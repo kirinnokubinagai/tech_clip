@@ -32,6 +32,7 @@
 - Worktree を使わずにメインブランチで直接コード変更
 - セルフマージ（ユーザーレビュー前のマージ）
 - ESLint / Prettier の使用（Biome を使用すること）
+- `drizzle-kit push` の使用（**`drizzle-kit migrate` のみ許可**。push はスキーマ差分を直接適用し、マイグレーション履歴が残らないため本番運用で危険）
 
 ## Tech Stack
 - pnpm (パッケージマネージャー)
