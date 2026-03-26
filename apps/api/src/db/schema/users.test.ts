@@ -27,8 +27,12 @@ describe("users schema", () => {
   });
 
   it("TypeScript型が正しくエクスポートされること", () => {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const user: typeof users.$inferSelect = {} as any;
-    expect(user).toBeDefined();
+    const columns = getTableColumns(users);
+    const columnNames = Object.keys(columns);
+    expect(columnNames).toContain("id");
+    expect(columnNames).toContain("email");
+    expect(columnNames).toContain("createdAt");
+    expect(columnNames).toContain("updatedAt");
+    expect(columnNames.length).toBeGreaterThan(10);
   });
 });

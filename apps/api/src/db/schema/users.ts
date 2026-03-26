@@ -27,8 +27,8 @@ export const users = sqliteTable("users", {
   pushToken: text("push_token"),
   pushEnabled: integer("push_enabled", { mode: "boolean" }).default(true),
   // タイムスタンプ
-  createdAt: text("created_at").default(sql`(datetime('now'))`),
-  updatedAt: text("updated_at").default(sql`(datetime('now'))`),
+  createdAt: text("created_at").notNull().default(sql`(datetime('now'))`),
+  updatedAt: text("updated_at").notNull().default(sql`(datetime('now'))`),
 });
 
 /** users テーブルの SELECT 結果の型 */
