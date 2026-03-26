@@ -21,6 +21,12 @@
             "command": "bash .claude/hooks/secret-guard.sh",
             "timeout": 10,
             "statusMessage": "Checking for secrets..."
+          },
+          {
+            "type": "command",
+            "command": "bash .claude/hooks/dangerous-command-guard.sh",
+            "timeout": 5,
+            "statusMessage": "Checking for dangerous commands..."
           }
         ]
       }
@@ -41,19 +47,6 @@
     "defaultMode": "bypassPermissions",
     "deny": [
       "Bash(drizzle-kit push:*)"
-    ],
-    "ask": [
-      "Bash(rm:*)",
-      "Bash(git reset --hard:*)",
-      "Bash(git push --force:*)",
-      "Bash(git push -f:*)",
-      "Bash(git checkout -- :*)",
-      "Bash(git clean:*)",
-      "Bash(git branch -D:*)",
-      "Bash(kill:*)",
-      "Bash(killall:*)",
-      "Bash(chmod 777:*)",
-      "Bash(sudo:*)"
     ]
   },
   "worktree": {
@@ -71,6 +64,7 @@
   "alwaysThinkingEnabled": true,
   "effortLevel": "high",
   "env": {
-    "NODE_ENV": "development"
+    "NODE_ENV": "development",
+    "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1"
   }
 }
