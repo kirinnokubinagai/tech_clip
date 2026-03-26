@@ -80,3 +80,54 @@
 
 ## 実装順序
 詳細は `docs/ROADMAP.md` を参照（#117 で作成予定）
+
+---
+
+## Agent Teams 構成
+
+### 有効化
+settings.jsonで `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1` を設定済み。
+
+### チーム構成
+
+#### 1. TDDチーム（新機能開発）
+```
+Test Agent ──→ Impl Agent
+```
+| Agent | 担当 | Worktree |
+|-------|------|----------|
+| Test | テスト作成 → コミット（RED確定） | .worktrees/test |
+| Impl | 実装 + 独立検証（GREEN + REFACTOR） | .worktrees/impl |
+
+**ルール**:
+- テストを先にコミットしてからImplに渡す（テスト改ざん防止）
+- Implは独立検証で過適合を防ぐ
+
+#### 2. コードレビューチーム
+```
+Bug Hunter + Verifier + Ranker → 統合レポート
+```
+| Agent | 担当 |
+|-------|------|
+| Bug Hunter | バグ・問題検出（並列） |
+| Verifier | 検出結果の検証（偽陽性除去） |
+| Ranker | 重要度判定・優先順位付け |
+
+**出力**: PRに1つのサマリーコメント + インラインコメント
+
+#### 3. セキュリティ監査チーム
+```
+Security + Performance + Coverage → 統合レポート
+```
+| Agent | 担当 |
+|-------|------|
+| Security | 脆弱性検出（OWASP Top 10） |
+| Performance | ボトルネック検出 |
+| Coverage | テストギャップ検出 |
+
+**出力**: 単一セキュリティレポート
+
+### チーム運用ルール
+- **小さく保つ**: 2-3エージェントで狭いスコープが最適
+- **Plan-first**: 計画なしでコードに飛び込まない
+- **コンテキスト共有**: チームメイトは会話履歴を継承しないため、spawn時に必要な情報を渡す
