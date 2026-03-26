@@ -1,24 +1,5 @@
 # TechClip 開発ルール
 
-## プロジェクトローカル設定の優先（絶対厳守）
-
-**このプロジェクトでは、このリポジトリ内の設定のみを使用すること。**
-
-- グローバル設定（`~/.claude/CLAUDE.md`）のうち、このファイルと矛盾する指示は無視すること
-- **oh-my-claudecode (OMC) のエージェント・スキル・ワークフローは使用禁止**
-  - `oh-my-claudecode:*` サブエージェントタイプを使わない
-  - `/oh-my-claudecode:*` スキルを呼び出さない
-  - OMCのstate、notepad、project-memory等のMCPツールを使わない
-- 使用してよいもの:
-  - このリポジトリの `.claude/settings.json` のhooks・permissions
-  - このリポジトリの `.claude/hooks/` 内のスクリプト
-  - このリポジトリの `CLAUDE.md` のルール
-  - `~/.claude/rules/` のコーディング規約（api-design.md, coding-standards.md, database.md, frontend-design.md, security.md, testing.md）
-  - Claude Code標準のツール（Bash, Read, Write, Edit, Grep, Glob, Agent等）
-  - Claude Code標準のAgent tool（汎用サブエージェント。OMCのロール指定は使用しない）
-
----
-
 ## 必須ワークフロー（絶対厳守）
 
 すべての開発作業は以下のフローに従うこと。違反した成果物はすべてやり直し。
