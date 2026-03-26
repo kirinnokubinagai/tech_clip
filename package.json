@@ -1,0 +1,17 @@
+{
+  "name": "tech-clip",
+  "private": true,
+  "packageManager": "pnpm@10.7.1",
+  "scripts": {
+    "dev:mobile": "turbo run dev --filter=@tech-clip/mobile",
+    "dev:api": "turbo run dev --filter=@tech-clip/api",
+    "build": "turbo run build",
+    "typecheck": "turbo run typecheck",
+    "lint": "turbo run lint",
+    "lint:fix": "turbo run lint:fix"
+  },
+  "devDependencies": {
+    "turbo": "^2.5.0",
+    "typescript": "^5.8.2"
+  }
+}
