@@ -9,10 +9,13 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@libsql/client": "^0.14.0",
+    "drizzle-orm": "^0.43.0",
     "hono": "^4.7.5"
   },
   "devDependencies": {
     "@cloudflare/workers-types": "^4.20250321.0",
+    "drizzle-kit": "^0.31.0",
     "typescript": "^5.8.2",
     "wrangler": "^4.7.0"
   }
