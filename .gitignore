@@ -50,5 +50,12 @@ coverage/
 # OMC (oh-my-claudecode state)
 .omc/
 
+# Nix
+result
+result-*
+
+# direnv
+.direnv/
+
 # Other tools
 .grepai/
