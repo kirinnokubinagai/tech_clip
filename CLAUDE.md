@@ -4,7 +4,10 @@
 
 すべての開発作業は以下のフローに従うこと。違反した成果物はすべてやり直し。
 
-### 1. GitHub Issue を取得する
+### 1. GitHub Issue を取得する（なければ作成する）
+- 既存のIssueがある場合: `gh issue view <番号>` で内容を確認
+- 既存のIssueがない場合: `gh issue create` でIssueを先に作成してから着手
+- **Issue番号がない状態での作業開始は禁止**
 ### 2. Git Worktree を作成する
 - ブランチ名: `issue/<issue番号>/<短い説明>`
 - コマンド: `git worktree add .worktrees/issue-N -b issue/N/short-desc`
