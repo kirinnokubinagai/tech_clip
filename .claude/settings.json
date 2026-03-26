@@ -11,6 +11,12 @@
           },
           {
             "type": "command",
+            "command": "bash .claude/hooks/check-worktrees.sh",
+            "timeout": 10,
+            "statusMessage": "Checking worktree health..."
+          },
+          {
+            "type": "command",
             "command": "bash .claude/hooks/implementation-order-guard.sh",
             "timeout": 10,
             "statusMessage": "Checking implementation order..."
