@@ -56,7 +56,7 @@
     ]
   },
   "permissions": {
-    "defaultMode": "default",
+    "defaultMode": "auto",
     "allow": [
       "Bash(*)",
       "Read",
@@ -74,7 +74,6 @@
       "Skill(new-feature:*)",
       "Skill(update-config:*)",
       "mcp__context7__*",
-      "mcp__supabase__*",
       "mcp__claude-in-chrome__*",
       "mcp__serena__*",
       "mcp__sequential-thinking__*"
