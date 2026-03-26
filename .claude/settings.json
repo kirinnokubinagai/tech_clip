@@ -24,6 +24,17 @@
           }
         ]
       }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash .claude/hooks/uncommitted-warn.sh",
+            "timeout": 5
+          }
+        ]
+      }
     ]
   },
   "permissions": {
@@ -44,5 +55,22 @@
       "Bash(chmod 777:*)",
       "Bash(sudo:*)"
     ]
+  },
+  "worktree": {
+    "symlinkDirectories": ["node_modules", ".turbo"]
+  },
+  "plansDirectory": ".claude/plans",
+  "attribution": {
+    "commit": "Co-Authored-By: Claude <noreply@anthropic.com>",
+    "pr": "🤖 Generated with [Claude Code](https://claude.ai/code)"
+  },
+  "model": "claude-opus-4-5-20251101",
+  "voiceEnabled": true,
+  "defaultView": "chat",
+  "showThinkingSummaries": true,
+  "alwaysThinkingEnabled": true,
+  "effortLevel": "high",
+  "env": {
+    "NODE_ENV": "development"
   }
 }

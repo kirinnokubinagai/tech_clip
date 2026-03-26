@@ -44,6 +44,9 @@ drizzle/meta/
 # Test coverage
 coverage/
 
+# Worktrees
+.worktrees/
+
 # OMC (oh-my-claudecode state)
 .omc/
 
