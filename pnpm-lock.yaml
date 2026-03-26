@@ -86,6 +86,12 @@ importers:
         specifier: ^5.8.0
         version: 5.9.3
 
+  packages/types:
+    devDependencies:
+      typescript:
+        specifier: ^5.8.0
+        version: 5.9.3
+
 packages:
 
   '@0no-co/graphql.web@1.2.0':
