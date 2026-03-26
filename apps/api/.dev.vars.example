@@ -1,4 +1,5 @@
 TURSO_DATABASE_URL=libsql://your-database.turso.io
 TURSO_AUTH_TOKEN=your-turso-auth-token
-ANTHROPIC_API_KEY=your-anthropic-api-key
+RUNPOD_API_KEY=your-runpod-api-key
+RUNPOD_ENDPOINT_ID=your-runpod-endpoint-id
 ENVIRONMENT=development

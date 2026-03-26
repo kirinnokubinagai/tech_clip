@@ -25,7 +25,7 @@ fi
 
 # シークレットパターン検知
 PATTERNS=(
-  'ANTHROPIC_API_KEY\s*='
+  'RUNPOD_API_KEY\s*='
   'OPENAI_API_KEY\s*='
   'STRIPE_API_KEY\s*='
   'STRIPE_SECRET_KEY\s*='
