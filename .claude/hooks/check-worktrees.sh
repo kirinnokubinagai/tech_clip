@@ -22,34 +22,55 @@ for wt_path in $WORKTREE_PATHS; do
 
     wt_name=$(basename "$wt_path")
 
-    # 1. リベース/マージ途中チェック（git statusで検出）
-    REBASE_STATUS=$(git -C "$wt_path" status 2>/dev/null | head -1)
-    if echo "$REBASE_STATUS" | grep -qiE '(rebase|merge)'; then
-        PROBLEMS="${PROBLEMS}\n❌ ${wt_name}: リベース/マージ途中 → git -C ${wt_path} rebase --continue (または --abort)"
-        PROBLEM_COUNT=$((PROBLEM_COUNT + 1))
-        continue
+    # git dir を解決（worktreeは .git ファイルで実際のgit dirを指す）
+    GIT_DIR=""
+    if [ -f "$wt_path/.git" ]; then
+        GIT_DIR=$(cat "$wt_path/.git" | sed 's/^gitdir: //')
+    elif [ -d "$wt_path/.git" ]; then
+        GIT_DIR="$wt_path/.git"
+    fi
+
+    # 1. リベース/マージ途中チェック（ファイルベース、ロケール非依存）
+    if [ -n "$GIT_DIR" ]; then
+        if [ -d "$GIT_DIR/rebase-merge" ] || [ -d "$GIT_DIR/rebase-apply" ]; then
+            PROBLEMS="${PROBLEMS}[REBASE] ${wt_name}: rebase途中 -> git -C ${wt_path} rebase --continue or --abort | "
+            PROBLEM_COUNT=$((PROBLEM_COUNT + 1))
+            continue
+        fi
+        if [ -f "$GIT_DIR/MERGE_HEAD" ]; then
+            PROBLEMS="${PROBLEMS}[MERGE] ${wt_name}: merge途中 -> git -C ${wt_path} merge --continue or --abort | "
+            PROBLEM_COUNT=$((PROBLEM_COUNT + 1))
+            continue
+        fi
     fi
 
     # 2. 未コミットの変更チェック
     DIRTY=$(git -C "$wt_path" status --porcelain 2>/dev/null | grep -v '^??' | head -1)
     if [ -n "$DIRTY" ]; then
         DIRTY_COUNT=$(git -C "$wt_path" status --porcelain 2>/dev/null | grep -v '^??' | wc -l | tr -d ' ')
-        PROBLEMS="${PROBLEMS}\n⚠️  ${wt_name}: 未コミットの変更${DIRTY_COUNT}件 → git -C ${wt_path} add -A && git -C ${wt_path} commit"
+        PROBLEMS="${PROBLEMS}[UNCOMMITTED] ${wt_name}: ${DIRTY_COUNT}files -> git -C ${wt_path} add -A && git commit | "
         PROBLEM_COUNT=$((PROBLEM_COUNT + 1))
     fi
 
     # 3. mainから遅れているかチェック
     BEHIND=$(git -C "$wt_path" rev-list --count "HEAD..origin/main" 2>/dev/null)
     if [ -n "$BEHIND" ] && [ "$BEHIND" -gt 0 ]; then
-        PROBLEMS="${PROBLEMS}\n📌 ${wt_name}: mainから${BEHIND}コミット遅れ → git -C ${wt_path} rebase origin/main"
+        PROBLEMS="${PROBLEMS}[BEHIND] ${wt_name}: ${BEHIND} commits behind main -> git -C ${wt_path} rebase origin/main | "
         PROBLEM_COUNT=$((PROBLEM_COUNT + 1))
     fi
 done
 
 if [ "$PROBLEM_COUNT" -gt 0 ]; then
-    MSG="🔍 Worktree健全性チェック: ${PROBLEM_COUNT}件の問題\n${PROBLEMS}\n\n上記を解決してから新しいIssueに着手してください。"
-    ESCAPED_MSG=$(printf '%s' "$MSG" | sed 's/"/\\"/g' | tr '\n' ' ')
-    echo "{\"hookSpecificOutput\":{\"hookEventName\":\"SessionStart\",\"additionalContext\":\"${ESCAPED_MSG}\"}}"
+    # jqがあればjqで安全にJSON生成、なければシンプルなASCII出力
+    MSG="Worktree health: ${PROBLEM_COUNT} issues found. ${PROBLEMS}Fix before starting new issues."
+    if command -v jq &> /dev/null; then
+        JSON=$(jq -n --arg msg "$MSG" '{hookSpecificOutput:{hookEventName:"SessionStart",additionalContext:$msg}}')
+        echo "$JSON"
+    else
+        # jqなしフォールバック: ASCII文字のみ使用でJSON安全
+        SAFE_MSG=$(printf '%s' "$MSG" | tr -d '"\\')
+        echo "{\"hookSpecificOutput\":{\"hookEventName\":\"SessionStart\",\"additionalContext\":\"${SAFE_MSG}\"}}"
+    fi
 fi
 
 exit 0
