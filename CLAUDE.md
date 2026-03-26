@@ -7,7 +7,7 @@
 ### 1. GitHub Issue を取得する
 ### 2. Git Worktree を作成する
 - ブランチ名: `issue/<issue番号>/<短い説明>`
-- コマンド: `git worktree add ../tech_clip-issue-N -b issue/N/short-desc`
+- コマンド: `git worktree add .worktrees/issue-N -b issue/N/short-desc`
 ### 3. Worktree 内で TDD 実装
 - **RED**: テストを先に書く（失敗することを確認）
 - **GREEN**: テストを通す最小限のコードを書く

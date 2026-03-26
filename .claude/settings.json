@@ -1,0 +1,76 @@
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash .claude/hooks/session-start.sh",
+            "timeout": 15,
+            "statusMessage": "Syncing with remote..."
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash .claude/hooks/secret-guard.sh",
+            "timeout": 10,
+            "statusMessage": "Checking for secrets..."
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash .claude/hooks/uncommitted-warn.sh",
+            "timeout": 5
+          }
+        ]
+      }
+    ]
+  },
+  "permissions": {
+    "defaultMode": "bypassPermissions",
+    "deny": [
+      "Bash(drizzle-kit push:*)"
+    ],
+    "ask": [
+      "Bash(rm:*)",
+      "Bash(git reset --hard:*)",
+      "Bash(git push --force:*)",
+      "Bash(git push -f:*)",
+      "Bash(git checkout -- :*)",
+      "Bash(git clean:*)",
+      "Bash(git branch -D:*)",
+      "Bash(kill:*)",
+      "Bash(killall:*)",
+      "Bash(chmod 777:*)",
+      "Bash(sudo:*)"
+    ]
+  },
+  "worktree": {
+    "symlinkDirectories": ["node_modules", ".turbo"]
+  },
+  "plansDirectory": ".claude/plans",
+  "attribution": {
+    "commit": "Co-Authored-By: Claude <noreply@anthropic.com>",
+    "pr": "🤖 Generated with [Claude Code](https://claude.ai/code)"
+  },
+  "model": "claude-opus-4-5-20251101",
+  "voiceEnabled": true,
+  "defaultView": "chat",
+  "showThinkingSummaries": true,
+  "alwaysThinkingEnabled": true,
+  "effortLevel": "high",
+  "env": {
+    "NODE_ENV": "development"
+  }
+}

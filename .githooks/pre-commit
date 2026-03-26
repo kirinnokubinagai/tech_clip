@@ -1,0 +1,53 @@
+#!/bin/bash
+# pre-commit: ステージングされたファイルからシークレット・環境変数を検知
+
+STAGED_DIFF=$(git diff --cached --diff-filter=ACMR 2>/dev/null)
+
+if [ -z "$STAGED_DIFF" ]; then
+  exit 0
+fi
+
+PATTERNS=(
+  'ANTHROPIC_API_KEY\s*='
+  'OPENAI_API_KEY\s*='
+  'STRIPE_API_KEY\s*='
+  'STRIPE_SECRET_KEY\s*='
+  'DATABASE_URL\s*=\s*["\x27]?(postgres|mysql|sqlite)'
+  'JWT_SECRET\s*='
+  'AWS_SECRET_ACCESS_KEY\s*='
+  'GOOGLE_CLIENT_SECRET\s*='
+  'GITHUB_TOKEN\s*='
+  'TURSO_AUTH_TOKEN\s*='
+  'TURSO_DATABASE_URL\s*='
+  'RESEND_API_KEY\s*='
+  'BETTER_AUTH_SECRET\s*='
+  'CLOUDFLARE_API_TOKEN\s*='
+  'REVENUE_CAT_API_KEY\s*='
+  'SENTRY_DSN\s*='
+  'sk_live_'
+  'sk_test_'
+  'sk-[a-zA-Z0-9]{20,}'
+  'ghp_[a-zA-Z0-9]{36}'
+  'gho_[a-zA-Z0-9]{36}'
+  'xoxb-[a-zA-Z0-9]+'
+)
+
+FOUND=""
+for PATTERN in "${PATTERNS[@]}"; do
+  MATCH=$(echo "$STAGED_DIFF" | grep -nEi "^\+" | grep -Ei "$PATTERN" | head -3)
+  if [ -n "$MATCH" ]; then
+    FOUND="${FOUND}\n  ${PATTERN}: ${MATCH}"
+  fi
+done
+
+if [ -n "$FOUND" ]; then
+  echo ""
+  echo "🚨 シークレット検出 - コミットをブロックしました"
+  echo "================================================"
+  echo -e "検出パターン:${FOUND}"
+  echo ""
+  echo "対処: 環境変数は .env ファイルに格納してください（.gitignoreで除外済み）"
+  echo "強制コミット: git commit --no-verify (非推奨)"
+  echo ""
+  exit 1
+fi
