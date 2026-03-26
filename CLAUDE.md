@@ -83,26 +83,26 @@
 **実装順序の違反は禁止。依存Issueが未完了の状態で着手しないこと。**
 
 ### Phase 順序
-1. **Phase 0**: セットアップ ✅ 完了
-2. **Phase 1**: DB + 認証 → 現在着手可能
+1. **Phase 0**: セットアップ → 現在着手中
+2. **Phase 1**: DB + 認証 → Phase 0 完了後
 3. **Phase 2**: パーサー → Phase 1 完了後
 4. **Phase 3**: API → Phase 1, 2 完了後
 5. **Phase 4**: モバイル → Phase 3 完了後
-6. **Phase 5-9**: 課金、ソーシャル、テスト、デザイン、リリース
+6. **Phase 5-9**: 課金、ソーシャル、オフライン、テスト、リリース
 
 ### 依存関係チェック
 - セッション開始時に `implementation-order-guard.sh` が自動実行
 - 依存Issueが未完了の場合、警告が表示される
 - 詳細な依存関係は `docs/ROADMAP.md` を参照
+- ROADMAP更新時は `scripts/sync-roadmap.sh` で GitHub Issue との整合性を検証すること
 
-### 次に着手すべきIssue（Phase 1）
+### 次に着手すべきIssue（Phase 0）
 | Issue | タイトル | 依存 |
 |-------|---------|------|
-| #26 | users テーブル設計 | #36 ✅ |
-| #27 | articles テーブル設計 | #36 ✅ |
-| #30 | sources テーブル設計 | #36 ✅ |
+| #17 | pnpm workspace + Turborepo 初期化 | - |
+| #49 | Nix 開発環境 (flake.nix) セットアップ | - |
 
-これら3つは並行作業可能。
+これら2つは並行作業可能。#17 完了後に #19, #18, #36 へ進める。
 
 ---
 
