@@ -8,6 +8,12 @@
             "command": "bash .claude/hooks/session-start.sh",
             "timeout": 15,
             "statusMessage": "Syncing with remote..."
+          },
+          {
+            "type": "command",
+            "command": "bash .claude/hooks/implementation-order-guard.sh",
+            "timeout": 10,
+            "statusMessage": "Checking implementation order..."
           }
         ]
       }
@@ -57,7 +63,7 @@
     "commit": "Co-Authored-By: Claude <noreply@anthropic.com>",
     "pr": "🤖 Generated with [Claude Code](https://claude.ai/code)"
   },
-  "model": "claude-opus-4-5-20251101",
+  "model": "claude-opus-4-6[1m]",
   "voiceEnabled": true,
   "defaultView": "chat",
   "showThinkingSummaries": true,
