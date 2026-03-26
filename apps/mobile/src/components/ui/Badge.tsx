@@ -1,7 +1,7 @@
 import { Text, View } from "react-native";
 
 /** Badgeコンポーネントで使用可能なバリアント */
-type BadgeVariant = "default" | "success" | "warning" | "error";
+type BadgeVariant = "default" | "success" | "warning" | "error" | "outline";
 
 type BadgeProps = {
   children: string;
@@ -14,6 +14,7 @@ const VARIANT_STYLES: Record<BadgeVariant, string> = {
   success: "bg-success/20 border-success",
   warning: "bg-warning/20 border-warning",
   error: "bg-error/20 border-error",
+  outline: "bg-transparent border-border",
 };
 
 /** バリアントごとのテキストスタイル */
@@ -22,6 +23,7 @@ const TEXT_VARIANT_STYLES: Record<BadgeVariant, string> = {
   success: "text-success",
   warning: "text-warning",
   error: "text-error",
+  outline: "text-text",
 };
 
 /**

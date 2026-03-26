@@ -1,4 +1,4 @@
-import { Pressable, Text } from "react-native";
+import { ActivityIndicator, Pressable, Text } from "react-native";
 
 /** Buttonコンポーネントで使用可能なバリアント */
 type ButtonVariant = "primary" | "secondary" | "outline" | "ghost" | "danger";
@@ -11,6 +11,7 @@ type ButtonProps = {
   variant?: ButtonVariant;
   size?: ButtonSize;
   disabled?: boolean;
+  loading?: boolean;
   onPress?: () => void;
 };
 
@@ -46,6 +47,15 @@ const TEXT_SIZE_STYLES: Record<ButtonSize, string> = {
   lg: "text-lg",
 };
 
+/** loading時のActivityIndicatorカラー */
+const LOADING_INDICATOR_COLORS: Record<ButtonVariant, string> = {
+  primary: "#ffffff",
+  secondary: "#e2e8f0",
+  outline: "#e2e8f0",
+  ghost: "#94a3b8",
+  danger: "#ffffff",
+};
+
 /**
  * 汎用ボタンコンポーネント
  *
@@ -53,6 +63,7 @@ const TEXT_SIZE_STYLES: Record<ButtonSize, string> = {
  * @param variant - ボタンの見た目バリアント
  * @param size - ボタンのサイズ
  * @param disabled - 無効状態
+ * @param loading - ローディング状態（trueでdisabled化しActivityIndicatorを表示）
  * @param onPress - タップ時のコールバック
  */
 export function Button({
@@ -60,20 +71,26 @@ export function Button({
   variant = "primary",
   size = "md",
   disabled = false,
+  loading = false,
   onPress,
 }: ButtonProps) {
-  const containerStyle = `rounded-lg items-center justify-center ${SIZE_STYLES[size]} ${VARIANT_STYLES[variant]} ${disabled ? "opacity-50" : ""}`;
+  const isDisabled = disabled || loading;
+  const containerStyle = `rounded-lg items-center justify-center ${SIZE_STYLES[size]} ${VARIANT_STYLES[variant]} ${isDisabled ? "opacity-50" : ""}`;
   const textStyle = `${TEXT_VARIANT_STYLES[variant]} ${TEXT_SIZE_STYLES[size]}`;
 
   return (
     <Pressable
       className={containerStyle}
-      disabled={disabled}
+      disabled={isDisabled}
       onPress={onPress}
       accessibilityRole="button"
-      accessibilityState={{ disabled }}
+      accessibilityState={{ disabled: isDisabled }}
     >
-      <Text className={textStyle}>{children}</Text>
+      {loading ? (
+        <ActivityIndicator color={LOADING_INDICATOR_COLORS[variant]} />
+      ) : (
+        <Text className={textStyle}>{children}</Text>
+      )}
     </Pressable>
   );
 }

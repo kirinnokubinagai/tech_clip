@@ -1,6 +1,9 @@
 import { Text, TextInput, View } from "react-native";
 import type { TextInputProps } from "react-native";
 
+/** プレースホルダーの色（テーマのtext-dimに対応） */
+const PLACEHOLDER_COLOR = "#64748b";
+
 type InputProps = {
   label?: string;
   placeholder?: string;
@@ -48,7 +51,7 @@ export function Input({
       <TextInput
         className={inputStyle}
         placeholder={placeholder}
-        placeholderTextColor="#64748b"
+        placeholderTextColor={PLACEHOLDER_COLOR}
         value={value}
         onChangeText={onChangeText}
         secureTextEntry={secureTextEntry}

@@ -64,7 +64,8 @@ export function Skeleton({
           height,
           borderRadius,
           opacity,
-          backgroundColor: "#2d2d44",
+          /** Animated APIはNativeWindクラス（bg-card等）と直接統合できないため、テーマ定数を直接参照 */
+          backgroundColor: "#1a1a2e",
         }}
       />
     </View>
