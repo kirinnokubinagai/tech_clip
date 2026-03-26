@@ -21,11 +21,10 @@ check_dangerous() {
   # rm コマンド
   echo "$cmd" | grep -qE "^rm " && return 0
 
-  # git 破壊的コマンド（--force-with-lease は安全なので除外）
+  # git 破壊的コマンド
   echo "$cmd" | grep -qE "git reset --hard" && return 0
-  echo "$cmd" | grep -qE "git push --force[^-]" && return 0
-  echo "$cmd" | grep -qE "git push --force$" && return 0
-  echo "$cmd" | grep -qE "git push -f " && return 0
+  echo "$cmd" | grep -qE "git push.*--force" && return 0
+  echo "$cmd" | grep -qE "git push.*-f[ $]" && return 0
   echo "$cmd" | grep -qE "git checkout -- " && return 0
   echo "$cmd" | grep -qE "git clean" && return 0
   echo "$cmd" | grep -qE "git branch -D" && return 0
