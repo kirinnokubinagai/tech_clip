@@ -6,7 +6,10 @@
     "dev": "wrangler dev",
     "build": "wrangler deploy --dry-run",
     "deploy": "wrangler deploy",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage"
   },
   "dependencies": {
     "@libsql/client": "^0.14.0",
@@ -17,6 +20,7 @@
     "@cloudflare/workers-types": "^4.20250321.0",
     "drizzle-kit": "^0.31.0",
     "typescript": "^5.8.2",
+    "vitest": "^4.1.1",
     "wrangler": "^4.7.0"
   }
 }
