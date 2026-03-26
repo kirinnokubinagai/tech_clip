@@ -8,6 +8,12 @@
             "command": "bash .claude/hooks/session-start.sh",
             "timeout": 15,
             "statusMessage": "Syncing with remote..."
+          },
+          {
+            "type": "command",
+            "command": "bash .claude/hooks/implementation-order-guard.sh",
+            "timeout": 10,
+            "statusMessage": "Checking implementation order..."
           }
         ]
       }
