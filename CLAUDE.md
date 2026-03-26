@@ -76,7 +76,7 @@
 - Cloudflare Workers + Hono (API)
 - Turso + Drizzle ORM (DB) ※ローカル開発は SQLite
 - Better Auth (認証)
-- Claude API (AI要約・翻訳)
+- RunPod + Qwen3.5 9B (AI要約・翻訳)
 - Nativewind v4 (スタイリング)
 - Biome (lint + formatter)
 - Nix (開発環境)

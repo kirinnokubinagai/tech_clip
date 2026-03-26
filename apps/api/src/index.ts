@@ -4,7 +4,8 @@ import { Hono } from "hono";
 type Bindings = {
   TURSO_DATABASE_URL: string;
   TURSO_AUTH_TOKEN: string;
-  ANTHROPIC_API_KEY: string;
+  RUNPOD_API_KEY: string;
+  RUNPOD_ENDPOINT_ID: string;
   ENVIRONMENT: string;
   // AVATARS_BUCKET: R2Bucket  // 後で有効化
 };
