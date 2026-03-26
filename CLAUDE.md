@@ -15,7 +15,7 @@
   - このリポジトリの `CLAUDE.md` のルール
   - `~/.claude/rules/` のコーディング規約（api-design.md, coding-standards.md, database.md, frontend-design.md, security.md, testing.md）
   - Claude Code標準のツール（Bash, Read, Write, Edit, Grep, Glob, Agent等）
-  - Agent toolの標準サブエージェント（executor, code-reviewer, explore等。oh-my-claudecodeプレフィックスなし）
+  - Claude Code標準のAgent tool（汎用サブエージェント。OMCのロール指定は使用しない）
 
 ---
 
