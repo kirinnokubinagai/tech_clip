@@ -1,5 +1,7 @@
 import { Hono } from "hono";
 
+import { securityHeadersMiddleware } from "./middleware/security-headers";
+
 /** Cloudflare Workers バインディング型定義 */
 type Bindings = {
   TURSO_DATABASE_URL: string;
@@ -11,6 +13,8 @@ type Bindings = {
 };
 
 const app = new Hono<{ Bindings: Bindings }>();
+
+app.use("*", securityHeadersMiddleware);
 
 app.get("/health", (c) => {
   return c.json({
