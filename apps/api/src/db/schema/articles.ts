@@ -1,4 +1,10 @@
-import { sqliteTable, text, integer, index } from "drizzle-orm/sqlite-core";
+import {
+  sqliteTable,
+  text,
+  integer,
+  index,
+  unique,
+} from "drizzle-orm/sqlite-core";
 import { users } from "./users";
 
 /**
@@ -9,24 +15,30 @@ export const articles = sqliteTable(
   "articles",
   {
     id: text("id").primaryKey(),
-    url: text("url").notNull(),
-    title: text("title").notNull(),
-    content: text("content"),
-    excerpt: text("excerpt"),
-    author: text("author"),
-    source: text("source").notNull(),
-    thumbnailUrl: text("thumbnail_url"),
-    publishedAt: integer("published_at", { mode: "timestamp" }),
-    savedBy: text("saved_by")
+    userId: text("user_id")
       .notNull()
       .references(() => users.id, { onDelete: "cascade" }),
+    url: text("url").notNull(),
+    source: text("source").notNull(),
+    title: text("title").notNull(),
+    author: text("author"),
+    content: text("content"),
+    excerpt: text("excerpt"),
+    thumbnailUrl: text("thumbnail_url"),
+    readingTimeMinutes: integer("reading_time_minutes"),
+    isRead: integer("is_read", { mode: "boolean" }).default(false),
+    isFavorite: integer("is_favorite", { mode: "boolean" }).default(false),
+    isPublic: integer("is_public", { mode: "boolean" }).default(false),
+    publishedAt: integer("published_at", { mode: "timestamp" }),
     createdAt: integer("created_at", { mode: "timestamp" }).notNull(),
     updatedAt: integer("updated_at", { mode: "timestamp" }).notNull(),
   },
   (table) => [
-    index("idx_articles_saved_by").on(table.savedBy),
+    unique("unq_articles_user_url").on(table.userId, table.url),
+    index("idx_articles_user_id").on(table.userId),
     index("idx_articles_source").on(table.source),
     index("idx_articles_created_at").on(table.createdAt),
+    index("idx_articles_published_at").on(table.publishedAt),
   ],
 );
 
