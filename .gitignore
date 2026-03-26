@@ -44,8 +44,7 @@ drizzle/meta/
 # Test coverage
 coverage/
 
-# Claude Code / OMC
-.claude/
+# OMC (oh-my-claudecode state)
 .omc/
 
 # Other tools
