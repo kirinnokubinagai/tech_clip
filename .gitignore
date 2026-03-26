@@ -41,6 +41,9 @@ Thumbs.db
 # Drizzle
 drizzle/meta/
 
+# SQLite local databases
+*.db
+
 # Test coverage
 coverage/
 
