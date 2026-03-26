@@ -27,45 +27,22 @@
     ]
   },
   "permissions": {
-    "allow": [
-      "Bash(git:*)",
-      "Bash(gh:*)",
-      "Bash(pnpm:*)",
-      "Bash(npx:*)",
-      "Bash(turbo:*)",
-      "Bash(biome:*)",
-      "Bash(drizzle-kit:*)",
-      "Bash(vitest:*)",
-      "Bash(expo:*)",
-      "Bash(wrangler:*)",
-      "Bash(mkdir:*)",
-      "Bash(ls:*)",
-      "Bash(cat:*)",
-      "Bash(head:*)",
-      "Bash(tail:*)",
-      "Bash(cp:*)",
-      "Bash(mv:*)",
-      "Bash(find:*)",
-      "Bash(sort:*)",
-      "Bash(jq:*)",
-      "Bash(cd:*)",
-      "Bash(pwd)",
-      "Bash(echo:*)",
-      "Bash(which:*)",
-      "Bash(ps:*)",
-      "Bash(lsof:*)",
-      "Read",
-      "Edit",
-      "Write",
-      "Glob",
-      "Grep",
-      "mcp__pencil",
-      "mcp__context7"
-    ],
+    "defaultMode": "bypassPermissions",
     "deny": [
-      "Bash(rm -rf /)",
-      "Bash(rm -rf ~)",
       "Bash(drizzle-kit push:*)"
+    ],
+    "ask": [
+      "Bash(rm:*)",
+      "Bash(git reset --hard:*)",
+      "Bash(git push --force:*)",
+      "Bash(git push -f:*)",
+      "Bash(git checkout -- :*)",
+      "Bash(git clean:*)",
+      "Bash(git branch -D:*)",
+      "Bash(kill:*)",
+      "Bash(killall:*)",
+      "Bash(chmod 777:*)",
+      "Bash(sudo:*)"
     ]
   }
 }
