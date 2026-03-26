@@ -56,7 +56,28 @@
     ]
   },
   "permissions": {
-    "defaultMode": "bypassPermissions",
+    "defaultMode": "auto",
+    "allow": [
+      "Bash(*)",
+      "Read",
+      "Write",
+      "Edit",
+      "MultiEdit",
+      "Grep",
+      "Glob",
+      "Agent(*)",
+      "WebFetch",
+      "WebSearch",
+      "NotebookEdit",
+      "Skill(sync:*)",
+      "Skill(finish:*)",
+      "Skill(new-feature:*)",
+      "Skill(update-config:*)",
+      "mcp__context7__*",
+      "mcp__claude-in-chrome__*",
+      "mcp__serena__*",
+      "mcp__sequential-thinking__*"
+    ],
     "deny": [
       "Bash(drizzle-kit push:*)"
     ]
