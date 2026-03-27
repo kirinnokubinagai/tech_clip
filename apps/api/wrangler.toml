@@ -3,8 +3,8 @@ main = "src/index.ts"
 compatibility_date = "2025-03-01"
 compatibility_flags = ["nodejs_compat"]
 
-# [vars]
-# ENVIRONMENT = "production"
+[vars]
+ENVIRONMENT = "development"
 
 # [[r2_buckets]]
 # binding = "AVATARS_BUCKET"
@@ -15,3 +15,15 @@ compatibility_flags = ["nodejs_compat"]
 # TURSO_AUTH_TOKEN
 # RUNPOD_API_KEY
 # RUNPOD_ENDPOINT_ID
+
+# --- ステージング環境 ---
+[env.staging]
+name = "tech-clip-api-staging"
+[env.staging.vars]
+ENVIRONMENT = "staging"
+
+# --- 本番環境 ---
+[env.production]
+name = "tech-clip-api-production"
+[env.production.vars]
+ENVIRONMENT = "production"
