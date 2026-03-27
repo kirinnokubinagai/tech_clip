@@ -8,19 +8,27 @@
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "platforms": ["ios", "android", "web"],
+    "icon": "./assets/images/icon.svg",
+    "splash": {
+      "image": "./assets/images/splash-icon.svg",
+      "resizeMode": "contain",
+      "backgroundColor": "#0c0a09"
+    },
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.techclip.app"
     },
     "android": {
       "adaptiveIcon": {
-        "backgroundColor": "#ffffff"
+        "foregroundImage": "./assets/images/adaptive-icon.svg",
+        "backgroundColor": "#0c0a09"
       },
       "package": "com.techclip.app"
     },
     "web": {
       "bundler": "metro",
-      "output": "static"
+      "output": "static",
+      "favicon": "./assets/images/favicon.svg"
     },
     "plugins": [
       [
