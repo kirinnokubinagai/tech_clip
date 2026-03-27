@@ -29,10 +29,7 @@ const BASE_URL = getBaseUrl();
  * @param options - fetchオプション
  * @returns レスポンスデータ
  */
-export async function apiFetch<T>(
-  path: string,
-  options: RequestInit = {},
-): Promise<T> {
+export async function apiFetch<T>(path: string, options: RequestInit = {}): Promise<T> {
   const token = await getAuthToken();
 
   const headers: Record<string, string> = {

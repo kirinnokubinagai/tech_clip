@@ -1,18 +1,8 @@
 import { create } from "zustand";
 
 import { apiFetch } from "@/lib/api";
-import {
-  clearAuthTokens,
-  getAuthToken,
-  setAuthToken,
-} from "@/lib/secure-store";
-import type {
-  AuthErrorResponse,
-  Session,
-  SignInParams,
-  SignInResponse,
-  User,
-} from "@/types/auth";
+import { clearAuthTokens, getAuthToken, setAuthToken } from "@/lib/secure-store";
+import type { AuthErrorResponse, Session, SignInParams, SignInResponse, User } from "@/types/auth";
 
 type AuthStore = {
   user: User | null;
@@ -37,13 +27,10 @@ export const useAuthStore = create<AuthStore>((set) => ({
    * @throws Error - 認証失敗時
    */
   signIn: async (params: SignInParams) => {
-    const data = await apiFetch<SignInResponse | AuthErrorResponse>(
-      "/auth/sign-in",
-      {
-        method: "POST",
-        body: JSON.stringify(params),
-      },
-    );
+    const data = await apiFetch<SignInResponse | AuthErrorResponse>("/auth/sign-in", {
+      method: "POST",
+      body: JSON.stringify(params),
+    });
 
     if (!data.success) {
       throw new Error(data.error.message);
@@ -88,8 +75,7 @@ export const useAuthStore = create<AuthStore>((set) => ({
 
     try {
       const data = await apiFetch<
-        | { success: true; data: { user: User; session: Session } }
-        | AuthErrorResponse
+        { success: true; data: { user: User; session: Session } } | AuthErrorResponse
       >("/auth/session");
 
       if (!data.success) {
