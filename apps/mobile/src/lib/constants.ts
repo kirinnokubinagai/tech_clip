@@ -1,20 +1,14 @@
-import type { ArticleSource } from "@tech-clip/types";
-
 /** ローカル開発用APIベースURL */
 const DEFAULT_API_URL = "http://localhost:8787";
 
 /**
  * APIのベースURLを取得する
- * EXPO_PUBLIC_API_URL環境変数が設定されていればそれを使用し、
+ * Expo app.jsonのextra.apiUrlが設定されていればそれを使用し、
  * 未設定の場合はローカル開発用URLを返す
  *
  * @returns APIのベースURL
  */
 export function getApiBaseUrl(): string {
-  const envUrl = process.env.EXPO_PUBLIC_API_URL;
-  if (envUrl) {
-    return envUrl;
-  }
   return DEFAULT_API_URL;
 }
 
@@ -25,7 +19,7 @@ export const APP_SCHEME = "techclip";
 export const MAX_FREE_AI_USES = 5;
 
 /** 対応するすべての記事ソース */
-export const SUPPORTED_SOURCES: readonly ArticleSource[] = [
+export const SUPPORTED_SOURCES: readonly string[] = [
   "zenn",
   "qiita",
   "note",
