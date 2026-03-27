@@ -4,6 +4,10 @@ import { z } from "zod";
 
 import type { Database } from "../db";
 import { users } from "../db/schema";
+import { uploadAvatarToR2, validateImageFile } from "../services/imageUpload";
+
+/** HTTP 400 Bad Request ステータスコード */
+const HTTP_BAD_REQUEST = 400;
 
 /** HTTP 401 Unauthorized ステータスコード */
 const HTTP_UNAUTHORIZED = 401;
@@ -16,6 +20,9 @@ const HTTP_CONFLICT = 409;
 
 /** HTTP 422 Unprocessable Entity ステータスコード */
 const HTTP_UNPROCESSABLE_ENTITY = 422;
+
+/** HTTP 500 Internal Server Error ステータスコード */
+const HTTP_INTERNAL_SERVER_ERROR = 500;
 
 /** 未認証エラーコード */
 const AUTH_ERROR_CODE = "AUTH_REQUIRED";
@@ -107,6 +114,8 @@ const UpdateProfileSchema = z.object({
 /** createUsersRouteのオプション */
 type UsersRouteOptions = {
   db: Database;
+  r2Bucket?: R2Bucket;
+  r2PublicUrl?: string;
 };
 
 /**
@@ -128,12 +137,13 @@ function omitSensitiveFields(user: Record<string, unknown>): Record<string, unkn
  *
  * GET /me: 自分のプロフィール取得
  * PATCH /me: 自分のプロフィール更新
+ * POST /me/avatar: アバター画像アップロード
  *
- * @param options - DB インスタンス
+ * @param options - DB インスタンスおよびR2設定
  * @returns Hono ルーターインスタンス
  */
 export function createUsersRoute(options: UsersRouteOptions) {
-  const { db } = options;
+  const { db, r2Bucket, r2PublicUrl } = options;
   const route = new Hono<{ Variables: { user?: Record<string, unknown> } }>();
 
   route.get("/me", async (c) => {
@@ -251,6 +261,113 @@ export function createUsersRoute(options: UsersRouteOptions) {
     const [updated] = await db
       .update(users)
       .set(updateData)
+      .where(eq(users.id, userId))
+      .returning();
+
+    return c.json({
+      success: true,
+      data: omitSensitiveFields(updated as unknown as Record<string, unknown>),
+    });
+  });
+
+  route.post("/me/avatar", async (c) => {
+    const user = c.get("user");
+    if (!user) {
+      return c.json(
+        {
+          success: false,
+          error: {
+            code: AUTH_ERROR_CODE,
+            message: AUTH_ERROR_MESSAGE,
+          },
+        },
+        HTTP_UNAUTHORIZED,
+      );
+    }
+
+    const userId = user.id as string;
+
+    let formData: FormData;
+    try {
+      formData = await c.req.formData();
+    } catch {
+      return c.json(
+        {
+          success: false,
+          error: {
+            code: "INVALID_REQUEST",
+            message: "リクエストの解析に失敗しました",
+          },
+        },
+        HTTP_BAD_REQUEST,
+      );
+    }
+
+    const avatarField = formData.get("avatar");
+    if (!avatarField || !(avatarField instanceof File)) {
+      return c.json(
+        {
+          success: false,
+          error: {
+            code: "INVALID_REQUEST",
+            message: "avatarフィールドにファイルを指定してください",
+          },
+        },
+        HTTP_BAD_REQUEST,
+      );
+    }
+
+    const validation = validateImageFile(avatarField);
+    if (!validation.isValid) {
+      return c.json(
+        {
+          success: false,
+          error: {
+            code: "INVALID_REQUEST",
+            message: validation.error ?? "ファイル形式が正しくありません",
+          },
+        },
+        HTTP_BAD_REQUEST,
+      );
+    }
+
+    if (!r2Bucket || !r2PublicUrl) {
+      return c.json(
+        {
+          success: false,
+          error: {
+            code: "INTERNAL_ERROR",
+            message: "サーバーエラーが発生しました",
+          },
+        },
+        HTTP_INTERNAL_SERVER_ERROR,
+      );
+    }
+
+    let avatarUrl: string;
+    try {
+      const result = await uploadAvatarToR2({
+        file: avatarField,
+        userId,
+        config: { r2Bucket, r2PublicUrl },
+      });
+      avatarUrl = result.avatarUrl;
+    } catch {
+      return c.json(
+        {
+          success: false,
+          error: {
+            code: "INTERNAL_ERROR",
+            message: "アバター画像のアップロードに失敗しました",
+          },
+        },
+        HTTP_INTERNAL_SERVER_ERROR,
+      );
+    }
+
+    const [updated] = await db
+      .update(users)
+      .set({ avatarUrl })
       .where(eq(users.id, userId))
       .returning();
 
