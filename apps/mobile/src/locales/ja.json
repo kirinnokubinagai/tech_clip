@@ -1,0 +1,47 @@
+{
+  "common": {
+    "loading": "読み込み中...",
+    "error": "エラーが発生しました",
+    "retry": "再試行",
+    "cancel": "キャンセル",
+    "save": "保存",
+    "delete": "削除",
+    "edit": "編集",
+    "close": "閉じる",
+    "confirm": "確認",
+    "back": "戻る",
+    "next": "次へ",
+    "done": "完了",
+    "search": "検索"
+  },
+  "auth": {
+    "login": "ログイン",
+    "logout": "ログアウト",
+    "signup": "アカウント作成",
+    "email": "メールアドレス",
+    "password": "パスワード",
+    "forgotPassword": "パスワードを忘れた方",
+    "noAccount": "アカウントをお持ちでない方",
+    "hasAccount": "アカウントをお持ちの方"
+  },
+  "tabs": {
+    "home": "ホーム",
+    "clips": "クリップ",
+    "settings": "設定"
+  },
+  "article": {
+    "save": "記事を保存",
+    "share": "共有",
+    "readLater": "あとで読む",
+    "noArticles": "記事がありません"
+  },
+  "settings": {
+    "title": "設定",
+    "language": "言語",
+    "theme": "テーマ",
+    "notifications": "通知",
+    "account": "アカウント",
+    "about": "このアプリについて",
+    "version": "バージョン"
+  }
+}
