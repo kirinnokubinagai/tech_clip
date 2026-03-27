@@ -1,7 +1,7 @@
 import * as Haptics from "expo-haptics";
-import { router } from "expo-router";
+import { router, useLocalSearchParams } from "expo-router";
 import { AlertCircle, ArrowLeft, Check, ExternalLink, Loader2 } from "lucide-react-native";
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Image, Pressable, ScrollView, Text, View } from "react-native";
 
 import { apiFetch } from "@/lib/api";
@@ -59,7 +59,8 @@ function validateUrl(url: string): string | null {
  * NativeWindダークテーマ、authStore + apiFetch使用。
  */
 export default function SaveScreen() {
-  const [url, setUrl] = useState("");
+  const { url: sharedUrl } = useLocalSearchParams<{ url?: string }>();
+  const [url, setUrl] = useState(sharedUrl ?? "");
   const [preview, setPreview] = useState<ArticlePreview | null>(null);
   const [isFetching, setIsFetching] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
