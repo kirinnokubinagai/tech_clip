@@ -15,6 +15,7 @@ export type ParsedArticleContent = {
   author: string | null;
   thumbnailUrl: string | null;
   publishedAt: string | null;
+  readingTimeMinutes: number | null;
 };
 
 /**
