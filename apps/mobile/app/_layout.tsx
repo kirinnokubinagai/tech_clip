@@ -29,6 +29,7 @@ export default function RootLayout() {
       <Stack screenOptions={{ headerShown: false }}>
         <Stack.Screen name="(tabs)" />
         <Stack.Screen name="(auth)" />
+        <Stack.Screen name="article/[id]" options={{ presentation: "card" }} />
       </Stack>
       {!isAuthenticated && <Redirect href="/(auth)/login" />}
       {isAuthenticated && <Redirect href="/(tabs)" />}
