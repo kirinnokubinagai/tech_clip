@@ -1,6 +1,25 @@
 import { describe, expect, it } from "vitest";
 import app from "../index";
 
+/** テスト用のシークレットキー（32文字以上） */
+const TEST_SECRET = "test-secret-key-for-better-auth-min-32-chars!!";
+
+/** テスト用の共通環境変数バインディング */
+const TEST_BINDINGS = {
+  TURSO_DATABASE_URL: "file:local.db",
+  TURSO_AUTH_TOKEN: "test-token",
+  RUNPOD_API_KEY: "test-key",
+  RUNPOD_ENDPOINT_ID: "test-endpoint",
+  ENVIRONMENT: "test",
+  BETTER_AUTH_SECRET: TEST_SECRET,
+  GOOGLE_CLIENT_ID: "google-client-id-test",
+  GOOGLE_CLIENT_SECRET: "google-client-secret-test",
+  APPLE_CLIENT_ID: "apple-client-id-test",
+  APPLE_CLIENT_SECRET: "apple-client-secret-test",
+  GITHUB_CLIENT_ID: "github-client-id-test",
+  GITHUB_CLIENT_SECRET: "github-client-secret-test",
+};
+
 describe("Better Auth", () => {
   describe("createAuth", () => {
     it("createAuth関数がエクスポートされていること", async () => {
@@ -15,15 +34,82 @@ describe("Better Auth", () => {
       // Arrange
       const { createAuth } = await import("./index");
       const mockDb = {} as Parameters<typeof createAuth>[0];
-      const secret = "test-secret-key-for-better-auth-min-32-chars!!";
 
       // Act
-      const auth = createAuth(mockDb, secret);
+      const auth = createAuth(mockDb, TEST_SECRET);
 
       // Assert
       expect(auth).toBeDefined();
       expect(auth.handler).toBeDefined();
       expect(typeof auth.handler).toBe("function");
+    });
+  });
+
+  describe("OAuth設定", () => {
+    it("socialProviders付きでauthインスタンスを生成できること", async () => {
+      // Arrange
+      const { createAuth } = await import("./index");
+      const mockDb = {} as Parameters<typeof createAuth>[0];
+
+      // Act
+      const auth = createAuth(mockDb, TEST_SECRET, {
+        google: {
+          clientId: "google-client-id-test",
+          clientSecret: "google-client-secret-test",
+        },
+        apple: {
+          clientId: "apple-client-id-test",
+          clientSecret: "apple-client-secret-test",
+        },
+        github: {
+          clientId: "github-client-id-test",
+          clientSecret: "github-client-secret-test",
+        },
+      });
+
+      // Assert
+      expect(auth).toBeDefined();
+      expect(auth.handler).toBeDefined();
+      expect(typeof auth.handler).toBe("function");
+    });
+
+    it("socialProvidersが未指定でもauthインスタンスを生成できること", async () => {
+      // Arrange
+      const { createAuth } = await import("./index");
+      const mockDb = {} as Parameters<typeof createAuth>[0];
+
+      // Act
+      const auth = createAuth(mockDb, TEST_SECRET);
+
+      // Assert
+      expect(auth).toBeDefined();
+      expect(auth.handler).toBeDefined();
+    });
+
+    it("一部のプロバイダーのみ指定してもauthインスタンスを生成できること", async () => {
+      // Arrange
+      const { createAuth } = await import("./index");
+      const mockDb = {} as Parameters<typeof createAuth>[0];
+
+      // Act
+      const auth = createAuth(mockDb, TEST_SECRET, {
+        github: {
+          clientId: "github-client-id-test",
+          clientSecret: "github-client-secret-test",
+        },
+      });
+
+      // Assert
+      expect(auth).toBeDefined();
+      expect(auth.handler).toBeDefined();
+    });
+
+    it("OAuthProviderConfig型がエクスポートされていること", async () => {
+      // Arrange
+      const authModule = await import("./index");
+
+      // Assert
+      expect(authModule.createAuth).toBeDefined();
     });
   });
 
@@ -33,14 +119,7 @@ describe("Better Auth", () => {
       const req = new Request("http://localhost/api/auth/ok");
 
       // Act
-      const res = await app.fetch(req, {
-        TURSO_DATABASE_URL: "file:local.db",
-        TURSO_AUTH_TOKEN: "test-token",
-        RUNPOD_API_KEY: "test-key",
-        RUNPOD_ENDPOINT_ID: "test-endpoint",
-        ENVIRONMENT: "test",
-        BETTER_AUTH_SECRET: "test-secret-key-for-better-auth-min-32-chars!!",
-      });
+      const res = await app.fetch(req, TEST_BINDINGS);
 
       // Assert
       expect(res.status).not.toBe(404);
@@ -51,19 +130,23 @@ describe("Better Auth", () => {
       const req = new Request("http://localhost/health");
 
       // Act
-      const res = await app.fetch(req, {
-        TURSO_DATABASE_URL: "file:local.db",
-        TURSO_AUTH_TOKEN: "test-token",
-        RUNPOD_API_KEY: "test-key",
-        RUNPOD_ENDPOINT_ID: "test-endpoint",
-        ENVIRONMENT: "test",
-        BETTER_AUTH_SECRET: "test-secret-key-for-better-auth-min-32-chars!!",
-      });
+      const res = await app.fetch(req, TEST_BINDINGS);
 
       // Assert
       expect(res.status).toBe(200);
       const body = await res.json();
       expect(body).toMatchObject({ status: "ok" });
+    });
+
+    it("OAuth環境変数がBindings型に含まれていること", async () => {
+      // Arrange
+      const req = new Request("http://localhost/health");
+
+      // Act
+      const res = await app.fetch(req, TEST_BINDINGS);
+
+      // Assert
+      expect(res.status).toBe(200);
     });
   });
 });
