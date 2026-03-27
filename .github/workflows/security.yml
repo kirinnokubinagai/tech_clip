@@ -1,0 +1,45 @@
+name: Security
+
+on:
+  pull_request:
+    branches: [main]
+
+jobs:
+  zap-scan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Start API server
+        run: pnpm --filter @tech-clip/api dev &
+        env:
+          TURSO_DATABASE_URL: file:local.db
+          TURSO_AUTH_TOKEN: dummy
+          RUNPOD_API_KEY: dummy
+          RUNPOD_ENDPOINT_ID: dummy
+          BETTER_AUTH_SECRET: test-secret-key-for-ci
+          ENVIRONMENT: test
+      - name: Wait for server
+        run: |
+          for i in $(seq 1 30); do
+            curl -s http://localhost:8787/health && break
+            sleep 1
+          done
+      - name: OWASP ZAP Baseline Scan
+        uses: zaproxy/action-baseline@v0.14.0
+        with:
+          target: http://localhost:8787
+          rules_file_name: .zap/rules.tsv
+          cmd_options: '-a'
+          allow_issue_writing: false
+      - name: Upload ZAP Report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: zap-report
+          path: report_html.html
