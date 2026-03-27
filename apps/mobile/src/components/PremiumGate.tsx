@@ -170,7 +170,9 @@ export function PremiumGate({
         <View style={styles.usageCard}>
           <Text style={styles.usageLabel}>今月のAI機能使用回数</Text>
           <Text style={styles.usageCount}>{`${currentUsage} / ${maxUsage}`}</Text>
-          <Text style={styles.usageLimitMessage}>無料プランの上限に達しました</Text>
+          {currentUsage >= maxUsage && (
+            <Text style={styles.usageLimitMessage}>無料プランの上限に達しました</Text>
+          )}
         </View>
 
         <Text style={styles.featuresTitle}>プレミアムプランで利用できる機能</Text>
