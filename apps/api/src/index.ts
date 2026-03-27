@@ -14,6 +14,12 @@ type Bindings = {
   RUNPOD_ENDPOINT_ID: string;
   ENVIRONMENT: string;
   BETTER_AUTH_SECRET: string;
+  GOOGLE_CLIENT_ID: string;
+  GOOGLE_CLIENT_SECRET: string;
+  APPLE_CLIENT_ID: string;
+  APPLE_CLIENT_SECRET: string;
+  GITHUB_CLIENT_ID: string;
+  GITHUB_CLIENT_SECRET: string;
 };
 
 const app = new Hono<{ Bindings: Bindings }>();
@@ -33,7 +39,20 @@ app.on(["POST", "GET"], "/api/auth/**", (c) => {
     TURSO_DATABASE_URL: c.env.TURSO_DATABASE_URL,
     TURSO_AUTH_TOKEN: c.env.TURSO_AUTH_TOKEN,
   });
-  const auth = createAuth(db, c.env.BETTER_AUTH_SECRET);
+  const auth = createAuth(db, c.env.BETTER_AUTH_SECRET, {
+    google: {
+      clientId: c.env.GOOGLE_CLIENT_ID,
+      clientSecret: c.env.GOOGLE_CLIENT_SECRET,
+    },
+    apple: {
+      clientId: c.env.APPLE_CLIENT_ID,
+      clientSecret: c.env.APPLE_CLIENT_SECRET,
+    },
+    github: {
+      clientId: c.env.GITHUB_CLIENT_ID,
+      clientSecret: c.env.GITHUB_CLIENT_SECRET,
+    },
+  });
   return auth.handler(c.req.raw);
 });
 
