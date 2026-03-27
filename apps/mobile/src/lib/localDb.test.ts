@@ -23,11 +23,13 @@ const mockExecAsync = jest.fn();
 const mockRunAsync = jest.fn();
 const mockGetAllAsync = jest.fn();
 const mockGetFirstAsync = jest.fn();
+const mockWithTransactionAsync = jest.fn();
 const mockDb = {
   execAsync: mockExecAsync,
   runAsync: mockRunAsync,
   getAllAsync: mockGetAllAsync,
   getFirstAsync: mockGetFirstAsync,
+  withTransactionAsync: mockWithTransactionAsync,
 };
 
 /** テスト用記事リストアイテム */
@@ -70,6 +72,9 @@ describe("localDb", () => {
     mockRunAsync.mockResolvedValue(undefined);
     mockGetAllAsync.mockResolvedValue([]);
     mockGetFirstAsync.mockResolvedValue(null);
+    mockWithTransactionAsync.mockImplementation(async (fn: () => Promise<void>) => {
+      await fn();
+    });
     // biome-ignore lint/suspicious/noExplicitAny: テスト用モック
     mockOpenDatabaseAsync.mockResolvedValue(mockDb as any);
     // DB シングルトンをリセットするためモジュールをリロード
@@ -253,24 +258,25 @@ describe("localDb", () => {
   });
 
   describe("clearAllOfflineData", () => {
-    it("全オフラインデータを削除できること", async () => {
+    it("全オフラインデータをトランザクション内で削除できること", async () => {
       // Act
       await initLocalDb();
       await clearAllOfflineData();
 
-      // Assert
-      expect(mockRunAsync).toHaveBeenCalledWith(
-        expect.stringContaining("DELETE FROM articles"),
-        [],
-      );
-      expect(mockRunAsync).toHaveBeenCalledWith(
-        expect.stringContaining("DELETE FROM summaries"),
-        [],
-      );
-      expect(mockRunAsync).toHaveBeenCalledWith(
-        expect.stringContaining("DELETE FROM translations"),
-        [],
-      );
+      // Assert: トランザクションが使用されること
+      expect(mockWithTransactionAsync).toHaveBeenCalledTimes(1);
+
+      // Assert: 外部キー制約の順序で削除されること（translations → summaries → articles）
+      const calls = mockRunAsync.mock.calls.map((call: unknown[]) => call[0] as string);
+      const translationsIndex = calls.findIndex((sql) => sql.includes("DELETE FROM translations"));
+      const summariesIndex = calls.findIndex((sql) => sql.includes("DELETE FROM summaries"));
+      const articlesIndex = calls.findIndex((sql) => sql.includes("DELETE FROM articles"));
+
+      expect(translationsIndex).toBeGreaterThanOrEqual(0);
+      expect(summariesIndex).toBeGreaterThanOrEqual(0);
+      expect(articlesIndex).toBeGreaterThanOrEqual(0);
+      expect(translationsIndex).toBeLessThan(summariesIndex);
+      expect(summariesIndex).toBeLessThan(articlesIndex);
     });
   });
 });

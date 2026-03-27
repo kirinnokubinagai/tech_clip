@@ -42,6 +42,8 @@ export async function initLocalDb(): Promise<void> {
 
   db = await openDatabaseAsync(DB_NAME);
 
+  await db.execAsync("PRAGMA foreign_keys = ON");
+
   await db.execAsync(
     `CREATE TABLE IF NOT EXISTS articles (
       id TEXT PRIMARY KEY,
@@ -66,7 +68,8 @@ export async function initLocalDb(): Promise<void> {
     `CREATE TABLE IF NOT EXISTS summaries (
       article_id TEXT PRIMARY KEY,
       content TEXT NOT NULL,
-      synced_at TEXT NOT NULL DEFAULT (datetime('now'))
+      synced_at TEXT NOT NULL DEFAULT (datetime('now')),
+      FOREIGN KEY (article_id) REFERENCES articles (id) ON DELETE CASCADE
     )`,
   );
 
@@ -74,7 +77,8 @@ export async function initLocalDb(): Promise<void> {
     `CREATE TABLE IF NOT EXISTS translations (
       article_id TEXT PRIMARY KEY,
       content TEXT NOT NULL,
-      synced_at TEXT NOT NULL DEFAULT (datetime('now'))
+      synced_at TEXT NOT NULL DEFAULT (datetime('now')),
+      FOREIGN KEY (article_id) REFERENCES articles (id) ON DELETE CASCADE
     )`,
   );
 }
@@ -199,13 +203,16 @@ export async function upsertTranslation(articleId: string, translation: string):
 
 /**
  * 全オフラインデータを削除する
+ * 外部キー制約の順序に従い translations → summaries → articles の順で削除する
  */
 export async function clearAllOfflineData(): Promise<void> {
   const database = await getDb();
 
-  await database.runAsync("DELETE FROM articles", []);
-  await database.runAsync("DELETE FROM summaries", []);
-  await database.runAsync("DELETE FROM translations", []);
+  await database.withTransactionAsync(async () => {
+    await database.runAsync("DELETE FROM translations", []);
+    await database.runAsync("DELETE FROM summaries", []);
+    await database.runAsync("DELETE FROM articles", []);
+  });
 }
 
 /**

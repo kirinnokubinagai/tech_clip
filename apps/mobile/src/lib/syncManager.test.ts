@@ -168,6 +168,63 @@ describe("syncManager", () => {
       expect(result.synced).toBe(0);
       expect(result.errors).toHaveLength(0);
     });
+
+    it("複数ページある場合は全ページの記事を同期できること", async () => {
+      // Arrange
+      const page1Article = {
+        id: "article-page1",
+        title: "ページ1記事",
+        author: "著者",
+        source: "zenn",
+        publishedAt: "2024-01-01T00:00:00Z",
+        excerpt: "概要",
+        thumbnailUrl: null,
+        isFavorite: false,
+        url: "https://zenn.dev/test/page1",
+      } as ArticleListItem;
+      const page2Article = {
+        id: "article-page2",
+        title: "ページ2記事",
+        author: "著者",
+        source: "qiita",
+        publishedAt: "2024-01-02T00:00:00Z",
+        excerpt: "概要",
+        thumbnailUrl: null,
+        isFavorite: false,
+        url: "https://qiita.com/test/page2",
+      } as ArticleListItem;
+
+      mockApiFetch
+        .mockResolvedValueOnce(
+          asApiFetchResult({
+            success: true,
+            data: [page1Article],
+            meta: { nextCursor: "cursor-abc", hasNext: true },
+          }),
+        )
+        .mockResolvedValueOnce(
+          asApiFetchResult({
+            success: true,
+            data: [page2Article],
+            meta: { nextCursor: null, hasNext: false },
+          }),
+        );
+
+      // Act
+      const result = await syncArticles();
+
+      // Assert
+      expect(mockApiFetch).toHaveBeenCalledTimes(2);
+      expect(mockApiFetch).toHaveBeenNthCalledWith(1, "/articles", expect.any(Object));
+      expect(mockApiFetch).toHaveBeenNthCalledWith(
+        2,
+        "/articles?cursor=cursor-abc",
+        expect.any(Object),
+      );
+      expect(mockUpsertArticle).toHaveBeenCalledTimes(2);
+      expect(result.synced).toBe(2);
+      expect(result.errors).toHaveLength(0);
+    });
   });
 
   describe("syncArticleDetail", () => {
@@ -242,7 +299,9 @@ describe("syncManager", () => {
       // Assert
       expect(mockUpsertArticle).not.toHaveBeenCalled();
       expect(result.success).toBe(false);
-      expect(result.error).toContain("記事が見つかりません");
+      if (!result.success) {
+        expect(result.error).toContain("記事が見つかりません");
+      }
     });
 
     it("ネットワークエラーが発生した場合はsuccessがfalseであること", async () => {
@@ -254,7 +313,9 @@ describe("syncManager", () => {
 
       // Assert
       expect(result.success).toBe(false);
-      expect(result.error).toBeDefined();
+      if (!result.success) {
+        expect(result.error).toBeDefined();
+      }
     });
   });
 });

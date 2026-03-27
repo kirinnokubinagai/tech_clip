@@ -13,29 +13,41 @@ export type SyncResult = {
 export type SyncDetailResult = { success: true } | { success: false; error: string };
 
 /**
- * サーバーから記事一覧を取得してローカルDBに同期する
+ * サーバーから記事一覧を取得してローカルDBに同期する（全ページ取得）
  *
  * @returns 同期した記事数とエラー一覧
  */
 export async function syncArticles(): Promise<SyncResult> {
   try {
-    const response = await apiFetch<ArticlesListResponse>("/articles", {
-      method: "GET",
-    });
+    let synced = 0;
+    let cursor: string | undefined = undefined;
 
-    if (!response.success) {
-      return {
-        synced: 0,
-        errors: [response.error.message],
-      };
-    }
+    do {
+      const url = cursor ? `/articles?cursor=${cursor}` : "/articles";
+      const response = await apiFetch<ArticlesListResponse>(url, {
+        method: "GET",
+      });
 
-    for (const article of response.data) {
-      await upsertArticle(article);
-    }
+      if (!response.success) {
+        return {
+          synced,
+          errors: [response.error.message],
+        };
+      }
+
+      for (const article of response.data) {
+        await upsertArticle(article);
+      }
+
+      synced += response.data.length;
+      cursor =
+        response.meta.hasNext && response.meta.nextCursor != null
+          ? response.meta.nextCursor
+          : undefined;
+    } while (cursor !== undefined);
 
     return {
-      synced: response.data.length,
+      synced,
       errors: [],
     };
   } catch (error) {
