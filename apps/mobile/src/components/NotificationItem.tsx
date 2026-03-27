@@ -63,27 +63,13 @@ function getNotificationIcon(type: NotificationType): ReactNode {
       );
     case "follow":
       return (
-        <UserPlus
-          testID="notification-icon-follow"
-          size={NOTIFICATION_ICON_SIZE}
-          color={color}
-        />
+        <UserPlus testID="notification-icon-follow" size={NOTIFICATION_ICON_SIZE} color={color} />
       );
     case "system":
-      return (
-        <Bell
-          testID="notification-icon-system"
-          size={NOTIFICATION_ICON_SIZE}
-          color={color}
-        />
-      );
+      return <Bell testID="notification-icon-system" size={NOTIFICATION_ICON_SIZE} color={color} />;
     case "article":
       return (
-        <Newspaper
-          testID="notification-icon-article"
-          size={NOTIFICATION_ICON_SIZE}
-          color={color}
-        />
+        <Newspaper testID="notification-icon-article" size={NOTIFICATION_ICON_SIZE} color={color} />
       );
   }
 }
@@ -160,11 +146,7 @@ export function NotificationItem({ notification, onPress }: NotificationItemProp
           </View>
         </View>
 
-        <Text
-          testID="notification-body"
-          className="text-xs text-text-muted"
-          numberOfLines={2}
-        >
+        <Text testID="notification-body" className="text-xs text-text-muted" numberOfLines={2}>
           {notification.body}
         </Text>
       </View>

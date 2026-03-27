@@ -40,10 +40,7 @@ export default function NotificationsScreen() {
   const markAsRead = useMarkAsRead();
   const markAllAsRead = useMarkAllAsRead();
 
-  const notifications = useMemo(
-    () => data?.pages.flatMap((page) => page.items) ?? [],
-    [data],
-  );
+  const notifications = useMemo(() => data?.pages.flatMap((page) => page.items) ?? [], [data]);
 
   const handleNotificationPress = useCallback(
     (notification: NotificationItemType) => {
@@ -66,10 +63,7 @@ export default function NotificationsScreen() {
 
   const renderItem = useCallback(
     ({ item }: { item: NotificationItemType }) => (
-      <NotificationItem
-        notification={item}
-        onPress={() => handleNotificationPress(item)}
-      />
+      <NotificationItem notification={item} onPress={() => handleNotificationPress(item)} />
     ),
     [handleNotificationPress],
   );
