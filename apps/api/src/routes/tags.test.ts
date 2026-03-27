@@ -769,8 +769,7 @@ describe("PUT /api/articles/:id/tags", () => {
       });
 
       // Assert
-      const text = await res.text();
-      expect(text).toBe("SHOW_ME_THE_BODY");
+      expect(res.status).toBe(404);
     });
   });
 });
