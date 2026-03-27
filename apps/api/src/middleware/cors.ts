@@ -4,10 +4,7 @@ import { cors } from "hono/cors";
 const EXPO_CUSTOM_SCHEME = "techclip://";
 
 /** Expo Go / 開発用ローカルオリジン */
-const LOCAL_ORIGINS = [
-  "http://localhost:8081",
-  "http://localhost:19006",
-];
+const LOCAL_ORIGINS = ["http://localhost:8081", "http://localhost:19006"];
 
 /** 許可するオリジン一覧（固定） */
 const ALLOWED_ORIGINS = [EXPO_CUSTOM_SCHEME, ...LOCAL_ORIGINS];

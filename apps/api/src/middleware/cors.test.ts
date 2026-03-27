@@ -1,5 +1,5 @@
-import { describe, it, expect } from "vitest";
 import { Hono } from "hono";
+import { describe, expect, it } from "vitest";
 import { corsMiddleware } from "./cors";
 
 /**
@@ -25,9 +25,7 @@ describe("corsMiddleware", () => {
 
       // Assert
       expect(res.status).toBe(200);
-      expect(res.headers.get("Access-Control-Allow-Origin")).toBe(
-        "techclip://",
-      );
+      expect(res.headers.get("Access-Control-Allow-Origin")).toBe("techclip://");
     });
 
     it("localhost:8081 を許可すること", async () => {
@@ -41,9 +39,7 @@ describe("corsMiddleware", () => {
 
       // Assert
       expect(res.status).toBe(200);
-      expect(res.headers.get("Access-Control-Allow-Origin")).toBe(
-        "http://localhost:8081",
-      );
+      expect(res.headers.get("Access-Control-Allow-Origin")).toBe("http://localhost:8081");
     });
 
     it("localhost:19006 を許可すること", async () => {
@@ -57,9 +53,7 @@ describe("corsMiddleware", () => {
 
       // Assert
       expect(res.status).toBe(200);
-      expect(res.headers.get("Access-Control-Allow-Origin")).toBe(
-        "http://localhost:19006",
-      );
+      expect(res.headers.get("Access-Control-Allow-Origin")).toBe("http://localhost:19006");
     });
 
     it("*.techclip.app サブドメインを許可すること", async () => {
@@ -73,9 +67,7 @@ describe("corsMiddleware", () => {
 
       // Assert
       expect(res.status).toBe(200);
-      expect(res.headers.get("Access-Control-Allow-Origin")).toBe(
-        "https://api.techclip.app",
-      );
+      expect(res.headers.get("Access-Control-Allow-Origin")).toBe("https://api.techclip.app");
     });
   });
 
@@ -90,9 +82,7 @@ describe("corsMiddleware", () => {
       });
 
       // Assert
-      expect(res.headers.get("Access-Control-Allow-Origin")).not.toBe(
-        "https://evil.example.com",
-      );
+      expect(res.headers.get("Access-Control-Allow-Origin")).not.toBe("https://evil.example.com");
     });
   });
 
