@@ -65,11 +65,14 @@ export async function registerTokenWithApi(token: string): Promise<void> {
  */
 export function setupNotificationHandlers(): () => void {
   Notifications.setNotificationHandler({
-    handleNotification: async () => ({
+    handleNotification: async () => {
+      return {
       shouldShowAlert: true,
       shouldPlaySound: true,
       shouldSetBadge: true,
-    }),
+      priority: Notifications.AndroidNotificationPriority.HIGH,
+      };
+    },
   });
 
   const receivedSubscription = Notifications.addNotificationReceivedListener((_notification) => {
