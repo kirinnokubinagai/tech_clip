@@ -27,6 +27,18 @@ const HTTP_CONFLICT = 409;
 /** HTTP 422 Unprocessable Entity ステータスコード */
 const HTTP_UNPROCESSABLE_ENTITY = 422;
 
+/** HTTP 200 OK ステータスコード */
+const HTTP_OK = 200;
+
+/** HTTP 204 No Content ステータスコード */
+const HTTP_NO_CONTENT = 204;
+
+/** HTTP 403 Forbidden ステータスコード */
+const HTTP_FORBIDDEN = 403;
+
+/** HTTP 404 Not Found ステータスコード */
+const HTTP_NOT_FOUND = 404;
+
 /** HTTP 500 Internal Server Error ステータスコード */
 const HTTP_INTERNAL_SERVER_ERROR = 500;
 
@@ -35,6 +47,18 @@ const AUTH_ERROR_CODE = "AUTH_REQUIRED";
 
 /** 未認証エラーメッセージ */
 const AUTH_ERROR_MESSAGE = "ログインが必要です";
+
+/** 権限エラーコード */
+const FORBIDDEN_ERROR_CODE = "FORBIDDEN";
+
+/** 権限エラーメッセージ */
+const FORBIDDEN_ERROR_MESSAGE = "この操作を実行する権限がありません";
+
+/** リソース未発見エラーコード */
+const NOT_FOUND_ERROR_CODE = "NOT_FOUND";
+
+/** リソース未発見エラーメッセージ */
+const NOT_FOUND_ERROR_MESSAGE = "記事が見つかりません";
 
 /** バリデーションエラーコード */
 const VALIDATION_ERROR_CODE = "VALIDATION_FAILED";
@@ -64,6 +88,21 @@ const CreateArticleSchema = z.object({
       { message: "URLはhttp://またはhttps://で始まる必要があります" },
     ),
 });
+
+/** 記事更新リクエストのZodスキーマ */
+const UpdateArticleSchema = z
+  .object({
+    isRead: z.boolean({ error: "isReadはブール値で指定してください" }).optional(),
+    isFavorite: z.boolean({ error: "isFavoriteはブール値で指定してください" }).optional(),
+    isPublic: z.boolean({ error: "isPublicはブール値で指定してください" }).optional(),
+  })
+  .refine(
+    (data) =>
+      data.isRead !== undefined || data.isFavorite !== undefined || data.isPublic !== undefined,
+    {
+      message: "更新するフィールドを1つ以上指定してください",
+    },
+  );
 
 /** 記事一覧クエリパラメータの型 */
 export type ArticlesQueryParams = {
@@ -125,6 +164,9 @@ function omitContent(article: Record<string, unknown>): Record<string, unknown> 
  *
  * GET /articles: 記事一覧（カーソルベースページネーション対応）
  * POST /: 記事保存（Zodバリデーション、重複チェック付き）
+ * GET /:id: 記事詳細取得（認証必須、所有者チェック付き）
+ * PATCH /:id: 記事更新（isRead/isFavorite/isPublic、認証必須、所有者チェック付き）
+ * DELETE /:id: 記事削除（認証必須、所有者チェック付き）
  *
  * @param options - DB インスタンス、parseArticle 関数、記事一覧クエリ関数
  * @returns Hono ルーターインスタンス
@@ -361,6 +403,203 @@ export function createArticlesRoute(options: ArticlesRouteOptions) {
         HTTP_INTERNAL_SERVER_ERROR,
       );
     }
+  });
+
+  route.get("/:id", async (c) => {
+    const user = c.get("user");
+    if (!user?.id) {
+      return c.json(
+        {
+          success: false,
+          error: {
+            code: AUTH_ERROR_CODE,
+            message: AUTH_ERROR_MESSAGE,
+          },
+        },
+        HTTP_UNAUTHORIZED,
+      );
+    }
+
+    const articleId = c.req.param("id");
+
+    const results = await db.select().from(articles).where(eq(articles.id, articleId));
+
+    if (results.length === 0) {
+      return c.json(
+        {
+          success: false,
+          error: {
+            code: NOT_FOUND_ERROR_CODE,
+            message: NOT_FOUND_ERROR_MESSAGE,
+          },
+        },
+        HTTP_NOT_FOUND,
+      );
+    }
+
+    const article = results[0];
+
+    if (article.userId !== (user.id as string)) {
+      return c.json(
+        {
+          success: false,
+          error: {
+            code: FORBIDDEN_ERROR_CODE,
+            message: FORBIDDEN_ERROR_MESSAGE,
+          },
+        },
+        HTTP_FORBIDDEN,
+      );
+    }
+
+    return c.json(
+      {
+        success: true,
+        data: article,
+      },
+      HTTP_OK,
+    );
+  });
+
+  route.patch("/:id", async (c) => {
+    const user = c.get("user");
+    if (!user?.id) {
+      return c.json(
+        {
+          success: false,
+          error: {
+            code: AUTH_ERROR_CODE,
+            message: AUTH_ERROR_MESSAGE,
+          },
+        },
+        HTTP_UNAUTHORIZED,
+      );
+    }
+
+    const body = await c.req.json().catch(() => ({}));
+    const validation = UpdateArticleSchema.safeParse(body);
+
+    if (!validation.success) {
+      return c.json(
+        {
+          success: false,
+          error: {
+            code: VALIDATION_ERROR_CODE,
+            message: VALIDATION_ERROR_MESSAGE,
+            details: validation.error.issues.map((e) => ({
+              field: e.path.join("."),
+              message: e.message,
+            })),
+          },
+        },
+        HTTP_UNPROCESSABLE_ENTITY,
+      );
+    }
+
+    const articleId = c.req.param("id");
+
+    const results = await db.select().from(articles).where(eq(articles.id, articleId));
+
+    if (results.length === 0) {
+      return c.json(
+        {
+          success: false,
+          error: {
+            code: NOT_FOUND_ERROR_CODE,
+            message: NOT_FOUND_ERROR_MESSAGE,
+          },
+        },
+        HTTP_NOT_FOUND,
+      );
+    }
+
+    const article = results[0];
+
+    if (article.userId !== (user.id as string)) {
+      return c.json(
+        {
+          success: false,
+          error: {
+            code: FORBIDDEN_ERROR_CODE,
+            message: FORBIDDEN_ERROR_MESSAGE,
+          },
+        },
+        HTTP_FORBIDDEN,
+      );
+    }
+
+    const updateData: Record<string, unknown> = { updatedAt: new Date() };
+    if (validation.data.isRead !== undefined) {
+      updateData.isRead = validation.data.isRead;
+    }
+    if (validation.data.isFavorite !== undefined) {
+      updateData.isFavorite = validation.data.isFavorite;
+    }
+    if (validation.data.isPublic !== undefined) {
+      updateData.isPublic = validation.data.isPublic;
+    }
+
+    const [updated] = await db.update(articles).set(updateData).where(eq(articles.id, articleId));
+
+    return c.json(
+      {
+        success: true,
+        data: updated,
+      },
+      HTTP_OK,
+    );
+  });
+
+  route.delete("/:id", async (c) => {
+    const user = c.get("user");
+    if (!user?.id) {
+      return c.json(
+        {
+          success: false,
+          error: {
+            code: AUTH_ERROR_CODE,
+            message: AUTH_ERROR_MESSAGE,
+          },
+        },
+        HTTP_UNAUTHORIZED,
+      );
+    }
+
+    const articleId = c.req.param("id");
+
+    const results = await db.select().from(articles).where(eq(articles.id, articleId));
+
+    if (results.length === 0) {
+      return c.json(
+        {
+          success: false,
+          error: {
+            code: NOT_FOUND_ERROR_CODE,
+            message: NOT_FOUND_ERROR_MESSAGE,
+          },
+        },
+        HTTP_NOT_FOUND,
+      );
+    }
+
+    const article = results[0];
+
+    if (article.userId !== (user.id as string)) {
+      return c.json(
+        {
+          success: false,
+          error: {
+            code: FORBIDDEN_ERROR_CODE,
+            message: FORBIDDEN_ERROR_MESSAGE,
+          },
+        },
+        HTTP_FORBIDDEN,
+      );
+    }
+
+    await db.delete(articles).where(eq(articles.id, articleId));
+
+    return c.body(null, HTTP_NO_CONTENT);
   });
 
   return route;
