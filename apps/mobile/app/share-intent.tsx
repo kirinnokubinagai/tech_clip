@@ -1,10 +1,19 @@
 import { router } from "expo-router";
 import { useShareIntent } from "expo-share-intent";
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { ActivityIndicator, Pressable, Text, View } from "react-native";
 
-/** URLバリデーション正規表現 */
-const URL_PATTERN = /^https?:\/\/.+/;
+/**
+ * URLがhttp/httpsスキームを持つ有効なURLかを検証する
+ */
+function isValidHttpUrl(urlString: string): boolean {
+  try {
+    const url = new URL(urlString);
+    return url.protocol === "http:" || url.protocol === "https:";
+  } catch {
+    return false;
+  }
+}
 
 /**
  * Share Intent 受信画面
@@ -14,14 +23,18 @@ const URL_PATTERN = /^https?:\/\/.+/;
  */
 export default function ShareIntentScreen() {
   const { shareIntent, isReady, error, resetShareIntent } = useShareIntent();
+  /** 二重遷移を防ぐガード */
+  const hasNavigated = useRef(false);
 
   useEffect(() => {
     if (!isReady) return;
     if (!shareIntent) return;
+    if (hasNavigated.current) return;
 
     const webUrl = shareIntent.webUrl;
-    if (!webUrl || !URL_PATTERN.test(webUrl)) return;
+    if (!webUrl || !isValidHttpUrl(webUrl)) return;
 
+    hasNavigated.current = true;
     resetShareIntent();
     router.push({
       pathname: "/article/save",
@@ -67,10 +80,23 @@ export default function ShareIntentScreen() {
 
   return (
     <View
-      className="flex-1 items-center justify-center bg-background"
-      accessibilityLabel="share-intent-loading"
+      className="flex-1 items-center justify-center bg-background px-6"
+      accessibilityLabel="share-intent-not-found"
     >
-      <ActivityIndicator size="large" accessibilityLabel="読み込み中" />
+      <Text
+        className="text-text text-base text-center mb-6"
+        accessibilityLabel="share-intent-not-found-message"
+      >
+        URLが見つかりません
+      </Text>
+      <Pressable
+        onPress={() => router.back()}
+        className="rounded-lg bg-primary px-6 py-3"
+        accessibilityRole="button"
+        accessibilityLabel="閉じる"
+      >
+        <Text className="text-white font-medium">閉じる</Text>
+      </Pressable>
     </View>
   );
 }

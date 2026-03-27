@@ -18,8 +18,7 @@ jest.mock("expo-router", () => ({
 }));
 
 /** モックされたrouterの参照 */
-// eslint-disable-next-line @typescript-eslint/no-require-imports
-const { router: mockRouter } = require("expo-router") as {
+const { router: mockRouter } = jest.requireMock("expo-router") as {
   router: { push: jest.Mock; back: jest.Mock };
 };
 
@@ -179,6 +178,44 @@ describe("ShareIntentScreen", () => {
       await waitFor(() => {
         expect(mockReset).toHaveBeenCalledTimes(1);
       });
+    });
+
+    it("URLが見つからない場合はフォールバックUIが表示されること", async () => {
+      // Arrange
+      mockUseShareIntent.mockReturnValue({
+        shareIntent: { webUrl: null },
+        isReady: true,
+        hasShareIntent: false,
+        error: null,
+        resetShareIntent: jest.fn(),
+      });
+
+      // Act
+      render(<ShareIntentScreen />);
+
+      // Assert
+      await waitFor(() => {
+        expect(screen.getByLabelText("share-intent-not-found")).toBeTruthy();
+        expect(screen.getByLabelText("share-intent-not-found-message")).toBeTruthy();
+      });
+    });
+
+    it("フォールバックUIの閉じるボタンを押すと戻ること", async () => {
+      // Arrange
+      mockUseShareIntent.mockReturnValue({
+        shareIntent: { webUrl: null },
+        isReady: true,
+        hasShareIntent: false,
+        error: null,
+        resetShareIntent: jest.fn(),
+      });
+
+      // Act
+      render(<ShareIntentScreen />);
+      fireEvent.press(screen.getByLabelText("閉じる"));
+
+      // Assert
+      expect(mockRouter.back).toHaveBeenCalledTimes(1);
     });
   });
 });
