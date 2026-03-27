@@ -1,5 +1,5 @@
-import { describe, it, expect } from "vitest";
 import { Hono } from "hono";
+import { describe, expect, it } from "vitest";
 import { securityHeadersMiddleware } from "./security-headers";
 
 /** テスト用Honoアプリを作成する */
@@ -53,9 +53,7 @@ describe("securityHeadersMiddleware", () => {
       const res = await app.request("/test");
 
       // Assert
-      expect(res.headers.get("Referrer-Policy")).toBe(
-        "strict-origin-when-cross-origin",
-      );
+      expect(res.headers.get("Referrer-Policy")).toBe("strict-origin-when-cross-origin");
     });
 
     it("Permissions-Policyでカメラ・マイク・位置情報が無効であること", async () => {

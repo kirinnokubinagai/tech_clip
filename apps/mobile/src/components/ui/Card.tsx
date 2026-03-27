@@ -1,5 +1,5 @@
-import { Pressable, View } from "react-native";
 import type { ReactNode } from "react";
+import { Pressable, View } from "react-native";
 
 type CardProps = {
   children: ReactNode;
@@ -28,9 +28,5 @@ export function Card({ children, className = "", onPress }: CardProps) {
     );
   }
 
-  return (
-    <View className={cardStyle}>
-      {children}
-    </View>
-  );
+  return <View className={cardStyle}>{children}</View>;
 }

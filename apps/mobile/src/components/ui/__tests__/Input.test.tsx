@@ -1,5 +1,4 @@
-import { describe, it, expect, vi } from "vitest";
-import { render, fireEvent } from "@testing-library/react-native";
+import { fireEvent, render } from "@testing-library/react-native";
 
 import { Input } from "../Input";
 
@@ -15,9 +14,7 @@ describe("Input", () => {
 
     it("プレースホルダーが正しく表示されること", () => {
       // Arrange & Act
-      const { getByPlaceholderText } = render(
-        <Input placeholder="example@domain.com" />,
-      );
+      const { getByPlaceholderText } = render(<Input placeholder="example@domain.com" />);
 
       // Assert
       expect(getByPlaceholderText("example@domain.com")).toBeDefined();
@@ -25,9 +22,7 @@ describe("Input", () => {
 
     it("ラベルなしでもレンダリングできること", () => {
       // Arrange & Act
-      const { getByPlaceholderText } = render(
-        <Input placeholder="入力してください" />,
-      );
+      const { getByPlaceholderText } = render(<Input placeholder="入力してください" />);
 
       // Assert
       expect(getByPlaceholderText("入力してください")).toBeDefined();
@@ -42,9 +37,7 @@ describe("Input", () => {
       );
 
       // Assert
-      expect(
-        getByText("メールアドレスの形式が正しくありません"),
-      ).toBeDefined();
+      expect(getByText("メールアドレスの形式が正しくありません")).toBeDefined();
     });
 
     it("エラーがない場合はエラーメッセージが表示されないこと", () => {
@@ -52,16 +45,14 @@ describe("Input", () => {
       const { queryByText } = render(<Input label="メール" />);
 
       // Assert
-      expect(
-        queryByText("メールアドレスの形式が正しくありません"),
-      ).toBeNull();
+      expect(queryByText("メールアドレスの形式が正しくありません")).toBeNull();
     });
   });
 
   describe("インタラクション", () => {
     it("テキスト入力時にonChangeTextが呼ばれること", () => {
       // Arrange
-      const onChangeText = vi.fn();
+      const onChangeText = jest.fn();
       const { getByPlaceholderText } = render(
         <Input placeholder="入力" onChangeText={onChangeText} />,
       );
@@ -75,9 +66,7 @@ describe("Input", () => {
 
     it("値が正しく反映されること", () => {
       // Arrange & Act
-      const { getByDisplayValue } = render(
-        <Input value="初期値" />,
-      );
+      const { getByDisplayValue } = render(<Input value="初期値" />);
 
       // Assert
       expect(getByDisplayValue("初期値")).toBeDefined();
@@ -87,9 +76,7 @@ describe("Input", () => {
   describe("プロパティ", () => {
     it("secureTextEntryが正しく設定されること", () => {
       // Arrange & Act
-      const { getByPlaceholderText } = render(
-        <Input placeholder="パスワード" secureTextEntry />,
-      );
+      const { getByPlaceholderText } = render(<Input placeholder="パスワード" secureTextEntry />);
 
       // Assert
       const input = getByPlaceholderText("パスワード");

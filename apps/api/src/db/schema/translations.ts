@@ -1,10 +1,4 @@
-import {
-  sqliteTable,
-  text,
-  integer,
-  index,
-  unique,
-} from "drizzle-orm/sqlite-core";
+import { index, integer, sqliteTable, text, unique } from "drizzle-orm/sqlite-core";
 import { articles } from "./articles";
 
 /**
@@ -25,10 +19,7 @@ export const translations = sqliteTable(
     createdAt: integer("created_at", { mode: "timestamp" }).notNull(),
   },
   (table) => [
-    unique("unq_translations_article_language").on(
-      table.articleId,
-      table.targetLanguage,
-    ),
+    unique("unq_translations_article_language").on(table.articleId, table.targetLanguage),
     index("idx_translations_article").on(table.articleId),
   ],
 );

@@ -1,4 +1,3 @@
-import { describe, it, expect } from "vitest";
 import { render } from "@testing-library/react-native";
 
 import { Badge } from "../Badge";
@@ -25,9 +24,7 @@ describe("Badge", () => {
 
     it("successバリアントでレンダリングできること", () => {
       // Arrange & Act
-      const { getByText } = render(
-        <Badge variant="success">完了</Badge>,
-      );
+      const { getByText } = render(<Badge variant="success">完了</Badge>);
 
       // Assert
       expect(getByText("完了")).toBeDefined();
@@ -35,9 +32,7 @@ describe("Badge", () => {
 
     it("warningバリアントでレンダリングできること", () => {
       // Arrange & Act
-      const { getByText } = render(
-        <Badge variant="warning">注意</Badge>,
-      );
+      const { getByText } = render(<Badge variant="warning">注意</Badge>);
 
       // Assert
       expect(getByText("注意")).toBeDefined();
@@ -45,9 +40,7 @@ describe("Badge", () => {
 
     it("errorバリアントでレンダリングできること", () => {
       // Arrange & Act
-      const { getByText } = render(
-        <Badge variant="error">エラー</Badge>,
-      );
+      const { getByText } = render(<Badge variant="error">エラー</Badge>);
 
       // Assert
       expect(getByText("エラー")).toBeDefined();

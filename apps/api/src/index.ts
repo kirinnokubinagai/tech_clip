@@ -1,6 +1,6 @@
 import { Hono } from "hono";
-import { createDatabase } from "./db";
 import { createAuth } from "./auth";
+import { createDatabase } from "./db";
 
 import { securityHeadersMiddleware } from "./middleware/security-headers";
 
