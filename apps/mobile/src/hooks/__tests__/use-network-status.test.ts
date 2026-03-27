@@ -1,16 +1,26 @@
-import NetInfo, { type NetInfoState } from "@react-native-community/netinfo";
+import NetInfo, { NetInfoStateType, type NetInfoState } from "@react-native-community/netinfo";
 import { act, renderHook } from "@testing-library/react-native";
 
 import { useNetworkStatus } from "../use-network-status";
 
 jest.mock("@react-native-community/netinfo", () => ({
   addEventListener: jest.fn(),
-  fetch: jest.fn(),
+  NetInfoStateType: {
+    unknown: "unknown",
+    none: "none",
+    cellular: "cellular",
+    wifi: "wifi",
+    bluetooth: "bluetooth",
+    ethernet: "ethernet",
+    wimax: "wimax",
+    vpn: "vpn",
+    other: "other",
+  },
 }));
 
 /** オンライン状態のNetInfoState */
 const ONLINE_STATE: NetInfoState = {
-  type: "wifi",
+  type: NetInfoStateType.wifi,
   isConnected: true,
   isInternetReachable: true,
   details: {
@@ -29,7 +39,7 @@ const ONLINE_STATE: NetInfoState = {
 
 /** オフライン状態のNetInfoState */
 const OFFLINE_STATE: NetInfoState = {
-  type: "none",
+  type: NetInfoStateType.none,
   isConnected: false,
   isInternetReachable: false,
   details: null,
@@ -44,7 +54,6 @@ describe("useNetworkStatus", () => {
     mockUnsubscribe = jest.fn();
     capturedCallback = null;
 
-    (NetInfo.fetch as jest.Mock).mockResolvedValue(ONLINE_STATE);
     (NetInfo.addEventListener as jest.Mock).mockImplementation((callback) => {
       capturedCallback = callback;
       return mockUnsubscribe;
@@ -101,7 +110,6 @@ describe("useNetworkStatus", () => {
 
     it("オンラインに復帰するとisOnlineがtrueになること", async () => {
       // Arrange
-      (NetInfo.fetch as jest.Mock).mockResolvedValue(OFFLINE_STATE);
       const { result } = renderHook(() => useNetworkStatus());
       await act(async () => {});
 
@@ -126,7 +134,7 @@ describe("useNetworkStatus", () => {
 
       // Act
       act(() => {
-        capturedCallback?.({ ...OFFLINE_STATE, isConnected: null });
+        capturedCallback?.({ ...OFFLINE_STATE, isConnected: null } as NetInfoState);
       });
 
       // Assert

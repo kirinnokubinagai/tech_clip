@@ -21,10 +21,10 @@ describe("OfflineBanner", () => {
       });
 
       // Act
-      const { UNSAFE_getByProps } = render(<OfflineBanner />);
+      const { getByLabelText } = render(<OfflineBanner />);
 
       // Assert
-      expect(UNSAFE_getByProps({ testID: "offline-banner" })).toBeDefined();
+      expect(getByLabelText("オフライン状態です")).toBeDefined();
     });
 
     it("オフライン時にオフラインメッセージが表示されること", () => {
@@ -35,10 +35,10 @@ describe("OfflineBanner", () => {
       });
 
       // Act
-      const { UNSAFE_getByProps } = render(<OfflineBanner />);
+      const { getByLabelText } = render(<OfflineBanner />);
 
       // Assert
-      expect(UNSAFE_getByProps({ accessibilityLabel: "オフライン状態です" })).toBeDefined();
+      expect(getByLabelText("オフライン状態です")).toBeDefined();
     });
   });
 
@@ -51,10 +51,10 @@ describe("OfflineBanner", () => {
       });
 
       // Act
-      const { UNSAFE_queryByProps } = render(<OfflineBanner />);
+      const { queryByLabelText } = render(<OfflineBanner />);
 
       // Assert
-      expect(UNSAFE_queryByProps({ testID: "offline-banner" })).toBeNull();
+      expect(queryByLabelText("オフライン状態です")).toBeNull();
     });
   });
 });

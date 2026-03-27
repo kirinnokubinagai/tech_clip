@@ -33,10 +33,6 @@ export function useNetworkStatus(): NetworkStatus {
   const [status, setStatus] = useState<NetworkStatus>(INITIAL_STATUS);
 
   useEffect(() => {
-    NetInfo.fetch().then((state) => {
-      setStatus(toNetworkStatus(state));
-    });
-
     const unsubscribe = NetInfo.addEventListener((state: NetInfoState) => {
       setStatus(toNetworkStatus(state));
     });
