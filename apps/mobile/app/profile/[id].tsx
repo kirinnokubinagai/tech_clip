@@ -59,7 +59,10 @@ export default function UserProfileScreen() {
 
   if (isLoading) {
     return (
-      <View testID="user-profile-loading" className="flex-1 bg-background items-center justify-center">
+      <View
+        testID="user-profile-loading"
+        className="flex-1 bg-background items-center justify-center"
+      >
         <ActivityIndicator size="large" color={PRIMARY_COLOR} />
         <Text className="text-text-muted mt-3">読み込み中...</Text>
       </View>
@@ -68,7 +71,10 @@ export default function UserProfileScreen() {
 
   if (isError) {
     return (
-      <View testID="user-profile-error" className="flex-1 bg-background items-center justify-center px-4">
+      <View
+        testID="user-profile-error"
+        className="flex-1 bg-background items-center justify-center px-4"
+      >
         <Text className="text-text-muted text-base text-center">
           ユーザー情報の取得に失敗しました
         </Text>
@@ -109,18 +115,12 @@ export default function UserProfileScreen() {
         <ProfileHeader user={user} />
 
         <View testID="user-profile-follow-section" className="px-4 py-4">
-          <FollowButton
-            userId={id}
-            isFollowing={isFollowing}
-            onToggle={handleFollowToggle}
-          />
+          <FollowButton userId={id} isFollowing={isFollowing} onToggle={handleFollowToggle} />
         </View>
 
         <View className="px-4">
           <View className="border-t border-border pt-4">
-            <Text className="text-base font-semibold text-text mb-3">
-              保存した記事
-            </Text>
+            <Text className="text-base font-semibold text-text mb-3">保存した記事</Text>
             <View className="items-center py-8">
               <Text className="text-text-muted text-sm text-center">
                 このユーザーの公開記事はまだありません

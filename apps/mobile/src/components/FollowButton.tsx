@@ -27,7 +27,11 @@ type FollowButtonProps = {
  * @param isFollowing - 現在フォロー中かどうか
  * @param onToggle - フォロー状態変更時のコールバック
  */
-export function FollowButton({ userId, isFollowing: initialFollowing, onToggle }: FollowButtonProps) {
+export function FollowButton({
+  userId,
+  isFollowing: initialFollowing,
+  onToggle,
+}: FollowButtonProps) {
   const [isFollowing, setIsFollowing] = useState(initialFollowing);
   const [isLoading, setIsLoading] = useState(false);
 
