@@ -30,6 +30,7 @@ export function ArticleDetailSkeleton() {
       <View className="mt-6 gap-2">
         {Array.from({ length: BODY_LINE_COUNT }, (_, index) => (
           <Skeleton
+            // biome-ignore lint/suspicious/noArrayIndexKey: skeleton items have no stable id
             key={`body-line-${index}`}
             width={index === BODY_LINE_COUNT - 1 ? "70%" : "100%"}
             height={BODY_LINE_HEIGHT}

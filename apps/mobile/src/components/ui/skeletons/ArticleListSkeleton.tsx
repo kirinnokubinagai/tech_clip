@@ -28,6 +28,7 @@ export function ArticleListSkeleton({ count = DEFAULT_ITEM_COUNT }: ArticleListS
     <View className="px-4">
       {Array.from({ length: count }, (_, index) => (
         <View
+          // biome-ignore lint/suspicious/noArrayIndexKey: skeleton items have no stable id
           key={`article-skeleton-${index}`}
           className="flex-row gap-3 py-3 border-b border-border"
         >
