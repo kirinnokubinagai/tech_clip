@@ -1,19 +1,3 @@
-<<<<<<< HEAD
-export type Article = {
-  id: string;
-  userId: string;
-  url: string;
-  source: string;
-  title: string;
-  author: string | null;
-  excerpt: string | null;
-  thumbnailUrl: string | null;
-  readingTimeMinutes: number | null;
-  isRead: boolean;
-  isFavorite: boolean;
-  isPublic: boolean;
-  publishedAt: string | null;
-=======
 export type ArticleSource =
   | "zenn"
   | "qiita"
@@ -51,30 +35,10 @@ export type SavedArticle = ArticlePreview & {
   isRead: boolean;
   isFavorite: boolean;
   isPublic: boolean;
->>>>>>> origin/main
   createdAt: string;
   updatedAt: string;
 };
 
-<<<<<<< HEAD
-export type SearchArticlesResponse = {
-  success: true;
-  data: Article[];
-  meta: {
-    nextCursor: string | null;
-    hasNext: boolean;
-  };
-};
-
-export type SearchArticlesErrorResponse = {
-  success: false;
-  error: {
-    code: string;
-    message: string;
-    details?: unknown;
-  };
-};
-=======
 export type ParseArticleResponse =
   | {
       success: true;
@@ -100,4 +64,3 @@ export type SaveArticleResponse =
         message: string;
       };
     };
->>>>>>> origin/main
