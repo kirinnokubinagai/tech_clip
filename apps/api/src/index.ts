@@ -1,11 +1,12 @@
+import { and, desc, eq, lt } from "drizzle-orm";
 import { Hono } from "hono";
 import { createAuth } from "./auth";
 import { createDatabase } from "./db";
-
-import { securityHeadersMiddleware } from "./middleware/security-headers";
+import { articles, users } from "./db/schema";
 
 import { corsMiddleware } from "./middleware/cors";
-import { createSubscriptionRoute } from "./routes/subscription";
+import { securityHeadersMiddleware } from "./middleware/security-headers";
+import { createPublicArticlesRoute } from "./routes/public-articles";
 
 /** Cloudflare Workers バインディング型定義 */
 type Bindings = {
@@ -21,7 +22,6 @@ type Bindings = {
   APPLE_CLIENT_SECRET: string;
   GITHUB_CLIENT_ID: string;
   GITHUB_CLIENT_SECRET: string;
-  REVENUECAT_WEBHOOK_SECRET: string;
 };
 
 const app = new Hono<{ Bindings: Bindings }>();
@@ -58,22 +58,35 @@ app.on(["POST", "GET"], "/api/auth/**", (c) => {
   return auth.handler(c.req.raw);
 });
 
-app.all("/api/subscription/*", (c) => {
+app.get("/api/users/:id/articles", async (c) => {
   const db = createDatabase({
     TURSO_DATABASE_URL: c.env.TURSO_DATABASE_URL,
     TURSO_AUTH_TOKEN: c.env.TURSO_AUTH_TOKEN,
   });
-  const subscriptionApp = createSubscriptionRoute({
-    db,
-    webhookSecret: c.env.REVENUECAT_WEBHOOK_SECRET,
+
+  const publicArticlesRoute = createPublicArticlesRoute({
+    queryFn: async (params) => {
+      const conditions = [eq(articles.userId, params.userId), eq(articles.isPublic, true)];
+      if (params.cursor) {
+        conditions.push(lt(articles.id, params.cursor));
+      }
+      const results = await db
+        .select()
+        .from(articles)
+        .where(and(...conditions))
+        .orderBy(desc(articles.createdAt))
+        .limit(params.limit);
+      return results as unknown as Array<Record<string, unknown>>;
+    },
+    userExistsFn: async (userId) => {
+      const [found] = await db.select({ id: users.id }).from(users).where(eq(users.id, userId));
+      return !!found;
+    },
   });
-  return subscriptionApp.fetch(
-    new Request(c.req.url, {
-      method: c.req.method,
-      headers: c.req.raw.headers,
-      body: c.req.raw.body,
-    }),
-  );
+
+  const subApp = new Hono();
+  subApp.route("/api/users", publicArticlesRoute);
+  return subApp.fetch(c.req.raw);
 });
 
 export default app;

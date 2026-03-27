@@ -88,4 +88,13 @@ if check_merge_without_review "$COMMAND"; then
   exit 2
 fi
 
+# PR作成前のテスト通過チェック
+if echo "$COMMAND" | grep -qE "gh pr create"; then
+  echo "🧪 PR作成前にテスト通過を確認中..."
+  if ! pnpm test 2>/dev/null; then
+    echo "❌ テストが失敗しています。テストを修正してからPRを作成してください。"
+    exit 2
+  fi
+fi
+
 exit 0
