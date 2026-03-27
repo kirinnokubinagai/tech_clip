@@ -115,10 +115,27 @@ const mockSelect = vi.fn().mockReturnValue({
   from: mockSelectFrom,
 });
 
+/** モックの db.update クエリ結果 */
+const mockUpdateSetWhere = vi.fn();
+const mockUpdateSet = vi.fn().mockReturnValue({
+  where: mockUpdateSetWhere,
+});
+const mockUpdate = vi.fn().mockReturnValue({
+  set: mockUpdateSet,
+});
+
+/** モックの db.delete クエリ結果 */
+const mockDeleteWhere = vi.fn();
+const mockDelete = vi.fn().mockReturnValue({
+  where: mockDeleteWhere,
+});
+
 /** モックのDBインスタンス */
 const mockDb = {
   insert: mockInsert,
   select: mockSelect,
+  update: mockUpdate,
+  delete: mockDelete,
 };
 
 /**
@@ -226,6 +243,93 @@ function postArticle(app: { request: Hono["request"] }, body: Record<string, unk
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body),
   });
+}
+
+/** HTTP 200 OK ステータスコード */
+const HTTP_OK = 200;
+
+/** HTTP 204 No Content ステータスコード */
+const HTTP_NO_CONTENT = 204;
+
+/** HTTP 403 Forbidden ステータスコード */
+const HTTP_FORBIDDEN = 403;
+
+/** HTTP 404 Not Found ステータスコード */
+const HTTP_NOT_FOUND = 404;
+
+/** 個別記事テスト用のモック記事データ */
+const MOCK_SINGLE_ARTICLE = {
+  id: "article_001",
+  userId: MOCK_USER.id,
+  url: "https://zenn.dev/test/articles/test-article",
+  source: "zenn",
+  title: "テスト記事 1",
+  author: "著者 1",
+  content: "記事本文 1",
+  excerpt: "概要 1",
+  thumbnailUrl: null,
+  readingTimeMinutes: 5,
+  isRead: false,
+  isFavorite: false,
+  isPublic: false,
+  publishedAt: new Date("2024-01-25"),
+  createdAt: new Date("2024-01-25"),
+  updatedAt: new Date("2024-01-25"),
+};
+
+/** 他ユーザーの記事データ */
+const MOCK_OTHER_USER_ARTICLE = {
+  ...MOCK_SINGLE_ARTICLE,
+  id: "article_other_001",
+  userId: "other_user_01",
+};
+
+/**
+ * 個別記事エンドポイント用テストアプリを作成する
+ *
+ * @returns テスト用Honoアプリ（認証あり）
+ */
+function createSingleArticleTestApp() {
+  type Variables = {
+    user: typeof MOCK_USER;
+    session: Record<string, unknown>;
+  };
+  const app = new Hono<{ Variables: Variables }>();
+
+  app.use("*", async (c, next) => {
+    c.set("user", MOCK_USER);
+    c.set("session", { id: "session_01" });
+    await next();
+  });
+
+  const mockQueryFn = vi.fn<ArticlesQueryFn>().mockResolvedValue([]);
+  const articlesRoute = createArticlesRoute({
+    db: mockDb as never,
+    parseArticleFn: mockParseArticle,
+    queryFn: mockQueryFn,
+  });
+  app.route("/api/articles", articlesRoute);
+
+  return app;
+}
+
+/**
+ * 個別記事エンドポイント用の未認証テストアプリを作成する
+ *
+ * @returns テスト用Honoアプリ（認証なし）
+ */
+function createSingleArticleTestAppWithoutAuth() {
+  const app = new Hono();
+
+  const mockQueryFn = vi.fn<ArticlesQueryFn>().mockResolvedValue([]);
+  const articlesRoute = createArticlesRoute({
+    db: mockDb as never,
+    parseArticleFn: mockParseArticle,
+    queryFn: mockQueryFn,
+  });
+  app.route("/api/articles", articlesRoute);
+
+  return app;
 }
 
 describe("GET /api/articles", () => {
@@ -924,6 +1028,410 @@ describe("POST /api/articles", () => {
 
       // Assert
       expect(res.headers.get("Content-Type")).toContain("application/json");
+    });
+  });
+});
+
+describe("GET /api/articles/:id", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  describe("正常系", () => {
+    it("認証済みユーザーが自分の記事を取得できること", async () => {
+      // Arrange
+      const app = createSingleArticleTestApp();
+      mockSelectWhere.mockResolvedValue([MOCK_SINGLE_ARTICLE]);
+
+      // Act
+      const res = await app.request("/api/articles/article_001");
+
+      // Assert
+      expect(res.status).toBe(HTTP_OK);
+      const body = (await res.json()) as ArticleResponseBody;
+      expect(body.success).toBe(true);
+      expect(body.data).toMatchObject({
+        id: "article_001",
+        title: "テスト記事 1",
+        source: "zenn",
+      });
+    });
+
+    it("レスポンスにcontentフィールドが含まれること", async () => {
+      // Arrange
+      const app = createSingleArticleTestApp();
+      mockSelectWhere.mockResolvedValue([MOCK_SINGLE_ARTICLE]);
+
+      // Act
+      const res = await app.request("/api/articles/article_001");
+
+      // Assert
+      const body = (await res.json()) as ArticleResponseBody;
+      expect(body.data).toHaveProperty("content", "記事本文 1");
+    });
+  });
+
+  describe("認証エラー", () => {
+    it("未認証の場合401が返ること", async () => {
+      // Arrange
+      const app = createSingleArticleTestAppWithoutAuth();
+
+      // Act
+      const res = await app.request("/api/articles/article_001");
+
+      // Assert
+      expect(res.status).toBe(HTTP_UNAUTHORIZED);
+      const body = (await res.json()) as ErrorResponseBody;
+      expect(body.success).toBe(false);
+      expect(body.error.code).toBe("AUTH_REQUIRED");
+    });
+  });
+
+  describe("所有者チェック", () => {
+    it("他ユーザーの記事にアクセスすると403が返ること", async () => {
+      // Arrange
+      const app = createSingleArticleTestApp();
+      mockSelectWhere.mockResolvedValue([MOCK_OTHER_USER_ARTICLE]);
+
+      // Act
+      const res = await app.request("/api/articles/article_other_001");
+
+      // Assert
+      expect(res.status).toBe(HTTP_FORBIDDEN);
+      const body = (await res.json()) as ErrorResponseBody;
+      expect(body.success).toBe(false);
+      expect(body.error.code).toBe("FORBIDDEN");
+    });
+  });
+
+  describe("存在しない記事", () => {
+    it("存在しない記事IDの場合404が返ること", async () => {
+      // Arrange
+      const app = createSingleArticleTestApp();
+      mockSelectWhere.mockResolvedValue([]);
+
+      // Act
+      const res = await app.request("/api/articles/nonexistent_id");
+
+      // Assert
+      expect(res.status).toBe(HTTP_NOT_FOUND);
+      const body = (await res.json()) as ErrorResponseBody;
+      expect(body.success).toBe(false);
+      expect(body.error.code).toBe("NOT_FOUND");
+    });
+  });
+
+  describe("レスポンス形式", () => {
+    it("統一レスポンス形式に従っていること", async () => {
+      // Arrange
+      const app = createSingleArticleTestApp();
+      mockSelectWhere.mockResolvedValue([MOCK_SINGLE_ARTICLE]);
+
+      // Act
+      const res = await app.request("/api/articles/article_001");
+
+      // Assert
+      const body = (await res.json()) as ArticleResponseBody;
+      expect(body).toHaveProperty("success", true);
+      expect(body).toHaveProperty("data");
+    });
+  });
+});
+
+describe("PATCH /api/articles/:id", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  describe("正常系", () => {
+    it("isReadを更新できること", async () => {
+      // Arrange
+      const app = createSingleArticleTestApp();
+      mockSelectWhere.mockResolvedValue([MOCK_SINGLE_ARTICLE]);
+      const updatedArticle = { ...MOCK_SINGLE_ARTICLE, isRead: true, updatedAt: new Date() };
+      mockUpdateSetWhere.mockResolvedValue([updatedArticle]);
+
+      // Act
+      const res = await app.request("/api/articles/article_001", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ isRead: true }),
+      });
+
+      // Assert
+      expect(res.status).toBe(HTTP_OK);
+      const body = (await res.json()) as ArticleResponseBody;
+      expect(body.success).toBe(true);
+      expect(body.data).toMatchObject({ isRead: true });
+    });
+
+    it("isFavoriteを更新できること", async () => {
+      // Arrange
+      const app = createSingleArticleTestApp();
+      mockSelectWhere.mockResolvedValue([MOCK_SINGLE_ARTICLE]);
+      const updatedArticle = { ...MOCK_SINGLE_ARTICLE, isFavorite: true, updatedAt: new Date() };
+      mockUpdateSetWhere.mockResolvedValue([updatedArticle]);
+
+      // Act
+      const res = await app.request("/api/articles/article_001", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ isFavorite: true }),
+      });
+
+      // Assert
+      expect(res.status).toBe(HTTP_OK);
+      const body = (await res.json()) as ArticleResponseBody;
+      expect(body.success).toBe(true);
+      expect(body.data).toMatchObject({ isFavorite: true });
+    });
+
+    it("isPublicを更新できること", async () => {
+      // Arrange
+      const app = createSingleArticleTestApp();
+      mockSelectWhere.mockResolvedValue([MOCK_SINGLE_ARTICLE]);
+      const updatedArticle = { ...MOCK_SINGLE_ARTICLE, isPublic: true, updatedAt: new Date() };
+      mockUpdateSetWhere.mockResolvedValue([updatedArticle]);
+
+      // Act
+      const res = await app.request("/api/articles/article_001", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ isPublic: true }),
+      });
+
+      // Assert
+      expect(res.status).toBe(HTTP_OK);
+      const body = (await res.json()) as ArticleResponseBody;
+      expect(body.success).toBe(true);
+      expect(body.data).toMatchObject({ isPublic: true });
+    });
+
+    it("複数フィールドを同時に更新できること", async () => {
+      // Arrange
+      const app = createSingleArticleTestApp();
+      mockSelectWhere.mockResolvedValue([MOCK_SINGLE_ARTICLE]);
+      const updatedArticle = {
+        ...MOCK_SINGLE_ARTICLE,
+        isRead: true,
+        isFavorite: true,
+        updatedAt: new Date(),
+      };
+      mockUpdateSetWhere.mockResolvedValue([updatedArticle]);
+
+      // Act
+      const res = await app.request("/api/articles/article_001", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ isRead: true, isFavorite: true }),
+      });
+
+      // Assert
+      expect(res.status).toBe(HTTP_OK);
+      const body = (await res.json()) as ArticleResponseBody;
+      expect(body.success).toBe(true);
+      expect(body.data).toMatchObject({ isRead: true, isFavorite: true });
+    });
+  });
+
+  describe("認証エラー", () => {
+    it("未認証の場合401が返ること", async () => {
+      // Arrange
+      const app = createSingleArticleTestAppWithoutAuth();
+
+      // Act
+      const res = await app.request("/api/articles/article_001", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ isRead: true }),
+      });
+
+      // Assert
+      expect(res.status).toBe(HTTP_UNAUTHORIZED);
+      const body = (await res.json()) as ErrorResponseBody;
+      expect(body.success).toBe(false);
+      expect(body.error.code).toBe("AUTH_REQUIRED");
+    });
+  });
+
+  describe("所有者チェック", () => {
+    it("他ユーザーの記事を更新しようとすると403が返ること", async () => {
+      // Arrange
+      const app = createSingleArticleTestApp();
+      mockSelectWhere.mockResolvedValue([MOCK_OTHER_USER_ARTICLE]);
+
+      // Act
+      const res = await app.request("/api/articles/article_other_001", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ isRead: true }),
+      });
+
+      // Assert
+      expect(res.status).toBe(HTTP_FORBIDDEN);
+      const body = (await res.json()) as ErrorResponseBody;
+      expect(body.success).toBe(false);
+      expect(body.error.code).toBe("FORBIDDEN");
+    });
+  });
+
+  describe("存在しない記事", () => {
+    it("存在しない記事IDの場合404が返ること", async () => {
+      // Arrange
+      const app = createSingleArticleTestApp();
+      mockSelectWhere.mockResolvedValue([]);
+
+      // Act
+      const res = await app.request("/api/articles/nonexistent_id", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ isRead: true }),
+      });
+
+      // Assert
+      expect(res.status).toBe(HTTP_NOT_FOUND);
+      const body = (await res.json()) as ErrorResponseBody;
+      expect(body.success).toBe(false);
+      expect(body.error.code).toBe("NOT_FOUND");
+    });
+  });
+
+  describe("バリデーション", () => {
+    it("更新フィールドが空の場合422が返ること", async () => {
+      // Arrange
+      const app = createSingleArticleTestApp();
+
+      // Act
+      const res = await app.request("/api/articles/article_001", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({}),
+      });
+
+      // Assert
+      expect(res.status).toBe(HTTP_UNPROCESSABLE_ENTITY);
+      const body = (await res.json()) as ErrorResponseBody;
+      expect(body.success).toBe(false);
+      expect(body.error.code).toBe("VALIDATION_FAILED");
+    });
+
+    it("不正な型のフィールドの場合422が返ること", async () => {
+      // Arrange
+      const app = createSingleArticleTestApp();
+
+      // Act
+      const res = await app.request("/api/articles/article_001", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ isRead: "not-a-boolean" }),
+      });
+
+      // Assert
+      expect(res.status).toBe(HTTP_UNPROCESSABLE_ENTITY);
+      const body = (await res.json()) as ErrorResponseBody;
+      expect(body.success).toBe(false);
+      expect(body.error.code).toBe("VALIDATION_FAILED");
+    });
+  });
+
+  describe("レスポンス形式", () => {
+    it("統一レスポンス形式に従っていること", async () => {
+      // Arrange
+      const app = createSingleArticleTestApp();
+      mockSelectWhere.mockResolvedValue([MOCK_SINGLE_ARTICLE]);
+      const updatedArticle = { ...MOCK_SINGLE_ARTICLE, isRead: true, updatedAt: new Date() };
+      mockUpdateSetWhere.mockResolvedValue([updatedArticle]);
+
+      // Act
+      const res = await app.request("/api/articles/article_001", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ isRead: true }),
+      });
+
+      // Assert
+      const body = (await res.json()) as ArticleResponseBody;
+      expect(body).toHaveProperty("success", true);
+      expect(body).toHaveProperty("data");
+    });
+  });
+});
+
+describe("DELETE /api/articles/:id", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  describe("正常系", () => {
+    it("自分の記事を削除して204を返すこと", async () => {
+      // Arrange
+      const app = createSingleArticleTestApp();
+      mockSelectWhere.mockResolvedValue([MOCK_SINGLE_ARTICLE]);
+      mockDeleteWhere.mockResolvedValue([]);
+
+      // Act
+      const res = await app.request("/api/articles/article_001", {
+        method: "DELETE",
+      });
+
+      // Assert
+      expect(res.status).toBe(HTTP_NO_CONTENT);
+    });
+  });
+
+  describe("認証エラー", () => {
+    it("未認証の場合401が返ること", async () => {
+      // Arrange
+      const app = createSingleArticleTestAppWithoutAuth();
+
+      // Act
+      const res = await app.request("/api/articles/article_001", {
+        method: "DELETE",
+      });
+
+      // Assert
+      expect(res.status).toBe(HTTP_UNAUTHORIZED);
+      const body = (await res.json()) as ErrorResponseBody;
+      expect(body.success).toBe(false);
+      expect(body.error.code).toBe("AUTH_REQUIRED");
+    });
+  });
+
+  describe("所有者チェック", () => {
+    it("他ユーザーの記事を削除しようとすると403が返ること", async () => {
+      // Arrange
+      const app = createSingleArticleTestApp();
+      mockSelectWhere.mockResolvedValue([MOCK_OTHER_USER_ARTICLE]);
+
+      // Act
+      const res = await app.request("/api/articles/article_other_001", {
+        method: "DELETE",
+      });
+
+      // Assert
+      expect(res.status).toBe(HTTP_FORBIDDEN);
+      const body = (await res.json()) as ErrorResponseBody;
+      expect(body.success).toBe(false);
+      expect(body.error.code).toBe("FORBIDDEN");
+    });
+  });
+
+  describe("存在しない記事", () => {
+    it("存在しない記事IDの場合404が返ること", async () => {
+      // Arrange
+      const app = createSingleArticleTestApp();
+      mockSelectWhere.mockResolvedValue([]);
+
+      // Act
+      const res = await app.request("/api/articles/nonexistent_id", {
+        method: "DELETE",
+      });
+
+      // Assert
+      expect(res.status).toBe(HTTP_NOT_FOUND);
+      const body = (await res.json()) as ErrorResponseBody;
+      expect(body.success).toBe(false);
+      expect(body.error.code).toBe("NOT_FOUND");
     });
   });
 });
