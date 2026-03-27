@@ -4,6 +4,11 @@ import { Redirect, Stack } from "expo-router";
 import { useEffect } from "react";
 import { ActivityIndicator, View } from "react-native";
 
+import {
+  registerForPushNotifications,
+  registerTokenWithApi,
+  setupNotificationHandlers,
+} from "../src/lib/notifications";
 import { queryClient } from "../src/lib/query-client";
 import { useAuthStore } from "../src/stores/auth-store";
 
@@ -15,6 +20,21 @@ export default function RootLayout() {
   useEffect(() => {
     checkSession();
   }, [checkSession]);
+
+  useEffect(() => {
+    const cleanup = setupNotificationHandlers();
+    return cleanup;
+  }, []);
+
+  useEffect(() => {
+    if (!isAuthenticated) return;
+
+    registerForPushNotifications().then((token) => {
+      if (token) {
+        registerTokenWithApi(token);
+      }
+    });
+  }, [isAuthenticated]);
 
   if (isLoading) {
     return (
