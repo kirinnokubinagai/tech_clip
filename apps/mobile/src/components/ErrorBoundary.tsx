@@ -70,7 +70,10 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
     }
 
     return (
-      <View testID="error-boundary-fallback" className="flex-1 items-center justify-center bg-background px-8">
+      <View
+        testID="error-boundary-fallback"
+        className="flex-1 items-center justify-center bg-background px-8"
+      >
         <AlertTriangle
           testID="error-boundary-icon"
           size={ERROR_ICON_SIZE}

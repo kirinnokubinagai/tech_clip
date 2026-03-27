@@ -56,9 +56,13 @@ function getErrorIcon(errorType: ErrorType): ReactNode {
     case "network":
       return <WifiOff testID="error-view-icon-network" size={ERROR_VIEW_ICON_SIZE} color={color} />;
     case "server":
-      return <AlertCircle testID="error-view-icon-server" size={ERROR_VIEW_ICON_SIZE} color={color} />;
+      return (
+        <AlertCircle testID="error-view-icon-server" size={ERROR_VIEW_ICON_SIZE} color={color} />
+      );
     case "generic":
-      return <AlertCircle testID="error-view-icon-generic" size={ERROR_VIEW_ICON_SIZE} color={color} />;
+      return (
+        <AlertCircle testID="error-view-icon-generic" size={ERROR_VIEW_ICON_SIZE} color={color} />
+      );
   }
 }
 

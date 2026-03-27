@@ -4,7 +4,6 @@ import { Redirect, Stack } from "expo-router";
 import { useEffect } from "react";
 import { ActivityIndicator, View } from "react-native";
 
-import { ErrorBoundary } from "../src/components/ErrorBoundary";
 import { queryClient } from "../src/lib/query-client";
 import { useAuthStore } from "../src/stores/auth-store";
 
@@ -26,16 +25,15 @@ export default function RootLayout() {
   }
 
   return (
-    <ErrorBoundary>
-      <QueryClientProvider client={queryClient}>
-        <Stack screenOptions={{ headerShown: false }}>
-          <Stack.Screen name="(tabs)" />
-          <Stack.Screen name="(auth)" />
-          <Stack.Screen name="article/[id]" options={{ presentation: "card" }} />
-        </Stack>
-        {!isAuthenticated && <Redirect href="/(auth)/login" />}
-        {isAuthenticated && <Redirect href="/(tabs)" />}
-      </QueryClientProvider>
-    </ErrorBoundary>
+    <QueryClientProvider client={queryClient}>
+      <Stack screenOptions={{ headerShown: false }}>
+        <Stack.Screen name="(tabs)" />
+        <Stack.Screen name="(auth)" />
+        <Stack.Screen name="article/[id]" options={{ presentation: "card" }} />
+        <Stack.Screen name="profile/edit" options={{ presentation: "card" }} />
+      </Stack>
+      {!isAuthenticated && <Redirect href="/(auth)/login" />}
+      {isAuthenticated && <Redirect href="/(tabs)" />}
+    </QueryClientProvider>
   );
 }
