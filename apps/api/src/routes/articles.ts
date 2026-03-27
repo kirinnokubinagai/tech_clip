@@ -539,12 +539,12 @@ export function createArticlesRoute(options: ArticlesRouteOptions) {
       updateData.isPublic = validation.data.isPublic;
     }
 
-    const [updated] = await db.update(articles).set(updateData).where(eq(articles.id, articleId));
+    await db.update(articles).set(updateData).where(eq(articles.id, articleId));
 
     return c.json(
       {
         success: true,
-        data: updated,
+        data: { ...article, ...updateData },
       },
       HTTP_OK,
     );
