@@ -11,6 +11,14 @@
     "lint": "biome check .",
     "lint:fix": "biome check --write ."
   },
+  "pnpm": {
+    "overrides": {
+      "tar": ">=7.5.11",
+      "esbuild": ">=0.25.0",
+      "brace-expansion": ">=5.0.5",
+      "@tootallnate/once": ">=3.0.1"
+    }
+  },
   "devDependencies": {
     "@biomejs/biome": "^1.9.0",
     "turbo": "^2.5.0",
