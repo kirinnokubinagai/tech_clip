@@ -30,7 +30,34 @@ const MOCK_ARTICLES = Array.from({ length: 25 }, (_, i) => ({
   updatedAt: new Date(`2024-01-${String(25 - i).padStart(2, "0")}`),
 }));
 
-/** レスポンスの型定義 */
+/** テスト用のパース済み記事 */
+const MOCK_PARSED_ARTICLE = {
+  title: "テスト記事タイトル",
+  author: "テスト著者",
+  content: "# テスト記事\n\nこれはテスト記事です。",
+  excerpt: "テスト記事の概要",
+  thumbnailUrl: "https://example.com/thumb.png",
+  readingTimeMinutes: 3,
+  publishedAt: "2024-01-15T00:00:00Z",
+  source: "zenn" as const,
+};
+
+/** HTTP 201 Created ステータスコード */
+const HTTP_CREATED = 201;
+
+/** HTTP 401 Unauthorized ステータスコード */
+const HTTP_UNAUTHORIZED = 401;
+
+/** HTTP 409 Conflict ステータスコード */
+const HTTP_CONFLICT = 409;
+
+/** HTTP 422 Unprocessable Entity ステータスコード */
+const HTTP_UNPROCESSABLE_ENTITY = 422;
+
+/** HTTP 500 Internal Server Error ステータスコード */
+const HTTP_INTERNAL_SERVER_ERROR = 500;
+
+/** GET レスポンスの型定義 */
 type ArticlesResponseBody = {
   success: boolean;
   data: Array<Record<string, unknown>>;
@@ -45,6 +72,7 @@ type ArticlesResponseBody = {
   };
 };
 
+/** エラーレスポンスの型定義 */
 type ErrorResponseBody = {
   success: boolean;
   error: {
@@ -54,16 +82,52 @@ type ErrorResponseBody = {
   };
 };
 
+/** POST レスポンスの型定義 */
+type ArticleResponseBody = {
+  success: boolean;
+  data?: Record<string, unknown>;
+  error?: {
+    code: string;
+    message: string;
+    details?: unknown;
+  };
+};
+
 /** モックDBクエリ関数の型 */
 type MockQueryFn = ReturnType<typeof vi.fn<ArticlesQueryFn>>;
 
+/** モックの parseArticle 関数 */
+const mockParseArticle = vi.fn();
+
+/** モックの db.insert 結果 */
+const mockInsertValues = vi.fn();
+const mockInsertReturning = vi.fn();
+const mockInsert = vi.fn().mockReturnValue({
+  values: mockInsertValues,
+});
+
+/** モックの db.select クエリ結果 */
+const mockSelectWhere = vi.fn();
+const mockSelectFrom = vi.fn().mockReturnValue({
+  where: mockSelectWhere,
+});
+const mockSelect = vi.fn().mockReturnValue({
+  from: mockSelectFrom,
+});
+
+/** モックのDBインスタンス */
+const mockDb = {
+  insert: mockInsert,
+  select: mockSelect,
+};
+
 /**
- * テスト用Honoアプリを作成する
+ * GET テスト用Honoアプリを作成する
  *
  * @param mockQueryFn - 記事一覧クエリのモック関数
  * @returns テスト用Honoアプリ
  */
-function createTestApp(mockQueryFn: MockQueryFn) {
+function createGetTestApp(mockQueryFn: MockQueryFn) {
   type Variables = {
     user: typeof MOCK_USER;
     session: Record<string, unknown>;
@@ -76,25 +140,92 @@ function createTestApp(mockQueryFn: MockQueryFn) {
     return next();
   });
 
-  const articlesRoute = createArticlesRoute(mockQueryFn);
+  const articlesRoute = createArticlesRoute({
+    db: mockDb as never,
+    parseArticleFn: mockParseArticle,
+    queryFn: mockQueryFn,
+  });
   app.route("/api", articlesRoute);
 
   return app;
 }
 
 /**
- * 認証なしのテスト用Honoアプリを作成する
+ * 認証なしのGETテスト用Honoアプリを作成する
  *
  * @param mockQueryFn - 記事一覧クエリのモック関数
  * @returns テスト用Honoアプリ（認証ミドルウェアなし）
  */
-function createTestAppWithoutAuth(mockQueryFn: MockQueryFn) {
+function createGetTestAppWithoutAuth(mockQueryFn: MockQueryFn) {
   const app = new Hono();
 
-  const articlesRoute = createArticlesRoute(mockQueryFn);
+  const articlesRoute = createArticlesRoute({
+    db: mockDb as never,
+    parseArticleFn: mockParseArticle,
+    queryFn: mockQueryFn,
+  });
   app.route("/api", articlesRoute);
 
   return app;
+}
+
+/**
+ * POST テスト用Honoアプリを作成する
+ *
+ * @returns テスト用Honoアプリ
+ */
+function createPostTestApp() {
+  type Variables = {
+    user: typeof MOCK_USER;
+    session: Record<string, unknown>;
+  };
+  const app = new Hono<{ Variables: Variables }>();
+
+  app.use("*", async (c, next) => {
+    c.set("user", MOCK_USER);
+    c.set("session", { id: "session_01" });
+    await next();
+  });
+
+  const mockQueryFn = vi.fn<ArticlesQueryFn>().mockResolvedValue([]);
+  const articlesRoute = createArticlesRoute({
+    db: mockDb as never,
+    parseArticleFn: mockParseArticle,
+    queryFn: mockQueryFn,
+  });
+  app.route("/api/articles", articlesRoute);
+
+  return app;
+}
+
+/**
+ * 未認証のPOSTテスト用Honoアプリを作成する
+ *
+ * @returns テスト用Honoアプリ（認証ミドルウェアなし）
+ */
+function createPostTestAppWithoutAuth() {
+  const app = new Hono();
+
+  const mockQueryFn = vi.fn<ArticlesQueryFn>().mockResolvedValue([]);
+  const articlesRoute = createArticlesRoute({
+    db: mockDb as never,
+    parseArticleFn: mockParseArticle,
+    queryFn: mockQueryFn,
+  });
+  app.route("/api/articles", articlesRoute);
+
+  return app;
+}
+
+/**
+ * POST リクエストを送信するヘルパー
+ */
+function postArticle(app: { request: Hono["request"] }, body: Record<string, unknown>) {
+  return app.request("/api/articles", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
 }
 
 describe("GET /api/articles", () => {
@@ -107,9 +238,9 @@ describe("GET /api/articles", () => {
   describe("認証", () => {
     it("認証済みユーザーが記事一覧を取得できること", async () => {
       // Arrange
-      const articles = MOCK_ARTICLES.slice(0, 20);
-      mockQueryFn.mockResolvedValue(articles.concat([MOCK_ARTICLES[20]]));
-      const app = createTestApp(mockQueryFn);
+      const fetchedArticles = MOCK_ARTICLES.slice(0, 20);
+      mockQueryFn.mockResolvedValue(fetchedArticles.concat([MOCK_ARTICLES[20]]));
+      const app = createGetTestApp(mockQueryFn);
 
       // Act
       const res = await app.request("/api/articles");
@@ -124,13 +255,13 @@ describe("GET /api/articles", () => {
     it("未認証の場合401が返ること", async () => {
       // Arrange
       mockQueryFn.mockResolvedValue([]);
-      const app = createTestAppWithoutAuth(mockQueryFn);
+      const app = createGetTestAppWithoutAuth(mockQueryFn);
 
       // Act
       const res = await app.request("/api/articles");
 
       // Assert
-      expect(res.status).toBe(401);
+      expect(res.status).toBe(HTTP_UNAUTHORIZED);
       const body = (await res.json()) as ErrorResponseBody;
       expect(body.success).toBe(false);
       expect(body.error.code).toBe("AUTH_REQUIRED");
@@ -141,7 +272,7 @@ describe("GET /api/articles", () => {
     it("デフォルトで20件の記事を返すこと", async () => {
       // Arrange
       mockQueryFn.mockResolvedValue(MOCK_ARTICLES.slice(0, 21));
-      const app = createTestApp(mockQueryFn);
+      const app = createGetTestApp(mockQueryFn);
 
       // Act
       const res = await app.request("/api/articles");
@@ -155,7 +286,7 @@ describe("GET /api/articles", () => {
     it("limit パラメータで取得件数を変更できること", async () => {
       // Arrange
       mockQueryFn.mockResolvedValue(MOCK_ARTICLES.slice(0, 11));
-      const app = createTestApp(mockQueryFn);
+      const app = createGetTestApp(mockQueryFn);
 
       // Act
       const res = await app.request("/api/articles?limit=10");
@@ -169,7 +300,7 @@ describe("GET /api/articles", () => {
     it("次のページがある場合hasNextがtrueであること", async () => {
       // Arrange
       mockQueryFn.mockResolvedValue(MOCK_ARTICLES.slice(0, 21));
-      const app = createTestApp(mockQueryFn);
+      const app = createGetTestApp(mockQueryFn);
 
       // Act
       const res = await app.request("/api/articles");
@@ -183,7 +314,7 @@ describe("GET /api/articles", () => {
     it("次のページがない場合hasNextがfalseであること", async () => {
       // Arrange
       mockQueryFn.mockResolvedValue(MOCK_ARTICLES.slice(0, 5));
-      const app = createTestApp(mockQueryFn);
+      const app = createGetTestApp(mockQueryFn);
 
       // Act
       const res = await app.request("/api/articles");
@@ -198,7 +329,7 @@ describe("GET /api/articles", () => {
       // Arrange
       const nextPageArticles = MOCK_ARTICLES.slice(20, 25);
       mockQueryFn.mockResolvedValue(nextPageArticles);
-      const app = createTestApp(mockQueryFn);
+      const app = createGetTestApp(mockQueryFn);
 
       // Act
       const res = await app.request("/api/articles?cursor=article_020");
@@ -213,7 +344,7 @@ describe("GET /api/articles", () => {
     it("nextCursorが最後の記事のIDであること", async () => {
       // Arrange
       mockQueryFn.mockResolvedValue(MOCK_ARTICLES.slice(0, 21));
-      const app = createTestApp(mockQueryFn);
+      const app = createGetTestApp(mockQueryFn);
 
       // Act
       const res = await app.request("/api/articles");
@@ -230,14 +361,13 @@ describe("GET /api/articles", () => {
       // Arrange
       const zennArticles = MOCK_ARTICLES.filter((a) => a.source === "zenn");
       mockQueryFn.mockResolvedValue(zennArticles);
-      const app = createTestApp(mockQueryFn);
+      const app = createGetTestApp(mockQueryFn);
 
       // Act
       const res = await app.request("/api/articles?source=zenn");
 
       // Assert
       expect(res.status).toBe(200);
-      const body = (await res.json()) as ArticlesResponseBody;
       expect(mockQueryFn).toHaveBeenCalledWith(expect.objectContaining({ source: "zenn" }));
     });
 
@@ -245,7 +375,7 @@ describe("GET /api/articles", () => {
       // Arrange
       const favoriteArticles = MOCK_ARTICLES.filter((a) => a.isFavorite);
       mockQueryFn.mockResolvedValue(favoriteArticles);
-      const app = createTestApp(mockQueryFn);
+      const app = createGetTestApp(mockQueryFn);
 
       // Act
       const res = await app.request("/api/articles?isFavorite=true");
@@ -259,7 +389,7 @@ describe("GET /api/articles", () => {
       // Arrange
       const readArticles = MOCK_ARTICLES.filter((a) => a.isRead);
       mockQueryFn.mockResolvedValue(readArticles);
-      const app = createTestApp(mockQueryFn);
+      const app = createGetTestApp(mockQueryFn);
 
       // Act
       const res = await app.request("/api/articles?isRead=true");
@@ -272,7 +402,7 @@ describe("GET /api/articles", () => {
     it("複数のフィルターを組み合わせて使用できること", async () => {
       // Arrange
       mockQueryFn.mockResolvedValue([]);
-      const app = createTestApp(mockQueryFn);
+      const app = createGetTestApp(mockQueryFn);
 
       // Act
       const res = await app.request("/api/articles?source=zenn&isFavorite=true&isRead=false");
@@ -293,13 +423,13 @@ describe("GET /api/articles", () => {
     it("limitが1未満の場合422が返ること", async () => {
       // Arrange
       mockQueryFn.mockResolvedValue([]);
-      const app = createTestApp(mockQueryFn);
+      const app = createGetTestApp(mockQueryFn);
 
       // Act
       const res = await app.request("/api/articles?limit=0");
 
       // Assert
-      expect(res.status).toBe(422);
+      expect(res.status).toBe(HTTP_UNPROCESSABLE_ENTITY);
       const body = (await res.json()) as ErrorResponseBody;
       expect(body.success).toBe(false);
       expect(body.error.code).toBe("VALIDATION_FAILED");
@@ -308,13 +438,13 @@ describe("GET /api/articles", () => {
     it("limitが50を超える場合422が返ること", async () => {
       // Arrange
       mockQueryFn.mockResolvedValue([]);
-      const app = createTestApp(mockQueryFn);
+      const app = createGetTestApp(mockQueryFn);
 
       // Act
       const res = await app.request("/api/articles?limit=51");
 
       // Assert
-      expect(res.status).toBe(422);
+      expect(res.status).toBe(HTTP_UNPROCESSABLE_ENTITY);
       const body = (await res.json()) as ErrorResponseBody;
       expect(body.success).toBe(false);
       expect(body.error.code).toBe("VALIDATION_FAILED");
@@ -323,13 +453,13 @@ describe("GET /api/articles", () => {
     it("limitが数値でない場合422が返ること", async () => {
       // Arrange
       mockQueryFn.mockResolvedValue([]);
-      const app = createTestApp(mockQueryFn);
+      const app = createGetTestApp(mockQueryFn);
 
       // Act
       const res = await app.request("/api/articles?limit=abc");
 
       // Assert
-      expect(res.status).toBe(422);
+      expect(res.status).toBe(HTTP_UNPROCESSABLE_ENTITY);
       const body = (await res.json()) as ErrorResponseBody;
       expect(body.success).toBe(false);
       expect(body.error.code).toBe("VALIDATION_FAILED");
@@ -338,13 +468,13 @@ describe("GET /api/articles", () => {
     it("isFavoriteがtrue/false以外の場合422が返ること", async () => {
       // Arrange
       mockQueryFn.mockResolvedValue([]);
-      const app = createTestApp(mockQueryFn);
+      const app = createGetTestApp(mockQueryFn);
 
       // Act
       const res = await app.request("/api/articles?isFavorite=invalid");
 
       // Assert
-      expect(res.status).toBe(422);
+      expect(res.status).toBe(HTTP_UNPROCESSABLE_ENTITY);
       const body = (await res.json()) as ErrorResponseBody;
       expect(body.success).toBe(false);
       expect(body.error.code).toBe("VALIDATION_FAILED");
@@ -353,13 +483,13 @@ describe("GET /api/articles", () => {
     it("isReadがtrue/false以外の場合422が返ること", async () => {
       // Arrange
       mockQueryFn.mockResolvedValue([]);
-      const app = createTestApp(mockQueryFn);
+      const app = createGetTestApp(mockQueryFn);
 
       // Act
       const res = await app.request("/api/articles?isRead=invalid");
 
       // Assert
-      expect(res.status).toBe(422);
+      expect(res.status).toBe(HTTP_UNPROCESSABLE_ENTITY);
       const body = (await res.json()) as ErrorResponseBody;
       expect(body.success).toBe(false);
       expect(body.error.code).toBe("VALIDATION_FAILED");
@@ -370,7 +500,7 @@ describe("GET /api/articles", () => {
     it("統一レスポンス形式に従っていること", async () => {
       // Arrange
       mockQueryFn.mockResolvedValue(MOCK_ARTICLES.slice(0, 3));
-      const app = createTestApp(mockQueryFn);
+      const app = createGetTestApp(mockQueryFn);
 
       // Act
       const res = await app.request("/api/articles");
@@ -388,7 +518,7 @@ describe("GET /api/articles", () => {
     it("Content-Typeがapplication/jsonであること", async () => {
       // Arrange
       mockQueryFn.mockResolvedValue([]);
-      const app = createTestApp(mockQueryFn);
+      const app = createGetTestApp(mockQueryFn);
 
       // Act
       const res = await app.request("/api/articles");
@@ -400,7 +530,7 @@ describe("GET /api/articles", () => {
     it("記事データにcontentフィールドが含まれないこと", async () => {
       // Arrange
       mockQueryFn.mockResolvedValue(MOCK_ARTICLES.slice(0, 1));
-      const app = createTestApp(mockQueryFn);
+      const app = createGetTestApp(mockQueryFn);
 
       // Act
       const res = await app.request("/api/articles");
@@ -413,7 +543,7 @@ describe("GET /api/articles", () => {
     it("空の配列が返る場合も正常なレスポンス形式であること", async () => {
       // Arrange
       mockQueryFn.mockResolvedValue([]);
-      const app = createTestApp(mockQueryFn);
+      const app = createGetTestApp(mockQueryFn);
 
       // Act
       const res = await app.request("/api/articles");
@@ -432,7 +562,7 @@ describe("GET /api/articles", () => {
     it("userIdがクエリ関数に渡されること", async () => {
       // Arrange
       mockQueryFn.mockResolvedValue([]);
-      const app = createTestApp(mockQueryFn);
+      const app = createGetTestApp(mockQueryFn);
 
       // Act
       await app.request("/api/articles");
@@ -444,7 +574,7 @@ describe("GET /api/articles", () => {
     it("limitがクエリ関数に渡されること", async () => {
       // Arrange
       mockQueryFn.mockResolvedValue([]);
-      const app = createTestApp(mockQueryFn);
+      const app = createGetTestApp(mockQueryFn);
 
       // Act
       await app.request("/api/articles?limit=15");
@@ -456,7 +586,7 @@ describe("GET /api/articles", () => {
     it("cursorがクエリ関数に渡されること", async () => {
       // Arrange
       mockQueryFn.mockResolvedValue([]);
-      const app = createTestApp(mockQueryFn);
+      const app = createGetTestApp(mockQueryFn);
 
       // Act
       await app.request("/api/articles?cursor=article_010");
@@ -468,7 +598,7 @@ describe("GET /api/articles", () => {
     it("フィルター未指定時はundefinedが渡されること", async () => {
       // Arrange
       mockQueryFn.mockResolvedValue([]);
-      const app = createTestApp(mockQueryFn);
+      const app = createGetTestApp(mockQueryFn);
 
       // Act
       await app.request("/api/articles");
@@ -481,6 +611,319 @@ describe("GET /api/articles", () => {
           isRead: undefined,
         }),
       );
+    });
+  });
+});
+
+describe("POST /api/articles", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockSelectWhere.mockResolvedValue([]);
+    mockInsertValues.mockReturnValue({
+      returning: mockInsertReturning,
+    });
+  });
+
+  describe("正常系", () => {
+    it("有効なURLで記事を保存して201を返すこと", async () => {
+      // Arrange
+      const app = createPostTestApp();
+      mockParseArticle.mockResolvedValue(MOCK_PARSED_ARTICLE);
+      mockInsertReturning.mockResolvedValue([
+        {
+          id: "article_test_01",
+          userId: MOCK_USER.id,
+          url: "https://zenn.dev/test/articles/test-article",
+          ...MOCK_PARSED_ARTICLE,
+          isRead: false,
+          isFavorite: false,
+          isPublic: false,
+          createdAt: new Date("2024-01-15"),
+          updatedAt: new Date("2024-01-15"),
+        },
+      ]);
+
+      // Act
+      const res = await postArticle(app, {
+        url: "https://zenn.dev/test/articles/test-article",
+      });
+
+      // Assert
+      expect(res.status).toBe(HTTP_CREATED);
+      const body = (await res.json()) as ArticleResponseBody;
+      expect(body.success).toBe(true);
+      expect(body.data).toMatchObject({
+        url: "https://zenn.dev/test/articles/test-article",
+        title: "テスト記事タイトル",
+        source: "zenn",
+      });
+    });
+
+    it("parseArticleに正しいURLが渡されること", async () => {
+      // Arrange
+      const app = createPostTestApp();
+      mockParseArticle.mockResolvedValue(MOCK_PARSED_ARTICLE);
+      mockInsertReturning.mockResolvedValue([
+        {
+          id: "article_test_01",
+          userId: MOCK_USER.id,
+          url: "https://zenn.dev/test/articles/test-article",
+          ...MOCK_PARSED_ARTICLE,
+          isRead: false,
+          isFavorite: false,
+          isPublic: false,
+          createdAt: new Date("2024-01-15"),
+          updatedAt: new Date("2024-01-15"),
+        },
+      ]);
+
+      // Act
+      await postArticle(app, {
+        url: "https://zenn.dev/test/articles/test-article",
+      });
+
+      // Assert
+      expect(mockParseArticle).toHaveBeenCalledWith("https://zenn.dev/test/articles/test-article");
+    });
+
+    it("レスポンスにid, url, title, source, createdAtが含まれること", async () => {
+      // Arrange
+      const app = createPostTestApp();
+      mockParseArticle.mockResolvedValue(MOCK_PARSED_ARTICLE);
+      mockInsertReturning.mockResolvedValue([
+        {
+          id: "article_test_01",
+          userId: MOCK_USER.id,
+          url: "https://zenn.dev/test/articles/test-article",
+          title: "テスト記事タイトル",
+          source: "zenn",
+          author: "テスト著者",
+          content: "# テスト記事\n\nこれはテスト記事です。",
+          excerpt: "テスト記事の概要",
+          thumbnailUrl: "https://example.com/thumb.png",
+          readingTimeMinutes: 3,
+          isRead: false,
+          isFavorite: false,
+          isPublic: false,
+          publishedAt: new Date("2024-01-15"),
+          createdAt: new Date("2024-01-15"),
+          updatedAt: new Date("2024-01-15"),
+        },
+      ]);
+
+      // Act
+      const res = await postArticle(app, {
+        url: "https://zenn.dev/test/articles/test-article",
+      });
+
+      // Assert
+      const body = (await res.json()) as ArticleResponseBody;
+      expect(body.data).toHaveProperty("id");
+      expect(body.data).toHaveProperty("url");
+      expect(body.data).toHaveProperty("title");
+      expect(body.data).toHaveProperty("source");
+      expect(body.data).toHaveProperty("createdAt");
+    });
+  });
+
+  describe("バリデーションエラー", () => {
+    it("urlが未指定の場合422を返すこと", async () => {
+      // Arrange
+      const app = createPostTestApp();
+
+      // Act
+      const res = await postArticle(app, {});
+
+      // Assert
+      expect(res.status).toBe(HTTP_UNPROCESSABLE_ENTITY);
+      const body = (await res.json()) as ArticleResponseBody;
+      expect(body.success).toBe(false);
+      expect(body.error?.code).toBe("VALIDATION_FAILED");
+    });
+
+    it("urlが空文字の場合422を返すこと", async () => {
+      // Arrange
+      const app = createPostTestApp();
+
+      // Act
+      const res = await postArticle(app, { url: "" });
+
+      // Assert
+      expect(res.status).toBe(HTTP_UNPROCESSABLE_ENTITY);
+      const body = (await res.json()) as ArticleResponseBody;
+      expect(body.success).toBe(false);
+      expect(body.error?.code).toBe("VALIDATION_FAILED");
+    });
+
+    it("urlが不正な形式の場合422を返すこと", async () => {
+      // Arrange
+      const app = createPostTestApp();
+
+      // Act
+      const res = await postArticle(app, { url: "not-a-valid-url" });
+
+      // Assert
+      expect(res.status).toBe(HTTP_UNPROCESSABLE_ENTITY);
+      const body = (await res.json()) as ArticleResponseBody;
+      expect(body.success).toBe(false);
+      expect(body.error?.code).toBe("VALIDATION_FAILED");
+    });
+
+    it("urlがhttp/https以外の場合422を返すこと", async () => {
+      // Arrange
+      const app = createPostTestApp();
+
+      // Act
+      const res = await postArticle(app, { url: "ftp://example.com/article" });
+
+      // Assert
+      expect(res.status).toBe(HTTP_UNPROCESSABLE_ENTITY);
+      const body = (await res.json()) as ArticleResponseBody;
+      expect(body.success).toBe(false);
+      expect(body.error?.code).toBe("VALIDATION_FAILED");
+    });
+
+    it("エラーメッセージが日本語であること", async () => {
+      // Arrange
+      const app = createPostTestApp();
+
+      // Act
+      const res = await postArticle(app, {});
+
+      // Assert
+      const body = (await res.json()) as ArticleResponseBody;
+      expect(body.error?.message).toBe("入力内容を確認してください");
+    });
+  });
+
+  describe("重複エラー", () => {
+    it("同一ユーザーが同じURLを保存済みの場合409を返すこと", async () => {
+      // Arrange
+      const app = createPostTestApp();
+      mockSelectWhere.mockResolvedValue([
+        { id: "existing_article_01", url: "https://zenn.dev/test/articles/test-article" },
+      ]);
+
+      // Act
+      const res = await postArticle(app, {
+        url: "https://zenn.dev/test/articles/test-article",
+      });
+
+      // Assert
+      expect(res.status).toBe(HTTP_CONFLICT);
+      const body = (await res.json()) as ArticleResponseBody;
+      expect(body.success).toBe(false);
+      expect(body.error?.code).toBe("DUPLICATE");
+    });
+
+    it("重複エラーのメッセージが日本語であること", async () => {
+      // Arrange
+      const app = createPostTestApp();
+      mockSelectWhere.mockResolvedValue([
+        { id: "existing_article_01", url: "https://zenn.dev/test/articles/test-article" },
+      ]);
+
+      // Act
+      const res = await postArticle(app, {
+        url: "https://zenn.dev/test/articles/test-article",
+      });
+
+      // Assert
+      const body = (await res.json()) as ArticleResponseBody;
+      expect(body.error?.message).toBe("この記事はすでに保存されています");
+    });
+  });
+
+  describe("パースエラー", () => {
+    it("parseArticleが失敗した場合500を返すこと", async () => {
+      // Arrange
+      const app = createPostTestApp();
+      mockParseArticle.mockRejectedValue(new Error("パースに失敗しました"));
+
+      // Act
+      const res = await postArticle(app, {
+        url: "https://example.com/article",
+      });
+
+      // Assert
+      expect(res.status).toBe(HTTP_INTERNAL_SERVER_ERROR);
+      const body = (await res.json()) as ArticleResponseBody;
+      expect(body.success).toBe(false);
+      expect(body.error?.code).toBe("INTERNAL_ERROR");
+    });
+  });
+
+  describe("レスポンス形式", () => {
+    it("成功レスポンスがAPI設計規約に従った形式であること", async () => {
+      // Arrange
+      const app = createPostTestApp();
+      mockParseArticle.mockResolvedValue(MOCK_PARSED_ARTICLE);
+      mockInsertReturning.mockResolvedValue([
+        {
+          id: "article_test_01",
+          userId: MOCK_USER.id,
+          url: "https://zenn.dev/test/articles/test-article",
+          ...MOCK_PARSED_ARTICLE,
+          isRead: false,
+          isFavorite: false,
+          isPublic: false,
+          createdAt: new Date("2024-01-15"),
+          updatedAt: new Date("2024-01-15"),
+        },
+      ]);
+
+      // Act
+      const res = await postArticle(app, {
+        url: "https://zenn.dev/test/articles/test-article",
+      });
+
+      // Assert
+      expect(res.status).toBe(HTTP_CREATED);
+      const body = (await res.json()) as ArticleResponseBody;
+      expect(body).toHaveProperty("success", true);
+      expect(body).toHaveProperty("data");
+    });
+
+    it("エラーレスポンスがAPI設計規約に従った形式であること", async () => {
+      // Arrange
+      const app = createPostTestApp();
+
+      // Act
+      const res = await postArticle(app, {});
+
+      // Assert
+      const body = (await res.json()) as ArticleResponseBody;
+      expect(body).toHaveProperty("success", false);
+      expect(body).toHaveProperty("error");
+      expect(body.error).toHaveProperty("code");
+      expect(body.error).toHaveProperty("message");
+    });
+
+    it("Content-Typeがapplication/jsonであること", async () => {
+      // Arrange
+      const app = createPostTestApp();
+      mockParseArticle.mockResolvedValue(MOCK_PARSED_ARTICLE);
+      mockInsertReturning.mockResolvedValue([
+        {
+          id: "article_test_01",
+          userId: MOCK_USER.id,
+          url: "https://zenn.dev/test/articles/test-article",
+          ...MOCK_PARSED_ARTICLE,
+          isRead: false,
+          isFavorite: false,
+          isPublic: false,
+          createdAt: new Date("2024-01-15"),
+          updatedAt: new Date("2024-01-15"),
+        },
+      ]);
+
+      // Act
+      const res = await postArticle(app, {
+        url: "https://zenn.dev/test/articles/test-article",
+      });
+
+      // Assert
+      expect(res.headers.get("Content-Type")).toContain("application/json");
     });
   });
 });

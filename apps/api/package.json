@@ -22,7 +22,8 @@
     "drizzle-orm": "^0.43.0",
     "hono": "^4.7.5",
     "linkedom": "^0.18.12",
-    "turndown": "^7.2.2"
+    "turndown": "^7.2.2",
+    "zod": "^4.3.6"
   },
   "devDependencies": {
     "@cloudflare/workers-types": "^4.20250321.0",
