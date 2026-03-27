@@ -11,15 +11,20 @@ import {
 } from "../src/lib/notifications";
 import { queryClient } from "../src/lib/query-client";
 import { useAuthStore } from "../src/stores/auth-store";
+import { useUIStore } from "../src/stores/ui-store";
 
 export default function RootLayout() {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const isLoading = useAuthStore((s) => s.isLoading);
   const checkSession = useAuthStore((s) => s.checkSession);
+  const hasSeenOnboarding = useUIStore((s) => s.hasSeenOnboarding);
+  const isOnboardingLoaded = useUIStore((s) => s.isOnboardingLoaded);
+  const loadOnboardingState = useUIStore((s) => s.loadOnboardingState);
 
   useEffect(() => {
     checkSession();
-  }, [checkSession]);
+    loadOnboardingState();
+  }, [checkSession, loadOnboardingState]);
 
   useEffect(() => {
     const cleanup = setupNotificationHandlers();
@@ -36,7 +41,7 @@ export default function RootLayout() {
     });
   }, [isAuthenticated]);
 
-  if (isLoading) {
+  if (isLoading || !isOnboardingLoaded) {
     return (
       <View style={{ flex: 1, alignItems: "center", justifyContent: "center" }}>
         <ActivityIndicator size="large" />
@@ -49,12 +54,14 @@ export default function RootLayout() {
       <Stack screenOptions={{ headerShown: false }}>
         <Stack.Screen name="(tabs)" />
         <Stack.Screen name="(auth)" />
+        <Stack.Screen name="onboarding" />
         <Stack.Screen name="article/[id]" options={{ presentation: "card" }} />
         <Stack.Screen name="profile/edit" options={{ presentation: "card" }} />
         <Stack.Screen name="share-intent" options={{ presentation: "modal" }} />
       </Stack>
-      {!isAuthenticated && <Redirect href="/(auth)/login" />}
-      {isAuthenticated && <Redirect href="/(tabs)" />}
+      {!hasSeenOnboarding && <Redirect href="/onboarding" />}
+      {hasSeenOnboarding && !isAuthenticated && <Redirect href="/(auth)/login" />}
+      {hasSeenOnboarding && isAuthenticated && <Redirect href="/(tabs)" />}
     </QueryClientProvider>
   );
 }

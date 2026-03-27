@@ -8,5 +8,7 @@ module.exports = {
   moduleNameMapper: {
     "^@/(.*)$": "<rootDir>/src/$1",
     "^nativewind$": "<rootDir>/__mocks__/nativewind.js",
+    "^lucide-react-native$": "<rootDir>/__mocks__/lucide-react-native.js",
+    "^react-native-css-interop$": "<rootDir>/__mocks__/react-native-css-interop.js",
   },
 };
