@@ -22,7 +22,7 @@ describe("TagPicker", () => {
 
       // Assert
       const reactTag = screen.getByTestId("tag-React");
-      expect(reactTag).toHaveAccessibilityState({ selected: true });
+      expect(reactTag).toHaveAccessibilityValue({ selected: true });
     });
 
     it("未選択タグが非選択状態であること", () => {
@@ -31,7 +31,7 @@ describe("TagPicker", () => {
 
       // Assert
       const tsTag = screen.getByTestId("tag-TypeScript");
-      expect(tsTag).toHaveAccessibilityState({ selected: false });
+      expect(tsTag).toHaveAccessibilityValue({ selected: false });
     });
   });
 
@@ -76,7 +76,7 @@ describe("TagPicker", () => {
 
       // Assert
       const expoTag = screen.getByTestId("tag-Expo");
-      expect(expoTag).toHaveAccessibilityState({ disabled: true });
+      expect(expoTag).toHaveAccessibilityValue({ disabled: true });
     });
 
     it("上限に達すると制限メッセージが表示されること", () => {
