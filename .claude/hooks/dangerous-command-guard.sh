@@ -38,12 +38,54 @@ check_dangerous() {
   return 1
 }
 
+# PRマージ前のレビューチェック
+check_merge_without_review() {
+  local cmd="$1"
+
+  # gh pr merge コマンドを検出
+  if ! echo "$cmd" | grep -qE "gh pr merge"; then
+    return 1
+  fi
+
+  # PR番号を抽出
+  local pr_num=$(echo "$cmd" | grep -oE "gh pr merge [0-9]+" | grep -oE "[0-9]+")
+  if [ -z "$pr_num" ]; then
+    return 1
+  fi
+
+  # gh CLIが使えない場合はスキップ
+  if ! command -v gh &> /dev/null; then
+    return 1
+  fi
+
+  # PRにレビューコメントがあるか確認
+  local repo=$(gh repo view --json nameWithOwner -q '.nameWithOwner' 2>/dev/null)
+  if [ -z "$repo" ]; then
+    return 1
+  fi
+  local review_count=$(gh api "repos/$repo/pulls/$pr_num/reviews" --jq 'length' 2>/dev/null)
+  if [ -z "$review_count" ] || [ "$review_count" = "0" ]; then
+    echo "⚠️ レビューなしでPRをマージしようとしています"
+    echo "PR #$pr_num にレビューコメントがありません。"
+    echo ""
+    echo "CLAUDE.mdルール: 全PRはレビュー必須（セルフマージ禁止）"
+    echo "先にレビューしてください: gh pr review $pr_num --comment --body 'LGTM'"
+    return 0
+  fi
+
+  return 1
+}
+
 if check_dangerous "$COMMAND"; then
   echo "⚠️ 危険なコマンドを検知しました"
   echo "コマンド: $COMMAND"
   echo ""
   echo "このコマンドは破壊的な操作を行う可能性があります。"
-  exit 2  # exit code 2 = ブロック（確認を促す）
+  exit 2
+fi
+
+if check_merge_without_review "$COMMAND"; then
+  exit 2
 fi
 
 exit 0
