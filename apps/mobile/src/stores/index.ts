@@ -1,2 +1,2 @@
-// Zustand stores will be exported from here
+export { useAuthStore } from "./auth-store";
 export { useUIStore } from "./ui-store";
