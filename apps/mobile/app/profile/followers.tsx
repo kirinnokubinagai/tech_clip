@@ -2,13 +2,7 @@ import { Image } from "expo-image";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { ArrowLeft } from "lucide-react-native";
 import { useCallback, useState } from "react";
-import {
-  ActivityIndicator,
-  FlatList,
-  Pressable,
-  Text,
-  View,
-} from "react-native";
+import { ActivityIndicator, FlatList, Pressable, Text, View } from "react-native";
 
 /** タブの種類 */
 type TabType = "followers" | "following";
@@ -186,9 +180,7 @@ export default function FollowersScreen() {
   }, []);
 
   const renderItem = useCallback(
-    ({ item }: { item: UserItem }) => (
-      <UserListItem item={item} onPress={handleUserPress} />
-    ),
+    ({ item }: { item: UserItem }) => <UserListItem item={item} onPress={handleUserPress} />,
     [handleUserPress],
   );
 
@@ -199,9 +191,7 @@ export default function FollowersScreen() {
       return null;
     }
     const message =
-      activeTab === "followers"
-        ? "フォロワーはまだいません"
-        : "フォロー中のユーザーはいません";
+      activeTab === "followers" ? "フォロワーはまだいません" : "フォロー中のユーザーはいません";
     return (
       <View testID="followers-empty" className="items-center py-12 px-4">
         <Text className="text-text-muted text-sm text-center">{message}</Text>
