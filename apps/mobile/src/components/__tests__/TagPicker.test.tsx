@@ -76,7 +76,7 @@ describe("TagPicker", () => {
 
       // Assert
       const expoTag = screen.getByTestId("tag-Expo");
-      expect(disabledTag).toBeTruthy();
+      expect(expoTag).toBeTruthy();
     });
 
     it("上限に達すると制限メッセージが表示されること", () => {
