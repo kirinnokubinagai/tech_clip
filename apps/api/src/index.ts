@@ -4,6 +4,8 @@ import { createDatabase } from "./db";
 
 import { securityHeadersMiddleware } from "./middleware/security-headers";
 
+import { corsMiddleware } from "./middleware/cors";
+
 /** Cloudflare Workers バインディング型定義 */
 type Bindings = {
   TURSO_DATABASE_URL: string;
@@ -16,6 +18,7 @@ type Bindings = {
 
 const app = new Hono<{ Bindings: Bindings }>();
 
+app.use("*", corsMiddleware);
 app.use("*", securityHeadersMiddleware);
 
 app.get("/health", (c) => {
