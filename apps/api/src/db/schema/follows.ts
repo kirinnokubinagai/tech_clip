@@ -1,5 +1,5 @@
-import { sqliteTable, text, index, primaryKey } from "drizzle-orm/sqlite-core";
 import { sql } from "drizzle-orm";
+import { index, primaryKey, sqliteTable, text } from "drizzle-orm/sqlite-core";
 import { users } from "./users";
 
 /**

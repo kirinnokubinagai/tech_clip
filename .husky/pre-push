@@ -1,0 +1,13 @@
+#!/bin/sh
+echo "🔍 Pre-push チェック実行中..."
+
+echo "  📝 Lint..."
+pnpm lint || { echo "❌ Lint失敗。修正してからpushしてください。"; exit 1; }
+
+echo "  🔧 Typecheck..."
+pnpm typecheck || { echo "❌ Typecheck失敗。修正してからpushしてください。"; exit 1; }
+
+echo "  🧪 Test..."
+pnpm test || { echo "❌ Test失敗。修正してからpushしてください。"; exit 1; }
+
+echo "✅ 全チェック通過"

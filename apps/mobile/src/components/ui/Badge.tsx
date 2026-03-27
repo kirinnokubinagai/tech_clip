@@ -34,12 +34,8 @@ const TEXT_VARIANT_STYLES: Record<BadgeVariant, string> = {
  */
 export function Badge({ children, variant = "default" }: BadgeProps) {
   return (
-    <View
-      className={`rounded-full border px-2.5 py-0.5 self-start ${VARIANT_STYLES[variant]}`}
-    >
-      <Text className={`text-xs font-medium ${TEXT_VARIANT_STYLES[variant]}`}>
-        {children}
-      </Text>
+    <View className={`rounded-full border px-2.5 py-0.5 self-start ${VARIANT_STYLES[variant]}`}>
+      <Text className={`text-xs font-medium ${TEXT_VARIANT_STYLES[variant]}`}>{children}</Text>
     </View>
   );
 }

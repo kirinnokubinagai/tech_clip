@@ -1,14 +1,7 @@
-import {
-  sqliteTable,
-  text,
-  integer,
-  primaryKey,
-  unique,
-  index,
-} from "drizzle-orm/sqlite-core";
 import { sql } from "drizzle-orm";
-import { users } from "./users";
+import { index, integer, primaryKey, sqliteTable, text, unique } from "drizzle-orm/sqlite-core";
 import { articles } from "./articles";
+import { users } from "./users";
 
 /**
  * tagsテーブル
@@ -50,9 +43,7 @@ export const articleTags = sqliteTable(
       .notNull()
       .references(() => tags.id, { onDelete: "cascade" }),
   },
-  (table) => [
-    primaryKey({ columns: [table.articleId, table.tagId] }),
-  ],
+  (table) => [primaryKey({ columns: [table.articleId, table.tagId] })],
 );
 
 /** article_tagsテーブルのSELECT型 */

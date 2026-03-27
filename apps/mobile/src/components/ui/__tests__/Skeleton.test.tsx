@@ -1,4 +1,3 @@
-import { describe, it, expect } from "vitest";
 import { render } from "@testing-library/react-native";
 
 import { Skeleton } from "../Skeleton";
@@ -34,9 +33,7 @@ describe("Skeleton", () => {
   describe("プロパティ", () => {
     it("カスタムborderRadiusが適用されること", () => {
       // Arrange & Act
-      const { toJSON } = render(
-        <Skeleton width={100} height={100} borderRadius={50} />,
-      );
+      const { toJSON } = render(<Skeleton width={100} height={100} borderRadius={50} />);
 
       // Assert
       expect(toJSON()).not.toBeNull();
@@ -44,9 +41,7 @@ describe("Skeleton", () => {
 
     it("追加のclassNameが適用されること", () => {
       // Arrange & Act
-      const { toJSON } = render(
-        <Skeleton width={100} height={20} className="mt-2" />,
-      );
+      const { toJSON } = render(<Skeleton width={100} height={20} className="mt-2" />);
 
       // Assert
       expect(toJSON()).not.toBeNull();
