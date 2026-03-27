@@ -1,6 +1,8 @@
 import { Tabs } from "expo-router";
-import { Home, Search, Settings, User } from "lucide-react-native";
-import { useColorScheme } from "react-native";
+import { Bell, Home, Search, Settings, User } from "lucide-react-native";
+import { Text, View, useColorScheme } from "react-native";
+
+import { useUnreadNotificationCount } from "@/hooks/use-notifications";
 
 /** タブバーのアクティブ色 */
 const TAB_ACTIVE_COLOR = "#6366f1";
@@ -23,9 +25,16 @@ const DARK_TEXT_COLOR = "#e2e8f0";
 /** タブアイコンサイズ */
 const TAB_ICON_SIZE = 24;
 
+/** 未読バッジの背景色 */
+const BADGE_BG_COLOR = "#ef4444";
+
+/** 未読バッジの最大表示数 */
+const BADGE_MAX_COUNT = 99;
+
 export default function TabLayout() {
   const colorScheme = useColorScheme();
   const isDark = colorScheme === "dark" || true;
+  const { data: unreadCount } = useUnreadNotificationCount();
 
   return (
     <Tabs
@@ -58,6 +67,28 @@ export default function TabLayout() {
         options={{
           title: "検索",
           tabBarIcon: ({ color }) => <Search size={TAB_ICON_SIZE} color={color} />,
+        }}
+      />
+      <Tabs.Screen
+        name="notifications"
+        options={{
+          title: "通知",
+          tabBarIcon: ({ color }) => (
+            <View>
+              <Bell size={TAB_ICON_SIZE} color={color} />
+              {unreadCount != null && unreadCount > 0 && (
+                <View
+                  testID="tab-badge"
+                  style={{ backgroundColor: BADGE_BG_COLOR }}
+                  className="absolute -top-1 -right-2 rounded-full min-w-[16px] h-4 items-center justify-center px-1"
+                >
+                  <Text className="text-white text-[10px] font-bold">
+                    {unreadCount > BADGE_MAX_COUNT ? `${BADGE_MAX_COUNT}+` : String(unreadCount)}
+                  </Text>
+                </View>
+              )}
+            </View>
+          ),
         }}
       />
       <Tabs.Screen
