@@ -31,8 +31,12 @@ const MAX_FILE_SIZE_BYTES = 5 * 1024 * 1024;
 /** アバター保存ディレクトリ */
 const AVATARS_DIR = "avatars";
 
-/** アップロード画像のContent-Type */
-const UPLOAD_CONTENT_TYPE = "image/webp";
+/** MIMEタイプと拡張子のマッピング */
+const MIME_TO_EXTENSION: Record<string, string> = {
+  "image/jpeg": "jpg",
+  "image/png": "png",
+  "image/webp": "webp",
+};
 
 /**
  * アップロードされたファイルを検証する
@@ -76,6 +80,10 @@ export function generateUniqueFileName(userId: string, extension: string): strin
 /**
  * アバター画像をCloudflare R2にアップロードする
  *
+ * TODO: Cloudflare Workers では sharp が使用できないため、現在はオリジナルの
+ * ファイル形式のままアップロードしている。将来的には Cloudflare Images や
+ * Workers AI を利用して WebP への変換・リサイズを実装することを検討する。
+ *
  * @param params - ファイル、ユーザーID、R2設定
  * @returns アップロードされた画像のURL
  * @throws Error - アップロードに失敗した場合
@@ -83,12 +91,13 @@ export function generateUniqueFileName(userId: string, extension: string): strin
 export async function uploadAvatarToR2(params: UploadAvatarParams): Promise<AvatarUploadResult> {
   const { file, userId, config } = params;
 
-  const fileName = generateUniqueFileName(userId, "webp");
+  const extension = MIME_TO_EXTENSION[file.type] ?? "jpg";
+  const fileName = generateUniqueFileName(userId, extension);
   const arrayBuffer = await file.arrayBuffer();
 
   try {
     await config.r2Bucket.put(fileName, arrayBuffer, {
-      httpMetadata: { contentType: UPLOAD_CONTENT_TYPE },
+      httpMetadata: { contentType: file.type },
     });
   } catch {
     throw new Error("アバター画像のアップロードに失敗しました");

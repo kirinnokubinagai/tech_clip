@@ -304,7 +304,7 @@ export function createUsersRoute(options: UsersRouteOptions) {
     }
 
     const avatarField = formData.get("avatar");
-    if (!avatarField || !(avatarField instanceof File)) {
+    if (!avatarField || typeof avatarField === "string") {
       return c.json(
         {
           success: false,
@@ -344,6 +344,12 @@ export function createUsersRoute(options: UsersRouteOptions) {
       );
     }
 
+    const [currentUser] = await db.select().from(users).where(eq(users.id, userId));
+    const oldAvatarUrl = (currentUser as unknown as Record<string, unknown>)?.avatarUrl as
+      | string
+      | null
+      | undefined;
+
     let avatarUrl: string;
     try {
       const result = await uploadAvatarToR2({
@@ -363,6 +369,11 @@ export function createUsersRoute(options: UsersRouteOptions) {
         },
         HTTP_INTERNAL_SERVER_ERROR,
       );
+    }
+
+    if (oldAvatarUrl) {
+      const oldKey = oldAvatarUrl.replace(`${r2PublicUrl}/`, "");
+      await r2Bucket.delete(oldKey).catch(() => {});
     }
 
     const [updated] = await db

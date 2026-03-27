@@ -235,7 +235,7 @@ describe("uploadAvatarToR2", () => {
       expect(mockR2Put).toHaveBeenCalledOnce();
     });
 
-    it("アップロード時にwebpのContent-Typeが設定されること", async () => {
+    it("アップロード時にオリジナルファイルのContent-Typeが設定されること", async () => {
       // Arrange
       mockR2Put.mockResolvedValue({});
       const file = createTestFile(JPEG_HEADER, "image/jpeg", "avatar.jpg");
@@ -250,7 +250,7 @@ describe("uploadAvatarToR2", () => {
       // Assert
       const callArgs = mockR2Put.mock.calls[0];
       expect(callArgs[2]).toMatchObject({
-        httpMetadata: { contentType: "image/webp" },
+        httpMetadata: { contentType: "image/jpeg" },
       });
     });
 
