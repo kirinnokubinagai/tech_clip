@@ -7,31 +7,23 @@ import {
 
 /** react-native-purchases モック */
 jest.mock("react-native-purchases", () => ({
-  Purchases: {
+  default: {
     configure: jest.fn(),
     getCustomerInfo: jest.fn(),
     purchasePackage: jest.fn(),
     restorePurchases: jest.fn(),
     setDebugLogsEnabled: jest.fn(),
   },
-}));
-
-jest.mock("react-native", () => ({
-  Platform: {
-    OS: "ios",
-  },
+  __esModule: true,
 }));
 
 /** モック関数へのアクセス用 */
-// eslint-disable-next-line @typescript-eslint/no-require-imports
-const { Purchases } = require("react-native-purchases") as {
-  Purchases: {
-    configure: jest.Mock;
-    getCustomerInfo: jest.Mock;
-    purchasePackage: jest.Mock;
-    restorePurchases: jest.Mock;
-    setDebugLogsEnabled: jest.Mock;
-  };
+const Purchases = require("react-native-purchases").default as {
+  configure: jest.Mock;
+  getCustomerInfo: jest.Mock;
+  purchasePackage: jest.Mock;
+  restorePurchases: jest.Mock;
+  setDebugLogsEnabled: jest.Mock;
 };
 
 /** プレミアムエンタイトルメントがアクティブなCustomerInfoのモック */
@@ -57,6 +49,13 @@ const mockInactiveCustomerInfo = {
 describe("configureRevenueCat", () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    process.env.EXPO_PUBLIC_REVENUECAT_IOS_API_KEY = "test-ios-key";
+    process.env.EXPO_PUBLIC_REVENUECAT_ANDROID_API_KEY = "test-android-key";
+  });
+
+  afterEach(() => {
+    process.env.EXPO_PUBLIC_REVENUECAT_IOS_API_KEY = undefined;
+    process.env.EXPO_PUBLIC_REVENUECAT_ANDROID_API_KEY = undefined;
   });
 
   it("RevenueCat SDKを設定できること", async () => {
@@ -74,6 +73,15 @@ describe("configureRevenueCat", () => {
         apiKey: expect.any(String),
       }),
     );
+  });
+
+  it("APIキーが未設定の場合にエラーをスローすること", async () => {
+    // Arrange
+    process.env.EXPO_PUBLIC_REVENUECAT_IOS_API_KEY = undefined;
+    process.env.EXPO_PUBLIC_REVENUECAT_ANDROID_API_KEY = undefined;
+
+    // Act & Assert
+    await expect(configureRevenueCat()).rejects.toThrow("が設定されていません");
   });
 
   it("設定が失敗した場合にエラーをスローすること", async () => {

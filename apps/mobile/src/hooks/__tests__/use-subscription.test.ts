@@ -9,7 +9,6 @@ jest.mock("@/lib/revenueCat", () => ({
   restorePurchases: jest.fn(),
 }));
 
-// eslint-disable-next-line @typescript-eslint/no-require-imports
 const revenueCat = require("@/lib/revenueCat") as {
   checkSubscriptionStatus: jest.Mock;
   purchasePackage: jest.Mock;
@@ -80,6 +79,23 @@ describe("useSubscription", () => {
       expect(result.current.isSubscribed).toBe(false);
       expect(result.current.currentPlan).toBeNull();
     });
+
+    it("サブスクリプション状態取得に失敗した場合にerrorが設定されること", async () => {
+      // Arrange
+      revenueCat.checkSubscriptionStatus.mockRejectedValue(
+        new Error("サブスクリプション状態の取得に失敗しました"),
+      );
+
+      // Act
+      const { result } = renderHook(() => useSubscription());
+
+      // Assert
+      await waitFor(() => {
+        expect(result.current.isLoading).toBe(false);
+      });
+      expect(result.current.error).not.toBeNull();
+      expect(result.current.error?.message).toBe("サブスクリプション状態の取得に失敗しました");
+    });
   });
 
   describe("purchase", () => {
@@ -144,6 +160,24 @@ describe("useSubscription", () => {
         resolvePurchase(mockActiveStatus);
       });
     });
+
+    it("購入が失敗した場合にerrorが設定されること", async () => {
+      // Arrange
+      revenueCat.checkSubscriptionStatus.mockResolvedValue(mockInactiveStatus);
+      revenueCat.purchasePackage.mockRejectedValue(new Error("購入処理に失敗しました"));
+
+      const { result } = renderHook(() => useSubscription());
+      await waitFor(() => expect(result.current.isLoading).toBe(false));
+
+      // Act
+      await act(async () => {
+        await result.current.purchase(mockPackage as never);
+      });
+
+      // Assert
+      expect(result.current.error).not.toBeNull();
+      expect(result.current.error?.message).toBe("購入処理に失敗しました");
+    });
   });
 
   describe("restore", () => {
@@ -191,6 +225,24 @@ describe("useSubscription", () => {
       await act(async () => {
         resolveRestore(mockActiveStatus);
       });
+    });
+
+    it("復元が失敗した場合にerrorが設定されること", async () => {
+      // Arrange
+      revenueCat.checkSubscriptionStatus.mockResolvedValue(mockInactiveStatus);
+      revenueCat.restorePurchases.mockRejectedValue(new Error("購入の復元に失敗しました"));
+
+      const { result } = renderHook(() => useSubscription());
+      await waitFor(() => expect(result.current.isLoading).toBe(false));
+
+      // Act
+      await act(async () => {
+        await result.current.restore();
+      });
+
+      // Assert
+      expect(result.current.error).not.toBeNull();
+      expect(result.current.error?.message).toBe("購入の復元に失敗しました");
     });
   });
 });

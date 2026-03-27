@@ -1,5 +1,5 @@
 import { Platform } from "react-native";
-import { Purchases } from "react-native-purchases";
+import Purchases from "react-native-purchases";
 import type { PurchasesPackage } from "react-native-purchases";
 
 /** RevenueCat プレミアムエンタイトルメント識別子 */
@@ -18,11 +18,24 @@ export type SubscriptionStatus = {
  *
  * @returns プラットフォームに対応するAPIキー
  */
+function requireEnvKey(name: string, value: string | undefined): string {
+  if (!value || value === "undefined") {
+    throw new Error(`環境変数 ${name} が設定されていません`);
+  }
+  return value;
+}
+
 function getApiKey(): string {
   if (Platform.OS === "ios") {
-    return process.env.EXPO_PUBLIC_REVENUECAT_IOS_API_KEY ?? "";
+    return requireEnvKey(
+      "EXPO_PUBLIC_REVENUECAT_IOS_API_KEY",
+      process.env.EXPO_PUBLIC_REVENUECAT_IOS_API_KEY,
+    );
   }
-  return process.env.EXPO_PUBLIC_REVENUECAT_ANDROID_API_KEY ?? "";
+  return requireEnvKey(
+    "EXPO_PUBLIC_REVENUECAT_ANDROID_API_KEY",
+    process.env.EXPO_PUBLIC_REVENUECAT_ANDROID_API_KEY,
+  );
 }
 
 /**
@@ -51,9 +64,10 @@ function extractSubscriptionStatus(customerInfo: {
  * @throws RevenueCat設定に失敗した場合
  */
 export async function configureRevenueCat(): Promise<void> {
+  const apiKey = getApiKey();
   try {
     Purchases.setDebugLogsEnabled(__DEV__);
-    await Purchases.configure({ apiKey: getApiKey() });
+    await Purchases.configure({ apiKey });
   } catch {
     throw new Error("RevenueCat設定に失敗しました");
   }

@@ -12,6 +12,8 @@ type UseSubscriptionResult = {
   currentPlan: string | null;
   /** ローディング中かどうか */
   isLoading: boolean;
+  /** 最後に発生したエラー。エラーがない場合はnull */
+  error: Error | null;
   /**
    * パッケージを購入する
    * @param pkg - 購入するパッケージ
@@ -32,6 +34,7 @@ export function useSubscription(): UseSubscriptionResult {
     currentPlan: null,
   });
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<Error | null>(null);
 
   useEffect(() => {
     let isMounted = true;
@@ -41,6 +44,12 @@ export function useSubscription(): UseSubscriptionResult {
         const result = await checkSubscriptionStatus();
         if (isMounted) {
           setStatus(result);
+        }
+      } catch (err) {
+        if (isMounted) {
+          setError(
+            err instanceof Error ? err : new Error("サブスクリプション状態の取得に失敗しました"),
+          );
         }
       } finally {
         if (isMounted) {
@@ -58,11 +67,14 @@ export function useSubscription(): UseSubscriptionResult {
 
   const purchase = useCallback(async (pkg: PurchasesPackage): Promise<void> => {
     setIsLoading(true);
+    setError(null);
     try {
       const result = await purchasePackage(pkg);
       if (result !== null) {
         setStatus(result);
       }
+    } catch (err) {
+      setError(err instanceof Error ? err : new Error("購入処理に失敗しました"));
     } finally {
       setIsLoading(false);
     }
@@ -70,9 +82,12 @@ export function useSubscription(): UseSubscriptionResult {
 
   const restore = useCallback(async (): Promise<void> => {
     setIsLoading(true);
+    setError(null);
     try {
       const result = await restorePurchases();
       setStatus(result);
+    } catch (err) {
+      setError(err instanceof Error ? err : new Error("購入の復元に失敗しました"));
     } finally {
       setIsLoading(false);
     }
@@ -82,6 +97,7 @@ export function useSubscription(): UseSubscriptionResult {
     isSubscribed: status.isSubscribed,
     currentPlan: status.currentPlan,
     isLoading,
+    error,
     purchase,
     restore,
   };
