@@ -65,7 +65,7 @@ export async function registerTokenWithApi(token: string): Promise<void> {
  */
 export function setupNotificationHandlers(): () => void {
   Notifications.setNotificationHandler({
-    handleNotification: async () => {
+    handleNotification: async (_notification) => {
       return {
       shouldShowAlert: true,
       shouldPlaySound: true,
