@@ -1,5 +1,4 @@
-import { describe, it, expect, vi } from "vitest";
-import { render, fireEvent } from "@testing-library/react-native";
+import { fireEvent, render } from "@testing-library/react-native";
 
 import { Button } from "../Button";
 
@@ -26,9 +25,7 @@ describe("Button", () => {
   describe("バリアント", () => {
     it("secondaryバリアントでレンダリングできること", () => {
       // Arrange & Act
-      const { getByText } = render(
-        <Button variant="secondary">セカンダリ</Button>,
-      );
+      const { getByText } = render(<Button variant="secondary">セカンダリ</Button>);
 
       // Assert
       expect(getByText("セカンダリ")).toBeDefined();
@@ -36,9 +33,7 @@ describe("Button", () => {
 
     it("outlineバリアントでレンダリングできること", () => {
       // Arrange & Act
-      const { getByText } = render(
-        <Button variant="outline">アウトライン</Button>,
-      );
+      const { getByText } = render(<Button variant="outline">アウトライン</Button>);
 
       // Assert
       expect(getByText("アウトライン")).toBeDefined();
@@ -46,9 +41,7 @@ describe("Button", () => {
 
     it("ghostバリアントでレンダリングできること", () => {
       // Arrange & Act
-      const { getByText } = render(
-        <Button variant="ghost">ゴースト</Button>,
-      );
+      const { getByText } = render(<Button variant="ghost">ゴースト</Button>);
 
       // Assert
       expect(getByText("ゴースト")).toBeDefined();
@@ -56,9 +49,7 @@ describe("Button", () => {
 
     it("dangerバリアントでレンダリングできること", () => {
       // Arrange & Act
-      const { getByText } = render(
-        <Button variant="danger">削除</Button>,
-      );
+      const { getByText } = render(<Button variant="danger">削除</Button>);
 
       // Assert
       expect(getByText("削除")).toBeDefined();
@@ -86,10 +77,8 @@ describe("Button", () => {
   describe("インタラクション", () => {
     it("タップ時にonPressが呼ばれること", () => {
       // Arrange
-      const onPress = vi.fn();
-      const { getByRole } = render(
-        <Button onPress={onPress}>タップ</Button>,
-      );
+      const onPress = jest.fn();
+      const { getByRole } = render(<Button onPress={onPress}>タップ</Button>);
 
       // Act
       fireEvent.press(getByRole("button"));
@@ -100,7 +89,7 @@ describe("Button", () => {
 
     it("disabled時にタップしてもonPressが呼ばれないこと", () => {
       // Arrange
-      const onPress = vi.fn();
+      const onPress = jest.fn();
       const { getByRole } = render(
         <Button onPress={onPress} disabled>
           無効

@@ -1,9 +1,9 @@
 import { useEffect, useRef } from "react";
-import { Animated, View } from "react-native";
+import { Animated, type DimensionValue, View } from "react-native";
 
 type SkeletonProps = {
-  width?: number | string;
-  height?: number | string;
+  width?: DimensionValue;
+  height?: DimensionValue;
   borderRadius?: number;
   className?: string;
 };
@@ -25,12 +25,7 @@ const MAX_OPACITY = 0.7;
  * @param borderRadius - 角丸の半径
  * @param className - 追加のNativeWindクラス名
  */
-export function Skeleton({
-  width,
-  height,
-  borderRadius = 8,
-  className = "",
-}: SkeletonProps) {
+export function Skeleton({ width, height, borderRadius = 8, className = "" }: SkeletonProps) {
   const opacity = useRef(new Animated.Value(MIN_OPACITY)).current;
 
   useEffect(() => {

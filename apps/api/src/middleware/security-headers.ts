@@ -14,9 +14,6 @@ export const securityHeadersMiddleware: MiddlewareHandler = async (c, next) => {
   c.header("Referrer-Policy", "strict-origin-when-cross-origin");
   c.header("Permissions-Policy", "camera=(), microphone=(), geolocation=()");
   if (c.env?.ENVIRONMENT === "production") {
-    c.header(
-      "Strict-Transport-Security",
-      "max-age=31536000; includeSubDomains",
-    );
+    c.header("Strict-Transport-Security", "max-age=31536000; includeSubDomains");
   }
 };

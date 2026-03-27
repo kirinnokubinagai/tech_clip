@@ -1,5 +1,5 @@
-import { describe, it, expect } from "vitest";
 import { getTableColumns } from "drizzle-orm";
+import { describe, expect, it } from "vitest";
 import { sessions } from "./sessions";
 
 describe("sessions schema", () => {

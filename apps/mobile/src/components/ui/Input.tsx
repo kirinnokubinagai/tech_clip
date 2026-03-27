@@ -45,9 +45,7 @@ export function Input({
 
   return (
     <View className="gap-1.5">
-      {label && (
-        <Text className="text-text text-sm font-medium">{label}</Text>
-      )}
+      {label && <Text className="text-text text-sm font-medium">{label}</Text>}
       <TextInput
         className={inputStyle}
         placeholder={placeholder}
@@ -61,9 +59,7 @@ export function Input({
         accessibilityLabel={label}
         accessibilityState={{ disabled: !editable }}
       />
-      {error && (
-        <Text className="text-error text-sm">{error}</Text>
-      )}
+      {error && <Text className="text-error text-sm">{error}</Text>}
     </View>
   );
 }
