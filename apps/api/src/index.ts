@@ -7,6 +7,7 @@ import { articles, users } from "./db/schema";
 import { corsMiddleware } from "./middleware/cors";
 import { securityHeadersMiddleware } from "./middleware/security-headers";
 import { openApiSpec } from "./openapi";
+import { createEmailVerificationRoute } from "./routes/email-verification";
 import { createPublicArticlesRoute } from "./routes/public-articles";
 
 /** Cloudflare Workers バインディング型定義 */
@@ -45,6 +46,32 @@ app.get("/health", (c) => {
 
 app.get("/openapi.json", (c) => {
   return c.json(openApiSpec);
+});
+
+app.post("/api/auth/send-verification", async (c) => {
+  const db = createDatabase({
+    TURSO_DATABASE_URL: c.env.TURSO_DATABASE_URL,
+    TURSO_AUTH_TOKEN: c.env.TURSO_AUTH_TOKEN,
+  });
+  const appUrl =
+    c.env.ENVIRONMENT === "production" ? "https://app.techclip.io" : "http://localhost:8081";
+  const route = createEmailVerificationRoute({ db, appUrl });
+  const subApp = new Hono<{ Variables: { user?: Record<string, unknown> } }>();
+  subApp.route("/api/auth", route);
+  return subApp.fetch(c.req.raw);
+});
+
+app.post("/api/auth/verify-email", async (c) => {
+  const db = createDatabase({
+    TURSO_DATABASE_URL: c.env.TURSO_DATABASE_URL,
+    TURSO_AUTH_TOKEN: c.env.TURSO_AUTH_TOKEN,
+  });
+  const appUrl =
+    c.env.ENVIRONMENT === "production" ? "https://app.techclip.io" : "http://localhost:8081";
+  const route = createEmailVerificationRoute({ db, appUrl });
+  const subApp = new Hono<{ Variables: { user?: Record<string, unknown> } }>();
+  subApp.route("/api/auth", route);
+  return subApp.fetch(c.req.raw);
 });
 
 app.on(["POST", "GET"], "/api/auth/**", (c) => {
