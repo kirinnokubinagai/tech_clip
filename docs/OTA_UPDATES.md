@@ -103,7 +103,7 @@ openssl req -new -x509 \
 
 ### 注意事項
 
-- `private-key.pem` は絶対に Git にコミットしないこと（`.gitignore` に追加済み）
+- `private-key.pem` は絶対に Git にコミットしないこと（`.gitignore` で除外済み: `apps/mobile/certs/private-key.pem`）
 - `certificate.pem` はリポジトリにコミットして構わない（公開鍵証明書）
 - 秘密鍵は CI/CD シークレットまたは安全な鍵管理サービスで管理すること
 

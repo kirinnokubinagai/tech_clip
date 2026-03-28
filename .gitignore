@@ -62,3 +62,6 @@ result-*
 
 # Other tools
 .grepai/
+
+# OTA code signing private key (never commit)
+apps/mobile/certs/private-key.pem
