@@ -452,11 +452,9 @@ describe("createRateLimitMiddleware", () => {
       await store.set("test-key", { count: 1, resetAt: Date.now() + 60_000 });
 
       // Assert
-      expect(mockKv.put).toHaveBeenCalledWith(
-        "test-key",
-        expect.any(String),
-        { expirationTtl: 120 },
-      );
+      expect(mockKv.put).toHaveBeenCalledWith("test-key", expect.any(String), {
+        expirationTtl: 120,
+      });
     });
 
     it("createKvStoreのgetがエントリを正しく返すこと", async () => {
