@@ -8,6 +8,7 @@ import { corsMiddleware } from "./middleware/cors";
 import { securityHeadersMiddleware } from "./middleware/security-headers";
 import { openApiSpec } from "./openapi";
 import { createEmailVerificationRoute } from "./routes/email-verification";
+import { createPasswordResetRoute } from "./routes/password-reset";
 import { createPublicArticlesRoute } from "./routes/public-articles";
 
 /** Cloudflare Workers バインディング型定義 */
@@ -30,6 +31,8 @@ type Bindings = {
   CACHE: KVNamespace;
   /** アバター画像保存用 R2 バケット */
   AVATARS_BUCKET: R2Bucket;
+  /** アプリのベースURL（パスワードリセットリンク生成用） */
+  APP_URL?: string;
 };
 
 const app = new Hono<{ Bindings: Bindings }>();
@@ -74,11 +77,27 @@ app.post("/api/auth/verify-email", async (c) => {
   return subApp.fetch(c.req.raw);
 });
 
-app.on(["POST", "GET"], "/api/auth/**", (c) => {
+app.on(["POST", "GET"], "/api/auth/**", async (c) => {
   const db = createDatabase({
     TURSO_DATABASE_URL: c.env.TURSO_DATABASE_URL,
     TURSO_AUTH_TOKEN: c.env.TURSO_AUTH_TOKEN,
   });
+
+  const path = new URL(c.req.url).pathname;
+
+  if (
+    c.req.method === "POST" &&
+    (path === "/api/auth/forgot-password" || path === "/api/auth/reset-password")
+  ) {
+    const passwordResetRoute = createPasswordResetRoute({
+      db,
+      appUrl: c.env.APP_URL ?? "https://app.techclip.example.com",
+    });
+    const subApp = new Hono();
+    subApp.route("/api/auth", passwordResetRoute);
+    return subApp.fetch(c.req.raw);
+  }
+
   const auth = createAuth(db, c.env.BETTER_AUTH_SECRET, {
     google: {
       clientId: c.env.GOOGLE_CLIENT_ID,
