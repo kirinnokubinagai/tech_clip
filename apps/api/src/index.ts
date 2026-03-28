@@ -22,6 +22,10 @@ type Bindings = {
   APPLE_CLIENT_SECRET: string;
   GITHUB_CLIENT_ID: string;
   GITHUB_CLIENT_SECRET: string;
+  /** レート制限用 Workers KV namespace */
+  RATE_LIMIT: KVNamespace;
+  /** キャッシュ用 Workers KV namespace */
+  CACHE: KVNamespace;
 };
 
 const app = new Hono<{ Bindings: Bindings }>();

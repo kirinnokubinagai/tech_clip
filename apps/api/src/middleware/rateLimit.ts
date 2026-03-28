@@ -23,9 +23,9 @@ type RateLimitEntry = {
  * ローカル開発はインメモリMap、本番はCloudflare Workers KVを注入可能
  */
 export type RateLimitStore = {
-  get: (key: string) => RateLimitEntry | null;
-  set: (key: string, value: RateLimitEntry) => void;
-  clear: () => void;
+  get: (key: string) => Promise<RateLimitEntry | null> | RateLimitEntry | null;
+  set: (key: string, value: RateLimitEntry) => Promise<void> | void;
+  clear: () => Promise<void> | void;
 };
 
 /**
@@ -90,6 +90,33 @@ export function createInMemoryStore(): RateLimitStore {
   };
 }
 
+/** KV エントリのTTL（秒）：最大ウィンドウ長より長く保持する */
+const KV_TTL_SECONDS = 120;
+
+/**
+ * Cloudflare Workers KV を使ったレート制限ストアを生成する
+ *
+ * @param kv - Workers KV namespace バインディング
+ * @returns KVNamespace を使ったRateLimitStore
+ */
+export function createKvStore(kv: KVNamespace): RateLimitStore {
+  return {
+    get: async (key: string) => {
+      const raw = await kv.get(key, "json");
+      if (raw === null) {
+        return null;
+      }
+      return raw as RateLimitEntry;
+    },
+    set: async (key: string, value: RateLimitEntry) => {
+      await kv.put(key, JSON.stringify(value), { expirationTtl: KV_TTL_SECONDS });
+    },
+    clear: async () => {
+      // KV には一括削除APIがないため、このメソッドはno-op
+    },
+  };
+}
+
 /** デフォルトのインメモリストア（開発環境用） */
 const defaultStore = createInMemoryStore();
 
@@ -134,10 +161,10 @@ export function createRateLimitMiddleware(
     const key = `${config.keyPrefix}:${identifier}`;
     const now = Date.now();
 
-    const existing = store.get(key);
+    const existing = await store.get(key);
 
     if (!existing || existing.resetAt <= now) {
-      store.set(key, { count: 1, resetAt: now + config.windowMs });
+      await store.set(key, { count: 1, resetAt: now + config.windowMs });
       await next();
       return;
     }
@@ -159,7 +186,7 @@ export function createRateLimitMiddleware(
       );
     }
 
-    store.set(key, { count: existing.count + 1, resetAt: existing.resetAt });
+    await store.set(key, { count: existing.count + 1, resetAt: existing.resetAt });
     await next();
   };
 }

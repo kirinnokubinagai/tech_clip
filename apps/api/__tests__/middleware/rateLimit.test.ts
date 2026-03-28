@@ -3,6 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   type RateLimitConfig,
   type RateLimitStore,
+  createKvStore,
   createRateLimitMiddleware,
 } from "../../src/middleware/rateLimit";
 
@@ -413,6 +414,68 @@ describe("createRateLimitMiddleware", () => {
 
       // Assert: 同一ユーザーとして扱われ429
       expect(res.status).toBe(429);
+    });
+  });
+
+  describe("KVストア", () => {
+    it("createKvStoreがKVNamespaceを使ったRateLimitStoreを返すこと", async () => {
+      // Arrange
+      const mockKv = {
+        get: vi.fn().mockResolvedValue(null),
+        put: vi.fn().mockResolvedValue(undefined),
+        delete: vi.fn().mockResolvedValue(undefined),
+        list: vi.fn(),
+        getWithMetadata: vi.fn(),
+      } as unknown as KVNamespace;
+
+      // Act
+      const store = createKvStore(mockKv);
+
+      // Assert: getが呼べること
+      const result = await store.get("test-key");
+      expect(result).toBeNull();
+      expect(mockKv.get).toHaveBeenCalledWith("test-key", "json");
+    });
+
+    it("createKvStoreのsetがKV.putを呼ぶこと", async () => {
+      // Arrange
+      const mockKv = {
+        get: vi.fn().mockResolvedValue(null),
+        put: vi.fn().mockResolvedValue(undefined),
+        delete: vi.fn().mockResolvedValue(undefined),
+        list: vi.fn(),
+        getWithMetadata: vi.fn(),
+      } as unknown as KVNamespace;
+      const store = createKvStore(mockKv);
+
+      // Act
+      await store.set("test-key", { count: 1, resetAt: Date.now() + 60_000 });
+
+      // Assert
+      expect(mockKv.put).toHaveBeenCalledWith(
+        "test-key",
+        expect.any(String),
+        { expirationTtl: 120 },
+      );
+    });
+
+    it("createKvStoreのgetがエントリを正しく返すこと", async () => {
+      // Arrange
+      const entry = { count: 3, resetAt: 9999999999 };
+      const mockKv = {
+        get: vi.fn().mockResolvedValue(entry),
+        put: vi.fn().mockResolvedValue(undefined),
+        delete: vi.fn().mockResolvedValue(undefined),
+        list: vi.fn(),
+        getWithMetadata: vi.fn(),
+      } as unknown as KVNamespace;
+      const store = createKvStore(mockKv);
+
+      // Act
+      const result = await store.get("test-key");
+
+      // Assert
+      expect(result).toEqual(entry);
     });
   });
 
