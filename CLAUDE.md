@@ -287,6 +287,32 @@ Closes #<issue番号>
 
 ---
 
+## コンフリクト防止ルール
+
+### 並列実装時の分類ルール
+
+1. **Backend issues** (apps/api/): 別ファイルなら並列マージOK
+2. **Mobile issues** (apps/mobile/):
+   - パッケージ追加あり → 1つずつ直列マージ（pnpm-lock.yaml衝突防止）
+   - 同じ画面/storeを変更 → 1つずつ直列マージ
+   - 新規ファイルのみ → 並列マージOK
+3. **Docs issues**: 並列マージOK
+4. **wrangler.toml を変更するissue**: 直列マージ
+
+### マージ手順
+
+- `scripts/safe-merge.sh <PR番号> [worktree_path]` を使用
+- コンフリクト時は自動rebaseを試みる
+- 自動rebase失敗時のみ手動介入
+
+```bash
+# 使用例
+bash scripts/safe-merge.sh 123
+bash scripts/safe-merge.sh 123 .worktrees/issue-123
+```
+
+---
+
 ## プロダクション完遂ルール
 
 **TechClipはプロダクション用アプリケーションである。全Issueを最後まで作り切ること。**
