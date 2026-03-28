@@ -1,8 +1,9 @@
 import { Bell, ChevronRight, CreditCard, Globe, LogOut, User } from "lucide-react-native";
 import type { ReactNode } from "react";
 import { useState } from "react";
-import { Alert, Pressable, ScrollView, Switch, Text, View } from "react-native";
+import { Pressable, ScrollView, Switch, Text, View } from "react-native";
 
+import { confirm } from "@/components/ConfirmDialog";
 import { useAuthStore } from "../../src/stores/auth-store";
 
 /** 設定セクションの区切り線コンポーネント */
@@ -86,16 +87,16 @@ export default function SettingsScreen() {
    * ログアウト確認ダイアログを表示し、確認後にサインアウトを実行する
    */
   function handleLogout() {
-    Alert.alert("ログアウト", "ログアウトしますか？", [
-      { text: "キャンセル", style: "cancel" },
-      {
-        text: "ログアウト",
-        style: "destructive",
-        onPress: () => {
-          signOut();
-        },
+    confirm({
+      title: "ログアウト",
+      message: "ログアウトしますか？",
+      variant: "danger",
+      confirmLabel: "ログアウト",
+      cancelLabel: "キャンセル",
+      onConfirm: () => {
+        signOut();
       },
-    ]);
+    });
   }
 
   /**
