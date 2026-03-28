@@ -1,7 +1,7 @@
-import { Bell, ChevronRight, CreditCard, Globe, LogOut, User } from "lucide-react-native";
+import { Bell, ChevronRight, CreditCard, Globe, LogOut, Trash2, User } from "lucide-react-native";
 import type { ReactNode } from "react";
 import { useState } from "react";
-import { Pressable, ScrollView, Switch, Text, View } from "react-native";
+import { Alert, Pressable, ScrollView, Switch, Text, View } from "react-native";
 
 import { confirm } from "@/components/ConfirmDialog";
 import { useAuthStore } from "../../src/stores/auth-store";
@@ -78,6 +78,7 @@ type Language = (typeof LANGUAGE_OPTIONS)[number];
  */
 export default function SettingsScreen() {
   const signOut = useAuthStore((s) => s.signOut);
+  const deleteAccount = useAuthStore((s) => s.deleteAccount);
   const user = useAuthStore((s) => s.user);
 
   const [isNotificationsEnabled, setIsNotificationsEnabled] = useState(true);
@@ -95,6 +96,25 @@ export default function SettingsScreen() {
       cancelLabel: "キャンセル",
       onConfirm: () => {
         signOut();
+      },
+    });
+  }
+
+  /**
+   * アカウント削除の確認ダイアログを表示し、確認後にアカウントを削除する
+   */
+  function handleDeleteAccount() {
+    confirm({
+      title: "アカウントを削除する",
+      message:
+        "アカウントを削除すると、すべてのデータが完全に削除されます。この操作は取り消せません。",
+      variant: "danger",
+      confirmLabel: "削除する",
+      cancelLabel: "キャンセル",
+      onConfirm: () => {
+        deleteAccount().catch(() => {
+          Alert.alert("エラー", "アカウントの削除に失敗しました。もう一度お試しください。");
+        });
       },
     });
   }
@@ -163,6 +183,16 @@ export default function SettingsScreen() {
               thumbColor="#ffffff"
             />
           }
+        />
+      </View>
+
+      <SectionTitle title="アカウント管理" />
+      <View className="bg-surface mx-4 rounded-xl border border-border">
+        <SettingsRow
+          icon={<Trash2 size={ICON_SIZE} color="#ef4444" />}
+          label="アカウントを削除する"
+          onPress={handleDeleteAccount}
+          trailing={<View />}
         />
       </View>
 
