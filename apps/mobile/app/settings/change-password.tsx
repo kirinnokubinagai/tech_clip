@@ -116,7 +116,10 @@ export default function ChangePasswordScreen() {
       showToast("パスワードを変更しました", "success");
       router.back();
     } catch {
-      Alert.alert("エラー", "パスワードの変更に失敗しました。現在のパスワードが正しいか確認してください。");
+      Alert.alert(
+        "エラー",
+        "パスワードの変更に失敗しました。現在のパスワードが正しいか確認してください。",
+      );
     } finally {
       setIsSaving(false);
     }
