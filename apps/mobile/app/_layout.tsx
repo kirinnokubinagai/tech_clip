@@ -57,6 +57,7 @@ export default function RootLayout() {
         <Stack.Screen name="onboarding" />
         <Stack.Screen name="article/[id]" options={{ presentation: "card" }} />
         <Stack.Screen name="profile/edit" options={{ presentation: "card" }} />
+        <Stack.Screen name="settings/change-password" options={{ presentation: "card" }} />
         <Stack.Screen name="share-intent" options={{ presentation: "modal" }} />
       </Stack>
       {!hasSeenOnboarding && <Redirect href="/onboarding" />}

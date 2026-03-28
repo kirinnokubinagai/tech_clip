@@ -1,10 +1,11 @@
-import { Bell, ChevronRight, CreditCard, Globe, LogOut, Trash2, User } from "lucide-react-native";
+import { Bell, ChevronRight, CreditCard, Globe, KeyRound, LogOut, Trash2, User } from "lucide-react-native";
 import type { ReactNode } from "react";
 import { useState } from "react";
 import { Alert, Pressable, ScrollView, Switch, Text, View } from "react-native";
 
 import { confirm } from "@/components/ConfirmDialog";
 import { useAuthStore } from "../../src/stores/auth-store";
+import { useRouter } from "expo-router";
 
 /** 設定セクションの区切り線コンポーネント */
 function SectionDivider() {
@@ -77,6 +78,7 @@ type Language = (typeof LANGUAGE_OPTIONS)[number];
  * アカウント（ログアウト）、サブスクリプション状態、言語設定、通知ON/OFFを提供する
  */
 export default function SettingsScreen() {
+  const router = useRouter();
   const signOut = useAuthStore((s) => s.signOut);
   const deleteAccount = useAuthStore((s) => s.deleteAccount);
   const user = useAuthStore((s) => s.user);
@@ -144,6 +146,13 @@ export default function SettingsScreen() {
           icon={<User size={ICON_SIZE} color={ICON_COLOR} />}
           label={user?.name ?? "未ログイン"}
           value={user?.email ?? ""}
+        />
+        <SectionDivider />
+        <SectionDivider />
+        <SettingsRow
+          icon={<KeyRound size={ICON_SIZE} color={ICON_COLOR} />}
+          label="パスワード変更"
+          onPress={() => router.push("/settings/change-password")}
         />
         <SectionDivider />
         <SettingsRow
