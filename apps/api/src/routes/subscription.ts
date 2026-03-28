@@ -35,6 +35,12 @@ const INVALID_REQUEST_CODE = "INVALID_REQUEST";
 /** リクエスト不正エラーメッセージ */
 const INVALID_REQUEST_MESSAGE = "リクエストが正しくありません";
 
+/** グレースピリオドの猶予日数 */
+const GRACE_PERIOD_DAYS = 7;
+
+/** 1日をミリ秒で表した値 */
+const ONE_DAY_MS = 24 * 60 * 60 * 1000;
+
 /** プレミアムを有効化するイベントタイプ */
 const PREMIUM_ACTIVATE_EVENTS = [
   "INITIAL_PURCHASE",
@@ -92,9 +98,40 @@ function msToIsoString(ms: number): string {
 }
 
 /**
+ * グレースピリオド中かどうかを判定する
+ *
+ * isPremium が true かつ premiumExpiresAt が過去の日時の場合、
+ * グレースピリオド中とみなす。WebhookやCronが isPremium を false に更新するまでの猶予期間。
+ *
+ * @param isPremium - プレミアムフラグ
+ * @param premiumExpiresAt - プレミアム有効期限（ISO 8601文字列）
+ * @returns グレースピリオド中の場合 true
+ */
+function isInGracePeriod(isPremium: boolean, premiumExpiresAt: string | null): boolean {
+  if (!isPremium || !premiumExpiresAt) {
+    return false;
+  }
+  const expiresAt = new Date(premiumExpiresAt).getTime();
+  const now = Date.now();
+  return expiresAt < now;
+}
+
+/**
+ * グレースピリオド終了日時を計算する
+ *
+ * @param premiumExpiresAt - プレミアム有効期限（ISO 8601文字列）
+ * @returns グレースピリオド終了日時（ISO 8601文字列）
+ */
+function calcGracePeriodEndsAt(premiumExpiresAt: string): string {
+  const expiresAt = new Date(premiumExpiresAt).getTime();
+  return new Date(expiresAt + GRACE_PERIOD_DAYS * ONE_DAY_MS).toISOString();
+}
+
+/**
  * サブスクリプションルートを生成する
  *
  * GET /status: サブスク状態確認（認証必須）
+ * POST /cancel: サブスクリプションキャンセル（認証必須）
  * POST /webhooks/revenuecat: RevenueCat Webhook受信
  *
  * @param options - DB インスタンスとWebhookシークレット
@@ -138,13 +175,87 @@ export function createSubscriptionRoute(options: SubscriptionRouteOptions) {
     }
 
     const userData = found as unknown as Record<string, unknown>;
+    const isPremium = (userData.isPremium ?? false) as boolean;
+    const premiumExpiresAt = (userData.premiumExpiresAt ?? null) as string | null;
+    const gracePeriod = isInGracePeriod(isPremium, premiumExpiresAt);
+    const gracePeriodEndsAt =
+      gracePeriod && premiumExpiresAt ? calcGracePeriodEndsAt(premiumExpiresAt) : null;
 
     return c.json(
       {
         success: true,
         data: {
-          isPremium: userData.isPremium ?? false,
-          premiumExpiresAt: userData.premiumExpiresAt ?? null,
+          isPremium,
+          premiumExpiresAt,
+          isInGracePeriod: gracePeriod,
+          gracePeriodEndsAt,
+          isTrial: false,
+        },
+      },
+      HTTP_OK,
+    );
+  });
+
+  route.post("/cancel", async (c) => {
+    const user = c.get("user");
+    if (!user) {
+      return c.json(
+        {
+          success: false,
+          error: {
+            code: AUTH_REQUIRED_CODE,
+            message: AUTH_REQUIRED_MESSAGE,
+          },
+        },
+        HTTP_UNAUTHORIZED,
+      );
+    }
+
+    const [found] = await db
+      .select()
+      .from(users)
+      .where(eq(users.id, user.id as string));
+
+    if (!found) {
+      return c.json(
+        {
+          success: false,
+          error: {
+            code: "NOT_FOUND",
+            message: "ユーザーが見つかりません",
+          },
+        },
+        HTTP_NOT_FOUND,
+      );
+    }
+
+    const userData = found as unknown as Record<string, unknown>;
+    if (!userData.isPremium) {
+      return c.json(
+        {
+          success: false,
+          error: {
+            code: INVALID_REQUEST_CODE,
+            message: "プレミアムサブスクリプションに加入していません",
+          },
+        },
+        HTTP_BAD_REQUEST,
+      );
+    }
+
+    await db
+      .update(users)
+      .set({
+        isPremium: false,
+        premiumExpiresAt: null,
+      })
+      .where(eq(users.id, user.id as string));
+
+    return c.json(
+      {
+        success: true,
+        data: {
+          message: "サブスクリプションをキャンセルしました",
         },
       },
       HTTP_OK,
