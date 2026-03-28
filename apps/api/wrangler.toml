@@ -38,3 +38,7 @@ ENVIRONMENT = "staging"
 name = "tech-clip-api-production"
 [env.production.vars]
 ENVIRONMENT = "production"
+
+[[env.production.routes]]
+pattern = "api.techclip.app/*"
+custom_domain = true
