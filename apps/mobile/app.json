@@ -24,9 +24,9 @@
     "runtimeVersion": {
       "policy": "appVersion"
     },
-    "icon": "./assets/images/icon.svg",
+    "icon": "./assets/images/icon.png",
     "splash": {
-      "image": "./assets/images/splash-icon.svg",
+      "image": "./assets/images/splash-icon.png",
       "resizeMode": "contain",
       "backgroundColor": "#0c0a09"
     },
@@ -41,7 +41,7 @@
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/images/adaptive-icon.svg",
+        "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#0c0a09"
       },
       "package": "com.techclip.app",
@@ -69,7 +69,7 @@
     "web": {
       "bundler": "metro",
       "output": "static",
-      "favicon": "./assets/images/favicon.svg"
+      "favicon": "./assets/images/favicon.png"
     },
     "plugins": [
       [
