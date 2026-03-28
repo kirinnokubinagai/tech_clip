@@ -7,6 +7,8 @@ import { ActivityIndicator, Alert, Pressable, ScrollView, Text, View } from "rea
 
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
+import { Toast } from "@/components/ui/Toast";
+import { useToast } from "@/hooks/use-toast";
 import { useAuthStore } from "@/stores/auth-store";
 
 /** アバター画像のサイズ（px） */
@@ -123,6 +125,7 @@ export function validateProfileForm(data: ProfileFormData): FormErrors {
 export default function ProfileEditScreen() {
   const router = useRouter();
   const user = useAuthStore((s) => s.user);
+  const { toast, show: showToast, dismiss: dismissToast } = useToast();
 
   const [formData, setFormData] = useState<ProfileFormData>({
     name: user?.name ?? "",
@@ -188,18 +191,25 @@ export default function ProfileEditScreen() {
 
     try {
       await new Promise((resolve) => setTimeout(resolve, 500));
+      showToast("プロフィールを更新しました", "success");
       router.back();
     } catch {
       Alert.alert("エラー", "プロフィールの保存に失敗しました");
     } finally {
       setIsSaving(false);
     }
-  }, [formData, router]);
+  }, [formData, router, showToast]);
 
   const displayName = formData.name || user?.name || "";
 
   return (
     <View testID="profile-edit-screen" className="flex-1 bg-background">
+      <Toast
+        message={toast.message}
+        variant={toast.variant}
+        visible={toast.visible}
+        onDismiss={dismissToast}
+      />
       <View className="flex-row items-center justify-between px-4 pt-14 pb-3 bg-surface border-b border-border">
         <Pressable
           testID="profile-edit-back-button"

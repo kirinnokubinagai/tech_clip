@@ -1,13 +1,14 @@
 import * as Haptics from "expo-haptics";
 import { router, useLocalSearchParams } from "expo-router";
-import { AlertCircle, ArrowLeft, Check, ExternalLink, Loader2 } from "lucide-react-native";
-import { useCallback, useEffect, useState } from "react";
+import { AlertCircle, ArrowLeft, ExternalLink, Loader2 } from "lucide-react-native";
+import { useCallback, useState } from "react";
 import { Image, Pressable, ScrollView, Text, View } from "react-native";
 
 import { apiFetch } from "@/lib/api";
 import type { ArticlePreview, ParseArticleResponse, SaveArticleResponse } from "@/types/article";
 
-import { Badge, Button, Card, Input, Skeleton } from "@/components/ui";
+import { Badge, Button, Card, Input, Toast } from "@/components/ui";
+import { useToast } from "@/hooks/use-toast";
 
 /** URL正規表現パターン */
 const URL_PATTERN = /^https?:\/\/.+/;
@@ -18,17 +19,11 @@ const THUMBNAIL_HEIGHT = 160;
 /** ソースバッジのアイコンサイズ */
 const ICON_SIZE_SM = 14;
 
-/** 成功アイコンのサイズ */
-const ICON_SIZE_MD = 20;
-
 /** 戻るボタンのアイコンサイズ */
 const ICON_SIZE_LG = 24;
 
 /** エラーアイコンのサイズ */
 const ERROR_ICON_SIZE = 16;
-
-/** 成功メッセージの表示色 */
-const SUCCESS_COLOR = "#22c55e";
 
 /** エラーメッセージの表示色 */
 const ERROR_COLOR = "#ef4444";
@@ -65,15 +60,14 @@ export default function SaveScreen() {
   const [isFetching, setIsFetching] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [urlError, setUrlError] = useState<string | null>(null);
+  const { toast, show: showToast, dismiss: dismissToast } = useToast();
 
   /**
    * URLから記事をパースしてプレビュー表示する
    */
   const handleFetch = useCallback(async () => {
     setErrorMessage(null);
-    setSuccessMessage(null);
     setPreview(null);
 
     const validationError = validateUrl(url);
@@ -114,7 +108,6 @@ export default function SaveScreen() {
     }
 
     setErrorMessage(null);
-    setSuccessMessage(null);
     setIsSaving(true);
 
     try {
@@ -128,132 +121,132 @@ export default function SaveScreen() {
         return;
       }
 
-      setSuccessMessage("記事を保存しました");
+      showToast("記事を保存しました", "success");
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     } catch {
       setErrorMessage("記事の保存に失敗しました");
     } finally {
       setIsSaving(false);
     }
-  }, [preview, url]);
+  }, [preview, url, showToast]);
 
   return (
-    <ScrollView className="flex-1 bg-background" keyboardShouldPersistTaps="handled">
-      <View className="px-4 pt-4 pb-8">
-        {/* ヘッダー */}
-        <View className="flex-row items-center mb-6">
-          <Pressable onPress={() => router.back()} accessibilityLabel="戻る" className="mr-3 p-1">
-            <ArrowLeft size={ICON_SIZE_LG} color="#e2e8f0" />
-          </Pressable>
-          <Text className="text-xl font-bold text-text">記事を保存</Text>
-        </View>
-
-        {/* URL入力 */}
-        <View className="mb-4">
-          <Input
-            label="URL"
-            placeholder="https://"
-            value={url}
-            onChangeText={(text) => {
-              setUrl(text);
-              setUrlError(null);
-            }}
-            error={urlError ?? undefined}
-            keyboardType="url"
-            autoCapitalize="none"
-          />
-        </View>
-
-        {/* 取得ボタン */}
-        <View className="mb-6">
-          <Button onPress={handleFetch} disabled={isFetching} loading={isFetching}>
-            取得
-          </Button>
-        </View>
-
-        {/* ローディング */}
-        {isFetching && (
-          <View testID="fetch-loading" className="items-center py-8">
-            <Loader2 size={ICON_SIZE_LG} color={SPINNER_COLOR} />
-            <Text className="mt-2 text-text-muted text-sm">記事を取得中...</Text>
+    <View className="flex-1">
+      <Toast
+        message={toast.message}
+        variant={toast.variant}
+        visible={toast.visible}
+        onDismiss={dismissToast}
+      />
+      <ScrollView className="flex-1 bg-background" keyboardShouldPersistTaps="handled">
+        <View className="px-4 pt-4 pb-8">
+          {/* ヘッダー */}
+          <View className="flex-row items-center mb-6">
+            <Pressable onPress={() => router.back()} accessibilityLabel="戻る" className="mr-3 p-1">
+              <ArrowLeft size={ICON_SIZE_LG} color="#e2e8f0" />
+            </Pressable>
+            <Text className="text-xl font-bold text-text">記事を保存</Text>
           </View>
-        )}
 
-        {/* エラーメッセージ */}
-        {errorMessage && (
-          <View className="flex-row items-center gap-2 rounded-lg bg-error/10 border border-error/30 p-3 mb-4">
-            <AlertCircle size={ERROR_ICON_SIZE} color={ERROR_COLOR} />
-            <Text className="text-error text-sm flex-1">{errorMessage}</Text>
+          {/* URL入力 */}
+          <View className="mb-4">
+            <Input
+              label="URL"
+              placeholder="https://"
+              value={url}
+              onChangeText={(text) => {
+                setUrl(text);
+                setUrlError(null);
+              }}
+              error={urlError ?? undefined}
+              keyboardType="url"
+              autoCapitalize="none"
+            />
           </View>
-        )}
 
-        {/* 成功メッセージ */}
-        {successMessage && (
-          <View className="flex-row items-center gap-2 rounded-lg bg-success/10 border border-success/30 p-3 mb-4">
-            <Check size={ICON_SIZE_MD} color={SUCCESS_COLOR} />
-            <Text className="text-success text-sm flex-1">{successMessage}</Text>
+          {/* 取得ボタン */}
+          <View className="mb-6">
+            <Button onPress={handleFetch} disabled={isFetching} loading={isFetching}>
+              取得
+            </Button>
           </View>
-        )}
 
-        {/* プレビュー */}
-        {preview && !isFetching && (
-          <View testID="article-preview">
-            <Text className="text-text-muted text-sm font-medium mb-3">プレビュー</Text>
-            <Card>
-              {/* サムネイル */}
-              {preview.thumbnailUrl && (
-                <Image
-                  source={{ uri: preview.thumbnailUrl }}
-                  className="w-full rounded-lg mb-3"
-                  style={{ height: THUMBNAIL_HEIGHT }}
-                  resizeMode="cover"
-                  accessibilityLabel="記事のサムネイル"
-                />
-              )}
+          {/* ローディング */}
+          {isFetching && (
+            <View testID="fetch-loading" className="items-center py-8">
+              <Loader2 size={ICON_SIZE_LG} color={SPINNER_COLOR} />
+              <Text className="mt-2 text-text-muted text-sm">記事を取得中...</Text>
+            </View>
+          )}
 
-              {/* ソースバッジ + 読了時間 */}
-              <View className="flex-row items-center gap-2 mb-2">
-                <Badge>{preview.source}</Badge>
-                {preview.readingTimeMinutes && (
-                  <Text className="text-text-dim text-xs">
-                    {preview.readingTimeMinutes}分で読了
+          {/* エラーメッセージ */}
+          {errorMessage && (
+            <View className="flex-row items-center gap-2 rounded-lg bg-error/10 border border-error/30 p-3 mb-4">
+              <AlertCircle size={ERROR_ICON_SIZE} color={ERROR_COLOR} />
+              <Text className="text-error text-sm flex-1">{errorMessage}</Text>
+            </View>
+          )}
+
+          {/* プレビュー */}
+          {preview && !isFetching && (
+            <View testID="article-preview">
+              <Text className="text-text-muted text-sm font-medium mb-3">プレビュー</Text>
+              <Card>
+                {/* サムネイル */}
+                {preview.thumbnailUrl && (
+                  <Image
+                    source={{ uri: preview.thumbnailUrl }}
+                    className="w-full rounded-lg mb-3"
+                    style={{ height: THUMBNAIL_HEIGHT }}
+                    resizeMode="cover"
+                    accessibilityLabel="記事のサムネイル"
+                  />
+                )}
+
+                {/* ソースバッジ + 読了時間 */}
+                <View className="flex-row items-center gap-2 mb-2">
+                  <Badge>{preview.source}</Badge>
+                  {preview.readingTimeMinutes && (
+                    <Text className="text-text-dim text-xs">
+                      {preview.readingTimeMinutes}分で読了
+                    </Text>
+                  )}
+                </View>
+
+                {/* タイトル */}
+                <Text className="text-text text-lg font-bold mb-2">{preview.title}</Text>
+
+                {/* 著者 */}
+                {preview.author && (
+                  <Text className="text-text-muted text-sm mb-2">{preview.author}</Text>
+                )}
+
+                {/* 概要 */}
+                {preview.excerpt && (
+                  <Text className="text-text-muted text-sm leading-relaxed mb-3">
+                    {preview.excerpt}
                   </Text>
                 )}
+
+                {/* URL表示 */}
+                <View className="flex-row items-center gap-1">
+                  <ExternalLink size={ICON_SIZE_SM} color="#64748b" />
+                  <Text className="text-text-dim text-xs flex-1" numberOfLines={1}>
+                    {url.trim()}
+                  </Text>
+                </View>
+              </Card>
+
+              {/* 保存ボタン */}
+              <View className="mt-4">
+                <Button onPress={handleSave} disabled={isSaving} loading={isSaving}>
+                  保存する
+                </Button>
               </View>
-
-              {/* タイトル */}
-              <Text className="text-text text-lg font-bold mb-2">{preview.title}</Text>
-
-              {/* 著者 */}
-              {preview.author && (
-                <Text className="text-text-muted text-sm mb-2">{preview.author}</Text>
-              )}
-
-              {/* 概要 */}
-              {preview.excerpt && (
-                <Text className="text-text-muted text-sm leading-relaxed mb-3">
-                  {preview.excerpt}
-                </Text>
-              )}
-
-              {/* URL表示 */}
-              <View className="flex-row items-center gap-1">
-                <ExternalLink size={ICON_SIZE_SM} color="#64748b" />
-                <Text className="text-text-dim text-xs flex-1" numberOfLines={1}>
-                  {url.trim()}
-                </Text>
-              </View>
-            </Card>
-
-            {/* 保存ボタン */}
-            <View className="mt-4">
-              <Button onPress={handleSave} disabled={isSaving} loading={isSaving}>
-                保存する
-              </Button>
             </View>
-          </View>
-        )}
-      </View>
-    </ScrollView>
+          )}
+        </View>
+      </ScrollView>
+    </View>
   );
 }
