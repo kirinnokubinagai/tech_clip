@@ -8,7 +8,7 @@
     "build:ios": "eas build --platform ios",
     "build:android": "eas build --platform android",
     "typecheck": "tsc --noEmit",
-    "test": "echo 'mobile tests: jest-expo setup pending (see issue #215)' && exit 0",
+    "test": "jest --passWithNoTests --forceExit",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
     "lint": "echo 'lint configured in root'"
