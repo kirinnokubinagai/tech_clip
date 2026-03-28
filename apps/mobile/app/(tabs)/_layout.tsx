@@ -81,6 +81,7 @@ export default function TabLayout() {
                   testID="tab-badge"
                   style={{ backgroundColor: BADGE_BG_COLOR }}
                   className="absolute -top-1 -right-2 rounded-full min-w-[16px] h-4 items-center justify-center px-1"
+                  accessibilityLabel={`未読通知${unreadCount > BADGE_MAX_COUNT ? `${BADGE_MAX_COUNT}件以上` : `${unreadCount}件`}`}
                 >
                   <Text className="text-white text-[10px] font-bold">
                     {unreadCount > BADGE_MAX_COUNT ? `${BADGE_MAX_COUNT}+` : String(unreadCount)}

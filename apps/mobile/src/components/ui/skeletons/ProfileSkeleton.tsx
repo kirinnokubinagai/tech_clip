@@ -22,7 +22,12 @@ const STAT_WIDTH = 60;
  */
 export function ProfileSkeleton() {
   return (
-    <View className="items-center px-4 pt-8">
+    <View
+      className="items-center px-4 pt-8"
+      accessibilityLabel="プロフィールを読み込み中"
+      accessibilityHint="しばらくお待ちください"
+      accessible={true}
+    >
       <Skeleton width={AVATAR_SIZE} height={AVATAR_SIZE} borderRadius={40} />
       <Skeleton width={120} height={NAME_HEIGHT} className="mt-4" />
       <Skeleton width={180} height={EMAIL_HEIGHT} className="mt-2" />

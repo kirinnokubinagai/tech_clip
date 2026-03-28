@@ -1,11 +1,20 @@
-import { Bell, ChevronRight, CreditCard, Globe, KeyRound, LogOut, Trash2, User } from "lucide-react-native";
+import {
+  Bell,
+  ChevronRight,
+  CreditCard,
+  Globe,
+  KeyRound,
+  LogOut,
+  Trash2,
+  User,
+} from "lucide-react-native";
 import type { ReactNode } from "react";
 import { useState } from "react";
 import { Alert, Pressable, ScrollView, Switch, Text, View } from "react-native";
 
 import { confirm } from "@/components/ConfirmDialog";
-import { useAuthStore } from "../../src/stores/auth-store";
 import { useRouter } from "expo-router";
+import { useAuthStore } from "../../src/stores/auth-store";
 
 /** 設定セクションの区切り線コンポーネント */
 function SectionDivider() {
@@ -57,7 +66,12 @@ function SettingsRow({ icon, label, value, onPress, trailing }: SettingsRowProps
 
   if (onPress) {
     return (
-      <Pressable onPress={onPress} accessibilityRole="button">
+      <Pressable
+        onPress={onPress}
+        accessibilityRole="button"
+        accessibilityLabel={value ? `${label}、現在の設定: ${value}` : label}
+        accessibilityHint={`${label}の設定を変更します`}
+      >
         {content}
       </Pressable>
     );
@@ -190,6 +204,13 @@ export default function SettingsScreen() {
               onValueChange={setIsNotificationsEnabled}
               trackColor={{ false: "#2d2d44", true: "#6366f1" }}
               thumbColor="#ffffff"
+              accessibilityLabel="通知"
+              accessibilityHint={
+                isNotificationsEnabled
+                  ? "タップして通知をオフにします"
+                  : "タップして通知をオンにします"
+              }
+              accessibilityRole="switch"
             />
           }
         />

@@ -142,7 +142,13 @@ export default function SaveScreen() {
         <View className="px-4 pt-4 pb-8">
           {/* ヘッダー */}
           <View className="flex-row items-center mb-6">
-            <Pressable onPress={() => router.back()} accessibilityLabel="戻る" className="mr-3 p-1">
+            <Pressable
+              onPress={() => router.back()}
+              accessibilityRole="button"
+              accessibilityLabel="戻る"
+              accessibilityHint="前の画面に戻ります"
+              className="mr-3 p-1"
+            >
               <ArrowLeft size={ICON_SIZE_LG} color="#e2e8f0" />
             </Pressable>
             <Text className="text-xl font-bold text-text">記事を保存</Text>
@@ -181,8 +187,17 @@ export default function SaveScreen() {
 
           {/* エラーメッセージ */}
           {errorMessage && (
-            <View className="flex-row items-center gap-2 rounded-lg bg-error/10 border border-error/30 p-3 mb-4">
-              <AlertCircle size={ERROR_ICON_SIZE} color={ERROR_COLOR} />
+            <View
+              className="flex-row items-center gap-2 rounded-lg bg-error/10 border border-error/30 p-3 mb-4"
+              accessibilityRole="alert"
+              accessibilityLabel={errorMessage}
+            >
+              <AlertCircle
+                size={ERROR_ICON_SIZE}
+                color={ERROR_COLOR}
+                accessibilityElementsHidden={true}
+                importantForAccessibility="no-hide-descendants"
+              />
               <Text className="text-error text-sm flex-1">{errorMessage}</Text>
             </View>
           )}

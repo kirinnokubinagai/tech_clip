@@ -72,7 +72,11 @@ export default function RegisterScreen() {
         </View>
 
         {errorMessage !== "" && (
-          <View className="mb-4 rounded-lg border border-error/30 bg-error/10 px-4 py-3">
+          <View
+            className="mb-4 rounded-lg border border-error/30 bg-error/10 px-4 py-3"
+            accessibilityRole="alert"
+            accessibilityLabel={errorMessage}
+          >
             <Text className="text-sm text-error">{errorMessage}</Text>
           </View>
         )}
@@ -90,6 +94,8 @@ export default function RegisterScreen() {
               autoComplete="name"
               textContentType="name"
               editable={!isSubmitting}
+              accessibilityLabel="名前"
+              accessibilityHint="お名前を入力してください"
             />
           </View>
 
@@ -106,6 +112,8 @@ export default function RegisterScreen() {
               keyboardType="email-address"
               textContentType="emailAddress"
               editable={!isSubmitting}
+              accessibilityLabel="メールアドレス"
+              accessibilityHint="メールアドレスを入力してください"
             />
           </View>
 
@@ -121,6 +129,8 @@ export default function RegisterScreen() {
               autoComplete="new-password"
               textContentType="newPassword"
               editable={!isSubmitting}
+              accessibilityLabel="パスワード"
+              accessibilityHint="8文字以上のパスワードを入力してください"
             />
           </View>
         </View>
@@ -132,6 +142,10 @@ export default function RegisterScreen() {
           style={({ pressed }) => ({
             opacity: pressed || isSubmitting ? 0.7 : 1,
           })}
+          accessibilityRole="button"
+          accessibilityLabel="アカウントを作成"
+          accessibilityHint="入力した情報で新規アカウントを作成します"
+          accessibilityState={{ disabled: isSubmitting }}
         >
           {isSubmitting ? (
             <ActivityIndicator color="#ffffff" />

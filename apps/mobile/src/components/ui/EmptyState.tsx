@@ -33,8 +33,18 @@ export function EmptyState({
   className = "",
 }: EmptyStateProps) {
   return (
-    <View className={`flex-1 items-center justify-center px-8 py-12 ${className}`}>
-      <View className="mb-4">{icon}</View>
+    <View
+      className={`flex-1 items-center justify-center px-8 py-12 ${className}`}
+      accessibilityRole="text"
+      accessibilityLabel={description ? `${title}。${description}` : title}
+    >
+      <View
+        className="mb-4"
+        accessibilityElementsHidden={true}
+        importantForAccessibility="no-hide-descendants"
+      >
+        {icon}
+      </View>
       <Text className="text-lg font-semibold text-text text-center">{title}</Text>
       {description ? (
         <Text className="mt-2 text-sm text-text-muted text-center">{description}</Text>
