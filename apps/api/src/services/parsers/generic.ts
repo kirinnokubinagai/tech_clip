@@ -13,6 +13,19 @@ const MIN_READING_TIME_MINUTES = 1;
 /** fetch時のUser-Agent */
 const USER_AGENT = "Mozilla/5.0 (compatible; TechClipBot/1.0; +https://techclip.app)";
 
+/** fetchタイムアウト（ミリ秒） */
+const FETCH_TIMEOUT_MS = 10000;
+
+/** ペイウォール検出セレクター */
+const PAYWALL_SELECTORS = [
+  "[class*='paywall']",
+  "[id*='paywall']",
+  ".meteredContent",
+  "[class*='metered']",
+  "[class*='subscriber-only']",
+  "[class*='member-only']",
+];
+
 /**
  * linkedomのドキュメント型
  *
@@ -22,6 +35,21 @@ const USER_AGENT = "Mozilla/5.0 (compatible; TechClipBot/1.0; +https://techclip.
 type LinkedomDocument = {
   querySelector: (selector: string) => { getAttribute: (name: string) => string | null } | null;
 };
+
+/**
+ * ペイウォールが存在するか検出する
+ *
+ * @param doc - linkedomのドキュメントオブジェクト
+ * @returns ペイウォールが検出された場合true
+ */
+function detectPaywall(doc: LinkedomDocument): boolean {
+  for (const selector of PAYWALL_SELECTORS) {
+    if (doc.querySelector(selector)) {
+      return true;
+    }
+  }
+  return false;
+}
 
 /**
  * HTMLからOGPメタタグの値を取得する
@@ -58,9 +86,19 @@ function calculateReadingTime(text: string): number {
  * @throws Error - HTMLの取得またはパースに失敗した場合
  */
 export async function parseGeneric(url: string): Promise<ParsedArticle> {
-  const response = await fetch(url, {
-    headers: { "User-Agent": USER_AGENT },
-  });
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
+
+  let response: Response;
+  try {
+    response = await fetch(url, {
+      headers: { "User-Agent": USER_AGENT },
+      signal: controller.signal,
+      redirect: "follow",
+    });
+  } finally {
+    clearTimeout(timeoutId);
+  }
 
   if (!response.ok) {
     throw new Error(`HTMLの取得に失敗しました（ステータス: ${response.status}）`);
@@ -68,6 +106,11 @@ export async function parseGeneric(url: string): Promise<ParsedArticle> {
 
   const html = await response.text();
   const { document } = parseHTML(html);
+
+  const paywallDoc = document as unknown as LinkedomDocument;
+  if (detectPaywall(paywallDoc)) {
+    throw new Error("記事本文の抽出に失敗しました");
+  }
 
   const reader = new Readability(document);
   const article = reader.parse();
