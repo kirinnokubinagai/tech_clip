@@ -6,6 +6,14 @@ compatibility_flags = ["nodejs_compat"]
 [vars]
 ENVIRONMENT = "development"
 
+[[kv_namespaces]]
+binding = "RATE_LIMIT"
+id = "REPLACE_WITH_RATE_LIMIT_KV_ID"
+
+[[kv_namespaces]]
+binding = "CACHE"
+id = "REPLACE_WITH_CACHE_KV_ID"
+
 # [[r2_buckets]]
 # binding = "AVATARS_BUCKET"
 # bucket_name = "tech-clip-avatars"
