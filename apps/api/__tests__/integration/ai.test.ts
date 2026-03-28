@@ -91,6 +91,10 @@ function createTestApp(
   const route = createAiRoute({
     db: mockDb as unknown as Parameters<typeof createAiRoute>[0]["db"],
     translateArticleFn: mockTranslateFn,
+    runpodConfig: {
+      apiKey: "test-api-key",
+      endpointId: "test-endpoint-id",
+    },
   });
 
   const app = new Hono<{ Variables: { user?: Record<string, unknown> } }>();

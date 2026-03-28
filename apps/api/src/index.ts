@@ -223,6 +223,10 @@ app.on(["GET", "POST", "PATCH", "DELETE"], "/api/articles/**", async (c) => {
   const aiRoute = createAiRoute({
     db,
     translateArticleFn: translateArticle,
+    runpodConfig: {
+      apiKey: c.env.RUNPOD_API_KEY,
+      endpointId: c.env.RUNPOD_ENDPOINT_ID,
+    },
   });
 
   const favoriteRoute = createFavoriteRoute({ db });

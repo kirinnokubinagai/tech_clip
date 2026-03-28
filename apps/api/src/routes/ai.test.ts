@@ -129,6 +129,10 @@ function createTestApp() {
   const aiRoute = createAiRoute({
     db: mockDb as never,
     translateArticleFn: mockTranslateArticle,
+    runpodConfig: {
+      apiKey: "test-api-key",
+      endpointId: "test-endpoint-id",
+    },
   });
   app.route("/api/articles", aiRoute);
 
@@ -146,6 +150,10 @@ function createTestAppWithoutAuth() {
   const aiRoute = createAiRoute({
     db: mockDb as never,
     translateArticleFn: mockTranslateArticle,
+    runpodConfig: {
+      apiKey: "test-api-key",
+      endpointId: "test-endpoint-id",
+    },
   });
   app.route("/api/articles", aiRoute);
 
