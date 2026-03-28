@@ -35,7 +35,6 @@ triggers:
 
 ## マージ後
 
-- `gh pr merge <番号> --merge`
-- `git worktree remove ../tech_clip-issue-<N>`
-- `gh issue close <番号>`（PRの`Closes`で自動クローズされない場合）
+- `bash scripts/safe-merge.sh <番号>`
+- `git worktree remove .worktrees/issue-<N>`
 - mainブランチで `git pull`
