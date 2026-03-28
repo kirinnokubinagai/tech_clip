@@ -185,6 +185,9 @@ importers:
       '@types/react':
         specifier: ~18.3.0
         version: 18.3.28
+      '@types/react-test-renderer':
+        specifier: ~18.3.0
+        version: 18.3.1
       jest:
         specifier: ^29
         version: 29.7.0(@types/node@25.5.0)
@@ -2353,6 +2356,9 @@ packages:
 
   '@types/prop-types@15.7.15':
     resolution: {integrity: sha512-F6bEyamV9jKGAFBEmlQnesRPGOQqS2+Uwi0Em15xenOxHaf2hv6L8YCVn3rPdPJOiJfPiCnLIRyvwVaqMY3MIw==}
+
+  '@types/react-test-renderer@18.3.1':
+    resolution: {integrity: sha512-vAhnk0tG2eGa37lkU9+s5SoroCsRI08xnsWFiAXOuPH2jqzMbcXvKExXViPi1P5fIklDeCvXqyrdmipFaSkZrA==}
 
   '@types/react@18.3.28':
     resolution: {integrity: sha512-z9VXpC7MWrhfWipitjNdgCauoMLRdIILQsAEV+ZesIzBq/oUlxk0m3ApZuMFCXdnS4U7KrI+l3WRUEGQ8K1QKw==}
@@ -8940,6 +8946,10 @@ snapshots:
       undici-types: 7.18.2
 
   '@types/prop-types@15.7.15': {}
+
+  '@types/react-test-renderer@18.3.1':
+    dependencies:
+      '@types/react': 18.3.28
 
   '@types/react@18.3.28':
     dependencies:
