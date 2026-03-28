@@ -17,7 +17,11 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.techclip.app",
-      "buildNumber": "1"
+      "buildNumber": "1",
+      "associatedDomains": [
+        "applinks:techclip.app",
+        "applinks:www.techclip.app"
+      ]
     },
     "android": {
       "adaptiveIcon": {
@@ -25,7 +29,26 @@
         "backgroundColor": "#0c0a09"
       },
       "package": "com.techclip.app",
-      "versionCode": 1
+      "versionCode": 1,
+      "intentFilters": [
+        {
+          "action": "VIEW",
+          "autoVerify": true,
+          "data": [
+            {
+              "scheme": "https",
+              "host": "techclip.app",
+              "pathPrefix": "/"
+            },
+            {
+              "scheme": "https",
+              "host": "www.techclip.app",
+              "pathPrefix": "/"
+            }
+          ],
+          "category": ["BROWSABLE", "DEFAULT"]
+        }
+      ]
     },
     "web": {
       "bundler": "metro",
