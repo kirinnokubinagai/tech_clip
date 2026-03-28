@@ -12,7 +12,9 @@
     "back": "Back",
     "next": "Next",
     "done": "Done",
-    "search": "Search"
+    "search": "Search",
+    "skip": "Skip",
+    "start": "Get Started"
   },
   "auth": {
     "login": "Log in",
@@ -22,18 +24,136 @@
     "password": "Password",
     "forgotPassword": "Forgot password?",
     "noAccount": "Don't have an account?",
-    "hasAccount": "Already have an account?"
+    "hasAccount": "Already have an account?",
+    "register": "Sign up",
+    "loginTitle": "Log in",
+    "appTagline": "Tech news summarized by AI",
+    "createAccount": "Create account",
+    "name": "Name",
+    "namePlaceholder": "Enter your name",
+    "emailPlaceholder": "example@domain.com",
+    "passwordPlaceholder": "8 characters or more",
+    "passwordHide": "Hide",
+    "passwordShow": "Show",
+    "passwordHideLabel": "Hide password",
+    "passwordShowLabel": "Show password",
+    "loginToRegister": "Sign up",
+    "loginToRegisterPrompt": "Don't have an account?",
+    "registerToLoginPrompt": "Already have an account?",
+    "registerFailed": "Registration failed",
+    "loginFailed": "Login failed. Please try again.",
+    "validation": {
+      "emailRequired": "Please enter your email address",
+      "passwordRequired": "Please enter your password",
+      "nameRequired": "Please enter your name",
+      "passwordMinLength": "Password must be at least {{min}} characters"
+    }
   },
   "tabs": {
     "home": "Home",
-    "clips": "Clips",
+    "search": "Search",
+    "notifications": "Notifications",
+    "profile": "Profile",
     "settings": "Settings"
+  },
+  "home": {
+    "filterAll": "All",
+    "favorites": "Favorites",
+    "favoritesFilterLabel": "Show favorites only",
+    "favoritesFilterClearLabel": "Clear favorites filter",
+    "filter": "Filter",
+    "loadingArticles": "Loading...",
+    "fetchError": "Failed to fetch articles",
+    "noArticles": "No articles"
   },
   "article": {
     "save": "Save article",
     "share": "Share",
     "readLater": "Read later",
-    "noArticles": "No articles"
+    "noArticles": "No articles",
+    "readingTime": "{{minutes}} min read",
+    "summary": "Summary",
+    "summarized": "Summarized",
+    "summarize": "Summarize",
+    "translation": "Translation",
+    "translated": "Translated",
+    "translate": "Translate",
+    "openInBrowser": "Open in browser",
+    "addToFavorites": "Add to favorites",
+    "removeFromFavorites": "Remove from favorites",
+    "noContent": "Article content is unavailable",
+    "viewOriginal": "View original article",
+    "fetchError": "Failed to fetch article",
+    "loadingArticle": "Loading...",
+    "saveTitle": "Save Article",
+    "urlLabel": "URL",
+    "urlPlaceholder": "https://",
+    "fetchButton": "Fetch",
+    "saveButton": "Save",
+    "fetching": "Fetching article...",
+    "preview": "Preview",
+    "saveFailed": "Failed to save article",
+    "fetchFailed": "Failed to fetch article",
+    "savedSuccess": "Article saved",
+    "thumbnailAlt": "Article thumbnail",
+    "urlRequired": "Please enter a URL",
+    "urlInvalid": "Please enter a valid URL",
+    "noMatch": "No articles matching \"{{query}}\""
+  },
+  "search": {
+    "placeholder": "Search articles...",
+    "clearLabel": "Clear search",
+    "hint": "Search articles by keyword",
+    "hintSub": "You can search by title or content",
+    "searching": "Searching...",
+    "error": "Search failed"
+  },
+  "notifications": {
+    "markAllRead": "Mark all read",
+    "markAllReadLabel": "Mark all as read",
+    "empty": "No notifications",
+    "emptyDescription": "New notifications will appear here",
+    "fetchError": "Failed to fetch notifications",
+    "loadingNotifications": "Loading..."
+  },
+  "profile": {
+    "loginPrompt": "Log in to see your saved articles and favorites",
+    "editProfile": "Edit Profile",
+    "savedArticles": "Saved Articles",
+    "noPublicArticles": "This user has no public articles yet",
+    "guestUser": "Guest",
+    "loadingUser": "Loading...",
+    "fetchError": "Failed to fetch user info",
+    "back": "Back",
+    "edit": {
+      "title": "Edit Profile",
+      "namePlaceholder": "Enter your name",
+      "usernamePlaceholder": "username",
+      "bioPlaceholder": "Enter your bio",
+      "snsLinks": "SNS Links",
+      "saveButton": "Save",
+      "avatarLabel": "Change avatar image",
+      "saveSuccess": "Profile updated",
+      "saveFailed": "Failed to save profile",
+      "permissionError": "Access to image library is not permitted",
+      "validation": {
+        "nameRequired": "Please enter your name",
+        "nameTooLong": "Name must be {{max}} characters or less",
+        "usernameTooLong": "Username must be {{max}} characters or less",
+        "usernameInvalid": "Username can only contain letters, numbers, and underscores",
+        "bioTooLong": "Bio must be {{max}} characters or less",
+        "urlTooLong": "URL must be {{max}} characters or less"
+      }
+    },
+    "followers": {
+      "title": "Followers",
+      "followersTab": "Followers",
+      "followingTab": "Following",
+      "noFollowers": "No followers yet",
+      "noFollowing": "Not following anyone yet",
+      "userProfileLabel": "View {{name}}'s profile",
+      "loading": "Loading..."
+    }
   },
   "settings": {
     "title": "Settings",
@@ -42,6 +162,85 @@
     "notifications": "Notifications",
     "account": "Account",
     "about": "About this app",
-    "version": "Version"
+    "version": "Version",
+    "sections": {
+      "account": "Account",
+      "subscription": "Subscription",
+      "general": "General",
+      "accountManagement": "Account Management"
+    },
+    "items": {
+      "changePassword": "Change Password",
+      "logout": "Log Out",
+      "plan": "Plan",
+      "language": "Language",
+      "notifications": "Notifications",
+      "deleteAccount": "Delete Account",
+      "notLoggedIn": "Not logged in"
+    },
+    "languageSelect": {
+      "title": "Language Settings",
+      "prompt": "Select display language"
+    },
+    "logout": {
+      "title": "Log Out",
+      "message": "Are you sure you want to log out?",
+      "confirm": "Log Out"
+    },
+    "deleteAccount": {
+      "title": "Delete Account",
+      "message": "Deleting your account will permanently remove all your data. This action cannot be undone.",
+      "confirm": "Delete",
+      "failed": "Failed to delete account. Please try again."
+    },
+    "changePassword": {
+      "title": "Change Password",
+      "currentPassword": "Current Password",
+      "currentPasswordPlaceholder": "Enter current password",
+      "newPassword": "New Password",
+      "newPasswordPlaceholder": "Enter new password",
+      "confirmPassword": "New Password (Confirm)",
+      "confirmPasswordPlaceholder": "Re-enter new password",
+      "saveButton": "Change",
+      "saveSuccess": "Password changed",
+      "saveFailed": "Failed to change password. Please check your current password.",
+      "validation": {
+        "currentPasswordRequired": "Please enter your current password",
+        "newPasswordRequired": "Please enter a new password",
+        "newPasswordTooShort": "Password must be at least {{min}} characters",
+        "newPasswordTooLong": "Password must be {{max}} characters or less",
+        "confirmPasswordRequired": "Please enter the confirmation password",
+        "passwordMismatch": "Passwords do not match"
+      }
+    }
+  },
+  "onboarding": {
+    "pages": {
+      "save": {
+        "title": "Save Tech Articles with One Tap",
+        "description": "Supports 18 sites including Zenn, Qiita, and dev.to. Save articles you're interested in right away."
+      },
+      "ai": {
+        "title": "AI Summarizes & Translates",
+        "description": "Read English articles in Japanese. Save time with AI summaries when you just need the key points."
+      },
+      "organize": {
+        "title": "Organize with Favorites & Tags",
+        "description": "Categorize articles with tags. Bookmark favorites for quick access anytime."
+      },
+      "start": {
+        "title": "Let's Get Started",
+        "description": "Create an account and manage your technical knowledge efficiently."
+      }
+    },
+    "skip": "Skip",
+    "next": "Next",
+    "start": "Get Started"
+  },
+  "shareIntent": {
+    "loading": "Loading",
+    "error": "Failed to read shared data",
+    "notFound": "URL not found",
+    "close": "Close"
   }
 }

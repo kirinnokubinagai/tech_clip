@@ -1,5 +1,6 @@
 import { Tabs } from "expo-router";
 import { Bell, Home, Search, Settings, User } from "lucide-react-native";
+import { useTranslation } from "react-i18next";
 import { Text, View, useColorScheme } from "react-native";
 
 import { useUnreadNotificationCount } from "@/hooks/use-notifications";
@@ -32,6 +33,7 @@ const BADGE_BG_COLOR = "#ef4444";
 const BADGE_MAX_COUNT = 99;
 
 export default function TabLayout() {
+  const { t } = useTranslation();
   const colorScheme = useColorScheme();
   const isDark = colorScheme === "dark" || true;
   const { data: unreadCount } = useUnreadNotificationCount();
@@ -58,21 +60,21 @@ export default function TabLayout() {
       <Tabs.Screen
         name="index"
         options={{
-          title: "ホーム",
+          title: t("tabs.home"),
           tabBarIcon: ({ color }) => <Home size={TAB_ICON_SIZE} color={color} />,
         }}
       />
       <Tabs.Screen
         name="search"
         options={{
-          title: "検索",
+          title: t("tabs.search"),
           tabBarIcon: ({ color }) => <Search size={TAB_ICON_SIZE} color={color} />,
         }}
       />
       <Tabs.Screen
         name="notifications"
         options={{
-          title: "通知",
+          title: t("tabs.notifications"),
           tabBarIcon: ({ color }) => (
             <View>
               <Bell size={TAB_ICON_SIZE} color={color} />
@@ -95,14 +97,14 @@ export default function TabLayout() {
       <Tabs.Screen
         name="profile"
         options={{
-          title: "プロフィール",
+          title: t("tabs.profile"),
           tabBarIcon: ({ color }) => <User size={TAB_ICON_SIZE} color={color} />,
         }}
       />
       <Tabs.Screen
         name="settings"
         options={{
-          title: "設定",
+          title: t("tabs.settings"),
           tabBarIcon: ({ color }) => <Settings size={TAB_ICON_SIZE} color={color} />,
         }}
       />
