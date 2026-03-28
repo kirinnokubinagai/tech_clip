@@ -15,13 +15,15 @@ if [ "$STATE" != "OPEN" ]; then
   exit 1
 fi
 
-# 2. レビュー済みか確認
+# 2. レビュー済みか確認（GH review または PRコメント）
 REVIEW_COUNT=$(gh api "repos/$REPO/pulls/$PR_NUMBER/reviews" --jq 'length' 2>/dev/null || echo "0")
-if [ "$REVIEW_COUNT" = "0" ]; then
+COMMENT_COUNT=$(gh api "repos/$REPO/issues/$PR_NUMBER/comments" --jq 'length' 2>/dev/null || echo "0")
+
+if [ "$REVIEW_COUNT" = "0" ] && [ "$COMMENT_COUNT" = "0" ]; then
   echo "ERROR: レビューがありません。先にcode-reviewを実行してください"
   exit 1
 fi
-echo "--- レビュー: ${REVIEW_COUNT}件確認 ---"
+echo "--- レビュー: ${REVIEW_COUNT}件（GH review）+ ${COMMENT_COUNT}件（コメント）確認 ---"
 
 # 3. マージ可能か確認
 MERGEABLE=$(gh pr view "$PR_NUMBER" --repo "$REPO" --json mergeable --jq .mergeable)
