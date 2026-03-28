@@ -1,5 +1,6 @@
 import { Link } from "expo-router";
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import {
   ActivityIndicator,
   KeyboardAvoidingView,
@@ -14,6 +15,7 @@ import {
 import { useAuthStore } from "../../src/stores/auth-store";
 
 export default function RegisterScreen() {
+  const { t } = useTranslation();
   const signIn = useAuthStore((s) => s.signIn);
 
   const [name, setName] = useState("");
@@ -30,15 +32,15 @@ export default function RegisterScreen() {
     setErrorMessage("");
 
     if (!name.trim()) {
-      setErrorMessage("名前を入力してください");
+      setErrorMessage(t("auth.validation.nameRequired"));
       return;
     }
     if (!email.trim()) {
-      setErrorMessage("メールアドレスを入力してください");
+      setErrorMessage(t("auth.validation.emailRequired"));
       return;
     }
     if (!password.trim()) {
-      setErrorMessage("パスワードを入力してください");
+      setErrorMessage(t("auth.validation.passwordRequired"));
       return;
     }
 
@@ -50,7 +52,7 @@ export default function RegisterScreen() {
       if (error instanceof Error) {
         setErrorMessage(error.message);
       } else {
-        setErrorMessage("登録に失敗しました");
+        setErrorMessage(t("auth.registerFailed"));
       }
     } finally {
       setIsSubmitting(false);
@@ -68,7 +70,7 @@ export default function RegisterScreen() {
       >
         <View className="mb-10 items-center">
           <Text className="text-3xl font-bold text-text">TechClip</Text>
-          <Text className="mt-2 text-base text-text-muted">アカウントを作成</Text>
+          <Text className="mt-2 text-base text-text-muted">{t("auth.createAccount")}</Text>
         </View>
 
         {errorMessage !== "" && (
@@ -79,10 +81,10 @@ export default function RegisterScreen() {
 
         <View className="gap-4">
           <View>
-            <Text className="mb-1.5 text-sm font-medium text-text-muted">名前</Text>
+            <Text className="mb-1.5 text-sm font-medium text-text-muted">{t("auth.name")}</Text>
             <TextInput
               className="rounded-lg border border-border bg-surface px-4 py-3 text-base text-text"
-              placeholder="名前を入力"
+              placeholder={t("auth.namePlaceholder")}
               placeholderTextColor="#64748b"
               value={name}
               onChangeText={setName}
@@ -94,7 +96,7 @@ export default function RegisterScreen() {
           </View>
 
           <View>
-            <Text className="mb-1.5 text-sm font-medium text-text-muted">メールアドレス</Text>
+            <Text className="mb-1.5 text-sm font-medium text-text-muted">{t("auth.email")}</Text>
             <TextInput
               className="rounded-lg border border-border bg-surface px-4 py-3 text-base text-text"
               placeholder="example@domain.com"
@@ -110,10 +112,10 @@ export default function RegisterScreen() {
           </View>
 
           <View>
-            <Text className="mb-1.5 text-sm font-medium text-text-muted">パスワード</Text>
+            <Text className="mb-1.5 text-sm font-medium text-text-muted">{t("auth.password")}</Text>
             <TextInput
               className="rounded-lg border border-border bg-surface px-4 py-3 text-base text-text"
-              placeholder="8文字以上"
+              placeholder={t("auth.passwordPlaceholder")}
               placeholderTextColor="#64748b"
               value={password}
               onChangeText={setPassword}
@@ -136,15 +138,15 @@ export default function RegisterScreen() {
           {isSubmitting ? (
             <ActivityIndicator color="#ffffff" />
           ) : (
-            <Text className="text-base font-semibold text-white">アカウントを作成</Text>
+            <Text className="text-base font-semibold text-white">{t("auth.createAccount")}</Text>
           )}
         </Pressable>
 
         <View className="mt-6 flex-row items-center justify-center">
-          <Text className="text-sm text-text-muted">すでにアカウントをお持ちですか？</Text>
+          <Text className="text-sm text-text-muted">{t("auth.registerToLoginPrompt")}</Text>
           <Link href="/(auth)/login" asChild>
             <Pressable>
-              <Text className="ml-1 text-sm font-semibold text-primary">ログイン</Text>
+              <Text className="ml-1 text-sm font-semibold text-primary">{t("auth.login")}</Text>
             </Pressable>
           </Link>
         </View>

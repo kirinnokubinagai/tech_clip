@@ -2,6 +2,7 @@ import { useRouter } from "expo-router";
 import { Filter, Heart, RefreshCw } from "lucide-react-native";
 import { useCallback, useMemo, useState } from "react";
 import { ActivityIndicator, FlatList, Pressable, RefreshControl, Text, View } from "react-native";
+import { useTranslation } from "react-i18next";
 
 import { ArticleCard } from "@/components/ArticleCard";
 import { useArticles, useToggleFavorite } from "@/hooks/use-articles";
@@ -22,17 +23,17 @@ const FAVORITE_INACTIVE_COLOR = "#94a3b8";
 /** フィルターアイコンサイズ */
 const FILTER_ICON_SIZE = 16;
 
-/** ソースフィルターの選択肢 */
-const SOURCE_FILTERS: { label: string; value: ArticleSource | undefined }[] = [
-  { label: "すべて", value: undefined },
-  { label: "Zenn", value: "zenn" },
-  { label: "Qiita", value: "qiita" },
-  { label: "はてな", value: "hatena" },
-  { label: "note", value: "note" },
-  { label: "Dev.to", value: "devto" },
-  { label: "Medium", value: "medium" },
-  { label: "GitHub", value: "github" },
-  { label: "HN", value: "hackernews" },
+/** ソースフィルターの選択肢（固有名詞はそのまま、「すべて」のみ翻訳） */
+const SOURCE_FILTER_STATIC: { value: ArticleSource | undefined; staticLabel?: string; i18nKey?: string }[] = [
+  { i18nKey: "home.filterAll", value: undefined },
+  { staticLabel: "Zenn", value: "zenn" },
+  { staticLabel: "Qiita", value: "qiita" },
+  { staticLabel: "はてな", value: "hatena" },
+  { staticLabel: "note", value: "note" },
+  { staticLabel: "Dev.to", value: "devto" },
+  { staticLabel: "Medium", value: "medium" },
+  { staticLabel: "GitHub", value: "github" },
+  { staticLabel: "HN", value: "hackernews" },
 ];
 
 /**
@@ -42,6 +43,7 @@ const SOURCE_FILTERS: { label: string; value: ArticleSource | undefined }[] = [
  * プルリフレッシュ、無限スクロールに対応。
  */
 export default function HomeScreen() {
+  const { t } = useTranslation();
   const router = useRouter();
   const [selectedSource, setSelectedSource] = useState<ArticleSource | undefined>(undefined);
   const [isFavoriteOnly, setIsFavoriteOnly] = useState(false);
@@ -63,6 +65,15 @@ export default function HomeScreen() {
   const toggleFavorite = useToggleFavorite();
 
   const articles = useMemo(() => data?.pages.flatMap((page) => page.items) ?? [], [data]);
+
+  const sourceFilters = useMemo(
+    () =>
+      SOURCE_FILTER_STATIC.map((opt) => ({
+        label: opt.i18nKey ? t(opt.i18nKey) : (opt.staticLabel ?? ""),
+        value: opt.value,
+      })),
+    [t],
+  );
 
   const handleArticlePress = useCallback(
     (articleId: string) => {
@@ -111,17 +122,17 @@ export default function HomeScreen() {
     return (
       <View className="flex-1 items-center justify-center py-20">
         <Text className="text-text-muted text-base">
-          {isError ? "記事の取得に失敗しました" : "記事がありません"}
+          {isError ? t("home.fetchError") : t("home.noArticles")}
         </Text>
         {isError && (
           <Pressable onPress={() => refetch()} className="mt-4 flex-row items-center gap-2">
             <RefreshCw size={FILTER_ICON_SIZE} color={FILTER_ACTIVE_BG} />
-            <Text className="text-primary">再試行</Text>
+            <Text className="text-primary">{t("common.retry")}</Text>
           </Pressable>
         )}
       </View>
     );
-  }, [isLoading, isError, refetch]);
+  }, [isLoading, isError, refetch, t]);
 
   return (
     <View className="flex-1 bg-background">
@@ -129,7 +140,7 @@ export default function HomeScreen() {
         <FlatList
           horizontal
           showsHorizontalScrollIndicator={false}
-          data={SOURCE_FILTERS}
+          data={sourceFilters}
           keyExtractor={(item) => item.label}
           contentContainerStyle={{ gap: 8 }}
           renderItem={({ item }) => (
@@ -160,7 +171,11 @@ export default function HomeScreen() {
               backgroundColor: isFavoriteOnly ? "#2d1a1a" : FILTER_INACTIVE_BG,
             }}
             accessibilityRole="button"
-            accessibilityLabel={isFavoriteOnly ? "お気に入りフィルター解除" : "お気に入りのみ表示"}
+            accessibilityLabel={
+              isFavoriteOnly
+                ? t("home.favoritesFilterClearLabel")
+                : t("home.favoritesFilterLabel")
+            }
           >
             <Heart
               size={FILTER_ICON_SIZE}
@@ -171,13 +186,13 @@ export default function HomeScreen() {
               className="text-sm"
               style={{ color: isFavoriteOnly ? FAVORITE_ACTIVE_COLOR : "#94a3b8" }}
             >
-              お気に入り
+              {t("home.favorites")}
             </Text>
           </Pressable>
           <Pressable
             className="flex-row items-center gap-1.5"
             accessibilityRole="button"
-            accessibilityLabel="フィルター"
+            accessibilityLabel={t("home.filter")}
           >
             <Filter size={FILTER_ICON_SIZE} color="#94a3b8" />
           </Pressable>
@@ -187,7 +202,7 @@ export default function HomeScreen() {
       {isLoading ? (
         <View className="flex-1 items-center justify-center">
           <ActivityIndicator size="large" color={FILTER_ACTIVE_BG} />
-          <Text className="text-text-muted mt-3">読み込み中...</Text>
+          <Text className="text-text-muted mt-3">{t("home.loadingArticles")}</Text>
         </View>
       ) : (
         <FlatList

@@ -12,7 +12,9 @@
     "back": "戻る",
     "next": "次へ",
     "done": "完了",
-    "search": "検索"
+    "search": "検索",
+    "skip": "スキップ",
+    "start": "始める"
   },
   "auth": {
     "login": "ログイン",
@@ -22,18 +24,136 @@
     "password": "パスワード",
     "forgotPassword": "パスワードを忘れた方",
     "noAccount": "アカウントをお持ちでない方",
-    "hasAccount": "アカウントをお持ちの方"
+    "hasAccount": "アカウントをお持ちの方",
+    "register": "新規登録",
+    "loginTitle": "ログイン",
+    "appTagline": "技術ニュースをAIで要約",
+    "createAccount": "アカウントを作成",
+    "name": "名前",
+    "namePlaceholder": "名前を入力",
+    "emailPlaceholder": "example@domain.com",
+    "passwordPlaceholder": "8文字以上",
+    "passwordHide": "隠す",
+    "passwordShow": "表示",
+    "passwordHideLabel": "パスワードを隠す",
+    "passwordShowLabel": "パスワードを表示する",
+    "loginToRegister": "新規登録",
+    "loginToRegisterPrompt": "アカウントをお持ちでない方は",
+    "registerToLoginPrompt": "すでにアカウントをお持ちですか？",
+    "registerFailed": "登録に失敗しました",
+    "loginFailed": "ログインに失敗しました。もう一度お試しください",
+    "validation": {
+      "emailRequired": "メールアドレスを入力してください",
+      "passwordRequired": "パスワードを入力してください",
+      "nameRequired": "名前を入力してください",
+      "passwordMinLength": "パスワードは{{min}}文字以上で入力してください"
+    }
   },
   "tabs": {
     "home": "ホーム",
-    "clips": "クリップ",
+    "search": "検索",
+    "notifications": "通知",
+    "profile": "プロフィール",
     "settings": "設定"
+  },
+  "home": {
+    "filterAll": "すべて",
+    "favorites": "お気に入り",
+    "favoritesFilterLabel": "お気に入りのみ表示",
+    "favoritesFilterClearLabel": "お気に入りフィルター解除",
+    "filter": "フィルター",
+    "loadingArticles": "読み込み中...",
+    "fetchError": "記事の取得に失敗しました",
+    "noArticles": "記事がありません"
   },
   "article": {
     "save": "記事を保存",
     "share": "共有",
     "readLater": "あとで読む",
-    "noArticles": "記事がありません"
+    "noArticles": "記事がありません",
+    "readingTime": "{{minutes}}分で読めます",
+    "summary": "要約",
+    "summarized": "要約済み",
+    "summarize": "要約",
+    "translation": "翻訳",
+    "translated": "翻訳済み",
+    "translate": "翻訳",
+    "openInBrowser": "ブラウザで開く",
+    "addToFavorites": "お気に入り追加",
+    "removeFromFavorites": "お気に入り解除",
+    "noContent": "記事本文が利用できません",
+    "viewOriginal": "元の記事を見る",
+    "fetchError": "記事の取得に失敗しました",
+    "loadingArticle": "読み込み中...",
+    "saveTitle": "記事を保存",
+    "urlLabel": "URL",
+    "urlPlaceholder": "https://",
+    "fetchButton": "取得",
+    "saveButton": "保存する",
+    "fetching": "記事を取得中...",
+    "preview": "プレビュー",
+    "saveFailed": "記事の保存に失敗しました",
+    "fetchFailed": "記事の取得に失敗しました",
+    "savedSuccess": "記事を保存しました",
+    "thumbnailAlt": "記事のサムネイル",
+    "urlRequired": "URLを入力してください",
+    "urlInvalid": "有効なURLを入力してください",
+    "noMatch": "「{{query}}」に一致する記事がありません"
+  },
+  "search": {
+    "placeholder": "記事を検索...",
+    "clearLabel": "検索をクリア",
+    "hint": "キーワードで記事を検索",
+    "hintSub": "タイトルや内容から検索できます",
+    "searching": "検索中...",
+    "error": "検索に失敗しました"
+  },
+  "notifications": {
+    "markAllRead": "すべて既読",
+    "markAllReadLabel": "すべて既読にする",
+    "empty": "通知はありません",
+    "emptyDescription": "新しい通知が届くとここに表示されます",
+    "fetchError": "通知の取得に失敗しました",
+    "loadingNotifications": "読み込み中..."
+  },
+  "profile": {
+    "loginPrompt": "ログインすると保存した記事やお気に入りが表示されます",
+    "editProfile": "プロフィール編集",
+    "savedArticles": "保存した記事",
+    "noPublicArticles": "このユーザーの公開記事はまだありません",
+    "guestUser": "ゲストユーザー",
+    "loadingUser": "読み込み中...",
+    "fetchError": "ユーザー情報の取得に失敗しました",
+    "back": "戻る",
+    "edit": {
+      "title": "プロフィール編集",
+      "namePlaceholder": "名前を入力",
+      "usernamePlaceholder": "username",
+      "bioPlaceholder": "自己紹介を入力",
+      "snsLinks": "SNSリンク",
+      "saveButton": "保存する",
+      "avatarLabel": "アバター画像を変更",
+      "saveSuccess": "プロフィールを更新しました",
+      "saveFailed": "プロフィールの保存に失敗しました",
+      "permissionError": "画像ライブラリへのアクセスが許可されていません",
+      "validation": {
+        "nameRequired": "名前を入力してください",
+        "nameTooLong": "名前は{{max}}文字以内で入力してください",
+        "usernameTooLong": "ユーザー名は{{max}}文字以内で入力してください",
+        "usernameInvalid": "ユーザー名は英数字とアンダースコアのみ使用できます",
+        "bioTooLong": "自己紹介は{{max}}文字以内で入力してください",
+        "urlTooLong": "URLは{{max}}文字以内で入力してください"
+      }
+    },
+    "followers": {
+      "title": "フォロワー",
+      "followersTab": "フォロワー",
+      "followingTab": "フォロー中",
+      "noFollowers": "フォロワーはまだいません",
+      "noFollowing": "フォロー中のユーザーはいません",
+      "userProfileLabel": "{{name}}のプロフィールを表示",
+      "loading": "読み込み中..."
+    }
   },
   "settings": {
     "title": "設定",
@@ -42,6 +162,85 @@
     "notifications": "通知",
     "account": "アカウント",
     "about": "このアプリについて",
-    "version": "バージョン"
+    "version": "バージョン",
+    "sections": {
+      "account": "アカウント",
+      "subscription": "サブスクリプション",
+      "general": "一般",
+      "accountManagement": "アカウント管理"
+    },
+    "items": {
+      "changePassword": "パスワード変更",
+      "logout": "ログアウト",
+      "plan": "プラン",
+      "language": "言語",
+      "notifications": "通知",
+      "deleteAccount": "アカウントを削除する",
+      "notLoggedIn": "未ログイン"
+    },
+    "languageSelect": {
+      "title": "言語設定",
+      "prompt": "表示言語を選択してください"
+    },
+    "logout": {
+      "title": "ログアウト",
+      "message": "ログアウトしますか？",
+      "confirm": "ログアウト"
+    },
+    "deleteAccount": {
+      "title": "アカウントを削除する",
+      "message": "アカウントを削除すると、すべてのデータが完全に削除されます。この操作は取り消せません。",
+      "confirm": "削除する",
+      "failed": "アカウントの削除に失敗しました。もう一度お試しください。"
+    },
+    "changePassword": {
+      "title": "パスワード変更",
+      "currentPassword": "現在のパスワード",
+      "currentPasswordPlaceholder": "現在のパスワードを入力",
+      "newPassword": "新しいパスワード",
+      "newPasswordPlaceholder": "新しいパスワードを入力",
+      "confirmPassword": "新しいパスワード（確認）",
+      "confirmPasswordPlaceholder": "新しいパスワードを再入力",
+      "saveButton": "変更する",
+      "saveSuccess": "パスワードを変更しました",
+      "saveFailed": "パスワードの変更に失敗しました。現在のパスワードが正しいか確認してください。",
+      "validation": {
+        "currentPasswordRequired": "現在のパスワードを入力してください",
+        "newPasswordRequired": "新しいパスワードを入力してください",
+        "newPasswordTooShort": "パスワードは{{min}}文字以上で入力してください",
+        "newPasswordTooLong": "パスワードは{{max}}文字以内で入力してください",
+        "confirmPasswordRequired": "確認用パスワードを入力してください",
+        "passwordMismatch": "パスワードが一致しません"
+      }
+    }
+  },
+  "onboarding": {
+    "pages": {
+      "save": {
+        "title": "技術記事をワンタップで保存",
+        "description": "Zenn、Qiita、dev.toなど18サイトに対応。気になった記事をすぐ保存できます。"
+      },
+      "ai": {
+        "title": "AIが要約・翻訳",
+        "description": "英語記事も日本語で読める。要点だけ把握したいときはAI要約で時短。"
+      },
+      "organize": {
+        "title": "お気に入り・タグで整理",
+        "description": "タグ付けで記事を分類。お気に入り登録でいつでも素早くアクセス。"
+      },
+      "start": {
+        "title": "さあ、始めましょう",
+        "description": "アカウントを作成して、技術知識を効率よく管理しましょう。"
+      }
+    },
+    "skip": "スキップ",
+    "next": "次へ",
+    "start": "始める"
+  },
+  "shareIntent": {
+    "loading": "読み込み中",
+    "error": "共有データの読み取りに失敗しました",
+    "notFound": "URLが見つかりません",
+    "close": "閉じる"
   }
 }
