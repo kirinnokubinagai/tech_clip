@@ -37,7 +37,10 @@
       "associatedDomains": [
         "applinks:techclip.app",
         "applinks:www.techclip.app"
-      ]
+      ],
+      "infoPlist": {
+        "NSUserTrackingUsageDescription": "広告をパーソナライズし、アプリのパフォーマンスを計測するために使用します。"
+      }
     },
     "android": {
       "adaptiveIcon": {
