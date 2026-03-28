@@ -22,6 +22,8 @@ type AuthStore = {
   /** セッション期限切れメッセージをクリアする */
   clearSessionExpiredMessage: () => void;
   deleteAccount: () => Promise<void>;
+  /** 現在のパスワードを確認した上で新しいパスワードに変更する */
+  changePassword: (currentPassword: string, newPassword: string) => Promise<void>;
 };
 
 export const useAuthStore = create<AuthStore>((set) => ({
@@ -86,6 +88,27 @@ export const useAuthStore = create<AuthStore>((set) => ({
       session: null,
       isAuthenticated: false,
     });
+  },
+
+  /**
+   * パスワードを変更する
+   *
+   * @param currentPassword - 現在のパスワード
+   * @param newPassword - 新しいパスワード
+   * @throws Error - 現在のパスワードが不正または変更失敗時
+   */
+  changePassword: async (currentPassword: string, newPassword: string) => {
+    const data = await apiFetch<{ success: boolean } | AuthErrorResponse>(
+      "/api/users/me/password",
+      {
+        method: "PATCH",
+        body: JSON.stringify({ currentPassword, newPassword }),
+      },
+    );
+
+    if (!data.success) {
+      throw new Error((data as AuthErrorResponse).error.message);
+    }
   },
 
   /**
