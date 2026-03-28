@@ -1,6 +1,6 @@
 import { Hono } from "hono";
-import { z } from "zod";
 import { describe, expect, it } from "vitest";
+import { z } from "zod";
 import { validateJson, validateQuery } from "./validate";
 
 /** HTTP 200 OK ステータスコード */
@@ -36,14 +36,10 @@ const testSchema = z.object({
  */
 function createJsonTestApp() {
   const app = new Hono();
-  app.post(
-    "/test",
-    validateJson(testSchema),
-    (c) => {
-      const body = c.get("validatedBody");
-      return c.json({ success: true, data: body });
-    },
-  );
+  app.post("/test", validateJson(testSchema), (c) => {
+    const body = c.get("validatedBody");
+    return c.json({ success: true, data: body });
+  });
   return app;
 }
 
@@ -56,14 +52,10 @@ function createQueryTestApp() {
     limit: z.coerce.number().int().min(1).max(50).optional(),
   });
   const app = new Hono();
-  app.get(
-    "/test",
-    validateQuery(querySchema),
-    (c) => {
-      const query = c.get("validatedQuery");
-      return c.json({ success: true, data: query });
-    },
-  );
+  app.get("/test", validateQuery(querySchema), (c) => {
+    const query = c.get("validatedQuery");
+    return c.json({ success: true, data: query });
+  });
   return app;
 }
 
