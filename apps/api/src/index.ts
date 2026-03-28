@@ -6,6 +6,7 @@ import { articles, users } from "./db/schema";
 
 import { corsMiddleware } from "./middleware/cors";
 import { securityHeadersMiddleware } from "./middleware/security-headers";
+import { createSentryMiddleware } from "./middleware/sentry";
 import { openApiSpec } from "./openapi";
 import { createEmailVerificationRoute } from "./routes/email-verification";
 import { createPasswordResetRoute } from "./routes/password-reset";
@@ -33,12 +34,15 @@ type Bindings = {
   AVATARS_BUCKET: R2Bucket;
   /** アプリのベースURL（パスワードリセットリンク生成用） */
   APP_URL?: string;
+  /** Sentry DSN（エラー監視用） */
+  SENTRY_DSN?: string;
 };
 
 const app = new Hono<{ Bindings: Bindings }>();
 
 app.use("*", corsMiddleware);
 app.use("*", securityHeadersMiddleware);
+app.use("*", createSentryMiddleware());
 
 app.get("/health", (c) => {
   return c.json({
