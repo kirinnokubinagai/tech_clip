@@ -24,6 +24,9 @@ id = "REPLACE_WITH_CACHE_KV_ID"
 # RUNPOD_API_KEY
 # RUNPOD_ENDPOINT_ID
 
+[triggers]
+crons = ["0 0 1 * *"]
+
 # --- ステージング環境 ---
 [env.staging]
 name = "tech-clip-api-staging"
