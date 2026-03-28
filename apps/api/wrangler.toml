@@ -14,9 +14,9 @@ id = "REPLACE_WITH_RATE_LIMIT_KV_ID"
 binding = "CACHE"
 id = "REPLACE_WITH_CACHE_KV_ID"
 
-# [[r2_buckets]]
-# binding = "AVATARS_BUCKET"
-# bucket_name = "tech-clip-avatars"
+[[r2_buckets]]
+binding = "AVATARS_BUCKET"
+bucket_name = "tech-clip-avatars"
 
 # [secrets]
 # TURSO_DATABASE_URL
