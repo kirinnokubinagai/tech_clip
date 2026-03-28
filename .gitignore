@@ -68,3 +68,4 @@ result-*
 
 # OTA code signing private key (never commit)
 apps/mobile/certs/private-key.pem
+.serena/
