@@ -85,10 +85,19 @@ export default function UserProfileScreen() {
             setTimeout(() => setIsLoading(false), 500);
           }}
           className="mt-4 bg-primary rounded-lg px-6 py-3"
+          accessibilityRole="button"
+          accessibilityLabel="再試行"
+          accessibilityHint="ユーザー情報の取得を再試行します"
         >
           <Text className="text-white font-semibold">再試行</Text>
         </Pressable>
-        <Pressable onPress={handleBack} className="mt-3">
+        <Pressable
+          onPress={handleBack}
+          className="mt-3"
+          accessibilityRole="button"
+          accessibilityLabel="戻る"
+          accessibilityHint="前の画面に戻ります"
+        >
           <Text className="text-primary">戻る</Text>
         </Pressable>
       </View>

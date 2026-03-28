@@ -89,7 +89,11 @@ export default function LoginScreen() {
           <Text className="mb-6 text-center text-xl font-semibold text-text">ログイン</Text>
 
           {errorMessage !== "" && (
-            <View className="mb-4 rounded-lg bg-error/10 px-4 py-3">
+            <View
+              className="mb-4 rounded-lg bg-error/10 px-4 py-3"
+              accessibilityRole="alert"
+              accessibilityLabel={errorMessage}
+            >
               <Text className="text-sm text-error">{errorMessage}</Text>
             </View>
           )}
@@ -108,6 +112,8 @@ export default function LoginScreen() {
               autoComplete="email"
               editable={!isSubmitting}
               testID="login-email-input"
+              accessibilityLabel="メールアドレス"
+              accessibilityHint="メールアドレスを入力してください"
             />
           </View>
 
@@ -126,6 +132,8 @@ export default function LoginScreen() {
                 autoComplete="password"
                 editable={!isSubmitting}
                 testID="login-password-input"
+                accessibilityLabel="パスワード"
+                accessibilityHint="8文字以上のパスワードを入力してください"
               />
               <Pressable
                 onPress={() => setIsPasswordVisible((prev) => !prev)}
@@ -147,6 +155,10 @@ export default function LoginScreen() {
               isSubmitting || !isFormValid ? "bg-primary/50" : "bg-primary"
             }`}
             testID="login-submit-button"
+            accessibilityRole="button"
+            accessibilityLabel="ログイン"
+            accessibilityHint="メールアドレスとパスワードでログインします"
+            accessibilityState={{ disabled: isSubmitting || !isFormValid }}
           >
             {isSubmitting ? (
               <ActivityIndicator color="#e2e8f0" />

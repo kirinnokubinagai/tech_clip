@@ -19,7 +19,12 @@ const BODY_LINE_COUNT = 8;
  */
 export function ArticleDetailSkeleton() {
   return (
-    <View className="px-4">
+    <View
+      className="px-4"
+      accessibilityLabel="記事の詳細を読み込み中"
+      accessibilityHint="しばらくお待ちください"
+      accessible={true}
+    >
       <Skeleton width="100%" height={HEADER_IMAGE_HEIGHT} borderRadius={12} />
       <Skeleton width="90%" height={TITLE_HEIGHT} className="mt-4" />
       <Skeleton width="60%" height={TITLE_HEIGHT} className="mt-2" />

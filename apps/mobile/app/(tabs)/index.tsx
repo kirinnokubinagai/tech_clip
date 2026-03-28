@@ -114,7 +114,13 @@ export default function HomeScreen() {
           {isError ? "記事の取得に失敗しました" : "記事がありません"}
         </Text>
         {isError && (
-          <Pressable onPress={() => refetch()} className="mt-4 flex-row items-center gap-2">
+          <Pressable
+            onPress={() => refetch()}
+            className="mt-4 flex-row items-center gap-2"
+            accessibilityRole="button"
+            accessibilityLabel="再試行"
+            accessibilityHint="記事の取得を再試行します"
+          >
             <RefreshCw size={FILTER_ICON_SIZE} color={FILTER_ACTIVE_BG} />
             <Text className="text-primary">再試行</Text>
           </Pressable>
@@ -140,6 +146,10 @@ export default function HomeScreen() {
                 backgroundColor:
                   selectedSource === item.value ? FILTER_ACTIVE_BG : FILTER_INACTIVE_BG,
               }}
+              accessibilityRole="button"
+              accessibilityLabel={item.label}
+              accessibilityHint={`${item.label}の記事のみ表示します`}
+              accessibilityState={{ selected: selectedSource === item.value }}
             >
               <Text
                 className="text-sm"

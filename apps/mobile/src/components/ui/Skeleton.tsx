@@ -52,7 +52,12 @@ export function Skeleton({ width, height, borderRadius = 8, className = "" }: Sk
   }, [opacity]);
 
   return (
-    <View className={className}>
+    <View
+      className={className}
+      accessibilityLabel="読み込み中"
+      accessibilityHint="コンテンツを読み込んでいます"
+      accessible={true}
+    >
       <Animated.View
         style={{
           width,

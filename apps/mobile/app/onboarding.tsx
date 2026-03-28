@@ -87,20 +87,34 @@ export default function OnboardingScreen() {
       </ScrollView>
 
       {/* ページインジケーター */}
-      <View testID="page-indicator" className="flex-row items-center justify-center py-4">
+      <View
+        testID="page-indicator"
+        className="flex-row items-center justify-center py-4"
+        accessibilityLabel={`${currentIndex + 1}ページ目（全${PAGE_COUNT}ページ）`}
+        accessible={true}
+      >
         {ONBOARDING_PAGES.map((page, index) => (
           <View
             key={page.id}
             className={`mx-1 h-2 rounded-full ${
               index === currentIndex ? "w-6 bg-stone-700" : "w-2 bg-stone-300"
             }`}
+            accessibilityElementsHidden={true}
+            importantForAccessibility="no-hide-descendants"
           />
         ))}
       </View>
 
       {/* ボタンエリア */}
       <View className="flex-row items-center justify-between px-6 pb-12 pt-2">
-        <Pressable testID="skip-button" onPress={handleSkip} className="px-4 py-3">
+        <Pressable
+          testID="skip-button"
+          onPress={handleSkip}
+          className="px-4 py-3"
+          accessibilityRole="button"
+          accessibilityLabel="スキップ"
+          accessibilityHint="オンボーディングをスキップしてログイン画面に進みます"
+        >
           <Text className="text-base text-stone-500">スキップ</Text>
         </Pressable>
 
@@ -109,6 +123,9 @@ export default function OnboardingScreen() {
             testID="finish-button"
             onPress={handleFinish}
             className="rounded-xl bg-stone-800 px-8 py-3"
+            accessibilityRole="button"
+            accessibilityLabel="始める"
+            accessibilityHint="アカウント作成画面に進みます"
           >
             <Text className="text-base font-semibold text-white">始める</Text>
           </Pressable>
@@ -117,6 +134,9 @@ export default function OnboardingScreen() {
             testID="next-button"
             onPress={handleNext}
             className="rounded-xl bg-stone-800 px-8 py-3"
+            accessibilityRole="button"
+            accessibilityLabel="次へ"
+            accessibilityHint={`次のページ（${currentIndex + 2}ページ目）に進みます`}
           >
             <Text className="text-base font-semibold text-white">次へ</Text>
           </Pressable>

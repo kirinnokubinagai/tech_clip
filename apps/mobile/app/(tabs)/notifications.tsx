@@ -87,6 +87,9 @@ export default function NotificationsScreen() {
             testID="retry-button"
             onPress={() => refetch()}
             className="mt-4 flex-row items-center gap-2"
+            accessibilityRole="button"
+            accessibilityLabel="再試行"
+            accessibilityHint="通知の取得を再試行します"
           >
             <RefreshCw size={HEADER_ICON_SIZE} color={LOADING_COLOR} />
             <Text className="text-primary">再試行</Text>
