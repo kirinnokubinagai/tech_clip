@@ -18,9 +18,7 @@ describe("FollowButton", () => {
   describe("未フォロー状態", () => {
     it("フォローするボタンが表示されること", () => {
       // Arrange & Act
-      const { UNSAFE_root } = render(
-        <FollowButton userId="user-1" isFollowing={false} />,
-      );
+      const { UNSAFE_root } = render(<FollowButton userId="user-1" isFollowing={false} />);
 
       // Assert
       const label = findByTestId(UNSAFE_root, "follow-button-label");
@@ -29,9 +27,7 @@ describe("FollowButton", () => {
 
     it("accessibilityLabelがフォローするになっていること", () => {
       // Arrange & Act
-      const { UNSAFE_root } = render(
-        <FollowButton userId="user-1" isFollowing={false} />,
-      );
+      const { UNSAFE_root } = render(<FollowButton userId="user-1" isFollowing={false} />);
 
       // Assert
       const button = findByTestId(UNSAFE_root, "follow-button");
@@ -42,9 +38,7 @@ describe("FollowButton", () => {
   describe("フォロー済み状態", () => {
     it("フォロー中ボタンが表示されること", () => {
       // Arrange & Act
-      const { UNSAFE_root } = render(
-        <FollowButton userId="user-1" isFollowing={true} />,
-      );
+      const { UNSAFE_root } = render(<FollowButton userId="user-1" isFollowing={true} />);
 
       // Assert
       const label = findByTestId(UNSAFE_root, "follow-button-label");
@@ -53,9 +47,7 @@ describe("FollowButton", () => {
 
     it("accessibilityLabelがフォロー解除になっていること", () => {
       // Arrange & Act
-      const { UNSAFE_root } = render(
-        <FollowButton userId="user-1" isFollowing={true} />,
-      );
+      const { UNSAFE_root } = render(<FollowButton userId="user-1" isFollowing={true} />);
 
       // Assert
       const button = findByTestId(UNSAFE_root, "follow-button");
@@ -99,9 +91,7 @@ describe("FollowButton", () => {
 
     it("onToggleが未指定の場合でもボタンタップできること", async () => {
       // Arrange
-      const { UNSAFE_root } = render(
-        <FollowButton userId="user-1" isFollowing={false} />,
-      );
+      const { UNSAFE_root } = render(<FollowButton userId="user-1" isFollowing={false} />);
 
       // Act & Assert（エラーが発生しないこと）
       await act(async () => {

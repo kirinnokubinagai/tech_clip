@@ -86,7 +86,9 @@ describe("ProfileHeader", () => {
 
     it("フォールバック表示時に名前の頭文字が表示されること", () => {
       // Arrange & Act
-      const { UNSAFE_getAllByType } = render(<ProfileHeader user={{ ...BASE_USER, avatarUrl: null }} />);
+      const { UNSAFE_getAllByType } = render(
+        <ProfileHeader user={{ ...BASE_USER, avatarUrl: null }} />,
+      );
       const texts = UNSAFE_getAllByType(Text).map((n) => n.props.children);
 
       // Assert（"テス" = 最初の2文字が頭文字として表示される）

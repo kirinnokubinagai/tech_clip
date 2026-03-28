@@ -1,3 +1,10 @@
+declare const process: {
+  env: Record<string, string | undefined>;
+  argv: string[];
+  stdout: { write: (s: string) => void };
+  stderr: { write: (s: string) => void };
+  exit: (code: number) => never;
+};
 import { createClient } from "@libsql/client";
 import { drizzle } from "drizzle-orm/libsql";
 import {

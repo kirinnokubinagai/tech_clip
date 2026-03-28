@@ -33,9 +33,7 @@ describe("ArticleCard", () => {
   describe("レンダリング", () => {
     it("記事カードが表示されること", () => {
       // Arrange & Act
-      const { UNSAFE_root } = render(
-        <ArticleCard article={BASE_ARTICLE} onPress={jest.fn()} />,
-      );
+      const { UNSAFE_root } = render(<ArticleCard article={BASE_ARTICLE} onPress={jest.fn()} />);
 
       // Assert
       expect(findByTestId(UNSAFE_root, "article-card")).toBeDefined();
@@ -46,7 +44,7 @@ describe("ArticleCard", () => {
       const { UNSAFE_getAllByType } = render(
         <ArticleCard article={BASE_ARTICLE} onPress={jest.fn()} />,
       );
-      const texts = UNSAFE_getAllByType(Text).map((n) => n.props.children).flat();
+      const texts = UNSAFE_getAllByType(Text).flatMap((n) => n.props.children);
 
       // Assert
       expect(texts).toContain("TypeScriptの型システム入門");
@@ -57,7 +55,7 @@ describe("ArticleCard", () => {
       const { UNSAFE_getAllByType } = render(
         <ArticleCard article={BASE_ARTICLE} onPress={jest.fn()} />,
       );
-      const texts = UNSAFE_getAllByType(Text).map((n) => n.props.children).flat();
+      const texts = UNSAFE_getAllByType(Text).flatMap((n) => n.props.children);
 
       // Assert
       expect(texts).toContain("zenn");
@@ -68,7 +66,7 @@ describe("ArticleCard", () => {
       const { UNSAFE_getAllByType } = render(
         <ArticleCard article={BASE_ARTICLE} onPress={jest.fn()} />,
       );
-      const texts = UNSAFE_getAllByType(Text).map((n) => n.props.children).flat();
+      const texts = UNSAFE_getAllByType(Text).flatMap((n) => n.props.children);
 
       // Assert
       expect(texts).toContain("テスト著者");
@@ -79,7 +77,7 @@ describe("ArticleCard", () => {
       const { UNSAFE_getAllByType } = render(
         <ArticleCard article={BASE_ARTICLE} onPress={jest.fn()} />,
       );
-      const texts = UNSAFE_getAllByType(Text).map((n) => n.props.children).flat();
+      const texts = UNSAFE_getAllByType(Text).flatMap((n) => n.props.children);
 
       // Assert
       expect(texts).toContain("TypeScriptの型システムについて解説します。");
@@ -90,7 +88,7 @@ describe("ArticleCard", () => {
       const { UNSAFE_getAllByType } = render(
         <ArticleCard article={BASE_ARTICLE} onPress={jest.fn()} />,
       );
-      const texts = UNSAFE_getAllByType(Text).map((n) => n.props.children).flat();
+      const texts = UNSAFE_getAllByType(Text).flatMap((n) => n.props.children);
 
       // Assert
       expect(texts).toContain("2024/01/15");
@@ -124,7 +122,7 @@ describe("ArticleCard", () => {
       const { UNSAFE_getAllByType } = render(
         <ArticleCard article={{ ...BASE_ARTICLE, author: null }} onPress={jest.fn()} />,
       );
-      const texts = UNSAFE_getAllByType(Text).map((n) => n.props.children).flat();
+      const texts = UNSAFE_getAllByType(Text).flatMap((n) => n.props.children);
 
       // Assert
       expect(texts).not.toContain("テスト著者");
@@ -135,7 +133,7 @@ describe("ArticleCard", () => {
       const { UNSAFE_getAllByType } = render(
         <ArticleCard article={{ ...BASE_ARTICLE, publishedAt: null }} onPress={jest.fn()} />,
       );
-      const texts = UNSAFE_getAllByType(Text).map((n) => n.props.children).flat();
+      const texts = UNSAFE_getAllByType(Text).flatMap((n) => n.props.children);
 
       // Assert
       expect(texts).not.toContain("2024/01/15");
@@ -145,9 +143,7 @@ describe("ArticleCard", () => {
   describe("お気に入りボタン", () => {
     it("onToggleFavoriteが未指定の場合お気に入りボタンが表示されないこと", () => {
       // Arrange & Act
-      const { UNSAFE_root } = render(
-        <ArticleCard article={BASE_ARTICLE} onPress={jest.fn()} />,
-      );
+      const { UNSAFE_root } = render(<ArticleCard article={BASE_ARTICLE} onPress={jest.fn()} />);
 
       // Assert
       expect(queryByTestId(UNSAFE_root, "favorite-button")).toBeNull();
@@ -156,11 +152,7 @@ describe("ArticleCard", () => {
     it("onToggleFavoriteが指定された場合お気に入りボタンが表示されること", () => {
       // Arrange & Act
       const { UNSAFE_root } = render(
-        <ArticleCard
-          article={BASE_ARTICLE}
-          onPress={jest.fn()}
-          onToggleFavorite={jest.fn()}
-        />,
+        <ArticleCard article={BASE_ARTICLE} onPress={jest.fn()} onToggleFavorite={jest.fn()} />,
       );
 
       // Assert
@@ -218,9 +210,7 @@ describe("ArticleCard", () => {
     it("カードタップ時にonPressが呼ばれること", () => {
       // Arrange
       const onPress = jest.fn();
-      const { UNSAFE_root } = render(
-        <ArticleCard article={BASE_ARTICLE} onPress={onPress} />,
-      );
+      const { UNSAFE_root } = render(<ArticleCard article={BASE_ARTICLE} onPress={onPress} />);
 
       // Act
       fireEvent.press(findByTestId(UNSAFE_root, "article-card"));
@@ -233,9 +223,7 @@ describe("ArticleCard", () => {
   describe("アクセシビリティ", () => {
     it("カードにaccessibilityLabelが設定されていること", () => {
       // Arrange & Act
-      const { UNSAFE_root } = render(
-        <ArticleCard article={BASE_ARTICLE} onPress={jest.fn()} />,
-      );
+      const { UNSAFE_root } = render(<ArticleCard article={BASE_ARTICLE} onPress={jest.fn()} />);
 
       // Assert
       const card = findByTestId(UNSAFE_root, "article-card");

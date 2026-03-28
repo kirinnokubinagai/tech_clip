@@ -204,10 +204,9 @@ describe("summarizeArticle", () => {
 
   it("ポーリング回数上限に達した場合にタイムアウトエラーをスローすること", async () => {
     // Arrange: 常にIN_QUEUEを返す（COMPLETEDにならない）
-    const inQueueResponse = new Response(
-      JSON.stringify({ status: "IN_QUEUE" }),
-      { status: HTTP_OK },
-    );
+    const inQueueResponse = new Response(JSON.stringify({ status: "IN_QUEUE" }), {
+      status: HTTP_OK,
+    });
     const mockFetch = vi
       .fn()
       .mockResolvedValueOnce(
