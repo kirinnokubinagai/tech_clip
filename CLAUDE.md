@@ -299,59 +299,71 @@ Closes #<issue番号>
 
 ---
 
-## Agent Teams 構成
+## マージフロー（必須）
 
-### 有効化
+PRマージは以下の手順に従うこと。レビューなしでのマージは禁止。
 
-settings.jsonで `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1` を設定済み。
+### 自動化されたフロー
 
-### チーム構成
+1. 実装エージェントがPR作成（**マージはしない**）
+2. code-review エージェントがPRをレビュー
+3. 重大な問題があれば修正してから再レビュー
+4. `scripts/review-and-merge.sh <PR番号>` でマージ
 
-#### 1. TDDチーム（新機能開発）
-
-```
-Test Agent ──→ Impl Agent
-```
-
-| Agent | 担当 | Worktree |
-|-------|------|----------|
-| Test | テスト作成 → コミット（RED確定） | .worktrees/test |
-| Impl | 実装 + 独立検証（GREEN + REFACTOR） | .worktrees/impl |
-
-**ルール**:
-- テストを先にコミットしてからImplに渡す（テスト改ざん防止）
-- Implは独立検証で過適合を防ぐ
-
-#### 2. コードレビューチーム
-
-```
-Bug Hunter + Verifier + Ranker → 統合レポート
+```bash
+# 使用例
+bash scripts/review-and-merge.sh 123
 ```
 
-| Agent | 担当 |
-|-------|------|
-| Bug Hunter | バグ・問題検出（並列） |
-| Verifier | 検出結果の検証（偽陽性除去） |
-| Ranker | 重要度判定・優先順位付け |
+### 実装エージェントへの指示テンプレート
 
-**出力**: PRに1つのサマリーコメント + インラインコメント
-
-#### 3. セキュリティ監査チーム
+実装エージェント（executor）に以下を含めること:
 
 ```
-Security + Performance + Coverage → 統合レポート
+PR作成後、以下の手順でレビュー→マージまで自律的に完了させること:
+1. PR作成（/finish スキル準拠）
+2. Agent(subagent_type="code-reviewer") を起動し、PR diffをレビュー
+3. 重大な指摘があれば修正→再push
+4. scripts/safe-merge.sh <PR番号> でマージ
 ```
 
-| Agent | 担当 |
-|-------|------|
-| Security | 脆弱性検出（OWASP Top 10） |
-| Performance | ボトルネック検出 |
-| Coverage | テストギャップ検出 |
+### 禁止事項
 
-**出力**: 単一セキュリティレポート
+- レビューなしでのマージ
+- `gh pr merge` を直接呼ぶこと（必ず `scripts/safe-merge.sh` 経由）
+- CI失敗・コンフリクト状態でのマージ
 
-### チーム運用ルール
+---
 
-- **小さく保つ**: 2-3エージェントで狭いスコープが最適
-- **Plan-first**: 計画なしでコードに飛び込まない
-- **コンテキスト共有**: チームメイトは会話履歴を継承しないため、spawn時に必要な情報を渡す
+## エージェント構成
+
+### 許可エージェント（settings.json で制御）
+
+| エージェント | 用途 | 対応スキル |
+|-------------|------|-----------|
+| `executor` | 実装・修正・リファクタ | `/new-feature`, `/finish` |
+| `code-reviewer` | コードレビュー | `/review/code-review` |
+| `Explore` | コードベース探索 | - |
+| `Plan` | 設計・計画 | - |
+| `general-purpose` | 汎用タスク | - |
+
+上記以外のエージェントタイプは settings.json の allow リストにないため起動不可。
+
+### 実装→レビュー→マージフロー
+
+```
+executor (実装)
+  ├── TDD実装（/new-feature スキル）
+  ├── biome check
+  ├── コミット・push・PR作成（/finish スキル）
+  ├── Agent(code-reviewer) を起動（/review/code-review スキル）
+  │     └── レビュー結果を返す
+  ├── HIGH以上の指摘 → 修正→再push→再レビュー
+  └── scripts/safe-merge.sh <PR番号> でマージ
+```
+
+### 並列実装時のルール
+
+- 各 executor は独立した worktree で作業
+- マージ順序はコンフリクト防止ルール（下記）に従う
+- executor 同士は互いのファイルを変更しない
