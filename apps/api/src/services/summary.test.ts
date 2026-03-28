@@ -150,6 +150,91 @@ describe("summarizeArticle", () => {
     ).rejects.toThrow("要約の生成に失敗しました");
   });
 
+  it("ポーリング中にステータスAPIがエラーを返した場合にエラーをスローすること", async () => {
+    // Arrange
+    const mockFetch = vi
+      .fn()
+      .mockResolvedValueOnce(
+        new Response(JSON.stringify({ id: "run_abc123", status: "IN_QUEUE" }), {
+          status: HTTP_OK,
+        }),
+      )
+      .mockResolvedValueOnce(
+        new Response(JSON.stringify({ error: "Internal Server Error" }), {
+          status: 500,
+        }),
+      );
+
+    // Act & Assert
+    await expect(
+      summarizeArticle({
+        content: MOCK_CONTENT,
+        language: "ja",
+        config: MOCK_CONFIG,
+        fetchFn: mockFetch,
+      }),
+    ).rejects.toThrow("要約の生成に失敗しました");
+  });
+
+  it("ジョブがFAILEDステータスになった場合にエラーをスローすること", async () => {
+    // Arrange
+    const mockFetch = vi
+      .fn()
+      .mockResolvedValueOnce(
+        new Response(JSON.stringify({ id: "run_abc123", status: "IN_QUEUE" }), {
+          status: HTTP_OK,
+        }),
+      )
+      .mockResolvedValueOnce(
+        new Response(JSON.stringify({ status: "FAILED" }), {
+          status: HTTP_OK,
+        }),
+      );
+
+    // Act & Assert
+    await expect(
+      summarizeArticle({
+        content: MOCK_CONTENT,
+        language: "ja",
+        config: MOCK_CONFIG,
+        fetchFn: mockFetch,
+      }),
+    ).rejects.toThrow("要約の生成に失敗しました");
+  });
+
+  it("ポーリング回数上限に達した場合にタイムアウトエラーをスローすること", async () => {
+    // Arrange: 常にIN_QUEUEを返す（COMPLETEDにならない）
+    const inQueueResponse = new Response(
+      JSON.stringify({ status: "IN_QUEUE" }),
+      { status: HTTP_OK },
+    );
+    const mockFetch = vi
+      .fn()
+      .mockResolvedValueOnce(
+        new Response(JSON.stringify({ id: "run_abc123", status: "IN_QUEUE" }), {
+          status: HTTP_OK,
+        }),
+      )
+      .mockResolvedValue(inQueueResponse);
+
+    vi.useFakeTimers();
+
+    // Act & Assert: expectでwrapしてからタイマーを進める
+    const assertion = expect(
+      summarizeArticle({
+        content: MOCK_CONTENT,
+        language: "ja",
+        config: MOCK_CONFIG,
+        fetchFn: mockFetch,
+      }),
+    ).rejects.toThrow("要約の生成に失敗しました");
+
+    await vi.runAllTimersAsync();
+    vi.useRealTimers();
+
+    await assertion;
+  }, 10000);
+
   it("戻り値がSummaryResult型であること", async () => {
     // Arrange
     const mockFetch = vi

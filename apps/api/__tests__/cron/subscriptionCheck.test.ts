@@ -1,8 +1,19 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
   type SubscriptionCheckDeps,
+  createSubscriptionCheckDeps,
   disableExpiredSubscriptions,
 } from "../../src/cron/subscriptionCheck";
+
+vi.mock("drizzle-orm", () => ({
+  and: vi.fn((...args: unknown[]) => ({ op: "and", args })),
+  eq: vi.fn((col: unknown, val: unknown) => ({ col, val, op: "eq" })),
+  lt: vi.fn((col: unknown, val: unknown) => ({ col, val, op: "lt" })),
+}));
+
+vi.mock("../../src/db/schema", () => ({
+  users: { isPremium: "isPremium", premiumExpiresAt: "premiumExpiresAt" },
+}));
 
 /** サブスクリプションチェックのテスト用モック */
 function createMockDeps(overrides?: Partial<SubscriptionCheckDeps>): SubscriptionCheckDeps {
@@ -86,5 +97,56 @@ describe("disableExpiredSubscriptions", () => {
       // Act & Assert
       await expect(disableExpiredSubscriptions(deps)).rejects.toThrow("DBエラーが発生しました");
     });
+  });
+});
+
+describe("createSubscriptionCheckDeps", () => {
+  it("SubscriptionCheckDepsインターフェースに適合したオブジェクトを返すこと", () => {
+    // Arrange
+    const mockDb = { update: vi.fn() };
+
+    // Act
+    const deps = createSubscriptionCheckDeps(mockDb);
+
+    // Assert
+    expect(deps).toHaveProperty("disableExpiredPremiumUsers");
+    expect(deps).toHaveProperty("getCurrentTimestamp");
+    expect(typeof deps.disableExpiredPremiumUsers).toBe("function");
+    expect(typeof deps.getCurrentTimestamp).toBe("function");
+  });
+
+  it("getCurrentTimestampがISO8601形式の文字列を返すこと", () => {
+    // Arrange
+    const mockDb = { update: vi.fn() };
+
+    // Act
+    const deps = createSubscriptionCheckDeps(mockDb);
+    const timestamp = deps.getCurrentTimestamp();
+
+    // Assert
+    expect(typeof timestamp).toBe("string");
+    expect(new Date(timestamp).toISOString()).toBe(timestamp);
+  });
+
+  it("disableExpiredPremiumUsersがDBのupdateを呼び出して更新件数を返すこと", async () => {
+    // Arrange
+    const updatedRows = [{}, {}];
+    const mockReturning = vi.fn().mockResolvedValue(updatedRows);
+    const mockWhere = vi.fn().mockReturnValue({ returning: mockReturning });
+    const mockSet = vi.fn().mockReturnValue({ where: mockWhere });
+    const mockUpdate = vi.fn().mockReturnValue({ set: mockSet });
+    const mockDb = { update: mockUpdate };
+    const deps = createSubscriptionCheckDeps(mockDb);
+
+    // Act
+    const count = await deps.disableExpiredPremiumUsers({
+      isPremium: false,
+      currentTimestamp: "2024-02-01T00:00:00.000Z",
+    });
+
+    // Assert
+    expect(count).toBe(2);
+    expect(mockUpdate).toHaveBeenCalled();
+    expect(mockSet).toHaveBeenCalledWith({ isPremium: false });
   });
 });
