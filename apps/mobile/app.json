@@ -7,7 +7,11 @@
     "orientation": "portrait",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
-    "platforms": ["ios", "android", "web"],
+    "platforms": [
+      "ios",
+      "android",
+      "web"
+    ],
     "icon": "./assets/images/icon.svg",
     "splash": {
       "image": "./assets/images/splash-icon.svg",
@@ -16,14 +20,16 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.techclip.app"
+      "bundleIdentifier": "com.techclip.app",
+      "buildNumber": "1"
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.svg",
         "backgroundColor": "#0c0a09"
       },
-      "package": "com.techclip.app"
+      "package": "com.techclip.app",
+      "versionCode": 1
     },
     "web": {
       "bundler": "metro",
@@ -38,7 +44,9 @@
             "NSExtensionActivationSupportsWebURLWithMaxCount": 1,
             "NSExtensionActivationSupportsWebPageWithMaxCount": 1
           },
-          "androidIntentFilters": ["text/*"]
+          "androidIntentFilters": [
+            "text/*"
+          ]
         }
       ]
     ]

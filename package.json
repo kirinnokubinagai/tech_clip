@@ -1,5 +1,6 @@
 {
   "name": "tech-clip",
+  "version": "0.0.1",
   "private": true,
   "packageManager": "pnpm@10.7.1",
   "scripts": {
