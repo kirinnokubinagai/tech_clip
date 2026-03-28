@@ -1,15 +1,18 @@
+/** lucide-react-nativeのモック */
 const React = require("react");
 const { View } = require("react-native");
 
-/** lucide-react-nativeのモック: SVGネイティブモジュール不要のダミーアイコン */
-const MockIcon = () => React.createElement(View, { testID: "mock-icon" });
+/** アイコンコンポーネントのモックファクトリ */
+const createMockIcon = (name) => {
+  const Icon = ({ testID, size, color, fill }) =>
+    React.createElement(View, { testID, accessibilityLabel: name });
+  Icon.displayName = name;
+  return Icon;
+};
 
 module.exports = new Proxy(
   {},
   {
-    get: (_target, name) => {
-      if (name === "__esModule") return true;
-      return MockIcon;
-    },
+    get: (_, name) => createMockIcon(String(name)),
   },
 );

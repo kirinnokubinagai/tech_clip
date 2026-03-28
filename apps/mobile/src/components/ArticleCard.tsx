@@ -1,5 +1,6 @@
 import { Image } from "expo-image";
 import { Heart } from "lucide-react-native";
+import { memo } from "react";
 import { Pressable, Text, View } from "react-native";
 
 import { Badge } from "@/components/ui";
@@ -73,12 +74,17 @@ function formatPublishedDate(isoString: string): string {
  *
  * 記事一覧で使用するカード型UIコンポーネント。
  * サムネイル、タイトル、ソースバッジ、著者、公開日、概要、お気に入りアイコンを表示する。
+ * React.memoでラップし、propsが変化しない限り再レンダリングを防ぐ。
  *
  * @param article - 表示する記事データ
  * @param onPress - カードタップ時のコールバック
  * @param onToggleFavorite - お気に入りトグル時のコールバック
  */
-export function ArticleCard({ article, onPress, onToggleFavorite }: ArticleCardProps) {
+export const ArticleCard = memo(function ArticleCard({
+  article,
+  onPress,
+  onToggleFavorite,
+}: ArticleCardProps) {
   return (
     <Pressable
       testID="article-card"
@@ -93,6 +99,7 @@ export function ArticleCard({ article, onPress, onToggleFavorite }: ArticleCardP
           source={{ uri: article.thumbnailUrl }}
           style={{ width: "100%", height: THUMBNAIL_HEIGHT }}
           contentFit="cover"
+          cachePolicy="memory-disk"
         />
       )}
 
@@ -122,6 +129,7 @@ export function ArticleCard({ article, onPress, onToggleFavorite }: ArticleCardP
           <View className="flex-row justify-end pt-1">
             <Pressable
               testID="favorite-button"
+              nativeID="favorite-button"
               onPress={onToggleFavorite}
               accessibilityRole="button"
               accessibilityLabel={article.isFavorite ? "お気に入り解除" : "お気に入り追加"}
@@ -147,4 +155,4 @@ export function ArticleCard({ article, onPress, onToggleFavorite }: ArticleCardP
       </View>
     </Pressable>
   );
-}
+});
