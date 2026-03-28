@@ -38,6 +38,13 @@ export async function sendEmail(
   subject: string,
   htmlBody: string,
 ): Promise<SendEmailResult> {
+  if (!env.RESEND_API_KEY) {
+    throw new Error("RESEND_API_KEY が設定されていません");
+  }
+  if (!env.FROM_EMAIL) {
+    throw new Error("FROM_EMAIL が設定されていません");
+  }
+
   const apiKey = env.RESEND_API_KEY;
   const fromEmail = env.FROM_EMAIL;
 

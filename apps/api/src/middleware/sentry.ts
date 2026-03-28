@@ -128,14 +128,17 @@ export function createSentryMiddleware(
   fetchFn: typeof fetch = fetch,
 ): MiddlewareHandler<{ Bindings: SentryBindings }> {
   return async (c, next) => {
-    try {
-      await next();
-    } catch (err) {
-      const dsn = c.env?.SENTRY_DSN;
-      if (dsn && err instanceof Error) {
-        await captureError(dsn, err, fetchFn);
-      }
-      throw err;
+    await next();
+    const err = c.error;
+    if (!err) {
+      return;
+    }
+    const dsn = c.env?.SENTRY_DSN;
+    if (!dsn) {
+      return;
+    }
+    if (err instanceof Error) {
+      await captureError(dsn, err, fetchFn);
     }
   };
 }

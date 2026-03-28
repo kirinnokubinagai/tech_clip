@@ -168,6 +168,7 @@ describe("POST /api/auth/forgot-password", () => {
       // Assert
       expect(sendPasswordReset).toHaveBeenCalledOnce();
       expect(sendPasswordReset).toHaveBeenCalledWith(
+        expect.objectContaining({ RESEND_API_KEY: expect.any(String) }),
         "test@example.com",
         "テストユーザー",
         expect.stringContaining("https://app.example.com"),

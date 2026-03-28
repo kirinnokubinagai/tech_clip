@@ -256,6 +256,20 @@ export function createAiRoute(options: AiRouteOptions) {
 
     const targetLanguage = c.req.query("targetLanguage");
 
+    if (!targetLanguage) {
+      return c.json(
+        {
+          success: false,
+          error: {
+            code: VALIDATION_ERROR_CODE,
+            message: VALIDATION_ERROR_MESSAGE,
+            details: [{ field: "targetLanguage", message: "targetLanguageは必須です" }],
+          },
+        },
+        HTTP_UNPROCESSABLE_ENTITY,
+      );
+    }
+
     const articleId = c.req.param("id");
 
     const articleResults = await db.select().from(articles).where(eq(articles.id, articleId));
