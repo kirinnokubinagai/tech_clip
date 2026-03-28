@@ -1,8 +1,8 @@
 import { useRouter } from "expo-router";
 import { Filter, Heart, RefreshCw } from "lucide-react-native";
 import { useCallback, useMemo, useState } from "react";
-import { ActivityIndicator, FlatList, Pressable, RefreshControl, Text, View } from "react-native";
 import { useTranslation } from "react-i18next";
+import { ActivityIndicator, FlatList, Pressable, RefreshControl, Text, View } from "react-native";
 
 import { ArticleCard } from "@/components/ArticleCard";
 import { useArticles, useToggleFavorite } from "@/hooks/use-articles";
@@ -24,7 +24,11 @@ const FAVORITE_INACTIVE_COLOR = "#94a3b8";
 const FILTER_ICON_SIZE = 16;
 
 /** ソースフィルターの選択肢（固有名詞はそのまま、「すべて」のみ翻訳） */
-const SOURCE_FILTER_STATIC: { value: ArticleSource | undefined; staticLabel?: string; i18nKey?: string }[] = [
+const SOURCE_FILTER_STATIC: {
+  value: ArticleSource | undefined;
+  staticLabel?: string;
+  i18nKey?: string;
+}[] = [
   { i18nKey: "home.filterAll", value: undefined },
   { staticLabel: "Zenn", value: "zenn" },
   { staticLabel: "Qiita", value: "qiita" },
@@ -182,9 +186,7 @@ export default function HomeScreen() {
             }}
             accessibilityRole="button"
             accessibilityLabel={
-              isFavoriteOnly
-                ? t("home.favoritesFilterClearLabel")
-                : t("home.favoritesFilterLabel")
+              isFavoriteOnly ? t("home.favoritesFilterClearLabel") : t("home.favoritesFilterLabel")
             }
           >
             <Heart

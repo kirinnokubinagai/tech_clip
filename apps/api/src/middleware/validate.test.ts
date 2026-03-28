@@ -35,7 +35,7 @@ const testSchema = z.object({
  * validateJson テスト用のHonoアプリを作成する
  */
 function createJsonTestApp() {
-  const app = new Hono();
+  const app = new Hono<{ Variables: { validatedBody: unknown } }>();
   app.post("/test", validateJson(testSchema), (c) => {
     const body = c.get("validatedBody");
     return c.json({ success: true, data: body });
@@ -51,7 +51,7 @@ function createQueryTestApp() {
     q: z.string().min(1, "検索キーワードを入力してください"),
     limit: z.coerce.number().int().min(1).max(50).optional(),
   });
-  const app = new Hono();
+  const app = new Hono<{ Variables: { validatedQuery: unknown } }>();
   app.get("/test", validateQuery(querySchema), (c) => {
     const query = c.get("validatedQuery");
     return c.json({ success: true, data: query });

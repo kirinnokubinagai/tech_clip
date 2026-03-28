@@ -86,6 +86,7 @@ function createTestApp() {
   const passwordResetRoute = createPasswordResetRoute({
     db: mockDb as never,
     appUrl: "https://app.example.com",
+    emailEnv: { RESEND_API_KEY: "test-key", FROM_EMAIL: "test@example.com" },
   });
   app.route("/api/auth", passwordResetRoute);
   return app;

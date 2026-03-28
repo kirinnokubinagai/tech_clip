@@ -25,6 +25,8 @@ type Bindings = {
   APPLE_CLIENT_SECRET: string;
   GITHUB_CLIENT_ID: string;
   GITHUB_CLIENT_SECRET: string;
+  RESEND_API_KEY: string;
+  FROM_EMAIL: string;
   /** レート制限用 Workers KV namespace */
   RATE_LIMIT: KVNamespace;
   /** キャッシュ用 Workers KV namespace */
@@ -58,7 +60,11 @@ app.post("/api/auth/send-verification", async (c) => {
   });
   const appUrl =
     c.env.ENVIRONMENT === "production" ? "https://app.techclip.io" : "http://localhost:8081";
-  const route = createEmailVerificationRoute({ db, appUrl });
+  const route = createEmailVerificationRoute({
+    db,
+    appUrl,
+    emailEnv: { RESEND_API_KEY: c.env.RESEND_API_KEY, FROM_EMAIL: c.env.FROM_EMAIL },
+  });
   const subApp = new Hono<{ Variables: { user?: Record<string, unknown> } }>();
   subApp.route("/api/auth", route);
   return subApp.fetch(c.req.raw);
@@ -71,7 +77,11 @@ app.post("/api/auth/verify-email", async (c) => {
   });
   const appUrl =
     c.env.ENVIRONMENT === "production" ? "https://app.techclip.io" : "http://localhost:8081";
-  const route = createEmailVerificationRoute({ db, appUrl });
+  const route = createEmailVerificationRoute({
+    db,
+    appUrl,
+    emailEnv: { RESEND_API_KEY: c.env.RESEND_API_KEY, FROM_EMAIL: c.env.FROM_EMAIL },
+  });
   const subApp = new Hono<{ Variables: { user?: Record<string, unknown> } }>();
   subApp.route("/api/auth", route);
   return subApp.fetch(c.req.raw);
@@ -92,6 +102,7 @@ app.on(["POST", "GET"], "/api/auth/**", async (c) => {
     const passwordResetRoute = createPasswordResetRoute({
       db,
       appUrl: c.env.APP_URL ?? "https://app.techclip.example.com",
+      emailEnv: { RESEND_API_KEY: c.env.RESEND_API_KEY, FROM_EMAIL: c.env.FROM_EMAIL },
     });
     const subApp = new Hono();
     subApp.route("/api/auth", passwordResetRoute);

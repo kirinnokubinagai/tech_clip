@@ -34,10 +34,7 @@
       "supportsTablet": true,
       "bundleIdentifier": "com.techclip.app",
       "buildNumber": "1",
-      "associatedDomains": [
-        "applinks:techclip.app",
-        "applinks:www.techclip.app"
-      ],
+      "associatedDomains": ["applinks:techclip.app", "applinks:www.techclip.app"],
       "infoPlist": {
         "NSUserTrackingUsageDescription": "広告をパーソナライズし、アプリのパフォーマンスを計測するために使用します。"
       }

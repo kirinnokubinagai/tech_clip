@@ -5,6 +5,7 @@ import { z } from "zod";
 import type { Database } from "../db";
 import { users, verifications } from "../db/schema";
 import { createLogger } from "../lib/logger";
+import type { EmailEnv } from "../services/emailService";
 import { sendEmailVerification } from "../services/emailService";
 
 const logger = createLogger();
@@ -47,13 +48,14 @@ const EMAIL_VERIFICATION_IDENTIFIER_PREFIX = "email-verification";
 
 /** トークン検証スキーマ */
 const VerifyEmailSchema = z.object({
-  token: z.string({ required_error: "tokenは必須です" }).min(1, "tokenは必須です"),
+  token: z.string({ error: "tokenは必須です" }).min(1, "tokenは必須です"),
 });
 
 /** createEmailVerificationRouteのオプション */
 type EmailVerificationRouteOptions = {
   db: Database;
   appUrl: string;
+  emailEnv: EmailEnv;
 };
 
 /**
@@ -66,7 +68,7 @@ type EmailVerificationRouteOptions = {
  * @returns Hono ルーターインスタンス
  */
 export function createEmailVerificationRoute(options: EmailVerificationRouteOptions) {
-  const { db, appUrl } = options;
+  const { db, appUrl, emailEnv } = options;
   const route = new Hono<{ Variables: { user?: Record<string, unknown> } }>();
 
   route.post("/send-verification", async (c) => {
@@ -120,6 +122,7 @@ export function createEmailVerificationRoute(options: EmailVerificationRouteOpti
 
     try {
       await sendEmailVerification(
+        emailEnv,
         (found as unknown as Record<string, unknown>).email as string,
         userName ?? "",
         verifyUrl,

@@ -88,6 +88,7 @@ function createApp(user?: Record<string, unknown>) {
   const route = createEmailVerificationRoute({
     db: mockDb,
     appUrl: "https://app.example.com",
+    emailEnv: { RESEND_API_KEY: "test-key", FROM_EMAIL: "test@example.com" },
   });
   app.route("/api/auth", route);
   return app;

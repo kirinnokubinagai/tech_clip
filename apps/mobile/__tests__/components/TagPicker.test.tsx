@@ -84,11 +84,7 @@ describe("TagPicker", () => {
     it("選択済みタグにはa11yState.selectedがtrueになっていること", () => {
       // Arrange & Act
       const { UNSAFE_root } = render(
-        <TagPicker
-          tags={["TypeScript"]}
-          selectedTags={["TypeScript"]}
-          onToggleTag={jest.fn()}
-        />,
+        <TagPicker tags={["TypeScript"]} selectedTags={["TypeScript"]} onToggleTag={jest.fn()} />,
       );
 
       // Assert
@@ -161,12 +157,7 @@ describe("TagPicker", () => {
       // Arrange
       const onAddTag = jest.fn();
       const { UNSAFE_root } = render(
-        <TagPicker
-          tags={[]}
-          selectedTags={[]}
-          onToggleTag={jest.fn()}
-          onAddTag={onAddTag}
-        />,
+        <TagPicker tags={[]} selectedTags={[]} onToggleTag={jest.fn()} onAddTag={onAddTag} />,
       );
 
       // Act
@@ -181,12 +172,7 @@ describe("TagPicker", () => {
       // Arrange
       const onAddTag = jest.fn();
       const { UNSAFE_root } = render(
-        <TagPicker
-          tags={[]}
-          selectedTags={[]}
-          onToggleTag={jest.fn()}
-          onAddTag={onAddTag}
-        />,
+        <TagPicker tags={[]} selectedTags={[]} onToggleTag={jest.fn()} onAddTag={onAddTag} />,
       );
 
       // Act
@@ -220,12 +206,7 @@ describe("TagPicker", () => {
     it("タグ追加後に入力欄がクリアされること", () => {
       // Arrange
       const { UNSAFE_root } = render(
-        <TagPicker
-          tags={[]}
-          selectedTags={[]}
-          onToggleTag={jest.fn()}
-          onAddTag={jest.fn()}
-        />,
+        <TagPicker tags={[]} selectedTags={[]} onToggleTag={jest.fn()} onAddTag={jest.fn()} />,
       );
 
       // Act

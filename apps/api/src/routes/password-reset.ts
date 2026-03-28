@@ -5,6 +5,7 @@ import { z } from "zod";
 import type { Database } from "../db";
 import { accounts, users, verifications } from "../db/schema";
 import { createLogger } from "../lib/logger";
+import type { EmailEnv } from "../services/emailService";
 import { sendPasswordReset } from "../services/emailService";
 
 const logger = createLogger();
@@ -56,16 +57,16 @@ const RESET_TOKEN_IDENTIFIER_PREFIX = "password-reset:";
 /** forgot-password リクエストスキーマ */
 const ForgotPasswordSchema = z.object({
   email: z
-    .string({ required_error: "メールアドレスは必須です" })
+    .string({ error: "メールアドレスは必須です" })
     .email("メールアドレスの形式が正しくありません")
     .max(EMAIL_MAX_LENGTH, `メールアドレスは${EMAIL_MAX_LENGTH}文字以内で入力してください`),
 });
 
 /** reset-password リクエストスキーマ */
 const ResetPasswordSchema = z.object({
-  token: z.string({ required_error: "トークンは必須です" }).min(1, "トークンは必須です"),
+  token: z.string({ error: "トークンは必須です" }).min(1, "トークンは必須です"),
   password: z
-    .string({ required_error: "パスワードは必須です" })
+    .string({ error: "パスワードは必須です" })
     .min(PASSWORD_MIN_LENGTH, `パスワードは${PASSWORD_MIN_LENGTH}文字以上で入力してください`)
     .max(PASSWORD_MAX_LENGTH, `パスワードは${PASSWORD_MAX_LENGTH}文字以内で入力してください`),
 });
@@ -74,6 +75,7 @@ const ResetPasswordSchema = z.object({
 type PasswordResetRouteOptions = {
   db: Database;
   appUrl: string;
+  emailEnv: EmailEnv;
 };
 
 /**
@@ -103,7 +105,7 @@ async function hashToken(token: string): Promise<string> {
  * @returns Hono ルーターインスタンス
  */
 export function createPasswordResetRoute(options: PasswordResetRouteOptions) {
-  const { db, appUrl } = options;
+  const { db, appUrl, emailEnv } = options;
   const route = new Hono();
 
   route.post("/forgot-password", async (c) => {
@@ -155,7 +157,7 @@ export function createPasswordResetRoute(options: PasswordResetRouteOptions) {
     const resetUrl = `${appUrl}/reset-password?token=${rawToken}&email=${encodeURIComponent(email)}`;
 
     try {
-      await sendPasswordReset(email, user.name ?? email, resetUrl);
+      await sendPasswordReset(emailEnv, email, user.name ?? email, resetUrl);
     } catch (error) {
       logger.error("パスワードリセットメール送信に失敗しました", { email, error });
       return c.json(

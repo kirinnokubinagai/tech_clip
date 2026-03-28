@@ -16,24 +16,16 @@ export type NotificationItem = {
   body: string;
 };
 
-/**
- * 環境変数を取得する
- *
- * @param name - 環境変数名
- * @returns 環境変数の値
- * @throws 環境変数が未設定の場合
- */
-function requireEnv(name: string): string {
-  const value = process.env[name];
-  if (!value) {
-    throw new Error(`環境変数 ${name} が設定されていません`);
-  }
-  return value;
-}
+/** メール送信に必要な環境変数 */
+export type EmailEnv = {
+  RESEND_API_KEY: string;
+  FROM_EMAIL: string;
+};
 
 /**
  * Resend API を使ってメールを送信する
  *
+ * @param env - 環境変数（RESEND_API_KEY, FROM_EMAIL）
  * @param to - 宛先メールアドレス
  * @param subject - 件名
  * @param htmlBody - HTMLボディ
@@ -41,12 +33,13 @@ function requireEnv(name: string): string {
  * @throws メール送信に失敗した場合
  */
 export async function sendEmail(
+  env: EmailEnv,
   to: string,
   subject: string,
   htmlBody: string,
 ): Promise<SendEmailResult> {
-  const apiKey = requireEnv("RESEND_API_KEY");
-  const fromEmail = requireEnv("FROM_EMAIL");
+  const apiKey = env.RESEND_API_KEY;
+  const fromEmail = env.FROM_EMAIL;
 
   const response = await fetch(RESEND_API_ENDPOINT, {
     method: "POST",
@@ -154,47 +147,52 @@ function buildNotificationDigestHtml(userName: string, notifications: Notificati
  * @returns 送信結果
  */
 export async function sendPasswordReset(
+  env: EmailEnv,
   to: string,
   userName: string,
   resetUrl: string,
 ): Promise<SendEmailResult> {
   const subject = "パスワードリセットのご案内";
   const html = buildPasswordResetHtml(userName, resetUrl);
-  return sendEmail(to, subject, html);
+  return sendEmail(env, to, subject, html);
 }
 
 /**
  * メールアドレス認証メールを送信する
  *
+ * @param env - 環境変数（RESEND_API_KEY, FROM_EMAIL）
  * @param to - 宛先メールアドレス
  * @param userName - ユーザー名
  * @param verifyUrl - メール認証URL
  * @returns 送信結果
  */
 export async function sendEmailVerification(
+  env: EmailEnv,
   to: string,
   userName: string,
   verifyUrl: string,
 ): Promise<SendEmailResult> {
   const subject = "メールアドレス認証のご案内";
   const html = buildEmailVerificationHtml(userName, verifyUrl);
-  return sendEmail(to, subject, html);
+  return sendEmail(env, to, subject, html);
 }
 
 /**
  * 通知ダイジェストメールを送信する
  *
+ * @param env - 環境変数（RESEND_API_KEY, FROM_EMAIL）
  * @param to - 宛先メールアドレス
  * @param userName - ユーザー名
  * @param notifications - 通知アイテムのリスト
  * @returns 送信結果
  */
 export async function sendNotificationDigest(
+  env: EmailEnv,
   to: string,
   userName: string,
   notifications: NotificationItem[],
 ): Promise<SendEmailResult> {
   const subject = "通知ダイジェスト";
   const html = buildNotificationDigestHtml(userName, notifications);
-  return sendEmail(to, subject, html);
+  return sendEmail(env, to, subject, html);
 }

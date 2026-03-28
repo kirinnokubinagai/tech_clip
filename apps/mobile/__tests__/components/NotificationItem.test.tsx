@@ -5,9 +5,7 @@ import { NotificationItem } from "../../src/components/NotificationItem";
 import type { NotificationItemData } from "../../src/components/NotificationItem";
 
 /** テスト用通知データのファクトリ */
-function makeNotification(
-  overrides: Partial<NotificationItemData> = {},
-): NotificationItemData {
+function makeNotification(overrides: Partial<NotificationItemData> = {}): NotificationItemData {
   return {
     id: "notif-1",
     type: "like",

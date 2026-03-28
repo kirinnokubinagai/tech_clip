@@ -3,8 +3,7 @@ const React = require("react");
 module.exports = {
   styled: (component) => component,
   useColorScheme: () => ({ colorScheme: "light" }),
-  createInteropElement: (type, props, ...children) =>
-    React.createElement(type, props, ...children),
+  createInteropElement: (type, props, ...children) => React.createElement(type, props, ...children),
   cssInterop: () => {},
   remapProps: () => {},
   vars: () => ({}),
