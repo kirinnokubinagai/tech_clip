@@ -27,3 +27,6 @@ export type { Notification, NewNotification } from "./notifications";
 
 export { follows } from "./follows";
 export type { Follow, NewFollow } from "./follows";
+
+export { notificationSettings } from "./notification-settings";
+export type { NotificationSettings, NewNotificationSettings } from "./notification-settings";

@@ -1,0 +1,13 @@
+{
+  "version": "7",
+  "dialect": "sqlite",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "6",
+      "when": 1774676406248,
+      "tag": "0000_add_notification_settings_table",
+      "breakpoints": true
+    }
+  ]
+}
