@@ -1,7 +1,6 @@
 #!/bin/bash
-# merge-from-main.sh (旧 rebase-on-main.sh)
-# 現在のブランチにorigin/mainをマージし、pnpm-lock.yamlコンフリクトを自動解決する
-# rebaseではなくmergeを使用するため、force pushが不要
+# rebase-on-main.sh
+# 現在のブランチをorigin/mainにリベースし、pnpm-lock.yamlコンフリクトを自動解決する
 #
 # 使い方:
 #   scripts/rebase-on-main.sh                    # カレントディレクトリで実行
@@ -21,7 +20,7 @@ git -C "$WORKTREE_PATH" fetch origin main --quiet 2>/dev/null
 
 BRANCH=$(git -C "$WORKTREE_PATH" branch --show-current 2>/dev/null)
 if [ "$BRANCH" = "main" ]; then
-    echo "⚠️  mainブランチではmerge不要です。git pull を使ってください。"
+    echo "⚠️  mainブランチではrebase不要です。git pull を使ってください。"
     exit 0
 fi
 
@@ -31,11 +30,11 @@ if [ "$BEHIND" = "0" ]; then
     exit 0
 fi
 
-echo "🔄 $BRANCH に origin/main をマージ中（${BEHIND}コミット遅れ）..."
+echo "🔄 $BRANCH を origin/main にリベース中（${BEHIND}コミット遅れ）..."
 
-# マージ実行
-if git -C "$WORKTREE_PATH" merge origin/main --no-edit 2>&1; then
-    echo "✅ マージ完了: $BRANCH は origin/main の最新です。"
+# リベース実行
+if git -C "$WORKTREE_PATH" rebase origin/main 2>&1; then
+    echo "✅ リベース完了: $BRANCH は origin/main の最新です。"
     exit 0
 fi
 
@@ -54,10 +53,11 @@ REMAINING=$(git -C "$WORKTREE_PATH" diff --name-only --diff-filter=U 2>/dev/null
 if [ -n "$REMAINING" ]; then
     echo "❌ 手動解決が必要なコンフリクトがあります:"
     echo "$REMAINING"
-    echo "   解決後: git -C $WORKTREE_PATH add . && git -C $WORKTREE_PATH merge --continue"
+    echo "   解決後: git -C $WORKTREE_PATH add . && git -C $WORKTREE_PATH rebase --continue"
+    git -C "$WORKTREE_PATH" rebase --abort
     exit 1
 fi
 
-# マージコミット完了
-git -C "$WORKTREE_PATH" commit --no-edit 2>/dev/null || true
-echo "✅ マージ完了: $BRANCH は origin/main の最新です。"
+# リベース続行
+git -C "$WORKTREE_PATH" rebase --continue --no-edit 2>/dev/null || true
+echo "✅ リベース完了: $BRANCH は origin/main の最新です。"
