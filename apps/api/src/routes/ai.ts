@@ -256,25 +256,6 @@ export function createAiRoute(options: AiRouteOptions) {
 
     const targetLanguage = c.req.query("targetLanguage");
 
-    if (!targetLanguage) {
-      return c.json(
-        {
-          success: false,
-          error: {
-            code: VALIDATION_ERROR_CODE,
-            message: VALIDATION_ERROR_MESSAGE,
-            details: [
-              {
-                field: "targetLanguage",
-                message: "targetLanguageは必須です",
-              },
-            ],
-          },
-        },
-        HTTP_UNPROCESSABLE_ENTITY,
-      );
-    }
-
     const articleId = c.req.param("id");
 
     const articleResults = await db.select().from(articles).where(eq(articles.id, articleId));
@@ -307,12 +288,11 @@ export function createAiRoute(options: AiRouteOptions) {
       );
     }
 
-    const translationResults = await db
-      .select()
-      .from(translations)
-      .where(
-        and(eq(translations.articleId, articleId), eq(translations.targetLanguage, targetLanguage)),
-      );
+    const whereCondition = targetLanguage
+      ? and(eq(translations.articleId, articleId), eq(translations.targetLanguage, targetLanguage))
+      : eq(translations.articleId, articleId);
+
+    const translationResults = await db.select().from(translations).where(whereCondition);
 
     if (translationResults.length === 0) {
       return c.json(
