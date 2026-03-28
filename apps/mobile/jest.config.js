@@ -10,6 +10,9 @@ module.exports = {
     "^nativewind$": "<rootDir>/__mocks__/nativewind.js",
     "^lucide-react-native$": "<rootDir>/__mocks__/lucide-react-native.js",
     "^react-native-css-interop$": "<rootDir>/__mocks__/react-native-css-interop.js",
+    "^react-native-css-interop/jsx-runtime$": "react/jsx-runtime",
+    "^react-native-css-interop/jsx-dev-runtime$": "react/jsx-dev-runtime",
+    "^react-native-css-interop/(.*)$": "<rootDir>/__mocks__/react-native-css-interop.js",
     "^expo-image$": "<rootDir>/__mocks__/expo-image.js",
   },
 };
