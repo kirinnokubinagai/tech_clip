@@ -134,7 +134,7 @@ describe("useNetworkStatus", () => {
 
       // Act
       act(() => {
-        capturedCallback?.({ ...OFFLINE_STATE, isConnected: null } as NetInfoState);
+        capturedCallback?.({ ...OFFLINE_STATE, isConnected: null } as unknown as NetInfoState);
       });
 
       // Assert

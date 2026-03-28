@@ -1,6 +1,5 @@
-import { FlashList } from "@shopify/flash-list";
 import { useCallback } from "react";
-import { View } from "react-native";
+import { FlatList, View } from "react-native";
 
 import { ArticleCard, type ArticleCardArticle } from "./ArticleCard";
 import { ArticleListSkeleton } from "./ui/skeletons";
@@ -15,12 +14,6 @@ type ArticleListProps = {
 /** リストアイテム間のスペース（px） */
 const ITEM_SEPARATOR_HEIGHT = 12;
 
-/** FlashListのウィンドウサイズ（画面数） */
-const WINDOW_SIZE = 5;
-
-/** 推定アイテム高さ（px）: サムネイルあり想定の概算値 */
-const ESTIMATED_ITEM_SIZE = 300;
-
 /**
  * アイテム間のセパレーター
  */
@@ -31,8 +24,7 @@ function ItemSeparator() {
 /**
  * 記事一覧コンポーネント
  *
- * FlashListを使用した高パフォーマンスな記事リスト。
- * keyExtractor、windowSize、estimatedItemSizeを設定して最適化済み。
+ * FlatListを使用した記事リスト。
  *
  * @param articles - 表示する記事データの配列
  * @param onPressArticle - 記事タップ時のコールバック
@@ -63,12 +55,10 @@ export function ArticleList({
   }
 
   return (
-    <FlashList
+    <FlatList
       data={articles}
       keyExtractor={keyExtractor}
       renderItem={renderItem}
-      estimatedItemSize={ESTIMATED_ITEM_SIZE}
-      windowSize={WINDOW_SIZE}
       ItemSeparatorComponent={ItemSeparator}
       showsVerticalScrollIndicator={false}
     />

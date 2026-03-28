@@ -27,7 +27,7 @@ import {
 
 /** fetchモック */
 const mockFetch = jest.fn();
-global.fetch = mockFetch;
+(globalThis as Record<string, unknown>).fetch = mockFetch;
 
 /**
  * fetchレスポンスのモックヘルパー

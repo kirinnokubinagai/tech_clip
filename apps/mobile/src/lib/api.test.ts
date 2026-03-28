@@ -26,7 +26,7 @@ const mockClearAuthTokens = clearAuthTokens as jest.MockedFunction<typeof clearA
 
 /** fetchモック */
 const mockFetch = jest.fn();
-global.fetch = mockFetch;
+(globalThis as Record<string, unknown>).fetch = mockFetch;
 
 /**
  * fetchレスポンスのモックヘルパー

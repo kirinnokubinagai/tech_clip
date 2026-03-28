@@ -23,7 +23,7 @@ export async function syncArticles(): Promise<SyncResult> {
     let cursor: string | undefined = undefined;
 
     do {
-      const url = cursor ? `/articles?cursor=${cursor}` : "/articles";
+      const url: string = cursor ? `/articles?cursor=${cursor}` : "/articles";
       const response = await apiFetch<ArticlesListResponse>(url, {
         method: "GET",
       });
