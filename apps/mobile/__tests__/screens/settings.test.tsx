@@ -1,5 +1,5 @@
-import { Alert } from "react-native";
 import { fireEvent, render, screen } from "@testing-library/react-native";
+import { Alert } from "react-native";
 
 import SettingsScreen from "../../app/(tabs)/settings";
 
@@ -28,11 +28,7 @@ describe("SettingsScreen", () => {
 
       // Assert
       expect(Alert.alert).toHaveBeenCalledTimes(1);
-      expect(Alert.alert).toHaveBeenCalledWith(
-        "ログアウト",
-        expect.any(String),
-        expect.any(Array),
-      );
+      expect(Alert.alert).toHaveBeenCalledWith("ログアウト", expect.any(String), expect.any(Array));
     });
 
     it("確認ダイアログのキャンセルボタンを押してもサインアウトが実行されないこと", () => {

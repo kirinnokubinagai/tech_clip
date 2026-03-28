@@ -1,5 +1,5 @@
-import { Alert } from "react-native";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react-native";
+import { Alert } from "react-native";
 
 import ProfileEditScreen from "../../app/profile/edit";
 
