@@ -1,0 +1,58 @@
+# 検索フロー
+# 検索タブから記事を検索し、結果をタップして詳細画面へ遷移することを確認する
+#
+# tags: search
+
+appId: com.techclip.app
+tags:
+  - search
+
+env:
+  TEST_EMAIL: ${TEST_EMAIL}
+  TEST_PASSWORD: ${TEST_PASSWORD}
+
+---
+
+# ログイン済み状態でアプリ起動
+- launchApp:
+    clearState: false
+
+# 検索タブへ移動
+- tapOn:
+    text: "検索"
+
+# --- 検索画面 ---
+- assertVisible: "検索"
+
+# 検索フィールドをタップ
+- tapOn:
+    text: "記事を検索"
+
+# キーワードを入力
+- inputText: "TypeScript"
+- waitForAnimationToEnd
+
+# 検索結果が表示されることを確認
+- assertVisible: "TypeScript"
+
+# --- 検索結果をクリア ---
+- clearText
+- waitForAnimationToEnd
+
+# 別キーワードで検索
+- inputText: "React"
+- waitForAnimationToEnd
+
+# 検索結果の記事をタップ
+- tapOn:
+    index: 0
+    text: "React"
+
+# 記事詳細画面に遷移することを確認
+- assertVisible:
+    accessibilityLabel: "戻る"
+
+# 戻る
+- tapOn:
+    accessibilityLabel: "戻る"
+- assertVisible: "検索"

@@ -1,0 +1,38 @@
+# オンボーディングフロー
+# 初回起動時のウォークスルー4ページを順に進み、ログイン画面まで遷移することを確認する
+#
+# tags: smoke
+
+appId: com.techclip.app
+tags:
+  - smoke
+
+---
+
+# アプリ起動
+- launchApp:
+    clearState: true
+
+# --- ページ1: 技術記事をワンタップで保存 ---
+- assertVisible: "技術記事をワンタップで保存"
+- assertVisible: "Zenn、Qiita"
+- tapOn: "次へ"
+
+# --- ページ2: AIが要約・翻訳 ---
+- assertVisible: "AIが要約・翻訳"
+- assertVisible: "英語記事も日本語で読める"
+- tapOn: "次へ"
+
+# --- ページ3: お気に入り・タグで整理 ---
+- assertVisible: "お気に入り・タグで整理"
+- assertVisible: "タグ付けで記事を分類"
+- tapOn: "次へ"
+
+# --- ページ4: さあ、始めましょう（最終ページ）---
+- assertVisible: "さあ、始めましょう"
+- assertVisible: "アカウントを作成して"
+- assertVisible: "はじめる"
+- tapOn: "はじめる"
+
+# ログイン画面またはホーム画面に遷移することを確認
+- assertVisible: "TechClip"

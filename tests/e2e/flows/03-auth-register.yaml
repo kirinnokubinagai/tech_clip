@@ -1,0 +1,78 @@
+# 認証フロー: 新規登録
+# 名前・メール・パスワードを入力してアカウント作成フローを確認する
+#
+# tags: auth
+
+appId: com.techclip.app
+tags:
+  - auth
+
+env:
+  TEST_EMAIL: ${TEST_EMAIL}
+  TEST_PASSWORD: ${TEST_PASSWORD}
+  TEST_NAME: ${TEST_NAME}
+
+---
+
+# アプリ起動（オンボーディング済み状態から）
+- launchApp:
+    clearState: true
+
+# オンボーディングをスキップ
+- tapOn: "次へ"
+- tapOn: "次へ"
+- tapOn: "次へ"
+- tapOn: "はじめる"
+
+# ログイン画面から新規登録へ
+- assertVisible: "ログイン"
+- tapOn: "新規登録"
+
+# --- 新規登録画面 ---
+- assertVisible: "アカウントを作成"
+- assertVisible: "名前"
+- assertVisible: "メールアドレス"
+- assertVisible: "パスワード"
+
+# バリデーション: 空送信
+- tapOn: "アカウントを作成"
+- assertVisible: "名前を入力してください"
+
+# 名前入力
+- tapOn:
+    text: "名前を入力"
+- inputText: ${TEST_NAME}
+
+# バリデーション: 名前のみで送信
+- tapOn: "アカウントを作成"
+- assertVisible: "メールアドレスを入力してください"
+
+# メールアドレス入力
+- tapOn:
+    text: "example@domain.com"
+- inputText: ${TEST_EMAIL}
+
+# バリデーション: パスワードなしで送信
+- tapOn: "アカウントを作成"
+- assertVisible: "パスワードを入力してください"
+
+# パスワード入力
+- tapOn:
+    text: "8文字以上"
+- inputText: ${TEST_PASSWORD}
+
+# フォーム送信
+- tapOn: "アカウントを作成"
+- waitForAnimationToEnd
+
+# ログイン画面へのリンク確認
+- launchApp:
+    clearState: true
+- tapOn: "次へ"
+- tapOn: "次へ"
+- tapOn: "次へ"
+- tapOn: "はじめる"
+- tapOn: "新規登録"
+- assertVisible: "すでにアカウントをお持ちですか？"
+- tapOn: "ログイン"
+- assertVisible: "ログイン"

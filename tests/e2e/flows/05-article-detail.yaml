@@ -1,0 +1,93 @@
+# 記事詳細フロー
+# ホーム画面から記事をタップして詳細表示、お気に入り・要約・翻訳操作を確認する
+#
+# tags: article
+
+appId: com.techclip.app
+tags:
+  - article
+
+env:
+  TEST_EMAIL: ${TEST_EMAIL}
+  TEST_PASSWORD: ${TEST_PASSWORD}
+
+---
+
+# ログイン済み状態でアプリ起動
+- launchApp:
+    clearState: false
+
+# --- ホーム画面: 記事一覧表示 ---
+- assertVisible: "すべて"
+
+# ソースフィルター確認
+- assertVisible: "Zenn"
+- assertVisible: "Qiita"
+- assertVisible: "はてな"
+
+# お気に入りフィルター
+- tapOn:
+    accessibilityLabel: "お気に入りのみ表示"
+- assertVisible:
+    accessibilityLabel: "お気に入りフィルター解除"
+- tapOn:
+    accessibilityLabel: "お気に入りフィルター解除"
+
+# 記事カードをタップして詳細へ
+- tapOn:
+    index: 0
+    type: com.techclip.ArticleCard
+
+# --- 記事詳細画面 ---
+- assertVisible:
+    accessibilityLabel: "戻る"
+
+# お気に入り追加
+- tapOn:
+    accessibilityLabel: "お気に入り追加"
+- assertVisible:
+    accessibilityLabel: "お気に入り解除"
+
+# お気に入り解除
+- tapOn:
+    accessibilityLabel: "お気に入り解除"
+- assertVisible:
+    accessibilityLabel: "お気に入り追加"
+
+# 要約ボタン
+- assertVisible:
+    accessibilityLabel: "要約を生成"
+- tapOn:
+    accessibilityLabel: "要約を生成"
+- waitForAnimationToEnd
+
+# 翻訳ボタン
+- assertVisible:
+    accessibilityLabel: "翻訳する"
+- tapOn:
+    accessibilityLabel: "翻訳する"
+- waitForAnimationToEnd
+
+# ブラウザで開くボタン確認
+- assertVisible:
+    accessibilityLabel: "ブラウザで開く"
+
+# 戻るボタンでホームへ
+- tapOn:
+    accessibilityLabel: "戻る"
+- assertVisible: "すべて"
+
+# --- ソースフィルター: Zenn ---
+- tapOn: "Zenn"
+- waitForAnimationToEnd
+
+# --- ソースフィルター: すべて ---
+- tapOn: "すべて"
+- waitForAnimationToEnd
+
+# プルリフレッシュ
+- swipe:
+    direction: DOWN
+    from:
+      x: 50%
+      y: 40%

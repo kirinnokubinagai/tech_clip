@@ -1,0 +1,75 @@
+# 記事保存フロー
+# URLを入力して記事をパース・プレビュー表示し、保存するフローを確認する
+#
+# tags: smoke, article
+
+appId: com.techclip.app
+tags:
+  - smoke
+  - article
+
+env:
+  TEST_EMAIL: ${TEST_EMAIL}
+  TEST_PASSWORD: ${TEST_PASSWORD}
+  TEST_ARTICLE_URL: https://zenn.dev/techclip_test/articles/sample-article
+
+---
+
+# ログイン済み状態でアプリ起動
+- launchApp:
+    clearState: false
+
+# --- 記事保存画面への遷移 ---
+# ホーム画面から記事保存画面へ（シェアボタン等経由）
+# Expo Router の /article/save へ直接遷移
+- openLink: techclip://article/save
+
+# --- 記事保存画面 ---
+- assertVisible: "記事を保存"
+- assertVisible: "URL"
+
+# --- バリデーション: 空URL送信 ---
+- tapOn: "取得"
+- assertVisible: "URLを入力してください"
+
+# --- バリデーション: 不正URL ---
+- tapOn:
+    text: "https://"
+- inputText: "not-a-valid-url"
+- tapOn: "取得"
+- assertVisible: "有効なURLを入力してください"
+
+# URLフィールドをクリア
+- clearText
+
+# --- 正常系: 有効なURLで記事を取得 ---
+- tapOn:
+    text: "https://"
+- inputText: ${TEST_ARTICLE_URL}
+- tapOn: "取得"
+
+# ローディング表示を確認
+- assertVisible:
+    id: "fetch-loading"
+    optional: true
+- waitForAnimationToEnd
+
+# プレビュー表示を確認
+- assertVisible:
+    id: "article-preview"
+- assertVisible: "プレビュー"
+
+# 保存ボタンをタップ
+- tapOn: "保存する"
+- waitForAnimationToEnd
+
+# 保存成功トースト確認
+- assertVisible: "記事を保存しました"
+
+# --- 戻るボタン ---
+- launchApp:
+    clearState: false
+- openLink: techclip://article/save
+- assertVisible: "記事を保存"
+- tapOn:
+    accessibilityLabel: "戻る"

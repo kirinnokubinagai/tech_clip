@@ -1,0 +1,88 @@
+# 設定フロー
+# 設定画面の各項目（通知・言語・パスワード変更・ログアウト）を確認する
+#
+# tags: settings
+
+appId: com.techclip.app
+tags:
+  - settings
+
+env:
+  TEST_EMAIL: ${TEST_EMAIL}
+  TEST_PASSWORD: ${TEST_PASSWORD}
+
+---
+
+# ログイン済み状態でアプリ起動
+- launchApp:
+    clearState: false
+
+# 設定タブへ移動
+- tapOn:
+    text: "設定"
+
+# --- 設定画面 ---
+- assertVisible: "アカウント"
+- assertVisible: "サブスクリプション"
+- assertVisible: "一般"
+- assertVisible: "アカウント管理"
+
+# アカウントセクション
+- assertVisible: "パスワード変更"
+- assertVisible: "ログアウト"
+
+# サブスクリプションセクション
+- assertVisible: "プラン"
+- assertVisible: "Free"
+
+# バージョン表示
+- assertVisible: "TechClip v"
+
+# --- 通知スイッチ ---
+- assertVisible: "通知"
+# スイッチをオフにする
+- tapOn:
+    text: "通知"
+- waitForAnimationToEnd
+# スイッチをオンに戻す
+- tapOn:
+    text: "通知"
+- waitForAnimationToEnd
+
+# --- 言語設定 ---
+- tapOn: "言語"
+- assertVisible: "言語設定"
+- assertVisible: "日本語"
+- assertVisible: "English"
+- tapOn: "日本語"
+- assertVisible: "日本語"
+
+# --- パスワード変更画面への遷移 ---
+- tapOn: "パスワード変更"
+- assertVisible: "パスワード変更"
+- tapOn:
+    accessibilityLabel: "戻る"
+
+# --- ログアウト確認ダイアログ ---
+- tapOn: "ログアウト"
+- assertVisible: "ログアウトしますか？"
+# キャンセル
+- tapOn: "キャンセル"
+# 設定画面に戻ることを確認
+- assertVisible: "アカウント"
+
+# --- アカウント削除確認ダイアログ ---
+- tapOn: "アカウントを削除する"
+- assertVisible: "アカウントを削除する"
+- assertVisible: "この操作は取り消せません"
+# キャンセル
+- tapOn: "キャンセル"
+- assertVisible: "アカウント管理"
+
+# --- ログアウト実行 ---
+- tapOn: "ログアウト"
+- assertVisible: "ログアウトしますか？"
+- tapOn: "ログアウト"
+- waitForAnimationToEnd
+# ログイン画面に遷移することを確認
+- assertVisible: "ログイン"
