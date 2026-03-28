@@ -6,6 +6,7 @@ import { articles, users } from "./db/schema";
 
 import { corsMiddleware } from "./middleware/cors";
 import { securityHeadersMiddleware } from "./middleware/security-headers";
+import { openApiSpec } from "./openapi";
 import { createPublicArticlesRoute } from "./routes/public-articles";
 
 /** Cloudflare Workers バインディング型定義 */
@@ -40,6 +41,10 @@ app.get("/health", (c) => {
     status: "ok",
     timestamp: new Date().toISOString(),
   });
+});
+
+app.get("/openapi.json", (c) => {
+  return c.json(openApiSpec);
 });
 
 app.on(["POST", "GET"], "/api/auth/**", (c) => {
