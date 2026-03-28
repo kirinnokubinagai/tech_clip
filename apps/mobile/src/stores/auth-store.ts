@@ -21,6 +21,7 @@ type AuthStore = {
   handleSessionExpired: () => Promise<void>;
   /** セッション期限切れメッセージをクリアする */
   clearSessionExpiredMessage: () => void;
+  deleteAccount: () => Promise<void>;
 };
 
 export const useAuthStore = create<AuthStore>((set) => ({
@@ -60,6 +61,24 @@ export const useAuthStore = create<AuthStore>((set) => ({
    * ローカルのトークンとストア状態をクリアする
    */
   signOut: async () => {
+    await clearAuthTokens();
+
+    set({
+      user: null,
+      session: null,
+      isAuthenticated: false,
+    });
+  },
+
+  /**
+   * アカウントを削除する
+   * サーバー側のユーザーデータを全削除後、ローカル状態をクリアする
+   */
+  deleteAccount: async () => {
+    await apiFetch<{ success: boolean }>("/api/users/me", {
+      method: "DELETE",
+    });
+
     await clearAuthTokens();
 
     set({

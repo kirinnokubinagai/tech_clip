@@ -21,6 +21,9 @@ const HTTP_CONFLICT = 409;
 /** HTTP 422 Unprocessable Entity ステータスコード */
 const HTTP_UNPROCESSABLE_ENTITY = 422;
 
+/** HTTP 204 No Content ステータスコード */
+const HTTP_NO_CONTENT = 204;
+
 /** HTTP 500 Internal Server Error ステータスコード */
 const HTTP_INTERNAL_SERVER_ERROR = 500;
 
@@ -386,6 +389,43 @@ export function createUsersRoute(options: UsersRouteOptions) {
       success: true,
       data: omitSensitiveFields(updated as unknown as Record<string, unknown>),
     });
+  });
+
+  route.delete("/me", async (c) => {
+    const user = c.get("user");
+    if (!user) {
+      return c.json(
+        {
+          success: false,
+          error: {
+            code: AUTH_ERROR_CODE,
+            message: AUTH_ERROR_MESSAGE,
+          },
+        },
+        HTTP_UNAUTHORIZED,
+      );
+    }
+
+    const userId = user.id as string;
+
+    try {
+      await db.transaction(async (tx) => {
+        await tx.delete(users).where(eq(users.id, userId));
+      });
+    } catch {
+      return c.json(
+        {
+          success: false,
+          error: {
+            code: "INTERNAL_ERROR",
+            message: "アカウントの削除に失敗しました",
+          },
+        },
+        HTTP_INTERNAL_SERVER_ERROR,
+      );
+    }
+
+    return new Response(null, { status: HTTP_NO_CONTENT });
   });
 
   return route;
