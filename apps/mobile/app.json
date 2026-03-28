@@ -7,11 +7,7 @@
     "orientation": "portrait",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
-    "platforms": [
-      "ios",
-      "android",
-      "web"
-    ],
+    "platforms": ["ios", "android", "web"],
     "icon": "./assets/images/icon.svg",
     "splash": {
       "image": "./assets/images/splash-icon.svg",
@@ -44,9 +40,7 @@
             "NSExtensionActivationSupportsWebURLWithMaxCount": 1,
             "NSExtensionActivationSupportsWebPageWithMaxCount": 1
           },
-          "androidIntentFilters": [
-            "text/*"
-          ]
+          "androidIntentFilters": ["text/*"]
         }
       ]
     ]
