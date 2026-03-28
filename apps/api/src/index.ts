@@ -26,6 +26,8 @@ type Bindings = {
   RATE_LIMIT: KVNamespace;
   /** キャッシュ用 Workers KV namespace */
   CACHE: KVNamespace;
+  /** アバター画像保存用 R2 バケット */
+  AVATARS_BUCKET: R2Bucket;
 };
 
 const app = new Hono<{ Bindings: Bindings }>();
