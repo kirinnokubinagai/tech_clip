@@ -25,7 +25,7 @@ export default function RootLayout() {
   useEffect(() => {
     checkSession();
     loadOnboardingState();
-    requestTrackingPermission();
+    void requestTrackingPermission();
   }, [checkSession, loadOnboardingState]);
 
   useEffect(() => {
