@@ -114,14 +114,16 @@ describe("Better Auth", () => {
   });
 
   describe("認証ルート統合", () => {
-    it("GET /api/auth/* がBetter Authハンドラーに接続されていること", async () => {
+    it("認証ルートがアプリに登録されていること", async () => {
       // Arrange
-      const req = new Request("http://localhost/api/auth/ok");
+      const req = new Request("http://localhost/api/auth/send-verification", {
+        method: "POST",
+      });
 
       // Act
       const res = await app.fetch(req, TEST_BINDINGS);
 
-      // Assert
+      // Assert（ルートが登録済み = Hono標準404以外）
       expect(res.status).not.toBe(404);
     });
 

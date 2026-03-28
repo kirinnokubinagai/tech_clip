@@ -142,6 +142,7 @@ describe("POST /api/auth/send-verification", () => {
 
     // Assert
     expect(sendEmailVerification).toHaveBeenCalledWith(
+      expect.objectContaining({ RESEND_API_KEY: expect.any(String) }),
       MOCK_USER.email,
       MOCK_USER.name,
       expect.stringContaining("token="),
@@ -160,7 +161,7 @@ describe("POST /api/auth/send-verification", () => {
 
     // Assert
     const callArgs = vi.mocked(sendEmailVerification).mock.calls[0];
-    const verifyUrl = callArgs[2];
+    const verifyUrl = callArgs[3];
     expect(verifyUrl).toContain("https://app.example.com");
     expect(verifyUrl).toContain("token=");
   });

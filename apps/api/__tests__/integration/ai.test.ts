@@ -241,7 +241,7 @@ describe("AI翻訳API 統合テスト", () => {
       // Arrange
       mockDb.where.mockResolvedValueOnce([MOCK_ARTICLE]).mockResolvedValueOnce([MOCK_TRANSLATION]);
       const app = createTestApp(mockDb, mockTranslateFn);
-      const req = new Request(`http://localhost/${MOCK_ARTICLE.id}/translate`);
+      const req = new Request(`http://localhost/${MOCK_ARTICLE.id}/translate?targetLanguage=en`);
 
       // Act
       const res = await app.fetch(req);
@@ -270,7 +270,7 @@ describe("AI翻訳API 統合テスト", () => {
       // Arrange
       mockDb.where.mockResolvedValueOnce([MOCK_ARTICLE]).mockResolvedValueOnce([]);
       const app = createTestApp(mockDb, mockTranslateFn);
-      const req = new Request(`http://localhost/${MOCK_ARTICLE.id}/translate`);
+      const req = new Request(`http://localhost/${MOCK_ARTICLE.id}/translate?targetLanguage=en`);
 
       // Act
       const res = await app.fetch(req);
