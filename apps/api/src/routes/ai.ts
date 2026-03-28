@@ -76,10 +76,17 @@ const TranslateRequestSchema = z.object({
 /** translateArticle関数の型 */
 type TranslateArticleFn = (options: TranslateOptions) => Promise<TranslationResult>;
 
+/** RunPod設定 */
+type RunpodConfig = {
+  apiKey: string;
+  endpointId: string;
+};
+
 /** createAiRouteのオプション */
 type AiRouteOptions = {
   db: Database;
   translateArticleFn: TranslateArticleFn;
+  runpodConfig: RunpodConfig;
 };
 
 /**
@@ -92,7 +99,7 @@ type AiRouteOptions = {
  * @returns Hono ルーターインスタンス
  */
 export function createAiRoute(options: AiRouteOptions) {
-  const { db, translateArticleFn } = options;
+  const { db, translateArticleFn, runpodConfig } = options;
   const route = new Hono<{ Variables: { user?: Record<string, unknown> } }>();
 
   route.post("/:id/translate", async (c) => {
@@ -198,8 +205,8 @@ export function createAiRoute(options: AiRouteOptions) {
         title: article.title,
         content: article.content,
         targetLanguage,
-        runpodApiKey: "",
-        runpodEndpointId: "",
+        runpodApiKey: runpodConfig.apiKey,
+        runpodEndpointId: runpodConfig.endpointId,
       });
 
       const now = new Date();
