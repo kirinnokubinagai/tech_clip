@@ -1,12 +1,72 @@
-TURSO_DATABASE_URL=libsql://your-database.turso.io
-TURSO_AUTH_TOKEN=your-turso-auth-token
-RUNPOD_API_KEY=your-runpod-api-key
-RUNPOD_ENDPOINT_ID=your-runpod-endpoint-id
+# =============================================================================
+# Cloudflare Workers 開発用シークレット (.dev.vars)
+# =============================================================================
+# このファイルをコピーして .dev.vars を作成し、実際の値を設定してください。
+# .dev.vars は .gitignore により Git 管理対象外です。絶対にコミットしないこと。
+#
+# 取得手順の詳細は docs/SECRETS.md を参照してください。
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# 実行環境
+# -----------------------------------------------------------------------------
+# 実行環境の識別子。development | staging | production のいずれかを設定する
 ENVIRONMENT=development
+
+# -----------------------------------------------------------------------------
+# Turso データベース
+# -----------------------------------------------------------------------------
+# Turso ダッシュボード (https://app.turso.tech) でデータベースを作成後に取得する
+# ローカル開発時は sqld を使ったローカルDBの URL を設定することも可能
+
+# LibSQL 接続 URL (例: libsql://your-db-name-your-org.turso.io)
+TURSO_DATABASE_URL=libsql://your-database.turso.io
+
+# Turso 認証トークン
+TURSO_AUTH_TOKEN=your-turso-auth-token
+
+# -----------------------------------------------------------------------------
+# Better Auth
+# -----------------------------------------------------------------------------
+# セッション署名・暗号化に使用するシークレット。32文字以上のランダム文字列を設定する
+# 生成例: openssl rand -base64 32
+
 BETTER_AUTH_SECRET=your-better-auth-secret-min-32-chars
+
+# -----------------------------------------------------------------------------
+# Google OAuth
+# -----------------------------------------------------------------------------
+# Google Cloud Console (https://console.cloud.google.com) で OAuth 2.0 クライアントを作成する
+# 承認済みリダイレクト URI に http://localhost:8787/api/auth/callback/google を追加すること
+
 GOOGLE_CLIENT_ID=your-google-client-id
 GOOGLE_CLIENT_SECRET=your-google-client-secret
+
+# -----------------------------------------------------------------------------
+# Apple Sign In
+# -----------------------------------------------------------------------------
+# Apple Developer (https://developer.apple.com) でサービス ID と秘密鍵を作成する
+# CLIENT_ID は com.techclip.app のようなリバースドメイン形式
+# CLIENT_SECRET は JWT 形式のトークン（Apple 秘密鍵から生成する）
+
 APPLE_CLIENT_ID=your-apple-client-id
 APPLE_CLIENT_SECRET=your-apple-client-secret
+
+# -----------------------------------------------------------------------------
+# GitHub OAuth
+# -----------------------------------------------------------------------------
+# GitHub Developer Settings (https://github.com/settings/developers) で
+# OAuth App を作成する
+# Authorization callback URL: http://localhost:8787/api/auth/callback/github
+
 GITHUB_CLIENT_ID=your-github-client-id
 GITHUB_CLIENT_SECRET=your-github-client-secret
+
+# -----------------------------------------------------------------------------
+# RunPod (AI 要約・翻訳)
+# -----------------------------------------------------------------------------
+# RunPod (https://www.runpod.io) でアカウントを作成し、API キーを発行する
+# ENDPOINT_ID はデプロイ済みエンドポイントの ID
+
+RUNPOD_API_KEY=your-runpod-api-key
+RUNPOD_ENDPOINT_ID=your-runpod-endpoint-id
