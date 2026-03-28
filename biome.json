@@ -16,7 +16,7 @@
     "enabled": true
   },
   "files": {
-    "ignore": ["node_modules", "dist", ".turbo", ".wrangler", ".expo", ".claude", "drizzle"]
+    "ignore": ["node_modules", "dist", ".turbo", ".wrangler", ".expo", ".claude", "drizzle", ".omc"]
   },
   "javascript": {
     "formatter": {
