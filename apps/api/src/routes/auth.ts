@@ -62,17 +62,17 @@ type AuthRouteOptions = {
 /** サインインリクエストのスキーマ */
 const SignInSchema = z.object({
   email: z
-    .string({ required_error: "メールアドレスは必須です" })
+    .string({ error: "メールアドレスは必須です" })
     .email("メールアドレスの形式が正しくありません"),
   password: z
-    .string({ required_error: "パスワードは必須です" })
+    .string({ error: "パスワードは必須です" })
     .min(1, "パスワードを入力してください"),
 });
 
 /** リフレッシュリクエストのスキーマ */
 const RefreshSchema = z.object({
   refreshToken: z
-    .string({ required_error: "リフレッシュトークンは必須です" })
+    .string({ error: "リフレッシュトークンは必須です" })
     .min(1, "リフレッシュトークンを入力してください"),
 });
 
@@ -100,7 +100,7 @@ export function createAuthRoute({ db, getAuth }: AuthRouteOptions) {
           error: {
             code: VALIDATION_FAILED_CODE,
             message: "入力内容を確認してください",
-            details: parsed.error.errors.map((e) => ({
+            details: parsed.error.issues.map((e) => ({
               field: e.path.join("."),
               message: e.message,
             })),
