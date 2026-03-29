@@ -74,6 +74,7 @@ export function SourceBadge({ source, size = "sm" }: SourceBadgeProps) {
 
   return (
     <View
+      testID="source-badge"
       className={`rounded-full self-start ${sizeStyle.container} ${config.color.split(" ")[0]}`}
       accessibilityLabel={config.label}
     >

@@ -1,44 +1,46 @@
 import { fireEvent, render } from "@testing-library/react-native";
 import { Text } from "react-native";
 
+import { containsText, findByTestId, queryByTestId } from "@/test-helpers";
+
 import { EmptyState } from "../EmptyState";
 
 describe("EmptyState", () => {
   describe("レンダリング", () => {
     it("タイトルが正しく表示されること", () => {
       // Arrange & Act
-      const { getByText } = render(
+      const { UNSAFE_root } = render(
         <EmptyState icon={<Text>icon</Text>} title="データがありません" />,
       );
 
       // Assert
-      expect(getByText("データがありません")).toBeDefined();
+      expect(containsText(UNSAFE_root, "データがありません")).toBe(true);
     });
 
     it("アイコンが表示されること", () => {
       // Arrange & Act
-      const { getByText } = render(<EmptyState icon={<Text>test-icon</Text>} title="タイトル" />);
+      const { UNSAFE_root } = render(<EmptyState icon={<Text>test-icon</Text>} title="タイトル" />);
 
       // Assert
-      expect(getByText("test-icon")).toBeDefined();
+      expect(containsText(UNSAFE_root, "test-icon")).toBe(true);
     });
 
     it("説明文が表示されること", () => {
       // Arrange & Act
-      const { getByText } = render(
+      const { UNSAFE_root } = render(
         <EmptyState icon={<Text>icon</Text>} title="タイトル" description="補足説明テキストです" />,
       );
 
       // Assert
-      expect(getByText("補足説明テキストです")).toBeDefined();
+      expect(containsText(UNSAFE_root, "補足説明テキストです")).toBe(true);
     });
 
     it("説明文が未指定の場合は表示されないこと", () => {
       // Arrange & Act
-      const { queryByText } = render(<EmptyState icon={<Text>icon</Text>} title="タイトル" />);
+      const { UNSAFE_root } = render(<EmptyState icon={<Text>icon</Text>} title="タイトル" />);
 
       // Assert
-      expect(queryByText("補足説明テキストです")).toBeNull();
+      expect(containsText(UNSAFE_root, "補足説明テキストです")).toBe(false);
     });
   });
 
@@ -48,7 +50,7 @@ describe("EmptyState", () => {
       const onAction = jest.fn();
 
       // Act
-      const { getByText } = render(
+      const { UNSAFE_root } = render(
         <EmptyState
           icon={<Text>icon</Text>}
           title="タイトル"
@@ -58,13 +60,13 @@ describe("EmptyState", () => {
       );
 
       // Assert
-      expect(getByText("記事を追加")).toBeDefined();
+      expect(containsText(UNSAFE_root, "記事を追加")).toBe(true);
     });
 
     it("ボタンタップ時にonActionが呼ばれること", () => {
       // Arrange
       const onAction = jest.fn();
-      const { getByText } = render(
+      const { UNSAFE_root } = render(
         <EmptyState
           icon={<Text>icon</Text>}
           title="タイトル"
@@ -74,7 +76,7 @@ describe("EmptyState", () => {
       );
 
       // Act
-      fireEvent.press(getByText("追加する"));
+      fireEvent.press(findByTestId(UNSAFE_root, "button"));
 
       // Assert
       expect(onAction).toHaveBeenCalledTimes(1);
@@ -82,12 +84,12 @@ describe("EmptyState", () => {
 
     it("actionLabelのみ指定でonAction未指定の場合ボタンが表示されないこと", () => {
       // Arrange & Act
-      const { queryByText } = render(
+      const { UNSAFE_root } = render(
         <EmptyState icon={<Text>icon</Text>} title="タイトル" actionLabel="追加する" />,
       );
 
       // Assert
-      expect(queryByText("追加する")).toBeNull();
+      expect(containsText(UNSAFE_root, "追加する")).toBe(false);
     });
 
     it("actionLabelもonActionも未指定の場合ボタンが表示されないこと", () => {

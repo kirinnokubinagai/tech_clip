@@ -1,5 +1,7 @@
 import { fireEvent, render } from "@testing-library/react-native";
 
+import { findByTestId, queryByTestId } from "@/test-helpers";
+
 import { NotificationItem } from "../NotificationItem";
 
 /** テスト用の通知データ（未読） */
@@ -12,7 +14,7 @@ const UNREAD_NOTIFICATION = {
   createdAt: new Date(Date.now() - 3 * 60 * 1000).toISOString(),
 };
 
-/** テスト用の通知データ（既読） */
+/** テスト用の通知デ���タ（既読） */
 const READ_NOTIFICATION = {
   ...UNREAD_NOTIFICATION,
   id: "01JTEST000000000000000002",
@@ -21,96 +23,98 @@ const READ_NOTIFICATION = {
 
 describe("NotificationItem", () => {
   describe("レンダリング", () => {
-    it("タイトルが正しく表示されること", () => {
+    it("タイトルが正し��表示されること", () => {
       // Arrange & Act
-      const { getByTestId } = render(
+      const { UNSAFE_root } = render(
         <NotificationItem notification={UNREAD_NOTIFICATION} onPress={() => {}} />,
       );
 
       // Assert
-      expect(getByTestId("notification-title").props.children).toBe("記事にいいねされました");
+      expect(findByTestId(UNSAFE_root, "notification-title").props.children).toBe(
+        "記事にいいねされました",
+      );
     });
 
     it("本文が正しく表示されること", () => {
       // Arrange & Act
-      const { getByTestId } = render(
+      const { UNSAFE_root } = render(
         <NotificationItem notification={UNREAD_NOTIFICATION} onPress={() => {}} />,
       );
 
       // Assert
-      expect(getByTestId("notification-body").props.children).toBe(
+      expect(findByTestId(UNSAFE_root, "notification-body").props.children).toBe(
         "tech_writerさんがあなたの記事にいいねしました",
       );
     });
 
     it("相対時間が表示されること", () => {
       // Arrange & Act
-      const { getByTestId } = render(
+      const { UNSAFE_root } = render(
         <NotificationItem notification={UNREAD_NOTIFICATION} onPress={() => {}} />,
       );
 
       // Assert
-      expect(getByTestId("notification-time")).toBeDefined();
+      expect(findByTestId(UNSAFE_root, "notification-time")).toBeDefined();
     });
   });
 
   describe("未読・既読の表示", () => {
     it("未読通知の場合に未読インジケーターが表示されること", () => {
       // Arrange & Act
-      const { getByTestId } = render(
+      const { UNSAFE_root } = render(
         <NotificationItem notification={UNREAD_NOTIFICATION} onPress={() => {}} />,
       );
 
       // Assert
-      expect(getByTestId("unread-indicator")).toBeDefined();
+      expect(findByTestId(UNSAFE_root, "unread-indicator")).toBeDefined();
     });
 
     it("既読通知の場合に未読インジケーターが表示されないこと", () => {
       // Arrange & Act
-      const { queryByTestId } = render(
+      const { UNSAFE_root } = render(
         <NotificationItem notification={READ_NOTIFICATION} onPress={() => {}} />,
       );
 
       // Assert
-      expect(queryByTestId("unread-indicator")).toBeNull();
+      expect(queryByTestId(UNSAFE_root, "unread-indicator")).toBeNull();
     });
   });
 
   describe("通知種別アイコン", () => {
-    it("likeタイプでハートアイコンが表示されること", () => {
+    it("likeタイプでハートアイコン��表示されること", () => {
       // Arrange & Act
-      const { getByTestId } = render(
+      const { UNSAFE_root } = render(
         <NotificationItem notification={UNREAD_NOTIFICATION} onPress={() => {}} />,
       );
 
       // Assert
-      expect(getByTestId("notification-icon-like")).toBeDefined();
+      expect(findByTestId(UNSAFE_root, "notification-icon-like")).toBeDefined();
     });
 
-    it("commentタイプでコメントアイコンが表示されること", () => {
+    it("commentタイプでコメントアイコン��表示されること", () => {
       // Arrange
       const notification = { ...UNREAD_NOTIFICATION, type: "comment" as const };
 
       // Act
-      const { getByTestId } = render(
+      const { UNSAFE_root } = render(
         <NotificationItem notification={notification} onPress={() => {}} />,
       );
 
       // Assert
-      expect(getByTestId("notification-icon-comment")).toBeDefined();
+      expect(findByTestId(UNSAFE_root, "notification-icon-comment")).toBeDefined();
     });
 
-    it("followタイプでフォローアイコンが表示されること", () => {
+    it("followタイプでフォローアイコンが表���されること", () => {
       // Arrange
       const notification = { ...UNREAD_NOTIFICATION, type: "follow" as const };
 
       // Act
-      const { getByTestId } = render(
+      const { UNSAFE_root } = render(
         <NotificationItem notification={notification} onPress={() => {}} />,
       );
 
       // Assert
-      expect(getByTestId("notification-icon-follow")).toBeDefined();
+      expect(findByTestId(UNSAFE_root, "notification-icon-follow")).toBeDefined();
     });
 
     it("systemタイプでベルアイコンが表示されること", () => {
@@ -118,38 +122,38 @@ describe("NotificationItem", () => {
       const notification = { ...UNREAD_NOTIFICATION, type: "system" as const };
 
       // Act
-      const { getByTestId } = render(
+      const { UNSAFE_root } = render(
         <NotificationItem notification={notification} onPress={() => {}} />,
       );
 
       // Assert
-      expect(getByTestId("notification-icon-system")).toBeDefined();
+      expect(findByTestId(UNSAFE_root, "notification-icon-system")).toBeDefined();
     });
 
-    it("articleタイプで記事アイコンが表示されること", () => {
+    it("articleタイプで記事ア��コンが表示される���と", () => {
       // Arrange
       const notification = { ...UNREAD_NOTIFICATION, type: "article" as const };
 
       // Act
-      const { getByTestId } = render(
+      const { UNSAFE_root } = render(
         <NotificationItem notification={notification} onPress={() => {}} />,
       );
 
       // Assert
-      expect(getByTestId("notification-icon-article")).toBeDefined();
+      expect(findByTestId(UNSAFE_root, "notification-icon-article")).toBeDefined();
     });
   });
 
   describe("インタラクション", () => {
-    it("タップ時にonPressが呼ばれること", () => {
+    it("タップ時にonPressが呼ばれ��こと", () => {
       // Arrange
       const onPress = jest.fn();
-      const { getByTestId } = render(
+      const { UNSAFE_root } = render(
         <NotificationItem notification={UNREAD_NOTIFICATION} onPress={onPress} />,
       );
 
       // Act
-      fireEvent.press(getByTestId("notification-item"));
+      fireEvent.press(findByTestId(UNSAFE_root, "notification-item"));
 
       // Assert
       expect(onPress).toHaveBeenCalledTimes(1);

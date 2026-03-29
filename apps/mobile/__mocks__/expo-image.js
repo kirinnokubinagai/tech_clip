@@ -1,10 +1,20 @@
-const React = require("react");
-const { View } = require("react-native");
+/**
+ * expo-imageのモック（css-interop非依存）
+ *
+ * forwardRefを使わず関数コンポーネントとして定義し、
+ * HTML要素"img"を返すことでcss-interopのラッピングを回避する
+ */
+const React = jest.requireActual("react");
 
-/** expo-imageのモック */
-const Image = React.forwardRef(({ testID, style, source, ...props }, ref) =>
-  React.createElement(View, { testID, style, ref, ...props }),
-);
+function Image({ testID, style, source, ...props }) {
+  return React.createElement("img", {
+    "data-testid": testID,
+    testID,
+    style,
+    src: source?.uri || "",
+    ...props,
+  });
+}
 Image.displayName = "ExpoImage";
 
 module.exports = { Image };

@@ -18,11 +18,8 @@ jest.mock("expo-notifications", () => ({
 }));
 
 jest.mock("expo-device", () => ({
+  __esModule: true,
   isDevice: true,
-}));
-
-jest.mock("react-native", () => ({
-  Platform: { OS: "ios" },
 }));
 
 jest.mock("@/lib/api", () => ({
@@ -31,13 +28,15 @@ jest.mock("@/lib/api", () => ({
 
 beforeEach(() => {
   jest.clearAllMocks();
+  Object.defineProperty(Device, "isDevice", { value: true, writable: true });
+  Object.defineProperty(Platform, "OS", { value: "ios", writable: true });
 });
 
 describe("notifications", () => {
   describe("registerForPushNotifications", () => {
     it("実機でプッシュトークンを取得できること", async () => {
       // Arrange
-      (Device as { isDevice: boolean }).isDevice = true;
+      Object.defineProperty(Device, "isDevice", { value: true });
       (Notifications.getPermissionsAsync as jest.Mock).mockResolvedValue({
         status: "granted",
       });
@@ -55,7 +54,7 @@ describe("notifications", () => {
 
     it("権限が未許可の場合にrequestPermissionsAsyncを呼ぶこと", async () => {
       // Arrange
-      (Device as { isDevice: boolean }).isDevice = true;
+      Object.defineProperty(Device, "isDevice", { value: true });
       (Notifications.getPermissionsAsync as jest.Mock).mockResolvedValue({
         status: "undetermined",
       });
@@ -76,7 +75,7 @@ describe("notifications", () => {
 
     it("権限が拒否された場合にnullを返すこと", async () => {
       // Arrange
-      (Device as { isDevice: boolean }).isDevice = true;
+      Object.defineProperty(Device, "isDevice", { value: true });
       (Notifications.getPermissionsAsync as jest.Mock).mockResolvedValue({
         status: "undetermined",
       });
@@ -94,7 +93,7 @@ describe("notifications", () => {
 
     it("シミュレータの場合にnullを返すこと", async () => {
       // Arrange
-      (Device as { isDevice: boolean }).isDevice = false;
+      Object.defineProperty(Device, "isDevice", { value: false });
 
       // Act
       const token = await registerForPushNotifications();
@@ -106,8 +105,8 @@ describe("notifications", () => {
 
     it("Androidの場合に通知チャンネルを設定すること", async () => {
       // Arrange
-      (Device as { isDevice: boolean }).isDevice = true;
-      (Platform as { OS: string }).OS = "android";
+      Object.defineProperty(Device, "isDevice", { value: true });
+      Object.defineProperty(Platform, "OS", { value: "android" });
       (Notifications.getPermissionsAsync as jest.Mock).mockResolvedValue({
         status: "granted",
       });
@@ -126,9 +125,6 @@ describe("notifications", () => {
           importance: Notifications.AndroidImportance.MAX,
         }),
       );
-
-      // Cleanup
-      (Platform as { OS: string }).OS = "ios";
     });
   });
 

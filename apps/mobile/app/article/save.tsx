@@ -172,7 +172,7 @@ export default function SaveScreen() {
 
           {/* 取得ボタン */}
           <View className="mb-6">
-            <Button onPress={handleFetch} disabled={isFetching} loading={isFetching}>
+            <Button testID="fetch-button" onPress={handleFetch} disabled={isFetching} loading={isFetching}>
               取得
             </Button>
           </View>
@@ -254,7 +254,7 @@ export default function SaveScreen() {
 
               {/* 保存ボタン */}
               <View className="mt-4">
-                <Button onPress={handleSave} disabled={isSaving} loading={isSaving}>
+                <Button testID="save-button" onPress={handleSave} disabled={isSaving} loading={isSaving}>
                   保存する
                 </Button>
               </View>

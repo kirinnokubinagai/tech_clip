@@ -13,30 +13,26 @@ import {
 } from "./backgroundSync";
 import { syncArticles } from "./syncManager";
 
-/** モック型キャスト */
-const mockSyncArticles = jest.mocked(syncArticles);
-
-/** AppState.addEventListener のスパイ */
-let mockAddEventListener: jest.SpyInstance;
-
 /** NativeEventSubscription モック */
 function makeMockSubscription(): { remove: jest.Mock } {
   return { remove: jest.fn() };
 }
 
+/** addEventListener のスパイ */
+let addEventListenerSpy: jest.SpyInstance;
+
 describe("backgroundSync", () => {
   beforeEach(() => {
     jest.clearAllMocks();
     resetBackgroundSyncState();
-    mockAddEventListener = jest
+    addEventListenerSpy = jest
       .spyOn(AppState, "addEventListener")
-      .mockReturnValue(
-        makeMockSubscription() as ReturnType<typeof AppState.addEventListener>,
-      );
+      .mockReturnValue(makeMockSubscription() as ReturnType<typeof AppState.addEventListener>);
   });
 
   afterEach(() => {
     resetBackgroundSyncState();
+    addEventListenerSpy.mockRestore();
   });
 
   describe("DEFAULT_BACKGROUND_SYNC_CONFIG", () => {
@@ -100,7 +96,7 @@ describe("backgroundSync", () => {
   describe("createAppStateHandler", () => {
     it("activeになった場合にsyncArticlesを呼び出すこと", async () => {
       // Arrange
-      mockSyncArticles.mockResolvedValue({ synced: 5, errors: [] });
+      (syncArticles as jest.Mock).mockResolvedValue({ synced: 5, errors: [] });
       const handler = createAppStateHandler(DEFAULT_BACKGROUND_SYNC_CONFIG);
 
       // Act
@@ -108,7 +104,7 @@ describe("backgroundSync", () => {
       await Promise.resolve();
 
       // Assert
-      expect(mockSyncArticles).toHaveBeenCalledTimes(1);
+      expect(syncArticles).toHaveBeenCalledTimes(1);
     });
 
     it("backgroundになった場合はsyncArticlesを呼び出さないこと", () => {
@@ -119,7 +115,7 @@ describe("backgroundSync", () => {
       handler("background");
 
       // Assert
-      expect(mockSyncArticles).not.toHaveBeenCalled();
+      expect(syncArticles).not.toHaveBeenCalled();
     });
 
     it("inactiveになった場合はsyncArticlesを呼び出さないこと", () => {
@@ -130,36 +126,35 @@ describe("backgroundSync", () => {
       handler("inactive");
 
       // Assert
-      expect(mockSyncArticles).not.toHaveBeenCalled();
+      expect(syncArticles).not.toHaveBeenCalled();
     });
 
     it("同期間隔が経過していない場合はsyncArticlesを呼び出さないこと", async () => {
       // Arrange
-      mockSyncArticles.mockResolvedValue({ synced: 0, errors: [] });
+      (syncArticles as jest.Mock).mockResolvedValue({ synced: 0, errors: [] });
       const config = { ...DEFAULT_BACKGROUND_SYNC_CONFIG, intervalMs: 15 * 60 * 1000 };
       const handler = createAppStateHandler(config);
 
-      // 1回目: 同期実行
       handler("active");
       await Promise.resolve();
-      expect(mockSyncArticles).toHaveBeenCalledTimes(1);
+      expect(syncArticles).toHaveBeenCalledTimes(1);
 
-      jest.clearAllMocks();
+      (syncArticles as jest.Mock).mockClear();
 
-      // Act: 2回目: 間隔未経過
+      // Act
       handler("active");
       await Promise.resolve();
 
       // Assert
-      expect(mockSyncArticles).not.toHaveBeenCalled();
+      expect(syncArticles).not.toHaveBeenCalled();
     });
 
     it("syncArticlesがエラーを返してもハンドラーがクラッシュしないこと", async () => {
       // Arrange
-      mockSyncArticles.mockRejectedValue(new Error("ネットワークエラー"));
+      (syncArticles as jest.Mock).mockRejectedValue(new Error("ネットワークエラー"));
       const handler = createAppStateHandler(DEFAULT_BACKGROUND_SYNC_CONFIG);
 
-      // Act & Assert: エラーがスローされないこと
+      // Act & Assert
       handler("active");
       await new Promise((resolve) => setTimeout(resolve, 0));
     });
@@ -171,7 +166,7 @@ describe("backgroundSync", () => {
       startBackgroundSync();
 
       // Assert
-      expect(mockAddEventListener).toHaveBeenCalledWith("change", expect.any(Function));
+      expect(addEventListenerSpy).toHaveBeenCalledWith("change", expect.any(Function));
     });
 
     it("カスタム設定でも登録できること", () => {
@@ -182,13 +177,13 @@ describe("backgroundSync", () => {
       startBackgroundSync(customConfig);
 
       // Assert
-      expect(mockAddEventListener).toHaveBeenCalledWith("change", expect.any(Function));
+      expect(addEventListenerSpy).toHaveBeenCalledWith("change", expect.any(Function));
     });
 
     it("クリーンアップ関数がsubscription.removeを呼び出すこと", () => {
       // Arrange
       const mockSubscription = makeMockSubscription();
-      mockAddEventListener.mockReturnValue(
+      addEventListenerSpy.mockReturnValue(
         mockSubscription as ReturnType<typeof AppState.addEventListener>,
       );
 
@@ -204,7 +199,7 @@ describe("backgroundSync", () => {
       // Arrange
       const firstSubscription = makeMockSubscription();
       const secondSubscription = makeMockSubscription();
-      mockAddEventListener
+      addEventListenerSpy
         .mockReturnValueOnce(firstSubscription as ReturnType<typeof AppState.addEventListener>)
         .mockReturnValueOnce(secondSubscription as ReturnType<typeof AppState.addEventListener>);
 
@@ -212,21 +207,21 @@ describe("backgroundSync", () => {
       startBackgroundSync();
       startBackgroundSync();
 
-      // Assert: 最初のsubscriptionが解除されること
+      // Assert
       expect(firstSubscription.remove).toHaveBeenCalledTimes(1);
-      expect(mockAddEventListener).toHaveBeenCalledTimes(2);
+      expect(addEventListenerSpy).toHaveBeenCalledTimes(2);
     });
 
     it("クリーンアップ後に再度クリーンアップを呼んでもエラーにならないこと", () => {
       // Arrange
       const mockSubscription = makeMockSubscription();
-      mockAddEventListener.mockReturnValue(
+      addEventListenerSpy.mockReturnValue(
         mockSubscription as ReturnType<typeof AppState.addEventListener>,
       );
       const cleanup = startBackgroundSync();
       cleanup();
 
-      // Act & Assert: 二重クリーンアップでエラーにならない
+      // Act & Assert
       expect(() => cleanup()).not.toThrow();
     });
   });
@@ -243,7 +238,7 @@ describe("backgroundSync", () => {
     it("activeになった後は同期時刻が記録されること", async () => {
       // Arrange
       const before = Date.now();
-      mockSyncArticles.mockResolvedValue({ synced: 1, errors: [] });
+      (syncArticles as jest.Mock).mockResolvedValue({ synced: 1, errors: [] });
       const handler = createAppStateHandler(DEFAULT_BACKGROUND_SYNC_CONFIG);
 
       // Act
@@ -260,7 +255,7 @@ describe("backgroundSync", () => {
   describe("resetBackgroundSyncState", () => {
     it("lastSyncedAtをnullにリセットすること", async () => {
       // Arrange
-      mockSyncArticles.mockResolvedValue({ synced: 0, errors: [] });
+      (syncArticles as jest.Mock).mockResolvedValue({ synced: 0, errors: [] });
       const handler = createAppStateHandler(DEFAULT_BACKGROUND_SYNC_CONFIG);
       handler("active");
       await Promise.resolve();

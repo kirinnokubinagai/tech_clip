@@ -15,5 +15,7 @@ module.exports = {
     "^react-native-css-interop/jsx-dev-runtime$": "react/jsx-dev-runtime",
     "^react-native-css-interop/(.*)$": "<rootDir>/__mocks__/react-native-css-interop.js",
     "^expo-image$": "<rootDir>/__mocks__/expo-image.js",
+    "^react-native-safe-area-context$": "<rootDir>/__mocks__/react-native-safe-area-context.js",
+    "^expo-router$": "<rootDir>/__mocks__/expo-router.js",
   },
 };

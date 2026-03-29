@@ -1,9 +1,10 @@
-const React = require("react");
+const actualReact = jest.requireActual("react");
+const originalCreateElement = actualReact.createElement.bind(actualReact);
 
 module.exports = {
   styled: (component) => component,
   useColorScheme: () => ({ colorScheme: "light" }),
-  createInteropElement: (type, props, ...children) => React.createElement(type, props, ...children),
+  createInteropElement: (type, props, ...children) => originalCreateElement(type, props, ...children),
   cssInterop: () => {},
   remapProps: () => {},
   vars: () => ({}),

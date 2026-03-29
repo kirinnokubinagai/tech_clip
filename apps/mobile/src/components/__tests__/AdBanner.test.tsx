@@ -1,6 +1,7 @@
 import { render } from "@testing-library/react-native";
 
 import { useSubscriptionStore } from "@/stores";
+import { findByTestId, queryByTestId } from "@/test-helpers";
 
 import { AdBanner } from "../AdBanner";
 
@@ -28,38 +29,38 @@ describe("AdBanner", () => {
       useSubscriptionStore.setState({ isPremium: false });
 
       // Act
-      const { getByTestId } = render(<AdBanner />);
+      const { UNSAFE_root } = render(<AdBanner />);
 
       // Assert
-      expect(getByTestId("ad-banner-container")).toBeDefined();
-      expect(getByTestId("banner-ad")).toBeDefined();
+      expect(findByTestId(UNSAFE_root, "ad-banner-container")).toBeDefined();
+      expect(findByTestId(UNSAFE_root, "banner-ad")).toBeDefined();
     });
   });
 
   describe("プレミアムユーザー", () => {
-    it("バナー広告が非表示になること", () => {
+    it("バナー広告が非表��になること", () => {
       // Arrange
       useSubscriptionStore.setState({ isPremium: true });
 
       // Act
-      const { queryByTestId } = render(<AdBanner />);
+      const { UNSAFE_root } = render(<AdBanner />);
 
       // Assert
-      expect(queryByTestId("ad-banner-container")).toBeNull();
-      expect(queryByTestId("banner-ad")).toBeNull();
+      expect(queryByTestId(UNSAFE_root, "ad-banner-container")).toBeNull();
+      expect(queryByTestId(UNSAFE_root, "banner-ad")).toBeNull();
     });
   });
 
   describe("プロパティ", () => {
-    it("カスタムtestIDが適用されること", () => {
+    it("カスタムtestIDが適用される���と", () => {
       // Arrange
       useSubscriptionStore.setState({ isPremium: false });
 
       // Act
-      const { getByTestId } = render(<AdBanner testID="custom-ad" />);
+      const { UNSAFE_root } = render(<AdBanner testID="custom-ad" />);
 
       // Assert
-      expect(getByTestId("custom-ad")).toBeDefined();
+      expect(findByTestId(UNSAFE_root, "custom-ad")).toBeDefined();
     });
   });
 });
