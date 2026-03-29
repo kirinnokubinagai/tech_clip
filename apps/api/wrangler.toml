@@ -64,5 +64,5 @@ binding = "AVATARS_BUCKET"
 bucket_name = "tech-clip-avatars"
 
 [[env.production.routes]]
-pattern = "api.techclip.app/*"
+pattern = "api.techclip.app"
 custom_domain = true
