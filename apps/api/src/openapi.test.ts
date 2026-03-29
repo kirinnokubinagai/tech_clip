@@ -32,9 +32,9 @@ describe("openApiSpec", () => {
     expect(spec.paths["/api/tags"]).toBeDefined();
     expect(spec.paths["/api/tags/{id}"]).toBeDefined();
     expect(spec.paths["/api/articles/{id}/tags"]).toBeDefined();
-    expect(spec.paths["/api/search"]).toBeDefined();
+    expect(spec.paths["/api/articles/search"]).toBeDefined();
     expect(spec.paths["/api/notifications"]).toBeDefined();
-    expect(spec.paths["/api/register"]).toBeDefined();
+    expect(spec.paths["/api/notifications/register"]).toBeDefined();
     expect(spec.paths["/api/notifications/{id}/read"]).toBeDefined();
     expect(spec.paths["/api/articles/{id}/translate"]).toBeDefined();
     expect(spec.paths["/api/articles/{id}/summary"]).toBeDefined();

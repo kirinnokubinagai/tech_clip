@@ -265,7 +265,7 @@ app.on(["GET", "POST", "PATCH", "DELETE"], "/api/articles/**", async (c) => {
     await next();
   });
 
-  subApp.route("/api", articlesRoute);
+  subApp.route("/api/articles", articlesRoute);
   subApp.route("/api", summaryRoute);
   subApp.route("/api/articles", aiRoute);
   subApp.route("/api/articles", favoriteRoute);
