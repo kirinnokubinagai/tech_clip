@@ -8,9 +8,6 @@ import { corsMiddleware } from "./middleware/cors";
 import { securityHeadersMiddleware } from "./middleware/security-headers";
 import { createSentryMiddleware } from "./middleware/sentry";
 import { openApiSpec } from "./openapi";
-import { parseArticle } from "./services/article-parser";
-import { summarizeArticle } from "./services/summary";
-import { translateArticle } from "./services/translator";
 import { createAiRoute } from "./routes/ai";
 import { createArticlesRoute } from "./routes/articles";
 import { createAuthRoute } from "./routes/auth";
@@ -26,6 +23,9 @@ import { createSubscriptionRoute } from "./routes/subscription";
 import { createSummaryRoute } from "./routes/summary";
 import { createTagsRoute } from "./routes/tags";
 import { createUsersRoute } from "./routes/users";
+import { parseArticle } from "./services/article-parser";
+import { summarizeArticle } from "./services/summary";
+import { translateArticle } from "./services/translator";
 
 /** Cloudflare Workers バインディング型定義 */
 type Bindings = {
@@ -342,9 +342,7 @@ app.on(["GET", "POST", "PATCH", "DELETE"], "/api/users/**", async (c) => {
   const usersRoute = createUsersRoute({
     db,
     r2Bucket: c.env.AVATARS_BUCKET,
-    r2PublicUrl: c.env.ENVIRONMENT === "production"
-      ? "https://avatars.techclip.io"
-      : undefined,
+    r2PublicUrl: c.env.ENVIRONMENT === "production" ? "https://avatars.techclip.io" : undefined,
   });
 
   const followsRoute = createFollowsRoute({

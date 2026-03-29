@@ -23,8 +23,8 @@ jest.mock("lucide-react-native", () => {
   };
 });
 
-import type React from "react";
 import { fireEvent, render } from "@testing-library/react-native";
+import type React from "react";
 import { Text } from "react-native";
 
 import { PremiumGate } from "../../src/components/PremiumGate";
@@ -42,7 +42,9 @@ const BASE_PROPS = {
  * レンダリングされたコンポーネントからTextノードのchildren一覧を取得する
  */
 function getAllTextContent(
-  unsafeGetAllByType: <P>(type: React.ComponentType<P>) => Array<{ props: Record<string, unknown> }>,
+  unsafeGetAllByType: <P>(
+    type: React.ComponentType<P>,
+  ) => Array<{ props: Record<string, unknown> }>,
 ): string[] {
   const textNodes = unsafeGetAllByType(Text);
   return textNodes

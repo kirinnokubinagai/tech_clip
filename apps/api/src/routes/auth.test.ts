@@ -301,9 +301,7 @@ describe("POST /api/auth/refresh", () => {
         from: vi.fn().mockReturnThis(),
         where: vi.fn().mockResolvedValue([MOCK_USER]),
       };
-      mockDb.select
-        .mockReturnValueOnce(selectChain)
-        .mockReturnValueOnce(selectChain2);
+      mockDb.select.mockReturnValueOnce(selectChain).mockReturnValueOnce(selectChain2);
       const app = createTestApp();
 
       // Act
