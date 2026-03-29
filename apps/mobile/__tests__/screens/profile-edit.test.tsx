@@ -9,7 +9,7 @@ jest.mock("expo-router", () => ({
   useRouter: () => ({ back: mockBack }),
 }));
 
-jest.mock("../../src/stores/auth-store", () => ({
+jest.mock("@/stores/auth-store", () => ({
   useAuthStore: jest.fn((selector: (state: Record<string, unknown>) => unknown) =>
     selector({ user: { name: "テストユーザー", image: null } }),
   ),

@@ -1,11 +1,9 @@
 /** lucide-react-nativeのモック */
 const React = require("react");
-const { View } = require("react-native");
 
 /** アイコンコンポーネントのモックファクトリ */
 const createMockIcon = (name) => {
-  const Icon = ({ testID, size, color, fill }) =>
-    React.createElement(View, { testID, accessibilityLabel: name });
+  const Icon = () => null;
   Icon.displayName = name;
   return Icon;
 };
