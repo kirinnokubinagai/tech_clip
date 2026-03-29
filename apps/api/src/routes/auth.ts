@@ -64,9 +64,7 @@ const SignInSchema = z.object({
   email: z
     .string({ error: "メールアドレスは必須です" })
     .email("メールアドレスの形式が正しくありません"),
-  password: z
-    .string({ error: "パスワードは必須です" })
-    .min(1, "パスワードを入力してください"),
+  password: z.string({ error: "パスワードは必須です" }).min(1, "パスワードを入力してください"),
 });
 
 /** リフレッシュリクエストのスキーマ */
