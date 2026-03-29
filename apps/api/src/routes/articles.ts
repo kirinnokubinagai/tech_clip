@@ -163,6 +163,7 @@ function omitContent(article: Record<string, unknown>): Record<string, unknown> 
  * 記事ルートを生成する
  *
  * GET /articles: 記事一覧（カーソルベースページネーション対応）
+ * POST /parse: URL解析プレビュー（認証必須）
  * POST /: 記事保存（Zodバリデーション、重複チェック付き）
  * GET /:id: 記事詳細取得（認証必須、所有者チェック付き）
  * PATCH /:id: 記事更新（isRead/isFavorite/isPublic、認証必須、所有者チェック付き）
@@ -295,6 +296,75 @@ export function createArticlesRoute(options: ArticlesRouteOptions) {
         hasNext,
       },
     });
+  });
+
+  route.post("/parse", async (c) => {
+    const user = c.get("user");
+    if (!user?.id) {
+      return c.json(
+        {
+          success: false,
+          error: {
+            code: AUTH_ERROR_CODE,
+            message: AUTH_ERROR_MESSAGE,
+          },
+        },
+        HTTP_UNAUTHORIZED,
+      );
+    }
+
+    const body = await c.req.json().catch(() => ({}));
+    const validation = CreateArticleSchema.safeParse(body);
+
+    if (!validation.success) {
+      return c.json(
+        {
+          success: false,
+          error: {
+            code: VALIDATION_ERROR_CODE,
+            message: VALIDATION_ERROR_MESSAGE,
+            details: validation.error.issues.map((e) => ({
+              field: e.path.join("."),
+              message: e.message,
+            })),
+          },
+        },
+        HTTP_UNPROCESSABLE_ENTITY,
+      );
+    }
+
+    const { url } = validation.data;
+
+    try {
+      const parsed = await parseArticleFn(url);
+
+      return c.json(
+        {
+          success: true,
+          data: {
+            title: parsed.title,
+            excerpt: parsed.excerpt,
+            author: parsed.author,
+            source: parsed.source,
+            thumbnailUrl: parsed.thumbnailUrl,
+            readingTimeMinutes: parsed.readingTimeMinutes,
+            publishedAt: parsed.publishedAt,
+          },
+        },
+        HTTP_OK,
+      );
+    } catch {
+      return c.json(
+        {
+          success: false,
+          error: {
+            code: "INTERNAL_ERROR",
+            message: "記事の解析に失敗しました",
+          },
+        },
+        HTTP_INTERNAL_SERVER_ERROR,
+      );
+    }
   });
 
   route.post("/", async (c) => {
