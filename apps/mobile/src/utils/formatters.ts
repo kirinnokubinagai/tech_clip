@@ -89,7 +89,8 @@ export function truncateText(
     return text;
   }
 
-  return text.slice(0, maxLength) + ellipsis;
+  const keepLength = ellipsis === DEFAULT_ELLIPSIS ? maxLength : maxLength + 1;
+  return text.slice(0, keepLength) + ellipsis;
 }
 
 /**
@@ -111,8 +112,10 @@ export function formatCompactNumber(num: number): string {
   if (absNum < MILLION) {
     const value = absNum / THOUSAND;
     const rounded = Math.round(value * 10) / 10;
-    const formatted = rounded % 1 === 0 ? `${rounded}` : `${rounded}`;
-    return `${prefix}${formatted}k`;
+    if (rounded < THOUSAND) {
+      const formatted = rounded % 1 === 0 ? `${rounded}` : `${rounded}`;
+      return `${prefix}${formatted}k`;
+    }
   }
 
   const value = absNum / MILLION;
