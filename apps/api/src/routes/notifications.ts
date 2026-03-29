@@ -1,4 +1,4 @@
-import { and, eq } from "drizzle-orm";
+import { and, eq, sql } from "drizzle-orm";
 import { Hono } from "hono";
 import { z } from "zod";
 
@@ -297,6 +297,77 @@ export function createNotificationsRoute(options: NotificationsRouteOptions) {
       return c.json({
         success: true,
         data: updated,
+      });
+    } catch {
+      return c.json(
+        {
+          success: false,
+          error: {
+            code: "INTERNAL_ERROR",
+            message: "通知の更新に失敗しました",
+          },
+        },
+        HTTP_INTERNAL_SERVER_ERROR,
+      );
+    }
+  });
+
+  route.get("/unread-count", async (c) => {
+    const user = c.get("user");
+    if (!user?.id) {
+      return c.json(
+        {
+          success: false,
+          error: {
+            code: AUTH_ERROR_CODE,
+            message: AUTH_ERROR_MESSAGE,
+          },
+        },
+        HTTP_UNAUTHORIZED,
+      );
+    }
+
+    const userId = user.id as string;
+
+    const result = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(notifications)
+      .where(and(eq(notifications.userId, userId), eq(notifications.isRead, false)));
+
+    const count = Number(result[0]?.count ?? 0);
+
+    return c.json({
+      success: true,
+      data: { count },
+    });
+  });
+
+  route.patch("/read-all", async (c) => {
+    const user = c.get("user");
+    if (!user?.id) {
+      return c.json(
+        {
+          success: false,
+          error: {
+            code: AUTH_ERROR_CODE,
+            message: AUTH_ERROR_MESSAGE,
+          },
+        },
+        HTTP_UNAUTHORIZED,
+      );
+    }
+
+    const userId = user.id as string;
+
+    try {
+      await db
+        .update(notifications)
+        .set({ isRead: true })
+        .where(and(eq(notifications.userId, userId), eq(notifications.isRead, false)));
+
+      return c.json({
+        success: true,
+        data: null,
       });
     } catch {
       return c.json(

@@ -51,7 +51,7 @@ export async function registerForPushNotifications(): Promise<string | null> {
  * @param token - Expoプッシュトークン文字列
  */
 export async function registerTokenWithApi(token: string): Promise<void> {
-  await apiFetch("/notifications/push-token", {
+  await apiFetch("/notifications/register", {
     method: "POST",
     body: JSON.stringify({ token, platform: Platform.OS }),
   });
