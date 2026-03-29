@@ -100,7 +100,7 @@ export function createAuthRoute({ db, getAuth }: AuthRouteOptions) {
           error: {
             code: VALIDATION_FAILED_CODE,
             message: "入力内容を確認してください",
-            details: parsed.error.errors.map((e) => ({
+            details: parsed.error.issues.map((e) => ({
               field: e.path.join("."),
               message: e.message,
             })),
