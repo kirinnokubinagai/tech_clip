@@ -8,11 +8,11 @@ ENVIRONMENT = "development"
 
 [[kv_namespaces]]
 binding = "RATE_LIMIT"
-id = "REPLACE_WITH_RATE_LIMIT_KV_ID"
+id = "113f55fe5de04673a2585e146b1520cc"
 
 [[kv_namespaces]]
 binding = "CACHE"
-id = "REPLACE_WITH_CACHE_KV_ID"
+id = "d8dd77ff2e0a4ee69e0d780657b02473"
 
 [[r2_buckets]]
 binding = "AVATARS_BUCKET"
