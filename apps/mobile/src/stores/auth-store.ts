@@ -40,7 +40,7 @@ export const useAuthStore = create<AuthStore>((set) => ({
    * @throws Error - 認証失敗時
    */
   signIn: async (params: SignInParams) => {
-    const data = await apiFetch<SignInResponse | AuthErrorResponse>("/auth/sign-in", {
+    const data = await apiFetch<SignInResponse | AuthErrorResponse>("/api/auth/sign-in", {
       method: "POST",
       body: JSON.stringify(params),
     });
@@ -128,7 +128,7 @@ export const useAuthStore = create<AuthStore>((set) => ({
     try {
       const data = await apiFetch<
         { success: true; data: { user: User; session: Session } } | AuthErrorResponse
-      >("/auth/session");
+      >("/api/auth/session");
 
       if (!data.success) {
         await clearAuthTokens();

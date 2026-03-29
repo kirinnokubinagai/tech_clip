@@ -13,6 +13,7 @@ import { summarizeArticle } from "./services/summary";
 import { translateArticle } from "./services/translator";
 import { createAiRoute } from "./routes/ai";
 import { createArticlesRoute } from "./routes/articles";
+import { createAuthRoute } from "./routes/auth";
 import { createEmailVerificationRoute } from "./routes/email-verification";
 import { createFavoriteRoute } from "./routes/favorite";
 import { createFollowsRoute } from "./routes/follows";
@@ -71,6 +72,63 @@ app.get("/health", (c) => {
 
 app.get("/openapi.json", (c) => {
   return c.json(openApiSpec);
+});
+
+app.on(["POST", "GET"], "/api/auth/sign-in", async (c) => {
+  const db = createDatabase({
+    TURSO_DATABASE_URL: c.env.TURSO_DATABASE_URL,
+    TURSO_AUTH_TOKEN: c.env.TURSO_AUTH_TOKEN,
+  });
+  const authRoute = createAuthRoute({
+    db,
+    getAuth: () =>
+      createAuth(db, c.env.BETTER_AUTH_SECRET, {
+        google: { clientId: c.env.GOOGLE_CLIENT_ID, clientSecret: c.env.GOOGLE_CLIENT_SECRET },
+        apple: { clientId: c.env.APPLE_CLIENT_ID, clientSecret: c.env.APPLE_CLIENT_SECRET },
+        github: { clientId: c.env.GITHUB_CLIENT_ID, clientSecret: c.env.GITHUB_CLIENT_SECRET },
+      }),
+  });
+  const subApp = new Hono();
+  subApp.route("/api/auth", authRoute);
+  return subApp.fetch(c.req.raw);
+});
+
+app.get("/api/auth/session", async (c) => {
+  const db = createDatabase({
+    TURSO_DATABASE_URL: c.env.TURSO_DATABASE_URL,
+    TURSO_AUTH_TOKEN: c.env.TURSO_AUTH_TOKEN,
+  });
+  const authRoute = createAuthRoute({
+    db,
+    getAuth: () =>
+      createAuth(db, c.env.BETTER_AUTH_SECRET, {
+        google: { clientId: c.env.GOOGLE_CLIENT_ID, clientSecret: c.env.GOOGLE_CLIENT_SECRET },
+        apple: { clientId: c.env.APPLE_CLIENT_ID, clientSecret: c.env.APPLE_CLIENT_SECRET },
+        github: { clientId: c.env.GITHUB_CLIENT_ID, clientSecret: c.env.GITHUB_CLIENT_SECRET },
+      }),
+  });
+  const subApp = new Hono();
+  subApp.route("/api/auth", authRoute);
+  return subApp.fetch(c.req.raw);
+});
+
+app.post("/api/auth/refresh", async (c) => {
+  const db = createDatabase({
+    TURSO_DATABASE_URL: c.env.TURSO_DATABASE_URL,
+    TURSO_AUTH_TOKEN: c.env.TURSO_AUTH_TOKEN,
+  });
+  const authRoute = createAuthRoute({
+    db,
+    getAuth: () =>
+      createAuth(db, c.env.BETTER_AUTH_SECRET, {
+        google: { clientId: c.env.GOOGLE_CLIENT_ID, clientSecret: c.env.GOOGLE_CLIENT_SECRET },
+        apple: { clientId: c.env.APPLE_CLIENT_ID, clientSecret: c.env.APPLE_CLIENT_SECRET },
+        github: { clientId: c.env.GITHUB_CLIENT_ID, clientSecret: c.env.GITHUB_CLIENT_SECRET },
+      }),
+  });
+  const subApp = new Hono();
+  subApp.route("/api/auth", authRoute);
+  return subApp.fetch(c.req.raw);
 });
 
 app.post("/api/auth/send-verification", async (c) => {

@@ -6,7 +6,7 @@ import { clearAuthTokens, getAuthToken, getRefreshToken, setAuthToken } from "./
 const REQUEST_TIMEOUT_MS = 15000;
 
 /** トークンリフレッシュAPIのパス */
-const REFRESH_TOKEN_PATH = "/auth/refresh";
+const REFRESH_TOKEN_PATH = "/api/auth/refresh";
 
 /**
  * セッション期限切れエラー
