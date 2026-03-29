@@ -141,7 +141,7 @@ describe("FollowButton", () => {
 
       // Cleanup
       await act(async () => {
-        resolve!();
+        resolve?.();
       });
     });
   });

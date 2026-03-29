@@ -129,10 +129,7 @@ export function createAuthRoute({ db, getAuth }: AuthRouteOptions) {
         );
       }
 
-      const [sessionRow] = await db
-        .select()
-        .from(sessions)
-        .where(eq(sessions.token, result.token));
+      const [sessionRow] = await db.select().from(sessions).where(eq(sessions.token, result.token));
 
       if (!sessionRow) {
         return c.json(
@@ -316,10 +313,7 @@ export function createAuthRoute({ db, getAuth }: AuthRouteOptions) {
         );
       }
 
-      const [userRow] = await db
-        .select()
-        .from(users)
-        .where(eq(users.id, sessionRow.userId));
+      const [userRow] = await db.select().from(users).where(eq(users.id, sessionRow.userId));
 
       if (!userRow) {
         return c.json(
