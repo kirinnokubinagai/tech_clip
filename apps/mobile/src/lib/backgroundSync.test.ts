@@ -1,9 +1,3 @@
-jest.mock("react-native", () => ({
-  AppState: {
-    addEventListener: jest.fn(),
-  },
-}));
-
 jest.mock("./syncManager", () => ({
   syncArticles: jest.fn(),
 }));
@@ -20,8 +14,10 @@ import {
 import { syncArticles } from "./syncManager";
 
 /** モック型キャスト */
-const mockAddEventListener = jest.mocked(AppState.addEventListener);
 const mockSyncArticles = jest.mocked(syncArticles);
+
+/** AppState.addEventListener のスパイ */
+let mockAddEventListener: jest.SpyInstance;
 
 /** NativeEventSubscription モック */
 function makeMockSubscription(): { remove: jest.Mock } {
@@ -32,9 +28,11 @@ describe("backgroundSync", () => {
   beforeEach(() => {
     jest.clearAllMocks();
     resetBackgroundSyncState();
-    mockAddEventListener.mockReturnValue(
-      makeMockSubscription() as ReturnType<typeof AppState.addEventListener>,
-    );
+    mockAddEventListener = jest
+      .spyOn(AppState, "addEventListener")
+      .mockReturnValue(
+        makeMockSubscription() as ReturnType<typeof AppState.addEventListener>,
+      );
   });
 
   afterEach(() => {
