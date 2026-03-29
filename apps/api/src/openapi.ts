@@ -919,7 +919,7 @@ export const openApiSpec: OpenApiSpec = {
       },
     },
 
-    "/api/search": {
+    "/api/articles/search": {
       get: {
         tags: ["Search"],
         summary: "記事全文検索",
@@ -956,7 +956,7 @@ export const openApiSpec: OpenApiSpec = {
       },
     },
 
-    "/api/register": {
+    "/api/notifications/register": {
       post: {
         tags: ["Notifications"],
         summary: "プッシュトークン登録",
