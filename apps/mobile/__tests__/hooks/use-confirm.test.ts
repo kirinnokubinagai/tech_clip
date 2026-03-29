@@ -1,3 +1,4 @@
+import { renderHook } from "@testing-library/react-native";
 import { Alert } from "react-native";
 
 import { useConfirm } from "../../src/hooks/use-confirm";
@@ -11,18 +12,18 @@ beforeEach(() => {
 describe("useConfirm", () => {
   it("関数を返すこと", () => {
     // Arrange & Act
-    const showConfirm = useConfirm();
+    const { result } = renderHook(() => useConfirm());
 
     // Assert
-    expect(typeof showConfirm).toBe("function");
+    expect(typeof result.current).toBe("function");
   });
 
   it("呼び出し時にAlert.alertが呼ばれること", () => {
     // Arrange
-    const showConfirm = useConfirm();
+    const { result } = renderHook(() => useConfirm());
 
     // Act
-    showConfirm({
+    result.current({
       title: "削除確認",
       message: "削除しますか？",
       onConfirm: jest.fn(),
@@ -34,13 +35,15 @@ describe("useConfirm", () => {
 
   it("プリセットオプションとマージされること", () => {
     // Arrange
-    const showConfirm = useConfirm({
-      variant: "warning",
-      cancelLabel: "やめる",
-    });
+    const { result } = renderHook(() =>
+      useConfirm({
+        variant: "warning",
+        cancelLabel: "やめる",
+      }),
+    );
 
     // Act
-    showConfirm({
+    result.current({
       title: "確認",
       message: "続行しますか？",
       onConfirm: jest.fn(),
@@ -55,13 +58,15 @@ describe("useConfirm", () => {
 
   it("呼び出し時のオプションがプリセットを上書きすること", () => {
     // Arrange
-    const showConfirm = useConfirm({
-      variant: "warning",
-      confirmLabel: "続行する",
-    });
+    const { result } = renderHook(() =>
+      useConfirm({
+        variant: "warning",
+        confirmLabel: "続行する",
+      }),
+    );
 
     // Act
-    showConfirm({
+    result.current({
       title: "削除",
       message: "削除しますか？",
       variant: "danger",
