@@ -63,9 +63,7 @@ describe("ErrorView", () => {
       const { UNSAFE_root } = render(<ErrorView title="カスタムタイトル" />);
 
       // Assert
-      expect(findByTestId(UNSAFE_root, "error-view-title").props.children).toBe(
-        "カスタムタイトル",
-      );
+      expect(findByTestId(UNSAFE_root, "error-view-title").props.children).toBe("カスタムタイトル");
     });
 
     it("カスタムメッセージが表示されること", () => {
