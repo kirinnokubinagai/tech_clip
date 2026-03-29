@@ -3,8 +3,7 @@
 // NativeWind v4 CSS interop mock for Jest environment
 const React = require("react");
 global._ReactNativeCSSInterop = {
-  createInteropElement: (type, props, ...children) =>
-    React.createElement(type, props, ...children),
+  createInteropElement: (type, props, ...children) => React.createElement(type, props, ...children),
   cssInterop: () => {},
   remapProps: () => {},
 };

@@ -1,8 +1,7 @@
 const React = jest.requireActual("react");
 
 const SafeAreaProvider = ({ children }) => children;
-const SafeAreaView = ({ children, ...props }) =>
-  React.createElement("div", props, children);
+const SafeAreaView = ({ children, ...props }) => React.createElement("div", props, children);
 const SafeAreaInsetsContext = React.createContext({
   top: 0,
   right: 0,

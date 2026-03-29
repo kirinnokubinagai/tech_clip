@@ -4,7 +4,8 @@ const originalCreateElement = actualReact.createElement.bind(actualReact);
 module.exports = {
   styled: (component) => component,
   useColorScheme: () => ({ colorScheme: "light" }),
-  createInteropElement: (type, props, ...children) => originalCreateElement(type, props, ...children),
+  createInteropElement: (type, props, ...children) =>
+    originalCreateElement(type, props, ...children),
   cssInterop: () => {},
   remapProps: () => {},
   vars: () => ({}),

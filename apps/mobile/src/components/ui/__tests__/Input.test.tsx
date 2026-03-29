@@ -57,9 +57,7 @@ describe("Input", () => {
     it("テキスト入力時にonChangeTextが呼ばれること", () => {
       // Arrange
       const onChangeText = jest.fn();
-      const { UNSAFE_root } = render(
-        <Input placeholder="入力" onChangeText={onChangeText} />,
-      );
+      const { UNSAFE_root } = render(<Input placeholder="入力" onChangeText={onChangeText} />);
 
       // Act
       fireEvent.changeText(findByTestId(UNSAFE_root, "input-field"), "テスト入力");
@@ -90,9 +88,7 @@ describe("Input", () => {
 
     it("編集不可状態が正しく設定されること", () => {
       // Arrange & Act
-      const { UNSAFE_root } = render(
-        <Input placeholder="読み取り専用" editable={false} />,
-      );
+      const { UNSAFE_root } = render(<Input placeholder="読み取り専用" editable={false} />);
 
       // Assert
       const input = findByTestId(UNSAFE_root, "input-field");
