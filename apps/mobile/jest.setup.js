@@ -1,7 +1,13 @@
 // jest-expo setup workaround for React Native compatibility
 
 // NativeWind v4 CSS interop mock for Jest environment
-global._ReactNativeCSSInterop = (component) => component;
+const React = require("react");
+global._ReactNativeCSSInterop = {
+  createInteropElement: (type, props, ...children) =>
+    React.createElement(type, props, ...children),
+  cssInterop: () => {},
+  remapProps: () => {},
+};
 
 // jest-expo/node renders testID as data-testid in DOM.
 // Configure RNTL to use data-testid so getByTestId works correctly.

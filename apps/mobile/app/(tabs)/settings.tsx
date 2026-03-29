@@ -37,6 +37,7 @@ type SettingsRowProps = {
   value?: string;
   onPress?: () => void;
   trailing?: ReactNode;
+  testID?: string;
 };
 
 /** アイコンサイズ */
@@ -54,7 +55,7 @@ const ICON_COLOR = "#94a3b8";
  * @param onPress - タップ時のコールバック
  * @param trailing - 右側に表示するカスタムウィジェット（Switchなど）
  */
-function SettingsRow({ icon, label, value, onPress, trailing }: SettingsRowProps) {
+function SettingsRow({ icon, label, value, onPress, trailing, testID }: SettingsRowProps) {
   const content = (
     <View className="flex-row items-center px-4 py-3">
       <View className="mr-3">{icon}</View>
@@ -67,6 +68,7 @@ function SettingsRow({ icon, label, value, onPress, trailing }: SettingsRowProps
   if (onPress) {
     return (
       <Pressable
+        testID={testID}
         onPress={onPress}
         accessibilityRole="button"
         accessibilityLabel={value ? `${label}、現在の設定: ${value}` : label}
@@ -170,6 +172,7 @@ export default function SettingsScreen() {
         />
         <SectionDivider />
         <SettingsRow
+          testID="settings-logout-button"
           icon={<LogOut size={ICON_SIZE} color="#ef4444" />}
           label="ログアウト"
           onPress={handleLogout}
@@ -219,6 +222,7 @@ export default function SettingsScreen() {
       <SectionTitle title="アカウント管理" />
       <View className="bg-surface mx-4 rounded-xl border border-border">
         <SettingsRow
+          testID="settings-delete-account-button"
           icon={<Trash2 size={ICON_SIZE} color="#ef4444" />}
           label="アカウントを削除する"
           onPress={handleDeleteAccount}

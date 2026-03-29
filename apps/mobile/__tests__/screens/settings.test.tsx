@@ -1,5 +1,7 @@
-import { fireEvent, render, screen } from "@testing-library/react-native";
+import { fireEvent, render } from "@testing-library/react-native";
 import { Alert } from "react-native";
+
+import { containsText, findByTestId } from "@/test-helpers";
 
 import SettingsScreen from "../../app/(tabs)/settings";
 
@@ -26,10 +28,10 @@ describe("SettingsScreen", () => {
   describe("ログアウト", () => {
     it("ログアウトボタンを押すと確認ダイアログが表示されること", () => {
       // Arrange
-      render(<SettingsScreen />);
+      const { UNSAFE_root } = render(<SettingsScreen />);
 
       // Act
-      fireEvent.press(screen.getByText("ログアウト"));
+      fireEvent.press(findByTestId(UNSAFE_root, "settings-logout-button"));
 
       // Assert
       expect(Alert.alert).toHaveBeenCalledTimes(1);
@@ -38,8 +40,8 @@ describe("SettingsScreen", () => {
 
     it("確認ダイアログのキャンセルボタンを押してもサインアウトが実行されないこと", () => {
       // Arrange
-      render(<SettingsScreen />);
-      fireEvent.press(screen.getByText("ログアウト"));
+      const { UNSAFE_root } = render(<SettingsScreen />);
+      fireEvent.press(findByTestId(UNSAFE_root, "settings-logout-button"));
 
       // Act
       const buttons = (Alert.alert as jest.Mock).mock.calls[0][2];
@@ -52,8 +54,8 @@ describe("SettingsScreen", () => {
 
     it("確認ダイアログの確認ボタンを押すとサインアウトが実行されること", () => {
       // Arrange
-      render(<SettingsScreen />);
-      fireEvent.press(screen.getByText("ログアウト"));
+      const { UNSAFE_root } = render(<SettingsScreen />);
+      fireEvent.press(findByTestId(UNSAFE_root, "settings-logout-button"));
 
       // Act
       const buttons = (Alert.alert as jest.Mock).mock.calls[0][2];
@@ -66,10 +68,10 @@ describe("SettingsScreen", () => {
 
     it("確認ダイアログのボタンがdestructiveスタイルであること", () => {
       // Arrange
-      render(<SettingsScreen />);
+      const { UNSAFE_root } = render(<SettingsScreen />);
 
       // Act
-      fireEvent.press(screen.getByText("ログアウト"));
+      fireEvent.press(findByTestId(UNSAFE_root, "settings-logout-button"));
 
       // Assert
       const buttons = (Alert.alert as jest.Mock).mock.calls[0][2];
@@ -81,18 +83,18 @@ describe("SettingsScreen", () => {
   describe("アカウント削除", () => {
     it("アカウント削除ボタンが表示されること", () => {
       // Arrange
-      render(<SettingsScreen />);
+      const { UNSAFE_root } = render(<SettingsScreen />);
 
       // Assert
-      expect(screen.getByText("アカウントを削除する")).toBeTruthy();
+      expect(containsText(UNSAFE_root, "アカウントを削除する")).toBe(true);
     });
 
     it("アカウント削除ボタンを押すと確認ダイアログが表示されること", () => {
       // Arrange
-      render(<SettingsScreen />);
+      const { UNSAFE_root } = render(<SettingsScreen />);
 
       // Act
-      fireEvent.press(screen.getByText("アカウントを削除する"));
+      fireEvent.press(findByTestId(UNSAFE_root, "settings-delete-account-button"));
 
       // Assert
       expect(Alert.alert).toHaveBeenCalledTimes(1);
@@ -105,8 +107,8 @@ describe("SettingsScreen", () => {
 
     it("確認ダイアログのキャンセルボタンを押してもアカウント削除が実行されないこと", () => {
       // Arrange
-      render(<SettingsScreen />);
-      fireEvent.press(screen.getByText("アカウントを削除する"));
+      const { UNSAFE_root } = render(<SettingsScreen />);
+      fireEvent.press(findByTestId(UNSAFE_root, "settings-delete-account-button"));
 
       // Act
       const buttons = (Alert.alert as jest.Mock).mock.calls[0][2];
@@ -120,8 +122,8 @@ describe("SettingsScreen", () => {
     it("確認ダイアログの確認ボタンを押すとアカウント削除が実行されること", () => {
       // Arrange
       mockDeleteAccount.mockResolvedValue(undefined);
-      render(<SettingsScreen />);
-      fireEvent.press(screen.getByText("アカウントを削除する"));
+      const { UNSAFE_root } = render(<SettingsScreen />);
+      fireEvent.press(findByTestId(UNSAFE_root, "settings-delete-account-button"));
 
       // Act
       const buttons = (Alert.alert as jest.Mock).mock.calls[0][2];
@@ -134,10 +136,10 @@ describe("SettingsScreen", () => {
 
     it("確認ダイアログの確認ボタンがdestructiveスタイルであること", () => {
       // Arrange
-      render(<SettingsScreen />);
+      const { UNSAFE_root } = render(<SettingsScreen />);
 
       // Act
-      fireEvent.press(screen.getByText("アカウントを削除する"));
+      fireEvent.press(findByTestId(UNSAFE_root, "settings-delete-account-button"));
 
       // Assert
       const buttons = (Alert.alert as jest.Mock).mock.calls[0][2];

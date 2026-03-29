@@ -1,5 +1,7 @@
 import { render } from "@testing-library/react-native";
 
+import { containsText, findByTestId } from "@/test-helpers";
+
 import { SOURCE_CONFIG, SourceBadge } from "../SourceBadge";
 import type { SourceName } from "../SourceBadge";
 
@@ -7,18 +9,18 @@ describe("SourceBadge", () => {
   describe("レンダリング", () => {
     it("ソース名が正しく表示されること", () => {
       // Arrange & Act
-      const { getByText } = render(<SourceBadge source="zenn" />);
+      const { UNSAFE_root } = render(<SourceBadge source="zenn" />);
 
       // Assert
-      expect(getByText("Zenn")).toBeDefined();
+      expect(containsText(UNSAFE_root, "Zenn")).toBe(true);
     });
 
     it("表示ラベルがSOURCE_CONFIGに基づくこと", () => {
       // Arrange & Act
-      const { getByText } = render(<SourceBadge source="hacker_news" />);
+      const { UNSAFE_root } = render(<SourceBadge source="hacker_news" />);
 
       // Assert
-      expect(getByText("Hacker News")).toBeDefined();
+      expect(containsText(UNSAFE_root, "Hacker News")).toBe(true);
     });
   });
 
@@ -52,11 +54,11 @@ describe("SourceBadge", () => {
 
     it.each(ALL_SOURCES)("%s のバッジがレンダリングできること", (source) => {
       // Arrange & Act
-      const { getByText } = render(<SourceBadge source={source} />);
+      const { UNSAFE_root } = render(<SourceBadge source={source} />);
 
       // Assert
       const config = SOURCE_CONFIG[source];
-      expect(getByText(config.label)).toBeDefined();
+      expect(containsText(UNSAFE_root, config.label)).toBe(true);
     });
 
     it.each(ALL_SOURCES)("%s のSOURCE_CONFIGにlabelとcolorが定義されていること", (source) => {
@@ -70,28 +72,29 @@ describe("SourceBadge", () => {
   describe("サイズ", () => {
     it("デフォルトサイズ(sm)でレンダリングできること", () => {
       // Arrange & Act
-      const { getByText } = render(<SourceBadge source="zenn" />);
+      const { UNSAFE_root } = render(<SourceBadge source="zenn" />);
 
       // Assert
-      expect(getByText("Zenn")).toBeDefined();
+      expect(containsText(UNSAFE_root, "Zenn")).toBe(true);
     });
 
     it("mdサイズでレンダリングできること", () => {
       // Arrange & Act
-      const { getByText } = render(<SourceBadge source="zenn" size="md" />);
+      const { UNSAFE_root } = render(<SourceBadge source="zenn" size="md" />);
 
       // Assert
-      expect(getByText("Zenn")).toBeDefined();
+      expect(containsText(UNSAFE_root, "Zenn")).toBe(true);
     });
   });
 
   describe("アクセシビリティ", () => {
     it("accessibilityLabelが設定されること", () => {
       // Arrange & Act
-      const { getByLabelText } = render(<SourceBadge source="qiita" />);
+      const { UNSAFE_root } = render(<SourceBadge source="qiita" />);
 
       // Assert
-      expect(getByLabelText("Qiita")).toBeDefined();
+      const badge = findByTestId(UNSAFE_root, "source-badge");
+      expect(badge.props.accessibilityLabel).toBe("Qiita");
     });
   });
 });

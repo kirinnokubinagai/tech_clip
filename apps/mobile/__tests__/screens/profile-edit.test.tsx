@@ -1,5 +1,7 @@
-import { fireEvent, render, screen, waitFor } from "@testing-library/react-native";
+import { fireEvent, render, waitFor } from "@testing-library/react-native";
 import { Alert } from "react-native";
+
+import { containsText, findByTestId } from "@/test-helpers";
 
 import ProfileEditScreen from "../../app/profile/edit";
 
@@ -31,10 +33,10 @@ describe("ProfileEditScreen", () => {
   describe("保存成功時のフィードバック", () => {
     it("保存ボタンを押すと保存処理が実行されること", async () => {
       // Arrange
-      render(<ProfileEditScreen />);
+      const { UNSAFE_root } = render(<ProfileEditScreen />);
 
       // Act
-      fireEvent.press(screen.getByText("保存する"));
+      fireEvent.press(findByTestId(UNSAFE_root, "button"));
 
       // Assert
       await waitFor(() => {
@@ -44,14 +46,14 @@ describe("ProfileEditScreen", () => {
 
     it("保存成功後にトーストメッセージが表示されること", async () => {
       // Arrange
-      render(<ProfileEditScreen />);
+      const { UNSAFE_root } = render(<ProfileEditScreen />);
 
       // Act
-      fireEvent.press(screen.getByText("保存する"));
+      fireEvent.press(findByTestId(UNSAFE_root, "button"));
 
       // Assert
       await waitFor(() => {
-        expect(screen.getByText("プロフィールを更新しました")).toBeTruthy();
+        expect(containsText(UNSAFE_root, "プロフィールを更新しました")).toBe(true);
       });
     });
   });
@@ -59,16 +61,16 @@ describe("ProfileEditScreen", () => {
   describe("バリデーションエラー", () => {
     it("名前が空の場合エラーメッセージが表示されること", async () => {
       // Arrange
-      render(<ProfileEditScreen />);
-      const nameInput = screen.getByPlaceholderText("名前を入力");
+      const { UNSAFE_root } = render(<ProfileEditScreen />);
+      const nameInput = UNSAFE_root.findByProps({ placeholder: "名前を入力" });
       fireEvent.changeText(nameInput, "");
 
       // Act
-      fireEvent.press(screen.getByText("保存する"));
+      fireEvent.press(findByTestId(UNSAFE_root, "button"));
 
       // Assert
       await waitFor(() => {
-        expect(screen.getByText("名前を入力してください")).toBeTruthy();
+        expect(containsText(UNSAFE_root, "名前を入力してください")).toBe(true);
       });
     });
   });

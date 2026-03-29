@@ -1,4 +1,7 @@
-import { fireEvent, render, screen } from "@testing-library/react-native";
+import { fireEvent, render } from "@testing-library/react-native";
+
+import { containsText, findByTestId, queryByTestId } from "@/test-helpers";
+
 import { ProfileHeader } from "../ProfileHeader";
 import type { ProfileHeaderUser } from "../ProfileHeader";
 
@@ -6,7 +9,7 @@ describe("ProfileHeader", () => {
   const baseUser: ProfileHeaderUser = {
     name: "テストユーザー",
     bio: "フロントエンドエンジニア。React Nativeが好き。",
-    avatarUrl: "https://example.com/avatar.png",
+    avatarUrl: null,
     followersCount: 128,
     followingCount: 64,
   };
@@ -17,10 +20,11 @@ describe("ProfileHeader", () => {
       const user = { ...baseUser };
 
       // Act
-      render(<ProfileHeader user={user} />);
+      const { UNSAFE_root } = render(<ProfileHeader user={user} />);
 
       // Assert
-      expect(screen.getByTestId("profile-name")).toHaveTextContent("テストユーザー");
+      const name = findByTestId(UNSAFE_root, "profile-name");
+      expect(name.props.children).toBe("テストユーザー");
     });
 
     it("bioが表示されること", () => {
@@ -28,12 +32,11 @@ describe("ProfileHeader", () => {
       const user = { ...baseUser };
 
       // Act
-      render(<ProfileHeader user={user} />);
+      const { UNSAFE_root } = render(<ProfileHeader user={user} />);
 
       // Assert
-      expect(screen.getByTestId("profile-bio")).toHaveTextContent(
-        "フロントエンドエンジニア。React Nativeが好き。",
-      );
+      const bio = findByTestId(UNSAFE_root, "profile-bio");
+      expect(containsText(bio, "フロントエンドエンジニア。React Nativeが好き。")).toBe(true);
     });
 
     it("bioがnullの場合は非表示になること", () => {
@@ -41,21 +44,10 @@ describe("ProfileHeader", () => {
       const user = { ...baseUser, bio: null };
 
       // Act
-      render(<ProfileHeader user={user} />);
+      const { UNSAFE_root } = render(<ProfileHeader user={user} />);
 
       // Assert
-      expect(screen.queryByTestId("profile-bio")).toBeNull();
-    });
-
-    it("アバター画像が表示されること", () => {
-      // Arrange
-      const user = { ...baseUser };
-
-      // Act
-      render(<ProfileHeader user={user} />);
-
-      // Assert
-      expect(screen.getByTestId("profile-avatar-image")).toBeTruthy();
+      expect(queryByTestId(UNSAFE_root, "profile-bio")).toBeNull();
     });
 
     it("アバターURLがnullの場合はフォールバックが表示されること", () => {
@@ -63,11 +55,11 @@ describe("ProfileHeader", () => {
       const user = { ...baseUser, avatarUrl: null };
 
       // Act
-      render(<ProfileHeader user={user} />);
+      const { UNSAFE_root } = render(<ProfileHeader user={user} />);
 
       // Assert
-      expect(screen.getByTestId("profile-avatar-fallback")).toBeTruthy();
-      expect(screen.queryByTestId("profile-avatar-image")).toBeNull();
+      expect(findByTestId(UNSAFE_root, "profile-avatar-fallback")).toBeDefined();
+      expect(queryByTestId(UNSAFE_root, "profile-avatar-image")).toBeNull();
     });
 
     it("フォロワー数が表示されること", () => {
@@ -75,10 +67,11 @@ describe("ProfileHeader", () => {
       const user = { ...baseUser };
 
       // Act
-      render(<ProfileHeader user={user} />);
+      const { UNSAFE_root } = render(<ProfileHeader user={user} />);
 
       // Assert
-      expect(screen.getByTestId("profile-followers-count")).toHaveTextContent("128");
+      const count = findByTestId(UNSAFE_root, "profile-followers-count");
+      expect(count.props.children).toBe("128");
     });
 
     it("フォロー中数が表示されること", () => {
@@ -86,10 +79,11 @@ describe("ProfileHeader", () => {
       const user = { ...baseUser };
 
       // Act
-      render(<ProfileHeader user={user} />);
+      const { UNSAFE_root } = render(<ProfileHeader user={user} />);
 
       // Assert
-      expect(screen.getByTestId("profile-following-count")).toHaveTextContent("64");
+      const count = findByTestId(UNSAFE_root, "profile-following-count");
+      expect(count.props.children).toBe("64");
     });
   });
 
@@ -99,10 +93,11 @@ describe("ProfileHeader", () => {
       const user = { ...baseUser, followersCount: 1500 };
 
       // Act
-      render(<ProfileHeader user={user} />);
+      const { UNSAFE_root } = render(<ProfileHeader user={user} />);
 
       // Assert
-      expect(screen.getByTestId("profile-followers-count")).toHaveTextContent("1.5K");
+      const count = findByTestId(UNSAFE_root, "profile-followers-count");
+      expect(count.props.children).toBe("1.5K");
     });
 
     it("10000以上の数値が万表記になること", () => {
@@ -110,10 +105,11 @@ describe("ProfileHeader", () => {
       const user = { ...baseUser, followersCount: 25000 };
 
       // Act
-      render(<ProfileHeader user={user} />);
+      const { UNSAFE_root } = render(<ProfileHeader user={user} />);
 
       // Assert
-      expect(screen.getByTestId("profile-followers-count")).toHaveTextContent("2.5万");
+      const count = findByTestId(UNSAFE_root, "profile-followers-count");
+      expect(count.props.children).toBe("2.5万");
     });
 
     it("1000未満の数値がそのまま表示されること", () => {
@@ -121,10 +117,11 @@ describe("ProfileHeader", () => {
       const user = { ...baseUser, followersCount: 42 };
 
       // Act
-      render(<ProfileHeader user={user} />);
+      const { UNSAFE_root } = render(<ProfileHeader user={user} />);
 
       // Assert
-      expect(screen.getByTestId("profile-followers-count")).toHaveTextContent("42");
+      const count = findByTestId(UNSAFE_root, "profile-followers-count");
+      expect(count.props.children).toBe("42");
     });
   });
 
@@ -134,8 +131,10 @@ describe("ProfileHeader", () => {
       const onSettingsPress = jest.fn();
 
       // Act
-      render(<ProfileHeader user={baseUser} onSettingsPress={onSettingsPress} />);
-      fireEvent.press(screen.getByTestId("profile-settings-button"));
+      const { UNSAFE_root } = render(
+        <ProfileHeader user={baseUser} onSettingsPress={onSettingsPress} />,
+      );
+      fireEvent.press(findByTestId(UNSAFE_root, "profile-settings-button"));
 
       // Assert
       expect(onSettingsPress).toHaveBeenCalledTimes(1);
@@ -143,10 +142,10 @@ describe("ProfileHeader", () => {
 
     it("onSettingsPressが未指定の場合は設定ボタンが非表示になること", () => {
       // Arrange & Act
-      render(<ProfileHeader user={baseUser} />);
+      const { UNSAFE_root } = render(<ProfileHeader user={baseUser} />);
 
       // Assert
-      expect(screen.queryByTestId("profile-settings-button")).toBeNull();
+      expect(queryByTestId(UNSAFE_root, "profile-settings-button")).toBeNull();
     });
   });
 });

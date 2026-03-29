@@ -1,4 +1,6 @@
-import { fireEvent, render, screen, waitFor } from "@testing-library/react-native";
+import { fireEvent, render, waitFor } from "@testing-library/react-native";
+
+import { containsText, findByTestId, queryByTestId } from "@/test-helpers";
 
 import SaveScreen from "../../app/article/save";
 
@@ -17,6 +19,7 @@ jest.mock("@/stores/auth-store", () => ({
 
 jest.mock("expo-router", () => ({
   router: { back: jest.fn(), push: jest.fn() },
+  useLocalSearchParams: () => ({}),
 }));
 
 jest.mock("expo-haptics", () => ({
@@ -32,7 +35,7 @@ const MOCK_PREVIEW_RESPONSE = {
     excerpt: "React Native 0.76の新機能について解説します",
     author: "テスト著者",
     source: "zenn" as const,
-    thumbnailUrl: "https://example.com/thumb.png",
+    thumbnailUrl: null,
     readingTimeMinutes: 5,
     publishedAt: "2025-01-01T00:00:00.000Z",
   },
@@ -48,7 +51,7 @@ const MOCK_SAVE_RESPONSE = {
     excerpt: "React Native 0.76の新機能について解説します",
     author: "テスト著者",
     source: "zenn",
-    thumbnailUrl: "https://example.com/thumb.png",
+    thumbnailUrl: null,
     readingTimeMinutes: 5,
     publishedAt: "2025-01-01T00:00:00.000Z",
     content: null,
@@ -69,34 +72,35 @@ describe("SaveScreen", () => {
   describe("初期表示", () => {
     it("URL入力フィールドが表示されること", () => {
       // Arrange & Act
-      render(<SaveScreen />);
+      const { UNSAFE_root } = render(<SaveScreen />);
 
       // Assert
-      expect(screen.getByPlaceholderText("https://")).toBeTruthy();
+      const input = UNSAFE_root.findByProps({ placeholder: "https://" });
+      expect(input).toBeDefined();
     });
 
     it("取得ボタンが表示されること", () => {
       // Arrange & Act
-      render(<SaveScreen />);
+      const { UNSAFE_root } = render(<SaveScreen />);
 
       // Assert
-      expect(screen.getByText("取得")).toBeTruthy();
+      expect(containsText(UNSAFE_root, "取得")).toBe(true);
     });
 
     it("プレビュー領域が初期状態では非表示であること", () => {
       // Arrange & Act
-      render(<SaveScreen />);
+      const { UNSAFE_root } = render(<SaveScreen />);
 
       // Assert
-      expect(screen.queryByTestId("article-preview")).toBeNull();
+      expect(queryByTestId(UNSAFE_root, "article-preview")).toBeNull();
     });
 
     it("保存ボタンが初期状態では非表示であること", () => {
       // Arrange & Act
-      render(<SaveScreen />);
+      const { UNSAFE_root } = render(<SaveScreen />);
 
       // Assert
-      expect(screen.queryByText("保存する")).toBeNull();
+      expect(containsText(UNSAFE_root, "保存する")).toBe(false);
     });
   });
 
@@ -104,61 +108,61 @@ describe("SaveScreen", () => {
     it("URLを入力して取得ボタンを押すとプレビューが表示されること", async () => {
       // Arrange
       mockApiFetch.mockResolvedValueOnce(MOCK_PREVIEW_RESPONSE);
-      render(<SaveScreen />);
+      const { UNSAFE_root } = render(<SaveScreen />);
 
       // Act
-      fireEvent.changeText(
-        screen.getByPlaceholderText("https://"),
-        "https://zenn.dev/test/articles/test-article",
-      );
-      fireEvent.press(screen.getByText("取得"));
+      const input = UNSAFE_root.findByProps({ placeholder: "https://" });
+      fireEvent.changeText(input, "https://zenn.dev/test/articles/test-article");
+      fireEvent.press(findByTestId(UNSAFE_root, "fetch-button"));
 
       // Assert
       await waitFor(() => {
-        expect(screen.getByTestId("article-preview")).toBeTruthy();
-        expect(screen.getByText("React Nativeの新機能")).toBeTruthy();
+        expect(findByTestId(UNSAFE_root, "article-preview")).toBeDefined();
+        expect(containsText(UNSAFE_root, "React Nativeの新機能")).toBe(true);
       });
     });
 
     it("取得中はローディング状態が表示されること", async () => {
       // Arrange
       mockApiFetch.mockReturnValueOnce(new Promise(() => {}));
-      render(<SaveScreen />);
+      const { UNSAFE_root } = render(<SaveScreen />);
 
       // Act
-      fireEvent.changeText(screen.getByPlaceholderText("https://"), "https://zenn.dev/test");
-      fireEvent.press(screen.getByText("取得"));
+      const input = UNSAFE_root.findByProps({ placeholder: "https://" });
+      fireEvent.changeText(input, "https://zenn.dev/test");
+      fireEvent.press(findByTestId(UNSAFE_root, "fetch-button"));
 
       // Assert
       await waitFor(() => {
-        expect(screen.getByTestId("fetch-loading")).toBeTruthy();
+        expect(findByTestId(UNSAFE_root, "fetch-loading")).toBeDefined();
       });
     });
 
     it("空URLで取得ボタンを押すとエラーメッセージが表示されること", async () => {
       // Arrange
-      render(<SaveScreen />);
+      const { UNSAFE_root } = render(<SaveScreen />);
 
       // Act
-      fireEvent.press(screen.getByText("取得"));
+      fireEvent.press(findByTestId(UNSAFE_root, "fetch-button"));
 
       // Assert
       await waitFor(() => {
-        expect(screen.getByText("URLを入力してください")).toBeTruthy();
+        expect(containsText(UNSAFE_root, "URLを入力してください")).toBe(true);
       });
     });
 
     it("不正なURLで取得ボタンを押すとエラーメッセージが表示されること", async () => {
       // Arrange
-      render(<SaveScreen />);
+      const { UNSAFE_root } = render(<SaveScreen />);
 
       // Act
-      fireEvent.changeText(screen.getByPlaceholderText("https://"), "not-a-url");
-      fireEvent.press(screen.getByText("取得"));
+      const input = UNSAFE_root.findByProps({ placeholder: "https://" });
+      fireEvent.changeText(input, "not-a-url");
+      fireEvent.press(findByTestId(UNSAFE_root, "fetch-button"));
 
       // Assert
       await waitFor(() => {
-        expect(screen.getByText("有効なURLを入力してください")).toBeTruthy();
+        expect(containsText(UNSAFE_root, "有効なURLを入力してください")).toBe(true);
       });
     });
 
@@ -168,15 +172,16 @@ describe("SaveScreen", () => {
         success: false,
         error: { code: "INTERNAL_ERROR", message: "記事の取得に失敗しました" },
       });
-      render(<SaveScreen />);
+      const { UNSAFE_root } = render(<SaveScreen />);
 
       // Act
-      fireEvent.changeText(screen.getByPlaceholderText("https://"), "https://example.com/article");
-      fireEvent.press(screen.getByText("取得"));
+      const input = UNSAFE_root.findByProps({ placeholder: "https://" });
+      fireEvent.changeText(input, "https://example.com/article");
+      fireEvent.press(findByTestId(UNSAFE_root, "fetch-button"));
 
       // Assert
       await waitFor(() => {
-        expect(screen.getByText("記事の取得に失敗しました")).toBeTruthy();
+        expect(containsText(UNSAFE_root, "記事の取得に失敗しました")).toBe(true);
       });
     });
   });
@@ -185,72 +190,64 @@ describe("SaveScreen", () => {
     it("記事タイトルが表示されること", async () => {
       // Arrange
       mockApiFetch.mockResolvedValueOnce(MOCK_PREVIEW_RESPONSE);
-      render(<SaveScreen />);
+      const { UNSAFE_root } = render(<SaveScreen />);
 
       // Act
-      fireEvent.changeText(
-        screen.getByPlaceholderText("https://"),
-        "https://zenn.dev/test/articles/test-article",
-      );
-      fireEvent.press(screen.getByText("取得"));
+      const input = UNSAFE_root.findByProps({ placeholder: "https://" });
+      fireEvent.changeText(input, "https://zenn.dev/test/articles/test-article");
+      fireEvent.press(findByTestId(UNSAFE_root, "fetch-button"));
 
       // Assert
       await waitFor(() => {
-        expect(screen.getByText("React Nativeの新機能")).toBeTruthy();
+        expect(containsText(UNSAFE_root, "React Nativeの新機能")).toBe(true);
       });
     });
 
     it("ソースバッジが表示されること", async () => {
       // Arrange
       mockApiFetch.mockResolvedValueOnce(MOCK_PREVIEW_RESPONSE);
-      render(<SaveScreen />);
+      const { UNSAFE_root } = render(<SaveScreen />);
 
       // Act
-      fireEvent.changeText(
-        screen.getByPlaceholderText("https://"),
-        "https://zenn.dev/test/articles/test-article",
-      );
-      fireEvent.press(screen.getByText("取得"));
+      const input = UNSAFE_root.findByProps({ placeholder: "https://" });
+      fireEvent.changeText(input, "https://zenn.dev/test/articles/test-article");
+      fireEvent.press(findByTestId(UNSAFE_root, "fetch-button"));
 
       // Assert
       await waitFor(() => {
-        expect(screen.getByText("zenn")).toBeTruthy();
+        expect(containsText(UNSAFE_root, "zenn")).toBe(true);
       });
     });
 
     it("excerptが表示されること", async () => {
       // Arrange
       mockApiFetch.mockResolvedValueOnce(MOCK_PREVIEW_RESPONSE);
-      render(<SaveScreen />);
+      const { UNSAFE_root } = render(<SaveScreen />);
 
       // Act
-      fireEvent.changeText(
-        screen.getByPlaceholderText("https://"),
-        "https://zenn.dev/test/articles/test-article",
-      );
-      fireEvent.press(screen.getByText("取得"));
+      const input = UNSAFE_root.findByProps({ placeholder: "https://" });
+      fireEvent.changeText(input, "https://zenn.dev/test/articles/test-article");
+      fireEvent.press(findByTestId(UNSAFE_root, "fetch-button"));
 
       // Assert
       await waitFor(() => {
-        expect(screen.getByText("React Native 0.76の新機能について解説します")).toBeTruthy();
+        expect(containsText(UNSAFE_root, "React Native 0.76の新機能について解説します")).toBe(true);
       });
     });
 
     it("保存ボタンが表示されること", async () => {
       // Arrange
       mockApiFetch.mockResolvedValueOnce(MOCK_PREVIEW_RESPONSE);
-      render(<SaveScreen />);
+      const { UNSAFE_root } = render(<SaveScreen />);
 
       // Act
-      fireEvent.changeText(
-        screen.getByPlaceholderText("https://"),
-        "https://zenn.dev/test/articles/test-article",
-      );
-      fireEvent.press(screen.getByText("取得"));
+      const input = UNSAFE_root.findByProps({ placeholder: "https://" });
+      fireEvent.changeText(input, "https://zenn.dev/test/articles/test-article");
+      fireEvent.press(findByTestId(UNSAFE_root, "fetch-button"));
 
       // Assert
       await waitFor(() => {
-        expect(screen.getByText("保存する")).toBeTruthy();
+        expect(containsText(UNSAFE_root, "保存する")).toBe(true);
       });
     });
   });
@@ -261,20 +258,18 @@ describe("SaveScreen", () => {
       mockApiFetch
         .mockResolvedValueOnce(MOCK_PREVIEW_RESPONSE)
         .mockResolvedValueOnce(MOCK_SAVE_RESPONSE);
-      render(<SaveScreen />);
+      const { UNSAFE_root } = render(<SaveScreen />);
 
-      fireEvent.changeText(
-        screen.getByPlaceholderText("https://"),
-        "https://zenn.dev/test/articles/test-article",
-      );
-      fireEvent.press(screen.getByText("取得"));
+      const input = UNSAFE_root.findByProps({ placeholder: "https://" });
+      fireEvent.changeText(input, "https://zenn.dev/test/articles/test-article");
+      fireEvent.press(findByTestId(UNSAFE_root, "fetch-button"));
 
       await waitFor(() => {
-        expect(screen.getByText("保存する")).toBeTruthy();
+        expect(containsText(UNSAFE_root, "保存する")).toBe(true);
       });
 
       // Act
-      fireEvent.press(screen.getByText("保存する"));
+      fireEvent.press(findByTestId(UNSAFE_root, "save-button"));
 
       // Assert
       await waitFor(() => {
@@ -293,24 +288,22 @@ describe("SaveScreen", () => {
       mockApiFetch
         .mockResolvedValueOnce(MOCK_PREVIEW_RESPONSE)
         .mockResolvedValueOnce(MOCK_SAVE_RESPONSE);
-      render(<SaveScreen />);
+      const { UNSAFE_root } = render(<SaveScreen />);
 
-      fireEvent.changeText(
-        screen.getByPlaceholderText("https://"),
-        "https://zenn.dev/test/articles/test-article",
-      );
-      fireEvent.press(screen.getByText("取得"));
+      const input = UNSAFE_root.findByProps({ placeholder: "https://" });
+      fireEvent.changeText(input, "https://zenn.dev/test/articles/test-article");
+      fireEvent.press(findByTestId(UNSAFE_root, "fetch-button"));
 
       await waitFor(() => {
-        expect(screen.getByText("保存する")).toBeTruthy();
+        expect(containsText(UNSAFE_root, "保存する")).toBe(true);
       });
 
       // Act
-      fireEvent.press(screen.getByText("保存する"));
+      fireEvent.press(findByTestId(UNSAFE_root, "save-button"));
 
       // Assert
       await waitFor(() => {
-        expect(screen.getByText("記事を保存しました")).toBeTruthy();
+        expect(containsText(UNSAFE_root, "記事を保存しました")).toBe(true);
       });
     });
 
@@ -320,24 +313,22 @@ describe("SaveScreen", () => {
         success: false,
         error: { code: "DUPLICATE", message: "この記事はすでに保存されています" },
       });
-      render(<SaveScreen />);
+      const { UNSAFE_root } = render(<SaveScreen />);
 
-      fireEvent.changeText(
-        screen.getByPlaceholderText("https://"),
-        "https://zenn.dev/test/articles/test-article",
-      );
-      fireEvent.press(screen.getByText("取得"));
+      const input = UNSAFE_root.findByProps({ placeholder: "https://" });
+      fireEvent.changeText(input, "https://zenn.dev/test/articles/test-article");
+      fireEvent.press(findByTestId(UNSAFE_root, "fetch-button"));
 
       await waitFor(() => {
-        expect(screen.getByText("保存する")).toBeTruthy();
+        expect(containsText(UNSAFE_root, "保存する")).toBe(true);
       });
 
       // Act
-      fireEvent.press(screen.getByText("保存する"));
+      fireEvent.press(findByTestId(UNSAFE_root, "save-button"));
 
       // Assert
       await waitFor(() => {
-        expect(screen.getByText("この記事はすでに保存されています")).toBeTruthy();
+        expect(containsText(UNSAFE_root, "この記事はすでに保存されています")).toBe(true);
       });
     });
   });

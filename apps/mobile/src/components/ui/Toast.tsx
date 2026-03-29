@@ -95,7 +95,7 @@ export function Toast({ message, variant = "info", visible, onDismiss }: ToastPr
         opacity,
       }}
     >
-      <Pressable onPress={onDismiss} accessibilityRole="alert">
+      <Pressable testID="toast-pressable" onPress={onDismiss} accessibilityRole="alert">
         <View className={`rounded-lg px-4 py-3 ${VARIANT_STYLES[variant]}`}>
           <Text className="text-white text-sm font-medium">{message}</Text>
         </View>

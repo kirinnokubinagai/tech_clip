@@ -47,6 +47,7 @@ export function Input({
     <View className="gap-1.5">
       {label && <Text className="text-text text-sm font-medium">{label}</Text>}
       <TextInput
+        testID="input-field"
         className={inputStyle}
         placeholder={placeholder}
         placeholderTextColor={PLACEHOLDER_COLOR}

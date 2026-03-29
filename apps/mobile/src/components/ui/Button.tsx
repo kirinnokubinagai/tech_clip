@@ -13,6 +13,7 @@ type ButtonProps = {
   disabled?: boolean;
   loading?: boolean;
   onPress?: () => void;
+  testID?: string;
 };
 
 /** バリアントごとのコンテナスタイル */
@@ -73,6 +74,7 @@ export function Button({
   disabled = false,
   loading = false,
   onPress,
+  testID = "button",
 }: ButtonProps) {
   const isDisabled = disabled || loading;
   const containerStyle = `rounded-lg items-center justify-center ${SIZE_STYLES[size]} ${VARIANT_STYLES[variant]} ${isDisabled ? "opacity-50" : ""}`;
@@ -80,6 +82,7 @@ export function Button({
 
   return (
     <Pressable
+      testID={testID}
       className={containerStyle}
       disabled={isDisabled}
       onPress={onPress}
