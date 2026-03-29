@@ -179,7 +179,7 @@ export function useRequestTranslation() {
   return useMutation({
     mutationFn: async (articleId: string) => {
       const response = await apiFetch<{ success: boolean; data: { translation: string } }>(
-        `/articles/${articleId}/translation`,
+        `/articles/${articleId}/translate`,
         { method: "POST" },
       );
       return response;

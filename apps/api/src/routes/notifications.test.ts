@@ -25,6 +25,9 @@ const MOCK_NOTIFICATIONS = Array.from({ length: 25 }, (_, i) => ({
 /** HTTP 200 OK ステータスコード */
 const HTTP_OK = 200;
 
+/** HTTP 500 Internal Server Error ステータスコード */
+const HTTP_INTERNAL_SERVER_ERROR = 500;
+
 /** HTTP 201 Created ステータスコード */
 const HTTP_CREATED = 201;
 
@@ -890,6 +893,158 @@ describe("PATCH /api/notifications/:id/read", () => {
       // Assert
       const body = (await res.json()) as ErrorResponseBody;
       expect(body.error.message).toBe("通知が見つかりません");
+    });
+  });
+});
+
+/** GET /api/notifications/unread-count レスポンスの型定義 */
+type UnreadCountResponseBody = {
+  success: boolean;
+  data?: { count: number };
+  error?: {
+    code: string;
+    message: string;
+  };
+};
+
+describe("GET /api/notifications/unread-count", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  describe("正常系", () => {
+    it("未読通知数を返すこと", async () => {
+      // Arrange
+      const app = createMutationTestApp();
+      mockSelectWhere.mockResolvedValue([{ count: 3 }]);
+
+      // Act
+      const res = await app.request("/api/notifications/unread-count");
+
+      // Assert
+      expect(res.status).toBe(HTTP_OK);
+      const body = (await res.json()) as UnreadCountResponseBody;
+      expect(body.success).toBe(true);
+      expect(body.data?.count).toBe(3);
+    });
+
+    it("未読通知がない場合0を返すこと", async () => {
+      // Arrange
+      const app = createMutationTestApp();
+      mockSelectWhere.mockResolvedValue([{ count: 0 }]);
+
+      // Act
+      const res = await app.request("/api/notifications/unread-count");
+
+      // Assert
+      expect(res.status).toBe(HTTP_OK);
+      const body = (await res.json()) as UnreadCountResponseBody;
+      expect(body.success).toBe(true);
+      expect(body.data?.count).toBe(0);
+    });
+  });
+
+  describe("認証", () => {
+    it("未認証の場合401が返ること", async () => {
+      // Arrange
+      const app = createMutationTestAppWithoutAuth();
+
+      // Act
+      const res = await app.request("/api/notifications/unread-count");
+
+      // Assert
+      expect(res.status).toBe(HTTP_UNAUTHORIZED);
+      const body = (await res.json()) as ErrorResponseBody;
+      expect(body.success).toBe(false);
+      expect(body.error.code).toBe("AUTH_REQUIRED");
+    });
+  });
+});
+
+/** PATCH /api/notifications/read-all レスポンスの型定義 */
+type ReadAllResponseBody = {
+  success: boolean;
+  data?: null;
+  error?: {
+    code: string;
+    message: string;
+  };
+};
+
+describe("PATCH /api/notifications/read-all", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockUpdateSet.mockReturnValue({
+      where: mockUpdateWhere,
+    });
+    mockUpdateWhere.mockResolvedValue(undefined);
+  });
+
+  describe("正常系", () => {
+    it("全通知を既読にして200を返すこと", async () => {
+      // Arrange
+      const app = createMutationTestApp();
+
+      // Act
+      const res = await app.request("/api/notifications/read-all", {
+        method: "PATCH",
+      });
+
+      // Assert
+      expect(res.status).toBe(HTTP_OK);
+      const body = (await res.json()) as ReadAllResponseBody;
+      expect(body.success).toBe(true);
+    });
+
+    it("updateが正しいパラメータで呼ばれること", async () => {
+      // Arrange
+      const app = createMutationTestApp();
+
+      // Act
+      await app.request("/api/notifications/read-all", {
+        method: "PATCH",
+      });
+
+      // Assert
+      expect(mockUpdate).toHaveBeenCalledWith(expect.anything());
+      expect(mockUpdateSet).toHaveBeenCalledWith({ isRead: true });
+    });
+  });
+
+  describe("認証", () => {
+    it("未認証の場合401が返ること", async () => {
+      // Arrange
+      const app = createMutationTestAppWithoutAuth();
+
+      // Act
+      const res = await app.request("/api/notifications/read-all", {
+        method: "PATCH",
+      });
+
+      // Assert
+      expect(res.status).toBe(HTTP_UNAUTHORIZED);
+      const body = (await res.json()) as ErrorResponseBody;
+      expect(body.success).toBe(false);
+      expect(body.error.code).toBe("AUTH_REQUIRED");
+    });
+  });
+
+  describe("エラーハンドリング", () => {
+    it("DB更新失敗時に500を返すこと", async () => {
+      // Arrange
+      const app = createMutationTestApp();
+      mockUpdateWhere.mockRejectedValue(new Error("DB error"));
+
+      // Act
+      const res = await app.request("/api/notifications/read-all", {
+        method: "PATCH",
+      });
+
+      // Assert
+      expect(res.status).toBe(HTTP_INTERNAL_SERVER_ERROR);
+      const body = (await res.json()) as ReadAllResponseBody;
+      expect(body.success).toBe(false);
+      expect(body.error?.message).toBe("通知の更新に失敗しました");
     });
   });
 });
