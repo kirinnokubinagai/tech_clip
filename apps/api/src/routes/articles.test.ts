@@ -54,7 +54,6 @@ const MOCK_PARSED_ARTICLE = {
   source: "zenn" as const,
 };
 
-
 /** GET レスポンスの型定義 */
 type ArticlesResponseBody = {
   success: boolean;
@@ -242,7 +241,6 @@ function postArticle(app: { request: Hono["request"] }, body: Record<string, unk
     body: JSON.stringify(body),
   });
 }
-
 
 /** 個別記事テスト用のモック記事データ */
 const MOCK_SINGLE_ARTICLE = {

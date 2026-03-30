@@ -24,8 +24,14 @@ describe("RegisterScreen", () => {
       const { getByDisplayValue, getByAccessibilityHint } = render(<RegisterScreen />);
 
       fireEvent.changeText(getByAccessibilityHint("お名前を入力してください"), "テストユーザー");
-      fireEvent.changeText(getByAccessibilityHint("メールアドレスを入力してください"), "test@example.com");
-      fireEvent.changeText(getByAccessibilityHint("8文字以上のパスワードを入力してください"), "Password123");
+      fireEvent.changeText(
+        getByAccessibilityHint("メールアドレスを入力してください"),
+        "test@example.com",
+      );
+      fireEvent.changeText(
+        getByAccessibilityHint("8文字以上のパスワードを入力してください"),
+        "Password123",
+      );
 
       // Act
       fireEvent.press(getByAccessibilityHint("入力した情報で新規アカウントを作成します"));
@@ -45,8 +51,14 @@ describe("RegisterScreen", () => {
       // Arrange
       const { getByAccessibilityHint } = render(<RegisterScreen />);
 
-      fireEvent.changeText(getByAccessibilityHint("メールアドレスを入力してください"), "test@example.com");
-      fireEvent.changeText(getByAccessibilityHint("8文字以上のパスワードを入力してください"), "Password123");
+      fireEvent.changeText(
+        getByAccessibilityHint("メールアドレスを入力してください"),
+        "test@example.com",
+      );
+      fireEvent.changeText(
+        getByAccessibilityHint("8文字以上のパスワードを入力してください"),
+        "Password123",
+      );
 
       // Act
       fireEvent.press(getByAccessibilityHint("入力した情報で新規アカウントを作成します"));
@@ -62,7 +74,10 @@ describe("RegisterScreen", () => {
       const { getByAccessibilityHint } = render(<RegisterScreen />);
 
       fireEvent.changeText(getByAccessibilityHint("お名前を入力してください"), "テストユーザー");
-      fireEvent.changeText(getByAccessibilityHint("8文字以上のパスワードを入力してください"), "Password123");
+      fireEvent.changeText(
+        getByAccessibilityHint("8文字以上のパスワードを入力してください"),
+        "Password123",
+      );
 
       // Act
       fireEvent.press(getByAccessibilityHint("入力した情報で新規アカウントを作成します"));
@@ -78,7 +93,10 @@ describe("RegisterScreen", () => {
       const { getByAccessibilityHint } = render(<RegisterScreen />);
 
       fireEvent.changeText(getByAccessibilityHint("お名前を入力してください"), "テストユーザー");
-      fireEvent.changeText(getByAccessibilityHint("メールアドレスを入力してください"), "test@example.com");
+      fireEvent.changeText(
+        getByAccessibilityHint("メールアドレスを入力してください"),
+        "test@example.com",
+      );
 
       // Act
       fireEvent.press(getByAccessibilityHint("入力した情報で新規アカウントを作成します"));
@@ -95,8 +113,14 @@ describe("RegisterScreen", () => {
       const { getByAccessibilityHint, findByText } = render(<RegisterScreen />);
 
       fireEvent.changeText(getByAccessibilityHint("お名前を入力してください"), "テストユーザー");
-      fireEvent.changeText(getByAccessibilityHint("メールアドレスを入力してください"), "test@example.com");
-      fireEvent.changeText(getByAccessibilityHint("8文字以上のパスワードを入力してください"), "Password123");
+      fireEvent.changeText(
+        getByAccessibilityHint("メールアドレスを入力してください"),
+        "test@example.com",
+      );
+      fireEvent.changeText(
+        getByAccessibilityHint("8文字以上のパスワードを入力してください"),
+        "Password123",
+      );
 
       // Act
       fireEvent.press(getByAccessibilityHint("入力した情報で新規アカウントを作成します"));

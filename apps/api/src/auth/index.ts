@@ -36,6 +36,9 @@ const MOBILE_APP_SCHEME = "techclip://";
  * @param baseURL - Better Auth のベースURL（省略時はLOCAL_APP_URLを使用）
  * @returns Better Auth インスタンス
  */
+/** Better Auth インスタンスの型 */
+export type Auth = ReturnType<typeof createAuth>;
+
 export function createAuth(
   db: Database,
   secret: string,

@@ -1,11 +1,7 @@
 import { Hono } from "hono";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import {
-  HTTP_OK,
-  HTTP_UNAUTHORIZED,
-  HTTP_UNPROCESSABLE_ENTITY,
-} from "../lib/http-status";
+import { HTTP_OK, HTTP_UNAUTHORIZED, HTTP_UNPROCESSABLE_ENTITY } from "../lib/http-status";
 import { createNotificationSettingsRoute } from "./notification-settings";
 
 /** テスト用のモックユーザー */

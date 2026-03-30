@@ -5,17 +5,12 @@ import { z } from "zod";
 import type { Database } from "../db";
 import { users } from "../db/schema";
 import {
-  AUTH_ERROR_CODE as AUTH_REQUIRED_CODE,
-  AUTH_ERROR_MESSAGE as AUTH_REQUIRED_MESSAGE,
   AUTH_INVALID_CODE,
   AUTH_INVALID_MESSAGE,
+  AUTH_ERROR_CODE as AUTH_REQUIRED_CODE,
+  AUTH_ERROR_MESSAGE as AUTH_REQUIRED_MESSAGE,
 } from "../lib/error-codes";
-import {
-  HTTP_BAD_REQUEST,
-  HTTP_NOT_FOUND,
-  HTTP_OK,
-  HTTP_UNAUTHORIZED,
-} from "../lib/http-status";
+import { HTTP_BAD_REQUEST, HTTP_NOT_FOUND, HTTP_OK, HTTP_UNAUTHORIZED } from "../lib/http-status";
 
 /** リクエスト不正エラーコード */
 const INVALID_REQUEST_CODE = "INVALID_REQUEST";
@@ -54,6 +49,27 @@ type SubscriptionRouteOptions = {
   db: Database;
   webhookSecret: string;
 };
+
+/**
+ * タイミング攻撃を防ぐための定数時間文字列比較
+ *
+ * @param a - 比較対象の文字列
+ * @param b - 比較対象の文字列
+ * @returns 一致する場合 true
+ */
+function timingSafeEqual(a: string, b: string): boolean {
+  if (a.length !== b.length) {
+    return false;
+  }
+  const encoder = new TextEncoder();
+  const bufA = encoder.encode(a);
+  const bufB = encoder.encode(b);
+  let result = 0;
+  for (let i = 0; i < bufA.length; i++) {
+    result |= bufA[i] ^ bufB[i];
+  }
+  return result === 0;
+}
 
 /**
  * イベントタイプがプレミアム有効化イベントかどうかを判定する

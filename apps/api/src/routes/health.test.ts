@@ -19,14 +19,16 @@ describe("createHealthRoute", () => {
 
       // Act
       const res = await app.request("/api/health");
-      const body = await res.json();
+      const body = (await res.json()) as Record<string, unknown>;
+      const data = body.data as Record<string, unknown>;
+      const error = body.error as Record<string, unknown> | undefined;
 
       // Assert
       expect(res.status).toBe(HTTP_OK);
       expect(body.success).toBe(true);
-      expect(body.data.status).toBe("ok");
-      expect(body.data.db).toBe("ok");
-      expect(typeof body.data.timestamp).toBe("string");
+      expect(data.status).toBe("ok");
+      expect(data.db).toBe("ok");
+      expect(typeof data.timestamp).toBe("string");
     });
 
     it("DB接続に失敗した場合に503とエラー情報を返すこと", async () => {
@@ -38,14 +40,16 @@ describe("createHealthRoute", () => {
 
       // Act
       const res = await app.request("/api/health");
-      const body = await res.json();
+      const body = (await res.json()) as Record<string, unknown>;
+      const data = body.data as Record<string, unknown>;
+      const error = body.error as Record<string, unknown> | undefined;
 
       // Assert
       expect(res.status).toBe(HTTP_SERVICE_UNAVAILABLE);
       expect(body.success).toBe(false);
-      expect(body.error.code).toBe("SERVICE_UNAVAILABLE");
-      expect(body.data.status).toBe("error");
-      expect(body.data.db).toBe("error");
+      expect(error?.code).toBe("SERVICE_UNAVAILABLE");
+      expect(data.status).toBe("error");
+      expect(data.db).toBe("error");
     });
 
     it("DBチェックが実行されること", async () => {

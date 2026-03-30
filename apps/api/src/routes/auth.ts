@@ -5,9 +5,9 @@ import { z } from "zod";
 import type { Database } from "../db";
 import { sessions, users } from "../db/schema";
 import {
-  AUTH_ERROR_CODE as AUTH_REQUIRED_CODE,
   AUTH_EXPIRED_CODE,
   AUTH_INVALID_CODE,
+  AUTH_ERROR_CODE as AUTH_REQUIRED_CODE,
   INTERNAL_ERROR_CODE,
   VALIDATION_ERROR_CODE as VALIDATION_FAILED_CODE,
 } from "../lib/error-codes";

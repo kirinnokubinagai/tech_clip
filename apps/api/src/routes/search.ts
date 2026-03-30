@@ -9,6 +9,16 @@ import {
 } from "../lib/error-codes";
 import { HTTP_UNAUTHORIZED, HTTP_UNPROCESSABLE_ENTITY } from "../lib/http-status";
 
+/**
+ * LIKE検索のワイルドカード文字をエスケープする
+ *
+ * @param input - エスケープ対象の文字列
+ * @returns エスケープ済み文字列
+ */
+export function escapeLikeWildcards(input: string): string {
+  return input.replace(/[%_\\]/g, (char) => `\\${char}`);
+}
+
 /** デフォルトのページサイズ */
 const DEFAULT_LIMIT = 20;
 

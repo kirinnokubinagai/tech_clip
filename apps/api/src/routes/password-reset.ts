@@ -5,13 +5,13 @@ import { z } from "zod";
 import type { Database } from "../db";
 import { accounts, users, verifications } from "../db/schema";
 import { VALIDATION_ERROR_CODE, VALIDATION_ERROR_MESSAGE } from "../lib/error-codes";
-import { createLogger } from "../lib/logger";
 import {
   HTTP_BAD_REQUEST,
   HTTP_INTERNAL_SERVER_ERROR,
   HTTP_OK,
   HTTP_UNPROCESSABLE_ENTITY,
 } from "../lib/http-status";
+import { createLogger } from "../lib/logger";
 import type { EmailEnv } from "../services/emailService";
 import { sendPasswordReset } from "../services/emailService";
 

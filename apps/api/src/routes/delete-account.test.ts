@@ -1,11 +1,7 @@
 import { Hono } from "hono";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import {
-  HTTP_INTERNAL_SERVER_ERROR,
-  HTTP_NO_CONTENT,
-  HTTP_UNAUTHORIZED,
-} from "../lib/http-status";
+import { HTTP_INTERNAL_SERVER_ERROR, HTTP_NO_CONTENT, HTTP_UNAUTHORIZED } from "../lib/http-status";
 import { createUsersRoute } from "./users";
 
 /** テスト用のモックユーザー */

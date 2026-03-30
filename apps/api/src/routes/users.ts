@@ -359,7 +359,7 @@ export function createUsersRoute(options: UsersRouteOptions) {
     if (oldAvatarUrl) {
       const oldKey = oldAvatarUrl.replace(`${r2PublicUrl}/`, "");
       await r2Bucket.delete(oldKey).catch((err) => {
-        logger.warn("旧アバター画像の削除に失敗しました", { oldKey, error: err });
+        console.warn("旧アバター画像の削除に失敗しました", { oldKey, error: err });
       });
     }
 

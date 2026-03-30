@@ -1,11 +1,7 @@
 import { Hono } from "hono";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import {
-  HTTP_NOT_FOUND,
-  HTTP_OK,
-  HTTP_UNPROCESSABLE_ENTITY,
-} from "../lib/http-status";
+import { HTTP_NOT_FOUND, HTTP_OK, HTTP_UNPROCESSABLE_ENTITY } from "../lib/http-status";
 import { createPublicArticlesRoute } from "./public-articles";
 
 /** テスト用のユーザーID */
