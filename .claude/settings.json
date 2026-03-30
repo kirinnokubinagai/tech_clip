@@ -41,6 +41,28 @@
             "statusMessage": "Checking for dangerous commands..."
           }
         ]
+      },
+      {
+        "matcher": "Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"$(git rev-parse --show-toplevel 2>/dev/null || echo .)/.claude/hooks/main-edit-guard.sh\"",
+            "timeout": 5,
+            "statusMessage": "Checking branch for edit..."
+          }
+        ]
+      },
+      {
+        "matcher": "Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"$(git rev-parse --show-toplevel 2>/dev/null || echo .)/.claude/hooks/main-edit-guard.sh\"",
+            "timeout": 5,
+            "statusMessage": "Checking branch for write..."
+          }
+        ]
       }
     ],
     "Stop": [
@@ -83,7 +105,20 @@
       "mcp__sequential-thinking__*"
     ],
     "deny": [
-      "Bash(drizzle-kit push:*)"
+      "Bash(drizzle-kit push:*)",
+      "Bash(*push*--force*)",
+      "Bash(*push*-f *)",
+      "Bash(*push*--force-with-lease*)",
+      "Bash(*reset --hard*)",
+      "Bash(*checkout -- *)",
+      "Bash(*clean -f*)",
+      "Bash(*-X theirs*)",
+      "Bash(*-X ours*)",
+      "Bash(*--strategy-option*theirs*)",
+      "Bash(*--strategy-option*ours*)",
+      "Bash(*gh api*protection*)",
+      "Bash(*gh pr merge*--admin*)",
+      "Bash(*enforce_admins*)"
     ]
   },
   "worktree": {
