@@ -1,0 +1,4 @@
+appId: com.techclip.app
+---
+# TechClip Maestro E2E テスト設定
+# 実行方法: maestro test .maestro/
