@@ -264,19 +264,13 @@ export function createSubscriptionRoute(options: SubscriptionRouteOptions) {
       );
     }
 
-    await db
-      .update(users)
-      .set({
-        isPremium: false,
-        premiumExpiresAt: null,
-      })
-      .where(eq(users.id, user.id as string));
-
     return c.json(
       {
         success: true,
         data: {
-          message: "サブスクリプションをキャンセルしました",
+          message:
+            "ストアのサブスクリプション管理画面から解約手続きを行ってください。解約完了後、自動的にプレミアム状態が更新されます。",
+          action: "redirect_to_store",
         },
       },
       HTTP_OK,
