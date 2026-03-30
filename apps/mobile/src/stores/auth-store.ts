@@ -2,7 +2,7 @@ import { create } from "zustand";
 
 import { SessionExpiredError, apiFetch } from "@/lib/api";
 import { clearAuthTokens, getAuthToken, setAuthToken, setRefreshToken } from "@/lib/secure-store";
-import type { AuthErrorResponse, Session, SignInParams, SignInResponse, User } from "@/types/auth";
+import type { AuthErrorResponse, Session, SignInParams, SignInResponse, SignUpParams, SignUpResponse, User } from "@/types/auth";
 
 /** セッション期限切れメッセージ */
 const SESSION_EXPIRED_MESSAGE = "セッションの有効期限が切れました。再度ログインしてください";
