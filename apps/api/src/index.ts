@@ -133,9 +133,11 @@ app.post("/api/auth/refresh", async (c) => {
 });
 
 app.post("/api/auth/send-verification", async (c) => {
-  const db = c.get("db");
-  const appUrl =
-    c.env.ENVIRONMENT === "production" ? "https://app.techclip.io" : "http://localhost:8081";
+  const db = createDatabase({
+    TURSO_DATABASE_URL: c.env.TURSO_DATABASE_URL,
+    TURSO_AUTH_TOKEN: c.env.TURSO_AUTH_TOKEN,
+  });
+  const appUrl = c.env.APP_URL ?? "http://localhost:8081";
   const route = createEmailVerificationRoute({
     db,
     appUrl,
@@ -147,9 +149,11 @@ app.post("/api/auth/send-verification", async (c) => {
 });
 
 app.post("/api/auth/verify-email", async (c) => {
-  const db = c.get("db");
-  const appUrl =
-    c.env.ENVIRONMENT === "production" ? "https://app.techclip.io" : "http://localhost:8081";
+  const db = createDatabase({
+    TURSO_DATABASE_URL: c.env.TURSO_DATABASE_URL,
+    TURSO_AUTH_TOKEN: c.env.TURSO_AUTH_TOKEN,
+  });
+  const appUrl = c.env.APP_URL ?? "http://localhost:8081";
   const route = createEmailVerificationRoute({
     db,
     appUrl,
@@ -170,7 +174,7 @@ app.on(["POST", "GET"], "/api/auth/**", async (c) => {
   ) {
     const passwordResetRoute = createPasswordResetRoute({
       db,
-      appUrl: c.env.APP_URL ?? "https://app.techclip.example.com",
+      appUrl: c.env.APP_URL ?? "http://localhost:8081",
       emailEnv: { RESEND_API_KEY: c.env.RESEND_API_KEY, FROM_EMAIL: c.env.FROM_EMAIL },
     });
     const subApp = new Hono();
