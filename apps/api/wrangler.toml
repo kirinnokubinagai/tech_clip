@@ -38,11 +38,11 @@ ENVIRONMENT = "staging"
 
 [[env.staging.kv_namespaces]]
 binding = "RATE_LIMIT"
-id = "STAGING_RATE_LIMIT_KV_ID"
+id = "113f55fe5de04673a2585e146b1520cc" # TODO: wrangler kv namespace create tech-clip-rate-limit-staging で作成後に置換
 
 [[env.staging.kv_namespaces]]
 binding = "CACHE"
-id = "STAGING_CACHE_KV_ID"
+id = "d8dd77ff2e0a4ee69e0d780657b02473" # TODO: wrangler kv namespace create tech-clip-cache-staging で作成後に置換
 
 [[env.staging.r2_buckets]]
 binding = "AVATARS_BUCKET"
@@ -59,11 +59,11 @@ ENVIRONMENT = "production"
 
 [[env.production.kv_namespaces]]
 binding = "RATE_LIMIT"
-id = "PRODUCTION_RATE_LIMIT_KV_ID"
+id = "113f55fe5de04673a2585e146b1520cc" # TODO: wrangler kv namespace create tech-clip-rate-limit-production で作成後に置換
 
 [[env.production.kv_namespaces]]
 binding = "CACHE"
-id = "PRODUCTION_CACHE_KV_ID"
+id = "d8dd77ff2e0a4ee69e0d780657b02473" # TODO: wrangler kv namespace create tech-clip-cache-production で作成後に置換
 
 [[env.production.r2_buckets]]
 binding = "AVATARS_BUCKET"
