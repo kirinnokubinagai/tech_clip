@@ -215,10 +215,10 @@ describe("syncManager", () => {
 
       // Assert
       expect(mockApiFetch).toHaveBeenCalledTimes(2);
-      expect(mockApiFetch).toHaveBeenNthCalledWith(1, "/articles", expect.any(Object));
+      expect(mockApiFetch).toHaveBeenNthCalledWith(1, "/api/articles", expect.any(Object));
       expect(mockApiFetch).toHaveBeenNthCalledWith(
         2,
-        "/articles?cursor=cursor-abc",
+        "/api/articles?cursor=cursor-abc",
         expect.any(Object),
       );
       expect(mockUpsertArticle).toHaveBeenCalledTimes(2);
