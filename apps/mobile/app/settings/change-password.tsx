@@ -42,10 +42,7 @@ type TFunction = (key: string, opts?: Record<string, unknown>) => string;
  * @param t - 翻訳関数
  * @returns エラーオブジェクト。エラーがない場合は空オブジェクト
  */
-export function validateChangePasswordForm(
-  data: ChangePasswordFormData,
-  t: TFunction,
-): FormErrors {
+export function validateChangePasswordForm(data: ChangePasswordFormData, t: TFunction): FormErrors {
   const errors: FormErrors = {};
 
   if (!data.currentPassword) {
@@ -129,10 +126,7 @@ export default function ChangePasswordScreen() {
       showToast(t("settings.changePassword.saveSuccess"), "success");
       router.back();
     } catch {
-      Alert.alert(
-        t("common.errorTitle"),
-        t("settings.changePassword.saveFailed"),
-      );
+      Alert.alert(t("common.errorTitle"), t("settings.changePassword.saveFailed"));
     } finally {
       setIsSaving(false);
     }

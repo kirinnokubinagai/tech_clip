@@ -103,4 +103,6 @@ class ErrorBoundaryBase extends Component<ErrorBoundaryProps, ErrorBoundaryState
   }
 }
 
-export const ErrorBoundary = withTranslation()(ErrorBoundaryBase) as unknown as React.ComponentType<ErrorBoundaryOwnProps>;
+export const ErrorBoundary = withTranslation()(
+  ErrorBoundaryBase,
+) as unknown as React.ComponentType<ErrorBoundaryOwnProps>;
