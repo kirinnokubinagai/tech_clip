@@ -25,6 +25,7 @@ import { createSubscriptionRoute } from "./routes/subscription";
 import { createSummaryRoute } from "./routes/summary";
 import { createTagsRoute } from "./routes/tags";
 import { createUsersRoute } from "./routes/users";
+import { fetchWithAuth } from "./lib/route-helpers";
 import { parseArticle } from "./services/article-parser";
 import { summarizeArticle } from "./services/summary";
 import { translateArticle } from "./services/translator";
@@ -307,23 +308,17 @@ app.on(["GET", "POST", "PATCH", "DELETE"], "/api/articles/**", async (c) => {
     },
   });
 
-  const subApp = new Hono<{ Variables: { user?: Record<string, unknown> } }>();
-
-  subApp.use("*", async (ctx, next) => {
-    const result = await auth.api.getSession({ headers: ctx.req.raw.headers });
-    if (result) {
-      ctx.set("user", result.user);
-    }
-    await next();
-  });
-
-  subApp.route("/api/articles", articlesRoute);
-  subApp.route("/api", summaryRoute);
-  subApp.route("/api/articles", aiRoute);
-  subApp.route("/api/articles", favoriteRoute);
-  subApp.route("/api/articles", searchRoute);
-
-  return subApp.fetch(c.req.raw);
+  return fetchWithAuth(
+    auth.api.getSession.bind(auth.api),
+    (subApp) => {
+      subApp.route("/api/articles", articlesRoute);
+      subApp.route("/api", summaryRoute);
+      subApp.route("/api/articles", aiRoute);
+      subApp.route("/api/articles", favoriteRoute);
+      subApp.route("/api/articles", searchRoute);
+    },
+    c.req.raw,
+  );
 });
 
 app.on(["GET", "POST", "PATCH", "DELETE"], "/api/users/**", async (c) => {
@@ -390,20 +385,14 @@ app.on(["GET", "POST", "PATCH", "DELETE"], "/api/users/**", async (c) => {
     },
   });
 
-  const subApp = new Hono<{ Variables: { user?: Record<string, unknown> } }>();
-
-  subApp.use("*", async (ctx, next) => {
-    const result = await auth.api.getSession({ headers: ctx.req.raw.headers });
-    if (result) {
-      ctx.set("user", result.user);
-    }
-    await next();
-  });
-
-  subApp.route("/api/users", usersRoute);
-  subApp.route("/api/users", followsRoute);
-
-  return subApp.fetch(c.req.raw);
+  return fetchWithAuth(
+    auth.api.getSession.bind(auth.api),
+    (subApp) => {
+      subApp.route("/api/users", usersRoute);
+      subApp.route("/api/users", followsRoute);
+    },
+    c.req.raw,
+  );
 });
 
 app.on(["GET", "POST", "PATCH"], "/api/tags/**", async (c) => {
@@ -412,19 +401,13 @@ app.on(["GET", "POST", "PATCH"], "/api/tags/**", async (c) => {
 
   const tagsRoute = createTagsRoute({ db });
 
-  const subApp = new Hono<{ Variables: { user?: Record<string, unknown> } }>();
-
-  subApp.use("*", async (ctx, next) => {
-    const result = await auth.api.getSession({ headers: ctx.req.raw.headers });
-    if (result) {
-      ctx.set("user", result.user);
-    }
-    await next();
-  });
-
-  subApp.route("/api", tagsRoute);
-
-  return subApp.fetch(c.req.raw);
+  return fetchWithAuth(
+    auth.api.getSession.bind(auth.api),
+    (subApp) => {
+      subApp.route("/api", tagsRoute);
+    },
+    c.req.raw,
+  );
 });
 
 app.on(["GET", "POST", "PATCH"], "/api/notifications/**", async (c) => {
@@ -448,19 +431,13 @@ app.on(["GET", "POST", "PATCH"], "/api/notifications/**", async (c) => {
     },
   });
 
-  const subApp = new Hono<{ Variables: { user?: Record<string, unknown> } }>();
-
-  subApp.use("*", async (ctx, next) => {
-    const result = await auth.api.getSession({ headers: ctx.req.raw.headers });
-    if (result) {
-      ctx.set("user", result.user);
-    }
-    await next();
-  });
-
-  subApp.route("/api", notificationsRoute);
-
-  return subApp.fetch(c.req.raw);
+  return fetchWithAuth(
+    auth.api.getSession.bind(auth.api),
+    (subApp) => {
+      subApp.route("/api", notificationsRoute);
+    },
+    c.req.raw,
+  );
 });
 
 app.on(["GET", "PATCH"], "/api/notification-settings/**", async (c) => {
@@ -469,19 +446,13 @@ app.on(["GET", "PATCH"], "/api/notification-settings/**", async (c) => {
 
   const notificationSettingsRoute = createNotificationSettingsRoute({ db });
 
-  const subApp = new Hono<{ Variables: { user?: Record<string, unknown> } }>();
-
-  subApp.use("*", async (ctx, next) => {
-    const result = await auth.api.getSession({ headers: ctx.req.raw.headers });
-    if (result) {
-      ctx.set("user", result.user);
-    }
-    await next();
-  });
-
-  subApp.route("/api", notificationSettingsRoute);
-
-  return subApp.fetch(c.req.raw);
+  return fetchWithAuth(
+    auth.api.getSession.bind(auth.api),
+    (subApp) => {
+      subApp.route("/api", notificationSettingsRoute);
+    },
+    c.req.raw,
+  );
 });
 
 app.on(["GET", "POST"], "/api/subscription/**", async (c) => {
@@ -493,19 +464,13 @@ app.on(["GET", "POST"], "/api/subscription/**", async (c) => {
     webhookSecret: c.env.REVENUECAT_WEBHOOK_SECRET ?? "",
   });
 
-  const subApp = new Hono<{ Variables: { user?: Record<string, unknown> } }>();
-
-  subApp.use("*", async (ctx, next) => {
-    const result = await auth.api.getSession({ headers: ctx.req.raw.headers });
-    if (result) {
-      ctx.set("user", result.user);
-    }
-    await next();
-  });
-
-  subApp.route("/api/subscription", subscriptionRoute);
-
-  return subApp.fetch(c.req.raw);
+  return fetchWithAuth(
+    auth.api.getSession.bind(auth.api),
+    (subApp) => {
+      subApp.route("/api/subscription", subscriptionRoute);
+    },
+    c.req.raw,
+  );
 });
 
 export default app;

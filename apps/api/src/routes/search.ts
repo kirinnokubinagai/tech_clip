@@ -1,4 +1,5 @@
 import { Hono } from "hono";
+import { omitContent } from "../lib/response-utils";
 
 /** デフォルトのページサイズ */
 const DEFAULT_LIMIT = 20;
@@ -45,27 +46,6 @@ export type SearchQueryFn = (params: SearchQueryParams) => Promise<Array<Record<
 type SearchRouteOptions = {
   searchQueryFn: SearchQueryFn;
 };
-
-/**
- * LIKE演算子のワイルドカード文字をエスケープする
- *
- * @param query - エスケープ対象の検索キーワード
- * @returns ワイルドカード文字（%、_、\）をエスケープした文字列
- */
-export function escapeLikeWildcards(query: string): string {
-  return query.replace(/[%_\\]/g, "\\$&");
-}
-
-/**
- * レスポンスからcontentフィールドを除外する
- *
- * @param article - 記事データ
- * @returns contentを除いた記事データ
- */
-function omitContent(article: Record<string, unknown>): Record<string, unknown> {
-  const { content: _, ...rest } = article;
-  return rest;
-}
 
 /**
  * 全文検索ルートを生成する

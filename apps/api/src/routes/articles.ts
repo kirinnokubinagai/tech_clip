@@ -4,6 +4,7 @@ import { z } from "zod";
 
 import type { Database } from "../db";
 import { articles } from "../db/schema";
+import { omitContent } from "../lib/response-utils";
 import type { ParsedArticle } from "../services/article-parser";
 
 /** デフォルトのページサイズ */
@@ -146,17 +147,6 @@ function parseBooleanParam(value: string | undefined): boolean | undefined | str
     return false;
   }
   return "invalid";
-}
-
-/**
- * レスポンスからcontentフィールドを除外する
- *
- * @param article - 記事データ
- * @returns contentを除いた記事データ
- */
-function omitContent(article: Record<string, unknown>): Record<string, unknown> {
-  const { content: _, ...rest } = article;
-  return rest;
 }
 
 /**
