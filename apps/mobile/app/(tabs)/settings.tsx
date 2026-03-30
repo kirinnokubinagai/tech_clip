@@ -14,6 +14,7 @@ import { Alert, Pressable, ScrollView, Switch, Text, View } from "react-native";
 
 import { confirm } from "@/components/ConfirmDialog";
 import { useRouter } from "expo-router";
+import { useSubscription } from "../../src/hooks/use-subscription";
 import { useAuthStore } from "../../src/stores/auth-store";
 import { useSettingsStore } from "../../src/stores/settings-store";
 
@@ -93,6 +94,7 @@ export default function SettingsScreen() {
   const signOut = useAuthStore((s) => s.signOut);
   const deleteAccount = useAuthStore((s) => s.deleteAccount);
   const user = useAuthStore((s) => s.user);
+  const { isSubscribed } = useSubscription();
 
   const language = useSettingsStore((s) => s.language);
   const setLanguage = useSettingsStore((s) => s.setLanguage);
@@ -213,7 +215,7 @@ export default function SettingsScreen() {
         <SettingsRow
           icon={<CreditCard size={ICON_SIZE} color={ICON_COLOR} />}
           label="プラン"
-          value="Free"
+          value={isSubscribed ? "Premium" : "Free"}
         />
       </View>
 
