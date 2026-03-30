@@ -38,14 +38,14 @@
             fi
 
             # .env の自動コピー（存在しない場合のみ）
-            for env_example in apps/mobile/.env.example apps/api/.dev.vars.example; do
-              env_file="''${env_example%.example}"
-              env_file="''${env_file%.vars.example}.vars"
-              if [ -f "$env_example" ] && [ ! -f "$env_file" ]; then
-                cp "$env_example" "$env_file"
-                echo "Created $env_file from example"
-              fi
-            done
+            if [ -f "apps/mobile/.env.example" ] && [ ! -f "apps/mobile/.env" ]; then
+              cp apps/mobile/.env.example apps/mobile/.env
+              echo "Created apps/mobile/.env from example"
+            fi
+            if [ -f "apps/api/.dev.vars.example" ] && [ ! -f "apps/api/.dev.vars" ]; then
+              cp apps/api/.dev.vars.example apps/api/.dev.vars
+              echo "Created apps/api/.dev.vars from example"
+            fi
 
             echo ""
             echo "TechClip dev environment ready"
