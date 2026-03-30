@@ -24,8 +24,13 @@ jest.mock("@tanstack/react-query", () => ({
 
 jest.mock("../../src/stores/auth-store", () => ({
   useAuthStore: jest.fn(
-    (selector: (s: { isAuthenticated: boolean; isLoading: boolean; checkSession: () => void }) => unknown) =>
-      selector({ isAuthenticated: false, isLoading: false, checkSession: jest.fn() }),
+    (
+      selector: (s: {
+        isAuthenticated: boolean;
+        isLoading: boolean;
+        checkSession: () => void;
+      }) => unknown,
+    ) => selector({ isAuthenticated: false, isLoading: false, checkSession: jest.fn() }),
   ),
 }));
 
@@ -46,8 +51,8 @@ jest.mock("../../src/stores/ui-store", () => ({
   ),
 }));
 
-import RootLayout from "../_layout";
 import { configureRevenueCat } from "../../src/lib/revenueCat";
+import RootLayout from "../_layout";
 
 const mockedConfigureRevenueCat = configureRevenueCat as jest.MockedFunction<
   typeof configureRevenueCat
