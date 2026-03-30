@@ -1,6 +1,14 @@
 import { Hono } from "hono";
 import { omitContent } from "../lib/response-utils";
 
+import {
+  AUTH_ERROR_CODE,
+  AUTH_ERROR_MESSAGE,
+  VALIDATION_ERROR_CODE,
+  VALIDATION_ERROR_MESSAGE,
+} from "../lib/error-codes";
+import { HTTP_UNAUTHORIZED, HTTP_UNPROCESSABLE_ENTITY } from "../lib/http-status";
+
 /** デフォルトのページサイズ */
 const DEFAULT_LIMIT = 20;
 
@@ -12,24 +20,6 @@ const MAX_LIMIT = 50;
 
 /** 検索キーワード最大文字数 */
 const QUERY_MAX_LENGTH = 200;
-
-/** HTTP 401 Unauthorized ステータスコード */
-const HTTP_UNAUTHORIZED = 401;
-
-/** HTTP 422 Unprocessable Entity ステータスコード */
-const HTTP_UNPROCESSABLE_ENTITY = 422;
-
-/** 未認証エラーコード */
-const AUTH_ERROR_CODE = "AUTH_REQUIRED";
-
-/** 未認証エラーメッセージ */
-const AUTH_ERROR_MESSAGE = "ログインが必要です";
-
-/** バリデーションエラーコード */
-const VALIDATION_ERROR_CODE = "VALIDATION_FAILED";
-
-/** バリデーションエラーメッセージ */
-const VALIDATION_ERROR_MESSAGE = "入力内容を確認してください";
 
 /** 検索クエリパラメータの型 */
 export type SearchQueryParams = {

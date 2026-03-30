@@ -1,5 +1,17 @@
 import { Hono } from "hono";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+
+import {
+  HTTP_CONFLICT,
+  HTTP_CREATED,
+  HTTP_FORBIDDEN,
+  HTTP_INTERNAL_SERVER_ERROR,
+  HTTP_NOT_FOUND,
+  HTTP_NO_CONTENT,
+  HTTP_OK,
+  HTTP_UNAUTHORIZED,
+  HTTP_UNPROCESSABLE_ENTITY,
+} from "../lib/http-status";
 import type { ArticlesQueryFn } from "./articles";
 import { createArticlesRoute } from "./articles";
 
@@ -42,20 +54,6 @@ const MOCK_PARSED_ARTICLE = {
   source: "zenn" as const,
 };
 
-/** HTTP 201 Created ステータスコード */
-const HTTP_CREATED = 201;
-
-/** HTTP 401 Unauthorized ステータスコード */
-const HTTP_UNAUTHORIZED = 401;
-
-/** HTTP 409 Conflict ステータスコード */
-const HTTP_CONFLICT = 409;
-
-/** HTTP 422 Unprocessable Entity ステータスコード */
-const HTTP_UNPROCESSABLE_ENTITY = 422;
-
-/** HTTP 500 Internal Server Error ステータスコード */
-const HTTP_INTERNAL_SERVER_ERROR = 500;
 
 /** GET レスポンスの型定義 */
 type ArticlesResponseBody = {
@@ -245,17 +243,6 @@ function postArticle(app: { request: Hono["request"] }, body: Record<string, unk
   });
 }
 
-/** HTTP 200 OK ステータスコード */
-const HTTP_OK = 200;
-
-/** HTTP 204 No Content ステータスコード */
-const HTTP_NO_CONTENT = 204;
-
-/** HTTP 403 Forbidden ステータスコード */
-const HTTP_FORBIDDEN = 403;
-
-/** HTTP 404 Not Found ステータスコード */
-const HTTP_NOT_FOUND = 404;
 
 /** 個別記事テスト用のモック記事データ */
 const MOCK_SINGLE_ARTICLE = {

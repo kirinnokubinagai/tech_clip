@@ -4,41 +4,25 @@ import { z } from "zod";
 
 import type { Database } from "../db";
 import { users, verifications } from "../db/schema";
+import {
+  AUTH_ERROR_CODE,
+  AUTH_ERROR_MESSAGE,
+  VALIDATION_ERROR_CODE,
+  VALIDATION_ERROR_MESSAGE,
+} from "../lib/error-codes";
 import { createLogger } from "../lib/logger";
+import {
+  HTTP_BAD_REQUEST,
+  HTTP_INTERNAL_SERVER_ERROR,
+  HTTP_NOT_FOUND,
+  HTTP_OK,
+  HTTP_UNAUTHORIZED,
+  HTTP_UNPROCESSABLE_ENTITY,
+} from "../lib/http-status";
 import type { EmailEnv } from "../services/emailService";
 import { sendEmailVerification } from "../services/emailService";
 
 const logger = createLogger();
-
-/** HTTP 200 OK ステータスコード */
-const HTTP_OK = 200;
-
-/** HTTP 400 Bad Request ステータスコード */
-const HTTP_BAD_REQUEST = 400;
-
-/** HTTP 401 Unauthorized ステータスコード */
-const HTTP_UNAUTHORIZED = 401;
-
-/** HTTP 404 Not Found ステータスコード */
-const HTTP_NOT_FOUND = 404;
-
-/** HTTP 422 Unprocessable Entity ステータスコード */
-const HTTP_UNPROCESSABLE_ENTITY = 422;
-
-/** HTTP 500 Internal Server Error ステータスコード */
-const HTTP_INTERNAL_SERVER_ERROR = 500;
-
-/** 未認証エラーコード */
-const AUTH_ERROR_CODE = "AUTH_REQUIRED";
-
-/** 未認証エラーメッセージ */
-const AUTH_ERROR_MESSAGE = "ログインが必要です";
-
-/** バリデーションエラーコード */
-const VALIDATION_ERROR_CODE = "VALIDATION_FAILED";
-
-/** バリデーションエラーメッセージ */
-const VALIDATION_ERROR_MESSAGE = "入力内容を確認してください";
 
 /** メール認証トークンの有効期間（ミリ秒） */
 const VERIFICATION_TOKEN_TTL_MS = 24 * 60 * 60 * 1000;

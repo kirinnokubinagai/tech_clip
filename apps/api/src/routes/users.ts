@@ -4,43 +4,22 @@ import { z } from "zod";
 
 import type { Database } from "../db";
 import { users } from "../db/schema";
-import { createLogger } from "../lib/logger";
+import {
+  AUTH_ERROR_CODE,
+  AUTH_ERROR_MESSAGE,
+  VALIDATION_ERROR_CODE,
+  VALIDATION_ERROR_MESSAGE,
+} from "../lib/error-codes";
+import {
+  HTTP_BAD_REQUEST,
+  HTTP_CONFLICT,
+  HTTP_INTERNAL_SERVER_ERROR,
+  HTTP_NOT_FOUND,
+  HTTP_NO_CONTENT,
+  HTTP_UNAUTHORIZED,
+  HTTP_UNPROCESSABLE_ENTITY,
+} from "../lib/http-status";
 import { uploadAvatarToR2, validateImageFile } from "../services/imageUpload";
-
-const logger = createLogger();
-
-/** HTTP 400 Bad Request ステータスコード */
-const HTTP_BAD_REQUEST = 400;
-
-/** HTTP 401 Unauthorized ステータスコード */
-const HTTP_UNAUTHORIZED = 401;
-
-/** HTTP 404 Not Found ステータスコード */
-const HTTP_NOT_FOUND = 404;
-
-/** HTTP 409 Conflict ステータスコード */
-const HTTP_CONFLICT = 409;
-
-/** HTTP 422 Unprocessable Entity ステータスコード */
-const HTTP_UNPROCESSABLE_ENTITY = 422;
-
-/** HTTP 204 No Content ステータスコード */
-const HTTP_NO_CONTENT = 204;
-
-/** HTTP 500 Internal Server Error ステータスコード */
-const HTTP_INTERNAL_SERVER_ERROR = 500;
-
-/** 未認証エラーコード */
-const AUTH_ERROR_CODE = "AUTH_REQUIRED";
-
-/** 未認証エラーメッセージ */
-const AUTH_ERROR_MESSAGE = "ログインが必要です";
-
-/** バリデーションエラーコード */
-const VALIDATION_ERROR_CODE = "VALIDATION_FAILED";
-
-/** バリデーションエラーメッセージ */
-const VALIDATION_ERROR_MESSAGE = "入力内容を確認してください";
 
 /** 名前最大文字数 */
 const NAME_MAX_LENGTH = 100;

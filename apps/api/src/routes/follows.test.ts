@@ -1,5 +1,15 @@
 import { Hono } from "hono";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+
+import {
+  HTTP_CONFLICT,
+  HTTP_CREATED,
+  HTTP_NOT_FOUND,
+  HTTP_NO_CONTENT,
+  HTTP_OK,
+  HTTP_UNAUTHORIZED,
+  HTTP_UNPROCESSABLE_ENTITY,
+} from "../lib/http-status";
 import type { FollowFn, GetFollowListFn, IsFollowingFn, UnfollowFn, UserExistsFn } from "./follows";
 import { createFollowsRoute } from "./follows";
 
@@ -16,27 +26,6 @@ const MOCK_TARGET_USER = {
   email: "target@example.com",
   name: "フォロー対象ユーザー",
 };
-
-/** HTTP 200 OK ステータスコード */
-const HTTP_OK = 200;
-
-/** HTTP 201 Created ステータスコード */
-const HTTP_CREATED = 201;
-
-/** HTTP 204 No Content ステータスコード */
-const HTTP_NO_CONTENT = 204;
-
-/** HTTP 401 Unauthorized ステータスコード */
-const HTTP_UNAUTHORIZED = 401;
-
-/** HTTP 404 Not Found ステータスコード */
-const HTTP_NOT_FOUND = 404;
-
-/** HTTP 409 Conflict ステータスコード */
-const HTTP_CONFLICT = 409;
-
-/** HTTP 422 Unprocessable Entity ステータスコード */
-const HTTP_UNPROCESSABLE_ENTITY = 422;
 
 /** エラーレスポンスの型定義 */
 type ErrorResponseBody = {
