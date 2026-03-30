@@ -32,6 +32,20 @@ export type SignInResponse = {
   };
 };
 
+export type SignUpParams = {
+  name: string;
+  email: string;
+  password: string;
+};
+
+export type SignUpResponse = {
+  success: true;
+  data: {
+    user: User;
+    session: Session;
+  };
+};
+
 export type AuthErrorResponse = {
   success: false;
   error: {

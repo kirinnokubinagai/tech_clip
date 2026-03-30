@@ -16,7 +16,7 @@ import { useAuthStore } from "../../src/stores/auth-store";
 
 export default function RegisterScreen() {
   const { t } = useTranslation();
-  const signIn = useAuthStore((s) => s.signIn);
+  const signUp = useAuthStore((s) => s.signUp);
 
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -26,7 +26,6 @@ export default function RegisterScreen() {
 
   /**
    * 新規登録フォームを送信する
-   * Phase 0ではsignInを呼び出すプレースホルダー実装
    */
   async function handleRegister() {
     setErrorMessage("");
@@ -47,7 +46,7 @@ export default function RegisterScreen() {
     setIsSubmitting(true);
 
     try {
-      await signIn({ email: email.trim(), password });
+      await signUp({ name: name.trim(), email: email.trim(), password });
     } catch (error: unknown) {
       if (error instanceof Error) {
         setErrorMessage(error.message);
