@@ -53,7 +53,7 @@ TURSO_DATABASE_URL="file:${ZAP_DB_FILE}" \
 TURSO_AUTH_TOKEN="dummy" \
 RUNPOD_API_KEY="dummy" \
 RUNPOD_ENDPOINT_ID="dummy" \
-BETTER_AUTH_SECRET="test-secret-key-for-zap-scan" \
+BETTER_AUTH_SECRET="${BETTER_AUTH_SECRET:-$(openssl rand -hex 32)}" \
 ENVIRONMENT="test" \
   pnpm --filter @tech-clip/api dev > /tmp/zap-api-server.log 2>&1 &
 ZAP_SERVER_PID=$!
