@@ -85,6 +85,7 @@ export const useAuthStore = create<AuthStore>((set) => ({
     }
 
     await setAuthToken(data.data.session.token);
+    await setRefreshToken(data.data.session.token);
 
     set({
       user: data.data.user,
