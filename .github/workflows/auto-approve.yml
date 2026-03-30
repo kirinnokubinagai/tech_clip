@@ -5,7 +5,7 @@ on:
     types: [opened, synchronize, reopened]
 
 jobs:
-  review:
+  review-and-approve:
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -15,21 +15,10 @@ jobs:
       - uses: anthropics/claude-code-action@v1
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
-          allowed_tools: "Skill,Read,Grep,Glob"
+          allowed_tools: "Skill,Read,Grep,Glob,Bash(gh pr review:*)"
           prompt: |
             このPRの差分をレビューしてください。
             レビューには必ず .claude/skills/review/code-review/SKILL.md と .claude/skills/review/pr-review/SKILL.md を Read ツールで読み取り、記載されたチェックリストと出力フォーマットに厳密に従ってください。
             結果は日本語でPRコメントに投稿してください。
-
-  approve:
-    needs: [review]
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/create-github-app-token@v1
-        id: app-token
-        with:
-          app-id: ${{ vars.APP_ID }}
-          private-key: ${{ secrets.APP_PRIVATE_KEY }}
-      - uses: hmarr/auto-approve-action@v4
-        with:
-          github-token: ${{ steps.app-token.outputs.token }}
+            重大な問題（🔴）が0件の場合、gh pr review --approve を実行してApproveしてください。
+            重大な問題がある場合はApproveせず、問題点をコメントしてください。
