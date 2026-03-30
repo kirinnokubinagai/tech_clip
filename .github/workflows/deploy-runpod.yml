@@ -26,7 +26,7 @@ jobs:
           echo "IMAGE_TAG=$IMAGE_TAG" >> "$GITHUB_ENV"
       - name: Update RunPod endpoint
         run: |
-          HTTP_CODE=$(curl -sf -o /tmp/runpod-response.json -w '%{http_code}' -X PATCH \
+          HTTP_CODE=$(curl -s -o /tmp/runpod-response.json -w '%{http_code}' -X PATCH \
             "https://api.runpod.io/v2/endpoint/${{ secrets.RUNPOD_ENDPOINT_ID }}" \
             -H "Content-Type: application/json" \
             -H "Authorization: Bearer ${{ secrets.RUNPOD_API_KEY }}" \
