@@ -19,6 +19,12 @@ jest.mock("../../src/lib/i18n", () => ({
   default: { changeLanguage: jest.fn(), language: "ja" },
 }));
 
+jest.mock("../../src/lib/backgroundSync", () => ({
+  DEFAULT_BACKGROUND_SYNC_CONFIG: { intervalMs: 900000, taskName: "TEST_TASK" },
+  registerNativeBackgroundFetch: jest.fn().mockResolvedValue(undefined),
+  startBackgroundSync: jest.fn().mockReturnValue(() => {}),
+}));
+
 jest.mock("../../src/lib/revenueCat", () => ({
   configureRevenueCat: jest.fn().mockResolvedValue(undefined),
 }));

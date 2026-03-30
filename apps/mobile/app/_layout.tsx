@@ -7,6 +7,11 @@ import { ActivityIndicator, View } from "react-native";
 import i18n from "../src/lib/i18n";
 
 import {
+  DEFAULT_BACKGROUND_SYNC_CONFIG,
+  registerNativeBackgroundFetch,
+  startBackgroundSync,
+} from "../src/lib/backgroundSync";
+import {
   registerForPushNotifications,
   registerTokenWithApi,
   setupNotificationHandlers,
@@ -34,6 +39,9 @@ export default function RootLayout() {
     void loadLanguage();
     void requestTrackingPermission();
     void configureRevenueCat().catch(() => {});
+    void registerNativeBackgroundFetch(DEFAULT_BACKGROUND_SYNC_CONFIG).catch(() => {});
+    const bgSyncCleanup = startBackgroundSync();
+    return bgSyncCleanup;
   }, [checkSession, loadOnboardingState, loadLanguage]);
 
   useEffect(() => {
