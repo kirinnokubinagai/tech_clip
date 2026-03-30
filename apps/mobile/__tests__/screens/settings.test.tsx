@@ -12,6 +12,10 @@ const mockLoadLanguage = jest.fn().mockResolvedValue(undefined);
 const mockFetchNotificationSettings = jest.fn().mockResolvedValue(undefined);
 const mockUpdateNotificationEnabled = jest.fn().mockResolvedValue(undefined);
 
+jest.mock("../../src/hooks/use-subscription", () => ({
+  useSubscription: () => ({ isSubscribed: false }),
+}));
+
 jest.mock("../../src/stores/auth-store", () => ({
   useAuthStore: jest.fn((selector: (state: Record<string, unknown>) => unknown) =>
     selector({
