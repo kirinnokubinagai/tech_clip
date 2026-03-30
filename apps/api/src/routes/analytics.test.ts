@@ -171,7 +171,7 @@ describe("createAnalyticsRoute", () => {
       });
 
       // Assert
-      expect((db as Record<string, unknown>).insert).toHaveBeenCalled();
+      expect((db as unknown as Record<string, unknown>).insert).toHaveBeenCalled();
     });
   });
 });
