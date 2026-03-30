@@ -17,9 +17,13 @@ jobs:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
           allowed_tools: "Skill,Read,Grep,Glob"
           prompt: |
-            このPRの差分を以下の基準でレビューし、結果を日本語でPRコメントに投稿してください。
+            まず Skill("review/code-review") を実行してください。
+            次に Skill("review/pr-review") を実行してください。
+            これらのスキルの基準に従ってこのPRをレビューしてください。
+            スキルが利用できない場合のフォールバックとして、以下の基準でレビューしてください。
+            結果は日本語でPRコメントに投稿してください。
 
-            ## コードレビュー基準
+            ## コードレビュー基準（フォールバック）
 
             ### 1. 正確性
             - ロジックは正しいか
