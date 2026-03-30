@@ -22,8 +22,15 @@ jobs:
         run: |
           IMAGE_TAG="${{ secrets.DOCKER_REGISTRY_URL }}/tech-clip-inference:${{ github.sha }}"
           docker build -t "$IMAGE_TAG" infra/runpod/
-          docker push "$IMAGE_TAG"
+          PUSH_OUTPUT=$(docker push "$IMAGE_TAG")
+          DIGEST=$(echo "$PUSH_OUTPUT" | grep -oP 'sha256:[a-f0-9]{64}' | tail -1)
+          if [ -z "$DIGEST" ]; then
+            echo "docker pushのdigest検証に失敗しました"
+            exit 1
+          fi
+          echo "Pushed image digest: $DIGEST"
           echo "IMAGE_TAG=$IMAGE_TAG" >> "$GITHUB_ENV"
+          echo "IMAGE_DIGEST=$DIGEST" >> "$GITHUB_ENV"
       - name: Update RunPod endpoint
         run: |
           HTTP_CODE=$(curl -s -o /tmp/runpod-response.json -w '%{http_code}' -X PATCH \

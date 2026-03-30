@@ -13,12 +13,7 @@ jobs:
     environment: staging
     steps:
       - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: pnpm
-      - run: pnpm install --frozen-lockfile
+      - uses: ./.github/actions/nix-setup
       - name: Deploy API to staging
         working-directory: apps/api
         run: pnpm wrangler deploy --env staging
@@ -47,12 +42,7 @@ jobs:
     environment: production
     steps:
       - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: pnpm
-      - run: pnpm install --frozen-lockfile
+      - uses: ./.github/actions/nix-setup
       - name: Deploy API to production
         working-directory: apps/api
         run: pnpm wrangler deploy --env production

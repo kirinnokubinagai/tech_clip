@@ -26,7 +26,7 @@ jobs:
             sleep 1
           done
       - name: Run DB migration
-        run: nix develop --command pnpm --filter @tech-clip/api exec drizzle-kit migrate
+        run: nix develop --command sh -c "cd apps/api && pnpm exec drizzle-kit migrate"
         env:
           TURSO_DATABASE_URL: file:local.db
           TURSO_AUTH_TOKEN: dummy

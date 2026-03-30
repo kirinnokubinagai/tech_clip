@@ -12,7 +12,6 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: ./.github/actions/nix-setup
       - uses: expo/expo-github-action@v8
         with:
           eas-version: latest
@@ -22,8 +21,9 @@ jobs:
       - name: Run Maestro Cloud E2E tests
         run: |
           export PATH="$HOME/.maestro/bin:$PATH"
-          BUILD_URL=$(eas build:list --platform ios --limit 1 --json --non-interactive | jq -r '.[0].artifacts.buildUrl')
-          if [ -z "$BUILD_URL" ] || [ "$BUILD_URL" = "null" ]; then
+          BUILD_LIST=$(eas build:list --platform ios --limit 1 --json --non-interactive)
+          BUILD_URL=$(echo "$BUILD_LIST" | jq -r '.[0].artifacts.buildUrl // empty')
+          if [ -z "$BUILD_URL" ]; then
             echo "EAS Buildのアーティファクトが見つかりません"
             exit 1
           fi
