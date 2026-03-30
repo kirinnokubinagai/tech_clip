@@ -47,7 +47,10 @@
       },
       "package": "com.techclip.app",
       "versionCode": 1,
-      "permissions": ["android.permission.RECEIVE_BOOT_COMPLETED", "android.permission.FOREGROUND_SERVICE"],
+      "permissions": [
+        "android.permission.RECEIVE_BOOT_COMPLETED",
+        "android.permission.FOREGROUND_SERVICE"
+      ],
       "intentFilters": [
         {
           "action": "VIEW",
