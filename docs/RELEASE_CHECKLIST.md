@@ -325,7 +325,7 @@ eas update --channel production --message "リリースノート"
 curl https://api.techclip.app/health
 
 # 認証エンドポイントの確認
-curl -X POST https://api.techclip.app/auth/sign-in \
+curl -X POST https://api.techclip.app/api/auth/sign-in \
   -H "Content-Type: application/json" \
   -d '{"email":"test@example.com","password":"testpassword"}'
 ```
