@@ -1,3 +1,5 @@
+import Constants from "expo-constants";
+
 jest.mock("expo-constants", () => ({
   __esModule: true,
   default: {
@@ -177,6 +179,48 @@ describe("apiFetch", () => {
       expect(error).toBeInstanceOf(Error);
       expect(error).toBeInstanceOf(SessionExpiredError);
       expect(error.message).toBe("セッションの有効期限が切れました。再度ログインしてください");
+    });
+  });
+
+  describe("getBaseUrl", () => {
+    it("extra.apiUrlが設定されている場合はその値をベースURLとして使用すること", async () => {
+      // Arrange（モックは上部でhttp://test-api.example.comを返すよう設定済み）
+      mockGetAuthToken.mockResolvedValue(null);
+      mockFetch.mockResolvedValue(createFetchResponse({ success: true, data: [] }));
+
+      // Act
+      await apiFetch("/test");
+
+      // Assert
+      expect(mockFetch).toHaveBeenCalledWith(
+        "http://test-api.example.com/test",
+        expect.any(Object),
+      );
+    });
+
+    it("extra.apiUrlが未設定の場合はlocalhost:8787をフォールバックとして使用すること", async () => {
+      // Arrange
+      const originalConfig = Constants.expoConfig;
+      Object.defineProperty(Constants, "expoConfig", {
+        value: { extra: {} },
+        writable: true,
+        configurable: true,
+      });
+      mockGetAuthToken.mockResolvedValue(null);
+      mockFetch.mockResolvedValue(createFetchResponse({ success: true, data: [] }));
+
+      // Act
+      await apiFetch("/test");
+
+      // Assert
+      expect(mockFetch).toHaveBeenCalledWith("http://localhost:8787/test", expect.any(Object));
+
+      // Cleanup
+      Object.defineProperty(Constants, "expoConfig", {
+        value: originalConfig,
+        writable: true,
+        configurable: true,
+      });
     });
   });
 });
