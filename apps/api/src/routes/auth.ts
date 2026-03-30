@@ -4,33 +4,19 @@ import { z } from "zod";
 
 import type { Database } from "../db";
 import { sessions, users } from "../db/schema";
-
-/** HTTP 200 OK ステータスコード */
-const HTTP_OK = 200;
-
-/** HTTP 401 Unauthorized ステータスコード */
-const HTTP_UNAUTHORIZED = 401;
-
-/** HTTP 422 Unprocessable Entity ステータスコード */
-const HTTP_UNPROCESSABLE_ENTITY = 422;
-
-/** HTTP 500 Internal Server Error ステータスコード */
-const HTTP_INTERNAL_SERVER_ERROR = 500;
-
-/** 未認証エラーコード */
-const AUTH_REQUIRED_CODE = "AUTH_REQUIRED";
-
-/** 認証情報不正エラーコード */
-const AUTH_INVALID_CODE = "AUTH_INVALID";
-
-/** バリデーションエラーコード */
-const VALIDATION_FAILED_CODE = "VALIDATION_FAILED";
-
-/** サーバーエラーコード */
-const INTERNAL_ERROR_CODE = "INTERNAL_ERROR";
-
-/** セッション期限切れエラーコード */
-const AUTH_EXPIRED_CODE = "AUTH_EXPIRED";
+import {
+  AUTH_ERROR_CODE as AUTH_REQUIRED_CODE,
+  AUTH_EXPIRED_CODE,
+  AUTH_INVALID_CODE,
+  INTERNAL_ERROR_CODE,
+  VALIDATION_ERROR_CODE as VALIDATION_FAILED_CODE,
+} from "../lib/error-codes";
+import {
+  HTTP_INTERNAL_SERVER_ERROR,
+  HTTP_OK,
+  HTTP_UNAUTHORIZED,
+  HTTP_UNPROCESSABLE_ENTITY,
+} from "../lib/http-status";
 
 /**
  * Better Auth インスタンスの型定義

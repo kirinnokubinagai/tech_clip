@@ -4,30 +4,18 @@ import { z } from "zod";
 
 import type { Database } from "../db";
 import { users } from "../db/schema";
-
-/** HTTP 200 OK ステータスコード */
-const HTTP_OK = 200;
-
-/** HTTP 400 Bad Request ステータスコード */
-const HTTP_BAD_REQUEST = 400;
-
-/** HTTP 401 Unauthorized ステータスコード */
-const HTTP_UNAUTHORIZED = 401;
-
-/** HTTP 404 Not Found ステータスコード */
-const HTTP_NOT_FOUND = 404;
-
-/** 未認証エラーコード */
-const AUTH_REQUIRED_CODE = "AUTH_REQUIRED";
-
-/** 未認証エラーメッセージ */
-const AUTH_REQUIRED_MESSAGE = "ログインが必要です";
-
-/** 認証不正エラーコード */
-const AUTH_INVALID_CODE = "AUTH_INVALID";
-
-/** 認証不正エラーメッセージ */
-const AUTH_INVALID_MESSAGE = "認証情報が正しくありません";
+import {
+  AUTH_ERROR_CODE as AUTH_REQUIRED_CODE,
+  AUTH_ERROR_MESSAGE as AUTH_REQUIRED_MESSAGE,
+  AUTH_INVALID_CODE,
+  AUTH_INVALID_MESSAGE,
+} from "../lib/error-codes";
+import {
+  HTTP_BAD_REQUEST,
+  HTTP_NOT_FOUND,
+  HTTP_OK,
+  HTTP_UNAUTHORIZED,
+} from "../lib/http-status";
 
 /** リクエスト不正エラーコード */
 const INVALID_REQUEST_CODE = "INVALID_REQUEST";

@@ -4,29 +4,18 @@ import { z } from "zod";
 
 import type { Database } from "../db";
 import { accounts, users, verifications } from "../db/schema";
+import { VALIDATION_ERROR_CODE, VALIDATION_ERROR_MESSAGE } from "../lib/error-codes";
 import { createLogger } from "../lib/logger";
+import {
+  HTTP_BAD_REQUEST,
+  HTTP_INTERNAL_SERVER_ERROR,
+  HTTP_OK,
+  HTTP_UNPROCESSABLE_ENTITY,
+} from "../lib/http-status";
 import type { EmailEnv } from "../services/emailService";
 import { sendPasswordReset } from "../services/emailService";
 
 const logger = createLogger();
-
-/** HTTP 200 OK ステータスコード */
-const HTTP_OK = 200;
-
-/** HTTP 400 Bad Request ステータスコード */
-const HTTP_BAD_REQUEST = 400;
-
-/** HTTP 422 Unprocessable Entity ステータスコード */
-const HTTP_UNPROCESSABLE_ENTITY = 422;
-
-/** HTTP 500 Internal Server Error ステータスコード */
-const HTTP_INTERNAL_SERVER_ERROR = 500;
-
-/** バリデーションエラーコード */
-const VALIDATION_ERROR_CODE = "VALIDATION_FAILED";
-
-/** バリデーションエラーメッセージ */
-const VALIDATION_ERROR_MESSAGE = "入力内容を確認してください";
 
 /** パスワード最小文字数 */
 const PASSWORD_MIN_LENGTH = 8;

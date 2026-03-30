@@ -1,6 +1,21 @@
 import { Hono } from "hono";
 
 import type { Database } from "../db";
+import {
+  AUTH_ERROR_CODE,
+  AUTH_ERROR_MESSAGE,
+  DUPLICATE_ERROR_CODE,
+  NOT_FOUND_ERROR_CODE,
+  VALIDATION_ERROR_CODE,
+} from "../lib/error-codes";
+import {
+  HTTP_CONFLICT,
+  HTTP_CREATED,
+  HTTP_NOT_FOUND,
+  HTTP_NO_CONTENT,
+  HTTP_UNAUTHORIZED,
+  HTTP_UNPROCESSABLE_ENTITY,
+} from "../lib/http-status";
 
 /** デフォルトのページサイズ */
 const DEFAULT_LIMIT = 20;
@@ -10,39 +25,6 @@ const MIN_LIMIT = 1;
 
 /** 最大ページサイズ */
 const MAX_LIMIT = 50;
-
-/** HTTP 201 Created ステータスコード */
-const HTTP_CREATED = 201;
-
-/** HTTP 204 No Content ステータスコード */
-const HTTP_NO_CONTENT = 204;
-
-/** HTTP 401 Unauthorized ステータスコード */
-const HTTP_UNAUTHORIZED = 401;
-
-/** HTTP 404 Not Found ステータスコード */
-const HTTP_NOT_FOUND = 404;
-
-/** HTTP 409 Conflict ステータスコード */
-const HTTP_CONFLICT = 409;
-
-/** HTTP 422 Unprocessable Entity ステータスコード */
-const HTTP_UNPROCESSABLE_ENTITY = 422;
-
-/** 未認証エラーコード */
-const AUTH_ERROR_CODE = "AUTH_REQUIRED";
-
-/** 未認証エラーメッセージ */
-const AUTH_ERROR_MESSAGE = "ログインが必要です";
-
-/** バリデーションエラーコード */
-const VALIDATION_ERROR_CODE = "VALIDATION_FAILED";
-
-/** リソース未存在エラーコード */
-const NOT_FOUND_ERROR_CODE = "NOT_FOUND";
-
-/** 重複エラーコード */
-const DUPLICATE_ERROR_CODE = "DUPLICATE";
 
 /** フォロー関係の型 */
 type FollowResult = {

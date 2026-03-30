@@ -1,5 +1,12 @@
 import { Hono } from "hono";
 
+import {
+  NOT_FOUND_ERROR_CODE,
+  VALIDATION_ERROR_CODE,
+  VALIDATION_ERROR_MESSAGE,
+} from "../lib/error-codes";
+import { HTTP_NOT_FOUND, HTTP_UNPROCESSABLE_ENTITY } from "../lib/http-status";
+
 /** デフォルトのページサイズ */
 const DEFAULT_LIMIT = 20;
 
@@ -8,21 +15,6 @@ const MIN_LIMIT = 1;
 
 /** 最大ページサイズ */
 const MAX_LIMIT = 50;
-
-/** HTTP 404 Not Found ステータスコード */
-const HTTP_NOT_FOUND = 404;
-
-/** HTTP 422 Unprocessable Entity ステータスコード */
-const HTTP_UNPROCESSABLE_ENTITY = 422;
-
-/** バリデーションエラーコード */
-const VALIDATION_ERROR_CODE = "VALIDATION_FAILED";
-
-/** バリデーションエラーメッセージ */
-const VALIDATION_ERROR_MESSAGE = "入力内容を確認してください";
-
-/** リソース未発見エラーコード */
-const NOT_FOUND_ERROR_CODE = "NOT_FOUND";
 
 /** ユーザー未発見エラーメッセージ */
 const USER_NOT_FOUND_MESSAGE = "ユーザーが見つかりません";

@@ -1,5 +1,11 @@
 import { Hono } from "hono";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+
+import {
+  HTTP_NOT_FOUND,
+  HTTP_OK,
+  HTTP_UNPROCESSABLE_ENTITY,
+} from "../lib/http-status";
 import { createPublicArticlesRoute } from "./public-articles";
 
 /** テスト用のユーザーID */
@@ -27,15 +33,6 @@ const MOCK_PUBLIC_ARTICLES = Array.from({ length: 5 }, (_, i) => ({
   createdAt: new Date(`2024-01-${String(5 - i).padStart(2, "0")}`),
   updatedAt: new Date(`2024-01-${String(5 - i).padStart(2, "0")}`),
 }));
-
-/** HTTP 200 OK ステータスコード */
-const HTTP_OK = 200;
-
-/** HTTP 404 Not Found ステータスコード */
-const HTTP_NOT_FOUND = 404;
-
-/** HTTP 422 Unprocessable Entity ステータスコード */
-const HTTP_UNPROCESSABLE_ENTITY = 422;
 
 /** デフォルトのページサイズ */
 const DEFAULT_LIMIT = 20;
