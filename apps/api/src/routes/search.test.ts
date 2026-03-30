@@ -1,7 +1,7 @@
 import { Hono } from "hono";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { SearchQueryFn } from "./search";
-import { createSearchRoute } from "./search";
+import { createSearchRoute, escapeLikeWildcards } from "./search";
 
 /** テスト用のモックユーザー */
 const MOCK_USER = {
@@ -107,6 +107,74 @@ function createTestAppWithoutAuth(mockSearchQueryFn: MockSearchQueryFn) {
 
   return app;
 }
+
+describe("escapeLikeWildcards", () => {
+  it("通常の文字列はそのまま返すこと", () => {
+    // Arrange
+    const input = "React hooks";
+
+    // Act
+    const result = escapeLikeWildcards(input);
+
+    // Assert
+    expect(result).toBe("React hooks");
+  });
+
+  it("%を含む場合エスケープされること", () => {
+    // Arrange
+    const input = "100%完了";
+
+    // Act
+    const result = escapeLikeWildcards(input);
+
+    // Assert
+    expect(result).toBe("100\\%完了");
+  });
+
+  it("_を含む場合エスケープされること", () => {
+    // Arrange
+    const input = "foo_bar";
+
+    // Act
+    const result = escapeLikeWildcards(input);
+
+    // Assert
+    expect(result).toBe("foo\\_bar");
+  });
+
+  it("バックスラッシュを含む場合エスケープされること", () => {
+    // Arrange
+    const input = "C:\\path";
+
+    // Act
+    const result = escapeLikeWildcards(input);
+
+    // Assert
+    expect(result).toBe("C:\\\\path");
+  });
+
+  it("%と_が混在する場合すべてエスケープされること", () => {
+    // Arrange
+    const input = "50%_off";
+
+    // Act
+    const result = escapeLikeWildcards(input);
+
+    // Assert
+    expect(result).toBe("50\\%\\_off");
+  });
+
+  it("空文字列は空文字列を返すこと", () => {
+    // Arrange
+    const input = "";
+
+    // Act
+    const result = escapeLikeWildcards(input);
+
+    // Assert
+    expect(result).toBe("");
+  });
+});
 
 describe("GET /api/articles/search", () => {
   let mockSearchQueryFn: MockSearchQueryFn;

@@ -18,7 +18,7 @@ import { createNotificationSettingsRoute } from "./routes/notification-settings"
 import { createNotificationsRoute } from "./routes/notifications";
 import { createPasswordResetRoute } from "./routes/password-reset";
 import { createPublicArticlesRoute } from "./routes/public-articles";
-import { createSearchRoute } from "./routes/search";
+import { createSearchRoute, escapeLikeWildcards } from "./routes/search";
 import { createSubscriptionRoute } from "./routes/subscription";
 import { createSummaryRoute } from "./routes/summary";
 import { createTagsRoute } from "./routes/tags";
@@ -291,7 +291,7 @@ app.on(["GET", "POST", "PATCH", "DELETE"], "/api/articles/**", async (c) => {
 
   const searchRoute = createSearchRoute({
     searchQueryFn: async (params) => {
-      const keyword = `%${params.query}%`;
+      const keyword = `%${escapeLikeWildcards(params.query)}%`;
       const conditions = [
         eq(articles.userId, params.userId),
         or(
