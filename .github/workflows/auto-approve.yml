@@ -10,12 +10,14 @@ jobs:
     permissions:
       contents: read
       pull-requests: write
+      id-token: write
     steps:
       - uses: actions/checkout@v4
       - uses: anthropics/claude-code-action@v1
         with:
-          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
-          allowed_tools: "Skill,Read,Grep,Glob,Bash(gh pr review:*)"
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          claude_args: |
+            --allowedTools Skill,Read,Grep,Glob,"Bash(gh pr review:*)"
           prompt: |
             このPRの差分をレビューしてください。
             レビューには必ず .claude/skills/review/code-review/SKILL.md と .claude/skills/review/pr-review/SKILL.md を Read ツールで読み取り、記載されたチェックリストと出力フォーマットに厳密に従ってください。

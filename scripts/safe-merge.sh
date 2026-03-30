@@ -1,5 +1,5 @@
 #!/bin/bash
-# PRマージ前のコンフリクト自動検出・自動rebase・マージスクリプト
+# PRマージ前のコンフリクト自動検出・自動merge・マージスクリプト
 # Usage: scripts/safe-merge.sh <PR番号> [worktree_path]
 set -euo pipefail
 
@@ -14,7 +14,7 @@ echo "=== PR #${PR_NUMBER} セーフマージ ==="
 MERGEABLE=$(gh pr view "$PR_NUMBER" --repo "$REPO" --json mergeable --jq .mergeable)
 
 if [ "$MERGEABLE" = "CONFLICTING" ]; then
-  echo "コンフリクト検出。自動rebase開始..."
+  echo "コンフリクト検出。mainをmergeして解消..."
 
   if [ -z "$WORKTREE_PATH" ]; then
     BRANCH=$(gh pr view "$PR_NUMBER" --repo "$REPO" --json headRefName --jq .headRefName)
@@ -30,14 +30,14 @@ if [ "$MERGEABLE" = "CONFLICTING" ]; then
 
   git -C "$WORKTREE_PATH" fetch origin main
 
-  if ! git -C "$WORKTREE_PATH" rebase origin/main; then
-    echo "ERROR: 自動rebase失敗。手動でコンフリクト解消が必要です"
-    git -C "$WORKTREE_PATH" rebase --abort
+  if ! git -C "$WORKTREE_PATH" merge origin/main --no-edit; then
+    echo "ERROR: 自動merge失敗。手動でコンフリクト解消が必要です"
+    git -C "$WORKTREE_PATH" merge --abort
     exit 1
   fi
 
-  git -C "$WORKTREE_PATH" push --force-with-lease
-  echo "rebase完了。再チェック..."
+  git -C "$WORKTREE_PATH" push
+  echo "merge完了。再チェック..."
   sleep 5
 fi
 
