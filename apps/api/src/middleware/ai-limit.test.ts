@@ -68,8 +68,11 @@ const mockDb = {
   update: mockUpdate,
 };
 
+/** HTTP 500 Internal Server Error ステータスコード */
+const HTTP_INTERNAL_SERVER_ERROR = 500;
+
 /** テスト用のHonoアプリを作成する */
-function createTestApp(userId?: string) {
+function createTestApp(userId?: string, downstreamStatus = HTTP_OK) {
   const app = new Hono<{ Variables: { user?: Record<string, unknown> } }>();
 
   if (userId) {
@@ -81,6 +84,12 @@ function createTestApp(userId?: string) {
 
   app.use("/ai/*", createAiLimitMiddleware(mockDb as never));
   app.post("/ai/summarize", (c) => {
+    if (downstreamStatus >= 400) {
+      return c.json(
+        { success: false, error: { code: "INTERNAL_ERROR", message: "サーバーエラーが発生しました" } },
+        downstreamStatus as 500,
+      );
+    }
     return c.json({ success: true, data: { summary: "テスト要約" } }, HTTP_OK);
   });
 
@@ -315,6 +324,24 @@ describe("aiLimitMiddleware", () => {
 
       // Assert
       expect(res.status).toBe(HTTP_UNAUTHORIZED);
+    });
+  });
+
+  describe("ダウンストリーム失敗時", () => {
+    it("ダウンストリームが500を返した場合db.updateが呼ばれないこと", async () => {
+      // Arrange
+      const userData = createFreeUserData({ remaining: 3 });
+      mockSelectWhere.mockResolvedValue([userData]);
+      const app = createTestApp(TEST_USER_ID, HTTP_INTERNAL_SERVER_ERROR);
+
+      // Act
+      await app.request("/ai/summarize", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+      });
+
+      // Assert
+      expect(mockUpdate).not.toHaveBeenCalled();
     });
   });
 
