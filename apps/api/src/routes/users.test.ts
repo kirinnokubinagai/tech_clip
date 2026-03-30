@@ -646,6 +646,259 @@ describe("PATCH /api/users/me", () => {
   });
 });
 
+/** HTTP 200 OK ステータスコード */
+const HTTP_OK_PASSWORD = 200;
+
+/** モックのアカウントデータ */
+const MOCK_ACCOUNT = {
+  id: "account_01HXYZ",
+  userId: "user_01HXYZ",
+  accountId: "user_01HXYZ",
+  providerId: "credential",
+  password: "pbkdf2:100000:aabbccdd:eeff1122",
+  accessToken: null,
+  refreshToken: null,
+  accessTokenExpiresAt: null,
+  refreshTokenExpiresAt: null,
+  scope: null,
+  idToken: null,
+  createdAt: "2024-01-15T00:00:00Z",
+  updatedAt: "2024-01-15T00:00:00Z",
+};
+
+/**
+ * PATCH /me/password リクエストを送信するヘルパー
+ */
+function patchPassword(app: { request: Hono["request"] }, body: Record<string, unknown>) {
+  return app.request("/api/users/me/password", {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+}
+
+describe("PATCH /api/users/me/password", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockSelectFrom.mockReturnValue({ where: mockSelectWhere });
+    mockSelectWhere.mockResolvedValue([MOCK_ACCOUNT]);
+    mockUpdateSet.mockReturnValue({ where: mockUpdateWhere });
+    mockUpdateWhere.mockResolvedValue(undefined);
+  });
+
+  describe("認証", () => {
+    it("未認証の場合401が返ること", async () => {
+      // Arrange
+      const app = createGetTestAppWithoutAuth();
+
+      // Act
+      const res = await patchPassword(app, {
+        currentPassword: "OldPass123",
+        newPassword: "NewPass456",
+      });
+
+      // Assert
+      expect(res.status).toBe(401);
+      const body = (await res.json()) as ErrorResponseBody;
+      expect(body.success).toBe(false);
+      expect(body.error.code).toBe("AUTH_REQUIRED");
+    });
+  });
+
+  describe("バリデーション", () => {
+    it("currentPasswordが空の場合422が返ること", async () => {
+      // Arrange
+      const app = createGetTestApp();
+
+      // Act
+      const res = await patchPassword(app, {
+        currentPassword: "",
+        newPassword: "NewPass456",
+      });
+
+      // Assert
+      expect(res.status).toBe(HTTP_UNPROCESSABLE_ENTITY);
+      const body = (await res.json()) as ErrorResponseBody;
+      expect(body.success).toBe(false);
+      expect(body.error.code).toBe("VALIDATION_FAILED");
+    });
+
+    it("newPasswordが8文字未満の場合422が返ること", async () => {
+      // Arrange
+      const app = createGetTestApp();
+
+      // Act
+      const res = await patchPassword(app, {
+        currentPassword: "OldPass123",
+        newPassword: "short",
+      });
+
+      // Assert
+      expect(res.status).toBe(HTTP_UNPROCESSABLE_ENTITY);
+      const body = (await res.json()) as ErrorResponseBody;
+      expect(body.success).toBe(false);
+      expect(body.error.code).toBe("VALIDATION_FAILED");
+    });
+
+    it("newPasswordが128文字を超える場合422が返ること", async () => {
+      // Arrange
+      const app = createGetTestApp();
+
+      // Act
+      const res = await patchPassword(app, {
+        currentPassword: "OldPass123",
+        newPassword: "a".repeat(129),
+      });
+
+      // Assert
+      expect(res.status).toBe(HTTP_UNPROCESSABLE_ENTITY);
+      const body = (await res.json()) as ErrorResponseBody;
+      expect(body.success).toBe(false);
+      expect(body.error.code).toBe("VALIDATION_FAILED");
+    });
+
+    it("currentPasswordが存在しない場合422が返ること", async () => {
+      // Arrange
+      const app = createGetTestApp();
+
+      // Act
+      const res = await patchPassword(app, {
+        newPassword: "NewPass456",
+      });
+
+      // Assert
+      expect(res.status).toBe(HTTP_UNPROCESSABLE_ENTITY);
+      const body = (await res.json()) as ErrorResponseBody;
+      expect(body.success).toBe(false);
+      expect(body.error.code).toBe("VALIDATION_FAILED");
+    });
+
+    it("newPasswordが存在しない場合422が返ること", async () => {
+      // Arrange
+      const app = createGetTestApp();
+
+      // Act
+      const res = await patchPassword(app, {
+        currentPassword: "OldPass123",
+      });
+
+      // Assert
+      expect(res.status).toBe(HTTP_UNPROCESSABLE_ENTITY);
+      const body = (await res.json()) as ErrorResponseBody;
+      expect(body.success).toBe(false);
+      expect(body.error.code).toBe("VALIDATION_FAILED");
+    });
+
+    it("エラーメッセージが日本語であること", async () => {
+      // Arrange
+      const app = createGetTestApp();
+
+      // Act
+      const res = await patchPassword(app, {
+        currentPassword: "OldPass123",
+        newPassword: "short",
+      });
+
+      // Assert
+      const body = (await res.json()) as ErrorResponseBody;
+      expect(body.error.message).toBe("入力内容を確認してください");
+    });
+  });
+
+  describe("現在のパスワード検証", () => {
+    it("アカウントが存在しない場合（ソーシャルログインユーザー）401が返ること", async () => {
+      // Arrange
+      mockSelectFrom.mockReturnValue({ where: mockSelectWhere });
+      mockSelectWhere.mockImplementation((_cond: unknown) => {
+        return Promise.resolve([]);
+      });
+      const app = createGetTestApp();
+
+      // Act
+      const res = await patchPassword(app, {
+        currentPassword: "OldPass123",
+        newPassword: "NewPass456",
+      });
+
+      // Assert
+      expect(res.status).toBe(401);
+      const body = (await res.json()) as ErrorResponseBody;
+      expect(body.success).toBe(false);
+      expect(body.error.code).toBe("AUTH_REQUIRED");
+    });
+
+    it("現在のパスワードが正しくない場合401が返ること", async () => {
+      // Arrange
+      const accountWithHash = {
+        ...MOCK_ACCOUNT,
+        password:
+          "pbkdf2:100000:000102030405060708090a0b0c0d0e0f:0000000000000000000000000000000000000000000000000000000000000000",
+      };
+      mockSelectFrom.mockReturnValue({ where: mockSelectWhere });
+      mockSelectWhere.mockResolvedValue([accountWithHash]);
+      const app = createGetTestApp();
+
+      // Act
+      const res = await patchPassword(app, {
+        currentPassword: "WrongPassword123",
+        newPassword: "NewPass456",
+      });
+
+      // Assert
+      expect(res.status).toBe(401);
+      const body = (await res.json()) as ErrorResponseBody;
+      expect(body.success).toBe(false);
+      expect(body.error.code).toBe("AUTH_INVALID");
+    });
+  });
+
+  describe("正常系", () => {
+    it("正しい現在のパスワードでパスワードを変更できること", async () => {
+      // Arrange
+      const plainPassword = "OldPass123";
+      const encoder = new TextEncoder();
+      const keyMaterial = await crypto.subtle.importKey(
+        "raw",
+        encoder.encode(plainPassword),
+        "PBKDF2",
+        false,
+        ["deriveBits"],
+      );
+      const salt = new Uint8Array([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]);
+      const derivedBits = await crypto.subtle.deriveBits(
+        { name: "PBKDF2", salt, iterations: 100000, hash: "SHA-256" },
+        keyMaterial,
+        256,
+      );
+      const saltHex = Array.from(salt)
+        .map((b) => b.toString(16).padStart(2, "0"))
+        .join("");
+      const hashHex = Array.from(new Uint8Array(derivedBits))
+        .map((b) => b.toString(16).padStart(2, "0"))
+        .join("");
+      const storedHash = `pbkdf2:100000:${saltHex}:${hashHex}`;
+
+      mockSelectFrom.mockReturnValue({ where: mockSelectWhere });
+      mockSelectWhere.mockResolvedValue([{ ...MOCK_ACCOUNT, password: storedHash }]);
+      mockUpdateSet.mockReturnValue({ where: mockUpdateWhere });
+      mockUpdateWhere.mockResolvedValue(undefined);
+      const app = createGetTestApp();
+
+      // Act
+      const res = await patchPassword(app, {
+        currentPassword: plainPassword,
+        newPassword: "NewPass456",
+      });
+
+      // Assert
+      expect(res.status).toBe(HTTP_OK_PASSWORD);
+      const body = (await res.json()) as { success: boolean; data: { message: string } };
+      expect(body.success).toBe(true);
+      expect(body.data.message).toBeDefined();
+    });
+  });
+});
+
 /** HTTP 200 OK ステータスコード (avatar) */
 const HTTP_OK_AVATAR = 200;
 

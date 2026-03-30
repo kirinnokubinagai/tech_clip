@@ -1,12 +1,14 @@
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { Hono } from "hono";
 import { z } from "zod";
 
 import type { Database } from "../db";
-import { users } from "../db/schema";
+import { accounts, users } from "../db/schema";
 import {
   AUTH_ERROR_CODE,
   AUTH_ERROR_MESSAGE,
+  AUTH_INVALID_CODE,
+  AUTH_INVALID_MESSAGE,
   VALIDATION_ERROR_CODE,
   VALIDATION_ERROR_MESSAGE,
 } from "../lib/error-codes";
@@ -16,6 +18,7 @@ import {
   HTTP_INTERNAL_SERVER_ERROR,
   HTTP_NOT_FOUND,
   HTTP_NO_CONTENT,
+  HTTP_OK,
   HTTP_UNAUTHORIZED,
   HTTP_UNPROCESSABLE_ENTITY,
 } from "../lib/http-status";
@@ -41,6 +44,29 @@ const TWITTER_USERNAME_MAX_LENGTH = 15;
 
 /** ユーザー名の正規表現（半角英数字とアンダースコア、ハイフンのみ） */
 const USERNAME_REGEX = /^[a-zA-Z0-9_-]+$/;
+
+/** パスワード最小文字数 */
+const PASSWORD_MIN_LENGTH = 8;
+
+/** パスワード最大文字数 */
+const PASSWORD_MAX_LENGTH = 128;
+
+/** PBKDF2 イテレーション回数 */
+const PBKDF2_ITERATIONS = 100000;
+
+/** パスワード変更成功メッセージ */
+const PASSWORD_CHANGE_SUCCESS_MESSAGE = "パスワードを変更しました。";
+
+/** パスワード変更スキーマ */
+const ChangePasswordSchema = z.object({
+  currentPassword: z
+    .string({ error: "現在のパスワードは必須です" })
+    .min(1, "現在のパスワードは必須です"),
+  newPassword: z
+    .string({ error: "新しいパスワードは必須です" })
+    .min(PASSWORD_MIN_LENGTH, `パスワードは${PASSWORD_MIN_LENGTH}文字以上で入力してください`)
+    .max(PASSWORD_MAX_LENGTH, `パスワードは${PASSWORD_MAX_LENGTH}文字以内で入力してください`),
+});
 
 /** レスポンスから除外する機密フィールド */
 const SENSITIVE_FIELDS = [
@@ -375,6 +401,94 @@ export function createUsersRoute(options: UsersRouteOptions) {
     });
   });
 
+  route.patch("/me/password", async (c) => {
+    const user = c.get("user");
+    if (!user) {
+      return c.json(
+        {
+          success: false,
+          error: {
+            code: AUTH_ERROR_CODE,
+            message: AUTH_ERROR_MESSAGE,
+          },
+        },
+        HTTP_UNAUTHORIZED,
+      );
+    }
+
+    const userId = user.id as string;
+
+    const body = await c.req.json().catch(() => ({}));
+    const validation = ChangePasswordSchema.safeParse(body);
+
+    if (!validation.success) {
+      return c.json(
+        {
+          success: false,
+          error: {
+            code: VALIDATION_ERROR_CODE,
+            message: VALIDATION_ERROR_MESSAGE,
+            details: validation.error.issues.map((e) => ({
+              field: e.path.join("."),
+              message: e.message,
+            })),
+          },
+        },
+        HTTP_UNPROCESSABLE_ENTITY,
+      );
+    }
+
+    const { currentPassword, newPassword } = validation.data;
+
+    const [account] = await db
+      .select()
+      .from(accounts)
+      .where(and(eq(accounts.userId, userId), eq(accounts.providerId, "credential")));
+
+    if (!account || !account.password) {
+      return c.json(
+        {
+          success: false,
+          error: {
+            code: AUTH_ERROR_CODE,
+            message: AUTH_ERROR_MESSAGE,
+          },
+        },
+        HTTP_UNAUTHORIZED,
+      );
+    }
+
+    const isValid = await verifyPassword(currentPassword, account.password);
+
+    if (!isValid) {
+      return c.json(
+        {
+          success: false,
+          error: {
+            code: AUTH_INVALID_CODE,
+            message: AUTH_INVALID_MESSAGE,
+          },
+        },
+        HTTP_UNAUTHORIZED,
+      );
+    }
+
+    const hashedNewPassword = await hashPasswordPbkdf2(newPassword);
+
+    await db
+      .update(accounts)
+      .set({ password: hashedNewPassword })
+      .where(and(eq(accounts.userId, userId), eq(accounts.providerId, "credential")));
+
+    return c.json(
+      {
+        success: true,
+        data: { message: PASSWORD_CHANGE_SUCCESS_MESSAGE },
+      },
+      HTTP_OK,
+    );
+  });
+
   route.delete("/me", async (c) => {
     const user = c.get("user");
     if (!user) {
@@ -413,4 +527,97 @@ export function createUsersRoute(options: UsersRouteOptions) {
   });
 
   return route;
+}
+
+/**
+ * パスワードをPBKDF2でハッシュ化する
+ *
+ * Web Crypto API を使用する。Cloudflare Workers 環境でも動作する。
+ *
+ * @param password - ハッシュ化する平文パスワード
+ * @returns ハッシュ化されたパスワード文字列（pbkdf2:iterations:saltHex:hashHex 形式）
+ */
+async function hashPasswordPbkdf2(password: string): Promise<string> {
+  const encoder = new TextEncoder();
+  const keyMaterial = await crypto.subtle.importKey(
+    "raw",
+    encoder.encode(password),
+    "PBKDF2",
+    false,
+    ["deriveBits"],
+  );
+
+  const salt = crypto.getRandomValues(new Uint8Array(16));
+
+  const derivedBits = await crypto.subtle.deriveBits(
+    {
+      name: "PBKDF2",
+      salt,
+      iterations: PBKDF2_ITERATIONS,
+      hash: "SHA-256",
+    },
+    keyMaterial,
+    256,
+  );
+
+  const saltHex = Array.from(salt)
+    .map((b) => b.toString(16).padStart(2, "0"))
+    .join("");
+  const hashHex = Array.from(new Uint8Array(derivedBits))
+    .map((b) => b.toString(16).padStart(2, "0"))
+    .join("");
+
+  return `pbkdf2:${PBKDF2_ITERATIONS}:${saltHex}:${hashHex}`;
+}
+
+/**
+ * 平文パスワードと保存済みハッシュを照合する
+ *
+ * @param plainPassword - 照合する平文パスワード
+ * @param storedHash - 保存済みハッシュ（pbkdf2:iterations:saltHex:hashHex 形式）
+ * @returns 照合成功の場合 true
+ */
+async function verifyPassword(plainPassword: string, storedHash: string): Promise<boolean> {
+  const parts = storedHash.split(":");
+  if (parts.length !== 4 || parts[0] !== "pbkdf2") {
+    return false;
+  }
+
+  const iterations = Number(parts[1]);
+  const saltHex = parts[2];
+  const expectedHashHex = parts[3];
+
+  if (!Number.isInteger(iterations) || iterations <= 0 || !saltHex || !expectedHashHex) {
+    return false;
+  }
+
+  const salt = new Uint8Array(
+    saltHex.match(/.{2}/g)?.map((byte) => Number.parseInt(byte, 16)) ?? [],
+  );
+
+  const encoder = new TextEncoder();
+  const keyMaterial = await crypto.subtle.importKey(
+    "raw",
+    encoder.encode(plainPassword),
+    "PBKDF2",
+    false,
+    ["deriveBits"],
+  );
+
+  const derivedBits = await crypto.subtle.deriveBits(
+    {
+      name: "PBKDF2",
+      salt,
+      iterations,
+      hash: "SHA-256",
+    },
+    keyMaterial,
+    256,
+  );
+
+  const hashHex = Array.from(new Uint8Array(derivedBits))
+    .map((b) => b.toString(16).padStart(2, "0"))
+    .join("");
+
+  return hashHex === expectedHashHex;
 }
