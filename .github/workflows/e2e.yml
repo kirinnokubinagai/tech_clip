@@ -27,7 +27,8 @@ jobs:
         run: curl -Ls "https://get.maestro.mobile.dev" | bash
       - name: Run Maestro Cloud E2E tests
         run: |
-          nix develop --command maestro cloud \
+          export PATH="$HOME/.maestro/bin:$PATH"
+          maestro cloud \
             --apiKey "${{ secrets.MAESTRO_CLOUD_API_KEY }}" \
             --app-file "$(eas build:list --platform ios --limit 1 --json --non-interactive | jq -r '.[0].artifacts.buildUrl')" \
             .maestro/
