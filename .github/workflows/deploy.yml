@@ -27,12 +27,18 @@ jobs:
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
       - name: Health check (staging)
         run: |
-          STATUS=$(curl -s -o /dev/null -w "%{http_code}" https://tech-clip-api-staging.workers.dev/health)
-          if [ "$STATUS" != "200" ]; then
-            echo "Health check failed: HTTP $STATUS"
-            exit 1
-          fi
-          echo "Health check passed: HTTP $STATUS"
+          sleep 5
+          for i in 1 2 3; do
+            STATUS=$(curl -s -o /dev/null -w "%{http_code}" https://tech-clip-api-staging.workers.dev/api/health)
+            if [ "$STATUS" = "200" ]; then
+              echo "Health check passed: HTTP $STATUS"
+              exit 0
+            fi
+            echo "Attempt $i: HTTP $STATUS, retrying in 5s..."
+            sleep 5
+          done
+          echo "Health check failed after 3 attempts"
+          exit 1
 
   deploy-production:
     if: startsWith(github.ref, 'refs/tags/v')
@@ -55,9 +61,15 @@ jobs:
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
       - name: Health check (production)
         run: |
-          STATUS=$(curl -s -o /dev/null -w "%{http_code}" https://api.techclip.app/health)
-          if [ "$STATUS" != "200" ]; then
-            echo "Health check failed: HTTP $STATUS"
-            exit 1
-          fi
-          echo "Health check passed: HTTP $STATUS"
+          sleep 5
+          for i in 1 2 3; do
+            STATUS=$(curl -s -o /dev/null -w "%{http_code}" https://api.techclip.app/api/health)
+            if [ "$STATUS" = "200" ]; then
+              echo "Health check passed: HTTP $STATUS"
+              exit 0
+            fi
+            echo "Attempt $i: HTTP $STATUS, retrying in 5s..."
+            sleep 5
+          done
+          echo "Health check failed after 3 attempts"
+          exit 1
