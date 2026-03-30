@@ -1,60 +1,43 @@
 /**
- * react-i18next テスト環境モック
- * useTranslation フックをシミュレートし、翻訳キーをそのまま返す
+ * react-i18next のモック
+ * ja.json から実際の翻訳を解決し、テストで日本語文字列を検証できるようにする
  */
+const actualReact = jest.requireActual("react");
+const jaTranslations = jest.requireActual("../src/locales/ja.json");
 
-const React = require("react");
-
-/** 翻訳関数モック: キーをそのまま返す */
-const tFunction = (key, options) => {
-  if (options && typeof options === "object") {
-    let result = key;
-    for (const [k, v] of Object.entries(options)) {
-      result = result.replace(new RegExp(`\\{\\{${k}\\}\\}`, "g"), String(v));
+function resolveKey(obj, key) {
+  const parts = key.split(".");
+  let current = obj;
+  for (const part of parts) {
+    if (current === null || current === undefined || typeof current !== "object") {
+      return key;
     }
-    return result;
+    current = current[part];
   }
-  return key;
-};
+  return current !== undefined && current !== null ? String(current) : key;
+}
 
-/** useTranslation フックモック */
-const useTranslation = () => ({
-  t: tFunction,
-  i18n: {
-    changeLanguage: jest.fn().mockResolvedValue(undefined),
-    language: "ja",
-    isInitialized: true,
-  },
-});
-
-/** Trans コンポーネントモック */
-const Trans = ({ i18nKey, children }) => {
-  if (children) {
-    return React.createElement(React.Fragment, null, children);
+function t(key, opts) {
+  const value = resolveKey(jaTranslations, key);
+  if (opts && typeof value === "string") {
+    return value.replace(/\{\{(\w+)\}\}/g, (_, k) =>
+      opts[k] !== undefined ? String(opts[k]) : `{{${k}}}`,
+    );
   }
-  return React.createElement(React.Fragment, null, i18nKey || "");
-};
+  return value;
+}
 
-/** initReactI18next モック */
-const initReactI18next = {
-  type: "3rdParty",
-  init: jest.fn(),
-};
-
-/** withTranslation HOC モック */
-const withTranslation = () => (Component) => {
-  const WrappedComponent = (props) =>
-    React.createElement(Component, { ...props, t: tFunction, i18n: { changeLanguage: jest.fn() } });
-  return WrappedComponent;
-};
-
-/** I18nextProvider モック */
-const I18nextProvider = ({ children }) => React.createElement(React.Fragment, null, children);
+const i18nStub = { language: "ja", changeLanguage: jest.fn() };
 
 module.exports = {
-  useTranslation,
-  Trans,
-  initReactI18next,
-  withTranslation,
-  I18nextProvider,
+  useTranslation: () => ({ t, i18n: i18nStub }),
+  withTranslation: () => (Component) => {
+    const Wrapped = (props) =>
+      actualReact.createElement(Component, { ...props, t, i18n: i18nStub });
+    Wrapped.displayName = `withTranslation(${Component.displayName || Component.name || "Component"})`;
+    return Wrapped;
+  },
+  initReactI18next: { type: "3rdParty", init: () => {} },
+  Trans: ({ children }) => children,
+  I18nextProvider: ({ children }) => children,
 };

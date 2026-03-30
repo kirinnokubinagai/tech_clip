@@ -1,5 +1,6 @@
 import { AlertCircle, RefreshCw, WifiOff } from "lucide-react-native";
 import type { ReactNode } from "react";
+import { useTranslation } from "react-i18next";
 import { Pressable, Text, View } from "react-native";
 
 /** エラー種別 */
@@ -25,23 +26,6 @@ const ERROR_TYPE_COLORS: Record<ErrorType, string> = {
   server: "#ef4444",
   generic: "#ef4444",
 };
-
-/** エラー種別ごとのデフォルトタイトル */
-const DEFAULT_TITLES: Record<ErrorType, string> = {
-  network: "ネットワークエラー",
-  server: "サーバーエラー",
-  generic: "エラーが発生しました",
-};
-
-/** エラー種別ごとのデフォルトメッセージ */
-const DEFAULT_MESSAGES: Record<ErrorType, string> = {
-  network: "インターネット接続を確認してください",
-  server: "サーバーで問題が発生しました。しばらくしてから再度お試しください",
-  generic: "問題が発生しました。再度お試しください",
-};
-
-/** デフォルトリトライラベル */
-const DEFAULT_RETRY_LABEL = "再試行";
 
 /**
  * エラー種別に対応するアイコンを返す
@@ -83,10 +67,25 @@ export function ErrorView({
   message,
   errorType = "generic",
   onRetry,
-  retryLabel = DEFAULT_RETRY_LABEL,
+  retryLabel,
 }: ErrorViewProps) {
-  const displayTitle = title ?? DEFAULT_TITLES[errorType];
-  const displayMessage = message ?? DEFAULT_MESSAGES[errorType];
+  const { t } = useTranslation();
+
+  const defaultTitles: Record<ErrorType, string> = {
+    network: t("errorView.titles.network"),
+    server: t("errorView.titles.server"),
+    generic: t("errorView.titles.generic"),
+  };
+
+  const defaultMessages: Record<ErrorType, string> = {
+    network: t("errorView.messages.network"),
+    server: t("errorView.messages.server"),
+    generic: t("errorView.messages.generic"),
+  };
+
+  const displayTitle = title ?? defaultTitles[errorType];
+  const displayMessage = message ?? defaultMessages[errorType];
+  const displayRetryLabel = retryLabel ?? t("errorView.retry");
 
   return (
     <View testID="error-view" className="flex-1 items-center justify-center px-8 py-12">
@@ -106,10 +105,10 @@ export function ErrorView({
           onPress={onRetry}
           className="flex-row items-center gap-2 mt-6 rounded-lg bg-primary px-5 py-3"
           accessibilityRole="button"
-          accessibilityLabel={retryLabel}
+          accessibilityLabel={displayRetryLabel}
         >
           <RefreshCw size={RETRY_VIEW_ICON_SIZE} color="#ffffff" />
-          <Text className="text-white font-semibold">{retryLabel}</Text>
+          <Text className="text-white font-semibold">{displayRetryLabel}</Text>
         </Pressable>
       )}
     </View>

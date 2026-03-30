@@ -10,6 +10,7 @@ import {
 } from "lucide-react-native";
 import type { ReactNode } from "react";
 import { useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import { Alert, Pressable, ScrollView, Switch, Text, View } from "react-native";
 
 import { confirm } from "@/components/ConfirmDialog";
@@ -90,6 +91,7 @@ function SettingsRow({ icon, label, value, onPress, trailing, testID }: Settings
  * アカウント（ログアウト）、サブスクリプション状態、言語設定、通知ON/OFFを提供する
  */
 export default function SettingsScreen() {
+  const { t } = useTranslation();
   const router = useRouter();
   const signOut = useAuthStore((s) => s.signOut);
   const deleteAccount = useAuthStore((s) => s.deleteAccount);
@@ -122,11 +124,11 @@ export default function SettingsScreen() {
    */
   function handleLogout() {
     confirm({
-      title: "ログアウト",
-      message: "ログアウトしますか？",
+      title: t("settings.logout.title"),
+      message: t("settings.logout.message"),
       variant: "danger",
-      confirmLabel: "ログアウト",
-      cancelLabel: "キャンセル",
+      confirmLabel: t("settings.logout.confirm"),
+      cancelLabel: t("common.cancel"),
       onConfirm: () => {
         signOut();
       },
@@ -138,15 +140,14 @@ export default function SettingsScreen() {
    */
   function handleDeleteAccount() {
     confirm({
-      title: "アカウントを削除する",
-      message:
-        "アカウントを削除すると、すべてのデータが完全に削除されます。この操作は取り消せません。",
+      title: t("settings.deleteAccount.title"),
+      message: t("settings.deleteAccount.message"),
       variant: "danger",
-      confirmLabel: "削除する",
-      cancelLabel: "キャンセル",
+      confirmLabel: t("settings.deleteAccount.confirm"),
+      cancelLabel: t("common.cancel"),
       onConfirm: () => {
         deleteAccount().catch(() => {
-          Alert.alert("エラー", "アカウントの削除に失敗しました。もう一度お試しください。");
+          Alert.alert(t("common.errorTitle"), t("settings.deleteAccount.failed"));
         });
       },
     });
@@ -156,7 +157,7 @@ export default function SettingsScreen() {
    * 言語選択のアクションシートを表示する
    */
   function handleLanguageSelect() {
-    Alert.alert("言語設定", "表示言語を選択してください", [
+    Alert.alert(t("settings.languageSelect.title"), t("settings.languageSelect.prompt"), [
       {
         text: "日本語",
         onPress: () => {
@@ -169,7 +170,7 @@ export default function SettingsScreen() {
           setLanguage("English");
         },
       },
-      { text: "キャンセル", style: "cancel" },
+      { text: t("common.cancel"), style: "cancel" },
     ]);
   }
 
@@ -180,58 +181,58 @@ export default function SettingsScreen() {
    */
   function handleNotificationToggle(enabled: boolean) {
     updateNotificationEnabled(enabled).catch(() => {
-      Alert.alert("エラー", "通知設定の更新に失敗しました。もう一度お試しください。");
+      Alert.alert(t("common.errorTitle"), t("settings.notificationUpdateError"));
     });
   }
 
   return (
     <ScrollView className="flex-1 bg-background">
-      <SectionTitle title="アカウント" />
+      <SectionTitle title={t("settings.sections.account")} />
       <View className="bg-surface mx-4 rounded-xl border border-border">
         <SettingsRow
           icon={<User size={ICON_SIZE} color={ICON_COLOR} />}
-          label={user?.name ?? "未ログイン"}
+          label={user?.name ?? t("settings.items.notLoggedIn")}
           value={user?.email ?? ""}
         />
         <SectionDivider />
         <SectionDivider />
         <SettingsRow
           icon={<KeyRound size={ICON_SIZE} color={ICON_COLOR} />}
-          label="パスワード変更"
+          label={t("settings.items.changePassword")}
           onPress={() => router.push("/settings/change-password")}
         />
         <SectionDivider />
         <SettingsRow
           testID="settings-logout-button"
           icon={<LogOut size={ICON_SIZE} color="#ef4444" />}
-          label="ログアウト"
+          label={t("settings.items.logout")}
           onPress={handleLogout}
           trailing={<View />}
         />
       </View>
 
-      <SectionTitle title="サブスクリプション" />
+      <SectionTitle title={t("settings.sections.subscription")} />
       <View className="bg-surface mx-4 rounded-xl border border-border">
         <SettingsRow
           icon={<CreditCard size={ICON_SIZE} color={ICON_COLOR} />}
-          label="プラン"
+          label={t("settings.items.plan")}
           value={isSubscribed ? "Premium" : "Free"}
         />
       </View>
 
-      <SectionTitle title="一般" />
+      <SectionTitle title={t("settings.sections.general")} />
       <View className="bg-surface mx-4 rounded-xl border border-border">
         <SettingsRow
           testID="settings-language-button"
           icon={<Globe size={ICON_SIZE} color={ICON_COLOR} />}
-          label="言語"
+          label={t("settings.items.language")}
           value={language}
           onPress={handleLanguageSelect}
         />
         <SectionDivider />
         <SettingsRow
           icon={<Bell size={ICON_SIZE} color={ICON_COLOR} />}
-          label="通知"
+          label={t("settings.items.notifications")}
           trailing={
             <Switch
               testID="settings-notification-switch"
@@ -239,11 +240,11 @@ export default function SettingsScreen() {
               onValueChange={handleNotificationToggle}
               trackColor={{ false: "#2d2d44", true: "#6366f1" }}
               thumbColor="#ffffff"
-              accessibilityLabel="通知"
+              accessibilityLabel={t("settings.items.notifications")}
               accessibilityHint={
                 isNotificationsEnabled
-                  ? "タップして通知をオフにします"
-                  : "タップして通知をオンにします"
+                  ? t("settings.notificationHintOff")
+                  : t("settings.notificationHintOn")
               }
               accessibilityRole="switch"
             />
@@ -251,12 +252,12 @@ export default function SettingsScreen() {
         />
       </View>
 
-      <SectionTitle title="アカウント管理" />
+      <SectionTitle title={t("settings.sections.accountManagement")} />
       <View className="bg-surface mx-4 rounded-xl border border-border">
         <SettingsRow
           testID="settings-delete-account-button"
           icon={<Trash2 size={ICON_SIZE} color="#ef4444" />}
-          label="アカウントを削除する"
+          label={t("settings.items.deleteAccount")}
           onPress={handleDeleteAccount}
           trailing={<View />}
         />

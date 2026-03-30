@@ -2,6 +2,7 @@
   "common": {
     "loading": "Loading...",
     "error": "An error occurred",
+    "errorTitle": "Error",
     "retry": "Retry",
     "cancel": "Cancel",
     "save": "Save",
@@ -182,11 +183,14 @@
       "title": "Language Settings",
       "prompt": "Select display language"
     },
+    "notificationHintOn": "Tap to turn notifications on",
+    "notificationHintOff": "Tap to turn notifications off",
     "logout": {
       "title": "Log Out",
       "message": "Are you sure you want to log out?",
       "confirm": "Log Out"
     },
+    "notificationUpdateError": "Failed to update notification settings",
     "deleteAccount": {
       "title": "Delete Account",
       "message": "Deleting your account will permanently remove all your data. This action cannot be undone.",
@@ -213,6 +217,24 @@
         "passwordMismatch": "Passwords do not match"
       }
     }
+  },
+  "errorBoundary": {
+    "unexpectedError": "An unexpected error occurred",
+    "appError": "An error occurred in the application",
+    "retry": "Retry"
+  },
+  "errorView": {
+    "titles": {
+      "network": "Network Error",
+      "server": "Server Error",
+      "generic": "An error occurred"
+    },
+    "messages": {
+      "network": "Please check your internet connection",
+      "server": "A problem occurred on the server. Please try again later.",
+      "generic": "A problem occurred. Please try again."
+    },
+    "retry": "Retry"
   },
   "onboarding": {
     "pages": {
