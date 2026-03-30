@@ -1,3 +1,5 @@
+import { apiFetch } from "./api";
+
 /**
  * アナリティクスイベント名の定数
  */
@@ -19,19 +21,29 @@ export const AnalyticsEventName = {
 /** アナリティクスイベント名の型 */
 export type AnalyticsEventNameType = (typeof AnalyticsEventName)[keyof typeof AnalyticsEventName];
 
+/** アナリティクスAPIのパス */
+const ANALYTICS_EVENTS_PATH = "/api/analytics/events";
+
 /**
  * アナリティクスイベントを記録する
- * バックエンドの /analytics/events エンドポイントが未実装のため、
- * 現時点では何も送信しない。実装時に復元すること。
+ * バックエンドの /api/analytics/events エンドポイントにイベントを送信する。
+ * 送信失敗時はエラーを無視して継続する（アナリティクスはベストエフォート）。
  *
- * @param _event - イベント名
- * @param _properties - イベントプロパティ
+ * @param event - イベント名
+ * @param properties - イベントプロパティ
  */
 export async function trackEvent(
-  _event: AnalyticsEventNameType,
-  _properties: Record<string, unknown>,
+  event: AnalyticsEventNameType,
+  properties: Record<string, unknown>,
 ): Promise<void> {
-  /* TODO: バックエンドに /analytics/events ルートを実装したら送信処理を復元する */
+  try {
+    await apiFetch(ANALYTICS_EVENTS_PATH, {
+      method: "POST",
+      body: JSON.stringify({ event, properties }),
+    });
+  } catch {
+    // アナリティクス送信失敗はサイレントに無視する
+  }
 }
 
 /**
