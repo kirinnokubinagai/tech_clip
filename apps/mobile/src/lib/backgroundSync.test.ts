@@ -2,14 +2,33 @@ jest.mock("./syncManager", () => ({
   syncArticles: jest.fn(),
 }));
 
+jest.mock("expo-task-manager", () => ({
+  defineTask: jest.fn(),
+}));
+
+jest.mock("expo-background-fetch", () => ({
+  registerTaskAsync: jest.fn(),
+  unregisterTaskAsync: jest.fn(),
+  BackgroundFetchResult: {
+    NewData: "newData",
+    NoData: "noData",
+    Failed: "failed",
+  },
+}));
+
+import * as BackgroundFetch from "expo-background-fetch";
+import * as TaskManager from "expo-task-manager";
 import { AppState } from "react-native";
 import {
+  BACKGROUND_FETCH_OPTIONS,
   DEFAULT_BACKGROUND_SYNC_CONFIG,
   createAppStateHandler,
   getLastSyncedAt,
   isSyncDue,
+  registerNativeBackgroundFetch,
   resetBackgroundSyncState,
   startBackgroundSync,
+  unregisterNativeBackgroundFetch,
 } from "./backgroundSync";
 import { syncArticles } from "./syncManager";
 
@@ -44,6 +63,23 @@ describe("backgroundSync", () => {
     it("デフォルト設定にタスク名が含まれること", () => {
       // Assert
       expect(DEFAULT_BACKGROUND_SYNC_CONFIG.taskName).toBe("BACKGROUND_SYNC_ARTICLES");
+    });
+  });
+
+  describe("BACKGROUND_FETCH_OPTIONS", () => {
+    it("最小間隔が15分（秒）であること", () => {
+      // Assert
+      expect(BACKGROUND_FETCH_OPTIONS.minimumInterval).toBe(15 * 60);
+    });
+
+    it("停止時にも実行する設定になっていること", () => {
+      // Assert
+      expect(BACKGROUND_FETCH_OPTIONS.stopOnTerminate).toBe(false);
+    });
+
+    it("起動時に開始する設定になっていること", () => {
+      // Assert
+      expect(BACKGROUND_FETCH_OPTIONS.startOnBoot).toBe(true);
     });
   });
 
@@ -157,6 +193,55 @@ describe("backgroundSync", () => {
       // Act & Assert
       handler("active");
       await new Promise((resolve) => setTimeout(resolve, 0));
+    });
+  });
+
+  describe("registerNativeBackgroundFetch", () => {
+    it("BackgroundFetch.registerTaskAsyncでタスクを登録すること", async () => {
+      // Act
+      await registerNativeBackgroundFetch(DEFAULT_BACKGROUND_SYNC_CONFIG);
+
+      // Assert
+      expect(BackgroundFetch.registerTaskAsync).toHaveBeenCalledWith(
+        DEFAULT_BACKGROUND_SYNC_CONFIG.taskName,
+        BACKGROUND_FETCH_OPTIONS,
+      );
+    });
+
+    it("registerTaskAsyncが失敗してもエラーをスローしないこと", async () => {
+      // Arrange
+      (BackgroundFetch.registerTaskAsync as jest.Mock).mockRejectedValue(
+        new Error("バックグラウンドフェッチ登録失敗"),
+      );
+
+      // Act & Assert
+      await expect(
+        registerNativeBackgroundFetch(DEFAULT_BACKGROUND_SYNC_CONFIG),
+      ).resolves.not.toThrow();
+    });
+  });
+
+  describe("unregisterNativeBackgroundFetch", () => {
+    it("BackgroundFetch.unregisterTaskAsyncでタスクを解除すること", async () => {
+      // Act
+      await unregisterNativeBackgroundFetch(DEFAULT_BACKGROUND_SYNC_CONFIG.taskName);
+
+      // Assert
+      expect(BackgroundFetch.unregisterTaskAsync).toHaveBeenCalledWith(
+        DEFAULT_BACKGROUND_SYNC_CONFIG.taskName,
+      );
+    });
+
+    it("unregisterTaskAsyncが失敗してもエラーをスローしないこと", async () => {
+      // Arrange
+      (BackgroundFetch.unregisterTaskAsync as jest.Mock).mockRejectedValue(
+        new Error("タスク解除失敗"),
+      );
+
+      // Act & Assert
+      await expect(
+        unregisterNativeBackgroundFetch(DEFAULT_BACKGROUND_SYNC_CONFIG.taskName),
+      ).resolves.not.toThrow();
     });
   });
 

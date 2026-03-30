@@ -10,6 +10,7 @@ import {
   setupNotificationHandlers,
 } from "../src/lib/notifications";
 import { queryClient } from "../src/lib/query-client";
+import { configureRevenueCat } from "../src/lib/revenueCat";
 import { requestTrackingPermission } from "../src/lib/tracking";
 import { useAuthStore } from "../src/stores/auth-store";
 import { useUIStore } from "../src/stores/ui-store";
@@ -26,6 +27,7 @@ export default function RootLayout() {
     checkSession();
     loadOnboardingState();
     void requestTrackingPermission();
+    void configureRevenueCat().catch(() => {});
   }, [checkSession, loadOnboardingState]);
 
   useEffect(() => {
