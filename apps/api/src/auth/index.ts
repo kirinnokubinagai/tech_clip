@@ -23,6 +23,9 @@ export type OAuthProviderConfig = {
  * @param oauthProviders - OAuthプロバイダー設定（省略可）
  * @returns Better Auth インスタンス
  */
+/** Better Auth インスタンスの型 */
+export type Auth = ReturnType<typeof createAuth>;
+
 export function createAuth(db: Database, secret: string, oauthProviders?: OAuthProviderConfig) {
   return betterAuth({
     database: drizzleAdapter(db, { provider: "sqlite" }),

@@ -1,7 +1,8 @@
 import { and, desc, eq, like, lt, or } from "drizzle-orm";
 import { Hono } from "hono";
+import type { Auth } from "./auth";
 import { createAuth } from "./auth";
-import { createDatabase } from "./db";
+import { type Database, createDatabase } from "./db";
 import { articles, follows, notifications, users } from "./db/schema";
 
 import { corsMiddleware } from "./middleware/cors";
@@ -57,11 +58,35 @@ type Bindings = {
   REVENUECAT_WEBHOOK_SECRET?: string;
 };
 
-const app = new Hono<{ Bindings: Bindings }>();
+/** リクエストスコープで共有する変数 */
+type Variables = {
+  db: Database;
+  auth: () => Auth;
+};
+
+const app = new Hono<{ Bindings: Bindings; Variables: Variables }>();
 
 app.use("*", corsMiddleware);
 app.use("*", securityHeadersMiddleware);
 app.use("*", createSentryMiddleware());
+
+/**
+ * DB・Auth インスタンスをリクエストごとに1回だけ生成してコンテキストに設定するミドルウェア
+ */
+app.use("/api/*", async (c, next) => {
+  const db = createDatabase({
+    TURSO_DATABASE_URL: c.env.TURSO_DATABASE_URL,
+    TURSO_AUTH_TOKEN: c.env.TURSO_AUTH_TOKEN,
+  });
+  const auth = createAuth(db, c.env.BETTER_AUTH_SECRET, {
+    google: { clientId: c.env.GOOGLE_CLIENT_ID, clientSecret: c.env.GOOGLE_CLIENT_SECRET },
+    apple: { clientId: c.env.APPLE_CLIENT_ID, clientSecret: c.env.APPLE_CLIENT_SECRET },
+    github: { clientId: c.env.GITHUB_CLIENT_ID, clientSecret: c.env.GITHUB_CLIENT_SECRET },
+  });
+  c.set("db", db);
+  c.set("auth", () => auth);
+  await next();
+});
 
 app.get("/health", (c) => {
   return c.json({
@@ -75,18 +100,10 @@ app.get("/openapi.json", (c) => {
 });
 
 app.on(["POST", "GET"], "/api/auth/sign-in", async (c) => {
-  const db = createDatabase({
-    TURSO_DATABASE_URL: c.env.TURSO_DATABASE_URL,
-    TURSO_AUTH_TOKEN: c.env.TURSO_AUTH_TOKEN,
-  });
+  const db = c.get("db");
   const authRoute = createAuthRoute({
     db,
-    getAuth: () =>
-      createAuth(db, c.env.BETTER_AUTH_SECRET, {
-        google: { clientId: c.env.GOOGLE_CLIENT_ID, clientSecret: c.env.GOOGLE_CLIENT_SECRET },
-        apple: { clientId: c.env.APPLE_CLIENT_ID, clientSecret: c.env.APPLE_CLIENT_SECRET },
-        github: { clientId: c.env.GITHUB_CLIENT_ID, clientSecret: c.env.GITHUB_CLIENT_SECRET },
-      }),
+    getAuth: c.get("auth"),
   });
   const subApp = new Hono();
   subApp.route("/api/auth", authRoute);
@@ -94,18 +111,10 @@ app.on(["POST", "GET"], "/api/auth/sign-in", async (c) => {
 });
 
 app.get("/api/auth/session", async (c) => {
-  const db = createDatabase({
-    TURSO_DATABASE_URL: c.env.TURSO_DATABASE_URL,
-    TURSO_AUTH_TOKEN: c.env.TURSO_AUTH_TOKEN,
-  });
+  const db = c.get("db");
   const authRoute = createAuthRoute({
     db,
-    getAuth: () =>
-      createAuth(db, c.env.BETTER_AUTH_SECRET, {
-        google: { clientId: c.env.GOOGLE_CLIENT_ID, clientSecret: c.env.GOOGLE_CLIENT_SECRET },
-        apple: { clientId: c.env.APPLE_CLIENT_ID, clientSecret: c.env.APPLE_CLIENT_SECRET },
-        github: { clientId: c.env.GITHUB_CLIENT_ID, clientSecret: c.env.GITHUB_CLIENT_SECRET },
-      }),
+    getAuth: c.get("auth"),
   });
   const subApp = new Hono();
   subApp.route("/api/auth", authRoute);
@@ -113,18 +122,10 @@ app.get("/api/auth/session", async (c) => {
 });
 
 app.post("/api/auth/refresh", async (c) => {
-  const db = createDatabase({
-    TURSO_DATABASE_URL: c.env.TURSO_DATABASE_URL,
-    TURSO_AUTH_TOKEN: c.env.TURSO_AUTH_TOKEN,
-  });
+  const db = c.get("db");
   const authRoute = createAuthRoute({
     db,
-    getAuth: () =>
-      createAuth(db, c.env.BETTER_AUTH_SECRET, {
-        google: { clientId: c.env.GOOGLE_CLIENT_ID, clientSecret: c.env.GOOGLE_CLIENT_SECRET },
-        apple: { clientId: c.env.APPLE_CLIENT_ID, clientSecret: c.env.APPLE_CLIENT_SECRET },
-        github: { clientId: c.env.GITHUB_CLIENT_ID, clientSecret: c.env.GITHUB_CLIENT_SECRET },
-      }),
+    getAuth: c.get("auth"),
   });
   const subApp = new Hono();
   subApp.route("/api/auth", authRoute);
@@ -132,10 +133,7 @@ app.post("/api/auth/refresh", async (c) => {
 });
 
 app.post("/api/auth/send-verification", async (c) => {
-  const db = createDatabase({
-    TURSO_DATABASE_URL: c.env.TURSO_DATABASE_URL,
-    TURSO_AUTH_TOKEN: c.env.TURSO_AUTH_TOKEN,
-  });
+  const db = c.get("db");
   const appUrl =
     c.env.ENVIRONMENT === "production" ? "https://app.techclip.io" : "http://localhost:8081";
   const route = createEmailVerificationRoute({
@@ -149,10 +147,7 @@ app.post("/api/auth/send-verification", async (c) => {
 });
 
 app.post("/api/auth/verify-email", async (c) => {
-  const db = createDatabase({
-    TURSO_DATABASE_URL: c.env.TURSO_DATABASE_URL,
-    TURSO_AUTH_TOKEN: c.env.TURSO_AUTH_TOKEN,
-  });
+  const db = c.get("db");
   const appUrl =
     c.env.ENVIRONMENT === "production" ? "https://app.techclip.io" : "http://localhost:8081";
   const route = createEmailVerificationRoute({
@@ -166,11 +161,7 @@ app.post("/api/auth/verify-email", async (c) => {
 });
 
 app.on(["POST", "GET"], "/api/auth/**", async (c) => {
-  const db = createDatabase({
-    TURSO_DATABASE_URL: c.env.TURSO_DATABASE_URL,
-    TURSO_AUTH_TOKEN: c.env.TURSO_AUTH_TOKEN,
-  });
-
+  const db = c.get("db");
   const path = new URL(c.req.url).pathname;
 
   if (
@@ -187,28 +178,12 @@ app.on(["POST", "GET"], "/api/auth/**", async (c) => {
     return subApp.fetch(c.req.raw);
   }
 
-  const auth = createAuth(db, c.env.BETTER_AUTH_SECRET, {
-    google: {
-      clientId: c.env.GOOGLE_CLIENT_ID,
-      clientSecret: c.env.GOOGLE_CLIENT_SECRET,
-    },
-    apple: {
-      clientId: c.env.APPLE_CLIENT_ID,
-      clientSecret: c.env.APPLE_CLIENT_SECRET,
-    },
-    github: {
-      clientId: c.env.GITHUB_CLIENT_ID,
-      clientSecret: c.env.GITHUB_CLIENT_SECRET,
-    },
-  });
+  const auth = c.get("auth")();
   return auth.handler(c.req.raw);
 });
 
 app.get("/api/users/:id/articles", async (c) => {
-  const db = createDatabase({
-    TURSO_DATABASE_URL: c.env.TURSO_DATABASE_URL,
-    TURSO_AUTH_TOKEN: c.env.TURSO_AUTH_TOKEN,
-  });
+  const db = c.get("db");
 
   const publicArticlesRoute = createPublicArticlesRoute({
     queryFn: async (params) => {
@@ -236,11 +211,8 @@ app.get("/api/users/:id/articles", async (c) => {
 });
 
 app.on(["GET", "POST", "PATCH", "DELETE"], "/api/articles/**", async (c) => {
-  const db = createDatabase({
-    TURSO_DATABASE_URL: c.env.TURSO_DATABASE_URL,
-    TURSO_AUTH_TOKEN: c.env.TURSO_AUTH_TOKEN,
-  });
-  const auth = createAuth(db, c.env.BETTER_AUTH_SECRET, {});
+  const db = c.get("db");
+  const auth = c.get("auth")();
 
   const articlesRoute = createArticlesRoute({
     db,
@@ -333,11 +305,8 @@ app.on(["GET", "POST", "PATCH", "DELETE"], "/api/articles/**", async (c) => {
 });
 
 app.on(["GET", "POST", "PATCH", "DELETE"], "/api/users/**", async (c) => {
-  const db = createDatabase({
-    TURSO_DATABASE_URL: c.env.TURSO_DATABASE_URL,
-    TURSO_AUTH_TOKEN: c.env.TURSO_AUTH_TOKEN,
-  });
-  const auth = createAuth(db, c.env.BETTER_AUTH_SECRET, {});
+  const db = c.get("db");
+  const auth = c.get("auth")();
 
   const usersRoute = createUsersRoute({
     db,
@@ -416,11 +385,8 @@ app.on(["GET", "POST", "PATCH", "DELETE"], "/api/users/**", async (c) => {
 });
 
 app.on(["GET", "POST", "PATCH"], "/api/tags/**", async (c) => {
-  const db = createDatabase({
-    TURSO_DATABASE_URL: c.env.TURSO_DATABASE_URL,
-    TURSO_AUTH_TOKEN: c.env.TURSO_AUTH_TOKEN,
-  });
-  const auth = createAuth(db, c.env.BETTER_AUTH_SECRET, {});
+  const db = c.get("db");
+  const auth = c.get("auth")();
 
   const tagsRoute = createTagsRoute({ db });
 
@@ -440,11 +406,8 @@ app.on(["GET", "POST", "PATCH"], "/api/tags/**", async (c) => {
 });
 
 app.on(["GET", "POST", "PATCH"], "/api/notifications/**", async (c) => {
-  const db = createDatabase({
-    TURSO_DATABASE_URL: c.env.TURSO_DATABASE_URL,
-    TURSO_AUTH_TOKEN: c.env.TURSO_AUTH_TOKEN,
-  });
-  const auth = createAuth(db, c.env.BETTER_AUTH_SECRET, {});
+  const db = c.get("db");
+  const auth = c.get("auth")();
 
   const notificationsRoute = createNotificationsRoute({
     db,
@@ -479,11 +442,8 @@ app.on(["GET", "POST", "PATCH"], "/api/notifications/**", async (c) => {
 });
 
 app.on(["GET", "PATCH"], "/api/notification-settings/**", async (c) => {
-  const db = createDatabase({
-    TURSO_DATABASE_URL: c.env.TURSO_DATABASE_URL,
-    TURSO_AUTH_TOKEN: c.env.TURSO_AUTH_TOKEN,
-  });
-  const auth = createAuth(db, c.env.BETTER_AUTH_SECRET, {});
+  const db = c.get("db");
+  const auth = c.get("auth")();
 
   const notificationSettingsRoute = createNotificationSettingsRoute({ db });
 
@@ -503,11 +463,8 @@ app.on(["GET", "PATCH"], "/api/notification-settings/**", async (c) => {
 });
 
 app.on(["GET", "POST"], "/api/subscription/**", async (c) => {
-  const db = createDatabase({
-    TURSO_DATABASE_URL: c.env.TURSO_DATABASE_URL,
-    TURSO_AUTH_TOKEN: c.env.TURSO_AUTH_TOKEN,
-  });
-  const auth = createAuth(db, c.env.BETTER_AUTH_SECRET, {});
+  const db = c.get("db");
+  const auth = c.get("auth")();
 
   const subscriptionRoute = createSubscriptionRoute({
     db,
