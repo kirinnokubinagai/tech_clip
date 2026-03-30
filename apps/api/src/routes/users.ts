@@ -4,7 +4,10 @@ import { z } from "zod";
 
 import type { Database } from "../db";
 import { users } from "../db/schema";
+import { createLogger } from "../lib/logger";
 import { uploadAvatarToR2, validateImageFile } from "../services/imageUpload";
+
+const logger = createLogger();
 
 /** HTTP 400 Bad Request ステータスコード */
 const HTTP_BAD_REQUEST = 400;
@@ -376,7 +379,9 @@ export function createUsersRoute(options: UsersRouteOptions) {
 
     if (oldAvatarUrl) {
       const oldKey = oldAvatarUrl.replace(`${r2PublicUrl}/`, "");
-      await r2Bucket.delete(oldKey).catch(() => {});
+      await r2Bucket.delete(oldKey).catch((err) => {
+        logger.warn("旧アバター画像の削除に失敗しました", { oldKey, error: err });
+      });
     }
 
     const [updated] = await db
