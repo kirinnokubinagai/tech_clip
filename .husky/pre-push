@@ -27,14 +27,28 @@ fi
 
 echo "  OWASP ZAP セキュリティスキャン..."
 
-# APIサーバーのポート番号
 ZAP_API_PORT=8787
-# ZAPスキャン用一時DBファイル
 ZAP_DB_FILE="/tmp/zap-prepush-local.db"
-# サーバー起動待機の最大試行回数
 ZAP_MAX_WAIT=30
+ZAP_SERVER_PID=""
 
-# バックグラウンドでAPIサーバーを起動
+zap_cleanup() {
+  if [ -n "${ZAP_SERVER_PID}" ]; then
+    kill "${ZAP_SERVER_PID}" 2>/dev/null
+  fi
+  rm -f "${ZAP_DB_FILE}"
+}
+trap zap_cleanup EXIT INT TERM
+
+# macOS Docker Desktop では --network host が動かないため host.docker.internal を使用
+if [ "$(uname)" = "Darwin" ]; then
+  ZAP_HOST="host.docker.internal"
+  ZAP_DOCKER_NETWORK=""
+else
+  ZAP_HOST="localhost"
+  ZAP_DOCKER_NETWORK="--network host"
+fi
+
 TURSO_DATABASE_URL="file:${ZAP_DB_FILE}" \
 TURSO_AUTH_TOKEN="dummy" \
 RUNPOD_API_KEY="dummy" \
@@ -72,7 +86,7 @@ curl -s -X POST "http://localhost:${ZAP_API_PORT}/api/auth/sign-up/email" \
 ZAP_RESPONSE=$(curl -s -X POST "http://localhost:${ZAP_API_PORT}/api/auth/sign-in" \
   -H "Content-Type: application/json" \
   -d '{"email":"zap-test@techclip.test","password":"ZapTest1234!"}')
-ZAP_TOKEN=$(echo "${ZAP_RESPONSE}" | grep -o '"token":"[^"]*"' | head -1 | sed 's/"token":"//;s/"//')
+ZAP_TOKEN=$(echo "${ZAP_RESPONSE}" | jq -r '.data.session.token // .data.token // .token // empty' 2>/dev/null || echo "")
 
 if [ -z "${ZAP_TOKEN}" ]; then
   echo "    警告: 認証トークンを取得できませんでした。未認証スキャンのみ実施します。"
@@ -80,25 +94,19 @@ if [ -z "${ZAP_TOKEN}" ]; then
 fi
 
 # OWASP ZAP API スキャン実行
-# .zap/ をコンテナ内 /zap/wrk/ にマウントしてルールとレポートを共有
-ZAP_EXIT_CODE=0
 docker run --rm \
-  --network host \
+  ${ZAP_DOCKER_NETWORK} \
   -v "$(pwd)/.zap:/zap/wrk:rw" \
   -e "ZAP_AUTH_HEADER=Authorization" \
   -e "ZAP_AUTH_HEADER_VALUE=Bearer ${ZAP_TOKEN}" \
   zaproxy/zaproxy \
   zap-api-scan.py \
-  -t "http://localhost:${ZAP_API_PORT}/openapi.json" \
+  -t "http://${ZAP_HOST}:${ZAP_API_PORT}/openapi.json" \
   -f openapi \
   -r /zap/wrk/zap-report.html \
   -c /zap/wrk/rules.tsv \
-  -a \
-  2>&1 | grep -v "^$" || ZAP_EXIT_CODE=$?
-
-# サーバー停止・クリーンアップ
-kill "${ZAP_SERVER_PID}" 2>/dev/null
-rm -f "${ZAP_DB_FILE}"
+  -a
+ZAP_EXIT_CODE=$?
 
 if [ "${ZAP_EXIT_CODE}" -ne 0 ]; then
   echo "ZAPスキャン失敗: セキュリティ問題が検出されました。"
