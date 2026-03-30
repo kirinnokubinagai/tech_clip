@@ -43,6 +43,32 @@ describe("Better Auth", () => {
       expect(auth.handler).toBeDefined();
       expect(typeof auth.handler).toBe("function");
     });
+
+    it("baseURLを指定してauthインスタンスを生成できること", async () => {
+      // Arrange
+      const { createAuth } = await import("./index");
+      const mockDb = {} as Parameters<typeof createAuth>[0];
+
+      // Act
+      const auth = createAuth(mockDb, TEST_SECRET, undefined, "https://techclip.app");
+
+      // Assert
+      expect(auth).toBeDefined();
+      expect(auth.handler).toBeDefined();
+    });
+
+    it("baseURLを省略した場合もauthインスタンスを生成できること", async () => {
+      // Arrange
+      const { createAuth } = await import("./index");
+      const mockDb = {} as Parameters<typeof createAuth>[0];
+
+      // Act
+      const auth = createAuth(mockDb, TEST_SECRET, undefined, undefined);
+
+      // Assert
+      expect(auth).toBeDefined();
+      expect(auth.handler).toBeDefined();
+    });
   });
 
   describe("OAuth設定", () => {
