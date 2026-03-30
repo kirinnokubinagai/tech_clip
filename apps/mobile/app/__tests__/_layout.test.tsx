@@ -7,11 +7,10 @@ jest.mock("expo-secure-store", () => ({
 }));
 
 jest.mock("../../src/stores/settings-store", () => ({
-  useSettingsStore: jest.fn(
-    (selector: (s: Record<string, unknown>) => unknown) =>
-      selector({
-        loadLanguage: jest.fn(),
-      }),
+  useSettingsStore: jest.fn((selector: (s: Record<string, unknown>) => unknown) =>
+    selector({
+      loadLanguage: jest.fn(),
+    }),
   ),
 }));
 
