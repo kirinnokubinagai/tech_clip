@@ -1,7 +1,9 @@
 import "../global.css";
+import "../src/lib/i18n";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Redirect, Stack } from "expo-router";
 import { useEffect } from "react";
+import i18n from "../src/lib/i18n";
 import { ActivityIndicator, View } from "react-native";
 
 import {
@@ -13,6 +15,7 @@ import { queryClient } from "../src/lib/query-client";
 import { configureRevenueCat } from "../src/lib/revenueCat";
 import { requestTrackingPermission } from "../src/lib/tracking";
 import { useAuthStore } from "../src/stores/auth-store";
+import { useSettingsStore } from "../src/stores/settings-store";
 import { useUIStore } from "../src/stores/ui-store";
 
 export default function RootLayout() {
@@ -22,13 +25,16 @@ export default function RootLayout() {
   const hasSeenOnboarding = useUIStore((s) => s.hasSeenOnboarding);
   const isOnboardingLoaded = useUIStore((s) => s.isOnboardingLoaded);
   const loadOnboardingState = useUIStore((s) => s.loadOnboardingState);
+  const language = useSettingsStore((s) => s.language);
+  const loadLanguage = useSettingsStore((s) => s.loadLanguage);
 
   useEffect(() => {
     checkSession();
     loadOnboardingState();
+    void loadLanguage();
     void requestTrackingPermission();
     void configureRevenueCat().catch(() => {});
-  }, [checkSession, loadOnboardingState]);
+  }, [checkSession, loadOnboardingState, loadLanguage]);
 
   useEffect(() => {
     const cleanup = setupNotificationHandlers();
@@ -44,6 +50,11 @@ export default function RootLayout() {
       }
     });
   }, [isAuthenticated]);
+
+  useEffect(() => {
+    const i18nLanguage = language === "English" ? "en" : "ja";
+    void i18n.changeLanguage(i18nLanguage);
+  }, [language]);
 
   if (isLoading || !isOnboardingLoaded) {
     return (
