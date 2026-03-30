@@ -197,17 +197,6 @@ describe("backgroundSync", () => {
   });
 
   describe("registerNativeBackgroundFetch", () => {
-    it("TaskManager.defineTaskでタスクを定義すること", async () => {
-      // Act
-      await registerNativeBackgroundFetch(DEFAULT_BACKGROUND_SYNC_CONFIG);
-
-      // Assert
-      expect(TaskManager.defineTask).toHaveBeenCalledWith(
-        DEFAULT_BACKGROUND_SYNC_CONFIG.taskName,
-        expect.any(Function),
-      );
-    });
-
     it("BackgroundFetch.registerTaskAsyncでタスクを登録すること", async () => {
       // Act
       await registerNativeBackgroundFetch(DEFAULT_BACKGROUND_SYNC_CONFIG);

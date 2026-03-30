@@ -37,6 +37,25 @@ export const DEFAULT_BACKGROUND_SYNC_CONFIG: BackgroundSyncConfig = {
 };
 
 /**
+ * バックグラウンドフェッチタスク定義（モジュールトップレベルで呼ぶ必要がある）
+ * OSがアプリをバックグラウンドで起動した際にタスクが見つかるようにする
+ */
+TaskManager.defineTask(DEFAULT_BACKGROUND_SYNC_CONFIG.taskName, async () => {
+  try {
+    const result = await syncArticles();
+    if (result.errors.length > 0) {
+      return BackgroundFetch.BackgroundFetchResult.Failed;
+    }
+    if (result.synced === 0) {
+      return BackgroundFetch.BackgroundFetchResult.NoData;
+    }
+    return BackgroundFetch.BackgroundFetchResult.NewData;
+  } catch {
+    return BackgroundFetch.BackgroundFetchResult.Failed;
+  }
+});
+
+/**
  * expo-background-fetch タスク登録オプション
  *
  * - stopOnTerminate: false → アプリ終了後もバックグラウンドフェッチを継続（Android）
@@ -109,21 +128,6 @@ export function createAppStateHandler(config: BackgroundSyncConfig): AppStateCha
  * @param config - バックグラウンド同期設定
  */
 export async function registerNativeBackgroundFetch(config: BackgroundSyncConfig): Promise<void> {
-  TaskManager.defineTask(config.taskName, async () => {
-    try {
-      const result = await syncArticles();
-      if (result.errors.length > 0) {
-        return BackgroundFetch.BackgroundFetchResult.Failed;
-      }
-      if (result.synced === 0) {
-        return BackgroundFetch.BackgroundFetchResult.NoData;
-      }
-      return BackgroundFetch.BackgroundFetchResult.NewData;
-    } catch {
-      return BackgroundFetch.BackgroundFetchResult.Failed;
-    }
-  });
-
   try {
     await BackgroundFetch.registerTaskAsync(config.taskName, BACKGROUND_FETCH_OPTIONS);
   } catch {
