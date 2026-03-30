@@ -1,4 +1,4 @@
-import { eq } from "drizzle-orm";
+import { and, eq, gt, sql } from "drizzle-orm";
 import type { MiddlewareHandler } from "hono";
 
 import type { Database } from "../db";
@@ -60,8 +60,9 @@ const HTTP_SUCCESS_MAX_STATUS = 399;
  * 要約/翻訳API呼び出し前にユーザーのfreeAiUsesRemainingをチェックし、
  * 無料ユーザーの使用回数を制限する。
  * - プレミアムユーザー: 制限なし（通過）
- * - 無料ユーザー（残回数あり）: 通過後にデクリメント（成功時のみ）
- * - 無料ユーザー（残回数なし、リセット期限切れ）: リセットして通過（成功時のみ適用）
+ * - 無料ユーザー（残回数あり）: アトミックUPDATE（WHERE freeAiUsesRemaining > 0）で
+ *   デクリメント。更新0件の場合はTOCTOU競合とみなし402を返却
+ * - 無料ユーザー（残回数なし、リセット期限切れ）: リセットして通過
  * - 無料ユーザー（残回数なし、リセット期限内）: 402を返却
  *
  * @param db - Drizzle ORMデータベースインスタンス
@@ -111,6 +112,28 @@ export function createAiLimitMiddleware(db: Database): MiddlewareHandler {
     const remaining = dbUser.freeAiUsesRemaining ?? 0;
 
     if (remaining > 0) {
+      const updated = await db
+        .update(users)
+        .set({
+          freeAiUsesRemaining: sql`${users.freeAiUsesRemaining} - 1`,
+          updatedAt: new Date().toISOString(),
+        })
+        .where(and(eq(users.id, userId), gt(users.freeAiUsesRemaining, 0)))
+        .returning();
+
+      if (updated.length === 0) {
+        return c.json(
+          {
+            success: false,
+            error: {
+              code: AI_LIMIT_ERROR_CODE,
+              message: AI_LIMIT_ERROR_MESSAGE,
+            },
+          },
+          HTTP_PAYMENT_REQUIRED,
+        );
+      }
+
       await next();
 
       if (c.res.status <= HTTP_SUCCESS_MAX_STATUS) {
