@@ -181,7 +181,7 @@ export default function SettingsScreen() {
    */
   function handleNotificationToggle(enabled: boolean) {
     updateNotificationEnabled(enabled).catch(() => {
-      Alert.alert(t("common.errorTitle"), t("notifications.fetchError"));
+      Alert.alert(t("common.errorTitle"), t("settings.notificationUpdateError"));
     });
   }
 

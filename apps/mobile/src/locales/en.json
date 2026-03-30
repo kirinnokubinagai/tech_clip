@@ -190,6 +190,7 @@
       "message": "Are you sure you want to log out?",
       "confirm": "Log Out"
     },
+    "notificationUpdateError": "Failed to update notification settings",
     "deleteAccount": {
       "title": "Delete Account",
       "message": "Deleting your account will permanently remove all your data. This action cannot be undone.",
