@@ -18,5 +18,6 @@ module.exports = {
     "^expo-image$": "<rootDir>/__mocks__/expo-image.js",
     "^react-native-safe-area-context$": "<rootDir>/__mocks__/react-native-safe-area-context.js",
     "^expo-router$": "<rootDir>/__mocks__/expo-router.js",
+    "^react-i18next$": "<rootDir>/__mocks__/react-i18next.js",
   },
 };
