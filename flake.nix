@@ -24,6 +24,7 @@
             jq
             curl
             docker-client
+            maestro
           ];
 
           shellHook = ''
