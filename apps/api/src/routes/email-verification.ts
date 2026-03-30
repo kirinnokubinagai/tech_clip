@@ -59,6 +59,23 @@ type EmailVerificationRouteOptions = {
 };
 
 /**
+ * メール認証用トークンをSHA-256でハッシュ化する
+ *
+ * Web Crypto API (SubtleCrypto) を使用してハッシュ化する。
+ * Cloudflare Workers 環境でも動作する。
+ *
+ * @param token - ハッシュ化するトークン文字列
+ * @returns ハッシュ化された16進数文字列
+ */
+async function hashToken(token: string): Promise<string> {
+  const encoder = new TextEncoder();
+  const data = encoder.encode(token);
+  const hashBuffer = await crypto.subtle.digest("SHA-256", data);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  return hashArray.map((b) => b.toString(16).padStart(2, "0")).join("");
+}
+
+/**
  * メール認証ルートを生成する
  *
  * POST /send-verification: 認証メールを送信する
@@ -102,7 +119,8 @@ export function createEmailVerificationRoute(options: EmailVerificationRouteOpti
       );
     }
 
-    const token = crypto.randomUUID();
+    const rawToken = crypto.randomUUID();
+    const hashedToken = await hashToken(rawToken);
     const identifier = `${EMAIL_VERIFICATION_IDENTIFIER_PREFIX}:${userId}`;
     const expiresAt = new Date(Date.now() + VERIFICATION_TOKEN_TTL_MS).toISOString();
 
@@ -111,13 +129,13 @@ export function createEmailVerificationRoute(options: EmailVerificationRouteOpti
     await db.insert(verifications).values({
       id: crypto.randomUUID(),
       identifier,
-      value: token,
+      value: hashedToken,
       expiresAt,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     });
 
-    const verifyUrl = `${appUrl}/verify-email?token=${token}`;
+    const verifyUrl = `${appUrl}/verify-email?token=${rawToken}`;
     const userName = (found as unknown as Record<string, unknown>).name as string | null;
 
     try {
@@ -187,11 +205,12 @@ export function createEmailVerificationRoute(options: EmailVerificationRouteOpti
     }
 
     const { token } = validation.data;
+    const hashedToken = await hashToken(token);
 
     const [verification] = await db
       .select()
       .from(verifications)
-      .where(eq(verifications.value, token));
+      .where(eq(verifications.value, hashedToken));
 
     if (!verification) {
       return c.json(
@@ -226,7 +245,7 @@ export function createEmailVerificationRoute(options: EmailVerificationRouteOpti
 
     await db.update(users).set({ emailVerified: true }).where(eq(users.id, userId));
 
-    await db.delete(verifications).where(eq(verifications.value, token));
+    await db.delete(verifications).where(eq(verifications.id, verification.id));
 
     return c.json(
       {
