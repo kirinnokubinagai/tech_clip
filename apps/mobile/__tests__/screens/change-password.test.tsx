@@ -5,6 +5,35 @@ import type { ReactTestInstance } from "react-test-renderer";
 import ChangePasswordScreen, {
   validateChangePasswordForm,
 } from "../../app/settings/change-password";
+import jaTranslations from "../../src/locales/ja.json";
+
+/**
+ * テスト用翻訳関数（ja.jsonから実際の日本語テキストを解決する）
+ */
+function resolveKey(obj: Record<string, unknown>, key: string): string {
+  const parts = key.split(".");
+  let current: unknown = obj;
+  for (const part of parts) {
+    if (current === null || current === undefined || typeof current !== "object") {
+      return key;
+    }
+    current = (current as Record<string, unknown>)[part];
+  }
+  if (current !== undefined && current !== null) {
+    return String(current);
+  }
+  return key;
+}
+
+function t(key: string, opts?: Record<string, unknown>): string {
+  const value = resolveKey(jaTranslations as unknown as Record<string, unknown>, key);
+  if (opts && typeof value === "string") {
+    return value.replace(/\{\{(\w+)\}\}/g, (_, k) =>
+      opts[k] !== undefined ? String(opts[k]) : `{{${k}}}`,
+    );
+  }
+  return value;
+}
 
 const mockBack = jest.fn();
 const mockChangePassword = jest.fn();
@@ -64,7 +93,7 @@ describe("validateChangePasswordForm", () => {
       };
 
       // Act
-      const errors = validateChangePasswordForm(data);
+      const errors = validateChangePasswordForm(data, t);
 
       // Assert
       expect(errors.currentPassword).toBe("現在のパスワードを入力してください");
@@ -77,7 +106,7 @@ describe("validateChangePasswordForm", () => {
       const data = { currentPassword: "OldPass123", newPassword: "", confirmPassword: "" };
 
       // Act
-      const errors = validateChangePasswordForm(data);
+      const errors = validateChangePasswordForm(data, t);
 
       // Assert
       expect(errors.newPassword).toBe("新しいパスワードを入力してください");
@@ -92,7 +121,7 @@ describe("validateChangePasswordForm", () => {
       };
 
       // Act
-      const errors = validateChangePasswordForm(data);
+      const errors = validateChangePasswordForm(data, t);
 
       // Assert
       expect(errors.newPassword).toBe("パスワードは8文字以上で入力してください");
@@ -107,7 +136,7 @@ describe("validateChangePasswordForm", () => {
       };
 
       // Act
-      const errors = validateChangePasswordForm(data);
+      const errors = validateChangePasswordForm(data, t);
 
       // Assert
       expect(errors.newPassword).toBeUndefined();
@@ -124,7 +153,7 @@ describe("validateChangePasswordForm", () => {
       };
 
       // Act
-      const errors = validateChangePasswordForm(data);
+      const errors = validateChangePasswordForm(data, t);
 
       // Assert
       expect(errors.confirmPassword).toBe("確認用パスワードを入力してください");
@@ -139,7 +168,7 @@ describe("validateChangePasswordForm", () => {
       };
 
       // Act
-      const errors = validateChangePasswordForm(data);
+      const errors = validateChangePasswordForm(data, t);
 
       // Assert
       expect(errors.confirmPassword).toBe("パスワードが一致しません");
@@ -154,7 +183,7 @@ describe("validateChangePasswordForm", () => {
       };
 
       // Act
-      const errors = validateChangePasswordForm(data);
+      const errors = validateChangePasswordForm(data, t);
 
       // Assert
       expect(errors.confirmPassword).toBeUndefined();
@@ -171,7 +200,7 @@ describe("validateChangePasswordForm", () => {
       };
 
       // Act
-      const errors = validateChangePasswordForm(data);
+      const errors = validateChangePasswordForm(data, t);
 
       // Assert
       expect(Object.keys(errors)).toHaveLength(0);

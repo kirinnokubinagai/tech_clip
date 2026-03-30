@@ -1,6 +1,7 @@
 import { useRouter } from "expo-router";
 import { ArrowLeft } from "lucide-react-native";
 import { useCallback, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Alert, Pressable, ScrollView, Text, View } from "react-native";
 
 import { Button } from "@/components/ui/Button";
@@ -31,31 +32,42 @@ type ChangePasswordFormData = {
 /** バリデーションエラーの型 */
 type FormErrors = Partial<Record<keyof ChangePasswordFormData, string>>;
 
+/** t関数の型 */
+type TFunction = (key: string, opts?: Record<string, unknown>) => string;
+
 /**
  * パスワード変更フォームのバリデーションを実行する
  *
  * @param data - バリデーション対象のフォームデータ
+ * @param t - 翻訳関数
  * @returns エラーオブジェクト。エラーがない場合は空オブジェクト
  */
-export function validateChangePasswordForm(data: ChangePasswordFormData): FormErrors {
+export function validateChangePasswordForm(
+  data: ChangePasswordFormData,
+  t: TFunction,
+): FormErrors {
   const errors: FormErrors = {};
 
   if (!data.currentPassword) {
-    errors.currentPassword = "現在のパスワードを入力してください";
+    errors.currentPassword = t("settings.changePassword.validation.currentPasswordRequired");
   }
 
   if (!data.newPassword) {
-    errors.newPassword = "新しいパスワードを入力してください";
+    errors.newPassword = t("settings.changePassword.validation.newPasswordRequired");
   } else if (data.newPassword.length < PASSWORD_MIN_LENGTH) {
-    errors.newPassword = `パスワードは${PASSWORD_MIN_LENGTH}文字以上で入力してください`;
+    errors.newPassword = t("settings.changePassword.validation.newPasswordTooShort", {
+      min: PASSWORD_MIN_LENGTH,
+    });
   } else if (data.newPassword.length > PASSWORD_MAX_LENGTH) {
-    errors.newPassword = `パスワードは${PASSWORD_MAX_LENGTH}文字以内で入力してください`;
+    errors.newPassword = t("settings.changePassword.validation.newPasswordTooLong", {
+      max: PASSWORD_MAX_LENGTH,
+    });
   }
 
   if (!data.confirmPassword) {
-    errors.confirmPassword = "確認用パスワードを入力してください";
+    errors.confirmPassword = t("settings.changePassword.validation.confirmPasswordRequired");
   } else if (data.newPassword && data.newPassword !== data.confirmPassword) {
-    errors.confirmPassword = "パスワードが一致しません";
+    errors.confirmPassword = t("settings.changePassword.validation.passwordMismatch");
   }
 
   return errors;
@@ -67,6 +79,7 @@ export function validateChangePasswordForm(data: ChangePasswordFormData): FormEr
  * 現在のパスワード、新しいパスワード、確認用パスワードの入力フォームを提供する
  */
 export default function ChangePasswordScreen() {
+  const { t } = useTranslation();
   const router = useRouter();
   const changePassword = useAuthStore((s) => s.changePassword);
   const { toast, show: showToast, dismiss: dismissToast } = useToast();
@@ -102,7 +115,7 @@ export default function ChangePasswordScreen() {
    * パスワード変更を実行する
    */
   const handleSave = useCallback(async () => {
-    const validationErrors = validateChangePasswordForm(formData);
+    const validationErrors = validateChangePasswordForm(formData, t);
 
     if (Object.keys(validationErrors).length > 0) {
       setErrors(validationErrors);
@@ -113,17 +126,17 @@ export default function ChangePasswordScreen() {
 
     try {
       await changePassword(formData.currentPassword, formData.newPassword);
-      showToast("パスワードを変更しました", "success");
+      showToast(t("settings.changePassword.saveSuccess"), "success");
       router.back();
     } catch {
       Alert.alert(
-        "エラー",
-        "パスワードの変更に失敗しました。現在のパスワードが正しいか確認してください。",
+        t("common.errorTitle"),
+        t("settings.changePassword.saveFailed"),
       );
     } finally {
       setIsSaving(false);
     }
-  }, [formData, changePassword, router, showToast]);
+  }, [formData, changePassword, router, showToast, t]);
 
   return (
     <View testID="change-password-screen" className="flex-1 bg-background">
@@ -138,12 +151,12 @@ export default function ChangePasswordScreen() {
           testID="change-password-back-button"
           onPress={handleBack}
           accessibilityRole="button"
-          accessibilityLabel="戻る"
+          accessibilityLabel={t("common.back")}
           hitSlop={8}
         >
           <ArrowLeft size={BACK_ICON_SIZE} color={TEXT_COLOR} />
         </Pressable>
-        <Text className="text-lg font-bold text-text">パスワード変更</Text>
+        <Text className="text-lg font-bold text-text">{t("settings.changePassword.title")}</Text>
         <View style={{ width: BACK_ICON_SIZE }} />
       </View>
 
@@ -154,8 +167,8 @@ export default function ChangePasswordScreen() {
       >
         <View className="px-4 pt-6 gap-4">
           <Input
-            label="現在のパスワード"
-            placeholder="現在のパスワードを入力"
+            label={t("settings.changePassword.currentPassword")}
+            placeholder={t("settings.changePassword.currentPasswordPlaceholder")}
             value={formData.currentPassword}
             onChangeText={(text) => updateField("currentPassword", text)}
             error={errors.currentPassword}
@@ -164,8 +177,8 @@ export default function ChangePasswordScreen() {
           />
 
           <Input
-            label="新しいパスワード"
-            placeholder="新しいパスワードを入力"
+            label={t("settings.changePassword.newPassword")}
+            placeholder={t("settings.changePassword.newPasswordPlaceholder")}
             value={formData.newPassword}
             onChangeText={(text) => updateField("newPassword", text)}
             error={errors.newPassword}
@@ -174,8 +187,8 @@ export default function ChangePasswordScreen() {
           />
 
           <Input
-            label="新しいパスワード（確認）"
-            placeholder="新しいパスワードを再入力"
+            label={t("settings.changePassword.confirmPassword")}
+            placeholder={t("settings.changePassword.confirmPasswordPlaceholder")}
             value={formData.confirmPassword}
             onChangeText={(text) => updateField("confirmPassword", text)}
             error={errors.confirmPassword}
@@ -185,7 +198,7 @@ export default function ChangePasswordScreen() {
 
           <View className="pt-4">
             <Button onPress={handleSave} loading={isSaving} disabled={isSaving}>
-              変更する
+              {t("settings.changePassword.saveButton")}
             </Button>
           </View>
         </View>

@@ -1,12 +1,16 @@
 import { AlertTriangle, RefreshCw } from "lucide-react-native";
 import { Component } from "react";
 import type { ErrorInfo, ReactNode } from "react";
+import { withTranslation } from "react-i18next";
+import type { WithTranslation } from "react-i18next";
 import { Pressable, Text, View } from "react-native";
 
-type ErrorBoundaryProps = {
+type ErrorBoundaryOwnProps = {
   children: ReactNode;
   fallback?: ReactNode;
 };
+
+type ErrorBoundaryProps = ErrorBoundaryOwnProps & WithTranslation;
 
 type ErrorBoundaryState = {
   hasError: boolean;
@@ -22,9 +26,6 @@ const ERROR_ICON_COLOR = "#ef4444";
 /** リトライアイコンサイズ（px） */
 const RETRY_ICON_SIZE = 20;
 
-/** リトライアイコン色 */
-const RETRY_ICON_COLOR = "#6366f1";
-
 /**
  * グローバルエラーバウンダリ
  *
@@ -34,7 +35,7 @@ const RETRY_ICON_COLOR = "#6366f1";
  * @param children - ラップする子コンポーネント
  * @param fallback - カスタムフォールバックUI（省略時はデフォルトのエラーUIを表示）
  */
-export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
+class ErrorBoundaryBase extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
   constructor(props: ErrorBoundaryProps) {
     super(props);
     this.state = { hasError: false, error: null };
@@ -61,12 +62,14 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
   };
 
   render(): ReactNode {
+    const { t, children, fallback } = this.props;
+
     if (!this.state.hasError) {
-      return this.props.children;
+      return children;
     }
 
-    if (this.props.fallback) {
-      return this.props.fallback;
+    if (fallback) {
+      return fallback;
     }
 
     return (
@@ -80,22 +83,24 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
           color={ERROR_ICON_COLOR}
         />
         <Text className="text-lg font-semibold text-text mt-4 text-center">
-          予期しないエラーが発生しました
+          {t("errorBoundary.unexpectedError")}
         </Text>
         <Text className="text-sm text-text-muted mt-2 text-center">
-          {this.state.error?.message ?? "アプリケーションでエラーが発生しました"}
+          {this.state.error?.message ?? t("errorBoundary.appError")}
         </Text>
         <Pressable
           testID="error-boundary-retry"
           onPress={this.handleRetry}
           className="flex-row items-center gap-2 mt-6 rounded-lg bg-primary px-5 py-3"
           accessibilityRole="button"
-          accessibilityLabel="再試行"
+          accessibilityLabel={t("errorBoundary.retry")}
         >
           <RefreshCw size={RETRY_ICON_SIZE} color="#ffffff" />
-          <Text className="text-white font-semibold">再試行</Text>
+          <Text className="text-white font-semibold">{t("errorBoundary.retry")}</Text>
         </Pressable>
       </View>
     );
   }
 }
+
+export const ErrorBoundary = withTranslation()(ErrorBoundaryBase) as unknown as React.ComponentType<ErrorBoundaryOwnProps>;
