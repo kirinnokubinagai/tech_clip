@@ -28,6 +28,9 @@ bucket_name = "tech-clip-avatars"
 crons = ["0 0 1 * *"]
 
 # --- ステージング環境 ---
+# TODO: 本番デプロイ前に以下のIDを実際の値に置換すること
+# STAGING_RATE_LIMIT_KV_ID: wrangler kv namespace create tech-clip-rate-limit-staging
+# STAGING_CACHE_KV_ID:      wrangler kv namespace create tech-clip-cache-staging
 [env.staging]
 name = "tech-clip-api-staging"
 [env.staging.vars]
@@ -35,17 +38,20 @@ ENVIRONMENT = "staging"
 
 [[env.staging.kv_namespaces]]
 binding = "RATE_LIMIT"
-id = "113f55fe5de04673a2585e146b1520cc"
+id = "STAGING_RATE_LIMIT_KV_ID"
 
 [[env.staging.kv_namespaces]]
 binding = "CACHE"
-id = "d8dd77ff2e0a4ee69e0d780657b02473"
+id = "STAGING_CACHE_KV_ID"
 
 [[env.staging.r2_buckets]]
 binding = "AVATARS_BUCKET"
-bucket_name = "tech-clip-avatars"
+bucket_name = "tech-clip-avatars-staging"
 
 # --- 本番環境 ---
+# TODO: 本番デプロイ前に以下のIDを実際の値に置換すること
+# PRODUCTION_RATE_LIMIT_KV_ID: wrangler kv namespace create tech-clip-rate-limit-production
+# PRODUCTION_CACHE_KV_ID:      wrangler kv namespace create tech-clip-cache-production
 [env.production]
 name = "tech-clip-api-production"
 [env.production.vars]
@@ -53,15 +59,15 @@ ENVIRONMENT = "production"
 
 [[env.production.kv_namespaces]]
 binding = "RATE_LIMIT"
-id = "113f55fe5de04673a2585e146b1520cc"
+id = "PRODUCTION_RATE_LIMIT_KV_ID"
 
 [[env.production.kv_namespaces]]
 binding = "CACHE"
-id = "d8dd77ff2e0a4ee69e0d780657b02473"
+id = "PRODUCTION_CACHE_KV_ID"
 
 [[env.production.r2_buckets]]
 binding = "AVATARS_BUCKET"
-bucket_name = "tech-clip-avatars"
+bucket_name = "tech-clip-avatars-production"
 
 [[env.production.routes]]
 pattern = "api.techclip.app"
