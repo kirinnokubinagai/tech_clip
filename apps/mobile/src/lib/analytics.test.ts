@@ -7,13 +7,6 @@ jest.mock("expo-constants", () => ({
   },
 }));
 
-jest.mock("./secure-store", () => ({
-  getAuthToken: jest.fn().mockResolvedValue(null),
-  getRefreshToken: jest.fn().mockResolvedValue(null),
-  setAuthToken: jest.fn().mockResolvedValue(undefined),
-  clearAuthTokens: jest.fn().mockResolvedValue(undefined),
-}));
-
 import {
   AnalyticsEventName,
   trackAiSummaryRequest,
@@ -29,169 +22,83 @@ import {
 const mockFetch = jest.fn();
 (globalThis as Record<string, unknown>).fetch = mockFetch;
 
-/**
- * fetchレスポンスのモックヘルパー
- */
-function createFetchResponse(body: unknown, status = 200): Response {
-  return {
-    ok: status >= 200 && status < 300,
-    status,
-    json: jest.fn().mockResolvedValue(body),
-  } as unknown as Response;
-}
-
 describe("analytics", () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    mockFetch.mockResolvedValue(createFetchResponse({ success: true, data: null }));
   });
 
   describe("trackEvent", () => {
-    it("イベント名とプロパティをAPIに送信できること", async () => {
-      // Arrange
-      const eventName = AnalyticsEventName.ARTICLE_VIEW;
-      const properties = { articleId: "article-123", source: "zenn" };
-
+    it("バックエンド未実装のためfetchを呼び出さないこと", async () => {
       // Act
-      await trackEvent(eventName, properties);
+      await trackEvent(AnalyticsEventName.ARTICLE_VIEW, { articleId: "article-123" });
 
       // Assert
-      expect(mockFetch).toHaveBeenCalledWith(
-        "http://test-api.example.com/analytics/events",
-        expect.objectContaining({
-          method: "POST",
-          headers: expect.objectContaining({
-            "Content-Type": "application/json",
-          }),
-        }),
-      );
-      const callBody = JSON.parse((mockFetch.mock.calls[0][1] as RequestInit).body as string);
-      expect(callBody.event).toBe(eventName);
-      expect(callBody.properties).toEqual(properties);
+      expect(mockFetch).not.toHaveBeenCalled();
     });
 
-    it("APIが失敗してもエラーをスローせずに静かに失敗すること", async () => {
-      // Arrange
-      mockFetch.mockRejectedValue(new Error("ネットワークエラー"));
-
-      // Act & Assert（エラーがスローされないこと）
-      await expect(trackEvent(AnalyticsEventName.ARTICLE_VIEW, {})).resolves.toBeUndefined();
-    });
-
-    it("APIが500を返してもエラーをスローせずに静かに失敗すること", async () => {
-      // Arrange
-      mockFetch.mockResolvedValue(
-        createFetchResponse({ success: false, error: { code: "INTERNAL_ERROR" } }, 500),
-      );
-
+    it("エラーをスローせずに正常に完了すること", async () => {
       // Act & Assert
-      await expect(
-        trackEvent(AnalyticsEventName.SCREEN_VIEW, { screen: "Home" }),
-      ).resolves.toBeUndefined();
-    });
-
-    it("送信データにtimestampが含まれること", async () => {
-      // Arrange
-      const before = Date.now();
-
-      // Act
-      await trackEvent(AnalyticsEventName.SEARCH, { query: "react" });
-
-      // Assert
-      const after = Date.now();
-      const callBody = JSON.parse((mockFetch.mock.calls[0][1] as RequestInit).body as string);
-      expect(callBody.timestamp).toBeGreaterThanOrEqual(before);
-      expect(callBody.timestamp).toBeLessThanOrEqual(after);
+      await expect(trackEvent(AnalyticsEventName.ARTICLE_VIEW, {})).resolves.toBeUndefined();
     });
   });
 
   describe("trackScreenView", () => {
-    it("画面名をプロパティとしてSCREEN_VIEWイベントを送信できること", async () => {
-      // Arrange
-      const screenName = "ArticleDetail";
-
+    it("fetchを呼び出さずに正常に完了すること", async () => {
       // Act
-      await trackScreenView(screenName);
+      await trackScreenView("ArticleDetail");
 
       // Assert
-      const callBody = JSON.parse((mockFetch.mock.calls[0][1] as RequestInit).body as string);
-      expect(callBody.event).toBe(AnalyticsEventName.SCREEN_VIEW);
-      expect(callBody.properties.screen).toBe(screenName);
+      expect(mockFetch).not.toHaveBeenCalled();
     });
   });
 
   describe("trackArticleView", () => {
-    it("記事IDをプロパティとしてARTICLE_VIEWイベントを送信できること", async () => {
-      // Arrange
-      const articleId = "article-456";
-
+    it("fetchを呼び出さずに正常に完了すること", async () => {
       // Act
-      await trackArticleView(articleId);
+      await trackArticleView("article-456");
 
       // Assert
-      const callBody = JSON.parse((mockFetch.mock.calls[0][1] as RequestInit).body as string);
-      expect(callBody.event).toBe(AnalyticsEventName.ARTICLE_VIEW);
-      expect(callBody.properties.articleId).toBe(articleId);
+      expect(mockFetch).not.toHaveBeenCalled();
     });
   });
 
   describe("trackArticleSave", () => {
-    it("記事IDをプロパティとしてARTICLE_SAVEイベントを送信できること", async () => {
-      // Arrange
-      const articleId = "article-789";
-
+    it("fetchを呼び出さずに正常に完了すること", async () => {
       // Act
-      await trackArticleSave(articleId);
+      await trackArticleSave("article-789");
 
       // Assert
-      const callBody = JSON.parse((mockFetch.mock.calls[0][1] as RequestInit).body as string);
-      expect(callBody.event).toBe(AnalyticsEventName.ARTICLE_SAVE);
-      expect(callBody.properties.articleId).toBe(articleId);
+      expect(mockFetch).not.toHaveBeenCalled();
     });
   });
 
   describe("trackArticleShare", () => {
-    it("記事IDをプロパティとしてARTICLE_SHAREイベントを送信できること", async () => {
-      // Arrange
-      const articleId = "article-101";
-
+    it("fetchを呼び出さずに正常に完了すること", async () => {
       // Act
-      await trackArticleShare(articleId);
+      await trackArticleShare("article-101");
 
       // Assert
-      const callBody = JSON.parse((mockFetch.mock.calls[0][1] as RequestInit).body as string);
-      expect(callBody.event).toBe(AnalyticsEventName.ARTICLE_SHARE);
-      expect(callBody.properties.articleId).toBe(articleId);
+      expect(mockFetch).not.toHaveBeenCalled();
     });
   });
 
   describe("trackAiSummaryRequest", () => {
-    it("記事IDをプロパティとしてAI_SUMMARY_REQUESTイベントを送信できること", async () => {
-      // Arrange
-      const articleId = "article-202";
-
+    it("fetchを呼び出さずに正常に完了すること", async () => {
       // Act
-      await trackAiSummaryRequest(articleId);
+      await trackAiSummaryRequest("article-202");
 
       // Assert
-      const callBody = JSON.parse((mockFetch.mock.calls[0][1] as RequestInit).body as string);
-      expect(callBody.event).toBe(AnalyticsEventName.AI_SUMMARY_REQUEST);
-      expect(callBody.properties.articleId).toBe(articleId);
+      expect(mockFetch).not.toHaveBeenCalled();
     });
   });
 
   describe("trackSearch", () => {
-    it("検索クエリをプロパティとしてSEARCHイベントを送信できること", async () => {
-      // Arrange
-      const query = "typescript hooks";
-
+    it("fetchを呼び出さずに正常に完了すること", async () => {
       // Act
-      await trackSearch(query);
+      await trackSearch("typescript hooks");
 
       // Assert
-      const callBody = JSON.parse((mockFetch.mock.calls[0][1] as RequestInit).body as string);
-      expect(callBody.event).toBe(AnalyticsEventName.SEARCH);
-      expect(callBody.properties.query).toBe(query);
+      expect(mockFetch).not.toHaveBeenCalled();
     });
   });
 
