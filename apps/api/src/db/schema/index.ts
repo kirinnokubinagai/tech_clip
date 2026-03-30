@@ -30,3 +30,6 @@ export type { Follow, NewFollow } from "./follows";
 
 export { notificationSettings } from "./notification-settings";
 export type { NotificationSettings, NewNotificationSettings } from "./notification-settings";
+
+export { analyticsEvents } from "./analytics-events";
+export type { AnalyticsEvent, NewAnalyticsEvent } from "./analytics-events";
