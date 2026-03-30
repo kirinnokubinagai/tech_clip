@@ -39,8 +39,9 @@ tech_clip/
 
 - Node.js 22+
 - pnpm 10+
+- Docker（OWASP ZAPローカルセキュリティスキャンに必要。pre-push時に自動実行。未インストールの場合はスキップされる）
 
-Nix を使用する場合は `nix develop` で全ツールが揃います。
+Nix を使用する場合は `nix develop` で全ツールが揃います（Docker除く。Dockerは別途インストールが必要）。
 
 ### インストール
 
