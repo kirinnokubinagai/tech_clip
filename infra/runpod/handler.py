@@ -18,7 +18,6 @@ Qwen2.5 9BモデルをvLLMで起動し、RunPodサーバーレスAPIのリクエ
 import os
 import runpod
 from vllm import LLM, SamplingParams
-from vllm.entrypoints.chat_utils import apply_chat_template
 
 # モデルパス（Dockerfileで設定）
 MODEL_PATH = os.environ.get("MODEL_PATH", "/models/qwen2.5")
