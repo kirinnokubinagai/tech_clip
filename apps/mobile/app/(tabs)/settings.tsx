@@ -9,12 +9,13 @@ import {
   User,
 } from "lucide-react-native";
 import type { ReactNode } from "react";
-import { useState } from "react";
+import { useEffect } from "react";
 import { Alert, Pressable, ScrollView, Switch, Text, View } from "react-native";
 
 import { confirm } from "@/components/ConfirmDialog";
 import { useRouter } from "expo-router";
 import { useAuthStore } from "../../src/stores/auth-store";
+import { useSettingsStore } from "../../src/stores/settings-store";
 
 /** 設定セクションの区切り線コンポーネント */
 function SectionDivider() {
@@ -82,12 +83,6 @@ function SettingsRow({ icon, label, value, onPress, trailing, testID }: Settings
   return content;
 }
 
-/** 言語選択肢 */
-const LANGUAGE_OPTIONS = ["日本語", "English"] as const;
-
-/** 言語選択肢の型 */
-type Language = (typeof LANGUAGE_OPTIONS)[number];
-
 /**
  * 設定画面
  *
@@ -99,8 +94,26 @@ export default function SettingsScreen() {
   const deleteAccount = useAuthStore((s) => s.deleteAccount);
   const user = useAuthStore((s) => s.user);
 
-  const [isNotificationsEnabled, setIsNotificationsEnabled] = useState(true);
-  const [selectedLanguage, setSelectedLanguage] = useState<Language>("日本語");
+  const language = useSettingsStore((s) => s.language);
+  const setLanguage = useSettingsStore((s) => s.setLanguage);
+  const loadLanguage = useSettingsStore((s) => s.loadLanguage);
+  const notificationSettings = useSettingsStore((s) => s.notificationSettings);
+  const fetchNotificationSettings = useSettingsStore((s) => s.fetchNotificationSettings);
+  const updateNotificationEnabled = useSettingsStore((s) => s.updateNotificationEnabled);
+
+  /** 通知が有効かどうか（全通知がONの場合にtrue） */
+  const isNotificationsEnabled =
+    notificationSettings !== null
+      ? notificationSettings.newArticle &&
+        notificationSettings.aiComplete &&
+        notificationSettings.follow &&
+        notificationSettings.system
+      : true;
+
+  useEffect(() => {
+    loadLanguage();
+    fetchNotificationSettings();
+  }, [loadLanguage, fetchNotificationSettings]);
 
   /**
    * ログアウト確認ダイアログを表示し、確認後にサインアウトを実行する
@@ -144,14 +157,29 @@ export default function SettingsScreen() {
     Alert.alert("言語設定", "表示言語を選択してください", [
       {
         text: "日本語",
-        onPress: () => setSelectedLanguage("日本語"),
+        onPress: () => {
+          setLanguage("日本語");
+        },
       },
       {
         text: "English",
-        onPress: () => setSelectedLanguage("English"),
+        onPress: () => {
+          setLanguage("English");
+        },
       },
       { text: "キャンセル", style: "cancel" },
     ]);
+  }
+
+  /**
+   * 通知トグルの変更を処理する
+   *
+   * @param enabled - trueで全通知ON、falseで全通知OFF
+   */
+  function handleNotificationToggle(enabled: boolean) {
+    updateNotificationEnabled(enabled).catch(() => {
+      Alert.alert("エラー", "通知設定の更新に失敗しました。もう一度お試しください。");
+    });
   }
 
   return (
@@ -192,9 +220,10 @@ export default function SettingsScreen() {
       <SectionTitle title="一般" />
       <View className="bg-surface mx-4 rounded-xl border border-border">
         <SettingsRow
+          testID="settings-language-button"
           icon={<Globe size={ICON_SIZE} color={ICON_COLOR} />}
           label="言語"
-          value={selectedLanguage}
+          value={language}
           onPress={handleLanguageSelect}
         />
         <SectionDivider />
@@ -203,8 +232,9 @@ export default function SettingsScreen() {
           label="通知"
           trailing={
             <Switch
+              testID="settings-notification-switch"
               value={isNotificationsEnabled}
-              onValueChange={setIsNotificationsEnabled}
+              onValueChange={handleNotificationToggle}
               trackColor={{ false: "#2d2d44", true: "#6366f1" }}
               thumbColor="#ffffff"
               accessibilityLabel="通知"
