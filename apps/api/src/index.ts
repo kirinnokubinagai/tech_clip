@@ -17,6 +17,7 @@ import { securityHeadersMiddleware } from "./middleware/security-headers";
 import { createSentryMiddleware } from "./middleware/sentry";
 import { openApiSpec } from "./openapi";
 import { createAiRoute } from "./routes/ai";
+import { createAnalyticsRoute } from "./routes/analytics";
 import { createArticlesRoute } from "./routes/articles";
 import { createAuthRoute } from "./routes/auth";
 import { createEmailVerificationRoute } from "./routes/email-verification";
@@ -489,6 +490,21 @@ app.on(["GET", "POST"], "/api/subscription/**", async (c) => {
     auth.api.getSession.bind(auth.api),
     (subApp) => {
       subApp.route("/api/subscription", subscriptionRoute);
+    },
+    c.req.raw,
+  );
+});
+
+app.on(["POST"], "/api/analytics/**", async (c) => {
+  const db = c.get("db");
+  const auth = c.get("auth")();
+
+  const analyticsRoute = createAnalyticsRoute({ db });
+
+  return fetchWithAuth(
+    auth.api.getSession.bind(auth.api),
+    (subApp) => {
+      subApp.route("/api/analytics", analyticsRoute);
     },
     c.req.raw,
   );
