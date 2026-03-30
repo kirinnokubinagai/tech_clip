@@ -83,7 +83,11 @@
       "mcp__sequential-thinking__*"
     ],
     "deny": [
-      "Bash(drizzle-kit push:*)"
+      "Bash(drizzle-kit push:*)",
+      "Bash(*enforce_admins*)",
+      "Bash(*merge*--admin*)",
+      "Bash(*git push origin main*)",
+      "Bash(*git push*main*)"
     ]
   },
   "worktree": {
