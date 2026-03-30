@@ -15,10 +15,11 @@ jobs:
       - uses: anthropics/claude-code-action@v1
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          allowed_tools: "Skill,Read,Grep,Glob"
           prompt: |
-            このPRを .claude/skills/review/code-review/SKILL.md と .claude/skills/review/pr-review/SKILL.md の基準に従ってレビューしてください。
-            重大な問題（セキュリティ脆弱性、バグ、コーディング規約違反）があれば指摘してください。
-            レビュー結果を日本語で出力してください。
+            Skill("review/code-review") を実行してこのPRの差分をレビューしてください。
+            次に Skill("review/pr-review") を実行してPRの品質を評価してください。
+            両方のスキルの基準に従い、結果を日本語で出力してください。
 
   approve:
     needs: [review]
