@@ -23,6 +23,7 @@ bucket_name = "tech-clip-avatars"
 # TURSO_AUTH_TOKEN
 # RUNPOD_API_KEY
 # RUNPOD_ENDPOINT_ID
+# SENTRY_DSN          # Sentry エラー監視用 DSN（例: https://<key>@oXXXXXX.ingest.sentry.io/<project_id>）
 
 [triggers]
 crons = ["0 0 1 * *"]
