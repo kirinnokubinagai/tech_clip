@@ -16,10 +16,12 @@ import { users } from "../db/schema";
  * @returns 一致する場合 true
  */
 function timingSafeEqual(a: string, b: string): boolean {
-  const maxLen = Math.max(a.length, b.length);
-  let result = a.length ^ b.length;
-  for (let i = 0; i < maxLen; i++) {
-    result |= (a.charCodeAt(i) || 0) ^ (b.charCodeAt(i) || 0);
+  if (a.length !== b.length) {
+    return false;
+  }
+  let result = 0;
+  for (let i = 0; i < a.length; i++) {
+    result |= a.charCodeAt(i) ^ b.charCodeAt(i);
   }
   return result === 0;
 }
@@ -262,19 +264,13 @@ export function createSubscriptionRoute(options: SubscriptionRouteOptions) {
       );
     }
 
-    await db
-      .update(users)
-      .set({
-        isPremium: false,
-        premiumExpiresAt: null,
-      })
-      .where(eq(users.id, user.id as string));
-
     return c.json(
       {
         success: true,
         data: {
-          message: "サブスクリプションをキャンセルしました",
+          message:
+            "ストアのサブスクリプション管理画面から解約手続きを行ってください。解約完了後、自動的にプレミアム状態が更新されます。",
+          action: "redirect_to_store",
         },
       },
       HTTP_OK,
