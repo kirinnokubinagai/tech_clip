@@ -1,0 +1,34 @@
+appId: com.techclip.app
+---
+# ログインフロー E2E テスト
+# メール・パスワード入力→ログインボタンの基本フローを検証する
+
+- launchApp:
+    clearState: true
+
+# オンボーディングをスキップしてログイン画面へ
+- tapOn:
+    id: "skip-button"
+
+# ログイン画面の表示確認
+- assertVisible:
+    id: "login-email-input"
+- assertVisible:
+    id: "login-password-input"
+- assertVisible:
+    id: "login-submit-button"
+
+# メールアドレスを入力する
+- tapOn:
+    id: "login-email-input"
+- inputText: "test@example.com"
+- assertVisible: "test@example.com"
+
+# パスワードを入力する
+- tapOn:
+    id: "login-password-input"
+- inputText: "Password123"
+
+# ログインボタンをタップする
+- tapOn:
+    id: "login-submit-button"
