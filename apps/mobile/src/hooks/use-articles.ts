@@ -43,7 +43,7 @@ async function fetchArticles(
   if (cursor) params.set("cursor", cursor);
   params.set("limit", String(DEFAULT_PAGE_LIMIT));
   if (filter.source) params.set("source", filter.source);
-  if (filter.isFavorite) params.set("favorite", "true");
+  if (filter.isFavorite) params.set("isFavorite", "true");
   if (filter.search) params.set("q", filter.search);
 
   const queryString = params.toString();
