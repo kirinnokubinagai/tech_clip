@@ -8,5 +8,5 @@
 10096	WARN	(Timestamp Disclosure - APIレスポンスのcreatedAt/updatedAtは意図的)
 10097	WARN	(Hash Disclosure - APIレスポンスのIDは意図的)
 10112	WARN	(Session Management Response Identified - Better Authのセッション管理)
-40012	WARN	(Cross Site Scripting Reflected - JSONエスケープで対応済み)
-40014	WARN	(Cross Site Scripting Persistent - JSONエスケープで対応済み)
+40012	WARN	(Cross Site Scripting Reflected - Content-Type: application/jsonで返却するためブラウザがHTMLとして解釈しない)
+40014	WARN	(Cross Site Scripting Persistent - Content-Type: application/jsonで返却するためブラウザがHTMLとして解釈しない)

@@ -30,19 +30,24 @@ jobs:
             curl -s http://localhost:8787/health && break
             sleep 1
           done
+      - name: Run DB migration
+        run: cd apps/api && pnpm drizzle-kit migrate
+        env:
+          TURSO_DATABASE_URL: file:local.db
+          TURSO_AUTH_TOKEN: dummy
       - name: Register test user and obtain auth token
         id: auth
         run: |
-          # テスト用ユーザー登録
-          curl -s -X POST http://localhost:8787/api/auth/sign-up/email \
+          # テスト用ユーザー登録（Better Auth catch-allハンドラ経由）
+          SIGNUP_STATUS=$(curl -s -o /dev/null -w '%{http_code}' -X POST http://localhost:8787/api/auth/sign-up/email \
             -H 'Content-Type: application/json' \
-            -d '{"email":"zap-test@techclip.test","password":"ZapTest1234!","name":"ZAP Test User"}' \
-            || true
+            -d '{"email":"zap-test@techclip.test","password":"ZapTest1234!","name":"ZAP Test User"}')
+          echo "サインアップHTTPステータス: $SIGNUP_STATUS"
           # サインインしてセッショントークンを取得
-          RESPONSE=$(curl -s -X POST http://localhost:8787/api/auth/sign-in/email \
+          RESPONSE=$(curl -s -X POST http://localhost:8787/api/auth/sign-in \
             -H 'Content-Type: application/json' \
             -d '{"email":"zap-test@techclip.test","password":"ZapTest1234!"}')
-          TOKEN=$(echo "$RESPONSE" | jq -r '.data.session.token // .data.token // .token // empty')
+          TOKEN=$(echo "$RESPONSE" | jq -r '.data.session.token // .data.token // .token // empty' 2>/dev/null || echo "")
           if [ -z "$TOKEN" ]; then
             echo "警告: 認証トークンを取得できませんでした。未認証スキャンのみ実施します"
             TOKEN="dummy-token-for-unauthenticated-scan"
