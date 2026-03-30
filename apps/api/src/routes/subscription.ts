@@ -4,51 +4,13 @@ import { z } from "zod";
 
 import type { Database } from "../db";
 import { users } from "../db/schema";
-
-/**
- * 定数時間で2つの文字列を比較する
- *
- * タイミング攻撃を防ぐため、文字列の長さや一致位置に関わらず
- * 常に同じ時間で比較を完了する。
- *
- * @param a - 比較対象の文字列
- * @param b - 比較対象の文字列
- * @returns 一致する場合 true
- */
-function timingSafeEqual(a: string, b: string): boolean {
-  if (a.length !== b.length) {
-    return false;
-  }
-  let result = 0;
-  for (let i = 0; i < a.length; i++) {
-    result |= a.charCodeAt(i) ^ b.charCodeAt(i);
-  }
-  return result === 0;
-}
-
-/** HTTP 200 OK ステータスコード */
-const HTTP_OK = 200;
-
-/** HTTP 400 Bad Request ステータスコード */
-const HTTP_BAD_REQUEST = 400;
-
-/** HTTP 401 Unauthorized ステータスコード */
-const HTTP_UNAUTHORIZED = 401;
-
-/** HTTP 404 Not Found ステータスコード */
-const HTTP_NOT_FOUND = 404;
-
-/** 未認証エラーコード */
-const AUTH_REQUIRED_CODE = "AUTH_REQUIRED";
-
-/** 未認証エラーメッセージ */
-const AUTH_REQUIRED_MESSAGE = "ログインが必要です";
-
-/** 認証不正エラーコード */
-const AUTH_INVALID_CODE = "AUTH_INVALID";
-
-/** 認証不正エラーメッセージ */
-const AUTH_INVALID_MESSAGE = "認証情報が正しくありません";
+import {
+  AUTH_INVALID_CODE,
+  AUTH_INVALID_MESSAGE,
+  AUTH_ERROR_CODE as AUTH_REQUIRED_CODE,
+  AUTH_ERROR_MESSAGE as AUTH_REQUIRED_MESSAGE,
+} from "../lib/error-codes";
+import { HTTP_BAD_REQUEST, HTTP_NOT_FOUND, HTTP_OK, HTTP_UNAUTHORIZED } from "../lib/http-status";
 
 /** リクエスト不正エラーコード */
 const INVALID_REQUEST_CODE = "INVALID_REQUEST";
@@ -87,6 +49,27 @@ type SubscriptionRouteOptions = {
   db: Database;
   webhookSecret: string;
 };
+
+/**
+ * タイミング攻撃を防ぐための定数時間文字列比較
+ *
+ * @param a - 比較対象の文字列
+ * @param b - 比較対象の文字列
+ * @returns 一致する場合 true
+ */
+function timingSafeEqual(a: string, b: string): boolean {
+  if (a.length !== b.length) {
+    return false;
+  }
+  const encoder = new TextEncoder();
+  const bufA = encoder.encode(a);
+  const bufB = encoder.encode(b);
+  let result = 0;
+  for (let i = 0; i < bufA.length; i++) {
+    result |= bufA[i] ^ bufB[i];
+  }
+  return result === 0;
+}
 
 /**
  * イベントタイプがプレミアム有効化イベントかどうかを判定する

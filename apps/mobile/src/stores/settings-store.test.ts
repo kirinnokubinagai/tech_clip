@@ -7,8 +7,8 @@ jest.mock("@/lib/api", () => ({
   apiFetch: jest.fn(),
 }));
 
-import * as SecureStore from "expo-secure-store";
 import { apiFetch } from "@/lib/api";
+import * as SecureStore from "expo-secure-store";
 import { useSettingsStore } from "./settings-store";
 
 /** モック型キャスト */
@@ -202,9 +202,9 @@ describe("useSettingsStore", () => {
         mockApiFetch.mockRejectedValue(new Error("ネットワークエラー"));
 
         // Act & Assert
-        await expect(
-          useSettingsStore.getState().updateNotificationEnabled(false),
-        ).rejects.toThrow("通知設定の更新に失敗しました");
+        await expect(useSettingsStore.getState().updateNotificationEnabled(false)).rejects.toThrow(
+          "通知設定の更新に失敗しました",
+        );
         expect(useSettingsStore.getState().notificationSettings?.newArticle).toBe(true);
       });
     });

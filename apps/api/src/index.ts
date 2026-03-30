@@ -5,19 +5,24 @@ import { createAuth } from "./auth";
 import { type Database, createDatabase } from "./db";
 import { articles, follows, notifications, users } from "./db/schema";
 
+import { fetchWithAuth } from "./lib/route-helpers";
 import { createAiLimitMiddleware } from "./middleware/ai-limit";
 import { corsMiddleware } from "./middleware/cors";
-import { RATE_LIMIT_CONFIG, createKvStore, createRateLimitMiddleware } from "./middleware/rateLimit";
+import {
+  RATE_LIMIT_CONFIG,
+  createKvStore,
+  createRateLimitMiddleware,
+} from "./middleware/rateLimit";
 import { securityHeadersMiddleware } from "./middleware/security-headers";
 import { createSentryMiddleware } from "./middleware/sentry";
 import { openApiSpec } from "./openapi";
-import { createHealthRoute } from "./routes/health";
 import { createAiRoute } from "./routes/ai";
 import { createArticlesRoute } from "./routes/articles";
 import { createAuthRoute } from "./routes/auth";
 import { createEmailVerificationRoute } from "./routes/email-verification";
 import { createFavoriteRoute } from "./routes/favorite";
 import { createFollowsRoute } from "./routes/follows";
+import { createHealthRoute } from "./routes/health";
 import { createNotificationSettingsRoute } from "./routes/notification-settings";
 import { createNotificationsRoute } from "./routes/notifications";
 import { createPasswordResetRoute } from "./routes/password-reset";
@@ -27,7 +32,6 @@ import { createSubscriptionRoute } from "./routes/subscription";
 import { createSummaryRoute } from "./routes/summary";
 import { createTagsRoute } from "./routes/tags";
 import { createUsersRoute } from "./routes/users";
-import { fetchWithAuth } from "./lib/route-helpers";
 import { parseArticle } from "./services/article-parser";
 import { summarizeArticle } from "./services/summary";
 import { translateArticle } from "./services/translator";
@@ -76,18 +80,12 @@ app.use("*", createSentryMiddleware());
 
 /** 認証ルートのレート制限（10リクエスト/分） */
 app.use("/api/auth/*", (c, next) =>
-  createRateLimitMiddleware(
-    RATE_LIMIT_CONFIG.auth,
-    createKvStore(c.env.RATE_LIMIT),
-  )(c, next),
+  createRateLimitMiddleware(RATE_LIMIT_CONFIG.auth, createKvStore(c.env.RATE_LIMIT))(c, next),
 );
 
 /** 一般APIのレート制限（100リクエスト/分） */
 app.use("/api/*", (c, next) =>
-  createRateLimitMiddleware(
-    RATE_LIMIT_CONFIG.general,
-    createKvStore(c.env.RATE_LIMIT),
-  )(c, next),
+  createRateLimitMiddleware(RATE_LIMIT_CONFIG.general, createKvStore(c.env.RATE_LIMIT))(c, next),
 );
 
 app.get("/health", (c) => {
@@ -320,20 +318,14 @@ app.on(["GET", "POST", "PATCH", "DELETE"], "/api/articles/**", async (c) => {
   });
 
   /** 記事保存（POST/PATCH）のレート制限（30リクエスト/分） */
-  subApp.use(
-    "/api/articles",
-    createRateLimitMiddleware(RATE_LIMIT_CONFIG.articleSave, kvStore),
-  );
+  subApp.use("/api/articles", createRateLimitMiddleware(RATE_LIMIT_CONFIG.articleSave, kvStore));
   subApp.use(
     "/api/articles/:id",
     createRateLimitMiddleware(RATE_LIMIT_CONFIG.articleSave, kvStore),
   );
 
   /** AI（要約・翻訳）ルートのレート制限（10リクエスト/分）とAI使用回数制限 */
-  subApp.use(
-    "/api/articles/:id/summary",
-    createRateLimitMiddleware(RATE_LIMIT_CONFIG.ai, kvStore),
-  );
+  subApp.use("/api/articles/:id/summary", createRateLimitMiddleware(RATE_LIMIT_CONFIG.ai, kvStore));
   subApp.use("/api/articles/:id/summary", createAiLimitMiddleware(db));
   subApp.use(
     "/api/articles/:id/translate",

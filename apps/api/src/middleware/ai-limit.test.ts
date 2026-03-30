@@ -89,7 +89,10 @@ function createTestApp(userId?: string, downstreamStatus = HTTP_OK) {
   app.post("/ai/summarize", (c) => {
     if (downstreamStatus >= 400) {
       return c.json(
-        { success: false, error: { code: "INTERNAL_ERROR", message: "サーバーエラーが発生しました" } },
+        {
+          success: false,
+          error: { code: "INTERNAL_ERROR", message: "サーバーエラーが発生しました" },
+        },
         downstreamStatus as 500,
       );
     }
@@ -102,7 +105,12 @@ function createTestApp(userId?: string, downstreamStatus = HTTP_OK) {
 describe("aiLimitMiddleware", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    mockUpdateReturning.mockResolvedValue(undefined);
+    mockSelectFrom.mockReturnValue({ where: mockSelectWhere });
+    mockSelect.mockReturnValue({ from: mockSelectFrom });
+    mockUpdateWhere.mockReturnValue({ returning: mockUpdateReturning });
+    mockUpdateSet.mockReturnValue({ where: mockUpdateWhere });
+    mockUpdate.mockReturnValue({ set: mockUpdateSet });
+    mockUpdateReturning.mockResolvedValue([]);
   });
 
   describe("無料ユーザー - 残回数あり", () => {
@@ -136,10 +144,10 @@ describe("aiLimitMiddleware", () => {
         headers: { "Content-Type": "application/json" },
       });
 
-      // Assert
-      expect(mockUpdate).toHaveBeenCalledTimes(1);
-      expect(mockUpdateSet).toHaveBeenCalledTimes(1);
-      expect(mockUpdateWhere).toHaveBeenCalledTimes(1);
+      // Assert: アトミック更新 + 成功時デクリメント = 2回
+      expect(mockUpdate).toHaveBeenCalledTimes(2);
+      expect(mockUpdateSet).toHaveBeenCalledTimes(2);
+      expect(mockUpdateWhere).toHaveBeenCalledTimes(2);
     });
 
     it("アトミック更新でreturningが呼ばれること（TOCTOU競合防止）", async () => {
@@ -370,10 +378,11 @@ describe("aiLimitMiddleware", () => {
   });
 
   describe("ダウンストリーム失敗時", () => {
-    it("ダウンストリームが500を返した場合db.updateが呼ばれないこと", async () => {
+    it("ダウンストリームが500を返した場合に成功時デクリメントが呼ばれないこと", async () => {
       // Arrange
       const userData = createFreeUserData({ remaining: 3 });
       mockSelectWhere.mockResolvedValue([userData]);
+      mockUpdateReturning.mockResolvedValue([userData]);
       const app = createTestApp(TEST_USER_ID, HTTP_INTERNAL_SERVER_ERROR);
 
       // Act
@@ -382,8 +391,8 @@ describe("aiLimitMiddleware", () => {
         headers: { "Content-Type": "application/json" },
       });
 
-      // Assert
-      expect(mockUpdate).not.toHaveBeenCalled();
+      // Assert: アトミック更新の1回のみ（成功時デクリメントは呼ばれない）
+      expect(mockUpdate).toHaveBeenCalledTimes(1);
     });
   });
 

@@ -22,7 +22,7 @@ describe("fetchWithAuth", () => {
 
     // Assert
     expect(response.status).toBe(200);
-    const body = await response.json();
+    const body = (await response.json()) as Record<string, unknown>;
     expect(body.user).toStrictEqual(mockUser);
   });
 
@@ -44,7 +44,7 @@ describe("fetchWithAuth", () => {
 
     // Assert
     expect(response.status).toBe(200);
-    const body = await response.json();
+    const body = (await response.json()) as Record<string, unknown>;
     expect(body.user).toBeNull();
   });
 
@@ -64,7 +64,7 @@ describe("fetchWithAuth", () => {
 
     // Assert
     expect(responseA.status).toBe(200);
-    const body = await responseA.json();
+    const body = (await responseA.json()) as Record<string, unknown>;
     expect(body.route).toBe("b");
   });
 

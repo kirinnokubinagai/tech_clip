@@ -17,10 +17,7 @@ const HTTP_TOO_MANY_REQUESTS = 429;
 function createTestApp(limit: number, windowMs: number) {
   const store = createInMemoryStore();
   const app = new Hono();
-  app.use(
-    "/api/*",
-    createRateLimitMiddleware({ limit, windowMs, keyPrefix: "test" }, store),
-  );
+  app.use("/api/*", createRateLimitMiddleware({ limit, windowMs, keyPrefix: "test" }, store));
   app.get("/api/test", (c) => c.json({ success: true, data: "ok" }, HTTP_OK));
   return app;
 }

@@ -1,5 +1,7 @@
 import { Hono } from "hono";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+
+import { HTTP_UNAUTHORIZED, HTTP_UNPROCESSABLE_ENTITY } from "../lib/http-status";
 import type { SearchQueryFn } from "./search";
 import { createSearchRoute, escapeLikeWildcards } from "./search";
 
@@ -29,12 +31,6 @@ const MOCK_ARTICLES = Array.from({ length: 25 }, (_, i) => ({
   createdAt: new Date(`2024-01-${String(25 - i).padStart(2, "0")}`),
   updatedAt: new Date(`2024-01-${String(25 - i).padStart(2, "0")}`),
 }));
-
-/** HTTP 401 Unauthorized ステータスコード */
-const HTTP_UNAUTHORIZED = 401;
-
-/** HTTP 422 Unprocessable Entity ステータスコード */
-const HTTP_UNPROCESSABLE_ENTITY = 422;
 
 /** 検索レスポンスの型定義 */
 type SearchResponseBody = {

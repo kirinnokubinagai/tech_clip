@@ -1,5 +1,13 @@
 import { Hono } from "hono";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+
+import {
+  HTTP_CREATED,
+  HTTP_INTERNAL_SERVER_ERROR,
+  HTTP_OK,
+  HTTP_UNAUTHORIZED,
+  HTTP_UNPROCESSABLE_ENTITY,
+} from "../lib/http-status";
 import type { NotificationsQueryFn } from "./notifications";
 import { createNotificationsRoute } from "./notifications";
 
@@ -21,21 +29,6 @@ const MOCK_NOTIFICATIONS = Array.from({ length: 25 }, (_, i) => ({
   data: null,
   createdAt: `2024-01-${String(25 - i).padStart(2, "0")}T00:00:00Z`,
 }));
-
-/** HTTP 200 OK ステータスコード */
-const HTTP_OK = 200;
-
-/** HTTP 500 Internal Server Error ステータスコード */
-const HTTP_INTERNAL_SERVER_ERROR = 500;
-
-/** HTTP 201 Created ステータスコード */
-const HTTP_CREATED = 201;
-
-/** HTTP 401 Unauthorized ステータスコード */
-const HTTP_UNAUTHORIZED = 401;
-
-/** HTTP 422 Unprocessable Entity ステータスコード */
-const HTTP_UNPROCESSABLE_ENTITY = 422;
 
 /** GET レスポンスの型定義 */
 type NotificationsResponseBody = {

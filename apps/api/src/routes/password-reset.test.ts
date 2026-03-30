@@ -1,21 +1,13 @@
 import { Hono } from "hono";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+import { HTTP_BAD_REQUEST, HTTP_OK, HTTP_UNPROCESSABLE_ENTITY } from "../lib/http-status";
 import { sendPasswordReset } from "../services/emailService";
 import { createPasswordResetRoute } from "./password-reset";
 
 vi.mock("../services/emailService", () => ({
   sendPasswordReset: vi.fn(),
 }));
-
-/** HTTP 200 OK ステータスコード */
-const HTTP_OK = 200;
-
-/** HTTP 400 Bad Request ステータスコード */
-const HTTP_BAD_REQUEST = 400;
-
-/** HTTP 422 Unprocessable Entity ステータスコード */
-const HTTP_UNPROCESSABLE_ENTITY = 422;
 
 /** エラーレスポンスの型定義 */
 type ErrorResponseBody = {
