@@ -1,10 +1,10 @@
 import { View } from "react-native";
 import { BannerAd, BannerAdSize, TestIds } from "react-native-google-mobile-ads";
 
-import { useSubscriptionStore } from "@/stores";
+import { useSubscription } from "@/hooks/use-subscription";
 
-/** AdMobバナー広告のユニットID（テスト用） */
-const AD_UNIT_ID = TestIds.ADAPTIVE_BANNER;
+/** AdMobバナー広告のユニットID（環境変数未設定時はテスト用IDにフォールバック） */
+const AD_UNIT_ID = process.env.EXPO_PUBLIC_ADMOB_BANNER_ID ?? TestIds.ADAPTIVE_BANNER;
 
 type AdBannerProps = {
   /** カスタムtestID */
@@ -19,9 +19,9 @@ type AdBannerProps = {
  * @returns バナー広告。プレミアムユーザーの場合はnull
  */
 export function AdBanner({ testID = "ad-banner-container" }: AdBannerProps) {
-  const isPremium = useSubscriptionStore((state) => state.isPremium);
+  const { isSubscribed } = useSubscription();
 
-  if (isPremium) {
+  if (isSubscribed) {
     return null;
   }
 

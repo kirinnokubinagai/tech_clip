@@ -21,12 +21,12 @@ module.exports = {
   useRootNavigation: () => ({ navigate: jest.fn() }),
   useRootNavigationState: () => ({ key: "root" }),
   Link: ({ children, ...props }) => React.createElement("a", props, children),
-  Stack: {
+  Stack: Object.assign(({ children }) => children || null, {
     Screen: ({ children }) => children || null,
-  },
-  Tabs: {
+  }),
+  Tabs: Object.assign(({ children }) => children || null, {
     Screen: ({ children }) => children || null,
-  },
+  }),
   Slot: ({ children }) => children || null,
   router: mockRouter,
   Redirect: () => null,

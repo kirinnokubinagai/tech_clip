@@ -7,6 +7,7 @@ module.exports = {
   setupFilesAfterEnv: ["<rootDir>/jest.setup.js"],
   moduleFileExtensions: ["ts", "tsx", "js", "jsx"],
   moduleNameMapper: {
+    "\\.css$": "<rootDir>/__mocks__/fileMock.js",
     "^@/(.*)$": "<rootDir>/src/$1",
     "^nativewind$": "<rootDir>/__mocks__/nativewind.js",
     "^lucide-react-native$": "<rootDir>/__mocks__/lucide-react-native.js",
