@@ -29,7 +29,7 @@ async function fetchNotifications(
   params.set("limit", String(DEFAULT_PAGE_LIMIT));
 
   const queryString = params.toString();
-  const path = `/notifications${queryString ? `?${queryString}` : ""}`;
+  const path = `/api/notifications${queryString ? `?${queryString}` : ""}`;
 
   const response = await apiFetch<NotificationsListResponse>(path);
 
@@ -51,7 +51,7 @@ async function fetchNotifications(
  */
 async function fetchUnreadCount(): Promise<number> {
   const response = await apiFetch<{ success: true; data: { count: number } }>(
-    "/notifications/unread-count",
+    "/api/notifications/unread-count",
   );
 
   if (!response.success) {
@@ -99,7 +99,7 @@ export function useMarkAsRead() {
   return useMutation({
     mutationFn: async (notificationId: string) => {
       const response = await apiFetch<{ success: boolean }>(
-        `/notifications/${notificationId}/read`,
+        `/api/notifications/${notificationId}/read`,
         { method: "PATCH" },
       );
       return response;
@@ -121,7 +121,7 @@ export function useMarkAllAsRead() {
 
   return useMutation({
     mutationFn: async () => {
-      const response = await apiFetch<{ success: boolean }>("/notifications/read-all", {
+      const response = await apiFetch<{ success: boolean }>("/api/notifications/read-all", {
         method: "PATCH",
       });
       return response;

@@ -4,55 +4,31 @@ import { z } from "zod";
 
 import type { Database } from "../db";
 import { articles, summaries } from "../db/schema";
+import {
+  AUTH_ERROR_CODE,
+  AUTH_ERROR_MESSAGE,
+  FORBIDDEN_ERROR_CODE,
+  FORBIDDEN_ERROR_MESSAGE,
+  NOT_FOUND_ERROR_CODE,
+  VALIDATION_ERROR_CODE,
+  VALIDATION_ERROR_MESSAGE,
+} from "../lib/error-codes";
+import {
+  HTTP_CREATED,
+  HTTP_FORBIDDEN,
+  HTTP_INTERNAL_SERVER_ERROR,
+  HTTP_NOT_FOUND,
+  HTTP_OK,
+  HTTP_UNAUTHORIZED,
+  HTTP_UNPROCESSABLE_ENTITY,
+} from "../lib/http-status";
 import type { RunPodConfig, SummaryResult } from "../services/summary";
-
-/** HTTP 200 OK ステータスコード */
-const HTTP_OK = 200;
-
-/** HTTP 201 Created ステータスコード */
-const HTTP_CREATED = 201;
-
-/** HTTP 401 Unauthorized ステータスコード */
-const HTTP_UNAUTHORIZED = 401;
-
-/** HTTP 403 Forbidden ステータスコード */
-const HTTP_FORBIDDEN = 403;
-
-/** HTTP 404 Not Found ステータスコード */
-const HTTP_NOT_FOUND = 404;
-
-/** HTTP 422 Unprocessable Entity ステータスコード */
-const HTTP_UNPROCESSABLE_ENTITY = 422;
-
-/** HTTP 500 Internal Server Error ステータスコード */
-const HTTP_INTERNAL_SERVER_ERROR = 500;
-
-/** 未認証エラーコード */
-const AUTH_ERROR_CODE = "AUTH_REQUIRED";
-
-/** 未認証エラーメッセージ */
-const AUTH_ERROR_MESSAGE = "ログインが必要です";
-
-/** 権限エラーコード */
-const FORBIDDEN_ERROR_CODE = "FORBIDDEN";
-
-/** 権限エラーメッセージ */
-const FORBIDDEN_ERROR_MESSAGE = "この操作を実行する権限がありません";
-
-/** リソース未発見エラーコード */
-const NOT_FOUND_ERROR_CODE = "NOT_FOUND";
 
 /** 記事未発見エラーメッセージ */
 const ARTICLE_NOT_FOUND_MESSAGE = "記事が見つかりません";
 
 /** 要約未発見エラーメッセージ */
 const SUMMARY_NOT_FOUND_MESSAGE = "要約が見つかりません";
-
-/** バリデーションエラーコード */
-const VALIDATION_ERROR_CODE = "VALIDATION_FAILED";
-
-/** バリデーションエラーメッセージ */
-const VALIDATION_ERROR_MESSAGE = "入力内容を確認してください";
 
 /** サーバーエラーコード */
 const INTERNAL_ERROR_CODE = "INTERNAL_ERROR";

@@ -3,7 +3,20 @@ import { Hono } from "hono";
 import { z } from "zod";
 
 import type { Database } from "../db";
-import { notifications } from "../db/schema";
+import { notifications, users } from "../db/schema";
+import {
+  AUTH_ERROR_CODE,
+  AUTH_ERROR_MESSAGE,
+  VALIDATION_ERROR_CODE,
+  VALIDATION_ERROR_MESSAGE,
+} from "../lib/error-codes";
+import {
+  HTTP_CREATED,
+  HTTP_INTERNAL_SERVER_ERROR,
+  HTTP_NOT_FOUND,
+  HTTP_UNAUTHORIZED,
+  HTTP_UNPROCESSABLE_ENTITY,
+} from "../lib/http-status";
 
 /** デフォルトのページサイズ */
 const DEFAULT_LIMIT = 20;
@@ -13,33 +26,6 @@ const MIN_LIMIT = 1;
 
 /** 最大ページサイズ */
 const MAX_LIMIT = 50;
-
-/** HTTP 201 Created ステータスコード */
-const HTTP_CREATED = 201;
-
-/** HTTP 401 Unauthorized ステータスコード */
-const HTTP_UNAUTHORIZED = 401;
-
-/** HTTP 404 Not Found ステータスコード */
-const HTTP_NOT_FOUND = 404;
-
-/** HTTP 422 Unprocessable Entity ステータスコード */
-const HTTP_UNPROCESSABLE_ENTITY = 422;
-
-/** HTTP 500 Internal Server Error ステータスコード */
-const HTTP_INTERNAL_SERVER_ERROR = 500;
-
-/** 未認証エラーコード */
-const AUTH_ERROR_CODE = "AUTH_REQUIRED";
-
-/** 未認証エラーメッセージ */
-const AUTH_ERROR_MESSAGE = "ログインが必要です";
-
-/** バリデーションエラーコード */
-const VALIDATION_ERROR_CODE = "VALIDATION_FAILED";
-
-/** バリデーションエラーメッセージ */
-const VALIDATION_ERROR_MESSAGE = "入力内容を確認してください";
 
 /** プッシュトークン最大文字数 */
 const TOKEN_MAX_LENGTH = 512;
@@ -202,35 +188,12 @@ export function createNotificationsRoute(options: NotificationsRouteOptions) {
     const { token, platform } = validation.data;
 
     try {
-      const now = new Date().toISOString();
-      const id = crypto.randomUUID();
-
-      const [inserted] = await db
-        .insert(notifications)
-        .values({
-          id,
-          userId,
-          type: "push_token",
-          title: "プッシュトークン登録",
-          body: token,
-          data: JSON.stringify({ token, platform }),
-          isRead: false,
-          createdAt: now,
-        })
-        .onConflictDoUpdate({
-          target: [notifications.id],
-          set: {
-            body: token,
-            data: JSON.stringify({ token, platform }),
-          },
-        })
-        .returning();
+      await db.update(users).set({ pushToken: token }).where(eq(users.id, userId));
 
       return c.json(
         {
           success: true,
           data: {
-            ...inserted,
             token,
             platform,
           },

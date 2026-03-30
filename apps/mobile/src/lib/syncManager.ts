@@ -23,7 +23,7 @@ export async function syncArticles(): Promise<SyncResult> {
     let cursor: string | undefined = undefined;
 
     do {
-      const url: string = cursor ? `/articles?cursor=${cursor}` : "/articles";
+      const url: string = cursor ? `/api/articles?cursor=${cursor}` : "/api/articles";
       const response = await apiFetch<ArticlesListResponse>(url, {
         method: "GET",
       });
@@ -67,7 +67,7 @@ export async function syncArticles(): Promise<SyncResult> {
  */
 export async function syncArticleDetail(articleId: string): Promise<SyncDetailResult> {
   try {
-    const response = await apiFetch<ArticleDetailResponse>(`/articles/${articleId}`, {
+    const response = await apiFetch<ArticleDetailResponse>(`/api/articles/${articleId}`, {
       method: "GET",
     });
 

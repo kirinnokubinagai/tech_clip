@@ -1,11 +1,3 @@
-import Constants from "expo-constants";
-
-/** アナリティクスイベントAPIのパス */
-const ANALYTICS_EVENTS_PATH = "/analytics/events";
-
-/** APIリクエストのタイムアウト（ミリ秒） */
-const ANALYTICS_REQUEST_TIMEOUT_MS = 5000;
-
 /**
  * アナリティクスイベント名の定数
  */
@@ -28,63 +20,22 @@ export const AnalyticsEventName = {
 export type AnalyticsEventNameType = (typeof AnalyticsEventName)[keyof typeof AnalyticsEventName];
 
 /**
- * アナリティクスイベントのペイロード型
- */
-type AnalyticsPayload = {
-  event: AnalyticsEventNameType;
-  properties: Record<string, unknown>;
-  timestamp: number;
-};
-
-/**
- * APIのベースURLを取得する
+ * アナリティクスイベントを記録する
+ * バックエンドの /analytics/events エンドポイントが未実装のため、
+ * 現時点では何も送信しない。実装時に復元すること。
  *
- * @returns Workers APIのベースURL
- */
-function getBaseUrl(): string {
-  const extra = Constants.expoConfig?.extra;
-  if (extra && typeof extra === "object" && "apiUrl" in extra) {
-    return extra.apiUrl as string;
-  }
-  return "http://localhost:8787";
-}
-
-/**
- * アナリティクスイベントをAPIに送信する
- * ネットワークエラーやAPIエラーは静かに無視する（アナリティクスでアプリを止めない）
- *
- * @param event - イベント名
- * @param properties - イベントプロパティ
+ * @param _event - イベント名
+ * @param _properties - イベントプロパティ
  */
 export async function trackEvent(
-  event: AnalyticsEventNameType,
-  properties: Record<string, unknown>,
+  _event: AnalyticsEventNameType,
+  _properties: Record<string, unknown>,
 ): Promise<void> {
-  const payload: AnalyticsPayload = {
-    event,
-    properties,
-    timestamp: Date.now(),
-  };
-
-  const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), ANALYTICS_REQUEST_TIMEOUT_MS);
-
-  try {
-    await fetch(`${getBaseUrl()}${ANALYTICS_EVENTS_PATH}`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-      signal: controller.signal,
-    });
-  } catch {
-    /* アナリティクスのエラーはアプリの動作に影響させない */
-  } finally {
-    clearTimeout(timeoutId);
-  }
+  /* TODO: バックエンドに /analytics/events ルートを実装したら送信処理を復元する */
 }
 
 /**
- * 画面表示イベントを送信する
+ * 画面表示イベントを記録する
  *
  * @param screen - 画面名
  */
@@ -93,7 +44,7 @@ export async function trackScreenView(screen: string): Promise<void> {
 }
 
 /**
- * 記事閲覧イベントを送信する
+ * 記事閲覧イベントを記録する
  *
  * @param articleId - 記事ID
  */
@@ -102,7 +53,7 @@ export async function trackArticleView(articleId: string): Promise<void> {
 }
 
 /**
- * 記事保存イベントを送信する
+ * 記事保存イベントを記録する
  *
  * @param articleId - 記事ID
  */
@@ -111,7 +62,7 @@ export async function trackArticleSave(articleId: string): Promise<void> {
 }
 
 /**
- * 記事シェアイベントを送信する
+ * 記事シェアイベントを記録する
  *
  * @param articleId - 記事ID
  */
@@ -120,7 +71,7 @@ export async function trackArticleShare(articleId: string): Promise<void> {
 }
 
 /**
- * AI要約リクエストイベントを送信する
+ * AI要約リクエストイベントを記録する
  *
  * @param articleId - 記事ID
  */
@@ -129,7 +80,7 @@ export async function trackAiSummaryRequest(articleId: string): Promise<void> {
 }
 
 /**
- * 検索イベントを送信する
+ * 検索イベントを記録する
  *
  * @param query - 検索クエリ
  */

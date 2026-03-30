@@ -1,6 +1,7 @@
 import { Hono } from "hono";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+import { HTTP_BAD_REQUEST, HTTP_OK, HTTP_UNAUTHORIZED } from "../lib/http-status";
 import { createSubscriptionRoute } from "./subscription";
 
 /** テスト用のモックユーザー（無料プラン） */
@@ -47,15 +48,6 @@ const MOCK_TRIAL_USER = {
   freeAiResetAt: null,
 };
 
-/** HTTP 200 OK ステータスコード */
-const HTTP_OK = 200;
-
-/** HTTP 401 Unauthorized ステータスコード */
-const HTTP_UNAUTHORIZED = 401;
-
-/** HTTP 400 Bad Request ステータスコード */
-const HTTP_BAD_REQUEST = 400;
-
 /** エラーレスポンスの型定義 */
 type ErrorResponseBody = {
   success: boolean;
@@ -82,6 +74,7 @@ type CancelResponseBody = {
   success: boolean;
   data?: {
     message: string;
+    action: string;
   };
 };
 
@@ -420,12 +413,10 @@ describe("POST /api/subscription/cancel", () => {
   });
 
   describe("正常系", () => {
-    it("プレミアムユーザーがキャンセルできること", async () => {
+    it("プレミアムユーザーがキャンセル誘導レスポンスを受け取れること", async () => {
       // Arrange
       mockSelectFrom.mockReturnValue({ where: mockSelectWhere });
       mockSelectWhere.mockResolvedValue([MOCK_PREMIUM_USER]);
-      mockUpdateSet.mockReturnValue({ where: mockUpdateWhere });
-      mockUpdateWhere.mockResolvedValue([]);
       const app = createTestAppWithPremiumUser();
 
       // Act
@@ -439,14 +430,13 @@ describe("POST /api/subscription/cancel", () => {
       const body = (await res.json()) as CancelResponseBody;
       expect(body.success).toBe(true);
       expect(body.data?.message).toBeDefined();
+      expect(body.data?.action).toBe("redirect_to_store");
     });
 
-    it("キャンセル後にDBが更新されること", async () => {
+    it("キャンセルリクエスト時にDBが更新されないこと", async () => {
       // Arrange
       mockSelectFrom.mockReturnValue({ where: mockSelectWhere });
       mockSelectWhere.mockResolvedValue([MOCK_PREMIUM_USER]);
-      mockUpdateSet.mockReturnValue({ where: mockUpdateWhere });
-      mockUpdateWhere.mockResolvedValue([]);
       const app = createTestAppWithPremiumUser();
 
       // Act
@@ -456,13 +446,7 @@ describe("POST /api/subscription/cancel", () => {
       });
 
       // Assert
-      expect(mockUpdate).toHaveBeenCalled();
-      expect(mockUpdateSet).toHaveBeenCalledWith(
-        expect.objectContaining({
-          isPremium: false,
-          premiumExpiresAt: null,
-        }),
-      );
+      expect(mockUpdate).not.toHaveBeenCalled();
     });
   });
 
@@ -512,8 +496,6 @@ describe("POST /api/subscription/cancel", () => {
       // Arrange
       mockSelectFrom.mockReturnValue({ where: mockSelectWhere });
       mockSelectWhere.mockResolvedValue([MOCK_PREMIUM_USER]);
-      mockUpdateSet.mockReturnValue({ where: mockUpdateWhere });
-      mockUpdateWhere.mockResolvedValue([]);
       const app = createTestAppWithPremiumUser();
 
       // Act
@@ -527,14 +509,13 @@ describe("POST /api/subscription/cancel", () => {
       const body = (await res.json()) as CancelResponseBody;
       expect(body).toHaveProperty("success", true);
       expect(body).toHaveProperty("data");
+      expect(body.data).toHaveProperty("action", "redirect_to_store");
     });
 
     it("Content-Typeがapplication/jsonであること", async () => {
       // Arrange
       mockSelectFrom.mockReturnValue({ where: mockSelectWhere });
       mockSelectWhere.mockResolvedValue([MOCK_PREMIUM_USER]);
-      mockUpdateSet.mockReturnValue({ where: mockUpdateWhere });
-      mockUpdateWhere.mockResolvedValue([]);
       const app = createTestAppWithPremiumUser();
 
       // Act

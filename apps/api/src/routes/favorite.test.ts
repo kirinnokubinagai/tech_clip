@@ -1,5 +1,7 @@
 import { Hono } from "hono";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+
+import { HTTP_FORBIDDEN, HTTP_NOT_FOUND, HTTP_OK, HTTP_UNAUTHORIZED } from "../lib/http-status";
 import { createFavoriteRoute } from "./favorite";
 
 /** テスト用のモックユーザー */
@@ -8,18 +10,6 @@ const MOCK_USER = {
   email: "test@example.com",
   name: "テストユーザー",
 };
-
-/** HTTP 200 OK ステータスコード */
-const HTTP_OK = 200;
-
-/** HTTP 401 Unauthorized ステータスコード */
-const HTTP_UNAUTHORIZED = 401;
-
-/** HTTP 403 Forbidden ステータスコード */
-const HTTP_FORBIDDEN = 403;
-
-/** HTTP 404 Not Found ステータスコード */
-const HTTP_NOT_FOUND = 404;
 
 /** モック記事データ（isFavorite: false） */
 const MOCK_ARTICLE_NOT_FAVORITE = {

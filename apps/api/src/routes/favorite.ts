@@ -3,33 +3,14 @@ import { Hono } from "hono";
 
 import type { Database } from "../db";
 import { articles } from "../db/schema";
-
-/** HTTP 200 OK ステータスコード */
-const HTTP_OK = 200;
-
-/** HTTP 401 Unauthorized ステータスコード */
-const HTTP_UNAUTHORIZED = 401;
-
-/** HTTP 403 Forbidden ステータスコード */
-const HTTP_FORBIDDEN = 403;
-
-/** HTTP 404 Not Found ステータスコード */
-const HTTP_NOT_FOUND = 404;
-
-/** 未認証エラーコード */
-const AUTH_ERROR_CODE = "AUTH_REQUIRED";
-
-/** 未認証エラーメッセージ */
-const AUTH_ERROR_MESSAGE = "ログインが必要です";
-
-/** 権限エラーコード */
-const FORBIDDEN_ERROR_CODE = "FORBIDDEN";
-
-/** 権限エラーメッセージ */
-const FORBIDDEN_ERROR_MESSAGE = "この操作を実行する権限がありません";
-
-/** リソース未発見エラーコード */
-const NOT_FOUND_ERROR_CODE = "NOT_FOUND";
+import {
+  AUTH_ERROR_CODE,
+  AUTH_ERROR_MESSAGE,
+  FORBIDDEN_ERROR_CODE,
+  FORBIDDEN_ERROR_MESSAGE,
+  NOT_FOUND_ERROR_CODE,
+} from "../lib/error-codes";
+import { HTTP_FORBIDDEN, HTTP_NOT_FOUND, HTTP_OK, HTTP_UNAUTHORIZED } from "../lib/http-status";
 
 /** リソース未発見エラーメッセージ */
 const NOT_FOUND_ERROR_MESSAGE = "記事が見つかりません";

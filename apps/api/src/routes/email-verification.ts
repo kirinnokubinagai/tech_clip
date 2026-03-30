@@ -4,41 +4,25 @@ import { z } from "zod";
 
 import type { Database } from "../db";
 import { users, verifications } from "../db/schema";
+import {
+  AUTH_ERROR_CODE,
+  AUTH_ERROR_MESSAGE,
+  VALIDATION_ERROR_CODE,
+  VALIDATION_ERROR_MESSAGE,
+} from "../lib/error-codes";
+import {
+  HTTP_BAD_REQUEST,
+  HTTP_INTERNAL_SERVER_ERROR,
+  HTTP_NOT_FOUND,
+  HTTP_OK,
+  HTTP_UNAUTHORIZED,
+  HTTP_UNPROCESSABLE_ENTITY,
+} from "../lib/http-status";
 import { createLogger } from "../lib/logger";
 import type { EmailEnv } from "../services/emailService";
 import { sendEmailVerification } from "../services/emailService";
 
 const logger = createLogger();
-
-/** HTTP 200 OK ステータスコード */
-const HTTP_OK = 200;
-
-/** HTTP 400 Bad Request ステータスコード */
-const HTTP_BAD_REQUEST = 400;
-
-/** HTTP 401 Unauthorized ステータスコード */
-const HTTP_UNAUTHORIZED = 401;
-
-/** HTTP 404 Not Found ステータスコード */
-const HTTP_NOT_FOUND = 404;
-
-/** HTTP 422 Unprocessable Entity ステータスコード */
-const HTTP_UNPROCESSABLE_ENTITY = 422;
-
-/** HTTP 500 Internal Server Error ステータスコード */
-const HTTP_INTERNAL_SERVER_ERROR = 500;
-
-/** 未認証エラーコード */
-const AUTH_ERROR_CODE = "AUTH_REQUIRED";
-
-/** 未認証エラーメッセージ */
-const AUTH_ERROR_MESSAGE = "ログインが必要です";
-
-/** バリデーションエラーコード */
-const VALIDATION_ERROR_CODE = "VALIDATION_FAILED";
-
-/** バリデーションエラーメッセージ */
-const VALIDATION_ERROR_MESSAGE = "入力内容を確認してください";
 
 /** メール認証トークンの有効期間（ミリ秒） */
 const VERIFICATION_TOKEN_TTL_MS = 24 * 60 * 60 * 1000;
@@ -57,6 +41,23 @@ type EmailVerificationRouteOptions = {
   appUrl: string;
   emailEnv: EmailEnv;
 };
+
+/**
+ * メール認証用トークンをSHA-256でハッシュ化する
+ *
+ * Web Crypto API (SubtleCrypto) を使用してハッシュ化する。
+ * Cloudflare Workers 環境でも動作する。
+ *
+ * @param token - ハッシュ化するトークン文字列
+ * @returns ハッシュ化された16進数文字列
+ */
+async function hashToken(token: string): Promise<string> {
+  const encoder = new TextEncoder();
+  const data = encoder.encode(token);
+  const hashBuffer = await crypto.subtle.digest("SHA-256", data);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  return hashArray.map((b) => b.toString(16).padStart(2, "0")).join("");
+}
 
 /**
  * メール認証ルートを生成する
@@ -102,7 +103,8 @@ export function createEmailVerificationRoute(options: EmailVerificationRouteOpti
       );
     }
 
-    const token = crypto.randomUUID();
+    const rawToken = crypto.randomUUID();
+    const hashedToken = await hashToken(rawToken);
     const identifier = `${EMAIL_VERIFICATION_IDENTIFIER_PREFIX}:${userId}`;
     const expiresAt = new Date(Date.now() + VERIFICATION_TOKEN_TTL_MS).toISOString();
 
@@ -111,13 +113,13 @@ export function createEmailVerificationRoute(options: EmailVerificationRouteOpti
     await db.insert(verifications).values({
       id: crypto.randomUUID(),
       identifier,
-      value: token,
+      value: hashedToken,
       expiresAt,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     });
 
-    const verifyUrl = `${appUrl}/verify-email?token=${token}`;
+    const verifyUrl = `${appUrl}/verify-email?token=${rawToken}`;
     const userName = (found as unknown as Record<string, unknown>).name as string | null;
 
     try {
@@ -187,11 +189,12 @@ export function createEmailVerificationRoute(options: EmailVerificationRouteOpti
     }
 
     const { token } = validation.data;
+    const hashedToken = await hashToken(token);
 
     const [verification] = await db
       .select()
       .from(verifications)
-      .where(eq(verifications.value, token));
+      .where(eq(verifications.value, hashedToken));
 
     if (!verification) {
       return c.json(
@@ -226,7 +229,7 @@ export function createEmailVerificationRoute(options: EmailVerificationRouteOpti
 
     await db.update(users).set({ emailVerified: true }).where(eq(users.id, userId));
 
-    await db.delete(verifications).where(eq(verifications.value, token));
+    await db.delete(verifications).where(eq(verifications.id, verification.id));
 
     return c.json(
       {

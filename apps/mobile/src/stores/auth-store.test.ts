@@ -11,17 +11,19 @@ jest.mock("@/lib/api", () => ({
 jest.mock("@/lib/secure-store", () => ({
   getAuthToken: jest.fn(),
   setAuthToken: jest.fn(),
+  setRefreshToken: jest.fn(),
   clearAuthTokens: jest.fn(),
 }));
 
 import { SessionExpiredError, apiFetch } from "@/lib/api";
-import { clearAuthTokens, getAuthToken, setAuthToken } from "@/lib/secure-store";
+import { clearAuthTokens, getAuthToken, setAuthToken, setRefreshToken } from "@/lib/secure-store";
 import { useAuthStore } from "./auth-store";
 
 /** モック型キャスト */
 const mockApiFetch = apiFetch as jest.MockedFunction<typeof apiFetch>;
 const mockGetAuthToken = getAuthToken as jest.MockedFunction<typeof getAuthToken>;
 const mockSetAuthToken = setAuthToken as jest.MockedFunction<typeof setAuthToken>;
+const mockSetRefreshToken = setRefreshToken as jest.MockedFunction<typeof setRefreshToken>;
 const mockClearAuthTokens = clearAuthTokens as jest.MockedFunction<typeof clearAuthTokens>;
 
 /** テスト用ユーザーデータ */
@@ -51,6 +53,7 @@ describe("useAuthStore", () => {
       sessionExpiredMessage: null,
     });
     mockSetAuthToken.mockResolvedValue(undefined);
+    mockSetRefreshToken.mockResolvedValue(undefined);
     mockClearAuthTokens.mockResolvedValue(undefined);
   });
 
@@ -71,6 +74,21 @@ describe("useAuthStore", () => {
       expect(state.user).toEqual(TEST_USER);
       expect(state.session).toEqual(TEST_SESSION);
       expect(mockSetAuthToken).toHaveBeenCalledWith(TEST_SESSION.token);
+      expect(mockSetRefreshToken).toHaveBeenCalledWith(TEST_SESSION.token);
+    });
+
+    it("サインイン成功時にリフレッシュトークンを保存すること", async () => {
+      // Arrange
+      mockApiFetch.mockResolvedValue({
+        success: true,
+        data: { user: TEST_USER, session: TEST_SESSION },
+      });
+
+      // Act
+      await useAuthStore.getState().signIn({ email: "test@example.com", password: "Password123" });
+
+      // Assert
+      expect(mockSetRefreshToken).toHaveBeenCalledWith(TEST_SESSION.token);
     });
 
     it("認証失敗時にエラーをスローすること", async () => {

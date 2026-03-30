@@ -118,7 +118,10 @@
       "Bash(*--strategy-option*ours*)",
       "Bash(*gh api*protection*)",
       "Bash(*gh pr merge*--admin*)",
-      "Bash(*enforce_admins*)"
+      "Bash(*enforce_admins*)",
+      "Bash(*merge*--admin*)",
+      "Bash(*git push origin main*)",
+      "Bash(*git push*main*)"
     ]
   },
   "worktree": {

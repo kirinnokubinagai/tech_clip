@@ -1,5 +1,7 @@
 import { Hono } from "hono";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+
+import { HTTP_OK, HTTP_UNAUTHORIZED, HTTP_UNPROCESSABLE_ENTITY } from "../lib/http-status";
 import { createNotificationSettingsRoute } from "./notification-settings";
 
 /** テスト用のモックユーザー */
@@ -20,15 +22,6 @@ const MOCK_SETTINGS = {
   createdAt: "2024-01-15T00:00:00Z",
   updatedAt: "2024-01-15T00:00:00Z",
 };
-
-/** HTTP 200 OK ステータスコード */
-const HTTP_OK = 200;
-
-/** HTTP 401 Unauthorized ステータスコード */
-const HTTP_UNAUTHORIZED = 401;
-
-/** HTTP 422 Unprocessable Entity ステータスコード */
-const HTTP_UNPROCESSABLE_ENTITY = 422;
 
 /** 成功レスポンスの型定義 */
 type SettingsResponseBody = {

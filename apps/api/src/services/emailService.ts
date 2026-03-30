@@ -76,20 +76,37 @@ export async function sendEmail(
 }
 
 /**
+ * ユーザー入力をHTML内に安全に埋め込むためにエスケープする
+ *
+ * @param s - エスケープ対象の文字列
+ * @returns HTMLエスケープ済みの文字列
+ */
+function escapeHtml(s: string): string {
+  return s
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
+/**
  * パスワードリセットメールのHTMLテンプレートを生成する
  *
  * @param userName - ユーザー名
  * @param resetUrl - パスワードリセットURL
  * @returns HTMLボディ文字列
  */
-function buildPasswordResetHtml(userName: string, resetUrl: string): string {
+export function buildPasswordResetHtml(userName: string, resetUrl: string): string {
+  const safeUserName = escapeHtml(userName);
+  const safeResetUrl = escapeHtml(resetUrl);
   return `
     <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;">
       <h1>パスワードリセット</h1>
-      <p>${userName} さん、</p>
+      <p>${safeUserName} さん、</p>
       <p>パスワードリセットのリクエストを受け付けました。</p>
       <p>以下のリンクをクリックしてパスワードをリセットしてください。</p>
-      <p><a href="${resetUrl}">${resetUrl}</a></p>
+      <p><a href="${safeResetUrl}">${safeResetUrl}</a></p>
       <p>このリンクは24時間有効です。リクエストした覚えがない場合は、このメールを無視してください。</p>
     </div>
   `;
@@ -102,13 +119,15 @@ function buildPasswordResetHtml(userName: string, resetUrl: string): string {
  * @param verifyUrl - メール認証URL
  * @returns HTMLボディ文字列
  */
-function buildEmailVerificationHtml(userName: string, verifyUrl: string): string {
+export function buildEmailVerificationHtml(userName: string, verifyUrl: string): string {
+  const safeUserName = escapeHtml(userName);
+  const safeVerifyUrl = escapeHtml(verifyUrl);
   return `
     <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;">
       <h1>メールアドレス認証</h1>
-      <p>${userName} さん、TechClip へようこそ！</p>
+      <p>${safeUserName} さん、TechClip へようこそ！</p>
       <p>メールアドレスを認証するために、以下のリンクをクリックしてください。</p>
-      <p><a href="${verifyUrl}">${verifyUrl}</a></p>
+      <p><a href="${safeVerifyUrl}">${safeVerifyUrl}</a></p>
       <p>このリンクは24時間有効です。</p>
     </div>
   `;
@@ -121,13 +140,17 @@ function buildEmailVerificationHtml(userName: string, verifyUrl: string): string
  * @param notifications - 通知アイテムのリスト
  * @returns HTMLボディ文字列
  */
-function buildNotificationDigestHtml(userName: string, notifications: NotificationItem[]): string {
+export function buildNotificationDigestHtml(
+  userName: string,
+  notifications: NotificationItem[],
+): string {
+  const safeUserName = escapeHtml(userName);
   const notificationItems = notifications
     .map(
       (n) => `
         <li style="margin-bottom: 12px;">
-          <strong>${n.title}</strong>
-          <p style="margin: 4px 0 0;">${n.body}</p>
+          <strong>${escapeHtml(n.title)}</strong>
+          <p style="margin: 4px 0 0;">${escapeHtml(n.body)}</p>
         </li>
       `,
     )
@@ -136,7 +159,7 @@ function buildNotificationDigestHtml(userName: string, notifications: Notificati
   return `
     <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;">
       <h1>通知ダイジェスト</h1>
-      <p>${userName} さん、</p>
+      <p>${safeUserName} さん、</p>
       <p>最近の通知をお届けします。</p>
       <ul style="padding-left: 20px;">
         ${notificationItems}

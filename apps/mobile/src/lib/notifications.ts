@@ -51,7 +51,7 @@ export async function registerForPushNotifications(): Promise<string | null> {
  * @param token - Expoプッシュトークン文字列
  */
 export async function registerTokenWithApi(token: string): Promise<void> {
-  await apiFetch("/notifications/register", {
+  await apiFetch("/api/notifications/register", {
     method: "POST",
     body: JSON.stringify({ token, platform: Platform.OS }),
   });
@@ -72,9 +72,7 @@ export function setupNotificationHandlers(): () => void {
         shouldShowAlert: true,
         shouldPlaySound: true,
         shouldSetBadge: true,
-        shouldShowBanner: true,
-        shouldShowList: true,
-      };
+      } as Notifications.NotificationBehavior;
     },
   });
 

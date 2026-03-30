@@ -1,4 +1,4 @@
-import { eq } from "drizzle-orm";
+import { and, eq, gt, sql } from "drizzle-orm";
 import type { MiddlewareHandler } from "hono";
 
 import type { Database } from "../db";
@@ -51,13 +51,17 @@ function isResetExpired(resetAt: string | null): boolean {
   return new Date(resetAt).getTime() <= Date.now();
 }
 
+/** レスポンスが成功とみなす最大ステータスコード */
+const HTTP_SUCCESS_MAX_STATUS = 399;
+
 /**
  * AI使用回数制限ミドルウェアを生成する
  *
  * 要約/翻訳API呼び出し前にユーザーのfreeAiUsesRemainingをチェックし、
  * 無料ユーザーの使用回数を制限する。
  * - プレミアムユーザー: 制限なし（通過）
- * - 無料ユーザー（残回数あり）: 通過後にデクリメント
+ * - 無料ユーザー（残回数あり）: アトミックUPDATE（WHERE freeAiUsesRemaining > 0）で
+ *   デクリメント。更新0件の場合はTOCTOU競合とみなし402を返却
  * - 無料ユーザー（残回数なし、リセット期限切れ）: リセットして通過
  * - 無料ユーザー（残回数なし、リセット期限内）: 402を返却
  *
@@ -108,31 +112,59 @@ export function createAiLimitMiddleware(db: Database): MiddlewareHandler {
     const remaining = dbUser.freeAiUsesRemaining ?? 0;
 
     if (remaining > 0) {
-      await db
+      const updated = await db
         .update(users)
         .set({
-          freeAiUsesRemaining: remaining - 1,
+          freeAiUsesRemaining: sql`${users.freeAiUsesRemaining} - 1`,
           updatedAt: new Date().toISOString(),
         })
-        .where(eq(users.id, userId));
+        .where(and(eq(users.id, userId), gt(users.freeAiUsesRemaining, 0)))
+        .returning();
+
+      if (updated.length === 0) {
+        return c.json(
+          {
+            success: false,
+            error: {
+              code: AI_LIMIT_ERROR_CODE,
+              message: AI_LIMIT_ERROR_MESSAGE,
+            },
+          },
+          HTTP_PAYMENT_REQUIRED,
+        );
+      }
 
       await next();
+
+      if (c.res.status <= HTTP_SUCCESS_MAX_STATUS) {
+        await db
+          .update(users)
+          .set({
+            freeAiUsesRemaining: remaining - 1,
+            updatedAt: new Date().toISOString(),
+          })
+          .where(eq(users.id, userId));
+      }
+
       return;
     }
 
     if (isResetExpired(dbUser.freeAiResetAt)) {
       const nextResetAt = calculateNextResetAt();
 
-      await db
-        .update(users)
-        .set({
-          freeAiUsesRemaining: FREE_AI_USES_PER_MONTH - 1,
-          freeAiResetAt: nextResetAt,
-          updatedAt: new Date().toISOString(),
-        })
-        .where(eq(users.id, userId));
-
       await next();
+
+      if (c.res.status <= HTTP_SUCCESS_MAX_STATUS) {
+        await db
+          .update(users)
+          .set({
+            freeAiUsesRemaining: FREE_AI_USES_PER_MONTH - 1,
+            freeAiResetAt: nextResetAt,
+            updatedAt: new Date().toISOString(),
+          })
+          .where(eq(users.id, userId));
+      }
+
       return;
     }
 

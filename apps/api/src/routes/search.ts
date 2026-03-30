@@ -1,4 +1,23 @@
 import { Hono } from "hono";
+import { omitContent } from "../lib/response-utils";
+
+import {
+  AUTH_ERROR_CODE,
+  AUTH_ERROR_MESSAGE,
+  VALIDATION_ERROR_CODE,
+  VALIDATION_ERROR_MESSAGE,
+} from "../lib/error-codes";
+import { HTTP_UNAUTHORIZED, HTTP_UNPROCESSABLE_ENTITY } from "../lib/http-status";
+
+/**
+ * LIKE検索のワイルドカード文字をエスケープする
+ *
+ * @param input - エスケープ対象の文字列
+ * @returns エスケープ済み文字列
+ */
+export function escapeLikeWildcards(input: string): string {
+  return input.replace(/[%_\\]/g, (char) => `\\${char}`);
+}
 
 /** デフォルトのページサイズ */
 const DEFAULT_LIMIT = 20;
@@ -11,24 +30,6 @@ const MAX_LIMIT = 50;
 
 /** 検索キーワード最大文字数 */
 const QUERY_MAX_LENGTH = 200;
-
-/** HTTP 401 Unauthorized ステータスコード */
-const HTTP_UNAUTHORIZED = 401;
-
-/** HTTP 422 Unprocessable Entity ステータスコード */
-const HTTP_UNPROCESSABLE_ENTITY = 422;
-
-/** 未認証エラーコード */
-const AUTH_ERROR_CODE = "AUTH_REQUIRED";
-
-/** 未認証エラーメッセージ */
-const AUTH_ERROR_MESSAGE = "ログインが必要です";
-
-/** バリデーションエラーコード */
-const VALIDATION_ERROR_CODE = "VALIDATION_FAILED";
-
-/** バリデーションエラーメッセージ */
-const VALIDATION_ERROR_MESSAGE = "入力内容を確認してください";
 
 /** 検索クエリパラメータの型 */
 export type SearchQueryParams = {
@@ -45,17 +46,6 @@ export type SearchQueryFn = (params: SearchQueryParams) => Promise<Array<Record<
 type SearchRouteOptions = {
   searchQueryFn: SearchQueryFn;
 };
-
-/**
- * レスポンスからcontentフィールドを除外する
- *
- * @param article - 記事データ
- * @returns contentを除いた記事データ
- */
-function omitContent(article: Record<string, unknown>): Record<string, unknown> {
-  const { content: _, ...rest } = article;
-  return rest;
-}
 
 /**
  * 全文検索ルートを生成する

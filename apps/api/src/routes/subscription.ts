@@ -4,30 +4,13 @@ import { z } from "zod";
 
 import type { Database } from "../db";
 import { users } from "../db/schema";
-
-/** HTTP 200 OK ステータスコード */
-const HTTP_OK = 200;
-
-/** HTTP 400 Bad Request ステータスコード */
-const HTTP_BAD_REQUEST = 400;
-
-/** HTTP 401 Unauthorized ステータスコード */
-const HTTP_UNAUTHORIZED = 401;
-
-/** HTTP 404 Not Found ステータスコード */
-const HTTP_NOT_FOUND = 404;
-
-/** 未認証エラーコード */
-const AUTH_REQUIRED_CODE = "AUTH_REQUIRED";
-
-/** 未認証エラーメッセージ */
-const AUTH_REQUIRED_MESSAGE = "ログインが必要です";
-
-/** 認証不正エラーコード */
-const AUTH_INVALID_CODE = "AUTH_INVALID";
-
-/** 認証不正エラーメッセージ */
-const AUTH_INVALID_MESSAGE = "認証情報が正しくありません";
+import {
+  AUTH_INVALID_CODE,
+  AUTH_INVALID_MESSAGE,
+  AUTH_ERROR_CODE as AUTH_REQUIRED_CODE,
+  AUTH_ERROR_MESSAGE as AUTH_REQUIRED_MESSAGE,
+} from "../lib/error-codes";
+import { HTTP_BAD_REQUEST, HTTP_NOT_FOUND, HTTP_OK, HTTP_UNAUTHORIZED } from "../lib/http-status";
 
 /** リクエスト不正エラーコード */
 const INVALID_REQUEST_CODE = "INVALID_REQUEST";
@@ -66,6 +49,27 @@ type SubscriptionRouteOptions = {
   db: Database;
   webhookSecret: string;
 };
+
+/**
+ * タイミング攻撃を防ぐための定数時間文字列比較
+ *
+ * @param a - 比較対象の文字列
+ * @param b - 比較対象の文字列
+ * @returns 一致する場合 true
+ */
+function timingSafeEqual(a: string, b: string): boolean {
+  if (a.length !== b.length) {
+    return false;
+  }
+  const encoder = new TextEncoder();
+  const bufA = encoder.encode(a);
+  const bufB = encoder.encode(b);
+  let result = 0;
+  for (let i = 0; i < bufA.length; i++) {
+    result |= bufA[i] ^ bufB[i];
+  }
+  return result === 0;
+}
 
 /**
  * イベントタイプがプレミアム有効化イベントかどうかを判定する
@@ -243,19 +247,13 @@ export function createSubscriptionRoute(options: SubscriptionRouteOptions) {
       );
     }
 
-    await db
-      .update(users)
-      .set({
-        isPremium: false,
-        premiumExpiresAt: null,
-      })
-      .where(eq(users.id, user.id as string));
-
     return c.json(
       {
         success: true,
         data: {
-          message: "サブスクリプションをキャンセルしました",
+          message:
+            "ストアのサブスクリプション管理画面から解約手続きを行ってください。解約完了後、自動的にプレミアム状態が更新されます。",
+          action: "redirect_to_store",
         },
       },
       HTTP_OK,
@@ -279,7 +277,7 @@ export function createSubscriptionRoute(options: SubscriptionRouteOptions) {
     }
 
     const token = authHeader.replace("Bearer ", "");
-    if (token !== webhookSecret) {
+    if (!timingSafeEqual(token, webhookSecret)) {
       return c.json(
         {
           success: false,

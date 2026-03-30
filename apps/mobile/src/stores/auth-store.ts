@@ -1,8 +1,16 @@
 import { create } from "zustand";
 
 import { SessionExpiredError, apiFetch } from "@/lib/api";
-import { clearAuthTokens, getAuthToken, setAuthToken } from "@/lib/secure-store";
-import type { AuthErrorResponse, Session, SignInParams, SignInResponse, User } from "@/types/auth";
+import { clearAuthTokens, getAuthToken, setAuthToken, setRefreshToken } from "@/lib/secure-store";
+import type {
+  AuthErrorResponse,
+  Session,
+  SignInParams,
+  SignInResponse,
+  SignUpParams,
+  SignUpResponse,
+  User,
+} from "@/types/auth";
 
 /** セッション期限切れメッセージ */
 const SESSION_EXPIRED_MESSAGE = "セッションの有効期限が切れました。再度ログインしてください";
@@ -15,6 +23,7 @@ type AuthStore = {
   /** セッション期限切れ時に表示するメッセージ。nullの場合は表示しない */
   sessionExpiredMessage: string | null;
   signIn: (params: SignInParams) => Promise<void>;
+  signUp: (params: SignUpParams) => Promise<void>;
   signOut: () => Promise<void>;
   checkSession: () => Promise<void>;
   /** セッション期限切れを処理する。トークンをクリアしてログイン画面へ誘導する */
@@ -41,6 +50,32 @@ export const useAuthStore = create<AuthStore>((set) => ({
    */
   signIn: async (params: SignInParams) => {
     const data = await apiFetch<SignInResponse | AuthErrorResponse>("/api/auth/sign-in", {
+      method: "POST",
+      body: JSON.stringify(params),
+    });
+
+    if (!data.success) {
+      throw new Error(data.error.message);
+    }
+
+    await setAuthToken(data.data.session.token);
+    await setRefreshToken(data.data.session.token);
+
+    set({
+      user: data.data.user,
+      session: data.data.session,
+      isAuthenticated: true,
+    });
+  },
+
+  /**
+   * メール・パスワード・名前で新規アカウントを作成してサインインする
+   *
+   * @param params - 名前、メールアドレス、パスワード
+   * @throws Error - 登録失敗時
+   */
+  signUp: async (params: SignUpParams) => {
+    const data = await apiFetch<SignUpResponse | AuthErrorResponse>("/api/auth/sign-up/email", {
       method: "POST",
       body: JSON.stringify(params),
     });

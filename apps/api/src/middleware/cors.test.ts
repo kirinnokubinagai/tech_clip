@@ -87,7 +87,7 @@ describe("corsMiddleware", () => {
   });
 
   describe("Originヘッダーなし", () => {
-    it("Originなしリクエストにワイルドカードを返すこと", async () => {
+    it("Originなしリクエストにワイルドカードを返さないこと", async () => {
       // Arrange
       const app = createTestApp();
 
@@ -96,7 +96,7 @@ describe("corsMiddleware", () => {
 
       // Assert
       expect(res.status).toBe(200);
-      expect(res.headers.get("Access-Control-Allow-Origin")).toBe("*");
+      expect(res.headers.get("Access-Control-Allow-Origin")).not.toBe("*");
     });
   });
 

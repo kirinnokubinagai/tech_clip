@@ -1,6 +1,7 @@
 import { Hono } from "hono";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+import { HTTP_INTERNAL_SERVER_ERROR, HTTP_NO_CONTENT, HTTP_UNAUTHORIZED } from "../lib/http-status";
 import { createUsersRoute } from "./users";
 
 /** テスト用のモックユーザー */
@@ -27,15 +28,6 @@ const MOCK_USER = {
   createdAt: "2024-01-15T00:00:00Z",
   updatedAt: "2024-01-15T00:00:00Z",
 };
-
-/** HTTP 204 No Content ステータスコード */
-const HTTP_NO_CONTENT = 204;
-
-/** HTTP 401 Unauthorized ステータスコード */
-const HTTP_UNAUTHORIZED = 401;
-
-/** HTTP 500 Internal Server Error ステータスコード */
-const HTTP_INTERNAL_SERVER_ERROR = 500;
 
 /** エラーレスポンスの型定義 */
 type ErrorResponseBody = {
