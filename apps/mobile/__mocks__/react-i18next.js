@@ -49,8 +49,7 @@ const withTranslation = () => (Component) => {
 };
 
 /** I18nextProvider モック */
-const I18nextProvider = ({ children }) =>
-  React.createElement(React.Fragment, null, children);
+const I18nextProvider = ({ children }) => React.createElement(React.Fragment, null, children);
 
 module.exports = {
   useTranslation,
