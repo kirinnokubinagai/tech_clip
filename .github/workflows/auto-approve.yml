@@ -16,7 +16,7 @@ jobs:
       - uses: anthropics/claude-code-action@v1
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
-          allowed_tools: "Skill,Read,Grep,Glob,Bash(gh pr review:*)"
+          claude_args: "--allowedTools Skill Read Grep Glob 'Bash(gh pr review:*)'"
           prompt: |
             このPRの差分をレビューしてください。
             レビューには必ず .claude/skills/review/code-review/SKILL.md と .claude/skills/review/pr-review/SKILL.md を Read ツールで読み取り、記載されたチェックリストと出力フォーマットに厳密に従ってください。
