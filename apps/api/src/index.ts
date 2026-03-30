@@ -1,4 +1,4 @@
-import { and, desc, eq, like, lt, or } from "drizzle-orm";
+import { and, desc, eq, like, lt, or, sql } from "drizzle-orm";
 import { Hono } from "hono";
 import type { Auth } from "./auth";
 import { createAuth } from "./auth";
@@ -9,6 +9,7 @@ import { corsMiddleware } from "./middleware/cors";
 import { securityHeadersMiddleware } from "./middleware/security-headers";
 import { createSentryMiddleware } from "./middleware/sentry";
 import { openApiSpec } from "./openapi";
+import { createHealthRoute } from "./routes/health";
 import { createAiRoute } from "./routes/ai";
 import { createArticlesRoute } from "./routes/articles";
 import { createAuthRoute } from "./routes/auth";
@@ -93,6 +94,23 @@ app.get("/health", (c) => {
     status: "ok",
     timestamp: new Date().toISOString(),
   });
+});
+
+app.on(["GET"], "/api/health", async (c) => {
+  const db = createDatabase({
+    TURSO_DATABASE_URL: c.env.TURSO_DATABASE_URL,
+    TURSO_AUTH_TOKEN: c.env.TURSO_AUTH_TOKEN,
+  });
+
+  const healthRoute = createHealthRoute({
+    pingFn: async () => {
+      await db.run(sql`SELECT 1`);
+    },
+  });
+
+  const subApp = new Hono();
+  subApp.route("/api", healthRoute);
+  return subApp.fetch(c.req.raw);
 });
 
 app.get("/openapi.json", (c) => {
