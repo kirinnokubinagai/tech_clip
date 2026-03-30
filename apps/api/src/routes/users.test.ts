@@ -669,10 +669,7 @@ const MOCK_ACCOUNT = {
 /**
  * PATCH /me/password リクエストを送信するヘルパー
  */
-function patchPassword(
-  app: { request: Hono["request"] },
-  body: Record<string, unknown>,
-) {
+function patchPassword(app: { request: Hono["request"] }, body: Record<string, unknown>) {
   return app.request("/api/users/me/password", {
     method: "PATCH",
     headers: { "Content-Type": "application/json" },
@@ -867,9 +864,7 @@ describe("PATCH /api/users/me/password", () => {
         false,
         ["deriveBits"],
       );
-      const salt = new Uint8Array([
-        0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15,
-      ]);
+      const salt = new Uint8Array([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]);
       const derivedBits = await crypto.subtle.deriveBits(
         { name: "PBKDF2", salt, iterations: 100000, hash: "SHA-256" },
         keyMaterial,
