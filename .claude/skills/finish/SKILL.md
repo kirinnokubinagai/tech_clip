@@ -18,7 +18,10 @@ triggers:
 2. **カバレッジ確認**: 80%以上であること
 3. **lint確認**: `pnpm turbo check` でBiomeチェック
 4. **未コミット確認**: `git status` で全変更がステージングされているか
-5. **コミット**: Conventional Commits形式
+5. **コードレビュー**: `/review/code-review` スキルで品質・セキュリティ・パフォーマンスを評価
+6. **PRレビュー**: `/review/pr-review` スキルで変更範囲・テスト・マージ可否を評価
+7. **レビュー通過確認**: 重大な問題（🔴）が0件であること。問題があれば修正してから次へ
+8. **コミット**: Conventional Commits形式
    ```
    feat: 機能説明 #<issue番号>
    fix: バグ修正内容 #<issue番号>
@@ -26,12 +29,12 @@ triggers:
    test: テスト追加 #<issue番号>
    chore: 設定変更 #<issue番号>
    ```
-6. **プッシュ**: `git push -u origin <ブランチ名>`
-7. **PR作成**: `gh pr create` で以下を含める
+9. **プッシュ**: `git push -u origin <ブランチ名>`
+10. **PR作成**: `gh pr create` で以下を含める
    - Summary（変更内容）
    - Test plan（テスト項目）
    - `Closes #<issue番号>`
-8. **ユーザーに報告**: PRのURLを提示してレビューを依頼
+11. **ユーザーに報告**: PRのURLを提示してレビューを依頼
 
 ## マージ後
 
