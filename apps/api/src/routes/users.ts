@@ -60,10 +60,10 @@ const PASSWORD_CHANGE_SUCCESS_MESSAGE = "パスワードを変更しました。
 /** パスワード変更スキーマ */
 const ChangePasswordSchema = z.object({
   currentPassword: z
-    .string({ required_error: "現在のパスワードは必須です" })
+    .string({ error: "現在のパスワードは必須です" })
     .min(1, "現在のパスワードは必須です"),
   newPassword: z
-    .string({ required_error: "新しいパスワードは必須です" })
+    .string({ error: "新しいパスワードは必須です" })
     .min(PASSWORD_MIN_LENGTH, `パスワードは${PASSWORD_MIN_LENGTH}文字以上で入力してください`)
     .max(PASSWORD_MAX_LENGTH, `パスワードは${PASSWORD_MAX_LENGTH}文字以内で入力してください`),
 });
