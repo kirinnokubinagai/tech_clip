@@ -1,6 +1,7 @@
 import { Hono } from "hono";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+import { HTTP_BAD_REQUEST, HTTP_OK, HTTP_UNAUTHORIZED } from "../lib/http-status";
 import { createSubscriptionRoute } from "./subscription";
 
 /** テスト用のモックユーザー（無料プラン） */
@@ -46,15 +47,6 @@ const MOCK_TRIAL_USER = {
   freeAiUsesRemaining: 5,
   freeAiResetAt: null,
 };
-
-/** HTTP 200 OK ステータスコード */
-const HTTP_OK = 200;
-
-/** HTTP 401 Unauthorized ステータスコード */
-const HTTP_UNAUTHORIZED = 401;
-
-/** HTTP 400 Bad Request ステータスコード */
-const HTTP_BAD_REQUEST = 400;
 
 /** エラーレスポンスの型定義 */
 type ErrorResponseBody = {
