@@ -1,5 +1,25 @@
 import { render, waitFor } from "@testing-library/react-native";
 
+jest.mock("expo-secure-store", () => ({
+  getItemAsync: jest.fn().mockResolvedValue(null),
+  setItemAsync: jest.fn().mockResolvedValue(undefined),
+  deleteItemAsync: jest.fn().mockResolvedValue(undefined),
+}));
+
+jest.mock("../../src/stores/settings-store", () => ({
+  useSettingsStore: jest.fn(
+    (selector: (s: Record<string, unknown>) => unknown) =>
+      selector({
+        loadLanguage: jest.fn(),
+      }),
+  ),
+}));
+
+jest.mock("../../src/lib/i18n", () => ({
+  __esModule: true,
+  default: { changeLanguage: jest.fn(), language: "ja" },
+}));
+
 jest.mock("../../src/lib/revenueCat", () => ({
   configureRevenueCat: jest.fn().mockResolvedValue(undefined),
 }));

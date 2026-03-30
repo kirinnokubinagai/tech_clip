@@ -3,8 +3,8 @@ import "../src/lib/i18n";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Redirect, Stack } from "expo-router";
 import { useEffect } from "react";
-import i18n from "../src/lib/i18n";
 import { ActivityIndicator, View } from "react-native";
+import i18n from "../src/lib/i18n";
 
 import {
   registerForPushNotifications,
