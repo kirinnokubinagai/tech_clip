@@ -1,13 +1,109 @@
 #!/bin/sh
-echo "🔍 Pre-push チェック実行中..."
+echo "Pre-push チェック実行中..."
 
-echo "  📝 Lint..."
-pnpm lint || { echo "❌ Lint失敗。修正してからpushしてください。"; exit 1; }
+echo "  Lint..."
+pnpm lint || { echo "Lint失敗。修正してからpushしてください。"; exit 1; }
 
-echo "  🔧 Typecheck..."
-pnpm typecheck || { echo "❌ Typecheck失敗。修正してからpushしてください。"; exit 1; }
+echo "  Typecheck..."
+pnpm typecheck || { echo "Typecheck失敗。修正してからpushしてください。"; exit 1; }
 
-echo "  🧪 Test..."
-pnpm test || { echo "❌ Test失敗。修正してからpushしてください。"; exit 1; }
+echo "  Test..."
+pnpm test || { echo "Test失敗。修正してからpushしてください。"; exit 1; }
 
-echo "✅ 全チェック通過"
+# OWASP ZAP ローカルセキュリティスキャン
+# Docker (zaproxy/zaproxy) がインストールされていない場合はスキップ
+if ! command -v docker > /dev/null 2>&1; then
+  echo "警告: Docker が見つかりません。ZAPスキャンをスキップします。"
+  echo "全チェック通過（ZAPスキャンはスキップ）"
+  exit 0
+fi
+
+if ! docker image inspect zaproxy/zaproxy > /dev/null 2>&1; then
+  echo "警告: zaproxy/zaproxy イメージが見つかりません。ZAPスキャンをスキップします。"
+  echo "  インストール方法: docker pull zaproxy/zaproxy"
+  echo "全チェック通過（ZAPスキャンはスキップ）"
+  exit 0
+fi
+
+echo "  OWASP ZAP セキュリティスキャン..."
+
+# APIサーバーのポート番号
+ZAP_API_PORT=8787
+# ZAPスキャン用一時DBファイル
+ZAP_DB_FILE="/tmp/zap-prepush-local.db"
+# サーバー起動待機の最大試行回数
+ZAP_MAX_WAIT=30
+
+# バックグラウンドでAPIサーバーを起動
+TURSO_DATABASE_URL="file:${ZAP_DB_FILE}" \
+TURSO_AUTH_TOKEN="dummy" \
+RUNPOD_API_KEY="dummy" \
+RUNPOD_ENDPOINT_ID="dummy" \
+BETTER_AUTH_SECRET="test-secret-key-for-zap-scan" \
+ENVIRONMENT="test" \
+  pnpm --filter @tech-clip/api dev > /tmp/zap-api-server.log 2>&1 &
+ZAP_SERVER_PID=$!
+
+# サーバー起動を待機
+echo "    APIサーバー起動待機中..."
+ZAP_WAIT_COUNT=0
+until curl -s "http://localhost:${ZAP_API_PORT}/health" > /dev/null 2>&1; do
+  ZAP_WAIT_COUNT=$((ZAP_WAIT_COUNT + 1))
+  if [ "${ZAP_WAIT_COUNT}" -ge "${ZAP_MAX_WAIT}" ]; then
+    echo "ZAPスキャン失敗: APIサーバーが${ZAP_MAX_WAIT}秒以内に起動しませんでした。"
+    kill "${ZAP_SERVER_PID}" 2>/dev/null
+    rm -f "${ZAP_DB_FILE}"
+    exit 1
+  fi
+  sleep 1
+done
+
+# DBマイグレーション実行
+TURSO_DATABASE_URL="file:${ZAP_DB_FILE}" \
+TURSO_AUTH_TOKEN="dummy" \
+  pnpm --filter @tech-clip/api exec drizzle-kit migrate > /dev/null 2>&1
+
+# テスト用ユーザー登録とトークン取得
+curl -s -X POST "http://localhost:${ZAP_API_PORT}/api/auth/sign-up/email" \
+  -H "Content-Type: application/json" \
+  -d '{"email":"zap-test@techclip.test","password":"ZapTest1234!","name":"ZAP Test User"}' \
+  > /dev/null 2>&1
+
+ZAP_RESPONSE=$(curl -s -X POST "http://localhost:${ZAP_API_PORT}/api/auth/sign-in" \
+  -H "Content-Type: application/json" \
+  -d '{"email":"zap-test@techclip.test","password":"ZapTest1234!"}')
+ZAP_TOKEN=$(echo "${ZAP_RESPONSE}" | grep -o '"token":"[^"]*"' | head -1 | sed 's/"token":"//;s/"//')
+
+if [ -z "${ZAP_TOKEN}" ]; then
+  echo "    警告: 認証トークンを取得できませんでした。未認証スキャンのみ実施します。"
+  ZAP_TOKEN="dummy-token-for-unauthenticated-scan"
+fi
+
+# OWASP ZAP API スキャン実行
+# .zap/ をコンテナ内 /zap/wrk/ にマウントしてルールとレポートを共有
+ZAP_EXIT_CODE=0
+docker run --rm \
+  --network host \
+  -v "$(pwd)/.zap:/zap/wrk:rw" \
+  -e "ZAP_AUTH_HEADER=Authorization" \
+  -e "ZAP_AUTH_HEADER_VALUE=Bearer ${ZAP_TOKEN}" \
+  zaproxy/zaproxy \
+  zap-api-scan.py \
+  -t "http://localhost:${ZAP_API_PORT}/openapi.json" \
+  -f openapi \
+  -r /zap/wrk/zap-report.html \
+  -c /zap/wrk/rules.tsv \
+  -a \
+  2>&1 | grep -v "^$" || ZAP_EXIT_CODE=$?
+
+# サーバー停止・クリーンアップ
+kill "${ZAP_SERVER_PID}" 2>/dev/null
+rm -f "${ZAP_DB_FILE}"
+
+if [ "${ZAP_EXIT_CODE}" -ne 0 ]; then
+  echo "ZAPスキャン失敗: セキュリティ問題が検出されました。"
+  echo "  レポート: .zap/zap-report.html を確認してください。"
+  exit 1
+fi
+
+echo "全チェック通過"
