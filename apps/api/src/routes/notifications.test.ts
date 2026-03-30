@@ -475,28 +475,16 @@ describe("GET /api/notifications", () => {
 describe("POST /api/notifications/register", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    mockInsertValues.mockReturnValue({
-      onConflictDoUpdate: mockInsertOnConflict,
+    mockUpdateSet.mockReturnValue({
+      where: mockUpdateWhere,
     });
-    mockInsertOnConflict.mockReturnValue({
-      returning: mockInsertReturning,
-    });
+    mockUpdateWhere.mockResolvedValue(undefined);
   });
 
   describe("正常系", () => {
     it("有効なプッシュトークンを登録して201を返すこと", async () => {
       // Arrange
       const app = createMutationTestApp();
-      mockInsertReturning.mockResolvedValue([
-        {
-          id: "token_01",
-          userId: MOCK_USER.id,
-          token: "ExponentPushToken[xxxxxx]",
-          platform: "ios",
-          createdAt: "2024-01-15T00:00:00Z",
-          updatedAt: "2024-01-15T00:00:00Z",
-        },
-      ]);
 
       // Act
       const res = await app.request("/api/notifications/register", {
@@ -521,16 +509,6 @@ describe("POST /api/notifications/register", () => {
     it("androidプラットフォームでも登録できること", async () => {
       // Arrange
       const app = createMutationTestApp();
-      mockInsertReturning.mockResolvedValue([
-        {
-          id: "token_02",
-          userId: MOCK_USER.id,
-          token: "fcm-token-android",
-          platform: "android",
-          createdAt: "2024-01-15T00:00:00Z",
-          updatedAt: "2024-01-15T00:00:00Z",
-        },
-      ]);
 
       // Act
       const res = await app.request("/api/notifications/register", {
@@ -669,16 +647,6 @@ describe("POST /api/notifications/register", () => {
     it("成功レスポンスがAPI設計規約に従った形式であること", async () => {
       // Arrange
       const app = createMutationTestApp();
-      mockInsertReturning.mockResolvedValue([
-        {
-          id: "token_01",
-          userId: MOCK_USER.id,
-          token: "ExponentPushToken[xxxxxx]",
-          platform: "ios",
-          createdAt: "2024-01-15T00:00:00Z",
-          updatedAt: "2024-01-15T00:00:00Z",
-        },
-      ]);
 
       // Act
       const res = await app.request("/api/notifications/register", {

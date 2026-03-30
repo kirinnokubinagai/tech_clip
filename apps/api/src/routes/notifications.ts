@@ -3,7 +3,7 @@ import { Hono } from "hono";
 import { z } from "zod";
 
 import type { Database } from "../db";
-import { notifications } from "../db/schema";
+import { notifications, users } from "../db/schema";
 
 /** デフォルトのページサイズ */
 const DEFAULT_LIMIT = 20;
@@ -202,35 +202,12 @@ export function createNotificationsRoute(options: NotificationsRouteOptions) {
     const { token, platform } = validation.data;
 
     try {
-      const now = new Date().toISOString();
-      const id = crypto.randomUUID();
-
-      const [inserted] = await db
-        .insert(notifications)
-        .values({
-          id,
-          userId,
-          type: "push_token",
-          title: "プッシュトークン登録",
-          body: token,
-          data: JSON.stringify({ token, platform }),
-          isRead: false,
-          createdAt: now,
-        })
-        .onConflictDoUpdate({
-          target: [notifications.id],
-          set: {
-            body: token,
-            data: JSON.stringify({ token, platform }),
-          },
-        })
-        .returning();
+      await db.update(users).set({ pushToken: token }).where(eq(users.id, userId));
 
       return c.json(
         {
           success: true,
           data: {
-            ...inserted,
             token,
             platform,
           },
