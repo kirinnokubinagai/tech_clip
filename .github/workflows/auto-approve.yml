@@ -1,11 +1,27 @@
-name: Auto Approve
+name: Claude Review & Auto Approve
 
 on:
   pull_request:
     types: [opened, synchronize, reopened]
 
 jobs:
+  review:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: anthropics/claude-code-action@v1
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          prompt: |
+            このPRを .claude/skills/review/code-review/SKILL.md と .claude/skills/review/pr-review/SKILL.md の基準に従ってレビューしてください。
+            重大な問題（セキュリティ脆弱性、バグ、コーディング規約違反）があれば指摘してください。
+            レビュー結果を日本語で出力してください。
+
   approve:
+    needs: [review]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/create-github-app-token@v1
