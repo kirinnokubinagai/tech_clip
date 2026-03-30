@@ -32,5 +32,3 @@ jobs:
             --app-file "$BUILD_URL" \
             .maestro/
         working-directory: apps/mobile
-        env:
-          MAESTRO_CLOUD_API_KEY: ${{ secrets.MAESTRO_CLOUD_API_KEY }}
