@@ -47,6 +47,16 @@ type SearchRouteOptions = {
 };
 
 /**
+ * LIKE演算子のワイルドカード文字をエスケープする
+ *
+ * @param query - エスケープ対象の検索キーワード
+ * @returns ワイルドカード文字（%、_、\）をエスケープした文字列
+ */
+export function escapeLikeWildcards(query: string): string {
+  return query.replace(/[%_\\]/g, "\\$&");
+}
+
+/**
  * レスポンスからcontentフィールドを除外する
  *
  * @param article - 記事データ
