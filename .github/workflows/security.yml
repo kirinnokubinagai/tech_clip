@@ -9,14 +9,17 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v4
-      - uses: actions/setup-node@v4
+      - uses: cachix/install-nix-action@v27
         with:
-          node-version: 22
-          cache: pnpm
-      - run: pnpm install --frozen-lockfile
+          nix_path: nixpkgs=channel:nixpkgs-unstable
+      - uses: cachix/cachix-action@v14
+        with:
+          name: devenv
+        continue-on-error: true
+      - name: Install deps (nix develop)
+        run: nix develop --command pnpm install --frozen-lockfile
       - name: Start API server
-        run: pnpm --filter @tech-clip/api dev &
+        run: nix develop --command pnpm --filter @tech-clip/api dev &
         env:
           TURSO_DATABASE_URL: file:local.db
           TURSO_AUTH_TOKEN: dummy
@@ -31,7 +34,7 @@ jobs:
             sleep 1
           done
       - name: Run DB migration
-        run: cd apps/api && pnpm drizzle-kit migrate
+        run: nix develop --command pnpm --filter @tech-clip/api exec drizzle-kit migrate
         env:
           TURSO_DATABASE_URL: file:local.db
           TURSO_AUTH_TOKEN: dummy

@@ -1,0 +1,45 @@
+name: Deploy RunPod
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - infra/runpod/**
+
+jobs:
+  deploy-runpod:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: cachix/install-nix-action@v27
+        with:
+          nix_path: nixpkgs=channel:nixpkgs-unstable
+      - uses: cachix/cachix-action@v14
+        with:
+          name: devenv
+        continue-on-error: true
+      - name: Log in to Docker registry
+        run: |
+          nix develop --command docker login \
+            "${{ secrets.DOCKER_REGISTRY_URL }}" \
+            --username "${{ secrets.DOCKER_USERNAME }}" \
+            --password-stdin <<< "${{ secrets.DOCKER_PASSWORD }}"
+      - name: Build and push Docker image
+        run: |
+          IMAGE_TAG="${{ secrets.DOCKER_REGISTRY_URL }}/tech-clip-inference:${{ github.sha }}"
+          nix develop --command docker build \
+            -t "$IMAGE_TAG" \
+            infra/runpod/
+          nix develop --command docker push "$IMAGE_TAG"
+          echo "IMAGE_TAG=$IMAGE_TAG" >> "$GITHUB_ENV"
+      - name: Update RunPod endpoint
+        run: |
+          nix develop --command curl -s -X PATCH \
+            "https://api.runpod.io/v2/endpoint/${{ secrets.RUNPOD_ENDPOINT_ID }}" \
+            -H "Content-Type: application/json" \
+            -H "Authorization: Bearer ${{ secrets.RUNPOD_API_KEY }}" \
+            -d "{\"imageName\": \"$IMAGE_TAG\"}" \
+            | jq .
+        env:
+          RUNPOD_API_KEY: ${{ secrets.RUNPOD_API_KEY }}
+          RUNPOD_ENDPOINT_ID: ${{ secrets.RUNPOD_ENDPOINT_ID }}
