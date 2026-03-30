@@ -18,28 +18,12 @@ id = "d8dd77ff2e0a4ee69e0d780657b02473"
 binding = "AVATARS_BUCKET"
 bucket_name = "tech-clip-avatars"
 
-# 本番/ステージング環境では以下の secrets を wrangler secret put で設定すること
-# （.dev.vars はローカル開発専用。本番には使用しない）
-#
-# 必須 secrets 一覧:
-#   TURSO_DATABASE_URL         - Turso libSQL データベース接続 URL
-#   TURSO_AUTH_TOKEN           - Turso 認証トークン
-#   BETTER_AUTH_SECRET         - Better Auth セッション署名キー（32文字以上）
-#   GOOGLE_CLIENT_ID           - Google OAuth クライアント ID
-#   GOOGLE_CLIENT_SECRET       - Google OAuth クライアントシークレット
-#   APPLE_CLIENT_ID            - Apple Sign In サービス ID
-#   APPLE_CLIENT_SECRET        - Apple Sign In JWT（6ヶ月ごとに更新）
-#   GITHUB_CLIENT_ID           - GitHub OAuth クライアント ID
-#   GITHUB_CLIENT_SECRET       - GitHub OAuth クライアントシークレット
-#   RUNPOD_API_KEY             - RunPod API キー（AI 推論）
-#   RUNPOD_ENDPOINT_ID         - RunPod サーバーレスエンドポイント ID
-#   REVENUECAT_WEBHOOK_SECRET  - RevenueCat Webhook 署名検証シークレット
-#   RESEND_API_KEY             - Resend メール送信 API キー
-#
-# 設定コマンド例（本番環境）:
-#   wrangler secret put TURSO_DATABASE_URL --env production
-#
-# 詳細手順: docs/SECRETS.md を参照
+# [secrets]
+# TURSO_DATABASE_URL
+# TURSO_AUTH_TOKEN
+# RUNPOD_API_KEY
+# RUNPOD_ENDPOINT_ID
+# SENTRY_DSN          # Sentry エラー監視用 DSN（例: https://<key>@oXXXXXX.ingest.sentry.io/<project_id>）
 
 [triggers]
 crons = ["0 0 1 * *"]
