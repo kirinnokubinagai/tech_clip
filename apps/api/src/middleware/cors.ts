@@ -23,7 +23,7 @@ const PREFLIGHT_MAX_AGE_SECONDS = 86400;
  */
 function resolveOrigin(origin: string): string {
   if (!origin) {
-    return "*";
+    return "";
   }
   if (ALLOWED_ORIGINS.includes(origin)) {
     return origin;
