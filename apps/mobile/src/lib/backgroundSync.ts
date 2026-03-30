@@ -1,3 +1,5 @@
+import * as BackgroundFetch from "expo-background-fetch";
+import * as TaskManager from "expo-task-manager";
 import { AppState } from "react-native";
 
 import { syncArticles } from "./syncManager";
@@ -12,17 +14,12 @@ import type { AppStateStatus, NativeEventSubscription } from "react-native";
 const BACKGROUND_SYNC_INTERVAL_MS = 15 * 60 * 1000;
 
 /**
+ * ネイティブバックグラウンドフェッチの最小間隔（秒）
+ */
+const BACKGROUND_FETCH_MIN_INTERVAL_SECONDS = 15 * 60;
+
+/**
  * バックグラウンド同期の設定
- *
- * expo-background-fetch / expo-task-manager が未インストールのため、
- * AppState を利用したフォアグラウンド復帰時同期で代替する。
- *
- * ネイティブバックグラウンド同期を有効化する場合は、以下を追加すること:
- *   - iOS: expo-background-fetch + expo-task-manager
- *   - Android: expo-background-fetch (WorkManager を内部利用)
- *   - app.json の ios.infoPlist に UIBackgroundModes: ["fetch"] を追加
- *   - app.json の android.permissions に
- *     RECEIVE_BOOT_COMPLETED, FOREGROUND_SERVICE を追加
  *
  * @see https://docs.expo.dev/versions/latest/sdk/background-fetch/
  */
@@ -37,6 +34,37 @@ export type BackgroundSyncConfig = {
 export const DEFAULT_BACKGROUND_SYNC_CONFIG: BackgroundSyncConfig = {
   intervalMs: BACKGROUND_SYNC_INTERVAL_MS,
   taskName: "BACKGROUND_SYNC_ARTICLES",
+};
+
+/**
+ * バックグラウンドフェッチタスク定義（モジュールトップレベルで呼ぶ必要がある）
+ * OSがアプリをバックグラウンドで起動した際にタスクが見つかるようにする
+ */
+TaskManager.defineTask(DEFAULT_BACKGROUND_SYNC_CONFIG.taskName, async () => {
+  try {
+    const result = await syncArticles();
+    if (result.errors.length > 0) {
+      return BackgroundFetch.BackgroundFetchResult.Failed;
+    }
+    if (result.synced === 0) {
+      return BackgroundFetch.BackgroundFetchResult.NoData;
+    }
+    return BackgroundFetch.BackgroundFetchResult.NewData;
+  } catch {
+    return BackgroundFetch.BackgroundFetchResult.Failed;
+  }
+});
+
+/**
+ * expo-background-fetch タスク登録オプション
+ *
+ * - stopOnTerminate: false → アプリ終了後もバックグラウンドフェッチを継続（Android）
+ * - startOnBoot: true → 端末再起動後に自動再登録（Android）
+ */
+export const BACKGROUND_FETCH_OPTIONS: BackgroundFetch.BackgroundFetchOptions = {
+  minimumInterval: BACKGROUND_FETCH_MIN_INTERVAL_SECONDS,
+  stopOnTerminate: false,
+  startOnBoot: true,
 };
 
 /** AppState 変化ハンドラーの型 */
@@ -91,10 +119,41 @@ export function createAppStateHandler(config: BackgroundSyncConfig): AppStateCha
 }
 
 /**
+ * ネイティブバックグラウンドフェッチタスクを登録する
+ *
+ * TaskManager.defineTask でタスクを定義し、BackgroundFetch.registerTaskAsync で
+ * OSレベルのバックグラウンドフェッチに登録する。
+ * 登録に失敗した場合はエラーをスローせず、フォアグラウンド復帰時同期にフォールバックする。
+ *
+ * @param config - バックグラウンド同期設定
+ */
+export async function registerNativeBackgroundFetch(config: BackgroundSyncConfig): Promise<void> {
+  try {
+    await BackgroundFetch.registerTaskAsync(config.taskName, BACKGROUND_FETCH_OPTIONS);
+  } catch {
+    /* 登録失敗時はフォアグラウンド復帰時同期にフォールバック */
+  }
+}
+
+/**
+ * ネイティブバックグラウンドフェッチタスクを解除する
+ *
+ * @param taskName - 解除するタスク識別子
+ */
+export async function unregisterNativeBackgroundFetch(taskName: string): Promise<void> {
+  try {
+    await BackgroundFetch.unregisterTaskAsync(taskName);
+  } catch {
+    /* 解除失敗時は無視 */
+  }
+}
+
+/**
  * バックグラウンド同期を開始する
  *
  * AppState の変化を監視し、アプリがフォアグラウンドに復帰した際に
  * 設定された間隔が経過していれば記事を同期する。
+ * ネイティブバックグラウンドフェッチの補完として機能する。
  *
  * @param config - バックグラウンド同期設定（省略時はデフォルト設定を使用）
  * @returns 購読解除用のクリーンアップ関数

@@ -36,7 +36,8 @@
       "buildNumber": "1",
       "associatedDomains": ["applinks:techclip.app", "applinks:www.techclip.app"],
       "infoPlist": {
-        "NSUserTrackingUsageDescription": "広告をパーソナライズし、アプリのパフォーマンスを計測するために使用します。"
+        "NSUserTrackingUsageDescription": "広告をパーソナライズし、アプリのパフォーマンスを計測するために使用します。",
+        "UIBackgroundModes": ["fetch"]
       }
     },
     "android": {
@@ -46,6 +47,10 @@
       },
       "package": "com.techclip.app",
       "versionCode": 1,
+      "permissions": [
+        "android.permission.RECEIVE_BOOT_COMPLETED",
+        "android.permission.FOREGROUND_SERVICE"
+      ],
       "intentFilters": [
         {
           "action": "VIEW",
@@ -72,6 +77,8 @@
       "favicon": "./assets/images/favicon.png"
     },
     "plugins": [
+      "expo-background-fetch",
+      "expo-task-manager",
       [
         "expo-share-intent",
         {
