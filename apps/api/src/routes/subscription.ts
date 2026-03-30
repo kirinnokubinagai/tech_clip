@@ -5,6 +5,27 @@ import { z } from "zod";
 import type { Database } from "../db";
 import { users } from "../db/schema";
 
+/**
+ * 定数時間で2つの文字列を比較する
+ *
+ * タイミング攻撃を防ぐため、文字列の長さや一致位置に関わらず
+ * 常に同じ時間で比較を完了する。
+ *
+ * @param a - 比較対象の文字列
+ * @param b - 比較対象の文字列
+ * @returns 一致する場合 true
+ */
+function timingSafeEqual(a: string, b: string): boolean {
+  if (a.length !== b.length) {
+    return false;
+  }
+  let result = 0;
+  for (let i = 0; i < a.length; i++) {
+    result |= a.charCodeAt(i) ^ b.charCodeAt(i);
+  }
+  return result === 0;
+}
+
 /** HTTP 200 OK ステータスコード */
 const HTTP_OK = 200;
 
@@ -279,7 +300,7 @@ export function createSubscriptionRoute(options: SubscriptionRouteOptions) {
     }
 
     const token = authHeader.replace("Bearer ", "");
-    if (token !== webhookSecret) {
+    if (!timingSafeEqual(token, webhookSecret)) {
       return c.json(
         {
           success: false,
