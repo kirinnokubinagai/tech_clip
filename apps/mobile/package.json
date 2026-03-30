@@ -11,7 +11,8 @@
     "test": "jest --passWithNoTests --forceExit",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
-    "lint": "echo 'lint configured in root'"
+    "lint": "echo 'lint configured in root'",
+    "e2e": "maestro test .maestro/"
   },
   "dependencies": {
     "@react-native-community/netinfo": "^12.0.1",

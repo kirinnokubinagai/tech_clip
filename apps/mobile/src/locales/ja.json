@@ -2,6 +2,7 @@
   "common": {
     "loading": "読み込み中...",
     "error": "エラーが発生しました",
+    "errorTitle": "エラー",
     "retry": "再試行",
     "cancel": "キャンセル",
     "save": "保存",
@@ -182,11 +183,14 @@
       "title": "言語設定",
       "prompt": "表示言語を選択してください"
     },
+    "notificationHintOn": "タップして通知をオンにします",
+    "notificationHintOff": "タップして通知をオフにします",
     "logout": {
       "title": "ログアウト",
       "message": "ログアウトしますか？",
       "confirm": "ログアウト"
     },
+    "notificationUpdateError": "通知設定の更新に失敗しました",
     "deleteAccount": {
       "title": "アカウントを削除する",
       "message": "アカウントを削除すると、すべてのデータが完全に削除されます。この操作は取り消せません。",
@@ -213,6 +217,24 @@
         "passwordMismatch": "パスワードが一致しません"
       }
     }
+  },
+  "errorBoundary": {
+    "unexpectedError": "予期しないエラーが発生しました",
+    "appError": "アプリケーションでエラーが発生しました",
+    "retry": "再試行"
+  },
+  "errorView": {
+    "titles": {
+      "network": "ネットワークエラー",
+      "server": "サーバーエラー",
+      "generic": "エラーが発生しました"
+    },
+    "messages": {
+      "network": "インターネット接続を確認してください",
+      "server": "サーバーで問題が発生しました。しばらくしてから再度お試しください",
+      "generic": "問題が発生しました。再度お試しください"
+    },
+    "retry": "再試行"
   },
   "onboarding": {
     "pages": {
