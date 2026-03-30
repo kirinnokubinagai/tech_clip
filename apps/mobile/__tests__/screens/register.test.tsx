@@ -1,4 +1,4 @@
-import { fireEvent, render, waitFor } from "@testing-library/react-native";
+import { act, fireEvent, render, waitFor } from "@testing-library/react-native";
 
 import RegisterScreen from "../../app/(auth)/register";
 
@@ -21,20 +21,14 @@ describe("RegisterScreen", () => {
     it("有効な入力でsignUpが呼ばれること", async () => {
       // Arrange
       mockSignUp.mockResolvedValue(undefined);
-      const { getByDisplayValue, getByAccessibilityHint } = render(<RegisterScreen />);
+      const { getByLabelText } = render(<RegisterScreen />);
 
-      fireEvent.changeText(getByAccessibilityHint("お名前を入力してください"), "テストユーザー");
-      fireEvent.changeText(
-        getByAccessibilityHint("メールアドレスを入力してください"),
-        "test@example.com",
-      );
-      fireEvent.changeText(
-        getByAccessibilityHint("8文字以上のパスワードを入力してください"),
-        "Password123",
-      );
+      fireEvent.changeText(getByLabelText("名前"), "テストユーザー");
+      fireEvent.changeText(getByLabelText("メールアドレス"), "test@example.com");
+      fireEvent.changeText(getByLabelText("パスワード"), "Password123");
 
       // Act
-      fireEvent.press(getByAccessibilityHint("入力した情報で新規アカウントを作成します"));
+      fireEvent.press(getByLabelText("アカウントを作成"));
 
       // Assert
       await waitFor(() => {
@@ -49,19 +43,13 @@ describe("RegisterScreen", () => {
 
     it("名前が空の場合signUpが呼ばれないこと", async () => {
       // Arrange
-      const { getByAccessibilityHint } = render(<RegisterScreen />);
+      const { getByLabelText } = render(<RegisterScreen />);
 
-      fireEvent.changeText(
-        getByAccessibilityHint("メールアドレスを入力してください"),
-        "test@example.com",
-      );
-      fireEvent.changeText(
-        getByAccessibilityHint("8文字以上のパスワードを入力してください"),
-        "Password123",
-      );
+      fireEvent.changeText(getByLabelText("メールアドレス"), "test@example.com");
+      fireEvent.changeText(getByLabelText("パスワード"), "Password123");
 
       // Act
-      fireEvent.press(getByAccessibilityHint("入力した情報で新規アカウントを作成します"));
+      fireEvent.press(getByLabelText("アカウントを作成"));
 
       // Assert
       await waitFor(() => {
@@ -71,16 +59,13 @@ describe("RegisterScreen", () => {
 
     it("メールが空の場合signUpが呼ばれないこと", async () => {
       // Arrange
-      const { getByAccessibilityHint } = render(<RegisterScreen />);
+      const { getByLabelText } = render(<RegisterScreen />);
 
-      fireEvent.changeText(getByAccessibilityHint("お名前を入力してください"), "テストユーザー");
-      fireEvent.changeText(
-        getByAccessibilityHint("8文字以上のパスワードを入力してください"),
-        "Password123",
-      );
+      fireEvent.changeText(getByLabelText("名前"), "テストユーザー");
+      fireEvent.changeText(getByLabelText("パスワード"), "Password123");
 
       // Act
-      fireEvent.press(getByAccessibilityHint("入力した情報で新規アカウントを作成します"));
+      fireEvent.press(getByLabelText("アカウントを作成"));
 
       // Assert
       await waitFor(() => {
@@ -90,16 +75,13 @@ describe("RegisterScreen", () => {
 
     it("パスワードが空の場合signUpが呼ばれないこと", async () => {
       // Arrange
-      const { getByAccessibilityHint } = render(<RegisterScreen />);
+      const { getByLabelText } = render(<RegisterScreen />);
 
-      fireEvent.changeText(getByAccessibilityHint("お名前を入力してください"), "テストユーザー");
-      fireEvent.changeText(
-        getByAccessibilityHint("メールアドレスを入力してください"),
-        "test@example.com",
-      );
+      fireEvent.changeText(getByLabelText("名前"), "テストユーザー");
+      fireEvent.changeText(getByLabelText("メールアドレス"), "test@example.com");
 
       // Act
-      fireEvent.press(getByAccessibilityHint("入力した情報で新規アカウントを作成します"));
+      fireEvent.press(getByLabelText("アカウントを作成"));
 
       // Assert
       await waitFor(() => {
@@ -110,24 +92,19 @@ describe("RegisterScreen", () => {
     it("signUpが失敗した場合エラーメッセージが表示されること", async () => {
       // Arrange
       mockSignUp.mockRejectedValue(new Error("メールアドレスはすでに使用されています"));
-      const { getByAccessibilityHint, findByText } = render(<RegisterScreen />);
+      const { getByLabelText } = render(<RegisterScreen />);
 
-      fireEvent.changeText(getByAccessibilityHint("お名前を入力してください"), "テストユーザー");
-      fireEvent.changeText(
-        getByAccessibilityHint("メールアドレスを入力してください"),
-        "test@example.com",
-      );
-      fireEvent.changeText(
-        getByAccessibilityHint("8文字以上のパスワードを入力してください"),
-        "Password123",
-      );
+      fireEvent.changeText(getByLabelText("名前"), "テストユーザー");
+      fireEvent.changeText(getByLabelText("メールアドレス"), "test@example.com");
+      fireEvent.changeText(getByLabelText("パスワード"), "Password123");
 
       // Act
-      fireEvent.press(getByAccessibilityHint("入力した情報で新規アカウントを作成します"));
+      await act(async () => {
+        fireEvent.press(getByLabelText("アカウントを作成"));
+      });
 
-      // Assert
-      const errorText = await findByText("メールアドレスはすでに使用されています");
-      expect(errorText).toBeTruthy();
+      // Assert: エラーメッセージがaccessibilityLabelとして表示されること
+      expect(getByLabelText("メールアドレスはすでに使用されています")).toBeTruthy();
     });
   });
 });
