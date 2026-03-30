@@ -51,14 +51,17 @@ function isResetExpired(resetAt: string | null): boolean {
   return new Date(resetAt).getTime() <= Date.now();
 }
 
+/** レスポンスが成功とみなす最大ステータスコード */
+const HTTP_SUCCESS_MAX_STATUS = 399;
+
 /**
  * AI使用回数制限ミドルウェアを生成する
  *
  * 要約/翻訳API呼び出し前にユーザーのfreeAiUsesRemainingをチェックし、
  * 無料ユーザーの使用回数を制限する。
  * - プレミアムユーザー: 制限なし（通過）
- * - 無料ユーザー（残回数あり）: 通過後にデクリメント
- * - 無料ユーザー（残回数なし、リセット期限切れ）: リセットして通過
+ * - 無料ユーザー（残回数あり）: 通過後にデクリメント（成功時のみ）
+ * - 無料ユーザー（残回数なし、リセット期限切れ）: リセットして通過（成功時のみ適用）
  * - 無料ユーザー（残回数なし、リセット期限内）: 402を返却
  *
  * @param db - Drizzle ORMデータベースインスタンス
@@ -108,31 +111,37 @@ export function createAiLimitMiddleware(db: Database): MiddlewareHandler {
     const remaining = dbUser.freeAiUsesRemaining ?? 0;
 
     if (remaining > 0) {
-      await db
-        .update(users)
-        .set({
-          freeAiUsesRemaining: remaining - 1,
-          updatedAt: new Date().toISOString(),
-        })
-        .where(eq(users.id, userId));
-
       await next();
+
+      if (c.res.status <= HTTP_SUCCESS_MAX_STATUS) {
+        await db
+          .update(users)
+          .set({
+            freeAiUsesRemaining: remaining - 1,
+            updatedAt: new Date().toISOString(),
+          })
+          .where(eq(users.id, userId));
+      }
+
       return;
     }
 
     if (isResetExpired(dbUser.freeAiResetAt)) {
       const nextResetAt = calculateNextResetAt();
 
-      await db
-        .update(users)
-        .set({
-          freeAiUsesRemaining: FREE_AI_USES_PER_MONTH - 1,
-          freeAiResetAt: nextResetAt,
-          updatedAt: new Date().toISOString(),
-        })
-        .where(eq(users.id, userId));
-
       await next();
+
+      if (c.res.status <= HTTP_SUCCESS_MAX_STATUS) {
+        await db
+          .update(users)
+          .set({
+            freeAiUsesRemaining: FREE_AI_USES_PER_MONTH - 1,
+            freeAiResetAt: nextResetAt,
+            updatedAt: new Date().toISOString(),
+          })
+          .where(eq(users.id, userId));
+      }
+
       return;
     }
 
