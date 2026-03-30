@@ -28,9 +28,14 @@ jobs:
       - name: Run Maestro Cloud E2E tests
         run: |
           export PATH="$HOME/.maestro/bin:$PATH"
+          BUILD_URL=$(eas build:list --platform ios --limit 1 --json --non-interactive | jq -r '.[0].artifacts.buildUrl')
+          if [ -z "$BUILD_URL" ] || [ "$BUILD_URL" = "null" ]; then
+            echo "EAS Buildのアーティファクトが見つかりません"
+            exit 1
+          fi
           maestro cloud \
             --apiKey "${{ secrets.MAESTRO_CLOUD_API_KEY }}" \
-            --app-file "$(eas build:list --platform ios --limit 1 --json --non-interactive | jq -r '.[0].artifacts.buildUrl')" \
+            --app-file "$BUILD_URL" \
             .maestro/
         working-directory: apps/mobile
         env:

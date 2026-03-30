@@ -18,7 +18,7 @@ jobs:
         with:
           name: devenv
         continue-on-error: true
-      - name: Lint (nix develop)
+      - name: Install deps (nix develop)
         run: nix develop --command pnpm install --frozen-lockfile
       - run: nix develop --command pnpm lint
 
