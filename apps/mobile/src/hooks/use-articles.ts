@@ -47,7 +47,7 @@ async function fetchArticles(
   if (filter.search) params.set("q", filter.search);
 
   const queryString = params.toString();
-  const path = `/articles${queryString ? `?${queryString}` : ""}`;
+  const path = `/api/articles${queryString ? `?${queryString}` : ""}`;
 
   const response = await apiFetch<ArticlesListResponse>(path);
 
@@ -69,7 +69,7 @@ async function fetchArticles(
  * @returns 記事詳細データ
  */
 async function fetchArticleDetail(articleId: string): Promise<ArticleDetail> {
-  const response = await apiFetch<ArticleDetailResponse>(`/articles/${articleId}`);
+  const response = await apiFetch<ArticleDetailResponse>(`/api/articles/${articleId}`);
 
   if (!response.success) {
     throw new Error(response.error.message);
@@ -133,7 +133,7 @@ export function useToggleFavorite() {
 
   return useMutation({
     mutationFn: async ({ articleId, isFavorite }: { articleId: string; isFavorite: boolean }) => {
-      const response = await apiFetch<{ success: boolean }>(`/articles/${articleId}`, {
+      const response = await apiFetch<{ success: boolean }>(`/api/articles/${articleId}`, {
         method: "PATCH",
         body: JSON.stringify({ isFavorite: !isFavorite }),
       });
@@ -157,7 +157,7 @@ export function useRequestSummary() {
   return useMutation({
     mutationFn: async (articleId: string) => {
       const response = await apiFetch<{ success: boolean; data: { summary: string } }>(
-        `/articles/${articleId}/summary`,
+        `/api/articles/${articleId}/summary`,
         { method: "POST" },
       );
       return response;
@@ -179,7 +179,7 @@ export function useRequestTranslation() {
   return useMutation({
     mutationFn: async (articleId: string) => {
       const response = await apiFetch<{ success: boolean; data: { translation: string } }>(
-        `/articles/${articleId}/translate`,
+        `/api/articles/${articleId}/translate`,
         { method: "POST" },
       );
       return response;
