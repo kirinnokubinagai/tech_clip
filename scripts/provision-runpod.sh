@@ -152,10 +152,13 @@ create_template() {
     env_input=", env: [${env_vars}]"
   fi
 
+  local safe_name="${template_name//\"/\\\"}"
+  local safe_image="${image_name//\"/\\\"}"
+
   local mutation="mutation {
     saveTemplate(input: {
-      name: \"${template_name}\",
-      imageName: \"${image_name}\",
+      name: \"${safe_name}\",
+      imageName: \"${safe_image}\",
       containerDiskInGb: ${CONTAINER_DISK_GB},
       isServerless: true${env_input}
     }) {
@@ -201,11 +204,15 @@ create_endpoint() {
 
   log_info "エンドポイントを作成中: ${endpoint_name}"
 
+  local safe_name="${endpoint_name//\"/\\\"}"
+  local safe_template_id="${template_id//\"/\\\"}"
+  local safe_gpu_ids="${gpu_ids//\"/\\\"}"
+
   local mutation="mutation {
     saveEndpoint(input: {
-      name: \"${endpoint_name}\",
-      templateId: \"${template_id}\",
-      gpuIds: \"${gpu_ids}\",
+      name: \"${safe_name}\",
+      templateId: \"${safe_template_id}\",
+      gpuIds: \"${safe_gpu_ids}\",
       workersMin: 0,
       workersMax: ${max_workers},
       idleTimeout: ${IDLE_TIMEOUT_SEC},
