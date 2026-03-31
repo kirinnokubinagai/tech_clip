@@ -111,17 +111,21 @@
       "Bash(*push*--force-with-lease*)",
       "Bash(*reset --hard*)",
       "Bash(*checkout -- *)",
+      "Bash(*git restore .*)",
+      "Bash(*git restore --staged .*)",
+      "Bash(*git merge*)",
+      "Bash(*git rebase*)",
       "Bash(*clean -f*)",
       "Bash(*-X theirs*)",
       "Bash(*-X ours*)",
       "Bash(*--strategy-option*theirs*)",
       "Bash(*--strategy-option*ours*)",
       "Bash(*gh api*protection*)",
-      "Bash(*gh pr merge*--admin*)",
+      "Bash(*gh pr merge*)",
       "Bash(*enforce_admins*)",
-      "Bash(*merge*--admin*)",
       "Bash(*git push origin main*)",
-      "Bash(*git push*main*)"
+      "Bash(*git push*main*)",
+      "Agent(oh-my-claudecode:*)"
     ]
   },
   "worktree": {
