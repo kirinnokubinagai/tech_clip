@@ -165,13 +165,15 @@ create_template() {
     env_input=", env: [${env_vars}]"
   fi
 
-  local safe_name="${template_name//\"/\\\"}"
-  local safe_image="${image_name//\"/\\\"}"
+  local safe_name
+  safe_name=$(echo "$template_name" | jq -Rs '.')
+  local safe_image
+  safe_image=$(echo "$image_name" | jq -Rs '.')
 
   local mutation="mutation {
     saveTemplate(input: {
-      name: \"${safe_name}\",
-      imageName: \"${safe_image}\",
+      name: ${safe_name},
+      imageName: ${safe_image},
       containerDiskInGb: ${CONTAINER_DISK_GB},
       isServerless: true${env_input}
     }) {
@@ -217,15 +219,18 @@ create_endpoint() {
 
   log_info "エンドポイントを作成中: ${endpoint_name}"
 
-  local safe_name="${endpoint_name//\"/\\\"}"
-  local safe_template_id="${template_id//\"/\\\"}"
-  local safe_gpu_ids="${gpu_ids//\"/\\\"}"
+  local safe_name
+  safe_name=$(echo "$endpoint_name" | jq -Rs '.')
+  local safe_template_id
+  safe_template_id=$(echo "$template_id" | jq -Rs '.')
+  local safe_gpu_ids
+  safe_gpu_ids=$(echo "$gpu_ids" | jq -Rs '.')
 
   local mutation="mutation {
     saveEndpoint(input: {
-      name: \"${safe_name}\",
-      templateId: \"${safe_template_id}\",
-      gpuIds: \"${safe_gpu_ids}\",
+      name: ${safe_name},
+      templateId: ${safe_template_id},
+      gpuIds: ${safe_gpu_ids},
       workersMin: 0,
       workersMax: ${max_workers},
       idleTimeout: ${IDLE_TIMEOUT_SEC},
@@ -370,10 +375,12 @@ if [[ "${ENDPOINT_TYPE}" == "qwen" ]]; then
   TEMPLATE_NAME="${QWEN_TEMPLATE_NAME}"
   ENDPOINT_NAME="${QWEN_ENDPOINT_NAME}"
   IMAGE_NAME="${DOCKER_IMAGE}"
+  ENV_VAR_NAME="RUNPOD_ENDPOINT_ID"
 elif [[ "${ENDPOINT_TYPE}" == "whisper" ]]; then
   TEMPLATE_NAME="${WHISPER_TEMPLATE_NAME}"
   ENDPOINT_NAME="${WHISPER_ENDPOINT_NAME}"
   IMAGE_NAME="${WHISPER_DEFAULT_IMAGE}"
+  ENV_VAR_NAME="RUNPOD_WHISPER_ENDPOINT_ID"
 fi
 
 echo ""
@@ -421,11 +428,7 @@ if [[ -n "${EXISTING_ENDPOINT_ID}" ]]; then
   echo "  エンドポイントID: ${EXISTING_ENDPOINT_ID}"
   echo ""
   echo "  環境変数に設定してください:"
-  if [[ "${ENDPOINT_TYPE}" == "qwen" ]]; then
-    echo "    RUNPOD_ENDPOINT_ID=${EXISTING_ENDPOINT_ID}"
-  elif [[ "${ENDPOINT_TYPE}" == "whisper" ]]; then
-    echo "    RUNPOD_WHISPER_ENDPOINT_ID=${EXISTING_ENDPOINT_ID}"
-  fi
+  echo "    ${ENV_VAR_NAME}=${EXISTING_ENDPOINT_ID}"
   echo ""
   exit 0
 fi
@@ -473,23 +476,11 @@ echo "  テンプレートID:   ${TEMPLATE_ID}"
 echo "  エンドポイントID: ${ENDPOINT_ID}"
 echo ""
 echo "  環境変数に設定してください:"
-if [[ "${ENDPOINT_TYPE}" == "qwen" ]]; then
-  echo "    RUNPOD_ENDPOINT_ID=${ENDPOINT_ID}"
-elif [[ "${ENDPOINT_TYPE}" == "whisper" ]]; then
-  echo "    RUNPOD_WHISPER_ENDPOINT_ID=${ENDPOINT_ID}"
-fi
+echo "    ${ENV_VAR_NAME}=${ENDPOINT_ID}"
 echo ""
 echo "  ローカル開発 (apps/api/.dev.vars):"
-if [[ "${ENDPOINT_TYPE}" == "qwen" ]]; then
-  echo "    RUNPOD_ENDPOINT_ID=${ENDPOINT_ID}"
-elif [[ "${ENDPOINT_TYPE}" == "whisper" ]]; then
-  echo "    RUNPOD_WHISPER_ENDPOINT_ID=${ENDPOINT_ID}"
-fi
+echo "    ${ENV_VAR_NAME}=${ENDPOINT_ID}"
 echo ""
 echo "  本番環境 (Wrangler シークレット):"
-if [[ "${ENDPOINT_TYPE}" == "qwen" ]]; then
-  echo "    wrangler secret put RUNPOD_ENDPOINT_ID"
-elif [[ "${ENDPOINT_TYPE}" == "whisper" ]]; then
-  echo "    wrangler secret put RUNPOD_WHISPER_ENDPOINT_ID"
-fi
+echo "    wrangler secret put ${ENV_VAR_NAME}"
 echo ""
