@@ -70,3 +70,11 @@ GITHUB_CLIENT_SECRET=your-github-client-secret
 
 RUNPOD_API_KEY=your-runpod-api-key
 RUNPOD_ENDPOINT_ID=your-runpod-endpoint-id
+
+# -----------------------------------------------------------------------------
+# RunPod Whisper (音声文字起こし)
+# -----------------------------------------------------------------------------
+# Faster Whisper エンドポイントの ID
+# provision-runpod.sh --type whisper で自動作成可能
+
+RUNPOD_WHISPER_ENDPOINT_ID=your-runpod-whisper-endpoint-id

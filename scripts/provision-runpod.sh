@@ -1,0 +1,445 @@
+#!/usr/bin/env bash
+# RunPod サーバーレスエンドポイントを自動プロビジョニングするスクリプト
+#
+# RunPod GraphQL API を使用して、テンプレートとエンドポイントを作成する。
+# 既存のエンドポイントがある場合はスキップする（冪等性）。
+#
+# 使用方法:
+#   RUNPOD_API_KEY=xxx bash scripts/provision-runpod.sh --type qwen --image user/techclip-runpod:latest
+#   RUNPOD_API_KEY=xxx bash scripts/provision-runpod.sh --type whisper
+#
+# 環境変数:
+#   RUNPOD_API_KEY  - RunPod API キー（必須）
+#
+# オプション:
+#   --type    - エンドポイント種別: qwen | whisper（必須）
+#   --image   - Docker イメージ名（qwen の場合は必須、whisper の場合は不要）
+#   --gpu     - GPU タイプ（デフォルト: AMPERE_24）
+#   --workers - 最大ワーカー数（デフォルト: 3）
+#   --dry-run - 実際には作成せず、リクエスト内容を表示する
+
+set -euo pipefail
+
+# =============================================================================
+# 定数
+# =============================================================================
+
+# RunPod GraphQL API エンドポイント
+RUNPOD_API_URL="https://api.runpod.io/graphql"
+
+# Qwen テンプレート名
+QWEN_TEMPLATE_NAME="techclip-qwen2.5-9b"
+
+# Whisper テンプレート名
+WHISPER_TEMPLATE_NAME="techclip-faster-whisper"
+
+# Qwen エンドポイント名
+QWEN_ENDPOINT_NAME="techclip-qwen2.5"
+
+# Whisper エンドポイント名
+WHISPER_ENDPOINT_NAME="techclip-whisper"
+
+# Faster Whisper の公式 Docker イメージ
+WHISPER_DEFAULT_IMAGE="runpod/worker-faster_whisper:latest"
+
+# デフォルト GPU タイプ（RTX 4090 = AMPERE_24）
+DEFAULT_GPU="AMPERE_24"
+
+# デフォルト最大ワーカー数
+DEFAULT_MAX_WORKERS=3
+
+# コンテナディスクサイズ（GB）
+CONTAINER_DISK_GB=20
+
+# アイドルタイムアウト（秒）
+IDLE_TIMEOUT_SEC=5
+
+# スケーラータイプ
+SCALER_TYPE="QUEUE_DELAY"
+
+# スケーラー値（秒）
+SCALER_VALUE=4
+
+# =============================================================================
+# ヘルパー関数
+# =============================================================================
+
+usage() {
+  cat <<'USAGE'
+使用方法:
+  RUNPOD_API_KEY=xxx bash scripts/provision-runpod.sh --type qwen --image user/techclip-runpod:latest
+  RUNPOD_API_KEY=xxx bash scripts/provision-runpod.sh --type whisper
+
+オプション:
+  --type    エンドポイント種別: qwen | whisper（必須）
+  --image   Docker イメージ名（qwen の場合は必須）
+  --gpu     GPU タイプ（デフォルト: AMPERE_24）
+  --workers 最大ワーカー数（デフォルト: 3）
+  --dry-run 実際には作成せず、リクエスト内容を表示する
+  --help    このヘルプを表示する
+
+環境変数:
+  RUNPOD_API_KEY  RunPod API キー（必須）
+USAGE
+}
+
+log_info() {
+  echo "==> $1"
+}
+
+log_error() {
+  echo "エラー: $1" >&2
+}
+
+log_success() {
+  echo "    [OK] $1"
+}
+
+log_skip() {
+  echo "    [SKIP] $1"
+}
+
+graphql_request() {
+  local query="$1"
+  local response
+
+  response=$(curl --silent --request POST \
+    --header 'content-type: application/json' \
+    --url "${RUNPOD_API_URL}?api_key=${RUNPOD_API_KEY}" \
+    --data "{\"query\": $(echo "$query" | jq -Rs .)}" 2>&1)
+
+  local exit_code=$?
+  if [[ $exit_code -ne 0 ]]; then
+    log_error "RunPod API リクエストに失敗しました"
+    log_error "レスポンス: ${response}"
+    return 1
+  fi
+
+  local errors
+  errors=$(echo "$response" | jq -r '.errors // empty')
+  if [[ -n "$errors" && "$errors" != "null" ]]; then
+    log_error "RunPod API がエラーを返しました:"
+    echo "$response" | jq '.errors' >&2
+    return 1
+  fi
+
+  echo "$response"
+}
+
+find_existing_endpoint() {
+  local target_name="$1"
+  local response
+
+  response=$(graphql_request 'query { myself { endpoints { id name templateId } } }')
+  if [[ $? -ne 0 ]]; then
+    return 1
+  fi
+
+  echo "$response" | jq -r --arg name "$target_name" \
+    '(.data.myself.endpoints // [])[] | select(.name == $name) | .id // empty'
+}
+
+create_template() {
+  local template_name="$1"
+  local image_name="$2"
+  local env_vars="${3:-}"
+
+  log_info "テンプレートを作成中: ${template_name}"
+
+  local env_input=""
+  if [[ -n "$env_vars" ]]; then
+    env_input=", env: [${env_vars}]"
+  fi
+
+  local mutation="mutation {
+    saveTemplate(input: {
+      name: \"${template_name}\",
+      imageName: \"${image_name}\",
+      containerDiskInGb: ${CONTAINER_DISK_GB},
+      isServerless: true${env_input}
+    }) {
+      id
+      name
+      imageName
+    }
+  }"
+
+  if [[ "${DRY_RUN}" == "true" ]]; then
+    echo "    [DRY-RUN] テンプレート作成リクエスト:"
+    echo "    名前: ${template_name}"
+    echo "    イメージ: ${image_name}"
+    echo "dry-run-template-id"
+    return 0
+  fi
+
+  local response
+  response=$(graphql_request "$mutation")
+  if [[ $? -ne 0 ]]; then
+    log_error "テンプレートの作成に失敗しました"
+    return 1
+  fi
+
+  local template_id
+  template_id=$(echo "$response" | jq -r '.data.saveTemplate.id')
+
+  if [[ -z "$template_id" || "$template_id" == "null" ]]; then
+    log_error "テンプレートIDの取得に失敗しました"
+    log_error "レスポンス: ${response}"
+    return 1
+  fi
+
+  log_success "テンプレート作成完了 (ID: ${template_id})"
+  echo "$template_id"
+}
+
+create_endpoint() {
+  local endpoint_name="$1"
+  local template_id="$2"
+  local gpu_ids="$3"
+  local max_workers="$4"
+
+  log_info "エンドポイントを作成中: ${endpoint_name}"
+
+  local mutation="mutation {
+    saveEndpoint(input: {
+      name: \"${endpoint_name}\",
+      templateId: \"${template_id}\",
+      gpuIds: \"${gpu_ids}\",
+      workersMin: 0,
+      workersMax: ${max_workers},
+      idleTimeout: ${IDLE_TIMEOUT_SEC},
+      scalerType: \"${SCALER_TYPE}\",
+      scalerValue: ${SCALER_VALUE},
+      locations: \"\"
+    }) {
+      id
+      name
+      templateId
+      gpuIds
+      workersMax
+    }
+  }"
+
+  if [[ "${DRY_RUN}" == "true" ]]; then
+    echo "    [DRY-RUN] エンドポイント作成リクエスト:"
+    echo "    名前: ${endpoint_name}"
+    echo "    テンプレートID: ${template_id}"
+    echo "    GPU: ${gpu_ids}"
+    echo "    最大ワーカー: ${max_workers}"
+    echo "dry-run-endpoint-id"
+    return 0
+  fi
+
+  local response
+  response=$(graphql_request "$mutation")
+  if [[ $? -ne 0 ]]; then
+    log_error "エンドポイントの作成に失敗しました"
+    return 1
+  fi
+
+  local endpoint_id
+  endpoint_id=$(echo "$response" | jq -r '.data.saveEndpoint.id')
+
+  if [[ -z "$endpoint_id" || "$endpoint_id" == "null" ]]; then
+    log_error "エンドポイントIDの取得に失敗しました"
+    log_error "レスポンス: ${response}"
+    return 1
+  fi
+
+  log_success "エンドポイント作成完了 (ID: ${endpoint_id})"
+  echo "$endpoint_id"
+}
+
+# =============================================================================
+# 引数パース
+# =============================================================================
+
+ENDPOINT_TYPE=""
+DOCKER_IMAGE=""
+GPU_TYPE="${DEFAULT_GPU}"
+MAX_WORKERS="${DEFAULT_MAX_WORKERS}"
+DRY_RUN="false"
+
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --type)
+      ENDPOINT_TYPE="$2"
+      shift 2
+      ;;
+    --image)
+      DOCKER_IMAGE="$2"
+      shift 2
+      ;;
+    --gpu)
+      GPU_TYPE="$2"
+      shift 2
+      ;;
+    --workers)
+      MAX_WORKERS="$2"
+      shift 2
+      ;;
+    --dry-run)
+      DRY_RUN="true"
+      shift
+      ;;
+    --help|-h)
+      usage
+      exit 0
+      ;;
+    *)
+      log_error "不明なオプション: $1"
+      usage
+      exit 1
+      ;;
+  esac
+done
+
+# =============================================================================
+# バリデーション
+# =============================================================================
+
+if [[ -z "${RUNPOD_API_KEY:-}" ]]; then
+  log_error "RUNPOD_API_KEY 環境変数が設定されていません"
+  echo "例: RUNPOD_API_KEY=xxx bash scripts/provision-runpod.sh --type qwen --image user/repo:tag" >&2
+  exit 1
+fi
+
+if [[ -z "${ENDPOINT_TYPE}" ]]; then
+  log_error "--type オプションが指定されていません（qwen または whisper）"
+  usage
+  exit 1
+fi
+
+if [[ "${ENDPOINT_TYPE}" != "qwen" && "${ENDPOINT_TYPE}" != "whisper" ]]; then
+  log_error "--type は qwen または whisper を指定してください（指定値: ${ENDPOINT_TYPE}）"
+  exit 1
+fi
+
+if [[ "${ENDPOINT_TYPE}" == "qwen" && -z "${DOCKER_IMAGE}" ]]; then
+  log_error "qwen タイプでは --image オプションが必須です"
+  echo "例: --image your-username/techclip-runpod:latest" >&2
+  exit 1
+fi
+
+if ! command -v jq &>/dev/null; then
+  log_error "jq コマンドが見つかりません。Nix 環境に入っているか確認してください。"
+  exit 1
+fi
+
+if ! command -v curl &>/dev/null; then
+  log_error "curl コマンドが見つかりません。"
+  exit 1
+fi
+
+# =============================================================================
+# メイン処理
+# =============================================================================
+
+TEMPLATE_NAME=""
+ENDPOINT_NAME=""
+IMAGE_NAME=""
+ENV_VARS=""
+
+if [[ "${ENDPOINT_TYPE}" == "qwen" ]]; then
+  TEMPLATE_NAME="${QWEN_TEMPLATE_NAME}"
+  ENDPOINT_NAME="${QWEN_ENDPOINT_NAME}"
+  IMAGE_NAME="${DOCKER_IMAGE}"
+elif [[ "${ENDPOINT_TYPE}" == "whisper" ]]; then
+  TEMPLATE_NAME="${WHISPER_TEMPLATE_NAME}"
+  ENDPOINT_NAME="${WHISPER_ENDPOINT_NAME}"
+  IMAGE_NAME="${WHISPER_DEFAULT_IMAGE}"
+fi
+
+echo ""
+echo "============================================"
+echo "  RunPod サーバーレスプロビジョニング"
+echo "============================================"
+echo ""
+echo "  種別:           ${ENDPOINT_TYPE}"
+echo "  テンプレート:   ${TEMPLATE_NAME}"
+echo "  エンドポイント: ${ENDPOINT_NAME}"
+echo "  イメージ:       ${IMAGE_NAME}"
+echo "  GPU:            ${GPU_TYPE}"
+echo "  最大ワーカー:   ${MAX_WORKERS}"
+if [[ "${DRY_RUN}" == "true" ]]; then
+  echo "  モード:         DRY-RUN（実際には作成しません）"
+fi
+echo ""
+
+# 既存エンドポイントの確認（dry-run 時はスキップ）
+EXISTING_ENDPOINT_ID=""
+if [[ "${DRY_RUN}" == "true" ]]; then
+  log_info "既存エンドポイントの確認をスキップ（DRY-RUN）"
+else
+  log_info "既存エンドポイントを確認中..."
+  EXISTING_ENDPOINT_ID=$(find_existing_endpoint "${ENDPOINT_NAME}" || echo "")
+fi
+
+if [[ -n "${EXISTING_ENDPOINT_ID}" ]]; then
+  log_skip "エンドポイント '${ENDPOINT_NAME}' は既に存在します (ID: ${EXISTING_ENDPOINT_ID})"
+  echo ""
+  echo "============================================"
+  echo "  プロビジョニング完了（既存のリソースを使用）"
+  echo "============================================"
+  echo ""
+  echo "  エンドポイントID: ${EXISTING_ENDPOINT_ID}"
+  echo ""
+  echo "  環境変数に設定してください:"
+  if [[ "${ENDPOINT_TYPE}" == "qwen" ]]; then
+    echo "    RUNPOD_ENDPOINT_ID=${EXISTING_ENDPOINT_ID}"
+  elif [[ "${ENDPOINT_TYPE}" == "whisper" ]]; then
+    echo "    RUNPOD_WHISPER_ENDPOINT_ID=${EXISTING_ENDPOINT_ID}"
+  fi
+  echo ""
+  exit 0
+fi
+
+log_success "既存エンドポイントなし。新規作成します。"
+
+# テンプレート作成
+TEMPLATE_OUTPUT=$(create_template "${TEMPLATE_NAME}" "${IMAGE_NAME}" "${ENV_VARS}")
+TEMPLATE_ID=$(echo "$TEMPLATE_OUTPUT" | tail -1)
+
+if [[ -z "${TEMPLATE_ID}" ]]; then
+  log_error "テンプレートの作成に失敗しました"
+  exit 1
+fi
+
+# エンドポイント作成
+ENDPOINT_OUTPUT=$(create_endpoint "${ENDPOINT_NAME}" "${TEMPLATE_ID}" "${GPU_TYPE}" "${MAX_WORKERS}")
+ENDPOINT_ID=$(echo "$ENDPOINT_OUTPUT" | tail -1)
+
+if [[ -z "${ENDPOINT_ID}" ]]; then
+  log_error "エンドポイントの作成に失敗しました"
+  exit 1
+fi
+
+echo ""
+echo "============================================"
+echo "  プロビジョニング完了"
+echo "============================================"
+echo ""
+echo "  テンプレートID:   ${TEMPLATE_ID}"
+echo "  エンドポイントID: ${ENDPOINT_ID}"
+echo ""
+echo "  環境変数に設定してください:"
+if [[ "${ENDPOINT_TYPE}" == "qwen" ]]; then
+  echo "    RUNPOD_ENDPOINT_ID=${ENDPOINT_ID}"
+elif [[ "${ENDPOINT_TYPE}" == "whisper" ]]; then
+  echo "    RUNPOD_WHISPER_ENDPOINT_ID=${ENDPOINT_ID}"
+fi
+echo ""
+echo "  ローカル開発 (apps/api/.dev.vars):"
+if [[ "${ENDPOINT_TYPE}" == "qwen" ]]; then
+  echo "    RUNPOD_ENDPOINT_ID=${ENDPOINT_ID}"
+elif [[ "${ENDPOINT_TYPE}" == "whisper" ]]; then
+  echo "    RUNPOD_WHISPER_ENDPOINT_ID=${ENDPOINT_ID}"
+fi
+echo ""
+echo "  本番環境 (Wrangler シークレット):"
+if [[ "${ENDPOINT_TYPE}" == "qwen" ]]; then
+  echo "    wrangler secret put RUNPOD_ENDPOINT_ID"
+elif [[ "${ENDPOINT_TYPE}" == "whisper" ]]; then
+  echo "    wrangler secret put RUNPOD_WHISPER_ENDPOINT_ID"
+fi
+echo ""

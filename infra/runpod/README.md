@@ -1,25 +1,67 @@
 # RunPod サーバーレスデプロイ手順
 
-TechClipのAI要約・翻訳機能で使用するQwen2.5 9BモデルをRunPodサーバーレスにデプロイする手順。
+TechClipのAI要約・翻訳機能で使用するRunPodサーバーレスエンドポイントのデプロイ手順。
+
+## エンドポイント構成
+
+| エンドポイント | 用途 | Docker イメージ |
+|---------------|------|----------------|
+| Qwen2.5 (要約・翻訳) | 技術記事のAI要約と翻訳 | カスタムビルド |
+| Faster Whisper (文字起こし) | 動画コンテンツの音声文字起こし | `runpod/worker-faster_whisper:latest` |
 
 ## 前提条件
 
-- Docker（ビルド・プッシュ用）
-- Docker Hubアカウント（またはその他のコンテナレジストリ）
-- RunPodアカウント（https://runpod.io）
-- RunPod APIキー
+- Docker（ビルド・プッシュ用、Qwen のみ）
+- Docker Hub アカウント（またはその他のコンテナレジストリ）
+- RunPod アカウント（https://runpod.io）
+- RunPod API キー
+- Nix 開発環境（`curl` と `jq` が必要）
 
-## デプロイ手順
+## クイックスタート（自動プロビジョニング）
 
-### 1. Docker イメージのビルドとプッシュ
+### Qwen エンドポイント（要約・翻訳）
+
+```bash
+# 1. Docker イメージをビルド・プッシュ
+export DOCKER_IMAGE=your-dockerhub-username/techclip-runpod:latest
+bash scripts/deploy-runpod.sh
+
+# 2. エンドポイントを自動作成
+RUNPOD_API_KEY=xxx bash scripts/provision-runpod.sh \
+  --type qwen \
+  --image your-dockerhub-username/techclip-runpod:latest
+```
+
+### Whisper エンドポイント（文字起こし）
+
+```bash
+# RunPod 公式の Faster Whisper イメージを使用するため、ビルド不要
+RUNPOD_API_KEY=xxx bash scripts/provision-runpod.sh --type whisper
+```
+
+### プロビジョニングオプション
+
+```bash
+RUNPOD_API_KEY=xxx bash scripts/provision-runpod.sh \
+  --type qwen|whisper \   # エンドポイント種別（必須）
+  --image <image>     \   # Docker イメージ（qwen の場合は必須）
+  --gpu AMPERE_24     \   # GPU タイプ（デフォルト: AMPERE_24 = RTX 4090）
+  --workers 3         \   # 最大ワーカー数（デフォルト: 3）
+  --dry-run               # 実際には作成せず内容を表示
+```
+
+スクリプトは冪等性があり、同名のエンドポイントが既に存在する場合はスキップする。
+
+## 手動デプロイ手順
+
+自動プロビジョニングを使わない場合の手順。
+
+### 1. Docker イメージのビルドとプッシュ（Qwen のみ）
 
 `scripts/deploy-runpod.sh` を使用する。
 
 ```bash
-# 環境変数を設定
 export DOCKER_IMAGE=your-dockerhub-username/techclip-runpod:latest
-
-# ビルドとプッシュ
 bash scripts/deploy-runpod.sh
 ```
 
@@ -28,10 +70,7 @@ bash scripts/deploy-runpod.sh
 ```bash
 cd infra/runpod
 
-# ビルド（初回はモデルダウンロードで時間がかかる）
 docker build -t your-dockerhub-username/techclip-runpod:latest .
-
-# プッシュ
 docker push your-dockerhub-username/techclip-runpod:latest
 ```
 
@@ -42,12 +81,21 @@ docker push your-dockerhub-username/techclip-runpod:latest
 3. **New Template** をクリック
 4. 以下の設定を入力する:
 
+**Qwen テンプレート:**
+
 | 項目 | 値 |
 |------|-----|
 | Template Name | `techclip-qwen2.5-9b` |
 | Container Image | `your-dockerhub-username/techclip-runpod:latest` |
 | Container Disk | `20 GB` 以上 |
-| GPU | `RTX 4090` または `A100` 推奨（VRAM 24GB以上） |
+
+**Whisper テンプレート:**
+
+| 項目 | 値 |
+|------|-----|
+| Template Name | `techclip-faster-whisper` |
+| Container Image | `runpod/worker-faster_whisper:latest` |
+| Container Disk | `20 GB` 以上 |
 
 ### 3. サーバーレスエンドポイントの作成
 
@@ -57,48 +105,67 @@ docker push your-dockerhub-username/techclip-runpod:latest
 
 | 項目 | 推奨値 |
 |------|--------|
-| Endpoint Name | `techclip-qwen2.5` |
+| Endpoint Name | `techclip-qwen2.5` / `techclip-whisper` |
+| GPU | `RTX 4090` (AMPERE_24) 推奨 |
 | Min Provisioned Workers | `0`（コスト最適化） |
 | Max Workers | `3` |
 | Idle Timeout | `5` 秒 |
 | Execution Timeout | `300` 秒 |
 
 4. **Deploy** をクリック
-5. 作成されたエンドポイントIDをコピーする（例: `abc123def456`）
+5. 作成されたエンドポイントIDをコピーする
 
 ### 4. 環境変数の設定
-
-Cloudflare Workers の環境変数（`apps/api/.dev.vars` またはWranglerシークレット）に設定する。
 
 **ローカル開発 (`apps/api/.dev.vars`):**
 
 ```env
 RUNPOD_API_KEY=your_runpod_api_key_here
-RUNPOD_ENDPOINT_ID=your_endpoint_id_here
+RUNPOD_ENDPOINT_ID=your_qwen_endpoint_id_here
+RUNPOD_WHISPER_ENDPOINT_ID=your_whisper_endpoint_id_here
 ```
 
-**本番環境（Wranglerシークレット）:**
+**本番環境（Wrangler シークレット）:**
 
 ```bash
-# APIキーをシークレットとして登録
 wrangler secret put RUNPOD_API_KEY --env production
-
-# エンドポイントIDをシークレットとして登録
 wrangler secret put RUNPOD_ENDPOINT_ID --env production
+wrangler secret put RUNPOD_WHISPER_ENDPOINT_ID --env production
 ```
 
-### 5. RunPod APIキーの取得
+### 5. RunPod API キーの取得
 
 1. [RunPod アカウント設定](https://www.runpod.io/console/user/settings) を開く
 2. **API Keys** セクションで **+ API Key** をクリック
 3. キー名を入力して生成する（例: `techclip-production`）
 4. 生成されたキーをコピーして環境変数に設定する
 
+## 完全デプロイワークフロー
+
+両方のエンドポイントを一括でセットアップする手順:
+
+```bash
+# 1. Nix 開発環境に入る
+nix develop
+
+# 2. Qwen の Docker イメージをビルド・プッシュ
+export DOCKER_IMAGE=your-username/techclip-runpod:latest
+bash scripts/deploy-runpod.sh
+
+# 3. Qwen エンドポイントをプロビジョニング
+RUNPOD_API_KEY=xxx bash scripts/provision-runpod.sh \
+  --type qwen \
+  --image your-username/techclip-runpod:latest
+
+# 4. Whisper エンドポイントをプロビジョニング
+RUNPOD_API_KEY=xxx bash scripts/provision-runpod.sh --type whisper
+
+# 5. 表示されたエンドポイントIDを .dev.vars に設定
+```
+
 ## API リクエスト形式
 
-ハンドラーは2種類のリクエスト形式に対応している。
-
-### 要約用（prompt形式）
+### Qwen: 要約用（prompt 形式）
 
 ```json
 {
@@ -120,7 +187,7 @@ wrangler secret put RUNPOD_ENDPOINT_ID --env production
 }
 ```
 
-### 翻訳用（messages形式）
+### Qwen: 翻訳用（messages 形式）
 
 ```json
 {
@@ -154,23 +221,41 @@ wrangler secret put RUNPOD_ENDPOINT_ID --env production
 }
 ```
 
-## GPU要件
+### Whisper: 文字起こし
 
-| モデル | 必要VRAM | 推奨GPU |
-|--------|---------|---------|
-| Qwen2.5-7B-Instruct | 16GB以上 | RTX 4090 (24GB) |
-| Qwen2.5-14B-Instruct | 28GB以上 | A100 (40GB) |
+```json
+{
+  "input": {
+    "audio": "https://example.com/audio.mp3",
+    "model": "large-v3",
+    "language": "en"
+  }
+}
+```
+
+## GPU 要件
+
+| モデル | 必要 VRAM | 推奨 GPU |
+|--------|----------|---------|
+| Qwen2.5-7B-Instruct | 16GB 以上 | RTX 4090 (24GB) |
+| Faster Whisper large-v3 | 8GB 以上 | RTX 4090 (24GB) |
 
 ## トラブルシューティング
 
-### OOMエラーが発生する場合
+### OOM エラーが発生する場合
 
-`handler.py` の `gpu_memory_utilization` を下げる（例: `0.85`）か、より大きなVRAMのGPUを使用する。
+`handler.py` の `gpu_memory_utilization` を下げる（例: `0.85`）か、より大きな VRAM の GPU を使用する。
 
 ### コンテナ起動が遅い場合
 
-初回起動時はモデルのロードに1〜2分かかる。RunPodのFlashbootオプションを有効にすることで改善できる。
+初回起動時はモデルのロードに1〜2分かかる。RunPod の Flashboot オプションを有効にすることで改善できる。
 
 ### タイムアウトが発生する場合
 
 エンドポイントの **Execution Timeout** を増やす（推奨: 300秒）。
+
+### プロビジョニングスクリプトがエラーになる場合
+
+- `RUNPOD_API_KEY` が正しく設定されているか確認する
+- `jq` と `curl` がインストールされているか確認する（`nix develop` で自動的に入る）
+- `--dry-run` オプションでリクエスト内容を確認する
