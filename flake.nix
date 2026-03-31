@@ -10,6 +10,59 @@
     flake-utils.lib.eachDefaultSystem (system:
       let
         pkgs = nixpkgs.legacyPackages.${system};
+
+        # OWASP ZAP: クロスプラットフォーム版で macOS/Linux 両対応
+        zap = pkgs.stdenv.mkDerivation {
+          pname = "zap";
+          version = "2.17.0";
+          src = pkgs.fetchurl {
+            url = "https://github.com/zaproxy/zaproxy/releases/download/v2.17.0/ZAP_2.17.0_Crossplatform.zip";
+            hash = "sha256-lMj3Z7HC6U8Ntms65WUU1eP1pyjuG2x5jgyP4tYfv/A=";
+          };
+          nativeBuildInputs = [ pkgs.unzip ];
+          buildInputs = [ pkgs.jre ];
+          # https://github.com/zaproxy/zaproxy/blob/master/zap/src/main/java/org/parosproxy/paros/Constant.java
+          version_tag = "20012000";
+          unpackPhase = ''
+            unzip $src
+          '';
+          installPhase = ''
+            runHook preInstall
+            mkdir -p $out/{share/zap,bin}
+            cp -r ZAP_2.17.0/* $out/share/zap/
+
+            cat > "$out/bin/zap" << WRAPPER
+            #!/usr/bin/env bash
+            export PATH="${pkgs.lib.makeBinPath [ pkgs.jre ]}:\$PATH"
+            export JAVA_HOME="${pkgs.jre}"
+
+            # macOS: ~/Library/Application Support/ZAP
+            # Linux: ~/.ZAP
+            if [ "\$(uname)" = "Darwin" ]; then
+              ZAP_HOME="\$HOME/Library/Application Support/ZAP"
+            else
+              ZAP_HOME="\$HOME/.ZAP"
+            fi
+
+            if ! [ -f "\$ZAP_HOME/config.xml" ]; then
+              mkdir -p "\$ZAP_HOME"
+              head -n 2 $out/share/zap/xml/config.xml > "\$ZAP_HOME/config.xml"
+              echo "<version>${"$"}{version_tag}</version>" >> "\$ZAP_HOME/config.xml"
+              tail -n +3 $out/share/zap/xml/config.xml >> "\$ZAP_HOME/config.xml"
+            fi
+            exec "$out/share/zap/zap.sh" "\$@"
+            WRAPPER
+
+            chmod +x "$out/bin/zap"
+            runHook postInstall
+          '';
+          meta = {
+            description = "OWASP ZAP - Web application security scanner";
+            homepage = "https://www.zaproxy.org/";
+            license = pkgs.lib.licenses.asl20;
+            platforms = pkgs.lib.platforms.unix;
+          };
+        };
       in
       {
         devShells.default = pkgs.mkShell {
@@ -23,7 +76,7 @@
             git
             jq
             curl
-            docker-client
+            zap
           ];
 
           shellHook = ''
