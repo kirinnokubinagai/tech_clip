@@ -4,9 +4,9 @@ import { ArticleDetailSkeleton } from "../ArticleDetailSkeleton";
 
 describe("ArticleDetailSkeleton", () => {
   describe("レンダリング", () => {
-    it("記事詳細スケルトンがレンダリングできること", () => {
+    it("記事詳細スケルトンがレンダリングできること", async () => {
       // Arrange & Act
-      const { toJSON } = render(<ArticleDetailSkeleton />);
+      const { toJSON } = await render(<ArticleDetailSkeleton />);
 
       // Assert
       expect(toJSON()).not.toBeNull();

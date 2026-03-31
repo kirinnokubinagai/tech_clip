@@ -1,97 +1,97 @@
 import { fireEvent, render } from "@testing-library/react-native";
 
-import { containsText, findByTestId, queryByTestId } from "@/test-helpers";
-
 import { Input } from "../Input";
 
 describe("Input", () => {
   describe("レンダリング", () => {
-    it("ラベルが正しく表示されること", () => {
+    it("ラベルが正しく表示されること", async () => {
       // Arrange & Act
-      const { UNSAFE_root } = render(<Input label="メールアドレス" />);
+      const { getByText } = await render(<Input label="メールアドレス" />);
 
       // Assert
-      expect(containsText(UNSAFE_root, "メールアドレス")).toBe(true);
+      expect(getByText("メールアドレス")).toBeDefined();
     });
 
-    it("プレースホルダーが正しく表示されること", () => {
+    it("プレースホルダーが正しく表示されること", async () => {
       // Arrange & Act
-      const { UNSAFE_root } = render(<Input placeholder="example@domain.com" />);
+      const { getByTestId } = await render(<Input placeholder="example@domain.com" />);
 
       // Assert
-      const input = findByTestId(UNSAFE_root, "input-field");
+      const input = getByTestId("input-field");
       expect(input.props.placeholder).toBe("example@domain.com");
     });
 
-    it("ラベルなしでもレンダリングできること", () => {
+    it("ラベルなしでもレンダリングできること", async () => {
       // Arrange & Act
-      const { UNSAFE_root } = render(<Input placeholder="入力してください" />);
+      const { getByTestId } = await render(<Input placeholder="入力してください" />);
 
       // Assert
-      const input = findByTestId(UNSAFE_root, "input-field");
+      const input = getByTestId("input-field");
       expect(input.props.placeholder).toBe("入力してください");
     });
   });
 
   describe("エラー表示", () => {
-    it("エラーメッセージが表示されること", () => {
+    it("エラーメッセージが表示されること", async () => {
       // Arrange & Act
-      const { UNSAFE_root } = render(
+      const { getByText } = await render(
         <Input label="メール" error="メールアドレスの形式が正しくありません" />,
       );
 
       // Assert
-      expect(containsText(UNSAFE_root, "メールアドレスの形式が正しくありません")).toBe(true);
+      expect(getByText("メールアドレスの形式が正しくありません")).toBeDefined();
     });
 
-    it("エラーがない場合はエラーメッセージが表示されないこと", () => {
+    it("エラーがない場合はエラーメッセージが表示されないこと", async () => {
       // Arrange & Act
-      const { UNSAFE_root } = render(<Input label="メール" />);
+      const { queryByText } = await render(<Input label="メール" />);
 
       // Assert
-      expect(containsText(UNSAFE_root, "メールアドレスの形式が正しくありません")).toBe(false);
+      expect(queryByText("メールアドレスの形式が正しくありません")).toBeNull();
     });
   });
 
   describe("インタラクション", () => {
-    it("テキスト入力時にonChangeTextが呼ばれること", () => {
+    it("テキスト入力時にonChangeTextが呼ばれること", async () => {
       // Arrange
       const onChangeText = jest.fn();
-      const { UNSAFE_root } = render(<Input placeholder="入力" onChangeText={onChangeText} />);
+      const { getByTestId } = await render(
+        <Input placeholder="入力" onChangeText={onChangeText} />,
+      );
 
       // Act
-      fireEvent.changeText(findByTestId(UNSAFE_root, "input-field"), "テスト入力");
+      await fireEvent.changeText(getByTestId("input-field"), "テスト入力");
 
       // Assert
       expect(onChangeText).toHaveBeenCalledWith("テスト入力");
     });
 
-    it("値が正しく反映されること", () => {
+    it("値が正しく反映されること", async () => {
       // Arrange & Act
-      const { UNSAFE_root } = render(<Input value="初期値" />);
+      const { getByTestId } = await render(<Input value="初期値" />);
 
       // Assert
-      const input = findByTestId(UNSAFE_root, "input-field");
+      const input = getByTestId("input-field");
       expect(input.props.value).toBe("初期値");
     });
   });
 
   describe("プロパティ", () => {
-    it("secureTextEntryが正しく設定されること", () => {
+    it("secureTextEntryが正しく設定されること", async () => {
       // Arrange & Act
-      const { UNSAFE_root } = render(<Input placeholder="パスワード" secureTextEntry />);
+      const { getByTestId } = await render(<Input placeholder="パスワード" secureTextEntry />);
 
       // Assert
-      const input = findByTestId(UNSAFE_root, "input-field");
+      const input = getByTestId("input-field");
       expect(input.props.secureTextEntry).toBe(true);
     });
 
-    it("編集不可状態が正しく設定されること", () => {
+    it("編集不可状態が正しく設定されること", async () => {
       // Arrange & Act
-      const { UNSAFE_root } = render(<Input placeholder="読み取り専用" editable={false} />);
+      const { getByTestId } = await render(<Input placeholder="読み取り専用" editable={false} />);
 
       // Assert
-      const input = findByTestId(UNSAFE_root, "input-field");
+      const input = getByTestId("input-field");
       expect(input.props.editable).toBe(false);
     });
   });

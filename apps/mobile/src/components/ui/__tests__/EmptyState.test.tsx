@@ -1,56 +1,58 @@
 import { fireEvent, render } from "@testing-library/react-native";
 import { Text } from "react-native";
 
-import { containsText, findByTestId, queryByTestId } from "@/test-helpers";
-
 import { EmptyState } from "../EmptyState";
 
 describe("EmptyState", () => {
   describe("レンダリング", () => {
-    it("タイトルが正しく表示されること", () => {
+    it("タイトルが正しく表示されること", async () => {
       // Arrange & Act
-      const { UNSAFE_root } = render(
+      const { getByText } = await render(
         <EmptyState icon={<Text>icon</Text>} title="データがありません" />,
       );
 
       // Assert
-      expect(containsText(UNSAFE_root, "データがありません")).toBe(true);
+      expect(getByText("データがありません")).toBeDefined();
     });
 
-    it("アイコンが表示されること", () => {
+    it("アイコンが表示されること", async () => {
       // Arrange & Act
-      const { UNSAFE_root } = render(<EmptyState icon={<Text>test-icon</Text>} title="タイトル" />);
+      const { getByText } = await render(
+        <EmptyState icon={<Text>test-icon</Text>} title="タイトル" />,
+      );
 
       // Assert
-      expect(containsText(UNSAFE_root, "test-icon")).toBe(true);
+      expect(getByText("test-icon")).toBeDefined();
     });
 
-    it("説明文が表示されること", () => {
+    it("説明文が表示されること", async () => {
       // Arrange & Act
-      const { UNSAFE_root } = render(
+      const { getByText } = await render(
         <EmptyState icon={<Text>icon</Text>} title="タイトル" description="補足説明テキストです" />,
       );
 
       // Assert
-      expect(containsText(UNSAFE_root, "補足説明テキストです")).toBe(true);
+      expect(getByText("補足説明テキストです")).toBeDefined();
     });
 
-    it("説明文が未指定の場合は表示されないこと", () => {
+    it("説明文が未指定の場合は表示されないこと", async () => {
       // Arrange & Act
-      const { UNSAFE_root } = render(<EmptyState icon={<Text>icon</Text>} title="タイトル" />);
+      const { queryByText } = await render(
+        <EmptyState icon={<Text>icon</Text>} title="タイトル" />,
+      );
 
       // Assert
-      expect(containsText(UNSAFE_root, "補足説明テキストです")).toBe(false);
+      expect(queryByText("補足説明テキストです")).toBeNull();
     });
   });
 
   describe("アクションボタン", () => {
-    it("actionLabelとonAction指定時にボタンが表示されること", () => {
+    it("actionLabelとonAction指定時にボタンが表示されること", async () => {
       // Arrange
       const onAction = jest.fn();
 
       // Act
-      const { UNSAFE_root } = render(
+      const { getByText } = await render(
         <EmptyState
           icon={<Text>icon</Text>}
           title="タイトル"
@@ -60,13 +62,13 @@ describe("EmptyState", () => {
       );
 
       // Assert
-      expect(containsText(UNSAFE_root, "記事を追加")).toBe(true);
+      expect(getByText("記事を追加")).toBeDefined();
     });
 
-    it("ボタンタップ時にonActionが呼ばれること", () => {
+    it("ボタンタップ時にonActionが呼ばれること", async () => {
       // Arrange
       const onAction = jest.fn();
-      const { UNSAFE_root } = render(
+      const { getByTestId } = await render(
         <EmptyState
           icon={<Text>icon</Text>}
           title="タイトル"
@@ -76,25 +78,25 @@ describe("EmptyState", () => {
       );
 
       // Act
-      fireEvent.press(findByTestId(UNSAFE_root, "button"));
+      await fireEvent.press(getByTestId("button"));
 
       // Assert
       expect(onAction).toHaveBeenCalledTimes(1);
     });
 
-    it("actionLabelのみ指定でonAction未指定の場合ボタンが表示されないこと", () => {
+    it("actionLabelのみ指定でonAction未指定の場合ボタンが表示されないこと", async () => {
       // Arrange & Act
-      const { UNSAFE_root } = render(
+      const { queryByText } = await render(
         <EmptyState icon={<Text>icon</Text>} title="タイトル" actionLabel="追加する" />,
       );
 
       // Assert
-      expect(containsText(UNSAFE_root, "追加する")).toBe(false);
+      expect(queryByText("追加する")).toBeNull();
     });
 
-    it("actionLabelもonActionも未指定の場合ボタンが表示されないこと", () => {
+    it("actionLabelもonActionも未指定の場合ボタンが表示されないこと", async () => {
       // Arrange & Act
-      const { toJSON } = render(<EmptyState icon={<Text>icon</Text>} title="タイトル" />);
+      const { toJSON } = await render(<EmptyState icon={<Text>icon</Text>} title="タイトル" />);
 
       // Assert
       expect(toJSON()).not.toBeNull();

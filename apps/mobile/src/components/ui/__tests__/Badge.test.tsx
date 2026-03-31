@@ -1,51 +1,49 @@
 import { render } from "@testing-library/react-native";
 
-import { containsText } from "@/test-helpers";
-
 import { Badge } from "../Badge";
 
 describe("Badge", () => {
   describe("レンダリング", () => {
-    it("テキストが正しく表示されること", () => {
+    it("テキストが正しく表示されること", async () => {
       // Arrange & Act
-      const { UNSAFE_root } = render(<Badge>新着</Badge>);
+      const { getByText } = await render(<Badge>新着</Badge>);
 
       // Assert
-      expect(containsText(UNSAFE_root, "新着")).toBe(true);
+      expect(getByText("新着")).toBeDefined();
     });
   });
 
   describe("バリアント", () => {
-    it("デフォルトバリアントでレンダリングできること", () => {
+    it("デフォルトバリアントでレンダリングできること", async () => {
       // Arrange & Act
-      const { UNSAFE_root } = render(<Badge>デフォルト</Badge>);
+      const { getByText } = await render(<Badge>デフォルト</Badge>);
 
       // Assert
-      expect(containsText(UNSAFE_root, "デフォルト")).toBe(true);
+      expect(getByText("デフォルト")).toBeDefined();
     });
 
-    it("successバリアントでレンダリングできること", () => {
+    it("successバリアントでレンダリングできること", async () => {
       // Arrange & Act
-      const { UNSAFE_root } = render(<Badge variant="success">完了</Badge>);
+      const { getByText } = await render(<Badge variant="success">完了</Badge>);
 
       // Assert
-      expect(containsText(UNSAFE_root, "完了")).toBe(true);
+      expect(getByText("完了")).toBeDefined();
     });
 
-    it("warningバリアントでレンダリングできること", () => {
+    it("warningバリアントでレンダリングできること", async () => {
       // Arrange & Act
-      const { UNSAFE_root } = render(<Badge variant="warning">注意</Badge>);
+      const { getByText } = await render(<Badge variant="warning">注意</Badge>);
 
       // Assert
-      expect(containsText(UNSAFE_root, "注意")).toBe(true);
+      expect(getByText("注意")).toBeDefined();
     });
 
-    it("errorバリアントでレンダリングできること", () => {
+    it("errorバリアントでレンダリングできること", async () => {
       // Arrange & Act
-      const { UNSAFE_root } = render(<Badge variant="error">エラー</Badge>);
+      const { getByText } = await render(<Badge variant="error">エラー</Badge>);
 
       // Assert
-      expect(containsText(UNSAFE_root, "エラー")).toBe(true);
+      expect(getByText("エラー")).toBeDefined();
     });
   });
 });

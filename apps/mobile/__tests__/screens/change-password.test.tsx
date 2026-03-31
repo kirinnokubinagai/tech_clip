@@ -1,6 +1,5 @@
 import { fireEvent, render, waitFor } from "@testing-library/react-native";
 import { Alert } from "react-native";
-import type { ReactTestInstance } from "react-test-renderer";
 
 import ChangePasswordScreen, {
   validateChangePasswordForm,
@@ -63,20 +62,6 @@ jest.mock("@/hooks/use-toast", () => ({
 }));
 
 jest.spyOn(Alert, "alert");
-
-/**
- * propsでReactTestInstanceを検索するヘルパー
- */
-function findByProps(root: ReactTestInstance, props: Record<string, unknown>): ReactTestInstance {
-  return root.findByProps(props);
-}
-
-/**
- * placeholder属性でTextInputを検索するヘルパー
- */
-function findInputByPlaceholder(root: ReactTestInstance, placeholder: string): ReactTestInstance {
-  return root.findByProps({ placeholder });
-}
 
 beforeEach(() => {
   jest.clearAllMocks();
@@ -210,54 +195,54 @@ describe("validateChangePasswordForm", () => {
 
 describe("ChangePasswordScreen", () => {
   describe("画面表示", () => {
-    it("パスワード変更画面が表示されること", () => {
+    it("パスワード変更画面が表示されること", async () => {
       // Arrange & Act
-      const { UNSAFE_root } = render(<ChangePasswordScreen />);
+      const { getByTestId } = await render(<ChangePasswordScreen />);
 
       // Assert
-      expect(findByProps(UNSAFE_root, { testID: "change-password-screen" })).toBeDefined();
+      expect(getByTestId("change-password-screen")).toBeDefined();
     });
 
-    it("現在のパスワード入力フィールドが表示されること", () => {
+    it("現在のパスワード入力フィールドが表示されること", async () => {
       // Arrange & Act
-      const { UNSAFE_root } = render(<ChangePasswordScreen />);
+      const { getByPlaceholderText } = await render(<ChangePasswordScreen />);
 
       // Assert
-      expect(findInputByPlaceholder(UNSAFE_root, "現在のパスワードを入力")).toBeDefined();
+      expect(getByPlaceholderText("現在のパスワードを入力")).toBeDefined();
     });
 
-    it("新しいパスワード入力フィールドが表示されること", () => {
+    it("新しいパスワード入力フィールドが表示されること", async () => {
       // Arrange & Act
-      const { UNSAFE_root } = render(<ChangePasswordScreen />);
+      const { getByPlaceholderText } = await render(<ChangePasswordScreen />);
 
       // Assert
-      expect(findInputByPlaceholder(UNSAFE_root, "新しいパスワードを入力")).toBeDefined();
+      expect(getByPlaceholderText("新しいパスワードを入力")).toBeDefined();
     });
 
-    it("確認用パスワード入力フィールドが表示されること", () => {
+    it("確認用パスワード入力フィールドが表示されること", async () => {
       // Arrange & Act
-      const { UNSAFE_root } = render(<ChangePasswordScreen />);
+      const { getByPlaceholderText } = await render(<ChangePasswordScreen />);
 
       // Assert
-      expect(findInputByPlaceholder(UNSAFE_root, "新しいパスワードを再入力")).toBeDefined();
+      expect(getByPlaceholderText("新しいパスワードを再入力")).toBeDefined();
     });
 
-    it("変更するボタンが表示されること", () => {
+    it("変更するボタンが表示されること", async () => {
       // Arrange & Act
-      const { UNSAFE_root } = render(<ChangePasswordScreen />);
+      const { getByText } = await render(<ChangePasswordScreen />);
 
       // Assert
-      expect(findByProps(UNSAFE_root, { children: "変更する" })).toBeDefined();
+      expect(getByText("変更する")).toBeDefined();
     });
   });
 
   describe("ナビゲーション", () => {
-    it("戻るボタンを押すと前の画面に戻ること", () => {
+    it("戻るボタンを押すと前の画面に戻ること", async () => {
       // Arrange
-      const { UNSAFE_root } = render(<ChangePasswordScreen />);
+      const { getByTestId } = await render(<ChangePasswordScreen />);
 
       // Act
-      fireEvent.press(findByProps(UNSAFE_root, { testID: "change-password-back-button" }));
+      await fireEvent.press(getByTestId("change-password-back-button"));
 
       // Assert
       expect(mockBack).toHaveBeenCalledTimes(1);
@@ -267,77 +252,58 @@ describe("ChangePasswordScreen", () => {
   describe("バリデーション", () => {
     it("現在のパスワードが空の場合エラーメッセージが表示されること", async () => {
       // Arrange
-      const { UNSAFE_root } = render(<ChangePasswordScreen />);
-      fireEvent.changeText(
-        findInputByPlaceholder(UNSAFE_root, "新しいパスワードを入力"),
-        "NewPass123",
-      );
-      fireEvent.changeText(
-        findInputByPlaceholder(UNSAFE_root, "新しいパスワードを再入力"),
-        "NewPass123",
-      );
+      const { getByPlaceholderText, getByText } = await render(<ChangePasswordScreen />);
+      await fireEvent.changeText(getByPlaceholderText("新しいパスワードを入力"), "NewPass123");
+      await fireEvent.changeText(getByPlaceholderText("新しいパスワードを再入力"), "NewPass123");
 
       // Act
-      fireEvent.press(UNSAFE_root.findAllByProps({ children: "変更する" })[0]);
+      await fireEvent.press(getByText("変更する"));
 
       // Assert
       await waitFor(() => {
-        expect(
-          UNSAFE_root.findByProps({ children: "現在のパスワードを入力してください" }),
-        ).toBeDefined();
+        expect(getByText("現在のパスワードを入力してください")).toBeDefined();
       });
     });
 
     it("新しいパスワードが空の場合エラーメッセージが表示されること", async () => {
       // Arrange
-      const { UNSAFE_root } = render(<ChangePasswordScreen />);
-      fireEvent.changeText(
-        findInputByPlaceholder(UNSAFE_root, "現在のパスワードを入力"),
-        "OldPass123",
-      );
+      const { getByPlaceholderText, getByText } = await render(<ChangePasswordScreen />);
+      await fireEvent.changeText(getByPlaceholderText("現在のパスワードを入力"), "OldPass123");
 
       // Act
-      fireEvent.press(UNSAFE_root.findAllByProps({ children: "変更する" })[0]);
+      await fireEvent.press(getByText("変更する"));
 
       // Assert
       await waitFor(() => {
-        expect(
-          UNSAFE_root.findByProps({ children: "新しいパスワードを入力してください" }),
-        ).toBeDefined();
+        expect(getByText("新しいパスワードを入力してください")).toBeDefined();
       });
     });
 
     it("パスワードが一致しない場合エラーメッセージが表示されること", async () => {
       // Arrange
-      const { UNSAFE_root } = render(<ChangePasswordScreen />);
-      fireEvent.changeText(
-        findInputByPlaceholder(UNSAFE_root, "現在のパスワードを入力"),
-        "OldPass123",
-      );
-      fireEvent.changeText(
-        findInputByPlaceholder(UNSAFE_root, "新しいパスワードを入力"),
-        "NewPass123",
-      );
-      fireEvent.changeText(
-        findInputByPlaceholder(UNSAFE_root, "新しいパスワードを再入力"),
+      const { getByPlaceholderText, getByText } = await render(<ChangePasswordScreen />);
+      await fireEvent.changeText(getByPlaceholderText("現在のパスワードを入力"), "OldPass123");
+      await fireEvent.changeText(getByPlaceholderText("新しいパスワードを入力"), "NewPass123");
+      await fireEvent.changeText(
+        getByPlaceholderText("新しいパスワードを再入力"),
         "DifferentPass123",
       );
 
       // Act
-      fireEvent.press(UNSAFE_root.findAllByProps({ children: "変更する" })[0]);
+      await fireEvent.press(getByText("変更する"));
 
       // Assert
       await waitFor(() => {
-        expect(UNSAFE_root.findByProps({ children: "パスワードが一致しません" })).toBeDefined();
+        expect(getByText("パスワードが一致しません")).toBeDefined();
       });
     });
 
     it("バリデーションエラーがある場合changePasswordが呼ばれないこと", async () => {
       // Arrange
-      const { UNSAFE_root } = render(<ChangePasswordScreen />);
+      const { getByText } = await render(<ChangePasswordScreen />);
 
       // Act
-      fireEvent.press(UNSAFE_root.findAllByProps({ children: "変更する" })[0]);
+      await fireEvent.press(getByText("変更する"));
 
       // Assert
       await waitFor(() => {
@@ -350,22 +316,13 @@ describe("ChangePasswordScreen", () => {
     it("成功時にchangePasswordが正しい引数で呼ばれること", async () => {
       // Arrange
       mockChangePassword.mockResolvedValue(undefined);
-      const { UNSAFE_root } = render(<ChangePasswordScreen />);
-      fireEvent.changeText(
-        findInputByPlaceholder(UNSAFE_root, "現在のパスワードを入力"),
-        "OldPass123",
-      );
-      fireEvent.changeText(
-        findInputByPlaceholder(UNSAFE_root, "新しいパスワードを入力"),
-        "NewPass123",
-      );
-      fireEvent.changeText(
-        findInputByPlaceholder(UNSAFE_root, "新しいパスワードを再入力"),
-        "NewPass123",
-      );
+      const { getByPlaceholderText, getByText } = await render(<ChangePasswordScreen />);
+      await fireEvent.changeText(getByPlaceholderText("現在のパスワードを入力"), "OldPass123");
+      await fireEvent.changeText(getByPlaceholderText("新しいパスワードを入力"), "NewPass123");
+      await fireEvent.changeText(getByPlaceholderText("新しいパスワードを再入力"), "NewPass123");
 
       // Act
-      fireEvent.press(UNSAFE_root.findAllByProps({ children: "変更する" })[0]);
+      await fireEvent.press(getByText("変更する"));
 
       // Assert
       await waitFor(() => {
@@ -376,22 +333,13 @@ describe("ChangePasswordScreen", () => {
     it("成功後に前の画面に戻ること", async () => {
       // Arrange
       mockChangePassword.mockResolvedValue(undefined);
-      const { UNSAFE_root } = render(<ChangePasswordScreen />);
-      fireEvent.changeText(
-        findInputByPlaceholder(UNSAFE_root, "現在のパスワードを入力"),
-        "OldPass123",
-      );
-      fireEvent.changeText(
-        findInputByPlaceholder(UNSAFE_root, "新しいパスワードを入力"),
-        "NewPass123",
-      );
-      fireEvent.changeText(
-        findInputByPlaceholder(UNSAFE_root, "新しいパスワードを再入力"),
-        "NewPass123",
-      );
+      const { getByPlaceholderText, getByText } = await render(<ChangePasswordScreen />);
+      await fireEvent.changeText(getByPlaceholderText("現在のパスワードを入力"), "OldPass123");
+      await fireEvent.changeText(getByPlaceholderText("新しいパスワードを入力"), "NewPass123");
+      await fireEvent.changeText(getByPlaceholderText("新しいパスワードを再入力"), "NewPass123");
 
       // Act
-      fireEvent.press(UNSAFE_root.findAllByProps({ children: "変更する" })[0]);
+      await fireEvent.press(getByText("変更する"));
 
       // Assert
       await waitFor(() => {
@@ -404,22 +352,13 @@ describe("ChangePasswordScreen", () => {
     it("変更失敗時にエラーアラートが表示されること", async () => {
       // Arrange
       mockChangePassword.mockRejectedValue(new Error("現在のパスワードが正しくありません"));
-      const { UNSAFE_root } = render(<ChangePasswordScreen />);
-      fireEvent.changeText(
-        findInputByPlaceholder(UNSAFE_root, "現在のパスワードを入力"),
-        "WrongPass123",
-      );
-      fireEvent.changeText(
-        findInputByPlaceholder(UNSAFE_root, "新しいパスワードを入力"),
-        "NewPass123",
-      );
-      fireEvent.changeText(
-        findInputByPlaceholder(UNSAFE_root, "新しいパスワードを再入力"),
-        "NewPass123",
-      );
+      const { getByPlaceholderText, getByText } = await render(<ChangePasswordScreen />);
+      await fireEvent.changeText(getByPlaceholderText("現在のパスワードを入力"), "WrongPass123");
+      await fireEvent.changeText(getByPlaceholderText("新しいパスワードを入力"), "NewPass123");
+      await fireEvent.changeText(getByPlaceholderText("新しいパスワードを再入力"), "NewPass123");
 
       // Act
-      fireEvent.press(UNSAFE_root.findAllByProps({ children: "変更する" })[0]);
+      await fireEvent.press(getByText("変更する"));
 
       // Assert
       await waitFor(() => {
@@ -433,22 +372,13 @@ describe("ChangePasswordScreen", () => {
     it("変更失敗時に前の画面に戻らないこと", async () => {
       // Arrange
       mockChangePassword.mockRejectedValue(new Error("エラー"));
-      const { UNSAFE_root } = render(<ChangePasswordScreen />);
-      fireEvent.changeText(
-        findInputByPlaceholder(UNSAFE_root, "現在のパスワードを入力"),
-        "WrongPass123",
-      );
-      fireEvent.changeText(
-        findInputByPlaceholder(UNSAFE_root, "新しいパスワードを入力"),
-        "NewPass123",
-      );
-      fireEvent.changeText(
-        findInputByPlaceholder(UNSAFE_root, "新しいパスワードを再入力"),
-        "NewPass123",
-      );
+      const { getByPlaceholderText, getByText } = await render(<ChangePasswordScreen />);
+      await fireEvent.changeText(getByPlaceholderText("現在のパスワードを入力"), "WrongPass123");
+      await fireEvent.changeText(getByPlaceholderText("新しいパスワードを入力"), "NewPass123");
+      await fireEvent.changeText(getByPlaceholderText("新しいパスワードを再入力"), "NewPass123");
 
       // Act
-      fireEvent.press(UNSAFE_root.findAllByProps({ children: "変更する" })[0]);
+      await fireEvent.press(getByText("変更する"));
 
       // Assert
       await waitFor(() => {

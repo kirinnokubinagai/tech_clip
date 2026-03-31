@@ -10,17 +10,17 @@ beforeEach(() => {
 });
 
 describe("useConfirm", () => {
-  it("関数を返すこと", () => {
+  it("関数を返すこと", async () => {
     // Arrange & Act
-    const { result } = renderHook(() => useConfirm());
+    const { result } = await renderHook(() => useConfirm());
 
     // Assert
     expect(typeof result.current).toBe("function");
   });
 
-  it("呼び出し時にAlert.alertが呼ばれること", () => {
+  it("呼び出し時にAlert.alertが呼ばれること", async () => {
     // Arrange
-    const { result } = renderHook(() => useConfirm());
+    const { result } = await renderHook(() => useConfirm());
 
     // Act
     result.current({
@@ -33,9 +33,9 @@ describe("useConfirm", () => {
     expect(Alert.alert).toHaveBeenCalledTimes(1);
   });
 
-  it("プリセットオプションとマージされること", () => {
+  it("プリセットオプションとマージされること", async () => {
     // Arrange
-    const { result } = renderHook(() =>
+    const { result } = await renderHook(() =>
       useConfirm({
         variant: "warning",
         cancelLabel: "やめる",
@@ -56,9 +56,9 @@ describe("useConfirm", () => {
     expect(buttons[0].text).toBe("やめる");
   });
 
-  it("呼び出し時のオプションがプリセットを上書きすること", () => {
+  it("呼び出し時のオプションがプリセットを上書きすること", async () => {
     // Arrange
-    const { result } = renderHook(() =>
+    const { result } = await renderHook(() =>
       useConfirm({
         variant: "warning",
         confirmLabel: "続行する",

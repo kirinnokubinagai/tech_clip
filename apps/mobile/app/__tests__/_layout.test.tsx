@@ -92,7 +92,7 @@ describe("RootLayout", () => {
   describe("RevenueCat初期化", () => {
     it("アプリ起動時にconfigureRevenueCatが呼ばれること", async () => {
       // Act
-      render(<RootLayout />);
+      await render(<RootLayout />);
 
       // Assert
       await waitFor(() => {
@@ -105,7 +105,7 @@ describe("RootLayout", () => {
       mockedConfigureRevenueCat.mockRejectedValue(new Error("RevenueCat設定に失敗しました"));
 
       // Act
-      render(<RootLayout />);
+      await render(<RootLayout />);
 
       // Assert - エラーが発生してもconfigureRevenueCatが呼ばれること
       await waitFor(() => {

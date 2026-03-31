@@ -4,26 +4,26 @@ import { Skeleton } from "../Skeleton";
 
 describe("Skeleton", () => {
   describe("レンダリング", () => {
-    it("デフォルトプロパティでレンダリングできること", () => {
+    it("デフォルトプロパティでレンダリングできること", async () => {
       // Arrange & Act
-      const { toJSON } = render(<Skeleton />);
+      const { toJSON } = await render(<Skeleton />);
 
       // Assert
       expect(toJSON()).not.toBeNull();
     });
 
-    it("幅と高さを指定してレンダリングできること", () => {
+    it("幅と高さを指定してレンダリングできること", async () => {
       // Arrange & Act
-      const { toJSON } = render(<Skeleton width={200} height={20} />);
+      const { toJSON } = await render(<Skeleton width={200} height={20} />);
 
       // Assert
       const tree = toJSON();
       expect(tree).not.toBeNull();
     });
 
-    it("パーセント指定でレンダリングできること", () => {
+    it("パーセント指定でレンダリングできること", async () => {
       // Arrange & Act
-      const { toJSON } = render(<Skeleton width="100%" height={16} />);
+      const { toJSON } = await render(<Skeleton width="100%" height={16} />);
 
       // Assert
       expect(toJSON()).not.toBeNull();
@@ -31,17 +31,17 @@ describe("Skeleton", () => {
   });
 
   describe("プロパティ", () => {
-    it("カスタムborderRadiusが適用されること", () => {
+    it("カスタムborderRadiusが適用されること", async () => {
       // Arrange & Act
-      const { toJSON } = render(<Skeleton width={100} height={100} borderRadius={50} />);
+      const { toJSON } = await render(<Skeleton width={100} height={100} borderRadius={50} />);
 
       // Assert
       expect(toJSON()).not.toBeNull();
     });
 
-    it("追加のclassNameが適用されること", () => {
+    it("追加のclassNameが適用されること", async () => {
       // Arrange & Act
-      const { toJSON } = render(<Skeleton width={100} height={20} className="mt-2" />);
+      const { toJSON } = await render(<Skeleton width={100} height={20} className="mt-2" />);
 
       // Assert
       expect(toJSON()).not.toBeNull();

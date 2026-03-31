@@ -158,7 +158,7 @@ describe("useAuthStore", () => {
   });
 
   describe("セッション期限切れハンドリング", () => {
-    it("初期状態でsessionExpiredMessageがnullであること", () => {
+    it("初期状態でsessionExpiredMessageがnullであること", async () => {
       // Arrange & Act
       const state = useAuthStore.getState();
 

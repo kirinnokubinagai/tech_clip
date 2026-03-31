@@ -1,114 +1,111 @@
 import { fireEvent, render } from "@testing-library/react-native";
-import type { ReactTestInstance } from "react-test-renderer";
-
-import { containsText, findByTestId } from "@/test-helpers";
 
 import { Button } from "../Button";
 
 describe("Button", () => {
   describe("レンダリング", () => {
-    it("テキストが正しく表示されること", () => {
+    it("テキストが正しく表示されること", async () => {
       // Arrange & Act
-      const { UNSAFE_root } = render(<Button>テスト</Button>);
+      const { getByText } = await render(<Button>テスト</Button>);
 
       // Assert
-      expect(containsText(UNSAFE_root, "テスト")).toBe(true);
+      expect(getByText("テスト")).toBeDefined();
     });
 
-    it("デフォルトでprimaryバリアントが適用されること", () => {
+    it("デフォルトでprimaryバリアントが適用されること", async () => {
       // Arrange & Act
-      const { UNSAFE_root } = render(<Button>ボタン</Button>);
+      const { getByTestId } = await render(<Button>ボタン</Button>);
 
       // Assert
-      const button = findByTestId(UNSAFE_root, "button");
+      const button = getByTestId("button");
       expect(button).toBeDefined();
     });
   });
 
   describe("バリアント", () => {
-    it("secondaryバリアントでレンダリングできること", () => {
+    it("secondaryバリアントでレンダリングできること", async () => {
       // Arrange & Act
-      const { UNSAFE_root } = render(<Button variant="secondary">セカンダリ</Button>);
+      const { getByText } = await render(<Button variant="secondary">セカンダリ</Button>);
 
       // Assert
-      expect(containsText(UNSAFE_root, "セカンダリ")).toBe(true);
+      expect(getByText("セカンダリ")).toBeDefined();
     });
 
-    it("outlineバリアントでレンダリングできること", () => {
+    it("outlineバリアントでレンダリングできること", async () => {
       // Arrange & Act
-      const { UNSAFE_root } = render(<Button variant="outline">アウトライン</Button>);
+      const { getByText } = await render(<Button variant="outline">アウトライン</Button>);
 
       // Assert
-      expect(containsText(UNSAFE_root, "アウトライン")).toBe(true);
+      expect(getByText("アウトライン")).toBeDefined();
     });
 
-    it("ghostバリアントでレンダリングできること", () => {
+    it("ghostバリアントでレンダリングできること", async () => {
       // Arrange & Act
-      const { UNSAFE_root } = render(<Button variant="ghost">ゴースト</Button>);
+      const { getByText } = await render(<Button variant="ghost">ゴースト</Button>);
 
       // Assert
-      expect(containsText(UNSAFE_root, "ゴースト")).toBe(true);
+      expect(getByText("ゴースト")).toBeDefined();
     });
 
-    it("dangerバリアントでレンダリングできること", () => {
+    it("dangerバリアントでレンダリングできること", async () => {
       // Arrange & Act
-      const { UNSAFE_root } = render(<Button variant="danger">削除</Button>);
+      const { getByText } = await render(<Button variant="danger">削除</Button>);
 
       // Assert
-      expect(containsText(UNSAFE_root, "削除")).toBe(true);
+      expect(getByText("削除")).toBeDefined();
     });
   });
 
   describe("サイズ", () => {
-    it("smサイズでレンダリングできること", () => {
+    it("smサイズでレンダリングできること", async () => {
       // Arrange & Act
-      const { UNSAFE_root } = render(<Button size="sm">小</Button>);
+      const { getByText } = await render(<Button size="sm">小</Button>);
 
       // Assert
-      expect(containsText(UNSAFE_root, "小")).toBe(true);
+      expect(getByText("小")).toBeDefined();
     });
 
-    it("lgサイズでレンダリングできること", () => {
+    it("lgサイズでレンダリングできること", async () => {
       // Arrange & Act
-      const { UNSAFE_root } = render(<Button size="lg">大</Button>);
+      const { getByText } = await render(<Button size="lg">大</Button>);
 
       // Assert
-      expect(containsText(UNSAFE_root, "大")).toBe(true);
+      expect(getByText("大")).toBeDefined();
     });
   });
 
   describe("インタラクション", () => {
-    it("タップ時にonPressが呼ばれること", () => {
+    it("タップ時にonPressが呼ばれること", async () => {
       // Arrange
       const onPress = jest.fn();
-      const { UNSAFE_root } = render(<Button onPress={onPress}>タップ</Button>);
+      const { getByTestId } = await render(<Button onPress={onPress}>タップ</Button>);
 
       // Act
-      fireEvent.press(findByTestId(UNSAFE_root, "button"));
+      await fireEvent.press(getByTestId("button"));
 
       // Assert
       expect(onPress).toHaveBeenCalledTimes(1);
     });
 
-    it("disabled時にボタンが無効化されること", () => {
+    it("disabled時にボタンが無効化されること", async () => {
       // Arrange & Act
-      const { UNSAFE_root } = render(
+      const { getByTestId } = await render(
         <Button onPress={jest.fn()} disabled>
           無効
         </Button>,
       );
 
       // Assert
-      const button = findByTestId(UNSAFE_root, "button");
-      expect(button.props.disabled).toBe(true);
+      const button = getByTestId("button");
+      expect(button.props.accessibilityState?.disabled).toBe(true);
     });
 
-    it("disabled時にアクセシビリティ状態が正しいこと", () => {
+    it("disabled時にアクセシビリティ状態が正しいこと", async () => {
       // Arrange & Act
-      const { UNSAFE_root } = render(<Button disabled>無効</Button>);
+      const { getByTestId } = await render(<Button disabled>無効</Button>);
 
       // Assert
-      const button = findByTestId(UNSAFE_root, "button");
+      const button = getByTestId("button");
       expect(button.props.accessibilityState).toEqual({ disabled: true });
     });
   });

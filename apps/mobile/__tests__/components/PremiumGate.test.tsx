@@ -38,144 +38,120 @@ const BASE_PROPS = {
   onClose: jest.fn(),
 };
 
-/**
- * レンダリングされたコンポーネントからTextノードのchildren一覧を取得する
- */
-function getAllTextContent(
-  unsafeGetAllByType: <P>(
-    type: React.ComponentType<P>,
-  ) => Array<{ props: Record<string, unknown> }>,
-): string[] {
-  const textNodes = unsafeGetAllByType(Text);
-  return textNodes
-    .map((node) => {
-      const children = node.props.children;
-      if (typeof children === "string") return children;
-      if (typeof children === "number") return String(children);
-      return null;
-    })
-    .filter((text): text is string => text !== null);
-}
-
 describe("PremiumGate", () => {
   beforeEach(() => {
     jest.clearAllMocks();
   });
 
   describe("レンダリング", () => {
-    it("プレミアムプランのタイトルが表示されること", () => {
+    it("プレミアムプランのタイトルが表示されること", async () => {
       // Arrange & Act
-      const { UNSAFE_getAllByType } = render(<PremiumGate {...BASE_PROPS} />);
-      const texts = getAllTextContent(UNSAFE_getAllByType);
+      const { getByText } = await render(<PremiumGate {...BASE_PROPS} />);
 
       // Assert
-      expect(texts.some((t) => t === "プレミアムプラン")).toBe(true);
+      expect(getByText("プレミアムプラン")).toBeDefined();
     });
 
-    it("現在の使用回数と上限が表示されること", () => {
+    it("現在の使用回数と上限が表示されること", async () => {
       // Arrange & Act
-      const { UNSAFE_getAllByType } = render(<PremiumGate {...BASE_PROPS} />);
-      const texts = getAllTextContent(UNSAFE_getAllByType);
+      const { getByText } = await render(<PremiumGate {...BASE_PROPS} />);
 
       // Assert
-      expect(texts.some((t) => t === "5 / 5")).toBe(true);
+      expect(getByText("5 / 5")).toBeDefined();
     });
 
-    it("プレミアム機能一覧が表示されること", () => {
+    it("プレミアム機能一覧が表示されること", async () => {
       // Arrange & Act
-      const { UNSAFE_getAllByType } = render(<PremiumGate {...BASE_PROPS} />);
-      const texts = getAllTextContent(UNSAFE_getAllByType);
+      const { getByText } = await render(<PremiumGate {...BASE_PROPS} />);
 
       // Assert
-      expect(texts).toContain("AI要約（無制限）");
-      expect(texts).toContain("AI翻訳（無制限）");
-      expect(texts).toContain("優先サポート");
+      expect(getByText("AI要約（無制限）")).toBeDefined();
+      expect(getByText("AI翻訳（無制限）")).toBeDefined();
+      expect(getByText("優先サポート")).toBeDefined();
     });
 
-    it("購入ボタンが表示されること", () => {
+    it("購入ボタンが表示されること", async () => {
       // Arrange & Act
-      const { getByLabelText } = render(<PremiumGate {...BASE_PROPS} />);
+      const { getByLabelText } = await render(<PremiumGate {...BASE_PROPS} />);
 
       // Assert
       expect(getByLabelText("プレミアムプランを購入する")).toBeDefined();
     });
 
-    it("閉じるボタンが表示されること", () => {
+    it("閉じるボタンが表示されること", async () => {
       // Arrange & Act
-      const { getByLabelText } = render(<PremiumGate {...BASE_PROPS} />);
+      const { getByLabelText } = await render(<PremiumGate {...BASE_PROPS} />);
 
       // Assert
       expect(getByLabelText("閉じる")).toBeDefined();
     });
 
-    it("featuresが空配列の場合も正常にレンダリングできること", () => {
+    it("featuresが空配列の場合も正常にレンダリングできること", async () => {
       // Arrange
       const props = { ...BASE_PROPS, features: [] };
 
       // Act
-      const { UNSAFE_getAllByType } = render(<PremiumGate {...props} />);
-      const texts = getAllTextContent(UNSAFE_getAllByType);
+      const { getByText } = await render(<PremiumGate {...props} />);
 
       // Assert
-      expect(texts.some((t) => t === "プレミアムプラン")).toBe(true);
+      expect(getByText("プレミアムプラン")).toBeDefined();
     });
 
-    it("上限超過メッセージが表示されること", () => {
+    it("上限超過メッセージが表示されること", async () => {
       // Arrange & Act
-      const { UNSAFE_getAllByType } = render(<PremiumGate {...BASE_PROPS} />);
-      const texts = getAllTextContent(UNSAFE_getAllByType);
+      const { getByText } = await render(<PremiumGate {...BASE_PROPS} />);
 
       // Assert
-      expect(texts).toContain("無料プランの上限に達しました");
+      expect(getByText("無料プランの上限に達しました")).toBeDefined();
     });
   });
 
   describe("使用量表示", () => {
-    it("currentUsageが0の場合も正常に表示されること", () => {
+    it("currentUsageが0の場合も正常に表示されること", async () => {
       // Arrange
       const props = { ...BASE_PROPS, currentUsage: 0, maxUsage: 10 };
 
       // Act
-      const { UNSAFE_getAllByType } = render(<PremiumGate {...props} />);
-      const texts = getAllTextContent(UNSAFE_getAllByType);
+      const { getByText } = await render(<PremiumGate {...props} />);
 
       // Assert
-      expect(texts.some((t) => t === "0 / 10")).toBe(true);
+      expect(getByText("0 / 10")).toBeDefined();
     });
 
-    it("currentUsageとmaxUsageが同じ値の場合に正しく表示されること", () => {
+    it("currentUsageとmaxUsageが同じ値の場合に正しく表示されること", async () => {
       // Arrange
       const props = { ...BASE_PROPS, currentUsage: 3, maxUsage: 3 };
 
       // Act
-      const { UNSAFE_getAllByType } = render(<PremiumGate {...props} />);
-      const texts = getAllTextContent(UNSAFE_getAllByType);
+      const { getByText } = await render(<PremiumGate {...props} />);
 
       // Assert
-      expect(texts.some((t) => t === "3 / 3")).toBe(true);
+      expect(getByText("3 / 3")).toBeDefined();
     });
   });
 
   describe("インタラクション", () => {
-    it("購入ボタンタップ時にonPurchaseが呼ばれること", () => {
+    it("購入ボタンタップ時にonPurchaseが呼ばれること", async () => {
       // Arrange
       const onPurchase = jest.fn();
-      const { getByLabelText } = render(<PremiumGate {...BASE_PROPS} onPurchase={onPurchase} />);
+      const { getByLabelText } = await render(
+        <PremiumGate {...BASE_PROPS} onPurchase={onPurchase} />,
+      );
 
       // Act
-      fireEvent.press(getByLabelText("プレミアムプランを購入する"));
+      await fireEvent.press(getByLabelText("プレミアムプランを購入する"));
 
       // Assert
       expect(onPurchase).toHaveBeenCalledTimes(1);
     });
 
-    it("閉じるボタンタップ時にonCloseが呼ばれること", () => {
+    it("閉じるボタンタップ時にonCloseが呼ばれること", async () => {
       // Arrange
       const onClose = jest.fn();
-      const { getByLabelText } = render(<PremiumGate {...BASE_PROPS} onClose={onClose} />);
+      const { getByLabelText } = await render(<PremiumGate {...BASE_PROPS} onClose={onClose} />);
 
       // Act
-      fireEvent.press(getByLabelText("閉じる"));
+      await fireEvent.press(getByLabelText("閉じる"));
 
       // Assert
       expect(onClose).toHaveBeenCalledTimes(1);
@@ -183,17 +159,17 @@ describe("PremiumGate", () => {
   });
 
   describe("アクセシビリティ", () => {
-    it("購入ボタンにaccessibilityLabelが設定されていること", () => {
+    it("購入ボタンにaccessibilityLabelが設定されていること", async () => {
       // Arrange & Act
-      const { getByLabelText } = render(<PremiumGate {...BASE_PROPS} />);
+      const { getByLabelText } = await render(<PremiumGate {...BASE_PROPS} />);
 
       // Assert
       expect(getByLabelText("プレミアムプランを購入する")).toBeDefined();
     });
 
-    it("閉じるボタンにaccessibilityLabelが設定されていること", () => {
+    it("閉じるボタンにaccessibilityLabelが設定されていること", async () => {
       // Arrange & Act
-      const { getByLabelText } = render(<PremiumGate {...BASE_PROPS} />);
+      const { getByLabelText } = await render(<PremiumGate {...BASE_PROPS} />);
 
       // Assert
       expect(getByLabelText("閉じる")).toBeDefined();

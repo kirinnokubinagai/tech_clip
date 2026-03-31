@@ -1,26 +1,24 @@
 import { render } from "@testing-library/react-native";
 
-import { containsText, findByTestId } from "@/test-helpers";
-
 import { SOURCE_CONFIG, SourceBadge } from "../SourceBadge";
 import type { SourceName } from "../SourceBadge";
 
 describe("SourceBadge", () => {
   describe("レンダリング", () => {
-    it("ソース名が正しく表示されること", () => {
+    it("ソース名が正しく表示されること", async () => {
       // Arrange & Act
-      const { UNSAFE_root } = render(<SourceBadge source="zenn" />);
+      const { getByText } = await render(<SourceBadge source="zenn" />);
 
       // Assert
-      expect(containsText(UNSAFE_root, "Zenn")).toBe(true);
+      expect(getByText("Zenn")).toBeDefined();
     });
 
-    it("表示ラベルがSOURCE_CONFIGに基づくこと", () => {
+    it("表示ラベルがSOURCE_CONFIGに基づくこと", async () => {
       // Arrange & Act
-      const { UNSAFE_root } = render(<SourceBadge source="hacker_news" />);
+      const { getByText } = await render(<SourceBadge source="hacker_news" />);
 
       // Assert
-      expect(containsText(UNSAFE_root, "Hacker News")).toBe(true);
+      expect(getByText("Hacker News")).toBeDefined();
     });
   });
 
@@ -47,18 +45,18 @@ describe("SourceBadge", () => {
       "itmedia",
     ];
 
-    it("SOURCE_CONFIGが18サイト分の設定を持つこと", () => {
+    it("SOURCE_CONFIGが18サイト分の設定を持つこと", async () => {
       // Assert
       expect(Object.keys(SOURCE_CONFIG)).toHaveLength(18);
     });
 
-    it.each(ALL_SOURCES)("%s のバッジがレンダリングできること", (source) => {
+    it.each(ALL_SOURCES)("%s のバッジがレンダリングできること", async (source) => {
       // Arrange & Act
-      const { UNSAFE_root } = render(<SourceBadge source={source} />);
+      const { getByText } = await render(<SourceBadge source={source} />);
 
       // Assert
       const config = SOURCE_CONFIG[source];
-      expect(containsText(UNSAFE_root, config.label)).toBe(true);
+      expect(getByText(config.label)).toBeDefined();
     });
 
     it.each(ALL_SOURCES)("%s のSOURCE_CONFIGにlabelとcolorが定義されていること", (source) => {
@@ -70,30 +68,30 @@ describe("SourceBadge", () => {
   });
 
   describe("サイズ", () => {
-    it("デフォルトサイズ(sm)でレンダリングできること", () => {
+    it("デフォルトサイズ(sm)でレンダリングできること", async () => {
       // Arrange & Act
-      const { UNSAFE_root } = render(<SourceBadge source="zenn" />);
+      const { getByText } = await render(<SourceBadge source="zenn" />);
 
       // Assert
-      expect(containsText(UNSAFE_root, "Zenn")).toBe(true);
+      expect(getByText("Zenn")).toBeDefined();
     });
 
-    it("mdサイズでレンダリングできること", () => {
+    it("mdサイズでレンダリングできること", async () => {
       // Arrange & Act
-      const { UNSAFE_root } = render(<SourceBadge source="zenn" size="md" />);
+      const { getByText } = await render(<SourceBadge source="zenn" size="md" />);
 
       // Assert
-      expect(containsText(UNSAFE_root, "Zenn")).toBe(true);
+      expect(getByText("Zenn")).toBeDefined();
     });
   });
 
   describe("アクセシビリティ", () => {
-    it("accessibilityLabelが設定されること", () => {
+    it("accessibilityLabelが設定されること", async () => {
       // Arrange & Act
-      const { UNSAFE_root } = render(<SourceBadge source="qiita" />);
+      const { getByTestId } = await render(<SourceBadge source="qiita" />);
 
       // Assert
-      const badge = findByTestId(UNSAFE_root, "source-badge");
+      const badge = getByTestId("source-badge");
       expect(badge.props.accessibilityLabel).toBe("Qiita");
     });
   });

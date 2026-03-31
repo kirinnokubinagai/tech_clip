@@ -1,20 +1,7 @@
 import { fireEvent, render } from "@testing-library/react-native";
 import { Text, View } from "react-native";
-import type { ReactTestInstance } from "react-test-renderer";
 
 import { ErrorBoundary } from "../../src/components/ErrorBoundary";
-
-/**
- * testIDでReactTestInstanceを検索するヘルパー
- */
-function findByTestId(root: ReactTestInstance, testId: string): ReactTestInstance {
-  return root.findByProps({ testID: testId });
-}
-
-function queryByTestId(root: ReactTestInstance, testId: string): ReactTestInstance | null {
-  const results = root.findAllByProps({ testID: testId });
-  return results.length > 0 ? results[0] : null;
-}
 
 /** テスト用エラーをthrowするコンポーネント */
 function ThrowingComponent({ shouldThrow }: { shouldThrow: boolean }) {
@@ -29,7 +16,6 @@ const originalConsoleError = console.error;
 
 describe("ErrorBoundary", () => {
   beforeEach(() => {
-    // Reactのエラーバウンダリはconsole.errorを出力するため抑制
     console.error = jest.fn();
   });
 
@@ -38,129 +24,127 @@ describe("ErrorBoundary", () => {
   });
 
   describe("正常時", () => {
-    it("エラーが発生しない場合は子コンポーネントが表示されること", () => {
+    it("エラーが発生しない場合は子コンポーネントが表示されること", async () => {
       // Arrange & Act
-      const { UNSAFE_root } = render(
+      const { getByTestId } = await render(
         <ErrorBoundary>
           <ThrowingComponent shouldThrow={false} />
         </ErrorBoundary>,
       );
 
       // Assert
-      expect(findByTestId(UNSAFE_root, "normal-content")).toBeDefined();
+      expect(getByTestId("normal-content")).toBeDefined();
     });
 
-    it("エラーが発生しない場合はフォールバックUIが表示されないこと", () => {
+    it("エラーが発生しない場合はフォールバックUIが表示されないこと", async () => {
       // Arrange & Act
-      const { UNSAFE_root } = render(
+      const { queryByTestId } = await render(
         <ErrorBoundary>
           <ThrowingComponent shouldThrow={false} />
         </ErrorBoundary>,
       );
 
       // Assert
-      expect(queryByTestId(UNSAFE_root, "error-boundary-fallback")).toBeNull();
+      expect(queryByTestId("error-boundary-fallback")).toBeNull();
     });
   });
 
   describe("エラー発生時", () => {
-    it("エラーが発生した場合はフォールバックUIが表示されること", () => {
+    it("エラーが発生した場合はフォールバックUIが表示されること", async () => {
       // Arrange & Act
-      const { UNSAFE_root } = render(
+      const { getByTestId } = await render(
         <ErrorBoundary>
           <ThrowingComponent shouldThrow={true} />
         </ErrorBoundary>,
       );
 
       // Assert
-      expect(findByTestId(UNSAFE_root, "error-boundary-fallback")).toBeDefined();
+      expect(getByTestId("error-boundary-fallback")).toBeDefined();
     });
 
-    it("エラーが発生した場合は子コンポーネントが非表示になること", () => {
+    it("エラーが発生した場合は子コンポーネントが非表示になること", async () => {
       // Arrange & Act
-      const { UNSAFE_root } = render(
+      const { queryByTestId } = await render(
         <ErrorBoundary>
           <ThrowingComponent shouldThrow={true} />
         </ErrorBoundary>,
       );
 
       // Assert
-      expect(queryByTestId(UNSAFE_root, "normal-content")).toBeNull();
+      expect(queryByTestId("normal-content")).toBeNull();
     });
 
-    it("エラーアイコンが表示されること", () => {
+    it("エラーアイコンが表示されること", async () => {
       // Arrange & Act
-      const { UNSAFE_root } = render(
+      const { getByTestId } = await render(
         <ErrorBoundary>
           <ThrowingComponent shouldThrow={true} />
         </ErrorBoundary>,
       );
 
       // Assert
-      expect(findByTestId(UNSAFE_root, "error-boundary-icon")).toBeDefined();
+      expect(getByTestId("error-boundary-icon")).toBeDefined();
     });
 
-    it("再試行ボタンが表示されること", () => {
+    it("再試行ボタンが表示されること", async () => {
       // Arrange & Act
-      const { UNSAFE_root } = render(
+      const { getByTestId } = await render(
         <ErrorBoundary>
           <ThrowingComponent shouldThrow={true} />
         </ErrorBoundary>,
       );
 
       // Assert
-      expect(findByTestId(UNSAFE_root, "error-boundary-retry")).toBeDefined();
+      expect(getByTestId("error-boundary-retry")).toBeDefined();
     });
   });
 
   describe("カスタムfallback", () => {
-    it("fallbackが指定された場合はそちらが表示されること", () => {
+    it("fallbackが指定された場合はそちらが表示されること", async () => {
       // Arrange
       const CustomFallback = <View testID="custom-fallback" />;
 
       // Act
-      const { UNSAFE_root } = render(
+      const { getByTestId, queryByTestId } = await render(
         <ErrorBoundary fallback={CustomFallback}>
           <ThrowingComponent shouldThrow={true} />
         </ErrorBoundary>,
       );
 
       // Assert
-      expect(findByTestId(UNSAFE_root, "custom-fallback")).toBeDefined();
-      expect(queryByTestId(UNSAFE_root, "error-boundary-fallback")).toBeNull();
+      expect(getByTestId("custom-fallback")).toBeDefined();
+      expect(queryByTestId("error-boundary-fallback")).toBeNull();
     });
   });
 
   describe("再試行", () => {
-    it("再試行ボタンを押すとエラー状態がリセットされること", () => {
+    it("再試行ボタンを押すとエラー状態がリセットされること", async () => {
       // Arrange
-      const { UNSAFE_root } = render(
+      const { getByTestId } = await render(
         <ErrorBoundary>
           <ThrowingComponent shouldThrow={true} />
         </ErrorBoundary>,
       );
 
       // Act
-      fireEvent.press(findByTestId(UNSAFE_root, "error-boundary-retry"));
+      await fireEvent.press(getByTestId("error-boundary-retry"));
 
-      // Assert（リセット後は再びレンダリングを試みる。ThrowingComponentは再度エラーをthrowするため
-      // フォールバックが表示されるが、リトライボタンの動作自体は確認できる）
-      expect(findByTestId(UNSAFE_root, "error-boundary-fallback")).toBeDefined();
+      // Assert
+      expect(getByTestId("error-boundary-fallback")).toBeDefined();
     });
   });
 
   describe("エラーメッセージ表示", () => {
-    it("エラーメッセージがフォールバックUIに含まれること", () => {
+    it("エラーメッセージがフォールバックUIに含まれること", async () => {
       // Arrange & Act
-      const { UNSAFE_getAllByType } = render(
+      const { getByText } = await render(
         <ErrorBoundary>
           <ThrowingComponent shouldThrow={true} />
         </ErrorBoundary>,
       );
-      const texts = UNSAFE_getAllByType(Text).map((n) => n.props.children);
 
       // Assert
-      expect(texts).toContain("テスト用エラー");
+      expect(getByText("テスト用エラー")).toBeDefined();
     });
   });
 });

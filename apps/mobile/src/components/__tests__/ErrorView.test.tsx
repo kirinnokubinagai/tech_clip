@@ -1,117 +1,111 @@
 import { fireEvent, render } from "@testing-library/react-native";
 
-import { containsText, findByTestId, queryByTestId } from "@/test-helpers";
-
 import { ErrorView } from "../ErrorView";
 
 describe("ErrorView", () => {
   describe("デフォルト表示", () => {
-    it("デフォルトのgenericエラータイトルが表示されること", () => {
+    it("デフォルトのgenericエラータイトルが表示されること", async () => {
       // Arrange & Act
-      const { UNSAFE_root } = render(<ErrorView />);
+      const { getByTestId } = await render(<ErrorView />);
 
       // Assert
-      expect(findByTestId(UNSAFE_root, "error-view-title").props.children).toBe(
-        "エラーが発生しました",
-      );
+      expect(getByTestId("error-view-title").props.children).toBe("エラーが発生しました");
     });
 
-    it("デフォルトのgenericエラーメッセージが表示されること", () => {
+    it("デフォルトのgenericエラーメッセージが表示されること", async () => {
       // Arrange & Act
-      const { UNSAFE_root } = render(<ErrorView />);
+      const { getByTestId } = await render(<ErrorView />);
 
       // Assert
-      expect(findByTestId(UNSAFE_root, "error-view-message").props.children).toBe(
+      expect(getByTestId("error-view-message").props.children).toBe(
         "問題が発生しました。再度お試しください",
       );
     });
 
-    it("genericエラーアイコンが表示されること", () => {
+    it("genericエラーアイコンが表示されること", async () => {
       // Arrange & Act
-      const { UNSAFE_root } = render(<ErrorView />);
+      const { getByTestId } = await render(<ErrorView />);
 
       // Assert
-      expect(findByTestId(UNSAFE_root, "error-view-icon-generic")).toBeDefined();
+      expect(getByTestId("error-view-icon-generic")).toBeDefined();
     });
   });
 
   describe("エラー種別", () => {
-    it("networkエラーでネットワークアイコンが表示されること", () => {
+    it("networkエラーでネットワークアイコンが表示されること", async () => {
       // Arrange & Act
-      const { UNSAFE_root } = render(<ErrorView errorType="network" />);
+      const { getByTestId } = await render(<ErrorView errorType="network" />);
 
       // Assert
-      expect(findByTestId(UNSAFE_root, "error-view-icon-network")).toBeDefined();
-      expect(findByTestId(UNSAFE_root, "error-view-title").props.children).toBe(
-        "ネットワークエラー",
-      );
+      expect(getByTestId("error-view-icon-network")).toBeDefined();
+      expect(getByTestId("error-view-title").props.children).toBe("ネットワークエラー");
     });
 
-    it("serverエラーでサーバーアイコンが表示されること", () => {
+    it("serverエラーでサーバーアイコンが表示されること", async () => {
       // Arrange & Act
-      const { UNSAFE_root } = render(<ErrorView errorType="server" />);
+      const { getByTestId } = await render(<ErrorView errorType="server" />);
 
       // Assert
-      expect(findByTestId(UNSAFE_root, "error-view-icon-server")).toBeDefined();
-      expect(findByTestId(UNSAFE_root, "error-view-title").props.children).toBe("サーバーエラー");
+      expect(getByTestId("error-view-icon-server")).toBeDefined();
+      expect(getByTestId("error-view-title").props.children).toBe("サーバーエラー");
     });
   });
 
   describe("カスタムメッセージ", () => {
-    it("カスタムタイトルが表示されること", () => {
+    it("カスタムタイトルが表示されること", async () => {
       // Arrange & Act
-      const { UNSAFE_root } = render(<ErrorView title="カスタムタイトル" />);
+      const { getByTestId } = await render(<ErrorView title="カスタムタイトル" />);
 
       // Assert
-      expect(findByTestId(UNSAFE_root, "error-view-title").props.children).toBe("カスタムタイトル");
+      expect(getByTestId("error-view-title").props.children).toBe("カスタムタイトル");
     });
 
-    it("カスタムメッセージが表示されること", () => {
+    it("カスタムメッセージが表示されること", async () => {
       // Arrange & Act
-      const { UNSAFE_root } = render(<ErrorView message="カスタムメッセージ" />);
+      const { getByTestId } = await render(<ErrorView message="カスタムメッセージ" />);
 
       // Assert
-      expect(findByTestId(UNSAFE_root, "error-view-message").props.children).toBe(
-        "カスタムメッセージ",
-      );
+      expect(getByTestId("error-view-message").props.children).toBe("カスタムメッセージ");
     });
   });
 
   describe("再試行ボタン", () => {
-    it("onRetryが未指定の場合に再試行ボタンが表示されないこと", () => {
+    it("onRetryが未指定の場合に再試行ボタンが表示されないこと", async () => {
       // Arrange & Act
-      const { UNSAFE_root } = render(<ErrorView />);
+      const { queryByTestId } = await render(<ErrorView />);
 
       // Assert
-      expect(queryByTestId(UNSAFE_root, "error-view-retry")).toBeNull();
+      expect(queryByTestId("error-view-retry")).toBeNull();
     });
 
-    it("onRetryが指定された場合に再試行ボタンが表示されること", () => {
+    it("onRetryが指定された場合に再試行ボタンが表示されること", async () => {
       // Arrange & Act
-      const { UNSAFE_root } = render(<ErrorView onRetry={() => {}} />);
+      const { getByTestId } = await render(<ErrorView onRetry={() => {}} />);
 
       // Assert
-      expect(findByTestId(UNSAFE_root, "error-view-retry")).toBeDefined();
+      expect(getByTestId("error-view-retry")).toBeDefined();
     });
 
-    it("再試行ボタンタップ時にonRetryが呼ばれること", () => {
+    it("再試行ボタンタップ時にonRetryが呼ばれること", async () => {
       // Arrange
       const onRetry = jest.fn();
-      const { UNSAFE_root } = render(<ErrorView onRetry={onRetry} />);
+      const { getByTestId } = await render(<ErrorView onRetry={onRetry} />);
 
       // Act
-      fireEvent.press(findByTestId(UNSAFE_root, "error-view-retry"));
+      await fireEvent.press(getByTestId("error-view-retry"));
 
       // Assert
       expect(onRetry).toHaveBeenCalledTimes(1);
     });
 
-    it("カスタムリトライラベルが表示されること", () => {
+    it("カスタムリトライラベルが表示されること", async () => {
       // Arrange & Act
-      const { UNSAFE_root } = render(<ErrorView onRetry={() => {}} retryLabel="もう一度試す" />);
+      const { getByText } = await render(
+        <ErrorView onRetry={() => {}} retryLabel="もう一度試す" />,
+      );
 
       // Assert
-      expect(containsText(UNSAFE_root, "もう一度試す")).toBe(true);
+      expect(getByText("もう一度試す")).toBeDefined();
     });
   });
 });

@@ -8,10 +8,9 @@ global._ReactNativeCSSInterop = {
   remapProps: () => {},
 };
 
-// jest-expo/node renders testID as data-testid in DOM.
-// Configure RNTL to use data-testid so getByTestId works correctly.
+// Configure RNTL for native test-renderer.
 const { configure } = require("@testing-library/react-native");
-configure({ defaultIncludeHiddenElements: true, testIdAttribute: "data-testid" });
+configure({ defaultIncludeHiddenElements: true });
 
 // React Native Animated uses requestAnimationFrame which is not available in Node.js
 global.requestAnimationFrame = (callback) => setTimeout(callback, 0);

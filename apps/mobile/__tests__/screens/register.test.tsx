@@ -21,14 +21,14 @@ describe("RegisterScreen", () => {
     it("有効な入力でsignUpが呼ばれること", async () => {
       // Arrange
       mockSignUp.mockResolvedValue(undefined);
-      const { getByLabelText } = render(<RegisterScreen />);
+      const { getByLabelText } = await render(<RegisterScreen />);
 
-      fireEvent.changeText(getByLabelText("名前"), "テストユーザー");
-      fireEvent.changeText(getByLabelText("メールアドレス"), "test@example.com");
-      fireEvent.changeText(getByLabelText("パスワード"), "Password123");
+      await fireEvent.changeText(getByLabelText("名前"), "テストユーザー");
+      await fireEvent.changeText(getByLabelText("メールアドレス"), "test@example.com");
+      await fireEvent.changeText(getByLabelText("パスワード"), "Password123");
 
       // Act
-      fireEvent.press(getByLabelText("アカウントを作成"));
+      await fireEvent.press(getByLabelText("アカウントを作成"));
 
       // Assert
       await waitFor(() => {
@@ -43,13 +43,13 @@ describe("RegisterScreen", () => {
 
     it("名前が空の場合signUpが呼ばれないこと", async () => {
       // Arrange
-      const { getByLabelText } = render(<RegisterScreen />);
+      const { getByLabelText } = await render(<RegisterScreen />);
 
-      fireEvent.changeText(getByLabelText("メールアドレス"), "test@example.com");
-      fireEvent.changeText(getByLabelText("パスワード"), "Password123");
+      await fireEvent.changeText(getByLabelText("メールアドレス"), "test@example.com");
+      await fireEvent.changeText(getByLabelText("パスワード"), "Password123");
 
       // Act
-      fireEvent.press(getByLabelText("アカウントを作成"));
+      await fireEvent.press(getByLabelText("アカウントを作成"));
 
       // Assert
       await waitFor(() => {
@@ -59,13 +59,13 @@ describe("RegisterScreen", () => {
 
     it("メールが空の場合signUpが呼ばれないこと", async () => {
       // Arrange
-      const { getByLabelText } = render(<RegisterScreen />);
+      const { getByLabelText } = await render(<RegisterScreen />);
 
-      fireEvent.changeText(getByLabelText("名前"), "テストユーザー");
-      fireEvent.changeText(getByLabelText("パスワード"), "Password123");
+      await fireEvent.changeText(getByLabelText("名前"), "テストユーザー");
+      await fireEvent.changeText(getByLabelText("パスワード"), "Password123");
 
       // Act
-      fireEvent.press(getByLabelText("アカウントを作成"));
+      await fireEvent.press(getByLabelText("アカウントを作成"));
 
       // Assert
       await waitFor(() => {
@@ -75,13 +75,13 @@ describe("RegisterScreen", () => {
 
     it("パスワードが空の場合signUpが呼ばれないこと", async () => {
       // Arrange
-      const { getByLabelText } = render(<RegisterScreen />);
+      const { getByLabelText } = await render(<RegisterScreen />);
 
-      fireEvent.changeText(getByLabelText("名前"), "テストユーザー");
-      fireEvent.changeText(getByLabelText("メールアドレス"), "test@example.com");
+      await fireEvent.changeText(getByLabelText("名前"), "テストユーザー");
+      await fireEvent.changeText(getByLabelText("メールアドレス"), "test@example.com");
 
       // Act
-      fireEvent.press(getByLabelText("アカウントを作成"));
+      await fireEvent.press(getByLabelText("アカウントを作成"));
 
       // Assert
       await waitFor(() => {
@@ -92,19 +92,19 @@ describe("RegisterScreen", () => {
     it("signUpが失敗した場合エラーメッセージが表示されること", async () => {
       // Arrange
       mockSignUp.mockRejectedValue(new Error("メールアドレスはすでに使用されています"));
-      const { getByLabelText } = render(<RegisterScreen />);
+      const { getByLabelText } = await render(<RegisterScreen />);
 
-      fireEvent.changeText(getByLabelText("名前"), "テストユーザー");
-      fireEvent.changeText(getByLabelText("メールアドレス"), "test@example.com");
-      fireEvent.changeText(getByLabelText("パスワード"), "Password123");
+      await fireEvent.changeText(getByLabelText("名前"), "テストユーザー");
+      await fireEvent.changeText(getByLabelText("メールアドレス"), "test@example.com");
+      await fireEvent.changeText(getByLabelText("パスワード"), "Password123");
 
       // Act
       await act(async () => {
-        fireEvent.press(getByLabelText("アカウントを作成"));
+        await fireEvent.press(getByLabelText("アカウントを作成"));
       });
 
       // Assert: エラーメッセージがaccessibilityLabelとして表示されること
-      expect(getByLabelText("メールアドレスはすでに使用されています")).toBeTruthy();
+      expect(getByLabelText("メールアドレスはすでに使用されています")).toBeDefined();
     });
   });
 });

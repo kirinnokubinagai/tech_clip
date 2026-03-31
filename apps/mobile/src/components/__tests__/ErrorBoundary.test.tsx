@@ -1,8 +1,6 @@
 import { fireEvent, render } from "@testing-library/react-native";
 import { Text } from "react-native";
 
-import { containsText, findByTestId, queryByTestId } from "@/test-helpers";
-
 import { ErrorBoundary } from "../ErrorBoundary";
 
 function ThrowingComponent({ shouldThrow }: { shouldThrow: boolean }) {
@@ -26,86 +24,86 @@ describe("ErrorBoundary", () => {
   });
 
   describe("正常系", () => {
-    it("エラーがない場合に子コンポーネントが表示されること", () => {
+    it("エラーがない場合に子コンポーネントが表示されること", async () => {
       // Arrange & Act
-      const { UNSAFE_root } = render(
+      const { getByTestId } = await render(
         <ErrorBoundary>
           <ThrowingComponent shouldThrow={false} />
         </ErrorBoundary>,
       );
 
       // Assert
-      expect(findByTestId(UNSAFE_root, "child-content").props.children).toBe("正常なコンテンツ");
+      expect(getByTestId("child-content").props.children).toBe("正常なコンテンツ");
     });
   });
 
   describe("エラーキャッチ", () => {
-    it("子コンポーネントのエラーをキャッチしてフォールバックUIが表示されること", () => {
+    it("子コンポーネントのエラーをキャッチしてフォールバックUIが表示されること", async () => {
       // Arrange & Act
-      const { UNSAFE_root } = render(
+      const { getByTestId } = await render(
         <ErrorBoundary>
           <ThrowingComponent shouldThrow={true} />
         </ErrorBoundary>,
       );
 
       // Assert
-      expect(findByTestId(UNSAFE_root, "error-boundary-fallback")).toBeDefined();
+      expect(getByTestId("error-boundary-fallback")).toBeDefined();
     });
 
-    it("エラーメッセージがフォールバックUIに表示されること", () => {
+    it("エラーメッセージがフォールバックUIに表示されること", async () => {
       // Arrange & Act
-      const { UNSAFE_root } = render(
+      const { getByText } = await render(
         <ErrorBoundary>
           <ThrowingComponent shouldThrow={true} />
         </ErrorBoundary>,
       );
 
       // Assert
-      expect(containsText(UNSAFE_root, "テストエラーが発生しました")).toBe(true);
+      expect(getByText("テストエラーが発生しました")).toBeDefined();
     });
 
-    it("エラーアイコンが表示されること", () => {
+    it("エラーアイコンが表示されること", async () => {
       // Arrange & Act
-      const { UNSAFE_root } = render(
+      const { getByTestId } = await render(
         <ErrorBoundary>
           <ThrowingComponent shouldThrow={true} />
         </ErrorBoundary>,
       );
 
       // Assert
-      expect(findByTestId(UNSAFE_root, "error-boundary-icon")).toBeDefined();
+      expect(getByTestId("error-boundary-icon")).toBeDefined();
     });
   });
 
   describe("カスタムフォールバック", () => {
-    it("fallback propが指定された場合にカスタムフォールバックが表示されること", () => {
+    it("fallback propが指定された場合にカスタムフォールバックが表示されること", async () => {
       // Arrange & Act
-      const { UNSAFE_root } = render(
+      const { getByTestId, queryByTestId } = await render(
         <ErrorBoundary fallback={<CustomFallback />}>
           <ThrowingComponent shouldThrow={true} />
         </ErrorBoundary>,
       );
 
       // Assert
-      expect(findByTestId(UNSAFE_root, "custom-fallback")).toBeDefined();
-      expect(queryByTestId(UNSAFE_root, "error-boundary-fallback")).toBeNull();
+      expect(getByTestId("custom-fallback")).toBeDefined();
+      expect(queryByTestId("error-boundary-fallback")).toBeNull();
     });
   });
 
   describe("リトライ", () => {
-    it("再試行ボタンが表示されること", () => {
+    it("再試行ボタンが表示されること", async () => {
       // Arrange & Act
-      const { UNSAFE_root } = render(
+      const { getByTestId } = await render(
         <ErrorBoundary>
           <ThrowingComponent shouldThrow={true} />
         </ErrorBoundary>,
       );
 
       // Assert
-      expect(findByTestId(UNSAFE_root, "error-boundary-retry")).toBeDefined();
+      expect(getByTestId("error-boundary-retry")).toBeDefined();
     });
 
-    it("再試行ボタンタップでエラー状態がリセットされること", () => {
+    it("再試行ボタンタップでエラー状態がリセットされること", async () => {
       // Arrange
       let shouldThrow = true;
       function ConditionalThrow() {
@@ -115,7 +113,7 @@ describe("ErrorBoundary", () => {
         return <Text testID="recovered-content">復旧済み</Text>;
       }
 
-      const { UNSAFE_root } = render(
+      const { getByTestId } = await render(
         <ErrorBoundary>
           <ConditionalThrow />
         </ErrorBoundary>,
@@ -123,10 +121,10 @@ describe("ErrorBoundary", () => {
 
       // Act
       shouldThrow = false;
-      fireEvent.press(findByTestId(UNSAFE_root, "error-boundary-retry"));
+      await fireEvent.press(getByTestId("error-boundary-retry"));
 
       // Assert
-      expect(findByTestId(UNSAFE_root, "recovered-content")).toBeDefined();
+      expect(getByTestId("recovered-content")).toBeDefined();
     });
   });
 });

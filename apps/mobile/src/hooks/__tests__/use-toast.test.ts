@@ -4,9 +4,9 @@ import { useToast } from "../use-toast";
 
 describe("useToast", () => {
   describe("初期状態", () => {
-    it("初期状態ではvisibleがfalseであること", () => {
+    it("初期状態ではvisibleがfalseであること", async () => {
       // Arrange & Act
-      const { result } = renderHook(() => useToast());
+      const { result } = await renderHook(() => useToast());
 
       // Assert
       expect(result.current.toast.visible).toBe(false);
@@ -16,12 +16,12 @@ describe("useToast", () => {
   });
 
   describe("show", () => {
-    it("showを呼ぶとvisibleがtrueになりメッセージが設定されること", () => {
+    it("showを呼ぶとvisibleがtrueになりメッセージが設定されること", async () => {
       // Arrange
-      const { result } = renderHook(() => useToast());
+      const { result } = await renderHook(() => useToast());
 
       // Act
-      act(() => {
+      await act(async () => {
         result.current.show("保存しました", "success");
       });
 
@@ -31,12 +31,12 @@ describe("useToast", () => {
       expect(result.current.toast.variant).toBe("success");
     });
 
-    it("variantを省略するとinfoがデフォルトになること", () => {
+    it("variantを省略するとinfoがデフォルトになること", async () => {
       // Arrange
-      const { result } = renderHook(() => useToast());
+      const { result } = await renderHook(() => useToast());
 
       // Act
-      act(() => {
+      await act(async () => {
         result.current.show("お知らせ");
       });
 
@@ -46,15 +46,15 @@ describe("useToast", () => {
   });
 
   describe("dismiss", () => {
-    it("dismissを呼ぶと初期状態に戻ること", () => {
+    it("dismissを呼ぶと初期状態に戻ること", async () => {
       // Arrange
-      const { result } = renderHook(() => useToast());
-      act(() => {
+      const { result } = await renderHook(() => useToast());
+      await act(async () => {
         result.current.show("エラー", "error");
       });
 
       // Act
-      act(() => {
+      await act(async () => {
         result.current.dismiss();
       });
 
