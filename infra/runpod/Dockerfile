@@ -1,21 +1,21 @@
-FROM runpod/pytorch:2.1.0-py3.10-cuda12.1.0-devel-ubuntu22.04
+FROM runpod/pytorch:2.6.0-py3.11-cuda12.4.1-devel-ubuntu22.04
 
 WORKDIR /app
 
-# vLLMのインストール
+# vLLM と依存パッケージのインストール
 RUN pip install --no-cache-dir \
-    vllm==0.3.3 \
-    runpod==1.6.2 \
-    huggingface-hub==0.21.4
+    vllm>=0.7.0 \
+    runpod>=1.7.0 \
+    huggingface-hub>=0.25.0
 
 # ハンドラーをコピー
 COPY handler.py .
 
-# Qwen2.5 9Bモデルのダウンロード
-ARG MODEL_NAME=Qwen/Qwen2.5-7B-Instruct
+# Qwen3.5-9B モデルのダウンロード
+ARG MODEL_NAME=Qwen/Qwen3.5-9B
 ENV MODEL_NAME=${MODEL_NAME}
-RUN python -c "from huggingface_hub import snapshot_download; snapshot_download('${MODEL_NAME}', local_dir='/models/qwen2.5')"
+RUN python -c "from huggingface_hub import snapshot_download; snapshot_download('${MODEL_NAME}', local_dir='/models/qwen3.5')"
 
-ENV MODEL_PATH=/models/qwen2.5
+ENV MODEL_PATH=/models/qwen3.5
 
 CMD ["python", "-u", "handler.py"]
