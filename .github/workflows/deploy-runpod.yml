@@ -23,7 +23,7 @@ jobs:
           IMAGE_TAG="${{ secrets.DOCKER_REGISTRY_URL }}/tech-clip-inference:${{ github.sha }}"
           docker build -t "$IMAGE_TAG" infra/runpod/
           PUSH_OUTPUT=$(docker push "$IMAGE_TAG")
-          DIGEST=$(echo "$PUSH_OUTPUT" | grep -oP 'sha256:[a-f0-9]{64}' | tail -1)
+          DIGEST=$(echo "$PUSH_OUTPUT" | grep -o 'sha256:[a-f0-9]\{64\}' | tail -1)
           if [ -z "$DIGEST" ]; then
             echo "docker pushのdigest検証に失敗しました"
             exit 1

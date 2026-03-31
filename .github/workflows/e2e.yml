@@ -12,22 +12,20 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - uses: ./.github/actions/nix-setup
       - uses: expo/expo-github-action@v8
         with:
           eas-version: latest
           token: ${{ secrets.EXPO_TOKEN }}
-      - name: Install Maestro CLI
-        run: curl -Ls "https://get.maestro.mobile.dev" | bash
       - name: Run Maestro Cloud E2E tests
         run: |
-          export PATH="$HOME/.maestro/bin:$PATH"
-          BUILD_LIST=$(eas build:list --platform ios --limit 1 --json --non-interactive)
+          BUILD_LIST=$(nix develop --command eas build:list --platform ios --limit 1 --json --non-interactive)
           BUILD_URL=$(echo "$BUILD_LIST" | jq -r '.[0].artifacts.buildUrl // empty')
           if [ -z "$BUILD_URL" ]; then
             echo "EAS Buildのアーティファクトが見つかりません"
             exit 1
           fi
-          maestro cloud \
+          nix develop --command maestro cloud \
             --apiKey "${{ secrets.MAESTRO_CLOUD_API_KEY }}" \
             --app-file "$BUILD_URL" \
             .maestro/
