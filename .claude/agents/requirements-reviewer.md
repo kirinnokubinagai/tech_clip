@@ -24,7 +24,7 @@ tools:
 
 - 他の Issue・機能と矛盾していないか
 - ROADMAP の Phase 順序と依存関係に違反していないか
-- 技術スタック（Expo SDK 52, Hono 4.x, Drizzle ORM 等）の制約に反していないか
+- 技術スタック（Expo SDK 55, Hono 4.x, Drizzle ORM 等）の制約に反していないか
 
 ### 実現可能性
 

@@ -15,7 +15,7 @@ tools:
 
 ## プロジェクトコンテキスト
 
-TechClip は React Native + Expo SDK 52 で構築されたモバイルアプリです。スタイリングには NativeWind v4 を使用します。
+TechClip は React Native + Expo SDK 55 で構築されたモバイルアプリです。スタイリングには NativeWind v4 を使用します。
 
 ## デザイン原則
 
