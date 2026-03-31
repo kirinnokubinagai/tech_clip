@@ -118,7 +118,7 @@ describe("SettingsScreen", () => {
       const { getByText } = await render(<SettingsScreen />);
 
       // Assert
-      expect(getByText("アカウントを削除する")).toBeTruthy();
+      expect(getByText("アカウントを削除する")).toBeDefined();
     });
 
     it("アカウント削除ボタンを押すと確認ダイアログが表示されること", async () => {

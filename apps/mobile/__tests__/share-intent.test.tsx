@@ -102,7 +102,7 @@ describe("ShareIntentScreen", () => {
       await render(<ShareIntentScreen />);
 
       // Assert
-      expect(screen.getByLabelText("share-intent-loading")).toBeTruthy();
+      expect(screen.getByLabelText("share-intent-loading")).toBeDefined();
     });
 
     it("エラー発生時はエラーメッセージが表示されること", async () => {
@@ -119,8 +119,8 @@ describe("ShareIntentScreen", () => {
       await render(<ShareIntentScreen />);
 
       // Assert
-      expect(screen.getByLabelText("share-intent-error")).toBeTruthy();
-      expect(screen.getByLabelText("share-intent-error-message")).toBeTruthy();
+      expect(screen.getByLabelText("share-intent-error")).toBeDefined();
+      expect(screen.getByLabelText("share-intent-error-message")).toBeDefined();
     });
 
     it("閉じるボタンを押すと戻ること", async () => {
@@ -195,8 +195,8 @@ describe("ShareIntentScreen", () => {
 
       // Assert
       await waitFor(() => {
-        expect(screen.getByLabelText("share-intent-not-found")).toBeTruthy();
-        expect(screen.getByLabelText("share-intent-not-found-message")).toBeTruthy();
+        expect(screen.getByLabelText("share-intent-not-found")).toBeDefined();
+        expect(screen.getByLabelText("share-intent-not-found-message")).toBeDefined();
       });
     });
 

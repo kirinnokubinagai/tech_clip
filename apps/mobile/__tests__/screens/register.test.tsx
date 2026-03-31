@@ -104,7 +104,7 @@ describe("RegisterScreen", () => {
       });
 
       // Assert: エラーメッセージがaccessibilityLabelとして表示されること
-      expect(getByLabelText("メールアドレスはすでに使用されています")).toBeTruthy();
+      expect(getByLabelText("メールアドレスはすでに使用されています")).toBeDefined();
     });
   });
 });

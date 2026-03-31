@@ -144,7 +144,7 @@ describe("ErrorBoundary", () => {
       );
 
       // Assert
-      expect(getByText("テスト用エラー")).toBeTruthy();
+      expect(getByText("テスト用エラー")).toBeDefined();
     });
   });
 });

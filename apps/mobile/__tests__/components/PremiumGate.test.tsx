@@ -49,7 +49,7 @@ describe("PremiumGate", () => {
       const { getByText } = await render(<PremiumGate {...BASE_PROPS} />);
 
       // Assert
-      expect(getByText("プレミアムプラン")).toBeTruthy();
+      expect(getByText("プレミアムプラン")).toBeDefined();
     });
 
     it("現在の使用回数と上限が表示されること", async () => {
@@ -57,7 +57,7 @@ describe("PremiumGate", () => {
       const { getByText } = await render(<PremiumGate {...BASE_PROPS} />);
 
       // Assert
-      expect(getByText("5 / 5")).toBeTruthy();
+      expect(getByText("5 / 5")).toBeDefined();
     });
 
     it("プレミアム機能一覧が表示されること", async () => {
@@ -65,9 +65,9 @@ describe("PremiumGate", () => {
       const { getByText } = await render(<PremiumGate {...BASE_PROPS} />);
 
       // Assert
-      expect(getByText("AI要約（無制限）")).toBeTruthy();
-      expect(getByText("AI翻訳（無制限）")).toBeTruthy();
-      expect(getByText("優先サポート")).toBeTruthy();
+      expect(getByText("AI要約（無制限）")).toBeDefined();
+      expect(getByText("AI翻訳（無制限）")).toBeDefined();
+      expect(getByText("優先サポート")).toBeDefined();
     });
 
     it("購入ボタンが表示されること", async () => {
@@ -94,7 +94,7 @@ describe("PremiumGate", () => {
       const { getByText } = await render(<PremiumGate {...props} />);
 
       // Assert
-      expect(getByText("プレミアムプラン")).toBeTruthy();
+      expect(getByText("プレミアムプラン")).toBeDefined();
     });
 
     it("上限超過メッセージが表示されること", async () => {
@@ -102,7 +102,7 @@ describe("PremiumGate", () => {
       const { getByText } = await render(<PremiumGate {...BASE_PROPS} />);
 
       // Assert
-      expect(getByText("無料プランの上限に達しました")).toBeTruthy();
+      expect(getByText("無料プランの上限に達しました")).toBeDefined();
     });
   });
 
@@ -115,7 +115,7 @@ describe("PremiumGate", () => {
       const { getByText } = await render(<PremiumGate {...props} />);
 
       // Assert
-      expect(getByText("0 / 10")).toBeTruthy();
+      expect(getByText("0 / 10")).toBeDefined();
     });
 
     it("currentUsageとmaxUsageが同じ値の場合に正しく表示されること", async () => {
@@ -126,7 +126,7 @@ describe("PremiumGate", () => {
       const { getByText } = await render(<PremiumGate {...props} />);
 
       // Assert
-      expect(getByText("3 / 3")).toBeTruthy();
+      expect(getByText("3 / 3")).toBeDefined();
     });
   });
 

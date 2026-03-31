@@ -11,7 +11,7 @@ describe("Toast", () => {
       );
 
       // Assert
-      expect(getByText("保存しました")).toBeTruthy();
+      expect(getByText("保存しました")).toBeDefined();
     });
 
     it("visible=falseの場合何も表示されないこと", async () => {
@@ -33,7 +33,7 @@ describe("Toast", () => {
       );
 
       // Assert
-      expect(getByText("成功")).toBeTruthy();
+      expect(getByText("成功")).toBeDefined();
     });
 
     it("errorバリアントでレンダリングできること", async () => {
@@ -43,7 +43,7 @@ describe("Toast", () => {
       );
 
       // Assert
-      expect(getByText("エラー")).toBeTruthy();
+      expect(getByText("エラー")).toBeDefined();
     });
 
     it("infoバリアントでレンダリングできること", async () => {
@@ -53,7 +53,7 @@ describe("Toast", () => {
       );
 
       // Assert
-      expect(getByText("お知らせ")).toBeTruthy();
+      expect(getByText("お知らせ")).toBeDefined();
     });
   });
 

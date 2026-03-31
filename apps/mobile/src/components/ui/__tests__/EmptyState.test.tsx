@@ -12,7 +12,7 @@ describe("EmptyState", () => {
       );
 
       // Assert
-      expect(getByText("データがありません")).toBeTruthy();
+      expect(getByText("データがありません")).toBeDefined();
     });
 
     it("アイコンが表示されること", async () => {
@@ -22,7 +22,7 @@ describe("EmptyState", () => {
       );
 
       // Assert
-      expect(getByText("test-icon")).toBeTruthy();
+      expect(getByText("test-icon")).toBeDefined();
     });
 
     it("説明文が表示されること", async () => {
@@ -32,7 +32,7 @@ describe("EmptyState", () => {
       );
 
       // Assert
-      expect(getByText("補足説明テキストです")).toBeTruthy();
+      expect(getByText("補足説明テキストです")).toBeDefined();
     });
 
     it("説明文が未指定の場合は表示されないこと", async () => {
@@ -62,7 +62,7 @@ describe("EmptyState", () => {
       );
 
       // Assert
-      expect(getByText("記事を追加")).toBeTruthy();
+      expect(getByText("記事を追加")).toBeDefined();
     });
 
     it("ボタンタップ時にonActionが呼ばれること", async () => {

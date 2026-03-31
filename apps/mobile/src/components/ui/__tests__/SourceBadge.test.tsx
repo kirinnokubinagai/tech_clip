@@ -10,7 +10,7 @@ describe("SourceBadge", () => {
       const { getByText } = await render(<SourceBadge source="zenn" />);
 
       // Assert
-      expect(getByText("Zenn")).toBeTruthy();
+      expect(getByText("Zenn")).toBeDefined();
     });
 
     it("表示ラベルがSOURCE_CONFIGに基づくこと", async () => {
@@ -18,7 +18,7 @@ describe("SourceBadge", () => {
       const { getByText } = await render(<SourceBadge source="hacker_news" />);
 
       // Assert
-      expect(getByText("Hacker News")).toBeTruthy();
+      expect(getByText("Hacker News")).toBeDefined();
     });
   });
 
@@ -56,7 +56,7 @@ describe("SourceBadge", () => {
 
       // Assert
       const config = SOURCE_CONFIG[source];
-      expect(getByText(config.label)).toBeTruthy();
+      expect(getByText(config.label)).toBeDefined();
     });
 
     it.each(ALL_SOURCES)("%s のSOURCE_CONFIGにlabelとcolorが定義されていること", (source) => {
@@ -73,7 +73,7 @@ describe("SourceBadge", () => {
       const { getByText } = await render(<SourceBadge source="zenn" />);
 
       // Assert
-      expect(getByText("Zenn")).toBeTruthy();
+      expect(getByText("Zenn")).toBeDefined();
     });
 
     it("mdサイズでレンダリングできること", async () => {
@@ -81,7 +81,7 @@ describe("SourceBadge", () => {
       const { getByText } = await render(<SourceBadge source="zenn" size="md" />);
 
       // Assert
-      expect(getByText("Zenn")).toBeTruthy();
+      expect(getByText("Zenn")).toBeDefined();
     });
   });
 

@@ -14,7 +14,7 @@ describe("Card", () => {
       );
 
       // Assert
-      expect(getByText("カードコンテンツ")).toBeTruthy();
+      expect(getByText("カードコンテンツ")).toBeDefined();
     });
 
     it("複数の子要素が表示されること", async () => {
@@ -27,8 +27,8 @@ describe("Card", () => {
       );
 
       // Assert
-      expect(getByText("タイトル")).toBeTruthy();
-      expect(getByText("説明文")).toBeTruthy();
+      expect(getByText("タイトル")).toBeDefined();
+      expect(getByText("説明文")).toBeDefined();
     });
   });
 
@@ -42,7 +42,7 @@ describe("Card", () => {
       );
 
       // Assert
-      expect(getByText("コンテンツ")).toBeTruthy();
+      expect(getByText("コンテンツ")).toBeDefined();
     });
 
     it("classNameなしでもレンダリングできること", async () => {
@@ -54,7 +54,7 @@ describe("Card", () => {
       );
 
       // Assert
-      expect(getByText("デフォルト")).toBeTruthy();
+      expect(getByText("デフォルト")).toBeDefined();
     });
   });
 });

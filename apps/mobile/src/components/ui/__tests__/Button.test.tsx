@@ -9,7 +9,7 @@ describe("Button", () => {
       const { getByText } = await render(<Button>テスト</Button>);
 
       // Assert
-      expect(getByText("テスト")).toBeTruthy();
+      expect(getByText("テスト")).toBeDefined();
     });
 
     it("デフォルトでprimaryバリアントが適用されること", async () => {
@@ -28,7 +28,7 @@ describe("Button", () => {
       const { getByText } = await render(<Button variant="secondary">セカンダリ</Button>);
 
       // Assert
-      expect(getByText("セカンダリ")).toBeTruthy();
+      expect(getByText("セカンダリ")).toBeDefined();
     });
 
     it("outlineバリアントでレンダリングできること", async () => {
@@ -36,7 +36,7 @@ describe("Button", () => {
       const { getByText } = await render(<Button variant="outline">アウトライン</Button>);
 
       // Assert
-      expect(getByText("アウトライン")).toBeTruthy();
+      expect(getByText("アウトライン")).toBeDefined();
     });
 
     it("ghostバリアントでレンダリングできること", async () => {
@@ -44,7 +44,7 @@ describe("Button", () => {
       const { getByText } = await render(<Button variant="ghost">ゴースト</Button>);
 
       // Assert
-      expect(getByText("ゴースト")).toBeTruthy();
+      expect(getByText("ゴースト")).toBeDefined();
     });
 
     it("dangerバリアントでレンダリングできること", async () => {
@@ -52,7 +52,7 @@ describe("Button", () => {
       const { getByText } = await render(<Button variant="danger">削除</Button>);
 
       // Assert
-      expect(getByText("削除")).toBeTruthy();
+      expect(getByText("削除")).toBeDefined();
     });
   });
 
@@ -62,7 +62,7 @@ describe("Button", () => {
       const { getByText } = await render(<Button size="sm">小</Button>);
 
       // Assert
-      expect(getByText("小")).toBeTruthy();
+      expect(getByText("小")).toBeDefined();
     });
 
     it("lgサイズでレンダリングできること", async () => {
@@ -70,7 +70,7 @@ describe("Button", () => {
       const { getByText } = await render(<Button size="lg">大</Button>);
 
       // Assert
-      expect(getByText("大")).toBeTruthy();
+      expect(getByText("大")).toBeDefined();
     });
   });
 

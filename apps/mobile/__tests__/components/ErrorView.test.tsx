@@ -17,7 +17,7 @@ describe("ErrorView", () => {
       const { getByText } = await render(<ErrorView />);
 
       // Assert
-      expect(getByText("エラーが発生しました")).toBeTruthy();
+      expect(getByText("エラーが発生しました")).toBeDefined();
     });
 
     it("デフォルトメッセージが表示されること", async () => {
@@ -25,7 +25,7 @@ describe("ErrorView", () => {
       const { getByText } = await render(<ErrorView />);
 
       // Assert
-      expect(getByText("問題が発生しました。再度お試しください")).toBeTruthy();
+      expect(getByText("問題が発生しました。再度お試しください")).toBeDefined();
     });
 
     it("genericアイコンが表示されること", async () => {
@@ -51,7 +51,7 @@ describe("ErrorView", () => {
       const { getByText } = await render(<ErrorView errorType="network" />);
 
       // Assert
-      expect(getByText("ネットワークエラー")).toBeTruthy();
+      expect(getByText("ネットワークエラー")).toBeDefined();
     });
   });
 
@@ -69,7 +69,7 @@ describe("ErrorView", () => {
       const { getByText } = await render(<ErrorView errorType="server" />);
 
       // Assert
-      expect(getByText("サーバーエラー")).toBeTruthy();
+      expect(getByText("サーバーエラー")).toBeDefined();
     });
   });
 
@@ -79,7 +79,7 @@ describe("ErrorView", () => {
       const { getByText } = await render(<ErrorView title="カスタムタイトル" />);
 
       // Assert
-      expect(getByText("カスタムタイトル")).toBeTruthy();
+      expect(getByText("カスタムタイトル")).toBeDefined();
     });
 
     it("カスタムメッセージが表示されること", async () => {
@@ -87,7 +87,7 @@ describe("ErrorView", () => {
       const { getByText } = await render(<ErrorView message="カスタムメッセージ" />);
 
       // Assert
-      expect(getByText("カスタムメッセージ")).toBeTruthy();
+      expect(getByText("カスタムメッセージ")).toBeDefined();
     });
   });
 
@@ -127,7 +127,7 @@ describe("ErrorView", () => {
       );
 
       // Assert
-      expect(getByText("もう一度試す")).toBeTruthy();
+      expect(getByText("もう一度試す")).toBeDefined();
     });
 
     it("デフォルトretryLabelが再試行であること", async () => {
@@ -135,7 +135,7 @@ describe("ErrorView", () => {
       const { getByText } = await render(<ErrorView onRetry={jest.fn()} />);
 
       // Assert
-      expect(getByText("再試行")).toBeTruthy();
+      expect(getByText("再試行")).toBeDefined();
     });
   });
 });

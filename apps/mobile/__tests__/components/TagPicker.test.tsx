@@ -21,8 +21,8 @@ describe("TagPicker", () => {
       );
 
       // Assert
-      expect(getByText("TypeScript")).toBeTruthy();
-      expect(getByText("React")).toBeTruthy();
+      expect(getByText("TypeScript")).toBeDefined();
+      expect(getByText("React")).toBeDefined();
     });
 
     it("onAddTagが未指定の場合入力欄が表示されないこと", async () => {

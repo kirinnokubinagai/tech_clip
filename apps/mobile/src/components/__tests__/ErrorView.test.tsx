@@ -105,7 +105,7 @@ describe("ErrorView", () => {
       );
 
       // Assert
-      expect(getByText("もう一度試す")).toBeTruthy();
+      expect(getByText("もう一度試す")).toBeDefined();
     });
   });
 });

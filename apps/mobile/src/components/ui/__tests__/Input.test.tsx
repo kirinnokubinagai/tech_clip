@@ -9,7 +9,7 @@ describe("Input", () => {
       const { getByText } = await render(<Input label="メールアドレス" />);
 
       // Assert
-      expect(getByText("メールアドレス")).toBeTruthy();
+      expect(getByText("メールアドレス")).toBeDefined();
     });
 
     it("プレースホルダーが正しく表示されること", async () => {
@@ -39,7 +39,7 @@ describe("Input", () => {
       );
 
       // Assert
-      expect(getByText("メールアドレスの形式が正しくありません")).toBeTruthy();
+      expect(getByText("メールアドレスの形式が正しくありません")).toBeDefined();
     });
 
     it("エラーがない場合はエラーメッセージが表示されないこと", async () => {

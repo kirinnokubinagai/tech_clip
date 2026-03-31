@@ -35,7 +35,7 @@ describe("ArticleCard", () => {
       );
 
       // Assert
-      expect(getByText("TypeScriptの型システム入門")).toBeTruthy();
+      expect(getByText("TypeScriptの型システム入門")).toBeDefined();
     });
 
     it("記事ソース（バッジ）が表示されること", async () => {
@@ -45,7 +45,7 @@ describe("ArticleCard", () => {
       );
 
       // Assert
-      expect(getByText("zenn")).toBeTruthy();
+      expect(getByText("zenn")).toBeDefined();
     });
 
     it("著者が表示されること", async () => {
@@ -55,7 +55,7 @@ describe("ArticleCard", () => {
       );
 
       // Assert
-      expect(getByText("テスト著者")).toBeTruthy();
+      expect(getByText("テスト著者")).toBeDefined();
     });
 
     it("概要が表示されること", async () => {
@@ -65,7 +65,7 @@ describe("ArticleCard", () => {
       );
 
       // Assert
-      expect(getByText("TypeScriptの型システムについて解説します。")).toBeTruthy();
+      expect(getByText("TypeScriptの型システムについて解説します。")).toBeDefined();
     });
 
     it("公開日がYYYY/MM/DD形式で表示されること", async () => {
@@ -75,7 +75,7 @@ describe("ArticleCard", () => {
       );
 
       // Assert
-      expect(getByText("2024/01/15")).toBeTruthy();
+      expect(getByText("2024/01/15")).toBeDefined();
     });
 
     it("thumbnailUrlがnullの場合サムネイルが表示されないこと", async () => {

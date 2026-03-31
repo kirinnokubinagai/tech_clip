@@ -51,7 +51,7 @@ describe("ProfileEditScreen", () => {
 
       // Assert
       await waitFor(() => {
-        expect(getByText("プロフィールを更新しました")).toBeTruthy();
+        expect(getByText("プロフィールを更新しました")).toBeDefined();
       });
     });
   });
@@ -68,7 +68,7 @@ describe("ProfileEditScreen", () => {
 
       // Assert
       await waitFor(() => {
-        expect(getByText("名前を入力してください")).toBeTruthy();
+        expect(getByText("名前を入力してください")).toBeDefined();
       });
     });
   });

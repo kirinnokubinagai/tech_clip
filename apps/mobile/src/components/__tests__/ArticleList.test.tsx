@@ -24,9 +24,9 @@ describe("ArticleList", () => {
       await render(<ArticleList articles={ARTICLES} onPressArticle={() => {}} />);
 
       // Assert - 3件の記事タイトルがレンダリングされていること
-      expect(screen.getByText(/記事タイトル 1/)).toBeTruthy();
-      expect(screen.getByText(/記事タイトル 2/)).toBeTruthy();
-      expect(screen.getByText(/記事タイトル 3/)).toBeTruthy();
+      expect(screen.getByText(/記事タイトル 1/)).toBeDefined();
+      expect(screen.getByText(/記事タイトル 2/)).toBeDefined();
+      expect(screen.getByText(/記事タイトル 3/)).toBeDefined();
     });
 
     it("記事が空の場合も正常にレンダリングできること", async () => {

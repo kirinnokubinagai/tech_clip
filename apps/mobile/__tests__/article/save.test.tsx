@@ -81,7 +81,7 @@ describe("SaveScreen", () => {
       const { getByText } = await render(<SaveScreen />);
 
       // Assert
-      expect(getByText("取得")).toBeTruthy();
+      expect(getByText("取得")).toBeDefined();
     });
 
     it("プレビュー領域が初期状態では非表示であること", async () => {
@@ -117,7 +117,7 @@ describe("SaveScreen", () => {
       // Assert
       await waitFor(() => {
         expect(getByTestId("article-preview")).toBeDefined();
-        expect(getByText("React Nativeの新機能")).toBeTruthy();
+        expect(getByText("React Nativeの新機能")).toBeDefined();
       });
     });
 
@@ -152,7 +152,7 @@ describe("SaveScreen", () => {
 
       // Assert
       await waitFor(() => {
-        expect(getByText("URLを入力してください")).toBeTruthy();
+        expect(getByText("URLを入力してください")).toBeDefined();
       });
     });
 
@@ -166,7 +166,7 @@ describe("SaveScreen", () => {
 
       // Assert
       await waitFor(() => {
-        expect(getByText("有効なURLを入力してください")).toBeTruthy();
+        expect(getByText("有効なURLを入力してください")).toBeDefined();
       });
     });
 
@@ -184,7 +184,7 @@ describe("SaveScreen", () => {
 
       // Assert
       await waitFor(() => {
-        expect(getByText("記事の取得に失敗しました")).toBeTruthy();
+        expect(getByText("記事の取得に失敗しました")).toBeDefined();
       });
     });
   });
@@ -204,7 +204,7 @@ describe("SaveScreen", () => {
 
       // Assert
       await waitFor(() => {
-        expect(getByText("React Nativeの新機能")).toBeTruthy();
+        expect(getByText("React Nativeの新機能")).toBeDefined();
       });
     });
 
@@ -222,7 +222,7 @@ describe("SaveScreen", () => {
 
       // Assert
       await waitFor(() => {
-        expect(getByText("zenn")).toBeTruthy();
+        expect(getByText("zenn")).toBeDefined();
       });
     });
 
@@ -240,7 +240,7 @@ describe("SaveScreen", () => {
 
       // Assert
       await waitFor(() => {
-        expect(getByText("React Native 0.76の新機能について解説します")).toBeTruthy();
+        expect(getByText("React Native 0.76の新機能について解説します")).toBeDefined();
       });
     });
 
@@ -258,7 +258,7 @@ describe("SaveScreen", () => {
 
       // Assert
       await waitFor(() => {
-        expect(getByText("保存する")).toBeTruthy();
+        expect(getByText("保存する")).toBeDefined();
       });
     });
   });
@@ -278,7 +278,7 @@ describe("SaveScreen", () => {
       await fireEvent.press(getByTestId("fetch-button"));
 
       await waitFor(() => {
-        expect(getByText("保存する")).toBeTruthy();
+        expect(getByText("保存する")).toBeDefined();
       });
 
       // Act
@@ -310,7 +310,7 @@ describe("SaveScreen", () => {
       await fireEvent.press(getByTestId("fetch-button"));
 
       await waitFor(() => {
-        expect(getByText("保存する")).toBeTruthy();
+        expect(getByText("保存する")).toBeDefined();
       });
 
       // Act
@@ -318,7 +318,7 @@ describe("SaveScreen", () => {
 
       // Assert
       await waitFor(() => {
-        expect(getByText("記事を保存しました")).toBeTruthy();
+        expect(getByText("記事を保存しました")).toBeDefined();
       });
     });
 
@@ -337,7 +337,7 @@ describe("SaveScreen", () => {
       await fireEvent.press(getByTestId("fetch-button"));
 
       await waitFor(() => {
-        expect(getByText("保存する")).toBeTruthy();
+        expect(getByText("保存する")).toBeDefined();
       });
 
       // Act
@@ -345,7 +345,7 @@ describe("SaveScreen", () => {
 
       // Assert
       await waitFor(() => {
-        expect(getByText("この記事はすでに保存されています")).toBeTruthy();
+        expect(getByText("この記事はすでに保存されています")).toBeDefined();
       });
     });
   });

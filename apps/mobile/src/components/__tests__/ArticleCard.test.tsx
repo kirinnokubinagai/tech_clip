@@ -21,7 +21,7 @@ describe("ArticleCard", () => {
       const { getByText } = await render(<ArticleCard article={BASE_ARTICLE} onPress={() => {}} />);
 
       // Assert
-      expect(getByText("React Nativeのパフォーマンス最適化ガイド")).toBeTruthy();
+      expect(getByText("React Nativeのパフォーマンス最適化ガイド")).toBeDefined();
     });
 
     it("著者名が正しく表示されること", async () => {
@@ -29,7 +29,7 @@ describe("ArticleCard", () => {
       const { getByText } = await render(<ArticleCard article={BASE_ARTICLE} onPress={() => {}} />);
 
       // Assert
-      expect(getByText("tech_writer")).toBeTruthy();
+      expect(getByText("tech_writer")).toBeDefined();
     });
 
     it("ソースバッジが正しく表示されること", async () => {
@@ -37,7 +37,7 @@ describe("ArticleCard", () => {
       const { getByText } = await render(<ArticleCard article={BASE_ARTICLE} onPress={() => {}} />);
 
       // Assert
-      expect(getByText("zenn")).toBeTruthy();
+      expect(getByText("zenn")).toBeDefined();
     });
 
     it("概要が正しく表示されること", async () => {
@@ -49,7 +49,7 @@ describe("ArticleCard", () => {
         getByText(
           "React Nativeアプリのパフォーマンスを改善するための実践的なテクニックを紹介します。",
         ),
-      ).toBeTruthy();
+      ).toBeDefined();
     });
 
     it("サムネイルがnullの場合も正常にレンダリングできること", async () => {
@@ -72,7 +72,7 @@ describe("ArticleCard", () => {
       const { getByText } = await render(<ArticleCard article={article} onPress={() => {}} />);
 
       // Assert
-      expect(getByText("React Nativeのパフォーマンス最適化ガイド")).toBeTruthy();
+      expect(getByText("React Nativeのパフォーマンス最適化ガイド")).toBeDefined();
     });
 
     it("概要がnullの場合も正常にレンダリングできること", async () => {
@@ -83,7 +83,7 @@ describe("ArticleCard", () => {
       const { getByText } = await render(<ArticleCard article={article} onPress={() => {}} />);
 
       // Assert
-      expect(getByText("React Nativeのパフォーマンス最適化ガイド")).toBeTruthy();
+      expect(getByText("React Nativeのパフォーマンス最適化ガイド")).toBeDefined();
     });
 
     it("公開日がnullの場合も正常にレンダリングできること", async () => {
@@ -94,7 +94,7 @@ describe("ArticleCard", () => {
       const { getByText } = await render(<ArticleCard article={article} onPress={() => {}} />);
 
       // Assert
-      expect(getByText("React Nativeのパフォーマンス最適化ガイド")).toBeTruthy();
+      expect(getByText("React Nativeのパフォーマンス最適化ガイド")).toBeDefined();
     });
   });
 
@@ -161,7 +161,7 @@ describe("ArticleCard", () => {
       const { getByText } = await render(<ArticleCard article={BASE_ARTICLE} onPress={() => {}} />);
 
       // Assert
-      expect(getByText("2025/03/15")).toBeTruthy();
+      expect(getByText("2025/03/15")).toBeDefined();
     });
   });
 });

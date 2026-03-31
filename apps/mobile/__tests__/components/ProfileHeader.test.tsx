@@ -79,7 +79,7 @@ describe("ProfileHeader", () => {
       );
 
       // Assert
-      expect(getByText("テス")).toBeTruthy();
+      expect(getByText("テス")).toBeDefined();
     });
   });
 

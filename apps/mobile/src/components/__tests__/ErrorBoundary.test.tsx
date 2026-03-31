@@ -59,7 +59,7 @@ describe("ErrorBoundary", () => {
       );
 
       // Assert
-      expect(getByText("テストエラーが発生しました")).toBeTruthy();
+      expect(getByText("テストエラーが発生しました")).toBeDefined();
     });
 
     it("エラーアイコンが表示されること", async () => {
