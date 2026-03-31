@@ -16,7 +16,7 @@ jobs:
       - uses: ./.github/actions/nix-setup
       - name: Deploy API to staging
         working-directory: apps/api
-        run: pnpm wrangler deploy --env staging
+        run: nix develop --command pnpm wrangler deploy --env staging
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
@@ -45,7 +45,7 @@ jobs:
       - uses: ./.github/actions/nix-setup
       - name: Deploy API to production
         working-directory: apps/api
-        run: pnpm wrangler deploy --env production
+        run: nix develop --command pnpm wrangler deploy --env production
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}

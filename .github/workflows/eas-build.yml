@@ -12,7 +12,7 @@ jobs:
       - uses: ./.github/actions/nix-setup
       - uses: expo/expo-github-action@v8
         with:
-          eas-version: latest
+          eas-version: "14.x"
           token: ${{ secrets.EXPO_TOKEN }}
       - name: Build iOS
         working-directory: apps/mobile
@@ -28,7 +28,7 @@ jobs:
       - uses: ./.github/actions/nix-setup
       - uses: expo/expo-github-action@v8
         with:
-          eas-version: latest
+          eas-version: "14.x"
           token: ${{ secrets.EXPO_TOKEN }}
       - name: Build Android
         working-directory: apps/mobile

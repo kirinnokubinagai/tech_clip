@@ -15,7 +15,7 @@ jobs:
       - uses: ./.github/actions/nix-setup
       - uses: expo/expo-github-action@v8
         with:
-          eas-version: latest
+          eas-version: "14.x"
           token: ${{ secrets.EXPO_TOKEN }}
       - name: Run Maestro Cloud E2E tests
         run: |
