@@ -60,6 +60,9 @@ SCALER_TYPE="QUEUE_DELAY"
 # スケーラー値（秒）
 SCALER_VALUE=4
 
+# 実行タイムアウト（秒）
+EXECUTION_TIMEOUT_SEC=300
+
 # =============================================================================
 # ヘルパー関数
 # =============================================================================
@@ -84,7 +87,7 @@ USAGE
 }
 
 log_info() {
-  echo "==> $1"
+  echo "==> $1" >&2
 }
 
 log_error() {
@@ -92,25 +95,22 @@ log_error() {
 }
 
 log_success() {
-  echo "    [OK] $1"
+  echo "    [OK] $1" >&2
 }
 
 log_skip() {
-  echo "    [SKIP] $1"
+  echo "    [SKIP] $1" >&2
 }
 
 graphql_request() {
   local query="$1"
   local response
 
-  response=$(curl --silent --fail-with-body --request POST \
+  if ! response=$(curl --silent --fail-with-body --request POST \
     --header 'content-type: application/json' \
     --header "Authorization: Bearer ${RUNPOD_API_KEY}" \
     --url "${RUNPOD_API_URL}" \
-    --data "{\"query\": $(echo "$query" | jq -Rs .)}" 2>&1)
-
-  local exit_code=$?
-  if [[ $exit_code -ne 0 ]]; then
+    --data "{\"query\": $(echo "$query" | jq -Rs .)}" 2>&1); then
     log_error "RunPod API リクエストに失敗しました"
     log_error "レスポンス: ${response}"
     return 1
@@ -138,6 +138,19 @@ find_existing_endpoint() {
 
   echo "$response" | jq -r --arg name "$target_name" \
     '(.data.myself.endpoints // [])[] | select(.name == $name) | .id // empty'
+}
+
+find_existing_template() {
+  local target_name="$1"
+  local response
+
+  response=$(graphql_request 'query { myself { serverlessTemplates { id name imageName } } }')
+  if [[ $? -ne 0 ]]; then
+    return 1
+  fi
+
+  echo "$response" | jq -r --arg name "$target_name" \
+    '(.data.myself.serverlessTemplates // [])[] | select(.name == $name) | .id // empty'
 }
 
 create_template() {
@@ -218,6 +231,7 @@ create_endpoint() {
       idleTimeout: ${IDLE_TIMEOUT_SEC},
       scalerType: \"${SCALER_TYPE}\",
       scalerValue: ${SCALER_VALUE},
+      executionTimeout: ${EXECUTION_TIMEOUT_SEC},
       locations: \"\"
     }) {
       id
@@ -283,6 +297,10 @@ while [[ $# -gt 0 ]]; do
       shift 2
       ;;
     --workers)
+      if [[ ! "$2" =~ ^[0-9]+$ ]]; then
+        log_error "--workers は数値を指定してください"
+        exit 1
+      fi
       MAX_WORKERS="$2"
       shift 2
       ;;
@@ -404,13 +422,27 @@ fi
 
 log_success "既存エンドポイントなし。新規作成します。"
 
-# テンプレート作成
-TEMPLATE_OUTPUT=$(create_template "${TEMPLATE_NAME}" "${IMAGE_NAME}" "${ENV_VARS}")
-TEMPLATE_ID=$(echo "$TEMPLATE_OUTPUT" | tail -1)
+# 既存テンプレートの確認
+EXISTING_TEMPLATE_ID=""
+if [[ "${DRY_RUN}" == "true" ]]; then
+  log_info "既存テンプレートの確認をスキップ（DRY-RUN）"
+else
+  log_info "既存テンプレートを確認中..."
+  EXISTING_TEMPLATE_ID=$(find_existing_template "${TEMPLATE_NAME}" || echo "")
+fi
 
-if [[ -z "${TEMPLATE_ID}" ]]; then
-  log_error "テンプレートの作成に失敗しました"
-  exit 1
+if [[ -n "${EXISTING_TEMPLATE_ID}" ]]; then
+  log_skip "テンプレート '${TEMPLATE_NAME}' は既に存在します (ID: ${EXISTING_TEMPLATE_ID})"
+  TEMPLATE_ID="${EXISTING_TEMPLATE_ID}"
+else
+  # テンプレート作成
+  TEMPLATE_OUTPUT=$(create_template "${TEMPLATE_NAME}" "${IMAGE_NAME}" "${ENV_VARS}")
+  TEMPLATE_ID=$(echo "$TEMPLATE_OUTPUT" | tail -1)
+
+  if [[ -z "${TEMPLATE_ID}" ]]; then
+    log_error "テンプレートの作成に失敗しました"
+    exit 1
+  fi
 fi
 
 # エンドポイント作成
