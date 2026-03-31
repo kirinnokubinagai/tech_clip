@@ -76,6 +76,7 @@
             git
             jq
             curl
+            maestro
             zap
           ];
 
