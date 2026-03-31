@@ -130,7 +130,7 @@ describe("FollowButton", () => {
         expect(button.props.accessibilityState?.disabled).toBe(true);
       });
 
-      resolveToggle!();
+      resolveToggle?.();
       await pressPromise;
       expect(onToggle).toHaveBeenCalledWith("user-1", false);
     });
