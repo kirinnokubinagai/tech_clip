@@ -325,15 +325,9 @@ Closes #<issue番号>
 
 ### マージ手順
 
-- `scripts/safe-merge.sh <PR番号> [worktree_path]` を使用
-- コンフリクト時は自動rebaseを試みる
-- 自動rebase失敗時のみ手動介入
-
-```bash
-# 使用例
-bash scripts/safe-merge.sh 123
-bash scripts/safe-merge.sh 123 .worktrees/issue-123
-```
+- マージは CI（auto-approve.yml）が自動で行う
+- Claude がローカルからマージすることは禁止
+- コンフリクト発生時はユーザーに報告し、手動解消を依頼する
 
 ---
 
@@ -401,7 +395,7 @@ executor (実装)
   ├── Agent(code-reviewer) を起動（/review/code-review スキル）
   │     └── レビュー結果を返す
   ├── 問題・改善提案が1つでもあれば → 全て修正→再push→再レビュー（0件になるまで繰り返す）
-  └── scripts/safe-merge.sh <PR番号> でマージ
+  └── 全件 PASS を確認して報告（マージは CI が自動で行う）
 ```
 
 ### 並列実装時のルール
