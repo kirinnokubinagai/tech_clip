@@ -4,9 +4,9 @@ WORKDIR /app
 
 # vLLM と依存パッケージのインストール
 RUN pip install --no-cache-dir \
-    vllm>=0.7.0 \
-    runpod>=1.7.0 \
-    huggingface-hub>=0.25.0
+    vllm==0.7.3 \
+    runpod==1.7.4 \
+    huggingface-hub==0.25.2
 
 # ハンドラーをコピー
 COPY handler.py .
