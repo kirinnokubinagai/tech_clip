@@ -5,6 +5,9 @@ on:
     branches: [main]
     tags: ["v*.*.*"]
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
 jobs:
   deploy-staging:
     if: github.ref == 'refs/heads/main'
