@@ -31,7 +31,9 @@ describe("ArticleList", () => {
 
     it("記事が空の場合も正常にレンダリングできること", async () => {
       // Arrange & Act
-      const { queryAllByTestId } = await render(<ArticleList articles={[]} onPressArticle={() => {}} />);
+      const { queryAllByTestId } = await render(
+        <ArticleList articles={[]} onPressArticle={() => {}} />,
+      );
 
       // Assert
       expect(queryAllByTestId("article-card")).toHaveLength(0);

@@ -108,7 +108,10 @@ describe("SaveScreen", () => {
       const { getByPlaceholderText, getByTestId, getByText } = await render(<SaveScreen />);
 
       // Act
-      await fireEvent.changeText(getByPlaceholderText("https://"), "https://zenn.dev/test/articles/test-article");
+      await fireEvent.changeText(
+        getByPlaceholderText("https://"),
+        "https://zenn.dev/test/articles/test-article",
+      );
       await fireEvent.press(getByTestId("fetch-button"));
 
       // Assert
@@ -132,7 +135,7 @@ describe("SaveScreen", () => {
       await fireEvent.changeText(getByPlaceholderText("https://"), "https://zenn.dev/test");
       // fireEvent.pressはact内でasync処理を待つため、setTimeoutでPromiseを解決する
       setTimeout(() => {
-        resolveApiFetch!({ success: true, data: { title: "test" } });
+        resolveApiFetch?.({ success: true, data: { title: "test" } });
       }, 100);
       await fireEvent.press(getByTestId("fetch-button"));
 
@@ -193,7 +196,10 @@ describe("SaveScreen", () => {
       const { getByPlaceholderText, getByTestId, getByText } = await render(<SaveScreen />);
 
       // Act
-      await fireEvent.changeText(getByPlaceholderText("https://"), "https://zenn.dev/test/articles/test-article");
+      await fireEvent.changeText(
+        getByPlaceholderText("https://"),
+        "https://zenn.dev/test/articles/test-article",
+      );
       await fireEvent.press(getByTestId("fetch-button"));
 
       // Assert
@@ -208,7 +214,10 @@ describe("SaveScreen", () => {
       const { getByPlaceholderText, getByTestId, getByText } = await render(<SaveScreen />);
 
       // Act
-      await fireEvent.changeText(getByPlaceholderText("https://"), "https://zenn.dev/test/articles/test-article");
+      await fireEvent.changeText(
+        getByPlaceholderText("https://"),
+        "https://zenn.dev/test/articles/test-article",
+      );
       await fireEvent.press(getByTestId("fetch-button"));
 
       // Assert
@@ -223,7 +232,10 @@ describe("SaveScreen", () => {
       const { getByPlaceholderText, getByTestId, getByText } = await render(<SaveScreen />);
 
       // Act
-      await fireEvent.changeText(getByPlaceholderText("https://"), "https://zenn.dev/test/articles/test-article");
+      await fireEvent.changeText(
+        getByPlaceholderText("https://"),
+        "https://zenn.dev/test/articles/test-article",
+      );
       await fireEvent.press(getByTestId("fetch-button"));
 
       // Assert
@@ -238,7 +250,10 @@ describe("SaveScreen", () => {
       const { getByPlaceholderText, getByTestId, getByText } = await render(<SaveScreen />);
 
       // Act
-      await fireEvent.changeText(getByPlaceholderText("https://"), "https://zenn.dev/test/articles/test-article");
+      await fireEvent.changeText(
+        getByPlaceholderText("https://"),
+        "https://zenn.dev/test/articles/test-article",
+      );
       await fireEvent.press(getByTestId("fetch-button"));
 
       // Assert
@@ -256,7 +271,10 @@ describe("SaveScreen", () => {
         .mockResolvedValueOnce(MOCK_SAVE_RESPONSE);
       const { getByPlaceholderText, getByTestId, getByText } = await render(<SaveScreen />);
 
-      await fireEvent.changeText(getByPlaceholderText("https://"), "https://zenn.dev/test/articles/test-article");
+      await fireEvent.changeText(
+        getByPlaceholderText("https://"),
+        "https://zenn.dev/test/articles/test-article",
+      );
       await fireEvent.press(getByTestId("fetch-button"));
 
       await waitFor(() => {
@@ -285,7 +303,10 @@ describe("SaveScreen", () => {
         .mockResolvedValueOnce(MOCK_SAVE_RESPONSE);
       const { getByPlaceholderText, getByTestId, getByText } = await render(<SaveScreen />);
 
-      await fireEvent.changeText(getByPlaceholderText("https://"), "https://zenn.dev/test/articles/test-article");
+      await fireEvent.changeText(
+        getByPlaceholderText("https://"),
+        "https://zenn.dev/test/articles/test-article",
+      );
       await fireEvent.press(getByTestId("fetch-button"));
 
       await waitFor(() => {
@@ -309,7 +330,10 @@ describe("SaveScreen", () => {
       });
       const { getByPlaceholderText, getByTestId, getByText } = await render(<SaveScreen />);
 
-      await fireEvent.changeText(getByPlaceholderText("https://"), "https://zenn.dev/test/articles/test-article");
+      await fireEvent.changeText(
+        getByPlaceholderText("https://"),
+        "https://zenn.dev/test/articles/test-article",
+      );
       await fireEvent.press(getByTestId("fetch-button"));
 
       await waitFor(() => {

@@ -134,7 +134,9 @@ describe("PremiumGate", () => {
     it("購入ボタンタップ時にonPurchaseが呼ばれること", async () => {
       // Arrange
       const onPurchase = jest.fn();
-      const { getByLabelText } = await render(<PremiumGate {...BASE_PROPS} onPurchase={onPurchase} />);
+      const { getByLabelText } = await render(
+        <PremiumGate {...BASE_PROPS} onPurchase={onPurchase} />,
+      );
 
       // Act
       await fireEvent.press(getByLabelText("プレミアムプランを購入する"));

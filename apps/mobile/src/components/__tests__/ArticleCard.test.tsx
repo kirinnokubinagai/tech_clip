@@ -54,7 +54,9 @@ describe("ArticleCard", () => {
 
     it("サムネイルがnullの場合も正常にレンダリングできること", async () => {
       // Arrange & Act
-      const { queryByTestId } = await render(<ArticleCard article={BASE_ARTICLE} onPress={() => {}} />);
+      const { queryByTestId } = await render(
+        <ArticleCard article={BASE_ARTICLE} onPress={() => {}} />,
+      );
 
       // Assert
       expect(queryByTestId("article-thumbnail")).toBeNull();
@@ -100,7 +102,9 @@ describe("ArticleCard", () => {
     it("カードタップ時にonPressが呼ばれること", async () => {
       // Arrange
       const onPress = jest.fn();
-      const { getByTestId } = await render(<ArticleCard article={BASE_ARTICLE} onPress={onPress} />);
+      const { getByTestId } = await render(
+        <ArticleCard article={BASE_ARTICLE} onPress={onPress} />,
+      );
 
       // Act
       await fireEvent.press(getByTestId("article-card"));

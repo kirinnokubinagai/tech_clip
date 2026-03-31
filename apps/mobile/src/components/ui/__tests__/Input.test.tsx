@@ -55,7 +55,9 @@ describe("Input", () => {
     it("テキスト入力時にonChangeTextが呼ばれること", async () => {
       // Arrange
       const onChangeText = jest.fn();
-      const { getByTestId } = await render(<Input placeholder="入力" onChangeText={onChangeText} />);
+      const { getByTestId } = await render(
+        <Input placeholder="入力" onChangeText={onChangeText} />,
+      );
 
       // Act
       await fireEvent.changeText(getByTestId("input-field"), "テスト入力");

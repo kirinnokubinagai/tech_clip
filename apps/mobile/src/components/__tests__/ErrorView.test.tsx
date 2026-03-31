@@ -9,9 +9,7 @@ describe("ErrorView", () => {
       const { getByTestId } = await render(<ErrorView />);
 
       // Assert
-      expect(getByTestId("error-view-title").props.children).toBe(
-        "エラーが発生しました",
-      );
+      expect(getByTestId("error-view-title").props.children).toBe("エラーが発生しました");
     });
 
     it("デフォルトのgenericエラーメッセージが表示されること", async () => {
@@ -40,9 +38,7 @@ describe("ErrorView", () => {
 
       // Assert
       expect(getByTestId("error-view-icon-network")).toBeDefined();
-      expect(getByTestId("error-view-title").props.children).toBe(
-        "ネットワークエラー",
-      );
+      expect(getByTestId("error-view-title").props.children).toBe("ネットワークエラー");
     });
 
     it("serverエラーでサーバーアイコンが表示されること", async () => {
@@ -69,9 +65,7 @@ describe("ErrorView", () => {
       const { getByTestId } = await render(<ErrorView message="カスタムメッセージ" />);
 
       // Assert
-      expect(getByTestId("error-view-message").props.children).toBe(
-        "カスタムメッセージ",
-      );
+      expect(getByTestId("error-view-message").props.children).toBe("カスタムメッセージ");
     });
   });
 
@@ -106,7 +100,9 @@ describe("ErrorView", () => {
 
     it("カスタムリトライラベルが表示されること", async () => {
       // Arrange & Act
-      const { getByText } = await render(<ErrorView onRetry={() => {}} retryLabel="もう一度試す" />);
+      const { getByText } = await render(
+        <ErrorView onRetry={() => {}} retryLabel="もう一度試す" />,
+      );
 
       // Assert
       expect(getByText("もう一度試す")).toBeTruthy();

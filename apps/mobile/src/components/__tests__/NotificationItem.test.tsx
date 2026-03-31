@@ -28,9 +28,7 @@ describe("NotificationItem", () => {
       );
 
       // Assert
-      expect(getByTestId("notification-title").props.children).toBe(
-        "記事にいいねされました",
-      );
+      expect(getByTestId("notification-title").props.children).toBe("記事にいいねされました");
     });
 
     it("本文が正しく表示されること", async () => {

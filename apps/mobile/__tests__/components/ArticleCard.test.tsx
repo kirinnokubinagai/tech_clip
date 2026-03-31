@@ -20,7 +20,9 @@ describe("ArticleCard", () => {
   describe("レンダリング", () => {
     it("記事カードが表示されること", async () => {
       // Arrange & Act
-      const { getByTestId } = await render(<ArticleCard article={BASE_ARTICLE} onPress={jest.fn()} />);
+      const { getByTestId } = await render(
+        <ArticleCard article={BASE_ARTICLE} onPress={jest.fn()} />,
+      );
 
       // Assert
       expect(getByTestId("article-card")).toBeDefined();
@@ -123,7 +125,9 @@ describe("ArticleCard", () => {
   describe("お気に入りボタン", () => {
     it("onToggleFavoriteが未指定の場合お気に入りボタンが表示されないこと", async () => {
       // Arrange & Act
-      const { queryByTestId } = await render(<ArticleCard article={BASE_ARTICLE} onPress={jest.fn()} />);
+      const { queryByTestId } = await render(
+        <ArticleCard article={BASE_ARTICLE} onPress={jest.fn()} />,
+      );
 
       // Assert
       expect(queryByTestId("favorite-button")).toBeNull();
@@ -190,7 +194,9 @@ describe("ArticleCard", () => {
     it("カードタップ時にonPressが呼ばれること", async () => {
       // Arrange
       const onPress = jest.fn();
-      const { getByTestId } = await render(<ArticleCard article={BASE_ARTICLE} onPress={onPress} />);
+      const { getByTestId } = await render(
+        <ArticleCard article={BASE_ARTICLE} onPress={onPress} />,
+      );
 
       // Act
       await fireEvent.press(getByTestId("article-card"));
@@ -203,7 +209,9 @@ describe("ArticleCard", () => {
   describe("アクセシビリティ", () => {
     it("カードにaccessibilityLabelが設定されていること", async () => {
       // Arrange & Act
-      const { getByTestId } = await render(<ArticleCard article={BASE_ARTICLE} onPress={jest.fn()} />);
+      const { getByTestId } = await render(
+        <ArticleCard article={BASE_ARTICLE} onPress={jest.fn()} />,
+      );
 
       // Assert
       const card = getByTestId("article-card");

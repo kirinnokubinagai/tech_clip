@@ -253,14 +253,8 @@ describe("ChangePasswordScreen", () => {
     it("現在のパスワードが空の場合エラーメッセージが表示されること", async () => {
       // Arrange
       const { getByPlaceholderText, getByText } = await render(<ChangePasswordScreen />);
-      await fireEvent.changeText(
-        getByPlaceholderText("新しいパスワードを入力"),
-        "NewPass123",
-      );
-      await fireEvent.changeText(
-        getByPlaceholderText("新しいパスワードを再入力"),
-        "NewPass123",
-      );
+      await fireEvent.changeText(getByPlaceholderText("新しいパスワードを入力"), "NewPass123");
+      await fireEvent.changeText(getByPlaceholderText("新しいパスワードを再入力"), "NewPass123");
 
       // Act
       await fireEvent.press(getByText("変更する"));
@@ -274,10 +268,7 @@ describe("ChangePasswordScreen", () => {
     it("新しいパスワードが空の場合エラーメッセージが表示されること", async () => {
       // Arrange
       const { getByPlaceholderText, getByText } = await render(<ChangePasswordScreen />);
-      await fireEvent.changeText(
-        getByPlaceholderText("現在のパスワードを入力"),
-        "OldPass123",
-      );
+      await fireEvent.changeText(getByPlaceholderText("現在のパスワードを入力"), "OldPass123");
 
       // Act
       await fireEvent.press(getByText("変更する"));
@@ -291,14 +282,8 @@ describe("ChangePasswordScreen", () => {
     it("パスワードが一致しない場合エラーメッセージが表示されること", async () => {
       // Arrange
       const { getByPlaceholderText, getByText } = await render(<ChangePasswordScreen />);
-      await fireEvent.changeText(
-        getByPlaceholderText("現在のパスワードを入力"),
-        "OldPass123",
-      );
-      await fireEvent.changeText(
-        getByPlaceholderText("新しいパスワードを入力"),
-        "NewPass123",
-      );
+      await fireEvent.changeText(getByPlaceholderText("現在のパスワードを入力"), "OldPass123");
+      await fireEvent.changeText(getByPlaceholderText("新しいパスワードを入力"), "NewPass123");
       await fireEvent.changeText(
         getByPlaceholderText("新しいパスワードを再入力"),
         "DifferentPass123",
@@ -332,18 +317,9 @@ describe("ChangePasswordScreen", () => {
       // Arrange
       mockChangePassword.mockResolvedValue(undefined);
       const { getByPlaceholderText, getByText } = await render(<ChangePasswordScreen />);
-      await fireEvent.changeText(
-        getByPlaceholderText("現在のパスワードを入力"),
-        "OldPass123",
-      );
-      await fireEvent.changeText(
-        getByPlaceholderText("新しいパスワードを入力"),
-        "NewPass123",
-      );
-      await fireEvent.changeText(
-        getByPlaceholderText("新しいパスワードを再入力"),
-        "NewPass123",
-      );
+      await fireEvent.changeText(getByPlaceholderText("現在のパスワードを入力"), "OldPass123");
+      await fireEvent.changeText(getByPlaceholderText("新しいパスワードを入力"), "NewPass123");
+      await fireEvent.changeText(getByPlaceholderText("新しいパスワードを再入力"), "NewPass123");
 
       // Act
       await fireEvent.press(getByText("変更する"));
@@ -358,18 +334,9 @@ describe("ChangePasswordScreen", () => {
       // Arrange
       mockChangePassword.mockResolvedValue(undefined);
       const { getByPlaceholderText, getByText } = await render(<ChangePasswordScreen />);
-      await fireEvent.changeText(
-        getByPlaceholderText("現在のパスワードを入力"),
-        "OldPass123",
-      );
-      await fireEvent.changeText(
-        getByPlaceholderText("新しいパスワードを入力"),
-        "NewPass123",
-      );
-      await fireEvent.changeText(
-        getByPlaceholderText("新しいパスワードを再入力"),
-        "NewPass123",
-      );
+      await fireEvent.changeText(getByPlaceholderText("現在のパスワードを入力"), "OldPass123");
+      await fireEvent.changeText(getByPlaceholderText("新しいパスワードを入力"), "NewPass123");
+      await fireEvent.changeText(getByPlaceholderText("新しいパスワードを再入力"), "NewPass123");
 
       // Act
       await fireEvent.press(getByText("変更する"));
@@ -386,18 +353,9 @@ describe("ChangePasswordScreen", () => {
       // Arrange
       mockChangePassword.mockRejectedValue(new Error("現在のパスワードが正しくありません"));
       const { getByPlaceholderText, getByText } = await render(<ChangePasswordScreen />);
-      await fireEvent.changeText(
-        getByPlaceholderText("現在のパスワードを入力"),
-        "WrongPass123",
-      );
-      await fireEvent.changeText(
-        getByPlaceholderText("新しいパスワードを入力"),
-        "NewPass123",
-      );
-      await fireEvent.changeText(
-        getByPlaceholderText("新しいパスワードを再入力"),
-        "NewPass123",
-      );
+      await fireEvent.changeText(getByPlaceholderText("現在のパスワードを入力"), "WrongPass123");
+      await fireEvent.changeText(getByPlaceholderText("新しいパスワードを入力"), "NewPass123");
+      await fireEvent.changeText(getByPlaceholderText("新しいパスワードを再入力"), "NewPass123");
 
       // Act
       await fireEvent.press(getByText("変更する"));
@@ -415,18 +373,9 @@ describe("ChangePasswordScreen", () => {
       // Arrange
       mockChangePassword.mockRejectedValue(new Error("エラー"));
       const { getByPlaceholderText, getByText } = await render(<ChangePasswordScreen />);
-      await fireEvent.changeText(
-        getByPlaceholderText("現在のパスワードを入力"),
-        "WrongPass123",
-      );
-      await fireEvent.changeText(
-        getByPlaceholderText("新しいパスワードを入力"),
-        "NewPass123",
-      );
-      await fireEvent.changeText(
-        getByPlaceholderText("新しいパスワードを再入力"),
-        "NewPass123",
-      );
+      await fireEvent.changeText(getByPlaceholderText("現在のパスワードを入力"), "WrongPass123");
+      await fireEvent.changeText(getByPlaceholderText("新しいパスワードを入力"), "NewPass123");
+      await fireEvent.changeText(getByPlaceholderText("新しいパスワードを再入力"), "NewPass123");
 
       // Act
       await fireEvent.press(getByText("変更する"));

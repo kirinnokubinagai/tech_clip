@@ -17,7 +17,9 @@ describe("EmptyState", () => {
 
     it("アイコンが表示されること", async () => {
       // Arrange & Act
-      const { getByText } = await render(<EmptyState icon={<Text>test-icon</Text>} title="タイトル" />);
+      const { getByText } = await render(
+        <EmptyState icon={<Text>test-icon</Text>} title="タイトル" />,
+      );
 
       // Assert
       expect(getByText("test-icon")).toBeTruthy();
@@ -35,7 +37,9 @@ describe("EmptyState", () => {
 
     it("説明文が未指定の場合は表示されないこと", async () => {
       // Arrange & Act
-      const { queryByText } = await render(<EmptyState icon={<Text>icon</Text>} title="タイトル" />);
+      const { queryByText } = await render(
+        <EmptyState icon={<Text>icon</Text>} title="タイトル" />,
+      );
 
       // Assert
       expect(queryByText("補足説明テキストです")).toBeNull();
