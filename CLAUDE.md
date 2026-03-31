@@ -343,7 +343,7 @@ bash scripts/review-and-merge.sh 123
 
 ### 実装エージェントへの指示テンプレート
 
-実装エージェント（executor）に以下を含めること:
+実装エージェント（coder）に以下を含めること:
 
 ```
 PR作成後、以下の手順でレビュー→マージまで自律的に完了させること:
@@ -365,20 +365,28 @@ PR作成後、以下の手順でレビュー→マージまで自律的に完了
 
 ### 許可エージェント（settings.json で制御）
 
-| エージェント | 用途 | 対応スキル |
-|-------------|------|-----------|
-| `executor` | 実装・修正・リファクタ | `/new-feature`, `/finish` |
-| `code-reviewer` | コードレビュー | `/review/code-review` |
-| `Explore` | コードベース探索 | - |
-| `Plan` | 設計・計画 | - |
-| `general-purpose` | 汎用タスク | - |
+| エージェント | 用途 | model |
+|-------------|------|-------|
+| `coder` | 実装・修正・リファクタ | sonnet |
+| `ui-designer` | UIデザイン・コンポーネント実装 | sonnet |
+| `security-engineer` | セキュリティ実装・脆弱性修正 | sonnet |
+| `requirements-analyst` | 要件定義・仕様策定 | opus |
+| `infra-engineer` | インフラ構築・CI/CD | sonnet |
+| `code-reviewer` | コードレビュー | sonnet |
+| `ui-reviewer` | UI/UXレビュー | sonnet |
+| `security-reviewer` | セキュリティレビュー | sonnet |
+| `requirements-reviewer` | 要件定義レビュー | opus |
+| `infra-reviewer` | インフラレビュー | sonnet |
+| `Explore` | コードベース探索 | haiku |
+| `Plan` | 設計・計画 | inherit |
+| `general-purpose` | 汎用タスク | inherit |
 
-上記以外のエージェントタイプは settings.json の allow リストにないため起動不可。
+全エージェントの定義は `.claude/agents/` を参照。settings.json の allow リストにないエージェントは起動不可。
 
 ### 実装→レビュー→マージフロー
 
 ```
-executor (実装)
+coder (実装)
   ├── TDD実装（/new-feature スキル）
   ├── biome check
   ├── コミット・push・PR作成（/finish スキル）
@@ -390,6 +398,6 @@ executor (実装)
 
 ### 並列実装時のルール
 
-- 各 executor は独立した worktree で作業
+- 各 coder は独立した worktree で作業
 - マージ順序はコンフリクト防止ルール（下記）に従う
-- executor 同士は互いのファイルを変更しない
+- coder 同士は互いのファイルを変更しない
