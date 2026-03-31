@@ -112,7 +112,7 @@ describe("validateChangePasswordForm", () => {
       expect(errors.newPassword).toBe("パスワードは8文字以上で入力してください");
     });
 
-    it("8文字の場合エラーにならないこと", async () => {
+    it("8文字の場合エラーにならないこと", () => {
       // Arrange
       const data = {
         currentPassword: "OldPass123",
@@ -129,7 +129,7 @@ describe("validateChangePasswordForm", () => {
   });
 
   describe("確認用パスワード", () => {
-    it("空の場合エラーになること", async () => {
+    it("空の場合エラーになること", () => {
       // Arrange
       const data = {
         currentPassword: "OldPass123",
@@ -144,7 +144,7 @@ describe("validateChangePasswordForm", () => {
       expect(errors.confirmPassword).toBe("確認用パスワードを入力してください");
     });
 
-    it("新しいパスワードと一致しない場合エラーになること", async () => {
+    it("新しいパスワードと一致しない場合エラーになること", () => {
       // Arrange
       const data = {
         currentPassword: "OldPass123",
@@ -159,7 +159,7 @@ describe("validateChangePasswordForm", () => {
       expect(errors.confirmPassword).toBe("パスワードが一致しません");
     });
 
-    it("新しいパスワードと一致する場合エラーにならないこと", async () => {
+    it("新しいパスワードと一致する場合エラーにならないこと", () => {
       // Arrange
       const data = {
         currentPassword: "OldPass123",
@@ -176,7 +176,7 @@ describe("validateChangePasswordForm", () => {
   });
 
   describe("全フィールドが有効な場合", () => {
-    it("エラーが空であること", async () => {
+    it("エラーが空であること", () => {
       // Arrange
       const data = {
         currentPassword: "OldPass123",

@@ -121,12 +121,17 @@ describe("FollowButton", () => {
         <FollowButton userId="user-1" isFollowing={false} onToggle={onToggle} />,
       );
 
-      // Act - fireEvent.pressはact()内でasync onPressを待つためハングしうる
-      // 代わりにsetTimeoutでresolveして完了させる
-      setTimeout(() => resolveToggle(), 50);
-      await fireEvent.press(getByTestId("follow-button"));
+      // Act - pressして即座にdisabled状態を確認、その後resolveして完了
+      const pressPromise = fireEvent.press(getByTestId("follow-button"));
 
-      // Assert - onToggleが呼ばれたことを確認（ローディング状態は遷移済み）
+      // Assert - ローディング中はdisabledになること
+      await waitFor(() => {
+        const button = getByTestId("follow-button");
+        expect(button.props.accessibilityState?.disabled).toBe(true);
+      });
+
+      resolveToggle!();
+      await pressPromise;
       expect(onToggle).toHaveBeenCalledWith("user-1", false);
     });
   });
