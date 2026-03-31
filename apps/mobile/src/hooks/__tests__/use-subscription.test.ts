@@ -39,12 +39,12 @@ describe("useSubscription", () => {
   });
 
   describe("初期状態", () => {
-    it("初期状態でisLoadingがtrueであること", () => {
-      // Arrange
-      revenueCat.checkSubscriptionStatus.mockResolvedValue(mockInactiveStatus);
+    it("初期状態でisLoadingがtrueであること", async () => {
+      // Arrange - 永続的にpendingのPromiseでローディング状態を維持
+      revenueCat.checkSubscriptionStatus.mockReturnValue(new Promise(() => {}));
 
       // Act
-      const { result } = renderHook(() => useSubscription());
+      const { result } = await renderHook(() => useSubscription());
 
       // Assert
       expect(result.current.isLoading).toBe(true);
@@ -55,7 +55,7 @@ describe("useSubscription", () => {
       revenueCat.checkSubscriptionStatus.mockResolvedValue(mockActiveStatus);
 
       // Act
-      const { result } = renderHook(() => useSubscription());
+      const { result } = await renderHook(() => useSubscription());
 
       // Assert
       await waitFor(() => {
@@ -70,7 +70,7 @@ describe("useSubscription", () => {
       revenueCat.checkSubscriptionStatus.mockResolvedValue(mockInactiveStatus);
 
       // Act
-      const { result } = renderHook(() => useSubscription());
+      const { result } = await renderHook(() => useSubscription());
 
       // Assert
       await waitFor(() => {
@@ -87,7 +87,7 @@ describe("useSubscription", () => {
       );
 
       // Act
-      const { result } = renderHook(() => useSubscription());
+      const { result } = await renderHook(() => useSubscription());
 
       // Assert
       await waitFor(() => {
@@ -104,7 +104,7 @@ describe("useSubscription", () => {
       revenueCat.checkSubscriptionStatus.mockResolvedValue(mockInactiveStatus);
       revenueCat.purchasePackage.mockResolvedValue(mockActiveStatus);
 
-      const { result } = renderHook(() => useSubscription());
+      const { result } = await renderHook(() => useSubscription());
       await waitFor(() => expect(result.current.isLoading).toBe(false));
 
       // Act
@@ -122,7 +122,7 @@ describe("useSubscription", () => {
       revenueCat.checkSubscriptionStatus.mockResolvedValue(mockInactiveStatus);
       revenueCat.purchasePackage.mockResolvedValue(null);
 
-      const { result } = renderHook(() => useSubscription());
+      const { result } = await renderHook(() => useSubscription());
       await waitFor(() => expect(result.current.isLoading).toBe(false));
 
       // Act
@@ -144,11 +144,11 @@ describe("useSubscription", () => {
         }),
       );
 
-      const { result } = renderHook(() => useSubscription());
+      const { result } = await renderHook(() => useSubscription());
       await waitFor(() => expect(result.current.isLoading).toBe(false));
 
       // Act
-      act(() => {
+      await act(async () => {
         result.current.purchase(mockPackage as never);
       });
 
@@ -166,7 +166,7 @@ describe("useSubscription", () => {
       revenueCat.checkSubscriptionStatus.mockResolvedValue(mockInactiveStatus);
       revenueCat.purchasePackage.mockRejectedValue(new Error("購入処理に失敗しました"));
 
-      const { result } = renderHook(() => useSubscription());
+      const { result } = await renderHook(() => useSubscription());
       await waitFor(() => expect(result.current.isLoading).toBe(false));
 
       // Act
@@ -186,7 +186,7 @@ describe("useSubscription", () => {
       revenueCat.checkSubscriptionStatus.mockResolvedValue(mockInactiveStatus);
       revenueCat.restorePurchases.mockResolvedValue(mockActiveStatus);
 
-      const { result } = renderHook(() => useSubscription());
+      const { result } = await renderHook(() => useSubscription());
       await waitFor(() => expect(result.current.isLoading).toBe(false));
 
       // Act
@@ -210,11 +210,11 @@ describe("useSubscription", () => {
         }),
       );
 
-      const { result } = renderHook(() => useSubscription());
+      const { result } = await renderHook(() => useSubscription());
       await waitFor(() => expect(result.current.isLoading).toBe(false));
 
       // Act
-      act(() => {
+      await act(async () => {
         result.current.restore();
       });
 
@@ -232,7 +232,7 @@ describe("useSubscription", () => {
       revenueCat.checkSubscriptionStatus.mockResolvedValue(mockInactiveStatus);
       revenueCat.restorePurchases.mockRejectedValue(new Error("購入の復元に失敗しました"));
 
-      const { result } = renderHook(() => useSubscription());
+      const { result } = await renderHook(() => useSubscription());
       await waitFor(() => expect(result.current.isLoading).toBe(false));
 
       // Act

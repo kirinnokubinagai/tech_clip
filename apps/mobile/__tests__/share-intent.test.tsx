@@ -39,7 +39,7 @@ describe("ShareIntentScreen", () => {
       });
 
       // Act
-      render(<ShareIntentScreen />);
+      await render(<ShareIntentScreen />);
 
       // Assert
       await waitFor(() => {
@@ -61,7 +61,7 @@ describe("ShareIntentScreen", () => {
       });
 
       // Act
-      render(<ShareIntentScreen />);
+      await render(<ShareIntentScreen />);
 
       // Assert
       await waitFor(() => {
@@ -80,7 +80,7 @@ describe("ShareIntentScreen", () => {
       });
 
       // Act
-      render(<ShareIntentScreen />);
+      await render(<ShareIntentScreen />);
 
       // Assert
       await waitFor(() => {
@@ -88,7 +88,7 @@ describe("ShareIntentScreen", () => {
       });
     });
 
-    it("isReadyがfalseの場合はローディング表示になること", () => {
+    it("isReadyがfalseの場合はローディング表示になること", async () => {
       // Arrange
       mockUseShareIntent.mockReturnValue({
         shareIntent: null,
@@ -99,13 +99,13 @@ describe("ShareIntentScreen", () => {
       });
 
       // Act
-      render(<ShareIntentScreen />);
+      await render(<ShareIntentScreen />);
 
       // Assert
       expect(screen.getByLabelText("share-intent-loading")).toBeTruthy();
     });
 
-    it("エラー発生時はエラーメッセージが表示されること", () => {
+    it("エラー発生時はエラーメッセージが表示されること", async () => {
       // Arrange
       mockUseShareIntent.mockReturnValue({
         shareIntent: null,
@@ -116,14 +116,14 @@ describe("ShareIntentScreen", () => {
       });
 
       // Act
-      render(<ShareIntentScreen />);
+      await render(<ShareIntentScreen />);
 
       // Assert
       expect(screen.getByLabelText("share-intent-error")).toBeTruthy();
       expect(screen.getByLabelText("share-intent-error-message")).toBeTruthy();
     });
 
-    it("閉じるボタンを押すと戻ること", () => {
+    it("閉じるボタンを押すと戻ること", async () => {
       // Arrange
       mockUseShareIntent.mockReturnValue({
         shareIntent: null,
@@ -134,8 +134,8 @@ describe("ShareIntentScreen", () => {
       });
 
       // Act
-      render(<ShareIntentScreen />);
-      fireEvent.press(screen.getByLabelText("閉じる"));
+      await render(<ShareIntentScreen />);
+      await fireEvent.press(screen.getByLabelText("閉じる"));
 
       // Assert
       expect(mockRouter.back).toHaveBeenCalledTimes(1);
@@ -152,7 +152,7 @@ describe("ShareIntentScreen", () => {
       });
 
       // Act
-      render(<ShareIntentScreen />);
+      await render(<ShareIntentScreen />);
 
       // Assert
       await waitFor(() => {
@@ -172,7 +172,7 @@ describe("ShareIntentScreen", () => {
       });
 
       // Act
-      render(<ShareIntentScreen />);
+      await render(<ShareIntentScreen />);
 
       // Assert
       await waitFor(() => {
@@ -191,7 +191,7 @@ describe("ShareIntentScreen", () => {
       });
 
       // Act
-      render(<ShareIntentScreen />);
+      await render(<ShareIntentScreen />);
 
       // Assert
       await waitFor(() => {
@@ -211,8 +211,8 @@ describe("ShareIntentScreen", () => {
       });
 
       // Act
-      render(<ShareIntentScreen />);
-      fireEvent.press(screen.getByLabelText("閉じる"));
+      await render(<ShareIntentScreen />);
+      await fireEvent.press(screen.getByLabelText("閉じる"));
 
       // Assert
       expect(mockRouter.back).toHaveBeenCalledTimes(1);

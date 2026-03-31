@@ -4,9 +4,9 @@ import { ProfileSkeleton } from "../ProfileSkeleton";
 
 describe("ProfileSkeleton", () => {
   describe("レンダリング", () => {
-    it("プロフィールスケルトンがレンダリングできること", () => {
+    it("プロフィールスケルトンがレンダリングできること", async () => {
       // Arrange & Act
-      const { toJSON } = render(<ProfileSkeleton />);
+      const { toJSON } = await render(<ProfileSkeleton />);
 
       // Assert
       expect(toJSON()).not.toBeNull();

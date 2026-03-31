@@ -63,9 +63,7 @@ describe("useNetworkStatus", () => {
   describe("初期状態", () => {
     it("初期状態ではisOnlineがtrueであること", async () => {
       // Arrange & Act
-      const { result } = renderHook(() => useNetworkStatus());
-
-      await act(async () => {});
+      const { result } = await renderHook(() => useNetworkStatus());
 
       // Assert
       expect(result.current.isOnline).toBe(true);
@@ -73,9 +71,7 @@ describe("useNetworkStatus", () => {
 
     it("初期状態ではisOfflineがfalseであること", async () => {
       // Arrange & Act
-      const { result } = renderHook(() => useNetworkStatus());
-
-      await act(async () => {});
+      const { result } = await renderHook(() => useNetworkStatus());
 
       // Assert
       expect(result.current.isOffline).toBe(false);
@@ -83,9 +79,7 @@ describe("useNetworkStatus", () => {
 
     it("マウント時にNetInfo.addEventListenerが呼ばれること", async () => {
       // Arrange & Act
-      renderHook(() => useNetworkStatus());
-
-      await act(async () => {});
+      await renderHook(() => useNetworkStatus());
 
       // Assert
       expect(NetInfo.addEventListener).toHaveBeenCalledTimes(1);
@@ -95,30 +89,29 @@ describe("useNetworkStatus", () => {
   describe("ネットワーク状態変化", () => {
     it("オフラインになるとisOfflineがtrueになること", async () => {
       // Arrange
-      const { result } = renderHook(() => useNetworkStatus());
-      await act(async () => {});
+      const { result } = await renderHook(() => useNetworkStatus());
 
       // Act
-      act(() => {
+      await act(async () => {
         capturedCallback?.(OFFLINE_STATE);
       });
 
       // Assert
+      expect(result.current).not.toBeNull();
       expect(result.current.isOffline).toBe(true);
       expect(result.current.isOnline).toBe(false);
     });
 
     it("オンラインに復帰するとisOnlineがtrueになること", async () => {
       // Arrange
-      const { result } = renderHook(() => useNetworkStatus());
-      await act(async () => {});
+      const { result } = await renderHook(() => useNetworkStatus());
 
-      act(() => {
+      await act(async () => {
         capturedCallback?.(OFFLINE_STATE);
       });
 
       // Act
-      act(() => {
+      await act(async () => {
         capturedCallback?.(ONLINE_STATE);
       });
 
@@ -129,11 +122,10 @@ describe("useNetworkStatus", () => {
 
     it("isConnectedがnullの場合はオフラインと判定されること", async () => {
       // Arrange
-      const { result } = renderHook(() => useNetworkStatus());
-      await act(async () => {});
+      const { result } = await renderHook(() => useNetworkStatus());
 
       // Act
-      act(() => {
+      await act(async () => {
         capturedCallback?.({ ...OFFLINE_STATE, isConnected: null } as unknown as NetInfoState);
       });
 
@@ -145,11 +137,10 @@ describe("useNetworkStatus", () => {
   describe("クリーンアップ", () => {
     it("アンマウント時にリスナーが解除されること", async () => {
       // Arrange
-      const { unmount } = renderHook(() => useNetworkStatus());
-      await act(async () => {});
+      const { unmount } = await renderHook(() => useNetworkStatus());
 
       // Act
-      unmount();
+      await unmount();
 
       // Assert
       expect(mockUnsubscribe).toHaveBeenCalledTimes(1);

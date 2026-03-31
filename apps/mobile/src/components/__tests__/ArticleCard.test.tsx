@@ -1,7 +1,5 @@
 import { fireEvent, render } from "@testing-library/react-native";
 
-import { containsText, findByTestId, queryByTestId } from "@/test-helpers";
-
 import { ArticleCard } from "../ArticleCard";
 
 /** テスト用の記事データ（thumbnailUrlはnullで画像レンダリングを回避） */
@@ -18,104 +16,103 @@ const BASE_ARTICLE = {
 
 describe("ArticleCard", () => {
   describe("レンダリング", () => {
-    it("タイトルが正しく表示されること", () => {
+    it("タイトルが正しく表示されること", async () => {
       // Arrange & Act
-      const { UNSAFE_root } = render(<ArticleCard article={BASE_ARTICLE} onPress={() => {}} />);
+      const { getByText } = await render(<ArticleCard article={BASE_ARTICLE} onPress={() => {}} />);
 
       // Assert
-      expect(containsText(UNSAFE_root, "React Nativeのパフォーマンス最適化ガイド")).toBe(true);
+      expect(getByText("React Nativeのパフォーマンス最適化ガイド")).toBeTruthy();
     });
 
-    it("著者名が正しく表示されること", () => {
+    it("著者名が正しく表示されること", async () => {
       // Arrange & Act
-      const { UNSAFE_root } = render(<ArticleCard article={BASE_ARTICLE} onPress={() => {}} />);
+      const { getByText } = await render(<ArticleCard article={BASE_ARTICLE} onPress={() => {}} />);
 
       // Assert
-      expect(containsText(UNSAFE_root, "tech_writer")).toBe(true);
+      expect(getByText("tech_writer")).toBeTruthy();
     });
 
-    it("ソースバッジが正しく表示されること", () => {
+    it("ソースバッジが正しく表示されること", async () => {
       // Arrange & Act
-      const { UNSAFE_root } = render(<ArticleCard article={BASE_ARTICLE} onPress={() => {}} />);
+      const { getByText } = await render(<ArticleCard article={BASE_ARTICLE} onPress={() => {}} />);
 
       // Assert
-      expect(containsText(UNSAFE_root, "zenn")).toBe(true);
+      expect(getByText("zenn")).toBeTruthy();
     });
 
-    it("概要が正しく表示されること", () => {
+    it("概要が正しく表示されること", async () => {
       // Arrange & Act
-      const { UNSAFE_root } = render(<ArticleCard article={BASE_ARTICLE} onPress={() => {}} />);
+      const { getByText } = await render(<ArticleCard article={BASE_ARTICLE} onPress={() => {}} />);
 
       // Assert
       expect(
-        containsText(
-          UNSAFE_root,
+        getByText(
           "React Nativeアプリのパフォーマンスを改善するための実践的なテクニックを紹介します。",
         ),
-      ).toBe(true);
+      ).toBeTruthy();
     });
 
-    it("サムネイルがnullの場合も正常にレンダリングできること", () => {
+    it("サムネイルがnullの場合も正常にレンダリングできること", async () => {
       // Arrange & Act
-      const { UNSAFE_root } = render(<ArticleCard article={BASE_ARTICLE} onPress={() => {}} />);
+      const { queryByTestId } = await render(<ArticleCard article={BASE_ARTICLE} onPress={() => {}} />);
 
       // Assert
-      expect(queryByTestId(UNSAFE_root, "article-thumbnail")).toBeNull();
+      expect(queryByTestId("article-thumbnail")).toBeNull();
     });
   });
 
   describe("オプショナルフィールド", () => {
-    it("著者名がnullの場合も正常にレンダリングできること", () => {
+    it("著者名がnullの場合も正常にレンダリングできること", async () => {
       // Arrange
       const article = { ...BASE_ARTICLE, author: null };
 
       // Act
-      const { UNSAFE_root } = render(<ArticleCard article={article} onPress={() => {}} />);
+      const { getByText } = await render(<ArticleCard article={article} onPress={() => {}} />);
 
       // Assert
-      expect(containsText(UNSAFE_root, "React Nativeのパフォーマンス最適化ガイド")).toBe(true);
+      expect(getByText("React Nativeのパフォーマンス最適化ガイド")).toBeTruthy();
     });
 
-    it("概要がnullの場合も正常にレンダリングできること", () => {
+    it("概要がnullの場合も正常にレンダリングできること", async () => {
       // Arrange
       const article = { ...BASE_ARTICLE, excerpt: null };
 
       // Act
-      const { UNSAFE_root } = render(<ArticleCard article={article} onPress={() => {}} />);
+      const { getByText } = await render(<ArticleCard article={article} onPress={() => {}} />);
 
       // Assert
-      expect(containsText(UNSAFE_root, "React Nativeのパフォーマンス最適化ガイド")).toBe(true);
+      expect(getByText("React Nativeのパフォーマンス最適化ガイド")).toBeTruthy();
     });
 
-    it("公開日がnullの場合も正常にレンダリングできること", () => {
+    it("公開日がnullの場合も正常にレンダリングできること", async () => {
       // Arrange
       const article = { ...BASE_ARTICLE, publishedAt: null };
 
       // Act
-      const { UNSAFE_root } = render(<ArticleCard article={article} onPress={() => {}} />);
+      const { getByText } = await render(<ArticleCard article={article} onPress={() => {}} />);
 
       // Assert
-      expect(containsText(UNSAFE_root, "React Nativeのパフォーマンス最適化ガイド")).toBe(true);
+      expect(getByText("React Nativeのパフォーマンス最適化ガイド")).toBeTruthy();
     });
   });
 
   describe("インタラクション", () => {
-    it("カードタップ時にonPressが呼ばれること", () => {
+    it("カードタップ時にonPressが呼ばれること", async () => {
       // Arrange
       const onPress = jest.fn();
-      const { UNSAFE_root } = render(<ArticleCard article={BASE_ARTICLE} onPress={onPress} />);
+      const { getByTestId } = await render(<ArticleCard article={BASE_ARTICLE} onPress={onPress} />);
 
       // Act
-      fireEvent.press(findByTestId(UNSAFE_root, "article-card"));
+      await fireEvent.press(getByTestId("article-card"));
 
       // Assert
       expect(onPress).toHaveBeenCalledTimes(1);
     });
 
-    it("お気に入りボタンタップ時にonToggleFavoriteが呼ばれること", () => {
+    it("お気に入りボタンタップ時にonToggleFavoriteが呼ばれること", async () => {
       // Arrange
       const onToggleFavorite = jest.fn();
-      const { UNSAFE_root } = render(
+      const { getByTestId } = await render(
         <ArticleCard
           article={BASE_ARTICLE}
           onPress={() => {}}
@@ -124,43 +121,43 @@ describe("ArticleCard", () => {
       );
 
       // Act
-      fireEvent.press(findByTestId(UNSAFE_root, "favorite-button"));
+      await fireEvent.press(getByTestId("favorite-button"));
 
       // Assert
       expect(onToggleFavorite).toHaveBeenCalledTimes(1);
     });
 
-    it("お気に入り状態がtrueの場合にお気に入りアイコンが塗りつぶされること", () => {
+    it("お気に入り状態がtrueの場合にお気に入りアイコンが塗りつぶされること", async () => {
       // Arrange
       const article = { ...BASE_ARTICLE, isFavorite: true };
 
       // Act
-      const { UNSAFE_root } = render(
+      const { getByTestId } = await render(
         <ArticleCard article={article} onPress={() => {}} onToggleFavorite={() => {}} />,
       );
 
       // Assert
-      expect(findByTestId(UNSAFE_root, "favorite-icon-filled")).toBeDefined();
+      expect(getByTestId("favorite-icon-filled")).toBeDefined();
     });
 
-    it("お気に入り状態がfalseの場合にお気に入りアイコンがアウトラインであること", () => {
+    it("お気に入り状態がfalseの場合にお気に入りアイコンがアウトラインであること", async () => {
       // Arrange & Act
-      const { UNSAFE_root } = render(
+      const { getByTestId } = await render(
         <ArticleCard article={BASE_ARTICLE} onPress={() => {}} onToggleFavorite={() => {}} />,
       );
 
       // Assert
-      expect(findByTestId(UNSAFE_root, "favorite-icon-outline")).toBeDefined();
+      expect(getByTestId("favorite-icon-outline")).toBeDefined();
     });
   });
 
   describe("日付フォーマット", () => {
-    it("公開日がフォーマットされて表示されること", () => {
+    it("公開日がフォーマットされて表示されること", async () => {
       // Arrange & Act
-      const { UNSAFE_root } = render(<ArticleCard article={BASE_ARTICLE} onPress={() => {}} />);
+      const { getByText } = await render(<ArticleCard article={BASE_ARTICLE} onPress={() => {}} />);
 
       // Assert
-      expect(containsText(UNSAFE_root, "2025/03/15")).toBe(true);
+      expect(getByText("2025/03/15")).toBeTruthy();
     });
   });
 });

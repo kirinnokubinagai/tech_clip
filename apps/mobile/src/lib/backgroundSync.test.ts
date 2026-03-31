@@ -60,31 +60,31 @@ describe("backgroundSync", () => {
       expect(DEFAULT_BACKGROUND_SYNC_CONFIG.intervalMs).toBe(15 * 60 * 1000);
     });
 
-    it("デフォルト設定にタスク名が含まれること", () => {
+    it("デフォルト設定にタスク名が含まれること", async () => {
       // Assert
       expect(DEFAULT_BACKGROUND_SYNC_CONFIG.taskName).toBe("BACKGROUND_SYNC_ARTICLES");
     });
   });
 
   describe("BACKGROUND_FETCH_OPTIONS", () => {
-    it("最小間隔が15分（秒）であること", () => {
+    it("最小間隔が15分（秒）であること", async () => {
       // Assert
       expect(BACKGROUND_FETCH_OPTIONS.minimumInterval).toBe(15 * 60);
     });
 
-    it("停止時にも実行する設定になっていること", () => {
+    it("停止時にも実行する設定になっていること", async () => {
       // Assert
       expect(BACKGROUND_FETCH_OPTIONS.stopOnTerminate).toBe(false);
     });
 
-    it("起動時に開始する設定になっていること", () => {
+    it("起動時に開始する設定になっていること", async () => {
       // Assert
       expect(BACKGROUND_FETCH_OPTIONS.startOnBoot).toBe(true);
     });
   });
 
   describe("isSyncDue", () => {
-    it("lastSyncedAtがnullの場合はtrueを返すこと", () => {
+    it("lastSyncedAtがnullの場合はtrueを返すこと", async () => {
       // Act
       const result = isSyncDue(null, 15 * 60 * 1000);
 
@@ -92,7 +92,7 @@ describe("backgroundSync", () => {
       expect(result).toBe(true);
     });
 
-    it("間隔が経過している場合はtrueを返すこと", () => {
+    it("間隔が経過している場合はtrueを返すこと", async () => {
       // Arrange
       const intervalMs = 15 * 60 * 1000;
       const lastSyncedAt = Date.now() - intervalMs - 1;
@@ -104,7 +104,7 @@ describe("backgroundSync", () => {
       expect(result).toBe(true);
     });
 
-    it("間隔がちょうど経過した場合はtrueを返すこと", () => {
+    it("間隔がちょうど経過した場合はtrueを返すこと", async () => {
       // Arrange
       const intervalMs = 15 * 60 * 1000;
       const lastSyncedAt = Date.now() - intervalMs;
@@ -116,7 +116,7 @@ describe("backgroundSync", () => {
       expect(result).toBe(true);
     });
 
-    it("間隔が経過していない場合はfalseを返すこと", () => {
+    it("間隔が経過していない場合はfalseを返すこと", async () => {
       // Arrange
       const intervalMs = 15 * 60 * 1000;
       const lastSyncedAt = Date.now() - intervalMs + 1000;
@@ -143,7 +143,7 @@ describe("backgroundSync", () => {
       expect(syncArticles).toHaveBeenCalledTimes(1);
     });
 
-    it("backgroundになった場合はsyncArticlesを呼び出さないこと", () => {
+    it("backgroundになった場合はsyncArticlesを呼び出さないこと", async () => {
       // Arrange
       const handler = createAppStateHandler(DEFAULT_BACKGROUND_SYNC_CONFIG);
 
@@ -154,7 +154,7 @@ describe("backgroundSync", () => {
       expect(syncArticles).not.toHaveBeenCalled();
     });
 
-    it("inactiveになった場合はsyncArticlesを呼び出さないこと", () => {
+    it("inactiveになった場合はsyncArticlesを呼び出さないこと", async () => {
       // Arrange
       const handler = createAppStateHandler(DEFAULT_BACKGROUND_SYNC_CONFIG);
 
@@ -265,7 +265,7 @@ describe("backgroundSync", () => {
       expect(addEventListenerSpy).toHaveBeenCalledWith("change", expect.any(Function));
     });
 
-    it("クリーンアップ関数がsubscription.removeを呼び出すこと", () => {
+    it("クリーンアップ関数がsubscription.removeを呼び出すこと", async () => {
       // Arrange
       const mockSubscription = makeMockSubscription();
       addEventListenerSpy.mockReturnValue(
@@ -280,7 +280,7 @@ describe("backgroundSync", () => {
       expect(mockSubscription.remove).toHaveBeenCalledTimes(1);
     });
 
-    it("二重登録時は既存のsubscriptionを解除してから再登録すること", () => {
+    it("二重登録時は既存のsubscriptionを解除してから再登録すること", async () => {
       // Arrange
       const firstSubscription = makeMockSubscription();
       const secondSubscription = makeMockSubscription();
@@ -297,7 +297,7 @@ describe("backgroundSync", () => {
       expect(addEventListenerSpy).toHaveBeenCalledTimes(2);
     });
 
-    it("クリーンアップ後に再度クリーンアップを呼んでもエラーにならないこと", () => {
+    it("クリーンアップ後に再度クリーンアップを呼んでもエラーにならないこと", async () => {
       // Arrange
       const mockSubscription = makeMockSubscription();
       addEventListenerSpy.mockReturnValue(
@@ -312,7 +312,7 @@ describe("backgroundSync", () => {
   });
 
   describe("getLastSyncedAt", () => {
-    it("初期状態ではnullを返すこと", () => {
+    it("初期状態ではnullを返すこと", async () => {
       // Act
       const result = getLastSyncedAt();
 

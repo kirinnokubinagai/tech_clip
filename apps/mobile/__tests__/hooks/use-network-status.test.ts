@@ -17,17 +17,17 @@ describe("useNetworkStatus", () => {
   });
 
   describe("初期状態", () => {
-    it("初期状態ではオンラインになっていること", () => {
+    it("初期状態ではオンラインになっていること", async () => {
       // Arrange & Act
-      const { result } = renderHook(() => useNetworkStatus());
+      const { result } = await renderHook(() => useNetworkStatus());
 
       // Assert
       expect(result.current.isOnline).toBe(true);
     });
 
-    it("初期状態ではオフラインでないこと", () => {
+    it("初期状態ではオフラインでないこと", async () => {
       // Arrange & Act
-      const { result } = renderHook(() => useNetworkStatus());
+      const { result } = await renderHook(() => useNetworkStatus());
 
       // Assert
       expect(result.current.isOffline).toBe(false);
@@ -35,7 +35,7 @@ describe("useNetworkStatus", () => {
   });
 
   describe("接続状態の変化", () => {
-    it("NetInfoがオフラインを通知するとisOfflineがtrueになること", () => {
+    it("NetInfoがオフラインを通知するとisOfflineがtrueになること", async () => {
       // Arrange
       let capturedCallback: ((state: { isConnected: boolean }) => void) | null = null;
       mockAddEventListener.mockImplementation((callback) => {
@@ -43,10 +43,10 @@ describe("useNetworkStatus", () => {
         return jest.fn();
       });
 
-      const { result } = renderHook(() => useNetworkStatus());
+      const { result } = await renderHook(() => useNetworkStatus());
 
       // Act
-      act(() => {
+      await act(async () => {
         capturedCallback?.({ isConnected: false });
       });
 
@@ -55,7 +55,7 @@ describe("useNetworkStatus", () => {
       expect(result.current.isOnline).toBe(false);
     });
 
-    it("NetInfoがオンラインを通知するとisOnlineがtrueになること", () => {
+    it("NetInfoがオンラインを通知するとisOnlineがtrueになること", async () => {
       // Arrange
       let capturedCallback: ((state: { isConnected: boolean }) => void) | null = null;
       mockAddEventListener.mockImplementation((callback) => {
@@ -63,15 +63,15 @@ describe("useNetworkStatus", () => {
         return jest.fn();
       });
 
-      const { result } = renderHook(() => useNetworkStatus());
+      const { result } = await renderHook(() => useNetworkStatus());
 
       // まずオフラインにする
-      act(() => {
+      await act(async () => {
         capturedCallback?.({ isConnected: false });
       });
 
       // Act: オンラインに戻す
-      act(() => {
+      await act(async () => {
         capturedCallback?.({ isConnected: true });
       });
 
@@ -82,15 +82,15 @@ describe("useNetworkStatus", () => {
   });
 
   describe("クリーンアップ", () => {
-    it("アンマウント時にイベントリスナーが解除されること", () => {
+    it("アンマウント時にイベントリスナーが解除されること", async () => {
       // Arrange
       const unsubscribe = jest.fn();
       mockAddEventListener.mockReturnValue(unsubscribe);
 
-      const { unmount } = renderHook(() => useNetworkStatus());
+      const { unmount } = await renderHook(() => useNetworkStatus());
 
       // Act
-      unmount();
+      await unmount();
 
       // Assert
       expect(unsubscribe).toHaveBeenCalledTimes(1);
@@ -98,9 +98,9 @@ describe("useNetworkStatus", () => {
   });
 
   describe("addEventListenerの呼び出し", () => {
-    it("マウント時にNetInfo.addEventListenerが呼ばれること", () => {
+    it("マウント時にNetInfo.addEventListenerが呼ばれること", async () => {
       // Arrange & Act
-      renderHook(() => useNetworkStatus());
+      await renderHook(() => useNetworkStatus());
 
       // Assert
       expect(mockAddEventListener).toHaveBeenCalledTimes(1);

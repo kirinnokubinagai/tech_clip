@@ -171,7 +171,7 @@ describe("apiFetch", () => {
   });
 
   describe("SessionExpiredError", () => {
-    it("SessionExpiredErrorはErrorのサブクラスであること", () => {
+    it("SessionExpiredErrorはErrorのサブクラスであること", async () => {
       // Arrange & Act
       const error = new SessionExpiredError();
 

@@ -1,74 +1,72 @@
 import { fireEvent, render } from "@testing-library/react-native";
 
-import { containsText, findByTestId, queryByTestId } from "@/test-helpers";
-
 import { Toast } from "../Toast";
 
 describe("Toast", () => {
   describe("レンダリング", () => {
-    it("visible=trueの場合メッセージが表示されること", () => {
+    it("visible=trueの場合メッセージが表示されること", async () => {
       // Arrange & Act
-      const { UNSAFE_root } = render(
+      const { getByText } = await render(
         <Toast message="保存しました" visible={true} onDismiss={jest.fn()} />,
       );
 
       // Assert
-      expect(containsText(UNSAFE_root, "保存しました")).toBe(true);
+      expect(getByText("保存しました")).toBeTruthy();
     });
 
-    it("visible=falseの場合何も表示されないこと", () => {
+    it("visible=falseの場合何も表示されないこと", async () => {
       // Arrange & Act
-      const { UNSAFE_root } = render(
+      const { queryByText } = await render(
         <Toast message="保存しました" visible={false} onDismiss={jest.fn()} />,
       );
 
       // Assert
-      expect(containsText(UNSAFE_root, "保存しました")).toBe(false);
+      expect(queryByText("保存しました")).toBeNull();
     });
   });
 
   describe("バリアント", () => {
-    it("successバリアントでレンダリングできること", () => {
+    it("successバリアントでレンダリングできること", async () => {
       // Arrange & Act
-      const { UNSAFE_root } = render(
+      const { getByText } = await render(
         <Toast message="成功" variant="success" visible={true} onDismiss={jest.fn()} />,
       );
 
       // Assert
-      expect(containsText(UNSAFE_root, "成功")).toBe(true);
+      expect(getByText("成功")).toBeTruthy();
     });
 
-    it("errorバリアントでレンダリングできること", () => {
+    it("errorバリアントでレンダリングできること", async () => {
       // Arrange & Act
-      const { UNSAFE_root } = render(
+      const { getByText } = await render(
         <Toast message="エラー" variant="error" visible={true} onDismiss={jest.fn()} />,
       );
 
       // Assert
-      expect(containsText(UNSAFE_root, "エラー")).toBe(true);
+      expect(getByText("エラー")).toBeTruthy();
     });
 
-    it("infoバリアントでレンダリングできること", () => {
+    it("infoバリアントでレンダリングできること", async () => {
       // Arrange & Act
-      const { UNSAFE_root } = render(
+      const { getByText } = await render(
         <Toast message="お知らせ" variant="info" visible={true} onDismiss={jest.fn()} />,
       );
 
       // Assert
-      expect(containsText(UNSAFE_root, "お知らせ")).toBe(true);
+      expect(getByText("お知らせ")).toBeTruthy();
     });
   });
 
   describe("インタラクション", () => {
-    it("タップ時にonDismissが呼ばれること", () => {
+    it("タップ時にonDismissが呼ばれること", async () => {
       // Arrange
       const onDismiss = jest.fn();
-      const { UNSAFE_root } = render(
+      const { getByTestId } = await render(
         <Toast message="タップして閉じる" visible={true} onDismiss={onDismiss} />,
       );
 
       // Act
-      fireEvent.press(findByTestId(UNSAFE_root, "toast-pressable"));
+      await fireEvent.press(getByTestId("toast-pressable"));
 
       // Assert
       expect(onDismiss).toHaveBeenCalledTimes(1);

@@ -1,8 +1,6 @@
 import { fireEvent, render, waitFor } from "@testing-library/react-native";
 import { Alert } from "react-native";
 
-import { containsText, findByTestId } from "@/test-helpers";
-
 import ProfileEditScreen from "../../app/profile/edit";
 
 const mockBack = jest.fn();
@@ -33,10 +31,10 @@ describe("ProfileEditScreen", () => {
   describe("保存成功時のフィードバック", () => {
     it("保存ボタンを押すと保存処理が実行されること", async () => {
       // Arrange
-      const { UNSAFE_root } = render(<ProfileEditScreen />);
+      const { getByTestId } = await render(<ProfileEditScreen />);
 
       // Act
-      fireEvent.press(findByTestId(UNSAFE_root, "button"));
+      await fireEvent.press(getByTestId("button"));
 
       // Assert
       await waitFor(() => {
@@ -46,14 +44,14 @@ describe("ProfileEditScreen", () => {
 
     it("保存成功後にトーストメッセージが表示されること", async () => {
       // Arrange
-      const { UNSAFE_root } = render(<ProfileEditScreen />);
+      const { getByTestId, getByText } = await render(<ProfileEditScreen />);
 
       // Act
-      fireEvent.press(findByTestId(UNSAFE_root, "button"));
+      await fireEvent.press(getByTestId("button"));
 
       // Assert
       await waitFor(() => {
-        expect(containsText(UNSAFE_root, "プロフィールを更新しました")).toBe(true);
+        expect(getByText("プロフィールを更新しました")).toBeTruthy();
       });
     });
   });
@@ -61,16 +59,16 @@ describe("ProfileEditScreen", () => {
   describe("バリデーションエラー", () => {
     it("名前が空の場合エラーメッセージが表示されること", async () => {
       // Arrange
-      const { UNSAFE_root } = render(<ProfileEditScreen />);
-      const nameInput = UNSAFE_root.findByProps({ placeholder: "名前を入力" });
-      fireEvent.changeText(nameInput, "");
+      const { getByTestId, getByPlaceholderText, getByText } = await render(<ProfileEditScreen />);
+      const nameInput = getByPlaceholderText("名前を入力");
+      await fireEvent.changeText(nameInput, "");
 
       // Act
-      fireEvent.press(findByTestId(UNSAFE_root, "button"));
+      await fireEvent.press(getByTestId("button"));
 
       // Assert
       await waitFor(() => {
-        expect(containsText(UNSAFE_root, "名前を入力してください")).toBe(true);
+        expect(getByText("名前を入力してください")).toBeTruthy();
       });
     });
   });

@@ -17,7 +17,7 @@ describe("i18n", () => {
       expect(i18n.hasResourceBundle("en", "translation")).toBe(true);
     });
 
-    it("フォールバック言語が日本語であること", () => {
+    it("フォールバック言語が日本語であること", async () => {
       // Assert
       expect(i18n.options.fallbackLng).toContain("ja");
     });
@@ -28,7 +28,7 @@ describe("i18n", () => {
       i18n.changeLanguage("ja");
     });
 
-    it("auth.createAccountを日本語で翻訳できること", () => {
+    it("auth.createAccountを日本語で翻訳できること", async () => {
       // Act
       const result = i18n.t("auth.createAccount");
 
@@ -36,7 +36,7 @@ describe("i18n", () => {
       expect(result).toBe("アカウントを作成");
     });
 
-    it("auth.loginを日本語で翻訳できること", () => {
+    it("auth.loginを日本語で翻訳できること", async () => {
       // Act
       const result = i18n.t("auth.login");
 
@@ -44,7 +44,7 @@ describe("i18n", () => {
       expect(result).toBe("ログイン");
     });
 
-    it("common.loadingを日本語で翻訳できること", () => {
+    it("common.loadingを日本語で翻訳できること", async () => {
       // Act
       const result = i18n.t("common.loading");
 
@@ -52,7 +52,7 @@ describe("i18n", () => {
       expect(result).toBe("読み込み中...");
     });
 
-    it("インターポレーションが機能すること", () => {
+    it("インターポレーションが機能すること", async () => {
       // Act
       const result = i18n.t("auth.validation.passwordMinLength", { min: 8 });
 
@@ -70,7 +70,7 @@ describe("i18n", () => {
       i18n.changeLanguage("ja");
     });
 
-    it("auth.createAccountを英語で翻訳できること", () => {
+    it("auth.createAccountを英語で翻訳できること", async () => {
       // Act
       const result = i18n.t("auth.createAccount");
 
@@ -78,7 +78,7 @@ describe("i18n", () => {
       expect(result).toBe("Create account");
     });
 
-    it("auth.loginを英語で翻訳できること", () => {
+    it("auth.loginを英語で翻訳できること", async () => {
       // Act
       const result = i18n.t("auth.login");
 
@@ -86,7 +86,7 @@ describe("i18n", () => {
       expect(result).toBe("Log in");
     });
 
-    it("common.loadingを英語で翻訳できること", () => {
+    it("common.loadingを英語で翻訳できること", async () => {
       // Act
       const result = i18n.t("common.loading");
 
@@ -94,7 +94,7 @@ describe("i18n", () => {
       expect(result).toBe("Loading...");
     });
 
-    it("インターポレーションが英語でも機能すること", () => {
+    it("インターポレーションが英語でも機能すること", async () => {
       // Act
       const result = i18n.t("auth.validation.passwordMinLength", { min: 8 });
 

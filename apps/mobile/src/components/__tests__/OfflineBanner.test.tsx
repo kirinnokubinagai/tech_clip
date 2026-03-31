@@ -13,7 +13,7 @@ import { OfflineBanner } from "../OfflineBanner";
 
 describe("OfflineBanner", () => {
   describe("オフライン時", () => {
-    it("オフラインのときバナーが表示されること", () => {
+    it("オフラインのときバナーが表示されること", async () => {
       // Arrange
       (useNetworkStatus as jest.Mock).mockReturnValue({
         isOnline: false,
@@ -21,13 +21,13 @@ describe("OfflineBanner", () => {
       });
 
       // Act
-      const { getByLabelText } = render(<OfflineBanner />);
+      const { getByLabelText } = await render(<OfflineBanner />);
 
       // Assert
       expect(getByLabelText("オフライン状態です")).toBeDefined();
     });
 
-    it("オフライン時にオフラインメッセージが表示されること", () => {
+    it("オフライン時にオフラインメッセージが表示されること", async () => {
       // Arrange
       (useNetworkStatus as jest.Mock).mockReturnValue({
         isOnline: false,
@@ -35,7 +35,7 @@ describe("OfflineBanner", () => {
       });
 
       // Act
-      const { getByLabelText } = render(<OfflineBanner />);
+      const { getByLabelText } = await render(<OfflineBanner />);
 
       // Assert
       expect(getByLabelText("オフライン状態です")).toBeDefined();
@@ -43,7 +43,7 @@ describe("OfflineBanner", () => {
   });
 
   describe("オンライン時", () => {
-    it("オンラインのときバナーが表示されないこと", () => {
+    it("オンラインのときバナーが表示されないこと", async () => {
       // Arrange
       (useNetworkStatus as jest.Mock).mockReturnValue({
         isOnline: true,
@@ -51,7 +51,7 @@ describe("OfflineBanner", () => {
       });
 
       // Act
-      const { queryByLabelText } = render(<OfflineBanner />);
+      const { queryByLabelText } = await render(<OfflineBanner />);
 
       // Assert
       expect(queryByLabelText("オフライン状態です")).toBeNull();

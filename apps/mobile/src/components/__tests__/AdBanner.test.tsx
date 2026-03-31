@@ -1,7 +1,5 @@
 import { render } from "@testing-library/react-native";
 
-import { findByTestId, queryByTestId } from "@/test-helpers";
-
 import { AdBanner } from "../AdBanner";
 
 jest.mock("react-native-google-mobile-ads", () => {
@@ -38,7 +36,7 @@ describe("AdBanner", () => {
   });
 
   describe("無料ユーザー", () => {
-    it("バナー広告が表示されること", () => {
+    it("バナー広告が表示されること", async () => {
       // Arrange
       mockedUseSubscription.mockReturnValue({
         isSubscribed: false,
@@ -50,16 +48,16 @@ describe("AdBanner", () => {
       });
 
       // Act
-      const { UNSAFE_root } = render(<AdBanner />);
+      const { getByTestId } = await render(<AdBanner />);
 
       // Assert
-      expect(findByTestId(UNSAFE_root, "ad-banner-container")).toBeDefined();
-      expect(findByTestId(UNSAFE_root, "banner-ad")).toBeDefined();
+      expect(getByTestId("ad-banner-container")).toBeDefined();
+      expect(getByTestId("banner-ad")).toBeDefined();
     });
   });
 
   describe("プレミアムユーザー", () => {
-    it("バナー広告が非表示になること", () => {
+    it("バナー広告が非表示になること", async () => {
       // Arrange
       mockedUseSubscription.mockReturnValue({
         isSubscribed: true,
@@ -71,16 +69,16 @@ describe("AdBanner", () => {
       });
 
       // Act
-      const { UNSAFE_root } = render(<AdBanner />);
+      const { queryByTestId } = await render(<AdBanner />);
 
       // Assert
-      expect(queryByTestId(UNSAFE_root, "ad-banner-container")).toBeNull();
-      expect(queryByTestId(UNSAFE_root, "banner-ad")).toBeNull();
+      expect(queryByTestId("ad-banner-container")).toBeNull();
+      expect(queryByTestId("banner-ad")).toBeNull();
     });
   });
 
   describe("プロパティ", () => {
-    it("カスタムtestIDが適用されること", () => {
+    it("カスタムtestIDが適用されること", async () => {
       // Arrange
       mockedUseSubscription.mockReturnValue({
         isSubscribed: false,
@@ -92,40 +90,40 @@ describe("AdBanner", () => {
       });
 
       // Act
-      const { UNSAFE_root } = render(<AdBanner testID="custom-ad" />);
+      const { getByTestId } = await render(<AdBanner testID="custom-ad" />);
 
       // Assert
-      expect(findByTestId(UNSAFE_root, "custom-ad")).toBeDefined();
+      expect(getByTestId("custom-ad")).toBeDefined();
     });
   });
 
   describe("広告ユニットID", () => {
-    it("環境変数が設定されている場合はその値を使用すること", () => {
+    it("環境変数が設定されている場合はその値を使用すること", async () => {
       // Arrange
       const originalEnv = process.env.EXPO_PUBLIC_ADMOB_BANNER_ID;
       process.env.EXPO_PUBLIC_ADMOB_BANNER_ID = "ca-app-pub-1234567890/1234567890";
 
       // Act
-      const { UNSAFE_root } = render(<AdBanner />);
+      const { getByTestId } = await render(<AdBanner />);
 
       // Assert
-      const bannerAd = findByTestId(UNSAFE_root, "banner-ad");
+      const bannerAd = getByTestId("banner-ad");
       expect(bannerAd).toBeDefined();
 
       // Cleanup
       process.env.EXPO_PUBLIC_ADMOB_BANNER_ID = originalEnv;
     });
 
-    it("環境変数が未設定の場合はTestIdsにフォールバックすること", () => {
+    it("環境変数が未設定の場合はTestIdsにフォールバックすること", async () => {
       // Arrange
       const originalEnv = process.env.EXPO_PUBLIC_ADMOB_BANNER_ID;
       process.env.EXPO_PUBLIC_ADMOB_BANNER_ID = undefined;
 
       // Act
-      const { UNSAFE_root } = render(<AdBanner />);
+      const { getByTestId } = await render(<AdBanner />);
 
       // Assert
-      const bannerAd = findByTestId(UNSAFE_root, "banner-ad");
+      const bannerAd = getByTestId("banner-ad");
       expect(bannerAd).toBeDefined();
       expect(bannerAd.props.unitId).toBe("ca-app-pub-3940256099942544/9214589741");
 

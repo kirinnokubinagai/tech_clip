@@ -19,86 +19,103 @@ import {
 } from "./analytics";
 
 /** fetchモック */
-const mockFetch = jest.fn();
+const mockFetch = jest.fn().mockResolvedValue({
+  ok: true,
+  json: () => Promise.resolve({ success: true }),
+});
 (globalThis as Record<string, unknown>).fetch = mockFetch;
 
 describe("analytics", () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    mockFetch.mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve({ success: true }),
+    });
   });
 
   describe("trackEvent", () => {
-    it("バックエンド未実装のためfetchを呼び出さないこと", async () => {
+    it("イベントをAPIに送信すること", async () => {
       // Act
       await trackEvent(AnalyticsEventName.ARTICLE_VIEW, { articleId: "article-123" });
 
       // Assert
-      expect(mockFetch).not.toHaveBeenCalled();
+      expect(mockFetch).toHaveBeenCalledTimes(1);
     });
 
     it("エラーをスローせずに正常に完了すること", async () => {
       // Act & Assert
       await expect(trackEvent(AnalyticsEventName.ARTICLE_VIEW, {})).resolves.toBeUndefined();
     });
+
+    it("fetch失敗時もエラーをスローしないこと", async () => {
+      // Arrange
+      mockFetch.mockRejectedValueOnce(new Error("ネットワークエラー"));
+
+      // Act & Assert
+      await expect(
+        trackEvent(AnalyticsEventName.ARTICLE_VIEW, { articleId: "article-123" }),
+      ).resolves.toBeUndefined();
+    });
   });
 
   describe("trackScreenView", () => {
-    it("fetchを呼び出さずに正常に完了すること", async () => {
+    it("画面表示イベントを送信すること", async () => {
       // Act
       await trackScreenView("ArticleDetail");
 
       // Assert
-      expect(mockFetch).not.toHaveBeenCalled();
+      expect(mockFetch).toHaveBeenCalledTimes(1);
     });
   });
 
   describe("trackArticleView", () => {
-    it("fetchを呼び出さずに正常に完了すること", async () => {
+    it("記事閲覧イベントを送信すること", async () => {
       // Act
       await trackArticleView("article-456");
 
       // Assert
-      expect(mockFetch).not.toHaveBeenCalled();
+      expect(mockFetch).toHaveBeenCalledTimes(1);
     });
   });
 
   describe("trackArticleSave", () => {
-    it("fetchを呼び出さずに正常に完了すること", async () => {
+    it("記事保存イベントを送信すること", async () => {
       // Act
       await trackArticleSave("article-789");
 
       // Assert
-      expect(mockFetch).not.toHaveBeenCalled();
+      expect(mockFetch).toHaveBeenCalledTimes(1);
     });
   });
 
   describe("trackArticleShare", () => {
-    it("fetchを呼び出さずに正常に完了すること", async () => {
+    it("記事シェアイベントを送信すること", async () => {
       // Act
       await trackArticleShare("article-101");
 
       // Assert
-      expect(mockFetch).not.toHaveBeenCalled();
+      expect(mockFetch).toHaveBeenCalledTimes(1);
     });
   });
 
   describe("trackAiSummaryRequest", () => {
-    it("fetchを呼び出さずに正常に完了すること", async () => {
+    it("AI要約リクエストイベントを送信すること", async () => {
       // Act
       await trackAiSummaryRequest("article-202");
 
       // Assert
-      expect(mockFetch).not.toHaveBeenCalled();
+      expect(mockFetch).toHaveBeenCalledTimes(1);
     });
   });
 
   describe("trackSearch", () => {
-    it("fetchを呼び出さずに正常に完了すること", async () => {
+    it("検索イベントを送信すること", async () => {
       // Act
       await trackSearch("typescript hooks");
 
       // Assert
-      expect(mockFetch).not.toHaveBeenCalled();
+      expect(mockFetch).toHaveBeenCalledTimes(1);
     });
   });
 

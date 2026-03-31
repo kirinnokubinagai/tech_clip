@@ -1,5 +1,4 @@
 import { fireEvent, render, waitFor } from "@testing-library/react-native";
-import type { ReactTestInstance } from "react-test-renderer";
 
 import OnboardingScreen from "../app/onboarding";
 
@@ -29,18 +28,6 @@ const { router: mockRouter } = jest.requireMock("expo-router") as {
   router: { replace: jest.Mock };
 };
 
-/**
- * testIDでReactTestInstanceを検索するヘルパー
- */
-function findByTestId(root: ReactTestInstance, testId: string): ReactTestInstance {
-  return root.findByProps({ testID: testId });
-}
-
-function queryByTestId(root: ReactTestInstance, testId: string): ReactTestInstance | null {
-  const results = root.findAllByProps({ testID: testId });
-  return results.length > 0 ? results[0] : null;
-}
-
 beforeEach(() => {
   jest.clearAllMocks();
   mockHasSeenOnboarding.current = false;
@@ -48,39 +35,39 @@ beforeEach(() => {
 
 describe("OnboardingScreen", () => {
   describe("ページ表示", () => {
-    it("最初のページが表示されること", () => {
+    it("最初のページが表示されること", async () => {
       // Arrange & Act
-      const { UNSAFE_root } = render(<OnboardingScreen />);
+      const { getByTestId } = await render(<OnboardingScreen />);
 
       // Assert
-      expect(findByTestId(UNSAFE_root, "onboarding-title")).toBeDefined();
-      expect(findByTestId(UNSAFE_root, "page-indicator")).toBeDefined();
+      expect(getByTestId("onboarding-title")).toBeDefined();
+      expect(getByTestId("page-indicator")).toBeDefined();
     });
 
-    it("スキップボタンが表示されること", () => {
+    it("スキップボタンが表示されること", async () => {
       // Arrange & Act
-      const { UNSAFE_root } = render(<OnboardingScreen />);
+      const { getByTestId } = await render(<OnboardingScreen />);
 
       // Assert
-      expect(findByTestId(UNSAFE_root, "skip-button")).toBeDefined();
+      expect(getByTestId("skip-button")).toBeDefined();
     });
 
-    it("次へボタンが表示されること", () => {
+    it("次へボタンが表示されること", async () => {
       // Arrange & Act
-      const { UNSAFE_root } = render(<OnboardingScreen />);
+      const { getByTestId } = await render(<OnboardingScreen />);
 
       // Assert
-      expect(findByTestId(UNSAFE_root, "next-button")).toBeDefined();
+      expect(getByTestId("next-button")).toBeDefined();
     });
   });
 
   describe("スキップボタン", () => {
-    it("スキップボタンを押すとhasSeenOnboardingがtrueになること", () => {
+    it("スキップボタンを押すとhasSeenOnboardingがtrueになること", async () => {
       // Arrange
-      const { UNSAFE_root } = render(<OnboardingScreen />);
+      const { getByTestId } = await render(<OnboardingScreen />);
 
       // Act
-      fireEvent.press(findByTestId(UNSAFE_root, "skip-button"));
+      await fireEvent.press(getByTestId("skip-button"));
 
       // Assert
       expect(mockSetHasSeenOnboarding).toHaveBeenCalledWith(true);
@@ -88,10 +75,10 @@ describe("OnboardingScreen", () => {
 
     it("スキップボタンを押すとログイン画面に遷移すること", async () => {
       // Arrange
-      const { UNSAFE_root } = render(<OnboardingScreen />);
+      const { getByTestId } = await render(<OnboardingScreen />);
 
       // Act
-      fireEvent.press(findByTestId(UNSAFE_root, "skip-button"));
+      await fireEvent.press(getByTestId("skip-button"));
 
       // Assert
       await waitFor(() => {
@@ -101,41 +88,40 @@ describe("OnboardingScreen", () => {
   });
 
   describe("ページ遷移", () => {
-    it("次へボタンを押すとページが進むこと", () => {
+    it("次へボタンを押すとページが進むこと", async () => {
       // Arrange
-      const { UNSAFE_root } = render(<OnboardingScreen />);
+      const { getByTestId } = await render(<OnboardingScreen />);
 
       // Act
-      fireEvent.press(findByTestId(UNSAFE_root, "next-button"));
+      await fireEvent.press(getByTestId("next-button"));
 
       // Assert
-      expect(findByTestId(UNSAFE_root, "onboarding-title")).toBeDefined();
+      expect(getByTestId("onboarding-title")).toBeDefined();
     });
 
-    it("最終ページで始めるボタンが表示されること", () => {
+    it("最終ページで始めるボタンが表示されること", async () => {
       // Arrange
-      const { UNSAFE_root } = render(<OnboardingScreen />);
+      const { getByTestId } = await render(<OnboardingScreen />);
 
       // Act - 3回次へを押して最終ページへ
-      fireEvent.press(findByTestId(UNSAFE_root, "next-button"));
-      fireEvent.press(findByTestId(UNSAFE_root, "next-button"));
-      fireEvent.press(findByTestId(UNSAFE_root, "next-button"));
+      await fireEvent.press(getByTestId("next-button"));
+      await fireEvent.press(getByTestId("next-button"));
+      await fireEvent.press(getByTestId("next-button"));
 
       // Assert
-      expect(findByTestId(UNSAFE_root, "finish-button")).toBeDefined();
+      expect(getByTestId("finish-button")).toBeDefined();
     });
 
     it("最終ページの始めるボタンを押すとログイン画面に遷移すること", async () => {
       // Arrange
-      const { UNSAFE_root } = render(<OnboardingScreen />);
+      const { getByTestId } = await render(<OnboardingScreen />);
 
-      // 最終ページまで進む
-      fireEvent.press(findByTestId(UNSAFE_root, "next-button"));
-      fireEvent.press(findByTestId(UNSAFE_root, "next-button"));
-      fireEvent.press(findByTestId(UNSAFE_root, "next-button"));
+      await fireEvent.press(getByTestId("next-button"));
+      await fireEvent.press(getByTestId("next-button"));
+      await fireEvent.press(getByTestId("next-button"));
 
       // Act
-      fireEvent.press(findByTestId(UNSAFE_root, "finish-button"));
+      await fireEvent.press(getByTestId("finish-button"));
 
       // Assert
       await waitFor(() => {
@@ -146,16 +132,16 @@ describe("OnboardingScreen", () => {
   });
 
   describe("hasSeenOnboarding済み", () => {
-    it("hasSeenOnboardingがtrueの場合は何も表示されないこと", () => {
+    it("hasSeenOnboardingがtrueの場合は何も表示されないこと", async () => {
       // Arrange
       mockHasSeenOnboarding.current = true;
 
       // Act
-      const { UNSAFE_root } = render(<OnboardingScreen />);
+      const { queryByTestId } = await render(<OnboardingScreen />);
 
       // Assert
-      expect(queryByTestId(UNSAFE_root, "onboarding-title")).toBeNull();
-      expect(queryByTestId(UNSAFE_root, "skip-button")).toBeNull();
+      expect(queryByTestId("onboarding-title")).toBeNull();
+      expect(queryByTestId("skip-button")).toBeNull();
     });
   });
 });

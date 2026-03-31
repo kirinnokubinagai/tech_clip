@@ -1,8 +1,6 @@
 import { fireEvent, render } from "@testing-library/react-native";
 import { Alert } from "react-native";
 
-import { containsText, findByTestId } from "@/test-helpers";
-
 import SettingsScreen from "../../app/(tabs)/settings";
 
 const mockSignOut = jest.fn();
@@ -60,22 +58,22 @@ beforeEach(() => {
 
 describe("SettingsScreen", () => {
   describe("ログアウト", () => {
-    it("ログアウトボタンを押すと確認ダイアログが表示されること", () => {
+    it("ログアウトボタンを押すと確認ダイアログが表示されること", async () => {
       // Arrange
-      const { UNSAFE_root } = render(<SettingsScreen />);
+      const { getByTestId } = await render(<SettingsScreen />);
 
       // Act
-      fireEvent.press(findByTestId(UNSAFE_root, "settings-logout-button"));
+      await fireEvent.press(getByTestId("settings-logout-button"));
 
       // Assert
       expect(Alert.alert).toHaveBeenCalledTimes(1);
       expect(Alert.alert).toHaveBeenCalledWith("ログアウト", expect.any(String), expect.any(Array));
     });
 
-    it("確認ダイアログのキャンセルボタンを押してもサインアウトが実行されないこと", () => {
+    it("確認ダイアログのキャンセルボタンを押してもサインアウトが実行されないこと", async () => {
       // Arrange
-      const { UNSAFE_root } = render(<SettingsScreen />);
-      fireEvent.press(findByTestId(UNSAFE_root, "settings-logout-button"));
+      const { getByTestId } = await render(<SettingsScreen />);
+      await fireEvent.press(getByTestId("settings-logout-button"));
 
       // Act
       const buttons = (Alert.alert as jest.Mock).mock.calls[0][2];
@@ -86,10 +84,10 @@ describe("SettingsScreen", () => {
       expect(mockSignOut).not.toHaveBeenCalled();
     });
 
-    it("確認ダイアログの確認ボタンを押すとサインアウトが実行されること", () => {
+    it("確認ダイアログの確認ボタンを押すとサインアウトが実行されること", async () => {
       // Arrange
-      const { UNSAFE_root } = render(<SettingsScreen />);
-      fireEvent.press(findByTestId(UNSAFE_root, "settings-logout-button"));
+      const { getByTestId } = await render(<SettingsScreen />);
+      await fireEvent.press(getByTestId("settings-logout-button"));
 
       // Act
       const buttons = (Alert.alert as jest.Mock).mock.calls[0][2];
@@ -100,12 +98,12 @@ describe("SettingsScreen", () => {
       expect(mockSignOut).toHaveBeenCalledTimes(1);
     });
 
-    it("確認ダイアログのボタンがdestructiveスタイルであること", () => {
+    it("確認ダイアログのボタンがdestructiveスタイルであること", async () => {
       // Arrange
-      const { UNSAFE_root } = render(<SettingsScreen />);
+      const { getByTestId } = await render(<SettingsScreen />);
 
       // Act
-      fireEvent.press(findByTestId(UNSAFE_root, "settings-logout-button"));
+      await fireEvent.press(getByTestId("settings-logout-button"));
 
       // Assert
       const buttons = (Alert.alert as jest.Mock).mock.calls[0][2];
@@ -115,20 +113,20 @@ describe("SettingsScreen", () => {
   });
 
   describe("アカウント削除", () => {
-    it("アカウント削除ボタンが表示されること", () => {
+    it("アカウント削除ボタンが表示されること", async () => {
       // Arrange
-      const { UNSAFE_root } = render(<SettingsScreen />);
+      const { getByText } = await render(<SettingsScreen />);
 
       // Assert
-      expect(containsText(UNSAFE_root, "アカウントを削除する")).toBe(true);
+      expect(getByText("アカウントを削除する")).toBeTruthy();
     });
 
-    it("アカウント削除ボタンを押すと確認ダイアログが表示されること", () => {
+    it("アカウント削除ボタンを押すと確認ダイアログが表示されること", async () => {
       // Arrange
-      const { UNSAFE_root } = render(<SettingsScreen />);
+      const { getByTestId } = await render(<SettingsScreen />);
 
       // Act
-      fireEvent.press(findByTestId(UNSAFE_root, "settings-delete-account-button"));
+      await fireEvent.press(getByTestId("settings-delete-account-button"));
 
       // Assert
       expect(Alert.alert).toHaveBeenCalledTimes(1);
@@ -139,10 +137,10 @@ describe("SettingsScreen", () => {
       );
     });
 
-    it("確認ダイアログのキャンセルボタンを押してもアカウント削除が実行されないこと", () => {
+    it("確認ダイアログのキャンセルボタンを押してもアカウント削除が実行されないこと", async () => {
       // Arrange
-      const { UNSAFE_root } = render(<SettingsScreen />);
-      fireEvent.press(findByTestId(UNSAFE_root, "settings-delete-account-button"));
+      const { getByTestId } = await render(<SettingsScreen />);
+      await fireEvent.press(getByTestId("settings-delete-account-button"));
 
       // Act
       const buttons = (Alert.alert as jest.Mock).mock.calls[0][2];
@@ -153,11 +151,11 @@ describe("SettingsScreen", () => {
       expect(mockDeleteAccount).not.toHaveBeenCalled();
     });
 
-    it("確認ダイアログの確認ボタンを押すとアカウント削除が実行されること", () => {
+    it("確認ダイアログの確認ボタンを押すとアカウント削除が実行されること", async () => {
       // Arrange
       mockDeleteAccount.mockResolvedValue(undefined);
-      const { UNSAFE_root } = render(<SettingsScreen />);
-      fireEvent.press(findByTestId(UNSAFE_root, "settings-delete-account-button"));
+      const { getByTestId } = await render(<SettingsScreen />);
+      await fireEvent.press(getByTestId("settings-delete-account-button"));
 
       // Act
       const buttons = (Alert.alert as jest.Mock).mock.calls[0][2];
@@ -168,12 +166,12 @@ describe("SettingsScreen", () => {
       expect(mockDeleteAccount).toHaveBeenCalledTimes(1);
     });
 
-    it("確認ダイアログの確認ボタンがdestructiveスタイルであること", () => {
+    it("確認ダイアログの確認ボタンがdestructiveスタイルであること", async () => {
       // Arrange
-      const { UNSAFE_root } = render(<SettingsScreen />);
+      const { getByTestId } = await render(<SettingsScreen />);
 
       // Act
-      fireEvent.press(findByTestId(UNSAFE_root, "settings-delete-account-button"));
+      await fireEvent.press(getByTestId("settings-delete-account-button"));
 
       // Assert
       const buttons = (Alert.alert as jest.Mock).mock.calls[0][2];
@@ -184,18 +182,18 @@ describe("SettingsScreen", () => {
 });
 
 describe("言語設定の永続化", () => {
-  it("画面表示時にloadLanguageが呼ばれること", () => {
+  it("画面表示時にloadLanguageが呼ばれること", async () => {
     // Arrange & Act
-    render(<SettingsScreen />);
+    await render(<SettingsScreen />);
 
     // Assert
     expect(mockLoadLanguage).toHaveBeenCalledTimes(1);
   });
 
-  it("言語選択ダイアログで日本語を選択するとsetLanguageが呼ばれること", () => {
+  it("言語選択ダイアログで日本語を選択するとsetLanguageが呼ばれること", async () => {
     // Arrange
-    const { UNSAFE_root } = render(<SettingsScreen />);
-    fireEvent.press(findByTestId(UNSAFE_root, "settings-language-button"));
+    const { getByTestId } = await render(<SettingsScreen />);
+    await fireEvent.press(getByTestId("settings-language-button"));
 
     // Act
     const buttons = (Alert.alert as jest.Mock).mock.calls[0][2];
@@ -206,10 +204,10 @@ describe("言語設定の永続化", () => {
     expect(mockSetLanguage).toHaveBeenCalledWith("日本語");
   });
 
-  it("言語選択ダイアログでEnglishを選択するとsetLanguageが呼ばれること", () => {
+  it("言語選択ダイアログでEnglishを選択するとsetLanguageが呼ばれること", async () => {
     // Arrange
-    const { UNSAFE_root } = render(<SettingsScreen />);
-    fireEvent.press(findByTestId(UNSAFE_root, "settings-language-button"));
+    const { getByTestId } = await render(<SettingsScreen />);
+    await fireEvent.press(getByTestId("settings-language-button"));
 
     // Act
     const buttons = (Alert.alert as jest.Mock).mock.calls[0][2];
@@ -222,31 +220,31 @@ describe("言語設定の永続化", () => {
 });
 
 describe("通知設定の永続化", () => {
-  it("画面表示時にfetchNotificationSettingsが呼ばれること", () => {
+  it("画面表示時にfetchNotificationSettingsが呼ばれること", async () => {
     // Arrange & Act
-    render(<SettingsScreen />);
+    await render(<SettingsScreen />);
 
     // Assert
     expect(mockFetchNotificationSettings).toHaveBeenCalledTimes(1);
   });
 
-  it("通知スイッチをOFFにするとupdateNotificationEnabledが呼ばれること", () => {
+  it("通知スイッチをOFFにするとupdateNotificationEnabledが呼ばれること", async () => {
     // Arrange
-    const { UNSAFE_root } = render(<SettingsScreen />);
+    const { getByTestId } = await render(<SettingsScreen />);
 
     // Act
-    fireEvent(findByTestId(UNSAFE_root, "settings-notification-switch"), "valueChange", false);
+    await fireEvent(getByTestId("settings-notification-switch"), "valueChange", false);
 
     // Assert
     expect(mockUpdateNotificationEnabled).toHaveBeenCalledWith(false);
   });
 
-  it("通知スイッチをONにするとupdateNotificationEnabledが呼ばれること", () => {
+  it("通知スイッチをONにするとupdateNotificationEnabledが呼ばれること", async () => {
     // Arrange
-    const { UNSAFE_root } = render(<SettingsScreen />);
+    const { getByTestId } = await render(<SettingsScreen />);
 
     // Act
-    fireEvent(findByTestId(UNSAFE_root, "settings-notification-switch"), "valueChange", true);
+    await fireEvent(getByTestId("settings-notification-switch"), "valueChange", true);
 
     // Assert
     expect(mockUpdateNotificationEnabled).toHaveBeenCalledWith(true);

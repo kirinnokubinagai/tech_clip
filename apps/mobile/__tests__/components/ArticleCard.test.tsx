@@ -1,6 +1,5 @@
 import { fireEvent, render } from "@testing-library/react-native";
 import { Text } from "react-native";
-import type { ReactTestInstance } from "react-test-renderer";
 
 import { ArticleCard } from "../../src/components/ArticleCard";
 import type { ArticleCardArticle } from "../../src/components/ArticleCard";
@@ -17,96 +16,79 @@ const BASE_ARTICLE: ArticleCardArticle = {
   isFavorite: false,
 };
 
-/**
- * propsでReactTestInstanceを検索するヘルパー
- */
-function findByTestId(root: ReactTestInstance, testId: string): ReactTestInstance {
-  return root.findByProps({ testID: testId });
-}
-
-function queryByTestId(root: ReactTestInstance, testId: string): ReactTestInstance | null {
-  const results = root.findAllByProps({ testID: testId });
-  return results.length > 0 ? results[0] : null;
-}
-
 describe("ArticleCard", () => {
   describe("レンダリング", () => {
-    it("記事カードが表示されること", () => {
+    it("記事カードが表示されること", async () => {
       // Arrange & Act
-      const { UNSAFE_root } = render(<ArticleCard article={BASE_ARTICLE} onPress={jest.fn()} />);
+      const { getByTestId } = await render(<ArticleCard article={BASE_ARTICLE} onPress={jest.fn()} />);
 
       // Assert
-      expect(findByTestId(UNSAFE_root, "article-card")).toBeDefined();
+      expect(getByTestId("article-card")).toBeDefined();
     });
 
-    it("記事タイトルが表示されること", () => {
+    it("記事タイトルが表示されること", async () => {
       // Arrange & Act
-      const { UNSAFE_getAllByType } = render(
+      const { getByText } = await render(
         <ArticleCard article={BASE_ARTICLE} onPress={jest.fn()} />,
       );
-      const texts = UNSAFE_getAllByType(Text).flatMap((n) => n.props.children);
 
       // Assert
-      expect(texts).toContain("TypeScriptの型システム入門");
+      expect(getByText("TypeScriptの型システム入門")).toBeTruthy();
     });
 
-    it("記事ソース（バッジ）が表示されること", () => {
+    it("記事ソース（バッジ）が表示されること", async () => {
       // Arrange & Act
-      const { UNSAFE_getAllByType } = render(
+      const { getByText } = await render(
         <ArticleCard article={BASE_ARTICLE} onPress={jest.fn()} />,
       );
-      const texts = UNSAFE_getAllByType(Text).flatMap((n) => n.props.children);
 
       // Assert
-      expect(texts).toContain("zenn");
+      expect(getByText("zenn")).toBeTruthy();
     });
 
-    it("著者が表示されること", () => {
+    it("著者が表示されること", async () => {
       // Arrange & Act
-      const { UNSAFE_getAllByType } = render(
+      const { getByText } = await render(
         <ArticleCard article={BASE_ARTICLE} onPress={jest.fn()} />,
       );
-      const texts = UNSAFE_getAllByType(Text).flatMap((n) => n.props.children);
 
       // Assert
-      expect(texts).toContain("テスト著者");
+      expect(getByText("テスト著者")).toBeTruthy();
     });
 
-    it("概要が表示されること", () => {
+    it("概要が表示されること", async () => {
       // Arrange & Act
-      const { UNSAFE_getAllByType } = render(
+      const { getByText } = await render(
         <ArticleCard article={BASE_ARTICLE} onPress={jest.fn()} />,
       );
-      const texts = UNSAFE_getAllByType(Text).flatMap((n) => n.props.children);
 
       // Assert
-      expect(texts).toContain("TypeScriptの型システムについて解説します。");
+      expect(getByText("TypeScriptの型システムについて解説します。")).toBeTruthy();
     });
 
-    it("公開日がYYYY/MM/DD形式で表示されること", () => {
+    it("公開日がYYYY/MM/DD形式で表示されること", async () => {
       // Arrange & Act
-      const { UNSAFE_getAllByType } = render(
+      const { getByText } = await render(
         <ArticleCard article={BASE_ARTICLE} onPress={jest.fn()} />,
       );
-      const texts = UNSAFE_getAllByType(Text).flatMap((n) => n.props.children);
 
       // Assert
-      expect(texts).toContain("2024/01/15");
+      expect(getByText("2024/01/15")).toBeTruthy();
     });
 
-    it("thumbnailUrlがnullの場合サムネイルが表示されないこと", () => {
+    it("thumbnailUrlがnullの場合サムネイルが表示されないこと", async () => {
       // Arrange & Act
-      const { UNSAFE_root } = render(
+      const { queryByTestId } = await render(
         <ArticleCard article={{ ...BASE_ARTICLE, thumbnailUrl: null }} onPress={jest.fn()} />,
       );
 
       // Assert
-      expect(queryByTestId(UNSAFE_root, "article-thumbnail")).toBeNull();
+      expect(queryByTestId("article-thumbnail")).toBeNull();
     });
 
-    it("thumbnailUrlが存在する場合サムネイルが表示されること", () => {
+    it("thumbnailUrlが存在する場合サムネイルが表示されること", async () => {
       // Arrange & Act
-      const { UNSAFE_root } = render(
+      const { getByTestId } = await render(
         <ArticleCard
           article={{ ...BASE_ARTICLE, thumbnailUrl: "https://example.com/img.png" }}
           onPress={jest.fn()}
@@ -114,54 +96,52 @@ describe("ArticleCard", () => {
       );
 
       // Assert
-      expect(findByTestId(UNSAFE_root, "article-thumbnail")).toBeDefined();
+      expect(getByTestId("article-thumbnail")).toBeDefined();
     });
 
-    it("authorがnullの場合著者が表示されないこと", () => {
+    it("authorがnullの場合著者が表示されないこと", async () => {
       // Arrange & Act
-      const { UNSAFE_getAllByType } = render(
+      const { queryByText } = await render(
         <ArticleCard article={{ ...BASE_ARTICLE, author: null }} onPress={jest.fn()} />,
       );
-      const texts = UNSAFE_getAllByType(Text).flatMap((n) => n.props.children);
 
       // Assert
-      expect(texts).not.toContain("テスト著者");
+      expect(queryByText("テスト著者")).toBeNull();
     });
 
-    it("publishedAtがnullの場合日付が表示されないこと", () => {
+    it("publishedAtがnullの場合日付が表示されないこと", async () => {
       // Arrange & Act
-      const { UNSAFE_getAllByType } = render(
+      const { queryByText } = await render(
         <ArticleCard article={{ ...BASE_ARTICLE, publishedAt: null }} onPress={jest.fn()} />,
       );
-      const texts = UNSAFE_getAllByType(Text).flatMap((n) => n.props.children);
 
       // Assert
-      expect(texts).not.toContain("2024/01/15");
+      expect(queryByText("2024/01/15")).toBeNull();
     });
   });
 
   describe("お気に入りボタン", () => {
-    it("onToggleFavoriteが未指定の場合お気に入りボタンが表示されないこと", () => {
+    it("onToggleFavoriteが未指定の場合お気に入りボタンが表示されないこと", async () => {
       // Arrange & Act
-      const { UNSAFE_root } = render(<ArticleCard article={BASE_ARTICLE} onPress={jest.fn()} />);
+      const { queryByTestId } = await render(<ArticleCard article={BASE_ARTICLE} onPress={jest.fn()} />);
 
       // Assert
-      expect(queryByTestId(UNSAFE_root, "favorite-button")).toBeNull();
+      expect(queryByTestId("favorite-button")).toBeNull();
     });
 
-    it("onToggleFavoriteが指定された場合お気に入りボタンが表示されること", () => {
+    it("onToggleFavoriteが指定された場合お気に入りボタンが表示されること", async () => {
       // Arrange & Act
-      const { UNSAFE_root } = render(
+      const { getByTestId } = await render(
         <ArticleCard article={BASE_ARTICLE} onPress={jest.fn()} onToggleFavorite={jest.fn()} />,
       );
 
       // Assert
-      expect(findByTestId(UNSAFE_root, "favorite-button")).toBeDefined();
+      expect(getByTestId("favorite-button")).toBeDefined();
     });
 
-    it("isFavoriteがfalseの場合アウトラインアイコンが表示されること", () => {
+    it("isFavoriteがfalseの場合アウトラインアイコンが表示されること", async () => {
       // Arrange & Act
-      const { UNSAFE_root } = render(
+      const { getByTestId } = await render(
         <ArticleCard
           article={{ ...BASE_ARTICLE, isFavorite: false }}
           onPress={jest.fn()}
@@ -170,12 +150,12 @@ describe("ArticleCard", () => {
       );
 
       // Assert
-      expect(findByTestId(UNSAFE_root, "favorite-icon-outline")).toBeDefined();
+      expect(getByTestId("favorite-icon-outline")).toBeDefined();
     });
 
-    it("isFavoriteがtrueの場合塗りつぶしアイコンが表示されること", () => {
+    it("isFavoriteがtrueの場合塗りつぶしアイコンが表示されること", async () => {
       // Arrange & Act
-      const { UNSAFE_root } = render(
+      const { getByTestId } = await render(
         <ArticleCard
           article={{ ...BASE_ARTICLE, isFavorite: true }}
           onPress={jest.fn()}
@@ -184,13 +164,13 @@ describe("ArticleCard", () => {
       );
 
       // Assert
-      expect(findByTestId(UNSAFE_root, "favorite-icon-filled")).toBeDefined();
+      expect(getByTestId("favorite-icon-filled")).toBeDefined();
     });
 
-    it("お気に入りボタンタップ時にonToggleFavoriteが呼ばれること", () => {
+    it("お気に入りボタンタップ時にonToggleFavoriteが呼ばれること", async () => {
       // Arrange
       const onToggleFavorite = jest.fn();
-      const { UNSAFE_root } = render(
+      const { getByTestId } = await render(
         <ArticleCard
           article={BASE_ARTICLE}
           onPress={jest.fn()}
@@ -199,7 +179,7 @@ describe("ArticleCard", () => {
       );
 
       // Act
-      fireEvent.press(findByTestId(UNSAFE_root, "favorite-button"));
+      await fireEvent.press(getByTestId("favorite-button"));
 
       // Assert
       expect(onToggleFavorite).toHaveBeenCalledTimes(1);
@@ -207,13 +187,13 @@ describe("ArticleCard", () => {
   });
 
   describe("インタラクション", () => {
-    it("カードタップ時にonPressが呼ばれること", () => {
+    it("カードタップ時にonPressが呼ばれること", async () => {
       // Arrange
       const onPress = jest.fn();
-      const { UNSAFE_root } = render(<ArticleCard article={BASE_ARTICLE} onPress={onPress} />);
+      const { getByTestId } = await render(<ArticleCard article={BASE_ARTICLE} onPress={onPress} />);
 
       // Act
-      fireEvent.press(findByTestId(UNSAFE_root, "article-card"));
+      await fireEvent.press(getByTestId("article-card"));
 
       // Assert
       expect(onPress).toHaveBeenCalledTimes(1);
@@ -221,12 +201,12 @@ describe("ArticleCard", () => {
   });
 
   describe("アクセシビリティ", () => {
-    it("カードにaccessibilityLabelが設定されていること", () => {
+    it("カードにaccessibilityLabelが設定されていること", async () => {
       // Arrange & Act
-      const { UNSAFE_root } = render(<ArticleCard article={BASE_ARTICLE} onPress={jest.fn()} />);
+      const { getByTestId } = await render(<ArticleCard article={BASE_ARTICLE} onPress={jest.fn()} />);
 
       // Assert
-      const card = findByTestId(UNSAFE_root, "article-card");
+      const card = getByTestId("article-card");
       expect(card.props.accessibilityLabel).toBe("TypeScriptの型システム入門");
     });
   });

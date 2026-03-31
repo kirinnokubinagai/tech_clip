@@ -1,74 +1,72 @@
 import { fireEvent, render } from "@testing-library/react-native";
 
-import { containsText, findByTestId, queryByTestId } from "@/test-helpers";
-
 import { TagPicker } from "../TagPicker";
 
 describe("TagPicker", () => {
   const defaultTags = ["React", "TypeScript", "Expo", "NativeWind"];
 
   describe("表示", () => {
-    it("すべてのタグが表示されること", () => {
+    it("すべてのタグが表示されること", async () => {
       // Arrange & Act
-      const { UNSAFE_root } = render(
+      const { getByTestId } = await render(
         <TagPicker tags={defaultTags} selectedTags={[]} onToggleTag={jest.fn()} />,
       );
 
       // Assert
-      expect(findByTestId(UNSAFE_root, "tag-React")).toBeDefined();
-      expect(findByTestId(UNSAFE_root, "tag-TypeScript")).toBeDefined();
-      expect(findByTestId(UNSAFE_root, "tag-Expo")).toBeDefined();
-      expect(findByTestId(UNSAFE_root, "tag-NativeWind")).toBeDefined();
+      expect(getByTestId("tag-React")).toBeDefined();
+      expect(getByTestId("tag-TypeScript")).toBeDefined();
+      expect(getByTestId("tag-Expo")).toBeDefined();
+      expect(getByTestId("tag-NativeWind")).toBeDefined();
     });
 
-    it("選択済みタグが視覚的に区別されること", () => {
+    it("選択済みタグが視覚的に区別されること", async () => {
       // Arrange & Act
-      const { UNSAFE_root } = render(
+      const { getByTestId } = await render(
         <TagPicker tags={defaultTags} selectedTags={["React"]} onToggleTag={jest.fn()} />,
       );
 
       // Assert
-      const reactTag = findByTestId(UNSAFE_root, "tag-React");
+      const reactTag = getByTestId("tag-React");
       expect(reactTag).toBeDefined();
     });
 
-    it("未選択タグが非選択状態である��と", () => {
+    it("未選択タグが非選択状態であること", async () => {
       // Arrange & Act
-      const { UNSAFE_root } = render(
+      const { getByTestId } = await render(
         <TagPicker tags={defaultTags} selectedTags={["React"]} onToggleTag={jest.fn()} />,
       );
 
       // Assert
-      const tsTag = findByTestId(UNSAFE_root, "tag-TypeScript");
+      const tsTag = getByTestId("tag-TypeScript");
       expect(tsTag).toBeDefined();
     });
   });
 
   describe("タグ選択・解除", () => {
-    it("タグをタップするとonToggleTagが���ばれるこ���", () => {
+    it("タグをタップするとonToggleTagが呼ばれること", async () => {
       // Arrange
       const onToggleTag = jest.fn();
-      const { UNSAFE_root } = render(
+      const { getByTestId } = await render(
         <TagPicker tags={defaultTags} selectedTags={[]} onToggleTag={onToggleTag} />,
       );
 
       // Act
-      fireEvent.press(findByTestId(UNSAFE_root, "tag-React"));
+      await fireEvent.press(getByTestId("tag-React"));
 
       // Assert
       expect(onToggleTag).toHaveBeenCalledWith("React");
       expect(onToggleTag).toHaveBeenCalledTimes(1);
     });
 
-    it("選択済みタグをタップするとonToggleTagが呼ばれること", () => {
+    it("選択済みタグをタップするとonToggleTagが呼ばれること", async () => {
       // Arrange
       const onToggleTag = jest.fn();
-      const { UNSAFE_root } = render(
+      const { getByTestId } = await render(
         <TagPicker tags={defaultTags} selectedTags={["React"]} onToggleTag={onToggleTag} />,
       );
 
       // Act
-      fireEvent.press(findByTestId(UNSAFE_root, "tag-React"));
+      await fireEvent.press(getByTestId("tag-React"));
 
       // Assert
       expect(onToggleTag).toHaveBeenCalledWith("React");
@@ -76,9 +74,9 @@ describe("TagPicker", () => {
   });
 
   describe("最大タグ数制限", () => {
-    it("上限に達すると未選択タグが無効化されること", () => {
+    it("上限に達すると未選択タグが無効化されること", async () => {
       // Arrange & Act
-      const { UNSAFE_root } = render(
+      const { getByTestId } = await render(
         <TagPicker
           tags={defaultTags}
           selectedTags={["React", "TypeScript"]}
@@ -88,13 +86,13 @@ describe("TagPicker", () => {
       );
 
       // Assert
-      const expoTag = findByTestId(UNSAFE_root, "tag-Expo");
+      const expoTag = getByTestId("tag-Expo");
       expect(expoTag).toBeDefined();
     });
 
-    it("上限に達すると制限メッセージが表示されること", () => {
+    it("上限に達すると制限メッセージが表示されること", async () => {
       // Arrange & Act
-      const { UNSAFE_root } = render(
+      const { getByTestId, getByText } = await render(
         <TagPicker
           tags={defaultTags}
           selectedTags={["React", "TypeScript"]}
@@ -104,14 +102,14 @@ describe("TagPicker", () => {
       );
 
       // Assert
-      const message = findByTestId(UNSAFE_root, "tag-limit-message");
-      expect(containsText(message, "タグは最大2個まで選択できます")).toBe(true);
+      expect(getByTestId("tag-limit-message")).toBeDefined();
+      expect(getByText("タグは最大2個まで選択できます")).toBeTruthy();
     });
 
-    it("上限に達しても選択済みタグは解除可能であること", () => {
+    it("上限に達しても選択済みタグは解除可能であること", async () => {
       // Arrange
       const onToggleTag = jest.fn();
-      const { UNSAFE_root } = render(
+      const { getByTestId } = await render(
         <TagPicker
           tags={defaultTags}
           selectedTags={["React", "TypeScript"]}
@@ -121,7 +119,7 @@ describe("TagPicker", () => {
       );
 
       // Act
-      fireEvent.press(findByTestId(UNSAFE_root, "tag-React"));
+      await fireEvent.press(getByTestId("tag-React"));
 
       // Assert
       expect(onToggleTag).toHaveBeenCalledWith("React");
@@ -129,9 +127,9 @@ describe("TagPicker", () => {
   });
 
   describe("新規タグ追加", () => {
-    it("onAddTagが指定されていると入力欄が表示されること", () => {
+    it("onAddTagが指定されていると入力欄が表示されること", async () => {
       // Arrange & Act
-      const { UNSAFE_root } = render(
+      const { getByTestId } = await render(
         <TagPicker
           tags={defaultTags}
           selectedTags={[]}
@@ -141,24 +139,24 @@ describe("TagPicker", () => {
       );
 
       // Assert
-      expect(findByTestId(UNSAFE_root, "tag-add-input")).toBeDefined();
-      expect(findByTestId(UNSAFE_root, "tag-input")).toBeDefined();
+      expect(getByTestId("tag-add-input")).toBeDefined();
+      expect(getByTestId("tag-input")).toBeDefined();
     });
 
-    it("onAddTagが未指定の���合は入力欄が非表示になること", () => {
+    it("onAddTagが未指定の場合は入力欄が非表示になること", async () => {
       // Arrange & Act
-      const { UNSAFE_root } = render(
+      const { queryByTestId } = await render(
         <TagPicker tags={defaultTags} selectedTags={[]} onToggleTag={jest.fn()} />,
       );
 
       // Assert
-      expect(queryByTestId(UNSAFE_root, "tag-add-input")).toBeNull();
+      expect(queryByTestId("tag-add-input")).toBeNull();
     });
 
-    it("追加ボタンをタップするとonAddTagが呼ばれること", () => {
+    it("追加ボタンをタップするとonAddTagが呼ばれること", async () => {
       // Arrange
       const onAddTag = jest.fn();
-      const { UNSAFE_root } = render(
+      const { getByTestId } = await render(
         <TagPicker
           tags={defaultTags}
           selectedTags={[]}
@@ -168,17 +166,17 @@ describe("TagPicker", () => {
       );
 
       // Act
-      fireEvent.changeText(findByTestId(UNSAFE_root, "tag-input"), "NewTag");
-      fireEvent.press(findByTestId(UNSAFE_root, "tag-add-button"));
+      await fireEvent.changeText(getByTestId("tag-input"), "NewTag");
+      await fireEvent.press(getByTestId("tag-add-button"));
 
       // Assert
       expect(onAddTag).toHaveBeenCalledWith("NewTag");
     });
 
-    it("空文字ではonAddTagが呼ばれないこと", () => {
+    it("空文字ではonAddTagが呼ばれないこと", async () => {
       // Arrange
       const onAddTag = jest.fn();
-      const { UNSAFE_root } = render(
+      const { getByTestId } = await render(
         <TagPicker
           tags={defaultTags}
           selectedTags={[]}
@@ -188,17 +186,17 @@ describe("TagPicker", () => {
       );
 
       // Act
-      fireEvent.changeText(findByTestId(UNSAFE_root, "tag-input"), "   ");
-      fireEvent.press(findByTestId(UNSAFE_root, "tag-add-button"));
+      await fireEvent.changeText(getByTestId("tag-input"), "   ");
+      await fireEvent.press(getByTestId("tag-add-button"));
 
       // Assert
       expect(onAddTag).not.toHaveBeenCalled();
     });
 
-    it("既存タグと同名ではonAddTagが呼ばれないこと", () => {
+    it("既存タグと同名ではonAddTagが呼ばれないこと", async () => {
       // Arrange
       const onAddTag = jest.fn();
-      const { UNSAFE_root } = render(
+      const { getByTestId } = await render(
         <TagPicker
           tags={defaultTags}
           selectedTags={[]}
@@ -208,8 +206,8 @@ describe("TagPicker", () => {
       );
 
       // Act
-      fireEvent.changeText(findByTestId(UNSAFE_root, "tag-input"), "React");
-      fireEvent.press(findByTestId(UNSAFE_root, "tag-add-button"));
+      await fireEvent.changeText(getByTestId("tag-input"), "React");
+      await fireEvent.press(getByTestId("tag-add-button"));
 
       // Assert
       expect(onAddTag).not.toHaveBeenCalled();
