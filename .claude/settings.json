@@ -125,6 +125,7 @@
       "Bash(*enforce_admins*)",
       "Bash(git push origin main)",
       "Bash(git push origin main:*)",
+      "Bash(*git push*:main*)",
       "Agent(oh-my-claudecode:*)"
     ]
   },
