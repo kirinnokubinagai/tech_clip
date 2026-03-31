@@ -103,9 +103,10 @@ graphql_request() {
   local query="$1"
   local response
 
-  response=$(curl --silent --request POST \
+  response=$(curl --silent --fail-with-body --request POST \
     --header 'content-type: application/json' \
-    --url "${RUNPOD_API_URL}?api_key=${RUNPOD_API_KEY}" \
+    --header "Authorization: Bearer ${RUNPOD_API_KEY}" \
+    --url "${RUNPOD_API_URL}" \
     --data "{\"query\": $(echo "$query" | jq -Rs .)}" 2>&1)
 
   local exit_code=$?
