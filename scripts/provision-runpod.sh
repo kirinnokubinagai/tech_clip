@@ -182,9 +182,9 @@ create_template() {
   }"
 
   if [[ "${DRY_RUN}" == "true" ]]; then
-    echo "    [DRY-RUN] テンプレート作成リクエスト:"
-    echo "    名前: ${template_name}"
-    echo "    イメージ: ${image_name}"
+    echo "    [DRY-RUN] テンプレート作成リクエスト:" >&2
+    echo "    名前: ${template_name}" >&2
+    echo "    イメージ: ${image_name}" >&2
     echo "dry-run-template-id"
     return 0
   fi
@@ -243,11 +243,11 @@ create_endpoint() {
   }"
 
   if [[ "${DRY_RUN}" == "true" ]]; then
-    echo "    [DRY-RUN] エンドポイント作成リクエスト:"
-    echo "    名前: ${endpoint_name}"
-    echo "    テンプレートID: ${template_id}"
-    echo "    GPU: ${gpu_ids}"
-    echo "    最大ワーカー: ${max_workers}"
+    echo "    [DRY-RUN] エンドポイント作成リクエスト:" >&2
+    echo "    名前: ${endpoint_name}" >&2
+    echo "    テンプレートID: ${template_id}" >&2
+    echo "    GPU: ${gpu_ids}" >&2
+    echo "    最大ワーカー: ${max_workers}" >&2
     echo "dry-run-endpoint-id"
     return 0
   fi
@@ -391,6 +391,16 @@ if [[ "${DRY_RUN}" == "true" ]]; then
   echo "  モード:         DRY-RUN（実際には作成しません）"
 fi
 echo ""
+
+# API 接続の事前検証（dry-run 時はスキップ）
+if [[ "${DRY_RUN}" != "true" ]]; then
+  log_info "RunPod API 接続を確認中..."
+  if ! graphql_request "{ myself { id } }" > /dev/null 2>&1; then
+    log_error "RunPod API への接続に失敗しました。API キーが正しいか確認してください。"
+    exit 1
+  fi
+  log_success "API 接続確認完了"
+fi
 
 # 既存エンドポイントの確認（dry-run 時はスキップ）
 EXISTING_ENDPOINT_ID=""
