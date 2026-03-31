@@ -112,7 +112,7 @@ describe("FollowButton", () => {
   describe("ローディング状態", () => {
     it("onToggle実行中はボタンがdisabledになること", async () => {
       // Arrange
-      let resolveToggle: () => void;
+      let resolveToggle: () => void = () => {};
       const togglePromise = new Promise<void>((r) => {
         resolveToggle = r;
       });
@@ -130,7 +130,7 @@ describe("FollowButton", () => {
         expect(button.props.accessibilityState?.disabled).toBe(true);
       });
 
-      resolveToggle?.();
+      resolveToggle();
       await pressPromise;
       expect(onToggle).toHaveBeenCalledWith("user-1", false);
     });
