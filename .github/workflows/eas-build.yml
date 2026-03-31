@@ -16,10 +16,10 @@ jobs:
           token: ${{ secrets.EXPO_TOKEN }}
       - name: Build iOS
         working-directory: apps/mobile
-        run: eas build --platform ios --profile production --non-interactive
+        run: nix develop --command bash -c "eas build --platform ios --profile production --non-interactive"
       - name: Submit iOS to App Store
         working-directory: apps/mobile
-        run: eas submit --platform ios --latest --non-interactive
+        run: nix develop --command bash -c "eas submit --platform ios --latest --non-interactive"
 
   build-android:
     runs-on: ubuntu-latest
@@ -32,7 +32,7 @@ jobs:
           token: ${{ secrets.EXPO_TOKEN }}
       - name: Build Android
         working-directory: apps/mobile
-        run: eas build --platform android --profile production --non-interactive
+        run: nix develop --command bash -c "eas build --platform android --profile production --non-interactive"
       - name: Submit Android to Google Play
         working-directory: apps/mobile
-        run: eas submit --platform android --latest --non-interactive
+        run: nix develop --command bash -c "eas submit --platform android --latest --non-interactive"

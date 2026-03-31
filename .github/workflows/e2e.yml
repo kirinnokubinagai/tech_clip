@@ -19,7 +19,7 @@ jobs:
           token: ${{ secrets.EXPO_TOKEN }}
       - name: Run Maestro Cloud E2E tests
         run: |
-          BUILD_LIST=$(nix develop --command eas build:list --platform ios --limit 1 --json --non-interactive)
+          BUILD_LIST=$(nix develop --command bash -c "eas build:list --platform ios --limit 1 --json --non-interactive")
           BUILD_URL=$(echo "$BUILD_LIST" | jq -r '.[0].artifacts.buildUrl // empty')
           if [ -z "$BUILD_URL" ]; then
             echo "EAS Buildのアーティファクトが見つかりません"
