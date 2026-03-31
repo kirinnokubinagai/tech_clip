@@ -9,6 +9,7 @@ tools:
   - Bash
   - Grep
   - Glob
+  - Agent
 ---
 
 あなたは TechClip プロジェクトのコーディング・機能実装エージェントです。
