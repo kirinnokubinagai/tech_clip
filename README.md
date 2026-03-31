@@ -7,12 +7,38 @@ Zenn、Qiita、dev.to、YouTube などの技術コンテンツを保存するだ
 ## 主な機能
 
 - 記事 URL を貼るだけで自動取得・保存
-- AI による要約生成（長文記事を数行に凝縮）
-- AI による翻訳（英語記事を自然な日本語に）
+- 他アプリの共有ボタンから直接保存（Share Intent 対応）
+- AI による要約生成（長文記事を数行に凝縮、デバイス言語に自動対応）
+- AI による翻訳（任意の言語間で翻訳可能）
+- 16 ソース対応（Zenn, Qiita, Medium, GitHub, Reddit, StackOverflow 等）
 - オフライン閲覧（バックグラウンド同期）
 - タグ・お気に入りで整理
 - プレミアムプラン（RevenueCat によるサブスクリプション）
-- 多言語対応（日本語 / 英語）
+- 多言語 UI 対応（日本語 / 英語）
+
+## 対応ソース
+
+| ソース | 種別 | 状態 |
+|--------|------|------|
+| Zenn | 記事 / 本 | 対応済み |
+| Qiita | 記事 | 対応済み |
+| note | 記事 | 対応済み |
+| はてなブログ | 記事 | 対応済み |
+| dev.to | 記事 | 対応済み |
+| Medium | 記事 | 対応済み |
+| Hacker News | 記事 | 対応済み |
+| Hashnode | 記事 | 対応済み |
+| GitHub | README / Issue / Discussion | 対応済み |
+| StackOverflow | Q&A | 対応済み |
+| Reddit | 投稿 / コメント | 対応済み |
+| Speaker Deck | スライド | 対応済み |
+| freeCodeCamp | 記事 | 対応済み |
+| LogRocket | 記事 | 対応済み |
+| CSS-Tricks | 記事 | 対応済み |
+| Smashing Magazine | 記事 | 対応済み |
+| その他 URL | 汎用パーサー | 対応済み |
+| YouTube | 動画 (字幕要約) | 予定 (#541) |
+| Twitter / X | ツイート / スレッド | 予定 (#542) |
 
 ## Tech Stack
 
