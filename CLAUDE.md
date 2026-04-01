@@ -366,7 +366,7 @@ PRマージは CI（GitHub Actions auto-approve workflow）のみが行う。Cla
 
 - `gh pr merge` の実行（settings.json の deny で強制ブロック）
 - `scripts/safe-merge.sh` の実行
-- ローカルでの `git merge` の実行
+- main ブランチ上での `git merge` の実行（作業ブランチでの `git merge origin/main` によるコンフリクト解消は許可）
 - 「マージしますか？」とユーザーに聞くこと
 
 ---
