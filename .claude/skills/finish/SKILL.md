@@ -38,6 +38,6 @@ triggers:
 
 ## マージ後
 
-- `bash scripts/safe-merge.sh <番号>`
-- `git worktree remove .worktrees/issue-<N>`
+- CI が自動で Approve → マージ（Claude は何もしない）
+- マージ完了後: `git worktree remove .worktrees/issue-<N>`
 - mainブランチで `git pull`

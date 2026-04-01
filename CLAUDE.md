@@ -214,13 +214,37 @@ Closes #<issue番号>
 
 ## 禁止事項
 
+### コード・開発
+
 - Issue なしでの作業開始
 - Worktree を使わずにメインブランチで直接コード変更
-- セルフマージ（ユーザーレビュー前のマージ）
 - ESLint / Prettier の使用（Biome を使用すること）
-- `drizzle-kit push` の使用（**`drizzle-kit migrate` のみ許可**。push はスキーマ差分を直接適用し、マイグレーション履歴が残らないため本番運用で危険）
+- `drizzle-kit push` の使用（**`drizzle-kit migrate` のみ許可**）
 - テストを書かずに実装コードを書くこと（TDDサイクル厳守）
 - テストカバレッジ80%未満でのPR作成
+
+### Git 操作（settings.json の deny で強制）
+
+- `git merge` — main ブランチ上でのマージは禁止（main への push が deny で防止済み）。作業ブランチでの `git merge origin/main`（コンフリクト解消）は許可
+- `git rebase` — 履歴の書き換えは禁止
+- `git restore .` — 全ファイル復元は禁止（個別ファイル指定のみ許可）
+- `git reset --hard` — 破壊的リセットは禁止
+- `git push --force` / `--force-with-lease` — 強制プッシュは禁止
+- `git checkout -- .` — 全ファイル復元は禁止
+- `gh pr merge` — ローカルからの PR マージは禁止。マージは CI のみが行う
+
+### PR・レビュー
+
+- セルフマージ（ユーザーレビュー前のマージ）
+- ローカルからの PR マージ操作（CI のみがマージ可能）
+- 「マージしますか？」「マージして良いですか？」とユーザーに聞くこと（CI が自動で行うため不要）
+- PRレビュー指摘を別 Issue に分離すること（指摘は該当 PR 内で修正する）
+- レビュー → 修正 → 再レビュー → 全件 PASS のサイクルが完了していない状態でのマージ提案
+
+### エージェント
+
+- oh-my-claudecode エージェントの使用（settings.json の deny で強制ブロック）
+- settings.json の allow リストにないエージェントの使用
 
 ---
 
@@ -301,15 +325,9 @@ Closes #<issue番号>
 
 ### マージ手順
 
-- `scripts/safe-merge.sh <PR番号> [worktree_path]` を使用
-- コンフリクト時は自動rebaseを試みる
-- 自動rebase失敗時のみ手動介入
-
-```bash
-# 使用例
-bash scripts/safe-merge.sh 123
-bash scripts/safe-merge.sh 123 .worktrees/issue-123
-```
+- マージは CI（auto-approve.yml）が自動で行う
+- Claude がローカルからマージすることは禁止
+- コンフリクト発生時はユーザーに報告し、手動解消を依頼する
 
 ---
 
@@ -327,37 +345,29 @@ bash scripts/safe-merge.sh 123 .worktrees/issue-123
 
 ## マージフロー（必須）
 
-PRマージは以下の手順に従うこと。レビューなしでのマージは禁止。
+PRマージは CI（GitHub Actions auto-approve workflow）のみが行う。Claude がローカルからマージすることは禁止。
 
-### 自動化されたフロー
+### フロー
 
-1. 実装エージェントがPR作成（**マージはしない**）
-2. code-review エージェントがPRをレビュー
-3. 問題（重大・軽微）や改善提案が1つでもあれば全て修正してから再レビュー。問題0件・提案0件になるまでApproveしない
-4. `scripts/review-and-merge.sh <PR番号>` でマージ
+1. 実装エージェントが PR を作成（**マージはしない**）
+2. code-reviewer エージェントが PR をレビュー
+3. 指摘が1つでもあれば **該当 PR 内で** 全て修正 → 再 push → 再レビュー
+4. 全件 PASS になるまで 3 を繰り返す
+5. CI（auto-approve.yml）が自動で Approve → マージ
 
-```bash
-# 使用例
-bash scripts/review-and-merge.sh 123
-```
+### PRレビュー修正ルール
 
-### 実装エージェントへの指示テンプレート
+- レビュー指摘は **該当 PR 内で修正** する（別 Issue に分離しない）
+- 修正コミットは `fix: <内容> #<元のIssue番号>` の形式
+- 修正後は必ず再レビューを実行し、全件 PASS を確認する
+- 全件 PASS になるまでユーザーにマージを提案しない
 
-実装エージェント（coder）に以下を含めること:
+### Claude に禁止されている操作
 
-```
-PR作成後、以下の手順でレビュー→マージまで自律的に完了させること:
-1. PR作成（/finish スキル準拠）
-2. Agent(subagent_type="code-reviewer") を起動し、PR diffをレビュー
-3. 重大な指摘があれば修正→再push
-4. scripts/safe-merge.sh <PR番号> でマージ
-```
+- `gh pr merge` の実行（settings.json の deny で強制ブロック）
 
-### 禁止事項
-
-- レビューなしでのマージ
-- `gh pr merge` を直接呼ぶこと（必ず `scripts/safe-merge.sh` 経由）
-- CI失敗・コンフリクト状態でのマージ
+- main ブランチ上での `git merge` の実行（作業ブランチでの `git merge origin/main` によるコンフリクト解消は許可）
+- 「マージしますか？」とユーザーに聞くこと
 
 ---
 
@@ -393,7 +403,7 @@ coder (実装)
   ├── Agent(code-reviewer) を起動（/review/code-review スキル）
   │     └── レビュー結果を返す
   ├── 問題・改善提案が1つでもあれば → 全て修正→再push→再レビュー（0件になるまで繰り返す）
-  └── scripts/safe-merge.sh <PR番号> でマージ
+  └── 全件 PASS を確認して報告（マージは CI が自動で行う）
 ```
 
 ### 並列実装時のルール

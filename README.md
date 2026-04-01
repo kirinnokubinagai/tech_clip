@@ -333,7 +333,6 @@ bash scripts/deploy-runpod.sh
 
 | スクリプト | 用途 |
 |-----------|------|
-| `scripts/safe-merge.sh` | PR の安全なマージ (rebase + CI チェック) |
 | `scripts/deploy-runpod.sh` | RunPod AI サーバーデプロイ |
 | `scripts/db-backup.sh` | Turso データベースバックアップ |
 | `scripts/db-restore.sh` | データベースリストア |
