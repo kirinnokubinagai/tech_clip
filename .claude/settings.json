@@ -87,8 +87,16 @@
       "MultiEdit",
       "Grep",
       "Glob",
-      "Agent(executor)",
+      "Agent(coder)",
+      "Agent(ui-designer)",
+      "Agent(security-engineer)",
+      "Agent(requirements-analyst)",
+      "Agent(infra-engineer)",
       "Agent(code-reviewer)",
+      "Agent(ui-reviewer)",
+      "Agent(security-reviewer)",
+      "Agent(requirements-reviewer)",
+      "Agent(infra-reviewer)",
       "Agent(Explore)",
       "Agent(Plan)",
       "Agent(general-purpose)",
@@ -129,7 +137,10 @@
     ]
   },
   "worktree": {
-    "symlinkDirectories": ["node_modules", ".turbo"]
+    "symlinkDirectories": [
+      "node_modules",
+      ".turbo"
+    ]
   },
   "plansDirectory": ".claude/plans",
   "attribution": {

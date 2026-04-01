@@ -1,7 +1,7 @@
 """
 RunPodサーバーレスハンドラー
 
-Qwen2.5 9BモデルをvLLMで起動し、RunPodサーバーレスAPIのリクエストを処理する。
+Qwen3.5-9BモデルをvLLMで起動し、RunPodサーバーレスAPIのリクエストを処理する。
 
 リクエスト形式:
     {"input": {"prompt": "...", "max_tokens": 1024}}
@@ -20,7 +20,7 @@ import runpod
 from vllm import LLM, SamplingParams
 
 # モデルパス（Dockerfileで設定）
-MODEL_PATH = os.environ.get("MODEL_PATH", "/models/qwen2.5")
+MODEL_PATH = os.environ.get("MODEL_PATH", "/models/qwen3.5")
 
 # vLLMエンジン初期化（起動時に一度だけ実行）
 llm = LLM(
