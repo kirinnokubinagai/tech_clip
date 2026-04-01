@@ -113,7 +113,6 @@
       "Bash(*checkout -- *)",
       "Bash(*git restore .)",
       "Bash(*git restore --staged .)",
-      "Bash(*git merge *)",
       "Bash(*git rebase*)",
       "Bash(*clean -f*)",
       "Bash(*-X theirs*)",
