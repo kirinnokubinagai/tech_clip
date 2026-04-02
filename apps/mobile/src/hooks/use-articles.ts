@@ -25,7 +25,6 @@ export const SEARCH_DEBOUNCE_MS = 300;
 type ArticlesFilter = {
   source?: ArticleSource;
   isFavorite?: boolean;
-  search?: string;
 };
 
 /**
@@ -44,10 +43,41 @@ async function fetchArticles(
   params.set("limit", String(DEFAULT_PAGE_LIMIT));
   if (filter.source) params.set("source", filter.source);
   if (filter.isFavorite) params.set("isFavorite", "true");
-  if (filter.search) params.set("q", filter.search);
 
   const queryString = params.toString();
   const path = `/api/articles${queryString ? `?${queryString}` : ""}`;
+
+  const response = await apiFetch<ArticlesListResponse>(path);
+
+  if (!response.success) {
+    throw new Error(response.error.message);
+  }
+
+  return {
+    items: response.data,
+    nextCursor: response.meta.nextCursor,
+    hasNext: response.meta.hasNext,
+  };
+}
+
+/**
+ * 記事検索結果をAPIから取得する
+ *
+ * @param cursor - ページネーションカーソル
+ * @param query - 検索クエリ
+ * @returns 検索結果データ
+ */
+async function fetchSearchResults(
+  cursor: string | undefined,
+  query: string,
+): Promise<{ items: ArticleListItem[]; nextCursor: string | null; hasNext: boolean }> {
+  const params = new URLSearchParams();
+  if (cursor) params.set("cursor", cursor);
+  params.set("limit", String(DEFAULT_PAGE_LIMIT));
+  params.set("q", query);
+
+  const queryString = params.toString();
+  const path = `/api/articles/search?${queryString}`;
 
   const response = await apiFetch<ArticlesListResponse>(path);
 
@@ -102,7 +132,7 @@ export function useArticles(filter: ArticlesFilter = {}) {
 export function useSearchArticles(query: string) {
   return useInfiniteQuery({
     queryKey: [ARTICLES_QUERY_KEY, "search", query],
-    queryFn: ({ pageParam }) => fetchArticles(pageParam as string | undefined, { search: query }),
+    queryFn: ({ pageParam }) => fetchSearchResults(pageParam as string | undefined, query),
     initialPageParam: undefined as string | undefined,
     getNextPageParam: (lastPage) => (lastPage.hasNext ? lastPage.nextCursor : undefined),
     enabled: query.length > 0,
@@ -146,6 +176,24 @@ export function useToggleFavorite() {
   });
 }
 
+/** 要約でサポートされる言語 */
+type SummaryLanguage = "ja" | "en" | "zh" | "ko";
+
+/** 翻訳でサポートされる言語 */
+type TranslationLanguage = "en" | "ja";
+
+/** 要約リクエストのパラメータ */
+type RequestSummaryParams = {
+  articleId: string;
+  language: SummaryLanguage;
+};
+
+/** 翻訳リクエストのパラメータ */
+type RequestTranslationParams = {
+  articleId: string;
+  targetLanguage: TranslationLanguage;
+};
+
 /**
  * AI要約リクエストのmutation hook
  *
@@ -155,14 +203,17 @@ export function useRequestSummary() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (articleId: string) => {
+    mutationFn: async ({ articleId, language }: RequestSummaryParams) => {
       const response = await apiFetch<{ success: boolean; data: { summary: string } }>(
         `/api/articles/${articleId}/summary`,
-        { method: "POST" },
+        {
+          method: "POST",
+          body: JSON.stringify({ language }),
+        },
       );
       return response;
     },
-    onSuccess: (_data, articleId) => {
+    onSuccess: (_data, { articleId }) => {
       queryClient.invalidateQueries({ queryKey: [ARTICLE_DETAIL_QUERY_KEY, articleId] });
     },
   });
@@ -177,14 +228,17 @@ export function useRequestTranslation() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (articleId: string) => {
+    mutationFn: async ({ articleId, targetLanguage }: RequestTranslationParams) => {
       const response = await apiFetch<{ success: boolean; data: { translation: string } }>(
         `/api/articles/${articleId}/translate`,
-        { method: "POST" },
+        {
+          method: "POST",
+          body: JSON.stringify({ targetLanguage }),
+        },
       );
       return response;
     },
-    onSuccess: (_data, articleId) => {
+    onSuccess: (_data, { articleId }) => {
       queryClient.invalidateQueries({ queryKey: [ARTICLE_DETAIL_QUERY_KEY, articleId] });
     },
   });
