@@ -15,7 +15,7 @@
 #   --target  - デプロイ対象: production | local（デフォルト: production）
 #   --image   - Docker イメージ名（qwen の場合は必須）
 #   --gpu     - GPU タイプ（デフォルト: AMPERE_24）
-#   --workers - 最大ワーカー数（デフォルト: 3）
+#   --workers - 最大ワーカー数（デフォルト: 1）
 #   --dry-run - 実際には作成せず、リクエスト内容を表示する
 
 set -euo pipefail
@@ -69,7 +69,7 @@ usage() {
   --target  デプロイ対象: production | local（デフォルト: production）
   --image   Docker イメージ名（qwen の場合は必須）
   --gpu     GPU タイプ（デフォルト: AMPERE_24）
-  --workers 最大ワーカー数（デフォルト: 3）
+  --workers 最大ワーカー数（デフォルト: 1）
   --dry-run 実際には作成せず、リクエスト内容を表示する
   --help    このヘルプを表示する
 

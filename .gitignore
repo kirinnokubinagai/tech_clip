@@ -63,6 +63,10 @@ result-*
 # direnv
 .direnv/
 
+# Python
+__pycache__/
+*.pyc
+
 # Other tools
 .grepai/
 
