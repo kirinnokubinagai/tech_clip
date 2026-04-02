@@ -1,10 +1,10 @@
 import { act, fireEvent, render, waitFor } from "@testing-library/react-native";
 
-import RegisterScreen from "./(auth)/register";
+import RegisterScreen from "../../app/(auth)/register";
 
 const mockSignUp = jest.fn();
 
-jest.mock("../src/stores/auth-store", () => ({
+jest.mock("../../src/stores/auth-store", () => ({
   useAuthStore: jest.fn((selector: (state: Record<string, unknown>) => unknown) =>
     selector({
       signUp: mockSignUp,

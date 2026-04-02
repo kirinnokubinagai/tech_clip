@@ -1,7 +1,7 @@
 import { fireEvent, render } from "@testing-library/react-native";
 import { Alert } from "react-native";
 
-import SettingsScreen from "./settings";
+import SettingsScreen from "../../app/(tabs)/settings";
 
 const mockSignOut = jest.fn();
 const mockDeleteAccount = jest.fn();

@@ -1,6 +1,6 @@
 import { fireEvent, render, waitFor } from "@testing-library/react-native";
 
-import OnboardingScreen from "./onboarding";
+import OnboardingScreen from "../app/onboarding";
 
 jest.mock("expo-router", () => ({
   router: {

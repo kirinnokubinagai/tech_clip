@@ -1,6 +1,6 @@
 import { fireEvent, render, waitFor } from "@testing-library/react-native";
 
-import SaveScreen from "./save";
+import SaveScreen from "../../app/article/save";
 
 /** apiFetchのモック */
 const mockApiFetch = jest.fn();

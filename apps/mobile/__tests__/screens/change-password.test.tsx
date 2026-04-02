@@ -3,7 +3,7 @@ import { Alert } from "react-native";
 
 import ChangePasswordScreen, {
   validateChangePasswordForm,
-} from "../settings/change-password";
+} from "../../app/settings/change-password";
 import jaTranslations from "../../src/locales/ja.json";
 
 /**

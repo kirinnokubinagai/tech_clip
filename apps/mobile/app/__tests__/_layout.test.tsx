@@ -6,7 +6,7 @@ jest.mock("expo-secure-store", () => ({
   deleteItemAsync: jest.fn().mockResolvedValue(undefined),
 }));
 
-jest.mock("../src/stores/settings-store", () => ({
+jest.mock("../../src/stores/settings-store", () => ({
   useSettingsStore: jest.fn((selector: (s: Record<string, unknown>) => unknown) =>
     selector({
       loadLanguage: jest.fn(),
@@ -14,32 +14,32 @@ jest.mock("../src/stores/settings-store", () => ({
   ),
 }));
 
-jest.mock("../src/lib/i18n", () => ({
+jest.mock("../../src/lib/i18n", () => ({
   __esModule: true,
   default: { changeLanguage: jest.fn(), language: "ja" },
 }));
 
-jest.mock("../src/lib/backgroundSync", () => ({
+jest.mock("../../src/lib/backgroundSync", () => ({
   DEFAULT_BACKGROUND_SYNC_CONFIG: { intervalMs: 900000, taskName: "TEST_TASK" },
   registerNativeBackgroundFetch: jest.fn().mockResolvedValue(undefined),
   startBackgroundSync: jest.fn().mockReturnValue(() => {}),
 }));
 
-jest.mock("../src/lib/revenueCat", () => ({
+jest.mock("../../src/lib/revenueCat", () => ({
   configureRevenueCat: jest.fn().mockResolvedValue(undefined),
 }));
 
-jest.mock("../src/lib/notifications", () => ({
+jest.mock("../../src/lib/notifications", () => ({
   registerForPushNotifications: jest.fn().mockResolvedValue(null),
   registerTokenWithApi: jest.fn(),
   setupNotificationHandlers: jest.fn().mockReturnValue(() => {}),
 }));
 
-jest.mock("../src/lib/tracking", () => ({
+jest.mock("../../src/lib/tracking", () => ({
   requestTrackingPermission: jest.fn().mockResolvedValue(undefined),
 }));
 
-jest.mock("../src/lib/query-client", () => ({
+jest.mock("../../src/lib/query-client", () => ({
   queryClient: {},
 }));
 
@@ -47,7 +47,7 @@ jest.mock("@tanstack/react-query", () => ({
   QueryClientProvider: ({ children }: { children: unknown }) => children,
 }));
 
-jest.mock("../src/stores/auth-store", () => ({
+jest.mock("../../src/stores/auth-store", () => ({
   useAuthStore: jest.fn(
     (
       selector: (s: {
@@ -59,7 +59,7 @@ jest.mock("../src/stores/auth-store", () => ({
   ),
 }));
 
-jest.mock("../src/stores/ui-store", () => ({
+jest.mock("../../src/stores/ui-store", () => ({
   useUIStore: jest.fn(
     (
       selector: (s: {
@@ -76,7 +76,7 @@ jest.mock("../src/stores/ui-store", () => ({
   ),
 }));
 
-import { configureRevenueCat } from "../src/lib/revenueCat";
+import { configureRevenueCat } from "../../src/lib/revenueCat";
 import RootLayout from "./_layout";
 
 const mockedConfigureRevenueCat = configureRevenueCat as jest.MockedFunction<
