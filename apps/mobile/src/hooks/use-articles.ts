@@ -25,7 +25,6 @@ export const SEARCH_DEBOUNCE_MS = 300;
 type ArticlesFilter = {
   source?: ArticleSource;
   isFavorite?: boolean;
-  search?: string;
 };
 
 /**
@@ -44,10 +43,41 @@ async function fetchArticles(
   params.set("limit", String(DEFAULT_PAGE_LIMIT));
   if (filter.source) params.set("source", filter.source);
   if (filter.isFavorite) params.set("isFavorite", "true");
-  if (filter.search) params.set("q", filter.search);
 
   const queryString = params.toString();
   const path = `/api/articles${queryString ? `?${queryString}` : ""}`;
+
+  const response = await apiFetch<ArticlesListResponse>(path);
+
+  if (!response.success) {
+    throw new Error(response.error.message);
+  }
+
+  return {
+    items: response.data,
+    nextCursor: response.meta.nextCursor,
+    hasNext: response.meta.hasNext,
+  };
+}
+
+/**
+ * 記事検索結果をAPIから取得する
+ *
+ * @param cursor - ページネーションカーソル
+ * @param query - 検索クエリ
+ * @returns 検索結果データ
+ */
+async function fetchSearchResults(
+  cursor: string | undefined,
+  query: string,
+): Promise<{ items: ArticleListItem[]; nextCursor: string | null; hasNext: boolean }> {
+  const params = new URLSearchParams();
+  if (cursor) params.set("cursor", cursor);
+  params.set("limit", String(DEFAULT_PAGE_LIMIT));
+  params.set("q", query);
+
+  const queryString = params.toString();
+  const path = `/api/articles/search?${queryString}`;
 
   const response = await apiFetch<ArticlesListResponse>(path);
 
@@ -102,7 +132,7 @@ export function useArticles(filter: ArticlesFilter = {}) {
 export function useSearchArticles(query: string) {
   return useInfiniteQuery({
     queryKey: [ARTICLES_QUERY_KEY, "search", query],
-    queryFn: ({ pageParam }) => fetchArticles(pageParam as string | undefined, { search: query }),
+    queryFn: ({ pageParam }) => fetchSearchResults(pageParam as string | undefined, query),
     initialPageParam: undefined as string | undefined,
     getNextPageParam: (lastPage) => (lastPage.hasNext ? lastPage.nextCursor : undefined),
     enabled: query.length > 0,
