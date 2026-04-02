@@ -134,7 +134,7 @@ describe("要約API 統合テスト", () => {
     it("記事の要約を生成できること", async () => {
       // Arrange
       mockDb.where.mockResolvedValueOnce([MOCK_ARTICLE]).mockResolvedValueOnce([]);
-    mockDb.returning.mockResolvedValue([MOCK_SUMMARY]);
+      mockDb.returning.mockResolvedValue([MOCK_SUMMARY]);
       const app = createTestApp(mockDb, mockSummarizeFn);
       const req = new Request(`http://localhost/articles/${MOCK_ARTICLE.id}/summary`, {
         method: "POST",

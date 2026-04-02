@@ -10,8 +10,8 @@ import {
   useRequestSummary,
   useRequestTranslation,
   useSummaryJobStatus,
-  useTranslationJobStatus,
   useToggleFavorite,
+  useTranslationJobStatus,
 } from "@/hooks/use-articles";
 
 /** 戻るアイコンサイズ */
