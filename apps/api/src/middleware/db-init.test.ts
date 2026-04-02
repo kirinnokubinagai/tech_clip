@@ -189,7 +189,12 @@ describe("createDbInitMiddleware", () => {
       capturedGetAuth[0]();
 
       // Assert
-      expect(mockCreateAuth).toHaveBeenCalledWith(mockDb, "test-secret-min-32-chars-long-enough!!", {}, undefined);
+      expect(mockCreateAuth).toHaveBeenCalledWith(
+        mockDb,
+        "test-secret-min-32-chars-long-enough!!",
+        {},
+        undefined,
+      );
     });
 
     it("GOOGLE_CLIENT_ID と GOOGLE_CLIENT_SECRET が設定されている場合 createAuth に渡されること", async () => {
