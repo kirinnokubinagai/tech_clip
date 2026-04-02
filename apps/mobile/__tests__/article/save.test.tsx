@@ -131,6 +131,13 @@ describe("SaveScreen", () => {
         expect(getByTestId("article-preview")).toBeDefined();
         expect(getByText("React Nativeの新機能")).toBeDefined();
       });
+      expect(mockApiFetch).toHaveBeenCalledWith(
+        "/api/articles/parse",
+        expect.objectContaining({
+          method: "POST",
+          body: JSON.stringify({ url: "https://zenn.dev/test/articles/test-article" }),
+        }),
+      );
     });
 
     it("取得中はローディング状態が表示されること", async () => {

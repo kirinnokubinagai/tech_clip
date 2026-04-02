@@ -100,7 +100,7 @@ export default function SaveScreen() {
   }, [url]);
 
   /**
-   * プレビュー済みの記事をPOST /articlesで保存する
+   * プレビュー済みの記事をPOST /api/articlesで保存する
    */
   const handleSave = useCallback(async () => {
     if (!preview) {
