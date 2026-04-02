@@ -5,14 +5,13 @@
 #
 # 使用方法:
 #   RUNPOD_API_KEY=xxx bash scripts/provision-runpod.sh \
-#     --type qwen --target production --image user/techclip-qwen:latest
+#     --type qwen --image user/techclip-qwen:latest
 #
 # 環境変数:
 #   RUNPOD_API_KEY  - RunPod API キー（必須）
 #
 # オプション:
 #   --type    - エンドポイント種別: qwen（必須）
-#   --target  - デプロイ対象: production | local（デフォルト: production）
 #   --image   - Docker イメージ名（qwen の場合は必須）
 #   --gpu     - GPU タイプ（デフォルト: AMPERE_24）
 #   --workers - 最大ワーカー数（デフォルト: 1）
@@ -62,11 +61,10 @@ usage() {
   cat <<'USAGE'
 使用方法:
   RUNPOD_API_KEY=xxx bash scripts/provision-runpod.sh \
-    --type qwen --target production --image user/techclip-qwen:latest
+    --type qwen --image user/techclip-qwen:latest
 
 オプション:
   --type    エンドポイント種別: qwen（必須）
-  --target  デプロイ対象: production | local（デフォルト: production）
   --image   Docker イメージ名（qwen の場合は必須）
   --gpu     GPU タイプ（デフォルト: AMPERE_24）
   --workers 最大ワーカー数（デフォルト: 1）
@@ -102,14 +100,14 @@ graphql_request() {
     --header 'content-type: application/json' \
     --header "Authorization: Bearer ${RUNPOD_API_KEY}" \
     --url "${RUNPOD_API_URL}" \
-    --data "{\"query\": $(echo "$query" | jq -Rs .)}" 2>&1); then
+    --data "{\"query\": $(printf '%s' "$query" | jq -Rs .)}" 2>&1); then
     log_error "RunPod API リクエストに失敗しました"
     log_error "レスポンス: ${response}"
     return 1
   fi
 
   local errors
-  errors=$(echo "$response" | jq -r '.errors // empty')
+  errors=$(printf '%s' "$response" | jq -r '.errors // empty')
   if [[ -n "$errors" && "$errors" != "null" ]]; then
     log_error "RunPod API がエラーを返しました:"
     echo "$response" | jq '.errors' >&2
@@ -136,13 +134,13 @@ find_existing_template() {
   local target_name="$1"
   local response
 
-  response=$(graphql_request 'query { myself { serverlessTemplates { id name imageName } } }')
+  response=$(graphql_request 'query { myself { podTemplates { id name imageName } } }')
   if [[ $? -ne 0 ]]; then
     return 1
   fi
 
   echo "$response" | jq -r --arg name "$target_name" \
-    '(.data.myself.serverlessTemplates // [])[] | select(.name == $name) | .id // empty'
+    '(.data.myself.podTemplates // [])[] | select(.name == $name) | .id // empty'
 }
 
 create_template() {
@@ -152,22 +150,20 @@ create_template() {
 
   log_info "テンプレートを作成中: ${template_name}"
 
-  local env_input=""
-  if [[ -n "$env_vars" ]]; then
-    env_input=", env: [${env_vars}]"
-  fi
-
   local safe_name
-  safe_name=$(echo "$template_name" | jq -Rs '.')
+  safe_name=$(printf '%s' "$template_name" | jq -Rs '.')
   local safe_image
-  safe_image=$(echo "$image_name" | jq -Rs '.')
+  safe_image=$(printf '%s' "$image_name" | jq -Rs '.')
 
   local mutation="mutation {
     saveTemplate(input: {
       name: ${safe_name},
       imageName: ${safe_image},
       containerDiskInGb: ${CONTAINER_DISK_GB},
-      isServerless: true${env_input}
+      volumeInGb: 0,
+      dockerArgs: \"\",
+      isServerless: true,
+      env: [${env_vars}]
     }) {
       id
       name
@@ -191,7 +187,7 @@ create_template() {
   fi
 
   local template_id
-  template_id=$(echo "$response" | jq -r '.data.saveTemplate.id')
+  template_id=$(printf '%s' "$response" | jq -r '.data.saveTemplate.id')
 
   if [[ -z "$template_id" || "$template_id" == "null" ]]; then
     log_error "テンプレートIDの取得に失敗しました"
@@ -217,16 +213,16 @@ save_endpoint() {
   fi
 
   local safe_name
-  safe_name=$(echo "$endpoint_name" | jq -Rs '.')
+  safe_name=$(printf '%s' "$endpoint_name" | jq -Rs '.')
   local safe_template_id
-  safe_template_id=$(echo "$template_id" | jq -Rs '.')
+  safe_template_id=$(printf '%s' "$template_id" | jq -Rs '.')
   local safe_gpu_ids
-  safe_gpu_ids=$(echo "$gpu_ids" | jq -Rs '.')
+  safe_gpu_ids=$(printf '%s' "$gpu_ids" | jq -Rs '.')
   local endpoint_id_input=""
 
   if [[ -n "${endpoint_id}" ]]; then
     local safe_endpoint_id
-    safe_endpoint_id=$(echo "$endpoint_id" | jq -Rs '.')
+    safe_endpoint_id=$(printf '%s' "$endpoint_id" | jq -Rs '.')
     endpoint_id_input="id: ${safe_endpoint_id},"
   fi
 
@@ -273,7 +269,7 @@ save_endpoint() {
   fi
 
   local endpoint_id
-  endpoint_id=$(echo "$response" | jq -r '.data.saveEndpoint.id')
+  endpoint_id=$(printf '%s' "$response" | jq -r '.data.saveEndpoint.id')
 
   if [[ -z "${endpoint_id}" || "$endpoint_id" == "null" ]]; then
     log_error "エンドポイントIDの取得に失敗しました"
@@ -290,7 +286,6 @@ save_endpoint() {
 # =============================================================================
 
 ENDPOINT_TYPE=""
-DEPLOY_TARGET="production"
 DOCKER_IMAGE=""
 GPU_TYPE="${DEFAULT_GPU}"
 MAX_WORKERS="${DEFAULT_MAX_WORKERS}"
@@ -300,10 +295,6 @@ while [[ $# -gt 0 ]]; do
   case "$1" in
     --type)
       ENDPOINT_TYPE="$2"
-      shift 2
-      ;;
-    --target)
-      DEPLOY_TARGET="$2"
       shift 2
       ;;
     --image)
@@ -359,11 +350,6 @@ if [[ "${ENDPOINT_TYPE}" != "qwen" ]]; then
   exit 1
 fi
 
-if [[ "${DEPLOY_TARGET}" != "production" && "${DEPLOY_TARGET}" != "local" ]]; then
-  log_error "--target は production または local を指定してください（指定値: ${DEPLOY_TARGET}）"
-  exit 1
-fi
-
 if [[ "${ENDPOINT_TYPE}" == "qwen" && -z "${DOCKER_IMAGE}" ]]; then
   log_error "qwen タイプでは --image オプションが必須です"
   echo "例: --image your-username/techclip-qwen:latest" >&2
@@ -384,20 +370,10 @@ fi
 # メイン処理
 # =============================================================================
 
-TEMPLATE_NAME=""
-ENDPOINT_NAME=""
-IMAGE_NAME=""
-ENV_VARS=""
-
 TEMPLATE_NAME="${QWEN_TEMPLATE_NAME}"
 ENDPOINT_NAME="${QWEN_ENDPOINT_NAME}"
 IMAGE_NAME="${DOCKER_IMAGE}"
 ENV_VAR_NAME="RUNPOD_ENDPOINT_ID"
-
-if [[ "${DEPLOY_TARGET}" == "local" ]]; then
-  ENDPOINT_NAME="${ENDPOINT_NAME}-local"
-  ENV_VAR_NAME="RUNPOD_LOCAL_ENDPOINT_ID"
-fi
 
 echo ""
 echo "============================================"
@@ -405,7 +381,6 @@ echo "  RunPod サーバーレスプロビジョニング"
 echo "============================================"
 echo ""
 echo "  種別:           ${ENDPOINT_TYPE}"
-echo "  対象:           ${DEPLOY_TARGET}"
 if [[ -n "${TEMPLATE_NAME}" ]]; then
   echo "  テンプレート:   ${TEMPLATE_NAME}"
 fi
@@ -457,8 +432,8 @@ if [[ -n "${EXISTING_TEMPLATE_ID}" ]]; then
   log_skip "テンプレート '${TEMPLATE_NAME}' は既に存在します (ID: ${EXISTING_TEMPLATE_ID})"
   TEMPLATE_ID="${EXISTING_TEMPLATE_ID}"
 else
-  TEMPLATE_OUTPUT=$(create_template "${TEMPLATE_NAME}" "${IMAGE_NAME}" "${ENV_VARS}")
-  TEMPLATE_ID=$(echo "$TEMPLATE_OUTPUT" | tail -1)
+  TEMPLATE_OUTPUT=$(create_template "${TEMPLATE_NAME}" "${IMAGE_NAME}")
+  TEMPLATE_ID=$(printf '%s' "$TEMPLATE_OUTPUT" | tail -1)
 
   if [[ -z "${TEMPLATE_ID}" ]]; then
     log_error "テンプレートの作成に失敗しました"
@@ -467,7 +442,7 @@ else
 fi
 
 ENDPOINT_OUTPUT=$(save_endpoint "${ENDPOINT_NAME}" "${TEMPLATE_ID}" "${GPU_TYPE}" "${MAX_WORKERS}" "${EXISTING_ENDPOINT_ID}")
-ENDPOINT_ID=$(echo "$ENDPOINT_OUTPUT" | tail -1)
+ENDPOINT_ID=$(printf '%s' "$ENDPOINT_OUTPUT" | tail -1)
 
 if [[ -z "${ENDPOINT_ID}" ]]; then
   log_error "エンドポイントの保存に失敗しました"
