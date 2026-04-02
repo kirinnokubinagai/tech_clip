@@ -106,9 +106,7 @@ describe("corsMiddleware", () => {
       });
 
       // Assert
-      expect(res.headers.get("Access-Control-Allow-Origin")).not.toBe(
-        "https://notatechclip.app",
-      );
+      expect(res.headers.get("Access-Control-Allow-Origin")).not.toBe("https://notatechclip.app");
     });
 
     it("ホワイトリストに登録されていないサブドメインを拒否すること", async () => {
