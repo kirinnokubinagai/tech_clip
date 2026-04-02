@@ -164,12 +164,12 @@ export default function ArticleDetailScreen() {
 
   const handleRequestSummary = useCallback(() => {
     if (!article) return;
-    requestSummary.mutate(article.id);
+    requestSummary.mutate({ articleId: article.id });
   }, [article, requestSummary]);
 
   const handleRequestTranslation = useCallback(() => {
     if (!article) return;
-    requestTranslation.mutate(article.id);
+    requestTranslation.mutate({ articleId: article.id });
   }, [article, requestTranslation]);
 
   if (isLoading) {
