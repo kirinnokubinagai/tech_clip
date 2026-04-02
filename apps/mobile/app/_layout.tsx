@@ -11,6 +11,7 @@ import {
   registerNativeBackgroundFetch,
   startBackgroundSync,
 } from "../src/lib/backgroundSync";
+import { logger } from "../src/lib/logger";
 import {
   registerForPushNotifications,
   registerTokenWithApi,
@@ -38,8 +39,12 @@ export default function RootLayout() {
     loadOnboardingState();
     void loadLanguage();
     void requestTrackingPermission();
-    void configureRevenueCat().catch(() => {});
-    void registerNativeBackgroundFetch(DEFAULT_BACKGROUND_SYNC_CONFIG).catch(() => {});
+    void configureRevenueCat().catch((error: unknown) => {
+      logger.warn("RevenueCat設定に失敗しました", { error });
+    });
+    void registerNativeBackgroundFetch(DEFAULT_BACKGROUND_SYNC_CONFIG).catch((error: unknown) => {
+      logger.warn("バックグラウンドフェッチの登録に失敗しました", { error });
+    });
     const bgSyncCleanup = startBackgroundSync();
     return bgSyncCleanup;
   }, [checkSession, loadOnboardingState, loadLanguage]);
