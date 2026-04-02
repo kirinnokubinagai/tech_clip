@@ -10,32 +10,34 @@ Zenn、Qiita、dev.to、YouTube などの技術コンテンツを保存するだ
 - 他アプリの共有ボタンから直接保存（Share Intent 対応）
 - AI による要約生成（長文記事を数行に凝縮、デバイス言語に自動対応）
 - AI による翻訳（任意の言語間で翻訳可能）
-- 16 ソース対応（Zenn, Qiita, Medium, GitHub, Reddit, StackOverflow 等）
-- オフライン閲覧（バックグラウンド同期）
+- 16 ソース対応（Zenn, Qiita, Medium, GitHub, Reddit, StackOverflow 等）※ディスパッチ接続は #606 で対応中
+- オフライン閲覧（バックグラウンド同期実装済み）
 - タグ・お気に入りで整理
 - プレミアムプラン（RevenueCat によるサブスクリプション）
 - 多言語 UI 対応（日本語 / 英語）
 
 ## 対応ソース
 
+> 各ソース専用のパーサーは実装済み。ただし URL からソース種別を判定してパーサーへ振り分けるディスパッチ処理は現在未接続のため、すべての URL に汎用パーサーが適用される（#606 で対応中）。
+
 | ソース | 種別 | 状態 |
 |--------|------|------|
-| Zenn | 記事 / 本 | 対応済み |
-| Qiita | 記事 | 対応済み |
-| note | 記事 | 対応済み |
-| はてなブログ | 記事 | 対応済み |
-| dev.to | 記事 | 対応済み |
-| Medium | 記事 | 対応済み |
-| Hacker News | 記事 | 対応済み |
-| Hashnode | 記事 | 対応済み |
-| GitHub | README / Issue / Discussion | 対応済み |
-| StackOverflow | Q&A | 対応済み |
-| Reddit | 投稿 / コメント | 対応済み |
-| Speaker Deck | スライド | 対応済み |
-| freeCodeCamp | 記事 | 対応済み |
-| LogRocket | 記事 | 対応済み |
-| CSS-Tricks | 記事 | 対応済み |
-| Smashing Magazine | 記事 | 対応済み |
+| Zenn | 記事 / 本 | パーサー実装済み |
+| Qiita | 記事 | パーサー実装済み |
+| note | 記事 | パーサー実装済み |
+| はてなブログ | 記事 | パーサー実装済み |
+| dev.to | 記事 | パーサー実装済み |
+| Medium | 記事 | パーサー実装済み |
+| Hacker News | 記事 | パーサー実装済み |
+| Hashnode | 記事 | パーサー実装済み |
+| GitHub | README / Issue / Discussion | パーサー実装済み |
+| StackOverflow | Q&A | パーサー実装済み |
+| Reddit | 投稿 / コメント | パーサー実装済み |
+| Speaker Deck | スライド | パーサー実装済み |
+| freeCodeCamp | 記事 | パーサー実装済み |
+| LogRocket | 記事 | パーサー実装済み |
+| CSS-Tricks | 記事 | パーサー実装済み |
+| Smashing Magazine | 記事 | パーサー実装済み |
 | その他 URL | 汎用パーサー | 対応済み |
 | YouTube | 動画 (字幕要約) | 予定 (#541) |
 | Twitter / X | ツイート / スレッド | 予定 (#542) |
@@ -95,11 +97,11 @@ tech_clip/
 │   ├── mobile/              # React Native + Expo モバイルアプリ
 │   │   ├── app/             #   Expo Router ファイルベースルーティング
 │   │   ├── src/
-│   │   │   ├── components/  #   UI コンポーネント
+│   │   │   ├── components/  #   UI コンポーネント（テストは同ディレクトリに併置）
 │   │   │   ├── hooks/       #   カスタムフック
-│   │   │   ├── stores/      #   Zustand ストア
-│   │   │   └── lib/         #   ユーティリティ
-│   │   └── __tests__/       #   テスト
+│   │   │   ├── stores/      #   Zustand ストア（テストは同ディレクトリに併置）
+│   │   │   └── lib/         #   ユーティリティ（テストは同ディレクトリに併置）
+│   │   └── __tests__/       #   画面・統合テスト
 │   └── api/                 # Cloudflare Workers + Hono API サーバー
 │       ├── src/
 │       │   ├── routes/      #   API ルート定義
