@@ -268,7 +268,7 @@ describe("parseArticle", () => {
       expect(result.source).toBe("reddit");
     });
 
-    it("freeCodeCamp URLがparseFreecodeampにディスパッチされること", async () => {
+    it("freeCodeCamp URLがparseFreecodecamp にディスパッチされること", async () => {
       // Arrange
       const url = "https://www.freecodecamp.org/news/article-title";
       mockDetectSource.mockReturnValue("freecodecamp");
@@ -328,7 +328,7 @@ describe("parseArticle", () => {
       expect(result.source).toBe("smashing");
     });
 
-    it("SpeakerDeck URLがparseSpeeakerdeckにディスパッチされること", async () => {
+    it("SpeakerDeck URLがparseSpeakerdeckにディスパッチされること", async () => {
       // Arrange
       const url = "https://speakerdeck.com/user/slide-title";
       mockDetectSource.mockReturnValue("speakerdeck");

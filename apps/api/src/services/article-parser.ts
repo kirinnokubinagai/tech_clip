@@ -34,6 +34,10 @@ export type ParsedArticle = ParsedArticleContent & {
  */
 async function dispatchParser(source: ArticleSource, url: string): Promise<ParsedArticleContent> {
   if (source === "zenn") {
+    if (url.includes("/books/")) {
+      const { parseZennBook } = await import("./parsers/zenn-book");
+      return parseZennBook(url);
+    }
     const { parseZenn } = await import("./parsers/zenn");
     return parseZenn(url);
   }
