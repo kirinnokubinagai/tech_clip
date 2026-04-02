@@ -1,4 +1,4 @@
-name: Claude Review & Auto Approve
+name: Claude Review & Label
 
 on:
   pull_request:
@@ -8,11 +8,12 @@ env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
-  review-and-approve:
+  review-and-label:
     runs-on: ubuntu-latest
     permissions:
       contents: read
       pull-requests: write
+      issues: write
       id-token: write
     steps:
       - uses: actions/checkout@v4
@@ -20,10 +21,16 @@ jobs:
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           claude_args: |
-            --allowedTools Skill,Read,Grep,Glob,"Bash(gh pr review:*)"
+            --allowedTools Skill,Read,Grep,Glob,"Bash(gh pr comment:*)","Bash(gh pr edit:*)"
           prompt: |
             このPRの差分をレビューしてください。
             レビューには必ず .claude/skills/review/code-review/SKILL.md と .claude/skills/review/pr-review/SKILL.md を Read ツールで読み取り、記載されたチェックリストと出力フォーマットに厳密に従ってください。
             結果は日本語でPRコメントに投稿してください。
-            重大な問題（🔴）が0件かつ軽微な問題（🟡）が0件かつ改善提案（💡）が0件の場合のみ、gh pr review --approve を実行してApproveしてください。
-            1つでも問題や改善提案がある場合はApproveせず、問題点をコメントしてください。
+
+            レビュー完了後、以下のルールに従いラベルを操作してください（gh pr edit コマンドを使用）。
+            - 重大な問題（🔴）が0件かつ軽微な問題（🟡）が0件かつ改善提案（💡）が0件の場合:
+              gh pr edit <PR番号> --add-label "AI Review: PASS" --remove-label "AI Review: NEEDS WORK"
+            - 1つでも問題や改善提案がある場合:
+              gh pr edit <PR番号> --add-label "AI Review: NEEDS WORK" --remove-label "AI Review: PASS"
+
+            重要: gh pr review --approve は絶対に実行しないでください。最終承認は人間が行います。
