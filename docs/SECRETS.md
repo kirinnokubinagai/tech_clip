@@ -17,6 +17,7 @@
 | `GITHUB_CLIENT_SECRET` | API (Cloudflare Workers) | `apps/api/.dev.vars` |
 | `RUNPOD_API_KEY` | API (Cloudflare Workers) | `apps/api/.dev.vars` |
 | `RUNPOD_ENDPOINT_ID` | API (Cloudflare Workers) | `apps/api/.dev.vars` |
+| `RUNPOD_LOCAL_ENDPOINT_ID` | API (Cloudflare Workers, local development) | `apps/api/.dev.vars` |
 | `REVENUECAT_WEBHOOK_SECRET` | API (Cloudflare Workers) | `apps/api/.dev.vars` |
 | `RESEND_API_KEY` | API (Cloudflare Workers) | `apps/api/.dev.vars` |
 | `EXPO_PUBLIC_REVENUECAT_IOS_API_KEY` | モバイル (Expo) | `apps/mobile/.env` |
@@ -171,7 +172,7 @@ console.log(header + '.' + payload + '.' + signature);
 
 ---
 
-### RUNPOD_API_KEY / RUNPOD_ENDPOINT_ID
+### RUNPOD_API_KEY / RUNPOD_ENDPOINT_ID / RUNPOD_LOCAL_ENDPOINT_ID
 
 **ダッシュボード:** https://www.runpod.io/console
 
@@ -185,8 +186,12 @@ console.log(header + '.' + payload + '.' + signature);
 
 1. "Serverless" > "My Endpoints" を開く
 2. Qwen3.5 9B モデルをデプロイしたエンドポイントを選択する
-   - モデル未デプロイの場合: "New Endpoint" からテンプレートを使用してデプロイする
-3. エンドポイントの ID (例: `abc1defgh2ijkl`) を `RUNPOD_ENDPOINT_ID` に設定する
+3. エンドポイントの ID を `RUNPOD_ENDPOINT_ID` に設定する
+
+#### RUNPOD_LOCAL_ENDPOINT_ID
+
+1. ローカル開発用に作成したエンドポイントを選択する
+2. エンドポイントの ID を `RUNPOD_LOCAL_ENDPOINT_ID` に設定する
 
 ---
 

@@ -4,6 +4,9 @@ const RUNPOD_API_BASE = "https://api.runpod.ai/v2";
 /** 使用するモデル名 */
 const MODEL_NAME = "qwen3.5-9b";
 
+/** 翻訳時の最大トークン数 */
+const MAX_TRANSLATION_TOKENS = 4096;
+
 /** コードブロックのプレースホルダーパターン */
 const CODE_BLOCK_REGEX = /```[\s\S]*?```/g;
 
@@ -35,18 +38,22 @@ export type TranslationResult = {
   model: string;
 };
 
+export type TranslationJobResult = {
+  providerJobId: string;
+  model: string;
+};
+
+export type TranslationJobStatus =
+  | { status: "queued" | "running"; model: string }
+  | { status: "completed"; model: string; translatedTitle: string; translatedContent: string }
+  | { status: "failed"; model: string; error: string };
+
 /** コードブロック抽出結果 */
 type CodeBlockExtractionResult = {
   text: string;
   blocks: string[];
 };
 
-/**
- * テキストからコードブロックを抽出し、プレースホルダーに置換する
- *
- * @param text - 元のテキスト
- * @returns プレースホルダー置換済みテキストと抽出されたコードブロック
- */
 export function extractCodeBlocks(text: string): CodeBlockExtractionResult {
   const blocks: string[] = [];
   const replacedText = text.replace(CODE_BLOCK_REGEX, (match) => {
@@ -58,13 +65,6 @@ export function extractCodeBlocks(text: string): CodeBlockExtractionResult {
   return { text: replacedText, blocks };
 }
 
-/**
- * プレースホルダーを元のコードブロックに復元する
- *
- * @param text - プレースホルダーを含むテキスト
- * @param blocks - 元のコードブロック配列
- * @returns コードブロックが復元されたテキスト
- */
 export function restoreCodeBlocks(text: string, blocks: string[]): string {
   let result = text;
   for (let i = 0; i < blocks.length; i++) {
@@ -74,13 +74,6 @@ export function restoreCodeBlocks(text: string, blocks: string[]): string {
   return result;
 }
 
-/**
- * 翻訳用プロンプトを構築する
- *
- * @param text - 翻訳対象テキスト
- * @param targetLanguage - ターゲット言語コード
- * @returns LLM向けプロンプト文字列
- */
 export function buildPrompt(text: string, targetLanguage: string): string {
   const languageName = LANGUAGE_DISPLAY_NAMES[targetLanguage] ?? targetLanguage;
 
@@ -95,41 +88,95 @@ Text to translate:
 ${text}`;
 }
 
-/**
- * RunPod APIレスポンスから翻訳テキストを抽出する
- *
- * @param response - RunPod APIのレスポンスオブジェクト
- * @returns 抽出された翻訳テキスト
- * @throws Error - レスポンス形式が不正な場合
- */
-export function parseTranslationResponse(response: unknown): string {
-  const resp = response as Record<string, unknown>;
-  const output = resp?.output as Record<string, unknown> | undefined;
-  const choices = output?.choices as Array<Record<string, unknown>> | undefined;
+function buildArticleTranslationPrompt(
+  title: string,
+  content: string,
+  targetLanguage: string,
+): string {
+  const languageName = LANGUAGE_DISPLAY_NAMES[targetLanguage] ?? targetLanguage;
 
-  if (!choices || choices.length === 0) {
-    throw new Error("翻訳レスポンスの解析に失敗しました");
-  }
+  return `Translate the following article to ${languageName}.
+Rules:
+- Preserve all markdown formatting in content
+- Do NOT translate code blocks or placeholders like {{CODE_BLOCK_N}}
+- Keep technical terms in their original form with the translation in parentheses when appropriate
+- Return ONLY valid JSON
+- JSON format: {"translatedTitle":"...","translatedContent":"..."}
 
-  const message = choices[0].message as Record<string, unknown> | undefined;
-  const content = message?.content;
+Title:
+${title}
 
-  if (typeof content !== "string") {
-    throw new Error("翻訳レスポンスの解析に失敗しました");
-  }
-
-  return content;
+Content:
+${content}`;
 }
 
+/** RunPod翻訳レスポンスの期待する構造 */
+type RunPodTranslationOutput = {
+  output: {
+    choices: Array<{
+      message: {
+        content: string;
+      };
+    }>;
+  };
+};
+
 /**
- * RunPod API経由でテキストを翻訳する
+ * RunPod翻訳レスポンスの型ガード
  *
- * @param text - 翻訳対象テキスト
- * @param targetLanguage - ターゲット言語コード
- * @param apiKey - RunPod APIキー
- * @param endpointId - RunPodエンドポイントID
- * @returns 翻訳されたテキスト
+ * @param value - 検証対象の値
+ * @returns RunPodTranslationOutput型かどうか
  */
+function isRunPodTranslationOutput(value: unknown): value is RunPodTranslationOutput {
+  if (typeof value !== "object" || value === null) return false;
+  const v = value as Record<string, unknown>;
+  if (typeof v.output !== "object" || v.output === null) return false;
+  const output = v.output as Record<string, unknown>;
+  if (!Array.isArray(output.choices) || output.choices.length === 0) return false;
+  const first = output.choices[0] as Record<string, unknown> | undefined;
+  if (typeof first?.message !== "object" || first.message === null) return false;
+  const message = first.message as Record<string, unknown>;
+  return typeof message.content === "string";
+}
+
+export function parseTranslationResponse(response: unknown): string {
+  if (!isRunPodTranslationOutput(response)) {
+    throw new Error("翻訳レスポンスの解析に失敗しました");
+  }
+
+  return response.output.choices[0].message.content;
+}
+
+function extractJsonObject(text: string): string {
+  const trimmed = text.trim();
+  if (trimmed.startsWith("```")) {
+    const match = trimmed.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
+    if (match?.[1]) {
+      return match[1];
+    }
+  }
+  return trimmed;
+}
+
+function parseArticleTranslationPayload(text: string): {
+  translatedTitle: string;
+  translatedContent: string;
+} {
+  const parsed = JSON.parse(extractJsonObject(text)) as {
+    translatedTitle?: string;
+    translatedContent?: string;
+  };
+
+  if (typeof parsed.translatedTitle !== "string" || typeof parsed.translatedContent !== "string") {
+    throw new Error("翻訳レスポンスの解析に失敗しました");
+  }
+
+  return {
+    translatedTitle: parsed.translatedTitle,
+    translatedContent: parsed.translatedContent,
+  };
+}
+
 async function callRunPodTranslation(
   text: string,
   targetLanguage: string,
@@ -153,7 +200,7 @@ async function callRunPodTranslation(
             content: prompt,
           },
         ],
-        max_tokens: 4096,
+        max_tokens: MAX_TRANSLATION_TOKENS,
       },
     }),
   });
@@ -166,16 +213,102 @@ async function callRunPodTranslation(
   return parseTranslationResponse(data);
 }
 
-/**
- * 記事を翻訳する
- *
- * コードブロックを保護しつつ、タイトルとコンテンツを翻訳する。
- * RunPod上のQwen3.5 9Bモデルを使用。
- *
- * @param options - 翻訳オプション
- * @returns 翻訳結果（タイトル、コンテンツ、使用モデル）
- * @throws Error - API通信エラーまたは翻訳処理エラー時
- */
+export async function createTranslationJob(
+  options: TranslateOptions,
+): Promise<TranslationJobResult> {
+  const { title, content, targetLanguage, runpodApiKey, runpodEndpointId } = options;
+  const { text: textWithoutCode } = extractCodeBlocks(content);
+  const prompt = buildArticleTranslationPrompt(title, textWithoutCode, targetLanguage);
+  const url = `${RUNPOD_API_BASE}/${runpodEndpointId}/run`;
+
+  const response = await fetch(url, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${runpodApiKey}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      input: {
+        messages: [{ role: "user", content: prompt }],
+        max_tokens: MAX_TRANSLATION_TOKENS,
+      },
+    }),
+  });
+
+  if (!response.ok) {
+    throw new Error(`RunPod APIリクエストに失敗しました（ステータス: ${response.status}）`);
+  }
+
+  const data = (await response.json()) as { id?: string };
+
+  if (!data.id) {
+    throw new Error("RunPodジョブの作成に失敗しました");
+  }
+
+  return {
+    providerJobId: data.id,
+    model: MODEL_NAME,
+  };
+}
+
+export async function getTranslationJobStatus(params: {
+  providerJobId: string;
+  content: string;
+  runpodApiKey: string;
+  runpodEndpointId: string;
+}): Promise<TranslationJobStatus> {
+  const { providerJobId, content, runpodApiKey, runpodEndpointId } = params;
+  const url = `${RUNPOD_API_BASE}/${runpodEndpointId}/status/${providerJobId}`;
+
+  const response = await fetch(url, {
+    headers: {
+      Authorization: `Bearer ${runpodApiKey}`,
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error(`RunPodステータス取得に失敗しました（ステータス: ${response.status}）`);
+  }
+
+  const data = (await response.json()) as {
+    status: string;
+    error?: string;
+    output?: {
+      choices?: Array<{
+        message?: {
+          content?: string;
+        };
+      }>;
+    };
+  };
+
+  if (data.status === "COMPLETED") {
+    const contentText = parseTranslationResponse(data);
+    const parsed = parseArticleTranslationPayload(contentText);
+    const { blocks } = extractCodeBlocks(content);
+
+    return {
+      status: "completed",
+      model: MODEL_NAME,
+      translatedTitle: parsed.translatedTitle,
+      translatedContent: restoreCodeBlocks(parsed.translatedContent, blocks),
+    };
+  }
+
+  if (data.status === "FAILED" || data.status === "CANCELLED" || data.status === "TIMED_OUT") {
+    return {
+      status: "failed",
+      model: MODEL_NAME,
+      error: data.error ?? "RunPodジョブの実行に失敗しました",
+    };
+  }
+
+  return {
+    status: data.status === "IN_QUEUE" ? "queued" : "running",
+    model: MODEL_NAME,
+  };
+}
+
 export async function translateArticle(options: TranslateOptions): Promise<TranslationResult> {
   const { title, content, targetLanguage, runpodApiKey, runpodEndpointId } = options;
 

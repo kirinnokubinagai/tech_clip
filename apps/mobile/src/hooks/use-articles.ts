@@ -1,6 +1,7 @@
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { apiFetch } from "@/lib/api";
+import { upsertArticle, upsertSummary, upsertTranslation } from "@/lib/localDb";
 import type {
   ArticleDetail,
   ArticleDetailResponse,
@@ -20,6 +21,52 @@ const DEFAULT_PAGE_LIMIT = 20;
 
 /** 検索デバウンス時間（ミリ秒） */
 export const SEARCH_DEBOUNCE_MS = 300;
+
+type AiJobState = "queued" | "running" | "completed" | "failed";
+
+type SummaryJobStartResponse = {
+  success: boolean;
+  data: {
+    status: AiJobState;
+    progress: number;
+    jobId: string | null;
+    summary?: { summary: string };
+    error?: string;
+  };
+};
+
+type SummaryJobStatusResponse = {
+  success: boolean;
+  data: {
+    status: AiJobState;
+    progress: number;
+    jobId: string;
+    summary?: { summary: string };
+    error?: string;
+  };
+};
+
+type TranslationJobStartResponse = {
+  success: boolean;
+  data: {
+    status: AiJobState;
+    progress: number;
+    jobId: string | null;
+    translation?: { translatedContent: string };
+    error?: string;
+  };
+};
+
+type TranslationJobStatusResponse = {
+  success: boolean;
+  data: {
+    status: AiJobState;
+    progress: number;
+    jobId: string;
+    translation?: { translatedContent: string };
+    error?: string;
+  };
+};
 
 /** 記事一覧取得のフィルター条件 */
 type ArticlesFilter = {
@@ -103,6 +150,14 @@ async function fetchArticleDetail(articleId: string): Promise<ArticleDetail> {
 
   if (!response.success) {
     throw new Error(response.error.message);
+  }
+
+  await upsertArticle(response.data);
+  if (response.data.summary !== null) {
+    await upsertSummary(articleId, response.data.summary);
+  }
+  if (response.data.translation !== null) {
+    await upsertTranslation(articleId, response.data.translation);
   }
 
   return response.data;
@@ -204,16 +259,16 @@ export function useRequestSummary() {
 
   return useMutation({
     mutationFn: async ({ articleId, language }: RequestSummaryParams) => {
-      const response = await apiFetch<{ success: boolean; data: { summary: string } }>(
+      const response = await apiFetch<SummaryJobStartResponse>(
         `/api/articles/${articleId}/summary`,
-        {
-          method: "POST",
-          body: JSON.stringify({ language }),
-        },
+        { method: "POST", body: JSON.stringify({ language }) },
       );
       return response;
     },
-    onSuccess: (_data, { articleId }) => {
+    onSuccess: async (data, { articleId }) => {
+      if (data.success && data.data.summary?.summary) {
+        await upsertSummary(articleId, data.data.summary.summary);
+      }
       queryClient.invalidateQueries({ queryKey: [ARTICLE_DETAIL_QUERY_KEY, articleId] });
     },
   });
@@ -229,17 +284,69 @@ export function useRequestTranslation() {
 
   return useMutation({
     mutationFn: async ({ articleId, targetLanguage }: RequestTranslationParams) => {
-      const response = await apiFetch<{ success: boolean; data: { translation: string } }>(
+      const response = await apiFetch<TranslationJobStartResponse>(
         `/api/articles/${articleId}/translate`,
-        {
-          method: "POST",
-          body: JSON.stringify({ targetLanguage }),
-        },
+        { method: "POST", body: JSON.stringify({ targetLanguage }) },
       );
       return response;
     },
-    onSuccess: (_data, { articleId }) => {
+    onSuccess: async (data, { articleId }) => {
+      if (data.success && data.data.translation?.translatedContent) {
+        await upsertTranslation(articleId, data.data.translation.translatedContent);
+      }
       queryClient.invalidateQueries({ queryKey: [ARTICLE_DETAIL_QUERY_KEY, articleId] });
+    },
+  });
+}
+
+/**
+ * AI要約ジョブのステータスをポーリングするmutation hook
+ *
+ * @returns TanStack QueryのuseMutation結果
+ */
+export function useSummaryJobStatus() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ articleId, jobId }: { articleId: string; jobId: string }) => {
+      return apiFetch<SummaryJobStatusResponse>(`/api/articles/${articleId}/summary/jobs/${jobId}`);
+    },
+    onSuccess: async (data, variables) => {
+      if (data.success && data.data.summary?.summary) {
+        await upsertSummary(variables.articleId, data.data.summary.summary);
+      }
+      if (data.success && data.data.status === "completed") {
+        queryClient.invalidateQueries({
+          queryKey: [ARTICLE_DETAIL_QUERY_KEY, variables.articleId],
+        });
+      }
+    },
+  });
+}
+
+/**
+ * AI翻訳ジョブのステータスをポーリングするmutation hook
+ *
+ * @returns TanStack QueryのuseMutation結果
+ */
+export function useTranslationJobStatus() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ articleId, jobId }: { articleId: string; jobId: string }) => {
+      return apiFetch<TranslationJobStatusResponse>(
+        `/api/articles/${articleId}/translate/jobs/${jobId}`,
+      );
+    },
+    onSuccess: async (data, variables) => {
+      if (data.success && data.data.translation?.translatedContent) {
+        await upsertTranslation(variables.articleId, data.data.translation.translatedContent);
+      }
+      if (data.success && data.data.status === "completed") {
+        queryClient.invalidateQueries({
+          queryKey: [ARTICLE_DETAIL_QUERY_KEY, variables.articleId],
+        });
+      }
     },
   });
 }

@@ -15,6 +15,13 @@
       "when": 1774869216368,
       "tag": "0001_add_analytics_events_table",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1775035728229,
+      "tag": "0002_amusing_jamie_braddock",
+      "breakpoints": true
     }
   ]
 }

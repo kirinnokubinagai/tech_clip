@@ -10,6 +10,16 @@ export type SummaryResult = {
   model: string;
 };
 
+export type SummaryJobResult = {
+  providerJobId: string;
+  model: string;
+};
+
+export type SummaryJobStatus =
+  | { status: "queued" | "running"; model: string }
+  | { status: "completed"; model: string; summary: string }
+  | { status: "failed"; model: string; error: string };
+
 /** summarizeArticle関数のパラメータ */
 type SummarizeArticleParams = {
   content: string;
@@ -23,6 +33,9 @@ const MAX_CONTENT_LENGTH = 24000;
 
 /** RunPodモデル名 */
 const MODEL_NAME = "qwen3.5-9b";
+
+/** RunPod API ベースURL */
+const RUNPOD_API_BASE = "https://api.runpod.ai/v2";
 
 /** RunPod APIのポーリング間隔（ミリ秒） */
 const POLLING_INTERVAL_MS = 2000;
@@ -38,13 +51,6 @@ const LANGUAGE_NAMES: Record<string, string> = {
   ko: "Korean",
 };
 
-/**
- * 要約プロンプトを生成する
- *
- * @param content - 記事本文
- * @param language - 出力言語
- * @returns プロンプト文字列
- */
 function buildPrompt(content: string, language: string): string {
   const truncated =
     content.length > MAX_CONTENT_LENGTH ? content.slice(0, MAX_CONTENT_LENGTH) : content;
@@ -61,70 +67,133 @@ ${truncated}
 Summary:`;
 }
 
-/**
- * RunPod API経由でQwen3.5 9Bに要約を依頼する
- *
- * @param params - コンテンツ、言語、RunPod設定、fetch関数
- * @returns 要約結果（summary + model名）
- * @throws Error - API呼び出しに失敗した場合
- */
+function mapRunPodStatus(status: string): "queued" | "running" | "completed" | "failed" {
+  if (status === "IN_QUEUE") {
+    return "queued";
+  }
+  if (status === "COMPLETED") {
+    return "completed";
+  }
+  if (status === "FAILED" || status === "CANCELLED" || status === "TIMED_OUT") {
+    return "failed";
+  }
+  return "running";
+}
+
+export async function createSummaryJob(params: SummarizeArticleParams): Promise<SummaryJobResult> {
+  const { content, language, config, fetchFn = fetch } = params;
+  const prompt = buildPrompt(content, language);
+  const runUrl = `${RUNPOD_API_BASE}/${config.endpointId}/run`;
+
+  const response = await fetchFn(runUrl, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${config.apiKey}`,
+    },
+    body: JSON.stringify({
+      input: {
+        prompt,
+        max_tokens: 1024,
+        temperature: 0.3,
+      },
+    }),
+  });
+
+  if (!response.ok) {
+    throw new Error(`RunPod API error: ${response.status}`);
+  }
+
+  const data = (await response.json()) as { id?: string };
+
+  if (!data.id) {
+    throw new Error("RunPod job create error");
+  }
+
+  return {
+    providerJobId: data.id,
+    model: MODEL_NAME,
+  };
+}
+
+export async function getSummaryJobStatus(params: {
+  providerJobId: string;
+  config: RunPodConfig;
+  fetchFn?: typeof fetch;
+}): Promise<SummaryJobStatus> {
+  const { providerJobId, config, fetchFn = fetch } = params;
+  const statusUrl = `${RUNPOD_API_BASE}/${config.endpointId}/status/${providerJobId}`;
+
+  const response = await fetchFn(statusUrl, {
+    headers: {
+      Authorization: `Bearer ${config.apiKey}`,
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error(`RunPod status error: ${response.status}`);
+  }
+
+  const data = (await response.json()) as {
+    status: string;
+    error?: string;
+    output?: { text?: string };
+  };
+  const status = mapRunPodStatus(data.status);
+
+  if (status === "completed" && data.output?.text) {
+    return {
+      status: "completed",
+      model: MODEL_NAME,
+      summary: data.output.text,
+    };
+  }
+
+  if (status === "failed") {
+    return {
+      status: "failed",
+      model: MODEL_NAME,
+      error: data.error ?? "RunPod job failed",
+    };
+  }
+
+  if (status === "completed") {
+    return {
+      status: "failed",
+      model: MODEL_NAME,
+      error: "RunPod job completed without summary output",
+    };
+  }
+
+  return {
+    status,
+    model: MODEL_NAME,
+  };
+}
+
 export async function summarizeArticle(params: SummarizeArticleParams): Promise<SummaryResult> {
   const { content, language, config, fetchFn = fetch } = params;
 
-  const prompt = buildPrompt(content, language);
-  const runUrl = `https://api.runpod.ai/v2/${config.endpointId}/run`;
-
   try {
-    const runResponse = await fetchFn(runUrl, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${config.apiKey}`,
-      },
-      body: JSON.stringify({
-        input: {
-          prompt,
-          max_tokens: 1024,
-          temperature: 0.3,
-        },
-      }),
-    });
-
-    if (!runResponse.ok) {
-      throw new Error(`RunPod API error: ${runResponse.status}`);
-    }
-
-    const runData = (await runResponse.json()) as { id: string; status: string };
-    const jobId = runData.id;
-
-    const statusUrl = `https://api.runpod.ai/v2/${config.endpointId}/status/${jobId}`;
+    const job = await createSummaryJob({ content, language, config, fetchFn });
 
     let attempts = 0;
     while (attempts < MAX_POLLING_ATTEMPTS) {
-      const statusResponse = await fetchFn(statusUrl, {
-        headers: {
-          Authorization: `Bearer ${config.apiKey}`,
-        },
+      const status = await getSummaryJobStatus({
+        providerJobId: job.providerJobId,
+        config,
+        fetchFn,
       });
 
-      if (!statusResponse.ok) {
-        throw new Error(`RunPod status error: ${statusResponse.status}`);
-      }
-
-      const statusData = (await statusResponse.json()) as {
-        status: string;
-        output?: { text: string };
-      };
-
-      if (statusData.status === "COMPLETED" && statusData.output) {
+      if (status.status === "completed") {
         return {
-          summary: statusData.output.text,
-          model: MODEL_NAME,
+          summary: status.summary,
+          model: status.model,
         };
       }
 
-      if (statusData.status === "FAILED") {
-        throw new Error("RunPod job failed");
+      if (status.status === "failed") {
+        throw new Error(status.error);
       }
 
       attempts++;

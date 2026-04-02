@@ -3,7 +3,7 @@ import { Hono } from "hono";
 import { z } from "zod";
 
 import type { Database } from "../db";
-import { articles } from "../db/schema";
+import { articles, summaries, translations } from "../db/schema";
 import {
   AUTH_ERROR_CODE,
   AUTH_ERROR_MESSAGE,
@@ -484,10 +484,23 @@ export function createArticlesRoute(options: ArticlesRouteOptions) {
       );
     }
 
+    const [summary] = await db
+      .select()
+      .from(summaries)
+      .where(and(eq(summaries.articleId, articleId), eq(summaries.language, "ja")));
+    const [translation] = await db
+      .select()
+      .from(translations)
+      .where(and(eq(translations.articleId, articleId), eq(translations.targetLanguage, "en")));
+
     return c.json(
       {
         success: true,
-        data: article,
+        data: {
+          ...article,
+          summary: summary?.summary ?? null,
+          translation: translation?.translatedContent ?? null,
+        },
       },
       HTTP_OK,
     );

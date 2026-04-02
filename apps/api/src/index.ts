@@ -35,8 +35,12 @@ import { createSummaryRoute } from "./routes/summary";
 import { createTagsRoute } from "./routes/tags";
 import { createUsersRoute } from "./routes/users";
 import { parseArticle } from "./services/article-parser";
-import { summarizeArticle } from "./services/summary";
-import { translateArticle } from "./services/translator";
+import { createSummaryJob, getSummaryJobStatus, summarizeArticle } from "./services/summary";
+import {
+  createTranslationJob,
+  getTranslationJobStatus,
+  translateArticle,
+} from "./services/translator";
 
 /** Cloudflare Workers バインディング型定義 */
 type Bindings = {
@@ -44,6 +48,7 @@ type Bindings = {
   TURSO_AUTH_TOKEN: string;
   RUNPOD_API_KEY: string;
   RUNPOD_ENDPOINT_ID: string;
+  RUNPOD_LOCAL_ENDPOINT_ID?: string;
   ENVIRONMENT: string;
   BETTER_AUTH_SECRET: string;
   GOOGLE_CLIENT_ID: string;
@@ -75,6 +80,14 @@ type Variables = {
 };
 
 const app = new Hono<{ Bindings: Bindings; Variables: Variables }>();
+
+function getRunPodEndpointId(env: Bindings): string {
+  if (env.ENVIRONMENT === "development" && env.RUNPOD_LOCAL_ENDPOINT_ID) {
+    return env.RUNPOD_LOCAL_ENDPOINT_ID;
+  }
+
+  return env.RUNPOD_ENDPOINT_ID;
+}
 
 app.use("*", corsMiddleware);
 app.use("*", securityHeadersMiddleware);
@@ -267,18 +280,22 @@ app.on(["GET", "POST", "PATCH", "DELETE"], "/api/articles/**", async (c) => {
   const summaryRoute = createSummaryRoute({
     db,
     summarizeFn: summarizeArticle,
+    createSummaryJobFn: createSummaryJob,
+    getSummaryJobStatusFn: getSummaryJobStatus,
     runpodConfig: {
       apiKey: c.env.RUNPOD_API_KEY,
-      endpointId: c.env.RUNPOD_ENDPOINT_ID,
+      endpointId: getRunPodEndpointId(c.env),
     },
   });
 
   const aiRoute = createAiRoute({
     db,
     translateArticleFn: translateArticle,
+    createTranslationJobFn: createTranslationJob,
+    getTranslationJobStatusFn: getTranslationJobStatus,
     runpodConfig: {
       apiKey: c.env.RUNPOD_API_KEY,
-      endpointId: c.env.RUNPOD_ENDPOINT_ID,
+      endpointId: getRunPodEndpointId(c.env),
     },
   });
 

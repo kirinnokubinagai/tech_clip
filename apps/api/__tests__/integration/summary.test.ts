@@ -97,6 +97,11 @@ function createTestApp(
   const route = createSummaryRoute({
     db: mockDb as unknown as Parameters<typeof createSummaryRoute>[0]["db"],
     summarizeFn: mockSummarizeFn,
+    createSummaryJobFn: vi.fn().mockResolvedValue({
+      providerJobId: "run_abc123",
+      model: "qwen3.5-9b",
+    }),
+    getSummaryJobStatusFn: vi.fn(),
     runpodConfig: MOCK_RUNPOD_CONFIG,
   });
 
