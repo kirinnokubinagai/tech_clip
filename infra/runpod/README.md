@@ -1,6 +1,7 @@
 # RunPod サーバーレスデプロイ手順
 
-TechClipのAI要約・翻訳機能で使用するQwen3.5 9BモデルをRunPodサーバーレスにデプロイする手順。
+TechClip の AI 要約・翻訳機能で使用する Qwen3.5 9B モデルを RunPod Serverless にデプロイする手順。
+この worker は 16GB GPU を狙うため、量子化済み `QuantTrio/Qwen3.5-9B-AWQ` を前提にしている。
 
 ## 前提条件
 
@@ -28,7 +29,7 @@ bash scripts/deploy-runpod.sh
 ```bash
 cd infra/runpod
 
-# ビルド（初回はモデルダウンロードで時間がかかる）
+# ビルド
 docker build -t your-dockerhub-username/techclip-qwen:latest .
 
 # プッシュ
@@ -47,7 +48,6 @@ bash scripts/provision-runpod.sh \
   --image your-dockerhub-username/techclip-qwen:latest
 ```
 
-GitHub Actions から実行する場合は `Provision RunPod` workflow を `workflow_dispatch` で起動する。
 `--target local` で作成した endpoint は、開発環境では `RUNPOD_LOCAL_ENDPOINT_ID` として使う。
 
 ### 3. 手動で作成する場合
@@ -61,8 +61,10 @@ GitHub Actions から実行する場合は `Provision RunPod` workflow を `work
 |------|-----|
 | Template Name | `techclip-qwen3.5-9b` |
 | Container Image | `your-dockerhub-username/techclip-qwen:latest` |
-| Container Disk | `20 GB` 以上 |
-| GPU | `RTX 4090` または `A100` 推奨（VRAM 24GB以上） |
+| Container Disk | `20 GB` |
+| GPU | `16GB` tier (`A4000 / A4500 / RTX 4000`) |
+| FlashBoot | `ON` |
+| Cached Models | `ON` |
 
 ### 4. サーバーレスエンドポイントの作成
 
@@ -74,12 +76,16 @@ GitHub Actions から実行する場合は `Provision RunPod` workflow を `work
 |------|--------|
 | Endpoint Name | `techclip-qwen3.5` |
 | Min Provisioned Workers | `0`（コスト最適化） |
-| Max Workers | `3` |
-| Idle Timeout | `5` 秒 |
+| Max Workers | `1` から開始 |
+| Idle Timeout | `120` 秒 |
 | Execution Timeout | `300` 秒 |
 
 4. **Deploy** をクリック
 5. 作成されたエンドポイントIDをコピーする（例: `abc123def456`）
+
+`Idle Timeout` は、最後のリクエストを処理し終えた worker を何秒間そのまま残すかの設定。
+`Min Provisioned Workers = 0` でも、この時間内に次のリクエストが来れば warm な worker が再利用される。
+起動速度を優先するなら `60` から `120` 秒が実用的。
 
 ### 5. 環境変数の設定
 
@@ -172,21 +178,37 @@ wrangler secret put RUNPOD_ENDPOINT_ID --env production
 }
 ```
 
-## GPU要件
+## モデル設定
 
-| モデル | 必要VRAM | 推奨GPU |
-|--------|---------|---------|
-| Qwen3.5-9B | 18GB以上 | RTX 4090 (24GB) |
+この Docker image はモデルを build 時に含めない。RunPod の `cached models` と Hugging Face cache を使って、
+起動時に `QuantTrio/Qwen3.5-9B-AWQ` を解決する。
+
+デフォルト環境変数:
+
+```env
+MODEL_NAME=QuantTrio/Qwen3.5-9B-AWQ
+VLLM_QUANTIZATION=awq
+MAX_MODEL_LEN=4096
+MAX_NUM_SEQS=4
+GPU_MEMORY_UTILIZATION=0.85
+TENSOR_PARALLEL_SIZE=1
+```
+
+16GB で厳しい場合は次を下げる:
+
+- `MAX_MODEL_LEN`
+- `MAX_NUM_SEQS`
+- `GPU_MEMORY_UTILIZATION`
 
 ## トラブルシューティング
 
 ### OOMエラーが発生する場合
 
-`handler.py` の `gpu_memory_utilization` を下げる（例: `0.85`）か、より大きなVRAMのGPUを使用する。
+`GPU_MEMORY_UTILIZATION`、`MAX_MODEL_LEN`、`MAX_NUM_SEQS` を下げる。改善しない場合は 24GB GPU に上げる。
 
 ### コンテナ起動が遅い場合
 
-初回起動時はモデルのロードに1〜2分かかる。RunPodのFlashbootオプションを有効にすることで改善できる。
+`FlashBoot` と `Cached Models` を有効にする。初回ロード後は cold start をかなり短縮できる。
 
 ### タイムアウトが発生する場合
 

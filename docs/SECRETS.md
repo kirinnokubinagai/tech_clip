@@ -186,14 +186,12 @@ console.log(header + '.' + payload + '.' + signature);
 
 1. "Serverless" > "My Endpoints" を開く
 2. Qwen3.5 9B モデルをデプロイしたエンドポイントを選択する
-   - モデル未デプロイの場合: "New Endpoint" からテンプレートを使用してデプロイする
-3. エンドポイントの ID (例: `abc1defgh2ijkl`) を `RUNPOD_ENDPOINT_ID` に設定する
+3. エンドポイントの ID を `RUNPOD_ENDPOINT_ID` に設定する
 
 #### RUNPOD_LOCAL_ENDPOINT_ID
 
-1. ローカル開発用に作成した Qwen3.5 9B のエンドポイントを選択する
+1. ローカル開発用に作成したエンドポイントを選択する
 2. エンドポイントの ID を `RUNPOD_LOCAL_ENDPOINT_ID` に設定する
-3. `ENVIRONMENT=development` のときは API がこちらを優先して使う
 
 ---
 

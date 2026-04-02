@@ -1,6 +1,6 @@
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { ArrowLeft, ExternalLink, Globe, Heart, Languages, Sparkles } from "lucide-react-native";
-import { useCallback } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { ActivityIndicator, Linking, Pressable, ScrollView, Text, View } from "react-native";
 import Markdown from "react-native-markdown-display";
 
@@ -9,6 +9,8 @@ import {
   useArticleDetail,
   useRequestSummary,
   useRequestTranslation,
+  useSummaryJobStatus,
+  useTranslationJobStatus,
   useToggleFavorite,
 } from "@/hooks/use-articles";
 
@@ -35,6 +37,8 @@ const PRIMARY_COLOR = "#6366f1";
 
 /** テキストカラー */
 const TEXT_COLOR = "#e2e8f0";
+
+const JOB_POLL_INTERVAL_MS = 2500;
 
 /** Markdownのスタイル定義 */
 const markdownStyles = {
@@ -147,6 +151,12 @@ export default function ArticleDetailScreen() {
   const toggleFavorite = useToggleFavorite();
   const requestSummary = useRequestSummary();
   const requestTranslation = useRequestTranslation();
+  const summaryJobStatus = useSummaryJobStatus();
+  const translationJobStatus = useTranslationJobStatus();
+  const [summaryJob, setSummaryJob] = useState<{ jobId: string; progress: number } | null>(null);
+  const [translationJob, setTranslationJob] = useState<{ jobId: string; progress: number } | null>(
+    null,
+  );
 
   const handleBack = useCallback(() => {
     router.back();
@@ -171,6 +181,98 @@ export default function ArticleDetailScreen() {
     if (!article) return;
     requestTranslation.mutate(article.id);
   }, [article, requestTranslation]);
+
+  useEffect(() => {
+    if (!article || !requestSummary.data?.success) return;
+
+    const data = requestSummary.data.data;
+    if (data.status === "completed" || !data.jobId) {
+      setSummaryJob(null);
+      return;
+    }
+
+    setSummaryJob({ jobId: data.jobId, progress: data.progress });
+  }, [article, requestSummary.data]);
+
+  useEffect(() => {
+    if (!article || !requestTranslation.data?.success) return;
+
+    const data = requestTranslation.data.data;
+    if (data.status === "completed" || !data.jobId) {
+      setTranslationJob(null);
+      return;
+    }
+
+    setTranslationJob({ jobId: data.jobId, progress: data.progress });
+  }, [article, requestTranslation.data]);
+
+  useEffect(() => {
+    if (!article || !summaryJob) return;
+
+    const intervalId = setInterval(() => {
+      summaryJobStatus.mutate(
+        { articleId: article.id, jobId: summaryJob.jobId },
+        {
+          onSuccess: (response) => {
+            if (!response.success) {
+              setSummaryJob(null);
+              return;
+            }
+
+            if (response.data.status === "completed" || response.data.status === "failed") {
+              setSummaryJob(null);
+              return;
+            }
+
+            setSummaryJob((current) =>
+              current
+                ? {
+                    ...current,
+                    progress: Math.max(current.progress, response.data.progress),
+                  }
+                : current,
+            );
+          },
+        },
+      );
+    }, JOB_POLL_INTERVAL_MS);
+
+    return () => clearInterval(intervalId);
+  }, [article, summaryJob, summaryJobStatus]);
+
+  useEffect(() => {
+    if (!article || !translationJob) return;
+
+    const intervalId = setInterval(() => {
+      translationJobStatus.mutate(
+        { articleId: article.id, jobId: translationJob.jobId },
+        {
+          onSuccess: (response) => {
+            if (!response.success) {
+              setTranslationJob(null);
+              return;
+            }
+
+            if (response.data.status === "completed" || response.data.status === "failed") {
+              setTranslationJob(null);
+              return;
+            }
+
+            setTranslationJob((current) =>
+              current
+                ? {
+                    ...current,
+                    progress: Math.max(current.progress, response.data.progress),
+                  }
+                : current,
+            );
+          },
+        },
+      );
+    }, JOB_POLL_INTERVAL_MS);
+
+    return () => clearInterval(intervalId);
+  }, [article, translationJob, translationJobStatus]);
 
   if (isLoading) {
     return (
@@ -252,16 +354,16 @@ export default function ArticleDetailScreen() {
         <View className="flex-row px-4 pt-4 pb-2 gap-3">
           <Pressable
             onPress={handleRequestSummary}
-            disabled={requestSummary.isPending || !!article.summary}
+            disabled={requestSummary.isPending || !!article.summary || !!summaryJob}
             className="flex-row items-center gap-1.5 rounded-lg px-4 py-2.5"
             style={{
               backgroundColor: article.summary ? "#1a2e1a" : "#1a1a2e",
-              opacity: requestSummary.isPending ? 0.6 : 1,
+              opacity: requestSummary.isPending || summaryJob ? 0.6 : 1,
             }}
             accessibilityRole="button"
             accessibilityLabel="要約を生成"
           >
-            {requestSummary.isPending ? (
+            {requestSummary.isPending || summaryJob ? (
               <ActivityIndicator size="small" color={PRIMARY_COLOR} />
             ) : (
               <Sparkles
@@ -279,16 +381,16 @@ export default function ArticleDetailScreen() {
 
           <Pressable
             onPress={handleRequestTranslation}
-            disabled={requestTranslation.isPending || !!article.translation}
+            disabled={requestTranslation.isPending || !!article.translation || !!translationJob}
             className="flex-row items-center gap-1.5 rounded-lg px-4 py-2.5"
             style={{
               backgroundColor: article.translation ? "#1a2e1a" : "#1a1a2e",
-              opacity: requestTranslation.isPending ? 0.6 : 1,
+              opacity: requestTranslation.isPending || translationJob ? 0.6 : 1,
             }}
             accessibilityRole="button"
             accessibilityLabel="翻訳する"
           >
-            {requestTranslation.isPending ? (
+            {requestTranslation.isPending || translationJob ? (
               <ActivityIndicator size="small" color={PRIMARY_COLOR} />
             ) : (
               <Languages
@@ -304,6 +406,30 @@ export default function ArticleDetailScreen() {
             </Text>
           </Pressable>
         </View>
+
+        {summaryJob && (
+          <View className="mx-4 mt-2 rounded-xl bg-card border border-border p-4">
+            <Text className="text-sm font-medium text-text mb-2">生成中...</Text>
+            <View className="h-2 rounded-full bg-[#1a1a2e] overflow-hidden">
+              <View
+                className="h-full rounded-full bg-[#818cf8]"
+                style={{ width: `${Math.min(summaryJob.progress, 80)}%` }}
+              />
+            </View>
+          </View>
+        )}
+
+        {translationJob && (
+          <View className="mx-4 mt-2 rounded-xl bg-card border border-border p-4">
+            <Text className="text-sm font-medium text-text mb-2">生成中...</Text>
+            <View className="h-2 rounded-full bg-[#1a1a2e] overflow-hidden">
+              <View
+                className="h-full rounded-full bg-[#22c55e]"
+                style={{ width: `${Math.min(translationJob.progress, 80)}%` }}
+              />
+            </View>
+          </View>
+        )}
 
         {article.summary && (
           <View className="mx-4 mt-2 p-4 rounded-xl bg-card border border-border">

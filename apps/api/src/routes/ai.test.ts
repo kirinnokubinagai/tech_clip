@@ -95,6 +95,8 @@ const mockDb = {
 
 /** モックの translateArticle 関数 */
 const mockTranslateArticle = vi.fn();
+const mockCreateTranslationJob = vi.fn();
+const mockGetTranslationJobStatus = vi.fn();
 
 /**
  * 認証ありのテスト用Honoアプリを作成する
@@ -117,6 +119,8 @@ function createTestApp() {
   const aiRoute = createAiRoute({
     db: mockDb as never,
     translateArticleFn: mockTranslateArticle,
+    createTranslationJobFn: mockCreateTranslationJob,
+    getTranslationJobStatusFn: mockGetTranslationJobStatus,
     runpodConfig: {
       apiKey: "test-api-key",
       endpointId: "test-endpoint-id",
@@ -138,6 +142,8 @@ function createTestAppWithoutAuth() {
   const aiRoute = createAiRoute({
     db: mockDb as never,
     translateArticleFn: mockTranslateArticle,
+    createTranslationJobFn: mockCreateTranslationJob,
+    getTranslationJobStatusFn: mockGetTranslationJobStatus,
     runpodConfig: {
       apiKey: "test-api-key",
       endpointId: "test-endpoint-id",
@@ -151,6 +157,10 @@ function createTestAppWithoutAuth() {
 describe("POST /api/articles/:id/translate", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockCreateTranslationJob.mockResolvedValue({
+      providerJobId: "run_abc123",
+      model: "qwen3.5-9b",
+    });
   });
 
   describe("認証", () => {
@@ -276,7 +286,13 @@ describe("POST /api/articles/:id/translate", () => {
       expect(res.status).toBe(HTTP_OK);
       const body = (await res.json()) as SuccessResponseBody;
       expect(body.success).toBe(true);
-      expect(body.data.translatedTitle).toBe(MOCK_TRANSLATION.translatedTitle);
+      expect(body.data.translation).toMatchObject({
+        articleId: MOCK_TRANSLATION.articleId,
+        targetLanguage: MOCK_TRANSLATION.targetLanguage,
+        translatedTitle: MOCK_TRANSLATION.translatedTitle,
+        translatedContent: MOCK_TRANSLATION.translatedContent,
+        model: MOCK_TRANSLATION.model,
+      });
       expect(mockTranslateArticle).not.toHaveBeenCalled();
     });
   });
@@ -286,17 +302,6 @@ describe("POST /api/articles/:id/translate", () => {
       // Arrange
       const app = createTestApp();
       mockSelectWhere.mockResolvedValueOnce([MOCK_ARTICLE]).mockResolvedValueOnce([]);
-
-      mockTranslateArticle.mockResolvedValue({
-        translatedTitle: "How to use React Hooks",
-        translatedContent: "# React Hooks\n\nThis is test content.",
-        model: "qwen3.5-9b",
-      });
-
-      mockInsertValues.mockReturnValue({
-        returning: mockInsertReturning,
-      });
-      mockInsertReturning.mockResolvedValue([MOCK_TRANSLATION]);
 
       const req = new Request("http://localhost/api/articles/article_001/translate", {
         method: "POST",
@@ -311,8 +316,8 @@ describe("POST /api/articles/:id/translate", () => {
       expect(res.status).toBe(HTTP_CREATED);
       const body = (await res.json()) as SuccessResponseBody;
       expect(body.success).toBe(true);
-      expect(body.data.translatedTitle).toBe(MOCK_TRANSLATION.translatedTitle);
-      expect(mockTranslateArticle).toHaveBeenCalledOnce();
+      expect(body.data.status).toBe("queued");
+      expect(mockCreateTranslationJob).toHaveBeenCalledOnce();
     });
 
     it("記事にcontentがない場合422を返すこと", async () => {
@@ -342,7 +347,7 @@ describe("POST /api/articles/:id/translate", () => {
       const app = createTestApp();
       mockSelectWhere.mockResolvedValueOnce([MOCK_ARTICLE]).mockResolvedValueOnce([]);
 
-      mockTranslateArticle.mockRejectedValue(new Error("RunPod APIリクエストに失敗しました"));
+      mockCreateTranslationJob.mockRejectedValue(new Error("RunPod APIリクエストに失敗しました"));
 
       const req = new Request("http://localhost/api/articles/article_001/translate", {
         method: "POST",

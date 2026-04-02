@@ -1,9 +1,10 @@
 import { and, eq } from "drizzle-orm";
 import { Hono } from "hono";
+import { ulid } from "ulid";
 import { z } from "zod";
 
 import type { Database } from "../db";
-import { articles, translations } from "../db/schema";
+import { aiJobs, articles, translations } from "../db/schema";
 import {
   AUTH_ERROR_CODE,
   AUTH_ERROR_MESSAGE,
@@ -23,77 +24,95 @@ import {
   HTTP_UNAUTHORIZED,
   HTTP_UNPROCESSABLE_ENTITY,
 } from "../lib/http-status";
-import type { TranslateOptions, TranslationResult } from "../services/translator";
+import type {
+  TranslateOptions,
+  TranslationJobStatus,
+  TranslationResult,
+} from "../services/translator";
 
-/** 記事未発見エラーメッセージ */
 const ARTICLE_NOT_FOUND_MESSAGE = "記事が見つかりません";
-
-/** 翻訳未発見エラーメッセージ */
 const TRANSLATION_NOT_FOUND_MESSAGE = "翻訳が見つかりません";
-
-/** 翻訳エラーメッセージ */
 const TRANSLATION_ERROR_MESSAGE = "翻訳処理に失敗しました";
-
-/** コンテンツ不足エラーメッセージ */
 const NO_CONTENT_MESSAGE = "翻訳するコンテンツがありません";
-
-/** サポートされる言語 */
 const SUPPORTED_LANGUAGES = ["en", "ja"] as const;
+const DEFAULT_TARGET_LANGUAGE = "en";
 
-/** 翻訳リクエストのZodスキーマ */
 const TranslateRequestSchema = z.object({
   targetLanguage: z.enum(SUPPORTED_LANGUAGES, {
     error: "targetLanguageはenまたはjaで指定してください",
   }),
 });
 
-/** translateArticle関数の型 */
 type TranslateArticleFn = (options: TranslateOptions) => Promise<TranslationResult>;
+type CreateTranslationJobFn = (
+  options: TranslateOptions,
+) => Promise<{ providerJobId: string; model: string }>;
+type GetTranslationJobStatusFn = (params: {
+  providerJobId: string;
+  content: string;
+  runpodApiKey: string;
+  runpodEndpointId: string;
+}) => Promise<TranslationJobStatus>;
 
-/** RunPod設定 */
 type RunpodConfig = {
   apiKey: string;
   endpointId: string;
 };
 
-/** createAiRouteのオプション */
 type AiRouteOptions = {
   db: Database;
   translateArticleFn: TranslateArticleFn;
+  createTranslationJobFn: CreateTranslationJobFn;
+  getTranslationJobStatusFn: GetTranslationJobStatusFn;
   runpodConfig: RunpodConfig;
 };
 
-/**
- * AI翻訳ルートを生成する
- *
- * POST /:id/translate: 記事を翻訳（キャッシュあり）
- * GET /:id/translate: 翻訳結果を取得
- *
- * @param options - DB インスタンス、翻訳関数
- * @returns Hono ルーターインスタンス
- */
+function buildRequestKey(articleId: string, targetLanguage: string): string {
+  return `translation:${articleId}:${targetLanguage}`;
+}
+
+/** ジョブステータスごとの進捗値（パーセント） */
+const PROGRESS_VALUES = {
+  queued: 15,
+  running: 65,
+  completed: 100,
+  failed: 0,
+} as const;
+
+function buildProgress(status: "queued" | "running" | "completed" | "failed"): number {
+  return PROGRESS_VALUES[status] ?? 0;
+}
+
+async function ensureOwnedArticle(db: Database, articleId: string, userId: string) {
+  const articleResults = await db.select().from(articles).where(eq(articles.id, articleId));
+
+  if (articleResults.length === 0) {
+    return { error: "not_found" as const };
+  }
+
+  const article = articleResults[0];
+  if (article.userId !== userId) {
+    return { error: "forbidden" as const };
+  }
+
+  return { article };
+}
+
 export function createAiRoute(options: AiRouteOptions) {
-  const { db, translateArticleFn, runpodConfig } = options;
+  const { db, createTranslationJobFn, getTranslationJobStatusFn, runpodConfig } = options;
   const route = new Hono<{ Variables: { user?: Record<string, unknown> } }>();
 
   route.post("/:id/translate", async (c) => {
     const user = c.get("user");
     if (!user?.id) {
       return c.json(
-        {
-          success: false,
-          error: {
-            code: AUTH_ERROR_CODE,
-            message: AUTH_ERROR_MESSAGE,
-          },
-        },
+        { success: false, error: { code: AUTH_ERROR_CODE, message: AUTH_ERROR_MESSAGE } },
         HTTP_UNAUTHORIZED,
       );
     }
 
     const body = await c.req.json().catch(() => ({}));
     const validation = TranslateRequestSchema.safeParse(body);
-
     if (!validation.success) {
       return c.json(
         {
@@ -113,37 +132,25 @@ export function createAiRoute(options: AiRouteOptions) {
 
     const articleId = c.req.param("id");
     const { targetLanguage } = validation.data;
+    const ownership = await ensureOwnedArticle(db, articleId, user.id as string);
 
-    const articleResults = await db.select().from(articles).where(eq(articles.id, articleId));
-
-    if (articleResults.length === 0) {
-      return c.json(
-        {
-          success: false,
-          error: {
-            code: NOT_FOUND_ERROR_CODE,
-            message: ARTICLE_NOT_FOUND_MESSAGE,
+    if ("error" in ownership) {
+      if (ownership.error === "not_found") {
+        return c.json(
+          {
+            success: false,
+            error: { code: NOT_FOUND_ERROR_CODE, message: ARTICLE_NOT_FOUND_MESSAGE },
           },
-        },
-        HTTP_NOT_FOUND,
-      );
-    }
-
-    const article = articleResults[0];
-
-    if (article.userId !== (user.id as string)) {
+          HTTP_NOT_FOUND,
+        );
+      }
       return c.json(
-        {
-          success: false,
-          error: {
-            code: FORBIDDEN_ERROR_CODE,
-            message: FORBIDDEN_ERROR_MESSAGE,
-          },
-        },
+        { success: false, error: { code: FORBIDDEN_ERROR_CODE, message: FORBIDDEN_ERROR_MESSAGE } },
         HTTP_FORBIDDEN,
       );
     }
 
+    const article = ownership.article;
     const existingTranslations = await db
       .select()
       .from(translations)
@@ -152,30 +159,48 @@ export function createAiRoute(options: AiRouteOptions) {
       );
 
     if (existingTranslations.length > 0) {
-      return c.json(
-        {
-          success: true,
-          data: existingTranslations[0],
+      return c.json({
+        success: true,
+        data: {
+          status: "completed",
+          progress: 100,
+          jobId: null,
+          translation: existingTranslations[0],
         },
-        HTTP_OK,
-      );
+      });
     }
 
     if (!article.content) {
       return c.json(
-        {
-          success: false,
-          error: {
-            code: VALIDATION_ERROR_CODE,
-            message: NO_CONTENT_MESSAGE,
-          },
-        },
+        { success: false, error: { code: VALIDATION_ERROR_CODE, message: NO_CONTENT_MESSAGE } },
         HTTP_UNPROCESSABLE_ENTITY,
       );
     }
 
+    const requestKey = buildRequestKey(articleId, targetLanguage);
+    const existingJobs =
+      (await db
+        .select()
+        .from(aiJobs)
+        .where(and(eq(aiJobs.requestKey, requestKey), eq(aiJobs.articleId, articleId)))) ?? [];
+    existingJobs.sort((a, b) => b.updatedAt.getTime() - a.updatedAt.getTime());
+
+    const activeJob = existingJobs.find(
+      (job) => job.status === "queued" || job.status === "running",
+    );
+    if (activeJob) {
+      return c.json({
+        success: true,
+        data: {
+          status: activeJob.status,
+          progress: buildProgress(activeJob.status as "queued" | "running"),
+          jobId: activeJob.id,
+        },
+      });
+    }
+
     try {
-      const result = await translateArticleFn({
+      const createdJob = await createTranslationJobFn({
         title: article.title,
         content: article.content,
         targetLanguage,
@@ -184,25 +209,30 @@ export function createAiRoute(options: AiRouteOptions) {
       });
 
       const now = new Date();
-      const id = crypto.randomUUID();
-
-      const [inserted] = await db
-        .insert(translations)
-        .values({
-          id,
-          articleId,
-          targetLanguage,
-          translatedTitle: result.translatedTitle,
-          translatedContent: result.translatedContent,
-          model: result.model,
-          createdAt: now,
-        })
-        .returning();
+      const jobId = ulid();
+      await db.insert(aiJobs).values({
+        id: jobId,
+        articleId,
+        requestKey,
+        jobType: "translation",
+        language: targetLanguage,
+        status: "queued",
+        providerJobId: createdJob.providerJobId,
+        model: createdJob.model,
+        errorMessage: null,
+        createdAt: now,
+        updatedAt: now,
+        completedAt: null,
+      });
 
       return c.json(
         {
           success: true,
-          data: inserted,
+          data: {
+            status: "queued",
+            progress: buildProgress("queued"),
+            jobId,
+          },
         },
         HTTP_CREATED,
       );
@@ -210,10 +240,194 @@ export function createAiRoute(options: AiRouteOptions) {
       return c.json(
         {
           success: false,
-          error: {
-            code: INTERNAL_ERROR_CODE,
-            message: TRANSLATION_ERROR_MESSAGE,
+          error: { code: INTERNAL_ERROR_CODE, message: TRANSLATION_ERROR_MESSAGE },
+        },
+        HTTP_INTERNAL_SERVER_ERROR,
+      );
+    }
+  });
+
+  route.get("/:id/translate/jobs/:jobId", async (c) => {
+    const user = c.get("user");
+    if (!user?.id) {
+      return c.json(
+        { success: false, error: { code: AUTH_ERROR_CODE, message: AUTH_ERROR_MESSAGE } },
+        HTTP_UNAUTHORIZED,
+      );
+    }
+
+    const articleId = c.req.param("id");
+    const jobId = c.req.param("jobId");
+    const ownership = await ensureOwnedArticle(db, articleId, user.id as string);
+
+    if ("error" in ownership) {
+      if (ownership.error === "not_found") {
+        return c.json(
+          {
+            success: false,
+            error: { code: NOT_FOUND_ERROR_CODE, message: ARTICLE_NOT_FOUND_MESSAGE },
           },
+          HTTP_NOT_FOUND,
+        );
+      }
+      return c.json(
+        { success: false, error: { code: FORBIDDEN_ERROR_CODE, message: FORBIDDEN_ERROR_MESSAGE } },
+        HTTP_FORBIDDEN,
+      );
+    }
+
+    const article = ownership.article;
+    const jobResults = await db.select().from(aiJobs).where(eq(aiJobs.id, jobId));
+    if (
+      jobResults.length === 0 ||
+      jobResults[0].articleId !== articleId ||
+      jobResults[0].jobType !== "translation"
+    ) {
+      return c.json(
+        {
+          success: false,
+          error: { code: NOT_FOUND_ERROR_CODE, message: TRANSLATION_NOT_FOUND_MESSAGE },
+        },
+        HTTP_NOT_FOUND,
+      );
+    }
+
+    const job = jobResults[0];
+    if (job.status === "completed") {
+      const cachedTranslation = await db
+        .select()
+        .from(translations)
+        .where(
+          and(
+            eq(translations.articleId, articleId),
+            eq(translations.targetLanguage, job.language ?? DEFAULT_TARGET_LANGUAGE),
+          ),
+        );
+      if (cachedTranslation.length > 0) {
+        return c.json({
+          success: true,
+          data: {
+            status: "completed",
+            progress: 100,
+            jobId: job.id,
+            translation: cachedTranslation[0],
+          },
+        });
+      }
+    }
+
+    if (!job.providerJobId) {
+      return c.json({
+        success: true,
+        data: {
+          status: "failed",
+          progress: 0,
+          jobId: job.id,
+          error: job.errorMessage ?? TRANSLATION_ERROR_MESSAGE,
+        },
+      });
+    }
+
+    try {
+      const status = await getTranslationJobStatusFn({
+        providerJobId: job.providerJobId,
+        content: article.content ?? "",
+        runpodApiKey: runpodConfig.apiKey,
+        runpodEndpointId: runpodConfig.endpointId,
+      });
+      const now = new Date();
+
+      if (status.status === "completed") {
+        const existingTranslation = await db
+          .select()
+          .from(translations)
+          .where(
+            and(
+              eq(translations.articleId, articleId),
+              eq(translations.targetLanguage, job.language ?? DEFAULT_TARGET_LANGUAGE),
+            ),
+          );
+
+        const translationRecord =
+          existingTranslation[0] ??
+          (
+            await db
+              .insert(translations)
+              .values({
+                id: ulid(),
+                articleId,
+                targetLanguage: job.language ?? DEFAULT_TARGET_LANGUAGE,
+                translatedTitle: status.translatedTitle,
+                translatedContent: status.translatedContent,
+                model: status.model,
+                createdAt: now,
+              })
+              .returning()
+          )[0];
+
+        await db
+          .update(aiJobs)
+          .set({
+            status: "completed",
+            errorMessage: null,
+            updatedAt: now,
+            completedAt: now,
+          })
+          .where(eq(aiJobs.id, job.id));
+
+        return c.json({
+          success: true,
+          data: {
+            status: "completed",
+            progress: 100,
+            jobId: job.id,
+            translation: translationRecord,
+          },
+        });
+      }
+
+      if (status.status === "failed") {
+        await db
+          .update(aiJobs)
+          .set({
+            status: "failed",
+            errorMessage: status.error,
+            updatedAt: now,
+          })
+          .where(eq(aiJobs.id, job.id));
+
+        return c.json({
+          success: true,
+          data: {
+            status: "failed",
+            progress: 0,
+            jobId: job.id,
+            error: status.error,
+          },
+        });
+      }
+
+      await db
+        .update(aiJobs)
+        .set({
+          status: status.status,
+          updatedAt: now,
+        })
+        .where(eq(aiJobs.id, job.id));
+
+      return c.json({
+        success: true,
+        data: {
+          status: status.status,
+          progress: buildProgress(status.status),
+          jobId: job.id,
+        },
+      });
+    } catch {
+      return c.json(
+        {
+          success: false,
+          error: { code: INTERNAL_ERROR_CODE, message: TRANSLATION_ERROR_MESSAGE },
         },
         HTTP_INTERNAL_SERVER_ERROR,
       );
@@ -224,19 +438,12 @@ export function createAiRoute(options: AiRouteOptions) {
     const user = c.get("user");
     if (!user?.id) {
       return c.json(
-        {
-          success: false,
-          error: {
-            code: AUTH_ERROR_CODE,
-            message: AUTH_ERROR_MESSAGE,
-          },
-        },
+        { success: false, error: { code: AUTH_ERROR_CODE, message: AUTH_ERROR_MESSAGE } },
         HTTP_UNAUTHORIZED,
       );
     }
 
     const targetLanguage = c.req.query("targetLanguage");
-
     if (!targetLanguage) {
       return c.json(
         {
@@ -250,65 +457,43 @@ export function createAiRoute(options: AiRouteOptions) {
         HTTP_UNPROCESSABLE_ENTITY,
       );
     }
-
     const articleId = c.req.param("id");
+    const ownership = await ensureOwnedArticle(db, articleId, user.id as string);
 
-    const articleResults = await db.select().from(articles).where(eq(articles.id, articleId));
-
-    if (articleResults.length === 0) {
-      return c.json(
-        {
-          success: false,
-          error: {
-            code: NOT_FOUND_ERROR_CODE,
-            message: ARTICLE_NOT_FOUND_MESSAGE,
+    if ("error" in ownership) {
+      if (ownership.error === "not_found") {
+        return c.json(
+          {
+            success: false,
+            error: { code: NOT_FOUND_ERROR_CODE, message: ARTICLE_NOT_FOUND_MESSAGE },
           },
-        },
-        HTTP_NOT_FOUND,
-      );
-    }
-
-    const article = articleResults[0];
-
-    if (article.userId !== (user.id as string)) {
+          HTTP_NOT_FOUND,
+        );
+      }
       return c.json(
-        {
-          success: false,
-          error: {
-            code: FORBIDDEN_ERROR_CODE,
-            message: FORBIDDEN_ERROR_MESSAGE,
-          },
-        },
+        { success: false, error: { code: FORBIDDEN_ERROR_CODE, message: FORBIDDEN_ERROR_MESSAGE } },
         HTTP_FORBIDDEN,
       );
     }
 
-    const whereCondition = targetLanguage
-      ? and(eq(translations.articleId, articleId), eq(translations.targetLanguage, targetLanguage))
-      : eq(translations.articleId, articleId);
-
-    const translationResults = await db.select().from(translations).where(whereCondition);
+    const translationResults = await db
+      .select()
+      .from(translations)
+      .where(
+        and(eq(translations.articleId, articleId), eq(translations.targetLanguage, targetLanguage)),
+      );
 
     if (translationResults.length === 0) {
       return c.json(
         {
           success: false,
-          error: {
-            code: NOT_FOUND_ERROR_CODE,
-            message: TRANSLATION_NOT_FOUND_MESSAGE,
-          },
+          error: { code: NOT_FOUND_ERROR_CODE, message: TRANSLATION_NOT_FOUND_MESSAGE },
         },
         HTTP_NOT_FOUND,
       );
     }
 
-    return c.json(
-      {
-        success: true,
-        data: translationResults[0],
-      },
-      HTTP_OK,
-    );
+    return c.json({ success: true, data: translationResults[0] }, HTTP_OK);
   });
 
   return route;

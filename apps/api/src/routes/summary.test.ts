@@ -93,6 +93,8 @@ const mockDb = {
 
 /** モックの summarizeArticle 関数 */
 const mockSummarizeArticle = vi.fn();
+const mockCreateSummaryJob = vi.fn();
+const mockGetSummaryJobStatus = vi.fn();
 
 /**
  * 認証済みテスト用Honoアプリを作成する
@@ -115,6 +117,8 @@ function createTestApp() {
   const summaryRoute = createSummaryRoute({
     db: mockDb as never,
     summarizeFn: mockSummarizeArticle,
+    createSummaryJobFn: mockCreateSummaryJob,
+    getSummaryJobStatusFn: mockGetSummaryJobStatus,
     runpodConfig: {
       apiKey: "test-api-key",
       endpointId: "test-endpoint-id",
@@ -136,6 +140,8 @@ function createTestAppWithoutAuth() {
   const summaryRoute = createSummaryRoute({
     db: mockDb as never,
     summarizeFn: mockSummarizeArticle,
+    createSummaryJobFn: mockCreateSummaryJob,
+    getSummaryJobStatusFn: mockGetSummaryJobStatus,
     runpodConfig: {
       apiKey: "test-api-key",
       endpointId: "test-endpoint-id",
@@ -156,6 +162,12 @@ describe("POST /api/articles/:id/summary", () => {
     mockInsertReturning.mockReset();
     mockInsert.mockReturnValue({ values: mockInsertValues });
     mockSummarizeArticle.mockReset();
+    mockCreateSummaryJob.mockReset();
+    mockGetSummaryJobStatus.mockReset();
+    mockCreateSummaryJob.mockResolvedValue({
+      providerJobId: "run_abc123",
+      model: "qwen3.5-9b",
+    });
   });
 
   it("未認証の場合401を返すこと", async () => {
@@ -268,9 +280,12 @@ describe("POST /api/articles/:id/summary", () => {
     const body = (await res.json()) as SummaryResponseBody;
     expect(body.success).toBe(true);
     expect(body.data).toMatchObject({
-      articleId: MOCK_ARTICLE.id,
-      language: "ja",
-      summary: MOCK_SUMMARY.summary,
+      status: "completed",
+      summary: {
+        articleId: MOCK_ARTICLE.id,
+        language: "ja",
+        summary: MOCK_SUMMARY.summary,
+      },
     });
     expect(mockSummarizeArticle).not.toHaveBeenCalled();
   });
@@ -279,24 +294,6 @@ describe("POST /api/articles/:id/summary", () => {
     // Arrange
     const app = createTestApp();
     mockSelectWhere.mockResolvedValueOnce([MOCK_ARTICLE]).mockResolvedValueOnce([]);
-
-    mockSummarizeArticle.mockResolvedValueOnce({
-      summary: "生成された要約テキスト",
-      model: "qwen3.5-9b",
-    });
-
-    const mockInsertedSummary = {
-      id: "summary_new",
-      articleId: MOCK_ARTICLE.id,
-      language: "ja",
-      summary: "生成された要約テキスト",
-      model: "qwen3.5-9b",
-      createdAt: new Date(),
-    };
-    mockInsertValues.mockReturnValue({
-      returning: mockInsertReturning,
-    });
-    mockInsertReturning.mockResolvedValueOnce([mockInsertedSummary]);
 
     // Act
     const res = await app.request("/api/articles/article_001/summary", {
@@ -310,10 +307,9 @@ describe("POST /api/articles/:id/summary", () => {
     const body = (await res.json()) as SummaryResponseBody;
     expect(body.success).toBe(true);
     expect(body.data).toMatchObject({
-      articleId: MOCK_ARTICLE.id,
-      language: "ja",
+      status: "queued",
     });
-    expect(mockSummarizeArticle).toHaveBeenCalledOnce();
+    expect(mockCreateSummaryJob).toHaveBeenCalledOnce();
   });
 
   it("記事にcontentがない場合500を返すこと", async () => {
@@ -341,7 +337,7 @@ describe("POST /api/articles/:id/summary", () => {
     const app = createTestApp();
     mockSelectWhere.mockResolvedValueOnce([MOCK_ARTICLE]).mockResolvedValueOnce([]);
 
-    mockSummarizeArticle.mockRejectedValueOnce(new Error("要約の生成に失敗しました"));
+    mockCreateSummaryJob.mockRejectedValueOnce(new Error("要約の生成に失敗しました"));
 
     // Act
     const res = await app.request("/api/articles/article_001/summary", {

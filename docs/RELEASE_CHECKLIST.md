@@ -98,6 +98,7 @@ grep -r "sk_live\|sk_test\|password.*=\|secret.*=" src/ --include="*.ts"
   - `TURSO_DATABASE_URL`
   - `TURSO_AUTH_TOKEN`
   - `RUNPOD_API_KEY`
+  - `RUNPOD_ENDPOINT_ID`
   - `ALLOWED_ORIGINS`
 
 ### 2-2. 認証・認可

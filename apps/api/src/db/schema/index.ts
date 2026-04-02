@@ -33,3 +33,6 @@ export type { NotificationSettings, NewNotificationSettings } from "./notificati
 
 export { analyticsEvents } from "./analytics-events";
 export type { AnalyticsEvent, NewAnalyticsEvent } from "./analytics-events";
+
+export { aiJobs } from "./ai-jobs";
+export type { AiJob, NewAiJob } from "./ai-jobs";

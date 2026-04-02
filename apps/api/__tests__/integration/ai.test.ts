@@ -91,6 +91,11 @@ function createTestApp(
   const route = createAiRoute({
     db: mockDb as unknown as Parameters<typeof createAiRoute>[0]["db"],
     translateArticleFn: mockTranslateFn,
+    createTranslationJobFn: vi.fn().mockResolvedValue({
+      providerJobId: "run_abc123",
+      model: "qwen3.5-9b",
+    }),
+    getTranslationJobStatusFn: vi.fn(),
     runpodConfig: {
       apiKey: "test-api-key",
       endpointId: "test-endpoint-id",

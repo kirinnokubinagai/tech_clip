@@ -19,15 +19,26 @@ import os
 import runpod
 from vllm import LLM, SamplingParams
 
-# モデルパス（Dockerfileで設定）
-MODEL_PATH = os.environ.get("MODEL_PATH", "/models/qwen3.5")
+# モデル参照。Dockerfile では Hugging Face のモデル名をそのまま入れる。
+MODEL_REF = os.environ.get("MODEL_PATH") or os.environ.get(
+    "MODEL_NAME", "QuantTrio/Qwen3.5-9B-AWQ"
+)
+MAX_MODEL_LEN = int(os.environ.get("MAX_MODEL_LEN", "4096"))
+MAX_NUM_SEQS = int(os.environ.get("MAX_NUM_SEQS", "4"))
+GPU_MEMORY_UTILIZATION = float(os.environ.get("GPU_MEMORY_UTILIZATION", "0.85"))
+TENSOR_PARALLEL_SIZE = int(os.environ.get("TENSOR_PARALLEL_SIZE", "1"))
+QUANTIZATION = os.environ.get("VLLM_QUANTIZATION", "awq")
 
-# vLLMエンジン初期化（起動時に一度だけ実行）
+# 16GB GPU を前提に、KV cache と同時実行数を抑えた設定にする。
 llm = LLM(
-    model=MODEL_PATH,
-    dtype="bfloat16",
-    max_model_len=8192,
-    gpu_memory_utilization=0.90,
+    model=MODEL_REF,
+    quantization=QUANTIZATION,
+    dtype="half",
+    max_model_len=MAX_MODEL_LEN,
+    max_num_seqs=MAX_NUM_SEQS,
+    gpu_memory_utilization=GPU_MEMORY_UTILIZATION,
+    tensor_parallel_size=TENSOR_PARALLEL_SIZE,
+    trust_remote_code=True,
 )
 
 
