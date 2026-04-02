@@ -34,7 +34,7 @@ describe("securityHeadersMiddleware", () => {
       expect(res.headers.get("X-Frame-Options")).toBe("DENY");
     });
 
-    it("X-XSS-Protectionが1; mode=blockであること", async () => {
+    it("X-XSS-Protectionが設定されていないこと（CSPに置き換え済み）", async () => {
       // Arrange
       const { app } = createTestApp();
 
@@ -42,7 +42,7 @@ describe("securityHeadersMiddleware", () => {
       const res = await app.request("/test");
 
       // Assert
-      expect(res.headers.get("X-XSS-Protection")).toBe("1; mode=block");
+      expect(res.headers.get("X-XSS-Protection")).toBeNull();
     });
 
     it("Referrer-Policyがstrict-origin-when-cross-originであること", async () => {
@@ -67,6 +67,55 @@ describe("securityHeadersMiddleware", () => {
       expect(res.headers.get("Permissions-Policy")).toBe(
         "camera=(), microphone=(), geolocation=()",
       );
+    });
+  });
+
+  describe("Content-Security-Policy", () => {
+    it("CSPヘッダーが設定されていること", async () => {
+      // Arrange
+      const { app } = createTestApp();
+
+      // Act
+      const res = await app.request("/test");
+
+      // Assert
+      expect(res.headers.get("Content-Security-Policy")).not.toBeNull();
+    });
+
+    it("CSPにdefault-src 'none'が含まれること", async () => {
+      // Arrange
+      const { app } = createTestApp();
+
+      // Act
+      const res = await app.request("/test");
+
+      // Assert
+      const csp = res.headers.get("Content-Security-Policy");
+      expect(csp).toContain("default-src 'none'");
+    });
+
+    it("CSPにframe-ancestors 'none'が含まれること", async () => {
+      // Arrange
+      const { app } = createTestApp();
+
+      // Act
+      const res = await app.request("/test");
+
+      // Assert
+      const csp = res.headers.get("Content-Security-Policy");
+      expect(csp).toContain("frame-ancestors 'none'");
+    });
+
+    it("CSPにbase-uri 'self'が含まれること", async () => {
+      // Arrange
+      const { app } = createTestApp();
+
+      // Act
+      const res = await app.request("/test");
+
+      // Assert
+      const csp = res.headers.get("Content-Security-Policy");
+      expect(csp).toContain("base-uri 'self'");
     });
   });
 
