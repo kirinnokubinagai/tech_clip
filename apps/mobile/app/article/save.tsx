@@ -80,7 +80,7 @@ export default function SaveScreen() {
     setIsFetching(true);
 
     try {
-      const data = await apiFetch<ParseArticleResponse>("/articles/parse", {
+      const data = await apiFetch<ParseArticleResponse>("/api/articles/parse", {
         method: "POST",
         body: JSON.stringify({ url: url.trim() }),
       });
@@ -100,7 +100,7 @@ export default function SaveScreen() {
   }, [url]);
 
   /**
-   * プレビュー済みの記事をPOST /articlesで保存する
+   * プレビュー済みの記事をPOST /api/articlesで保存する
    */
   const handleSave = useCallback(async () => {
     if (!preview) {
@@ -111,7 +111,7 @@ export default function SaveScreen() {
     setIsSaving(true);
 
     try {
-      const data = await apiFetch<SaveArticleResponse>("/articles", {
+      const data = await apiFetch<SaveArticleResponse>("/api/articles", {
         method: "POST",
         body: JSON.stringify({ url: url.trim() }),
       });
