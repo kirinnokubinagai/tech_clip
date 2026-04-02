@@ -9,6 +9,14 @@ export type Logger = {
   debug: (message: string, context?: Record<string, unknown>) => void;
 };
 
+/** ログレベルに対応するconsoleメソッドのマッピング */
+const CONSOLE_METHODS: Record<LogLevel, (message: string, ...args: unknown[]) => void> = {
+  info: console.info,
+  warn: console.warn,
+  error: console.error,
+  debug: console.debug,
+};
+
 /**
  * ログレベルに対応するconsoleメソッドを返す
  *
@@ -16,23 +24,22 @@ export type Logger = {
  * @returns consoleメソッド
  */
 function getConsoleMethod(level: LogLevel): (message: string, ...args: unknown[]) => void {
-  const methods: Record<LogLevel, (message: string, ...args: unknown[]) => void> = {
-    info: console.info,
-    warn: console.warn,
-    error: console.error,
-    debug: console.debug,
-  };
-  return methods[level];
+  return CONSOLE_METHODS[level];
 }
 
 /**
  * ログを出力する
+ *
+ * 本番環境（__DEV__ が false）では debug レベルのログを抑制する。
  *
  * @param level - ログレベル
  * @param message - ログメッセージ
  * @param context - 追加コンテキスト
  */
 function writeLog(level: LogLevel, message: string, context?: Record<string, unknown>): void {
+  if (level === "debug" && !__DEV__) {
+    return;
+  }
   const method = getConsoleMethod(level);
   if (context !== undefined) {
     method(`[${level.toUpperCase()}] ${message}`, context);
