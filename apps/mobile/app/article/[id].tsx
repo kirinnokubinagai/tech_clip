@@ -38,84 +38,103 @@ const PRIMARY_COLOR = "#6366f1";
 /** テキストカラー */
 const TEXT_COLOR = "#e2e8f0";
 
+/** リンク・アクセントカラー */
+const ACCENT_COLOR = "#818cf8";
+
+/** カード背景カラー */
+const CARD_BG_COLOR = "#1a1a2e";
+
+/** コードブロック背景カラー */
+const CODE_BG_COLOR = "#13131a";
+
+/** 区切り線カラー */
+const DIVIDER_COLOR = "#2d2d44";
+
+/** 成功カラー */
+const SUCCESS_COLOR = "#22c55e";
+
+/** 成功時の背景カラー */
+const SUCCESS_BG_COLOR = "#1a2e1a";
+
+/** ジョブステータスのポーリング間隔（ミリ秒） */
 const JOB_POLL_INTERVAL_MS = 2500;
 
 /** Markdownのスタイル定義 */
 const markdownStyles = {
   body: {
-    color: "#e2e8f0",
+    color: TEXT_COLOR,
     fontSize: 16,
     lineHeight: 26,
   },
   heading1: {
-    color: "#e2e8f0",
+    color: TEXT_COLOR,
     fontSize: 24,
     fontWeight: "bold" as const,
     marginTop: 24,
     marginBottom: 12,
   },
   heading2: {
-    color: "#e2e8f0",
+    color: TEXT_COLOR,
     fontSize: 20,
     fontWeight: "bold" as const,
     marginTop: 20,
     marginBottom: 10,
   },
   heading3: {
-    color: "#e2e8f0",
+    color: TEXT_COLOR,
     fontSize: 18,
     fontWeight: "600" as const,
     marginTop: 16,
     marginBottom: 8,
   },
   paragraph: {
-    color: "#e2e8f0",
+    color: TEXT_COLOR,
     fontSize: 16,
     lineHeight: 26,
     marginBottom: 12,
   },
   link: {
-    color: "#818cf8",
+    color: ACCENT_COLOR,
   },
   blockquote: {
-    backgroundColor: "#1a1a2e",
-    borderLeftColor: "#6366f1",
+    backgroundColor: CARD_BG_COLOR,
+    borderLeftColor: PRIMARY_COLOR,
     borderLeftWidth: 3,
     paddingLeft: 12,
     paddingVertical: 8,
     marginVertical: 8,
   },
   code_inline: {
-    backgroundColor: "#1a1a2e",
-    color: "#818cf8",
+    backgroundColor: CARD_BG_COLOR,
+    color: ACCENT_COLOR,
     paddingHorizontal: 6,
     paddingVertical: 2,
     borderRadius: 4,
     fontSize: 14,
   },
   code_block: {
-    backgroundColor: "#13131a",
-    color: "#e2e8f0",
+    backgroundColor: CODE_BG_COLOR,
+    color: TEXT_COLOR,
     padding: 12,
     borderRadius: 8,
     fontSize: 14,
     lineHeight: 22,
   },
   fence: {
-    backgroundColor: "#13131a",
-    color: "#e2e8f0",
+    backgroundColor: CODE_BG_COLOR,
+    color: TEXT_COLOR,
     padding: 12,
     borderRadius: 8,
     fontSize: 14,
     lineHeight: 22,
   },
   list_item: {
-    color: "#e2e8f0",
+    color: TEXT_COLOR,
     fontSize: 16,
     lineHeight: 26,
   },
   hr: {
-    backgroundColor: "#2d2d44",
+    backgroundColor: DIVIDER_COLOR,
     height: 1,
     marginVertical: 16,
   },
@@ -357,7 +376,7 @@ export default function ArticleDetailScreen() {
             disabled={requestSummary.isPending || !!article.summary || !!summaryJob}
             className="flex-row items-center gap-1.5 rounded-lg px-4 py-2.5"
             style={{
-              backgroundColor: article.summary ? "#1a2e1a" : "#1a1a2e",
+              backgroundColor: article.summary ? SUCCESS_BG_COLOR : CARD_BG_COLOR,
               opacity: requestSummary.isPending || summaryJob ? 0.6 : 1,
             }}
             accessibilityRole="button"
@@ -368,12 +387,12 @@ export default function ArticleDetailScreen() {
             ) : (
               <Sparkles
                 size={ACTION_ICON_SIZE}
-                color={article.summary ? "#22c55e" : PRIMARY_COLOR}
+                color={article.summary ? SUCCESS_COLOR : PRIMARY_COLOR}
               />
             )}
             <Text
               className="text-sm font-medium"
-              style={{ color: article.summary ? "#22c55e" : "#818cf8" }}
+              style={{ color: article.summary ? SUCCESS_COLOR : ACCENT_COLOR }}
             >
               {article.summary ? "要約済み" : "要約"}
             </Text>
@@ -384,7 +403,7 @@ export default function ArticleDetailScreen() {
             disabled={requestTranslation.isPending || !!article.translation || !!translationJob}
             className="flex-row items-center gap-1.5 rounded-lg px-4 py-2.5"
             style={{
-              backgroundColor: article.translation ? "#1a2e1a" : "#1a1a2e",
+              backgroundColor: article.translation ? SUCCESS_BG_COLOR : CARD_BG_COLOR,
               opacity: requestTranslation.isPending || translationJob ? 0.6 : 1,
             }}
             accessibilityRole="button"
@@ -395,12 +414,12 @@ export default function ArticleDetailScreen() {
             ) : (
               <Languages
                 size={ACTION_ICON_SIZE}
-                color={article.translation ? "#22c55e" : PRIMARY_COLOR}
+                color={article.translation ? SUCCESS_COLOR : PRIMARY_COLOR}
               />
             )}
             <Text
               className="text-sm font-medium"
-              style={{ color: article.translation ? "#22c55e" : "#818cf8" }}
+              style={{ color: article.translation ? SUCCESS_COLOR : ACCENT_COLOR }}
             >
               {article.translation ? "翻訳済み" : "翻訳"}
             </Text>
@@ -410,10 +429,16 @@ export default function ArticleDetailScreen() {
         {summaryJob && (
           <View className="mx-4 mt-2 rounded-xl bg-card border border-border p-4">
             <Text className="text-sm font-medium text-text mb-2">生成中...</Text>
-            <View className="h-2 rounded-full bg-[#1a1a2e] overflow-hidden">
+            <View
+              className="h-2 rounded-full overflow-hidden"
+              style={{ backgroundColor: CARD_BG_COLOR }}
+            >
               <View
-                className="h-full rounded-full bg-[#818cf8]"
-                style={{ width: `${Math.min(summaryJob.progress, 80)}%` }}
+                className="h-full rounded-full"
+                style={{
+                  backgroundColor: ACCENT_COLOR,
+                  width: `${Math.min(summaryJob.progress, 80)}%`,
+                }}
               />
             </View>
           </View>
@@ -422,10 +447,16 @@ export default function ArticleDetailScreen() {
         {translationJob && (
           <View className="mx-4 mt-2 rounded-xl bg-card border border-border p-4">
             <Text className="text-sm font-medium text-text mb-2">生成中...</Text>
-            <View className="h-2 rounded-full bg-[#1a1a2e] overflow-hidden">
+            <View
+              className="h-2 rounded-full overflow-hidden"
+              style={{ backgroundColor: CARD_BG_COLOR }}
+            >
               <View
-                className="h-full rounded-full bg-[#22c55e]"
-                style={{ width: `${Math.min(translationJob.progress, 80)}%` }}
+                className="h-full rounded-full"
+                style={{
+                  backgroundColor: SUCCESS_COLOR,
+                  width: `${Math.min(translationJob.progress, 80)}%`,
+                }}
               />
             </View>
           </View>
@@ -434,7 +465,7 @@ export default function ArticleDetailScreen() {
         {article.summary && (
           <View className="mx-4 mt-2 p-4 rounded-xl bg-card border border-border">
             <View className="flex-row items-center gap-2 mb-2">
-              <Sparkles size={SECTION_ICON_SIZE} color="#22c55e" />
+              <Sparkles size={SECTION_ICON_SIZE} color={SUCCESS_COLOR} />
               <Text className="text-sm font-semibold text-success">要約</Text>
             </View>
             <Text className="text-sm text-text leading-relaxed">{article.summary}</Text>
@@ -444,7 +475,7 @@ export default function ArticleDetailScreen() {
         {article.translation && (
           <View className="mx-4 mt-3 p-4 rounded-xl bg-card border border-border">
             <View className="flex-row items-center gap-2 mb-2">
-              <Globe size={SECTION_ICON_SIZE} color="#818cf8" />
+              <Globe size={SECTION_ICON_SIZE} color={ACCENT_COLOR} />
               <Text className="text-sm font-semibold text-primary-light">翻訳</Text>
             </View>
             <Text className="text-sm text-text leading-relaxed">{article.translation}</Text>

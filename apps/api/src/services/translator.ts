@@ -4,6 +4,9 @@ const RUNPOD_API_BASE = "https://api.runpod.ai/v2";
 /** 使用するモデル名 */
 const MODEL_NAME = "qwen3.5-9b";
 
+/** 翻訳時の最大トークン数 */
+const MAX_TRANSLATION_TOKENS = 4096;
+
 /** コードブロックのプレースホルダーパターン */
 const CODE_BLOCK_REGEX = /```[\s\S]*?```/g;
 
@@ -107,23 +110,41 @@ Content:
 ${content}`;
 }
 
+/** RunPod翻訳レスポンスの期待する構造 */
+type RunPodTranslationOutput = {
+  output: {
+    choices: Array<{
+      message: {
+        content: string;
+      };
+    }>;
+  };
+};
+
+/**
+ * RunPod翻訳レスポンスの型ガード
+ *
+ * @param value - 検証対象の値
+ * @returns RunPodTranslationOutput型かどうか
+ */
+function isRunPodTranslationOutput(value: unknown): value is RunPodTranslationOutput {
+  if (typeof value !== "object" || value === null) return false;
+  const v = value as Record<string, unknown>;
+  if (typeof v.output !== "object" || v.output === null) return false;
+  const output = v.output as Record<string, unknown>;
+  if (!Array.isArray(output.choices) || output.choices.length === 0) return false;
+  const first = output.choices[0] as Record<string, unknown> | undefined;
+  if (typeof first?.message !== "object" || first.message === null) return false;
+  const message = first.message as Record<string, unknown>;
+  return typeof message.content === "string";
+}
+
 export function parseTranslationResponse(response: unknown): string {
-  const resp = response as Record<string, unknown>;
-  const output = resp?.output as Record<string, unknown> | undefined;
-  const choices = output?.choices as Array<Record<string, unknown>> | undefined;
-
-  if (!choices || choices.length === 0) {
+  if (!isRunPodTranslationOutput(response)) {
     throw new Error("翻訳レスポンスの解析に失敗しました");
   }
 
-  const message = choices[0].message as Record<string, unknown> | undefined;
-  const content = message?.content;
-
-  if (typeof content !== "string") {
-    throw new Error("翻訳レスポンスの解析に失敗しました");
-  }
-
-  return content;
+  return response.output.choices[0].message.content;
 }
 
 function extractJsonObject(text: string): string {
@@ -179,7 +200,7 @@ async function callRunPodTranslation(
             content: prompt,
           },
         ],
-        max_tokens: 4096,
+        max_tokens: MAX_TRANSLATION_TOKENS,
       },
     }),
   });
@@ -209,7 +230,7 @@ export async function createTranslationJob(
     body: JSON.stringify({
       input: {
         messages: [{ role: "user", content: prompt }],
-        max_tokens: 4096,
+        max_tokens: MAX_TRANSLATION_TOKENS,
       },
     }),
   });
@@ -221,7 +242,7 @@ export async function createTranslationJob(
   const data = (await response.json()) as { id?: string };
 
   if (!data.id) {
-    throw new Error("RunPod job create error");
+    throw new Error("RunPodジョブの作成に失敗しました");
   }
 
   return {
@@ -246,7 +267,7 @@ export async function getTranslationJobStatus(params: {
   });
 
   if (!response.ok) {
-    throw new Error(`RunPod status error: ${response.status}`);
+    throw new Error(`RunPodステータス取得に失敗しました（ステータス: ${response.status}）`);
   }
 
   const data = (await response.json()) as {
@@ -278,7 +299,7 @@ export async function getTranslationJobStatus(params: {
     return {
       status: "failed",
       model: MODEL_NAME,
-      error: data.error ?? "RunPod job failed",
+      error: data.error ?? "RunPodジョブの実行に失敗しました",
     };
   }
 

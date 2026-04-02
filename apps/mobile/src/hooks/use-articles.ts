@@ -251,6 +251,11 @@ export function useRequestTranslation() {
   });
 }
 
+/**
+ * AI要約ジョブのステータスをポーリングするmutation hook
+ *
+ * @returns TanStack QueryのuseMutation結果
+ */
 export function useSummaryJobStatus() {
   const queryClient = useQueryClient();
 
@@ -271,6 +276,11 @@ export function useSummaryJobStatus() {
   });
 }
 
+/**
+ * AI翻訳ジョブのステータスをポーリングするmutation hook
+ *
+ * @returns TanStack QueryのuseMutation結果
+ */
 export function useTranslationJobStatus() {
   const queryClient = useQueryClient();
 

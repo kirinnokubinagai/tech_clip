@@ -1,14 +1,14 @@
 import { Hono } from "hono";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import {
+  HTTP_CREATED,
+  HTTP_FORBIDDEN,
+  HTTP_NOT_FOUND,
+  HTTP_OK,
+  HTTP_UNAUTHORIZED,
+  HTTP_UNPROCESSABLE_ENTITY,
+} from "../../src/lib/http-status";
 import { createAiRoute } from "../../src/routes/ai";
-
-/** HTTP ステータスコード定数 */
-const HTTP_OK = 200;
-const HTTP_CREATED = 201;
-const HTTP_UNAUTHORIZED = 401;
-const HTTP_FORBIDDEN = 403;
-const HTTP_NOT_FOUND = 404;
-const HTTP_UNPROCESSABLE_ENTITY = 422;
 
 /** テスト用モックユーザー */
 const MOCK_USER = {

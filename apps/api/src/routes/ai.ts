@@ -59,6 +59,12 @@ type RunpodConfig = {
   endpointId: string;
 };
 
+/** 認証済みユーザーの型 */
+type AuthUser = {
+  id: string;
+  [key: string]: unknown;
+};
+
 type AiRouteOptions = {
   db: Database;
   translateArticleFn: TranslateArticleFn;
@@ -67,6 +73,13 @@ type AiRouteOptions = {
   runpodConfig: RunpodConfig;
 };
 
+/**
+ * 記事IDと言語からリクエストキーを生成する
+ *
+ * @param articleId - 記事ID
+ * @param targetLanguage - 翻訳先言語
+ * @returns リクエストキー文字列
+ */
 function buildRequestKey(articleId: string, targetLanguage: string): string {
   return `translation:${articleId}:${targetLanguage}`;
 }
@@ -83,6 +96,14 @@ function buildProgress(status: "queued" | "running" | "completed" | "failed"): n
   return PROGRESS_VALUES[status] ?? 0;
 }
 
+/**
+ * 記事が存在し、指定ユーザーの所有であることを確認する
+ *
+ * @param db - データベースインスタンス
+ * @param articleId - 確認する記事ID
+ * @param userId - 確認するユーザーID
+ * @returns 記事オブジェクト、またはエラー種別
+ */
 async function ensureOwnedArticle(db: Database, articleId: string, userId: string) {
   const articleResults = await db.select().from(articles).where(eq(articles.id, articleId));
 
@@ -100,7 +121,7 @@ async function ensureOwnedArticle(db: Database, articleId: string, userId: strin
 
 export function createAiRoute(options: AiRouteOptions) {
   const { db, createTranslationJobFn, getTranslationJobStatusFn, runpodConfig } = options;
-  const route = new Hono<{ Variables: { user?: Record<string, unknown> } }>();
+  const route = new Hono<{ Variables: { user?: AuthUser } }>();
 
   route.post("/:id/translate", async (c) => {
     const user = c.get("user");
@@ -132,7 +153,7 @@ export function createAiRoute(options: AiRouteOptions) {
 
     const articleId = c.req.param("id");
     const { targetLanguage } = validation.data;
-    const ownership = await ensureOwnedArticle(db, articleId, user.id as string);
+    const ownership = await ensureOwnedArticle(db, articleId, user.id);
 
     if ("error" in ownership) {
       if (ownership.error === "not_found") {
@@ -258,7 +279,7 @@ export function createAiRoute(options: AiRouteOptions) {
 
     const articleId = c.req.param("id");
     const jobId = c.req.param("jobId");
-    const ownership = await ensureOwnedArticle(db, articleId, user.id as string);
+    const ownership = await ensureOwnedArticle(db, articleId, user.id);
 
     if ("error" in ownership) {
       if (ownership.error === "not_found") {
@@ -458,7 +479,7 @@ export function createAiRoute(options: AiRouteOptions) {
       );
     }
     const articleId = c.req.param("id");
-    const ownership = await ensureOwnedArticle(db, articleId, user.id as string);
+    const ownership = await ensureOwnedArticle(db, articleId, user.id);
 
     if ("error" in ownership) {
       if (ownership.error === "not_found") {
