@@ -77,7 +77,7 @@ jest.mock("../../src/stores/ui-store", () => ({
 }));
 
 import { configureRevenueCat } from "../../src/lib/revenueCat";
-import RootLayout from "./_layout";
+import RootLayout from "../_layout";
 
 const mockedConfigureRevenueCat = configureRevenueCat as jest.MockedFunction<
   typeof configureRevenueCat
