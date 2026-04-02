@@ -63,7 +63,7 @@ describe("useSearchArticles", () => {
       apiFetch.mockResolvedValue(mockArticlesResponse);
 
       // Act
-      await renderHook(() => useSearchArticles("typescript"), {
+      renderHook(() => useSearchArticles("typescript"), {
         wrapper: Wrapper,
       });
 
@@ -78,7 +78,7 @@ describe("useSearchArticles", () => {
       apiFetch.mockResolvedValue(mockArticlesResponse);
 
       // Act
-      await renderHook(() => useSearchArticles("typescript"), {
+      renderHook(() => useSearchArticles("typescript"), {
         wrapper: Wrapper,
       });
 
@@ -94,7 +94,7 @@ describe("useSearchArticles", () => {
       apiFetch.mockResolvedValue(mockArticlesResponse);
 
       // Act
-      await renderHook(() => useSearchArticles("typescript"), {
+      renderHook(() => useSearchArticles("typescript"), {
         wrapper: Wrapper,
       });
 
@@ -111,7 +111,7 @@ describe("useSearchArticles", () => {
       apiFetch.mockResolvedValue(mockArticlesResponse);
 
       // Act
-      await renderHook(() => useSearchArticles("typescript"), {
+      renderHook(() => useSearchArticles("typescript"), {
         wrapper: Wrapper,
       });
 
@@ -142,7 +142,7 @@ describe("useSearchArticles", () => {
       apiFetch.mockResolvedValue(mockArticlesResponse);
 
       // Act
-      const { result } = await renderHook(() => useSearchArticles("typescript"), {
+      const { result } = renderHook(() => useSearchArticles("typescript"), {
         wrapper: Wrapper,
       });
 
@@ -165,7 +165,7 @@ describe("useSearchArticles", () => {
       });
 
       // Act
-      const { result } = await renderHook(() => useSearchArticles("typescript"), {
+      const { result } = renderHook(() => useSearchArticles("typescript"), {
         wrapper: Wrapper,
       });
 
