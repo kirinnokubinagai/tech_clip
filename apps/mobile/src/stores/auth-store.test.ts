@@ -36,9 +36,10 @@ const TEST_USER = {
   updatedAt: "2024-01-01T00:00:00Z",
 };
 
-/** テスト用セッションデータ */
+/** テスト用セッションデータ（accessToken と refreshToken が別々） */
 const TEST_SESSION = {
   token: "test-access-token",
+  refreshToken: "test-session-id-as-refresh-token",
   expiresAt: "2024-12-31T00:00:00Z",
 };
 
@@ -74,10 +75,10 @@ describe("useAuthStore", () => {
       expect(state.user).toEqual(TEST_USER);
       expect(state.session).toEqual(TEST_SESSION);
       expect(mockSetAuthToken).toHaveBeenCalledWith(TEST_SESSION.token);
-      expect(mockSetRefreshToken).toHaveBeenCalledWith(TEST_SESSION.token);
+      expect(mockSetRefreshToken).toHaveBeenCalledWith(TEST_SESSION.refreshToken);
     });
 
-    it("サインイン成功時にリフレッシュトークンを保存すること", async () => {
+    it("サインイン時にaccessTokenとrefreshTokenを別々に保存すること", async () => {
       // Arrange
       mockApiFetch.mockResolvedValue({
         success: true,
@@ -88,7 +89,10 @@ describe("useAuthStore", () => {
       await useAuthStore.getState().signIn({ email: "test@example.com", password: "Password123" });
 
       // Assert
-      expect(mockSetRefreshToken).toHaveBeenCalledWith(TEST_SESSION.token);
+      expect(mockSetAuthToken).toHaveBeenCalledWith("test-access-token");
+      expect(mockSetRefreshToken).toHaveBeenCalledWith("test-session-id-as-refresh-token");
+      expect(mockSetAuthToken).not.toHaveBeenCalledWith("test-session-id-as-refresh-token");
+      expect(mockSetRefreshToken).not.toHaveBeenCalledWith("test-access-token");
     });
 
     it("認証失敗時にエラーをスローすること", async () => {
@@ -104,6 +108,50 @@ describe("useAuthStore", () => {
       ).rejects.toThrow("認証情報が正しくありません");
 
       expect(useAuthStore.getState().isAuthenticated).toBe(false);
+    });
+  });
+
+  describe("signUp", () => {
+    it("有効なデータで新規登録できること", async () => {
+      // Arrange
+      mockApiFetch.mockResolvedValue({
+        success: true,
+        data: { user: TEST_USER, session: TEST_SESSION },
+      });
+
+      // Act
+      await useAuthStore.getState().signUp({
+        name: "テストユーザー",
+        email: "test@example.com",
+        password: "Password123",
+      });
+
+      // Assert
+      const state = useAuthStore.getState();
+      expect(state.isAuthenticated).toBe(true);
+      expect(mockSetAuthToken).toHaveBeenCalledWith(TEST_SESSION.token);
+      expect(mockSetRefreshToken).toHaveBeenCalledWith(TEST_SESSION.refreshToken);
+    });
+
+    it("新規登録時にaccessTokenとrefreshTokenを別々に保存すること", async () => {
+      // Arrange
+      mockApiFetch.mockResolvedValue({
+        success: true,
+        data: { user: TEST_USER, session: TEST_SESSION },
+      });
+
+      // Act
+      await useAuthStore.getState().signUp({
+        name: "テストユーザー",
+        email: "test@example.com",
+        password: "Password123",
+      });
+
+      // Assert
+      expect(mockSetAuthToken).toHaveBeenCalledWith("test-access-token");
+      expect(mockSetRefreshToken).toHaveBeenCalledWith("test-session-id-as-refresh-token");
+      expect(mockSetAuthToken).not.toHaveBeenCalledWith("test-session-id-as-refresh-token");
+      expect(mockSetRefreshToken).not.toHaveBeenCalledWith("test-access-token");
     });
   });
 

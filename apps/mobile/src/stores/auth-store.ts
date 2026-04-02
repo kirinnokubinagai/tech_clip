@@ -59,7 +59,7 @@ export const useAuthStore = create<AuthStore>((set) => ({
     }
 
     await setAuthToken(data.data.session.token);
-    await setRefreshToken(data.data.session.token);
+    await setRefreshToken(data.data.session.refreshToken);
 
     set({
       user: data.data.user,
@@ -85,7 +85,7 @@ export const useAuthStore = create<AuthStore>((set) => ({
     }
 
     await setAuthToken(data.data.session.token);
-    await setRefreshToken(data.data.session.token);
+    await setRefreshToken(data.data.session.refreshToken);
 
     set({
       user: data.data.user,
