@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 echo "Pre-push チェック実行中..."
 
 echo "  Lint..."
