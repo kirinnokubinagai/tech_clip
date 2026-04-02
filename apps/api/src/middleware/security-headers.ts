@@ -13,7 +13,7 @@ export const securityHeadersMiddleware: MiddlewareHandler = async (c, next) => {
   c.header("X-Frame-Options", "DENY");
   c.header(
     "Content-Security-Policy",
-    "default-src 'none'; frame-ancestors 'none'; base-uri 'self'",
+    "default-src 'none'; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'",
   );
   c.header("Referrer-Policy", "strict-origin-when-cross-origin");
   c.header("Permissions-Policy", "camera=(), microphone=(), geolocation=()");
