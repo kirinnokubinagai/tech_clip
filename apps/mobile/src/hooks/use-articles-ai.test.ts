@@ -4,7 +4,7 @@ import type { ReactNode } from "react";
 import React from "react";
 
 import { apiFetch } from "@/lib/api";
-import { useRequestSummary, useRequestTranslation } from "../use-articles";
+import { useRequestSummary, useRequestTranslation } from "./use-articles";
 
 jest.mock("@/lib/api", () => ({
   apiFetch: jest.fn(),
