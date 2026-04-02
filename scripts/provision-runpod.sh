@@ -35,8 +35,8 @@ QWEN_ENDPOINT_NAME="techclip-qwen3.5"
 # デフォルト GPU タイプ（RTX 4090 = AMPERE_24）
 DEFAULT_GPU="AMPERE_24"
 
-# デフォルト最大ワーカー数
-DEFAULT_MAX_WORKERS=1
+# デフォルト最大ワーカー数（リクエスト増加時に自動スケール、アイドル時は0）
+DEFAULT_MAX_WORKERS=3
 
 # コンテナディスクサイズ（GB）
 CONTAINER_DISK_GB=20
@@ -67,7 +67,7 @@ usage() {
   --type    エンドポイント種別: qwen（必須）
   --image   Docker イメージ名（qwen の場合は必須）
   --gpu     GPU タイプ（デフォルト: AMPERE_24）
-  --workers 最大ワーカー数（デフォルト: 1）
+  --workers 最大ワーカー数（デフォルト: 3）
   --dry-run 実際には作成せず、リクエスト内容を表示する
   --help    このヘルプを表示する
 
