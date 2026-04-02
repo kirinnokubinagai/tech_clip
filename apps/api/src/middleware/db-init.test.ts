@@ -212,7 +212,7 @@ describe("createDbInitMiddleware", () => {
       const envWithGoogle: TestBindings = {
         TURSO_DATABASE_URL: "libsql://test.turso.io",
         TURSO_AUTH_TOKEN: "test-token",
-        BETTER_AUTH_SECRET: "test-secret",
+        BETTER_AUTH_SECRET: "test-secret-min-32-chars-long-enough!!",
         GOOGLE_CLIENT_ID: "google-client-id",
         GOOGLE_CLIENT_SECRET: "google-client-secret",
       };
@@ -224,7 +224,7 @@ describe("createDbInitMiddleware", () => {
       // Assert
       expect(mockCreateAuth).toHaveBeenCalledWith(
         mockDb,
-        "test-secret",
+        "test-secret-min-32-chars-long-enough!!",
         {
           google: {
             clientId: "google-client-id",
@@ -255,7 +255,7 @@ describe("createDbInitMiddleware", () => {
       const envWithAppUrl: TestBindings = {
         TURSO_DATABASE_URL: "libsql://test.turso.io",
         TURSO_AUTH_TOKEN: "test-token",
-        BETTER_AUTH_SECRET: "test-secret",
+        BETTER_AUTH_SECRET: "test-secret-min-32-chars-long-enough!!",
         APP_URL: "https://app.techclip.io",
       };
 
@@ -266,7 +266,7 @@ describe("createDbInitMiddleware", () => {
       // Assert
       expect(mockCreateAuth).toHaveBeenCalledWith(
         mockDb,
-        "test-secret",
+        "test-secret-min-32-chars-long-enough!!",
         {},
         "https://app.techclip.io",
       );
@@ -292,7 +292,7 @@ describe("createDbInitMiddleware", () => {
       const defaultEnv: TestBindings = {
         TURSO_DATABASE_URL: "libsql://test.turso.io",
         TURSO_AUTH_TOKEN: "test-token",
-        BETTER_AUTH_SECRET: "test-secret",
+        BETTER_AUTH_SECRET: "test-secret-min-32-chars-long-enough!!",
       };
 
       // Act
