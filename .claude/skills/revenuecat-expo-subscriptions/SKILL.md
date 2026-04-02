@@ -55,19 +55,27 @@ npx expo install expo-dev-client
 
 ### SDK Initialization
 
-```javascript
-import { Purchases } from 'react-native-purchases';
-import { Platform } from 'react-native';
+このプロジェクトでは `src/lib/revenueCat.ts` で初期化関数を定義し、`_layout.tsx` から呼び出す方式を採用しています。
+useEffect 内で直接 configure を呼ぶのではなく、初期化関数を分離してください。
 
-useEffect(() => {
-  Purchases.setDebugLogsEnabled(true);
-  
-  if (Platform.OS === 'ios') {
-    await Purchases.configure({apiKey: "public_ios_sdk_key"});
-  } else if (Platform.OS === 'android') {
-    await Purchases.configure({apiKey: "public_google_sdk_key"});
-  }
-}, []);
+```typescript
+// src/lib/revenueCat.ts
+import Purchases from "react-native-purchases";
+import { Platform } from "react-native";
+
+/** RevenueCat API キー */
+const REVENUECAT_IOS_KEY = process.env.EXPO_PUBLIC_REVENUECAT_IOS_KEY ?? "";
+const REVENUECAT_ANDROID_KEY = process.env.EXPO_PUBLIC_REVENUECAT_ANDROID_KEY ?? "";
+
+/**
+ * RevenueCat SDK を初期化する
+ */
+export async function configureRevenueCat(): Promise<void> {
+  Purchases.setLogLevel(Purchases.LOG_LEVEL.DEBUG);
+  const apiKey = Platform.OS === "ios" ? REVENUECAT_IOS_KEY : REVENUECAT_ANDROID_KEY;
+  if (!apiKey) return;
+  await Purchases.configure({ apiKey });
+}
 ```
 
 ### Fetch Offerings
