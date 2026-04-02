@@ -173,7 +173,10 @@ export function useRequestSummary() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ articleId, language = DEFAULT_SUMMARY_LANGUAGE }: RequestSummaryParams) => {
+    mutationFn: async ({
+      articleId,
+      language = DEFAULT_SUMMARY_LANGUAGE,
+    }: RequestSummaryParams) => {
       const response = await apiFetch<{ success: boolean; data: { summary: string } }>(
         `/api/articles/${articleId}/summary`,
         {
@@ -198,7 +201,10 @@ export function useRequestTranslation() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ articleId, targetLanguage = DEFAULT_TRANSLATION_LANGUAGE }: RequestTranslationParams) => {
+    mutationFn: async ({
+      articleId,
+      targetLanguage = DEFAULT_TRANSLATION_LANGUAGE,
+    }: RequestTranslationParams) => {
       const response = await apiFetch<{ success: boolean; data: { translation: string } }>(
         `/api/articles/${articleId}/translate`,
         {
