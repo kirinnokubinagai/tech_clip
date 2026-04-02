@@ -58,7 +58,7 @@ describe("useSearchArticles", () => {
   });
 
   describe("fetchSearchResults", () => {
-    it("/api/articles/search エンドポイントを呼ぶこと", async () => {
+    it("検索用エンドポイントが呼ばれること", async () => {
       // Arrange
       apiFetch.mockResolvedValue(mockArticlesResponse);
 
@@ -73,7 +73,7 @@ describe("useSearchArticles", () => {
       expect(apiFetch).toHaveBeenCalledWith(expect.stringContaining("/api/articles/search"));
     });
 
-    it("検索クエリがURLパラメータqとして渡されること", async () => {
+    it("検索クエリがURLパラメータとして渡されること", async () => {
       // Arrange
       apiFetch.mockResolvedValue(mockArticlesResponse);
 
@@ -89,7 +89,7 @@ describe("useSearchArticles", () => {
       expect(calledUrl).toContain("q=typescript");
     });
 
-    it("/api/articles（検索エンドポイント以外）を呼ばないこと", async () => {
+    it("一覧取得エンドポイントを呼ばないこと", async () => {
       // Arrange
       apiFetch.mockResolvedValue(mockArticlesResponse);
 
@@ -106,7 +106,7 @@ describe("useSearchArticles", () => {
       expect(calledUrl).not.toBe("/api/articles");
     });
 
-    it("limitパラメータが含まれること", async () => {
+    it("件数制限パラメータが含まれること", async () => {
       // Arrange
       apiFetch.mockResolvedValue(mockArticlesResponse);
 
