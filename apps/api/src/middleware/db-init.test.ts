@@ -1,0 +1,228 @@
+import { Hono } from "hono";
+import { describe, expect, it, vi } from "vitest";
+import { createDbInitMiddleware } from "./db-init";
+
+/** テスト用DBモック */
+const mockDb = { run: vi.fn(), select: vi.fn() };
+
+/** テスト用Authモック */
+const mockAuth = { api: { getSession: vi.fn() }, handler: vi.fn() };
+
+/** モック createDatabase 関数 */
+const mockCreateDatabase = vi.fn().mockReturnValue(mockDb);
+
+/** モック createAuth 関数 */
+const mockCreateAuth = vi.fn().mockReturnValue(mockAuth);
+
+/** テスト用 Bindings */
+type TestBindings = {
+  TURSO_DATABASE_URL: string;
+  TURSO_AUTH_TOKEN: string;
+  BETTER_AUTH_SECRET: string;
+  APP_URL?: string;
+  GOOGLE_CLIENT_ID?: string;
+  GOOGLE_CLIENT_SECRET?: string;
+  APPLE_CLIENT_ID?: string;
+  APPLE_CLIENT_SECRET?: string;
+  GITHUB_CLIENT_ID?: string;
+  GITHUB_CLIENT_SECRET?: string;
+};
+
+/** テスト用 Variables */
+type TestVariables = {
+  db: typeof mockDb;
+  auth: () => typeof mockAuth;
+};
+
+/**
+ * テスト用 Hono アプリを生成する
+ */
+function createTestApp(env: Partial<TestBindings> = {}) {
+  const app = new Hono<{ Bindings: TestBindings; Variables: TestVariables }>();
+
+  const defaultEnv: TestBindings = {
+    TURSO_DATABASE_URL: "libsql://test.turso.io",
+    TURSO_AUTH_TOKEN: "test-token",
+    BETTER_AUTH_SECRET: "test-secret-min-32-chars-long-enough!!",
+    ...env,
+  };
+
+  app.use(
+    "/api/*",
+    createDbInitMiddleware({
+      createDatabaseFn: mockCreateDatabase,
+      createAuthFn: mockCreateAuth,
+    }),
+  );
+
+  app.get("/api/test", (c) => {
+    const db = c.get("db");
+    const getAuth = c.get("auth");
+    return c.json({
+      hasDb: db !== undefined,
+      hasAuth: getAuth !== undefined,
+      authIsFunction: typeof getAuth === "function",
+    });
+  });
+
+  return { app, defaultEnv };
+}
+
+describe("createDbInitMiddleware", () => {
+  describe("db の初期化", () => {
+    it("リクエストスコープで db が Context にセットされること", async () => {
+      // Arrange
+      const { app, defaultEnv } = createTestApp();
+
+      // Act
+      const res = await app.request("/api/test", {}, defaultEnv);
+      const body = (await res.json()) as Record<string, unknown>;
+
+      // Assert
+      expect(body.hasDb).toBe(true);
+    });
+
+    it("createDatabase が正しい接続情報で呼び出されること", async () => {
+      // Arrange
+      vi.clearAllMocks();
+      mockCreateDatabase.mockReturnValue(mockDb);
+      const { app, defaultEnv } = createTestApp();
+
+      // Act
+      await app.request("/api/test", {}, defaultEnv);
+
+      // Assert
+      expect(mockCreateDatabase).toHaveBeenCalledWith({
+        TURSO_DATABASE_URL: "libsql://test.turso.io",
+        TURSO_AUTH_TOKEN: "test-token",
+      });
+    });
+  });
+
+  describe("auth の初期化", () => {
+    it("リクエストスコープで auth が Context にセットされること", async () => {
+      // Arrange
+      const { app, defaultEnv } = createTestApp();
+
+      // Act
+      const res = await app.request("/api/test", {}, defaultEnv);
+      const body = (await res.json()) as Record<string, unknown>;
+
+      // Assert
+      expect(body.hasAuth).toBe(true);
+    });
+
+    it("auth が関数（ファクトリ）としてセットされること", async () => {
+      // Arrange
+      const { app, defaultEnv } = createTestApp();
+
+      // Act
+      const res = await app.request("/api/test", {}, defaultEnv);
+      const body = (await res.json()) as Record<string, unknown>;
+
+      // Assert
+      expect(body.authIsFunction).toBe(true);
+    });
+
+    it("auth ファクトリを呼び出すと createAuth が実行されること", async () => {
+      // Arrange
+      vi.clearAllMocks();
+      mockCreateDatabase.mockReturnValue(mockDb);
+      mockCreateAuth.mockReturnValue(mockAuth);
+
+      const capturedGetAuth: Array<() => typeof mockAuth> = [];
+      const app = new Hono<{ Bindings: TestBindings; Variables: TestVariables }>();
+
+      app.use(
+        "/api/*",
+        createDbInitMiddleware({
+          createDatabaseFn: mockCreateDatabase,
+          createAuthFn: mockCreateAuth,
+        }),
+      );
+      app.get("/api/test", (c) => {
+        capturedGetAuth.push(c.get("auth"));
+        return c.json({ ok: true });
+      });
+
+      const defaultEnv: TestBindings = {
+        TURSO_DATABASE_URL: "libsql://test.turso.io",
+        TURSO_AUTH_TOKEN: "test-token",
+        BETTER_AUTH_SECRET: "test-secret-min-32-chars-long-enough!!",
+      };
+
+      // Act
+      await app.request("/api/test", {}, defaultEnv);
+      const getAuth = capturedGetAuth[0];
+      const result = getAuth();
+
+      // Assert
+      expect(mockCreateAuth).toHaveBeenCalledOnce();
+      expect(result).toBe(mockAuth);
+    });
+
+    it("createAuth が db と secret で呼び出されること", async () => {
+      // Arrange
+      vi.clearAllMocks();
+      mockCreateDatabase.mockReturnValue(mockDb);
+      mockCreateAuth.mockReturnValue(mockAuth);
+
+      const capturedGetAuth: Array<() => typeof mockAuth> = [];
+      const app = new Hono<{ Bindings: TestBindings; Variables: TestVariables }>();
+
+      app.use(
+        "/api/*",
+        createDbInitMiddleware({
+          createDatabaseFn: mockCreateDatabase,
+          createAuthFn: mockCreateAuth,
+        }),
+      );
+      app.get("/api/test", (c) => {
+        capturedGetAuth.push(c.get("auth"));
+        return c.json({ ok: true });
+      });
+
+      const defaultEnv: TestBindings = {
+        TURSO_DATABASE_URL: "libsql://test.turso.io",
+        TURSO_AUTH_TOKEN: "test-token",
+        BETTER_AUTH_SECRET: "my-test-secret",
+      };
+
+      // Act
+      await app.request("/api/test", {}, defaultEnv);
+      capturedGetAuth[0]();
+
+      // Assert
+      expect(mockCreateAuth).toHaveBeenCalledWith(mockDb, "my-test-secret", {}, undefined);
+    });
+  });
+
+  describe("ミドルウェア適用外のルート", () => {
+    it("/api/* 以外のパスではミドルウェアが実行されないこと", async () => {
+      // Arrange
+      vi.clearAllMocks();
+      mockCreateDatabase.mockReturnValue(mockDb);
+      const { app, defaultEnv } = createTestApp();
+      app.get("/health", (c) => c.json({ ok: true }));
+
+      // Act
+      await app.request("/health", {}, defaultEnv);
+
+      // Assert
+      expect(mockCreateDatabase).not.toHaveBeenCalled();
+    });
+  });
+
+  describe("next() の呼び出し", () => {
+    it("ミドルウェアが next を呼び出して後続処理が実行されること", async () => {
+      // Arrange
+      const { app, defaultEnv } = createTestApp();
+
+      // Act
+      const res = await app.request("/api/test", {}, defaultEnv);
+
+      // Assert
+      expect(res.status).toBe(200);
+    });
+  });
+});

@@ -8,6 +8,7 @@ import { articles, follows, notifications, users } from "./db/schema";
 import { fetchWithAuth } from "./lib/route-helpers";
 import { createAiLimitMiddleware } from "./middleware/ai-limit";
 import { corsMiddleware } from "./middleware/cors";
+import { createDbInitMiddleware } from "./middleware/db-init";
 import {
   RATE_LIMIT_CONFIG,
   createKvStore,
@@ -78,6 +79,15 @@ const app = new Hono<{ Bindings: Bindings; Variables: Variables }>();
 app.use("*", corsMiddleware);
 app.use("*", securityHeadersMiddleware);
 app.use("*", createSentryMiddleware());
+
+/** リクエストスコープで db / auth を初期化 */
+app.use(
+  "/api/*",
+  createDbInitMiddleware({
+    createDatabaseFn: createDatabase,
+    createAuthFn: createAuth,
+  }),
+);
 
 /** 認証ルートのレート制限（10リクエスト/分） */
 app.use("/api/auth/*", (c, next) =>
@@ -151,10 +161,7 @@ app.post("/api/auth/refresh", async (c) => {
 });
 
 app.post("/api/auth/send-verification", async (c) => {
-  const db = createDatabase({
-    TURSO_DATABASE_URL: c.env.TURSO_DATABASE_URL,
-    TURSO_AUTH_TOKEN: c.env.TURSO_AUTH_TOKEN,
-  });
+  const db = c.get("db");
   const appUrl = c.env.APP_URL ?? "http://localhost:8081";
   const route = createEmailVerificationRoute({
     db,
@@ -167,10 +174,7 @@ app.post("/api/auth/send-verification", async (c) => {
 });
 
 app.post("/api/auth/verify-email", async (c) => {
-  const db = createDatabase({
-    TURSO_DATABASE_URL: c.env.TURSO_DATABASE_URL,
-    TURSO_AUTH_TOKEN: c.env.TURSO_AUTH_TOKEN,
-  });
+  const db = c.get("db");
   const appUrl = c.env.APP_URL ?? "http://localhost:8081";
   const route = createEmailVerificationRoute({
     db,
