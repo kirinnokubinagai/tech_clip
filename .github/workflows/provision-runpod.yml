@@ -3,14 +3,6 @@ name: Provision RunPod
 on:
   workflow_dispatch:
     inputs:
-      deploy_target:
-        description: "Create/update production or local endpoint"
-        required: true
-        default: "local"
-        type: choice
-        options:
-          - local
-          - production
       endpoint_type:
         description: "Provision target"
         required: true
@@ -30,7 +22,7 @@ on:
       workers_max:
         description: "Maximum workers"
         required: false
-        default: "3"
+        default: "1"
         type: string
       dry_run:
         description: "Validate without creating or updating resources"
@@ -59,7 +51,6 @@ jobs:
 
           ARGS=(
             --type "${{ inputs.endpoint_type }}"
-            --target "${{ inputs.deploy_target }}"
             --gpu "${{ inputs.gpu_type }}"
             --workers "${{ inputs.workers_max }}"
           )
