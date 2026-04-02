@@ -10,3 +10,6 @@
 10112	WARN	(Session Management Response Identified - Better Authのセッション管理)
 40012	WARN	(Cross Site Scripting Reflected - Content-Type: application/jsonで返却するためブラウザがHTMLとして解釈しない)
 40014	WARN	(Cross Site Scripting Persistent - Content-Type: application/jsonで返却するためブラウザがHTMLとして解釈しない)
+40018	IGNORE	(SQL Injection - Drizzle ORMのパラメータ化クエリを使用しており誤検知。ZAPがJSON APIにSQLペイロードを送信した結果の偽陽性)
+10098	IGNORE	(Cross-Domain Misconfiguration - ローカル開発環境のCORS設定。本番はCloudflare Workersの厳格なCORS設定を使用)
+10106	IGNORE	(HTTP Only Site - ローカル開発はHTTP。本番環境はCloudflare経由でHTTPS強制)

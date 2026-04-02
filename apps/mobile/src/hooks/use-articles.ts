@@ -231,6 +231,24 @@ export function useToggleFavorite() {
   });
 }
 
+/** 要約でサポートされる言語 */
+type SummaryLanguage = "ja" | "en" | "zh" | "ko";
+
+/** 翻訳でサポートされる言語 */
+type TranslationLanguage = "en" | "ja";
+
+/** 要約リクエストのパラメータ */
+type RequestSummaryParams = {
+  articleId: string;
+  language: SummaryLanguage;
+};
+
+/** 翻訳リクエストのパラメータ */
+type RequestTranslationParams = {
+  articleId: string;
+  targetLanguage: TranslationLanguage;
+};
+
 /**
  * AI要約リクエストのmutation hook
  *
@@ -240,14 +258,14 @@ export function useRequestSummary() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (articleId: string) => {
+    mutationFn: async ({ articleId, language }: RequestSummaryParams) => {
       const response = await apiFetch<SummaryJobStartResponse>(
         `/api/articles/${articleId}/summary`,
-        { method: "POST", body: JSON.stringify({ language: "ja" }) },
+        { method: "POST", body: JSON.stringify({ language }) },
       );
       return response;
     },
-    onSuccess: async (data, articleId) => {
+    onSuccess: async (data, { articleId }) => {
       if (data.success && data.data.summary?.summary) {
         await upsertSummary(articleId, data.data.summary.summary);
       }
@@ -265,14 +283,14 @@ export function useRequestTranslation() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (articleId: string) => {
+    mutationFn: async ({ articleId, targetLanguage }: RequestTranslationParams) => {
       const response = await apiFetch<TranslationJobStartResponse>(
         `/api/articles/${articleId}/translate`,
-        { method: "POST", body: JSON.stringify({ targetLanguage: "en" }) },
+        { method: "POST", body: JSON.stringify({ targetLanguage }) },
       );
       return response;
     },
-    onSuccess: async (data, articleId) => {
+    onSuccess: async (data, { articleId }) => {
       if (data.success && data.data.translation?.translatedContent) {
         await upsertTranslation(articleId, data.data.translation.translatedContent);
       }
