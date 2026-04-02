@@ -39,6 +39,15 @@ jest.mock("../../src/lib/tracking", () => ({
   requestTrackingPermission: jest.fn().mockResolvedValue(undefined),
 }));
 
+jest.mock("../../src/lib/logger", () => ({
+  logger: {
+    info: jest.fn(),
+    warn: jest.fn(),
+    error: jest.fn(),
+    debug: jest.fn(),
+  },
+}));
+
 jest.mock("../../src/lib/query-client", () => ({
   queryClient: {},
 }));
@@ -76,6 +85,8 @@ jest.mock("../../src/stores/ui-store", () => ({
   ),
 }));
 
+import { registerNativeBackgroundFetch } from "../../src/lib/backgroundSync";
+import { logger } from "../../src/lib/logger";
 import { configureRevenueCat } from "../../src/lib/revenueCat";
 import RootLayout from "../_layout";
 
@@ -83,10 +94,17 @@ const mockedConfigureRevenueCat = configureRevenueCat as jest.MockedFunction<
   typeof configureRevenueCat
 >;
 
+const mockedRegisterNativeBackgroundFetch = registerNativeBackgroundFetch as jest.MockedFunction<
+  typeof registerNativeBackgroundFetch
+>;
+
+const mockedLogger = logger as jest.Mocked<typeof logger>;
+
 describe("RootLayout", () => {
   beforeEach(() => {
     jest.clearAllMocks();
     mockedConfigureRevenueCat.mockResolvedValue(undefined);
+    mockedRegisterNativeBackgroundFetch.mockResolvedValue(undefined);
   });
 
   describe("RevenueCat初期化", () => {
@@ -111,6 +129,62 @@ describe("RootLayout", () => {
       await waitFor(() => {
         expect(mockedConfigureRevenueCat).toHaveBeenCalledTimes(1);
       });
+    });
+
+    it("configureRevenueCatが失敗した場合にlogger.warnが呼ばれること", async () => {
+      // Arrange
+      const testError = new Error("RevenueCat設定に失敗しました");
+      mockedConfigureRevenueCat.mockRejectedValue(testError);
+
+      // Act
+      await render(<RootLayout />);
+
+      // Assert
+      await waitFor(() => {
+        expect(mockedLogger.warn).toHaveBeenCalledWith(
+          "RevenueCat設定に失敗しました",
+          expect.objectContaining({ error: testError }),
+        );
+      });
+    });
+  });
+
+  describe("バックグラウンドフェッチ登録", () => {
+    it("アプリ起動時にregisterNativeBackgroundFetchが呼ばれること", async () => {
+      // Act
+      await render(<RootLayout />);
+
+      // Assert
+      await waitFor(() => {
+        expect(mockedRegisterNativeBackgroundFetch).toHaveBeenCalledTimes(1);
+      });
+    });
+
+    it("registerNativeBackgroundFetchが失敗した場合にlogger.warnが呼ばれること", async () => {
+      // Arrange
+      const testError = new Error("バックグラウンドフェッチ登録失敗");
+      mockedRegisterNativeBackgroundFetch.mockRejectedValue(testError);
+
+      // Act
+      await render(<RootLayout />);
+
+      // Assert
+      await waitFor(() => {
+        expect(mockedLogger.warn).toHaveBeenCalledWith(
+          "バックグラウンドフェッチの登録に失敗しました",
+          expect.objectContaining({ error: testError }),
+        );
+      });
+    });
+
+    it("registerNativeBackgroundFetchが失敗してもアプリがクラッシュしないこと", async () => {
+      // Arrange
+      mockedRegisterNativeBackgroundFetch.mockRejectedValue(
+        new Error("バックグラウンドフェッチ登録失敗"),
+      );
+
+      // Act & Assert - エラーが発生してもクラッシュしないこと
+      await expect(render(<RootLayout />)).resolves.not.toThrow();
     });
   });
 });
