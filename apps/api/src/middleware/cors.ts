@@ -1,4 +1,5 @@
 import { cors } from "hono/cors";
+import type { MiddlewareHandler } from "hono";
 
 /** Expo カスタムスキーム */
 const EXPO_CUSTOM_SCHEME = "techclip://";
@@ -6,44 +7,77 @@ const EXPO_CUSTOM_SCHEME = "techclip://";
 /** Expo Go / 開発用ローカルオリジン */
 const LOCAL_ORIGINS = ["http://localhost:8081", "http://localhost:19006"];
 
-/** 許可するオリジン一覧（固定） */
-const ALLOWED_ORIGINS = [EXPO_CUSTOM_SCHEME, ...LOCAL_ORIGINS];
-
-/** 本番サブドメインのサフィックス */
-const PRODUCTION_DOMAIN_SUFFIX = ".techclip.app";
-
 /** プリフライトキャッシュ有効期限（秒） */
 const PREFLIGHT_MAX_AGE_SECONDS = 86400;
 
 /**
- * オリジンが許可対象か判定する
+ * 環境変数 CORS_ALLOWED_ORIGINS からオリジンリストを取得する
  *
- * @param origin - リクエストのOriginヘッダー値
- * @returns 許可する場合はそのオリジン文字列、拒否する場合は空文字
+ * @returns カンマ区切りで指定された追加許可オリジンの配列。未設定時は空配列
  */
-function resolveOrigin(origin: string): string {
-  if (!origin) {
+function getEnvAllowedOrigins(): string[] {
+  const envValue = process.env.CORS_ALLOWED_ORIGINS;
+  if (!envValue) {
+    return [];
+  }
+  return envValue
+    .split(",")
+    .map((o) => o.trim())
+    .filter((o) => o.length > 0);
+}
+
+/**
+ * デフォルトの許可オリジン一覧
+ *
+ * フォールバック値として固定オリジンを保持する。
+ * 本番サブドメインは環境変数 CORS_ALLOWED_ORIGINS で追加する。
+ */
+const DEFAULT_ALLOWED_ORIGINS: string[] = [
+  EXPO_CUSTOM_SCHEME,
+  ...LOCAL_ORIGINS,
+  ...getEnvAllowedOrigins(),
+];
+
+/**
+ * オリジン判定関数を生成する
+ *
+ * @param allowedOrigins - 許可するオリジンの配列（完全一致）
+ * @returns オリジン文字列を受け取り、許可する場合はそのオリジン文字列、拒否する場合は空文字を返す関数
+ */
+function buildOriginResolver(allowedOrigins: string[]): (origin: string) => string {
+  return (origin: string): string => {
+    if (!origin) {
+      return "";
+    }
+    if (allowedOrigins.includes(origin)) {
+      return origin;
+    }
     return "";
-  }
-  if (ALLOWED_ORIGINS.includes(origin)) {
-    return origin;
-  }
-  if (origin.endsWith(PRODUCTION_DOMAIN_SUFFIX)) {
-    return origin;
-  }
-  return "";
+  };
+}
+
+/**
+ * 指定オリジンリストで CORS ミドルウェアを生成する
+ *
+ * @param allowedOrigins - 許可するオリジンの配列（完全一致ホワイトリスト）
+ * @returns Hono ミドルウェアハンドラー
+ */
+export function createCorsMiddleware(allowedOrigins: string[]): MiddlewareHandler {
+  return cors({
+    origin: buildOriginResolver(allowedOrigins),
+    allowMethods: ["GET", "POST", "PATCH", "DELETE", "OPTIONS"],
+    allowHeaders: ["Content-Type", "Authorization"],
+    credentials: true,
+    maxAge: PREFLIGHT_MAX_AGE_SECONDS,
+  });
 }
 
 /**
  * CORS ミドルウェア
  *
  * Hono組み込みのcors()を使用し、許可オリジン・メソッド・ヘッダーを設定する。
- * Expo（カスタムスキーム・localhost）と本番サブドメインを許可する。
+ * サフィックスマッチングではなく完全一致ホワイトリスト方式を採用し、
+ * 任意サブドメインからのアクセスを防ぐ。
+ * 追加オリジンは環境変数 CORS_ALLOWED_ORIGINS にカンマ区切りで設定する。
  */
-export const corsMiddleware = cors({
-  origin: resolveOrigin,
-  allowMethods: ["GET", "POST", "PATCH", "DELETE", "OPTIONS"],
-  allowHeaders: ["Content-Type", "Authorization"],
-  credentials: true,
-  maxAge: PREFLIGHT_MAX_AGE_SECONDS,
-});
+export const corsMiddleware: MiddlewareHandler = createCorsMiddleware(DEFAULT_ALLOWED_ORIGINS);

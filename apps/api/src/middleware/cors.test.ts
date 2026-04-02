@@ -1,6 +1,6 @@
 import { Hono } from "hono";
 import { describe, expect, it } from "vitest";
-import { corsMiddleware } from "./cors";
+import { corsMiddleware, createCorsMiddleware } from "./cors";
 
 /**
  * CORSミドルウェアのテスト用Honoアプリを生成する
@@ -8,6 +8,16 @@ import { corsMiddleware } from "./cors";
 function createTestApp(): Hono {
   const app = new Hono();
   app.use("*", corsMiddleware);
+  app.get("/test", (c) => c.json({ ok: true }));
+  return app;
+}
+
+/**
+ * カスタムオリジンリストで CORSミドルウェアのテスト用Honoアプリを生成する
+ */
+function createTestAppWithOrigins(origins: string[]): Hono {
+  const app = new Hono();
+  app.use("*", createCorsMiddleware(origins));
   app.get("/test", (c) => c.json({ ok: true }));
   return app;
 }
@@ -55,20 +65,6 @@ describe("corsMiddleware", () => {
       expect(res.status).toBe(200);
       expect(res.headers.get("Access-Control-Allow-Origin")).toBe("http://localhost:19006");
     });
-
-    it("*.techclip.app サブドメインを許可すること", async () => {
-      // Arrange
-      const app = createTestApp();
-
-      // Act
-      const res = await app.request("/test", {
-        headers: { Origin: "https://api.techclip.app" },
-      });
-
-      // Assert
-      expect(res.status).toBe(200);
-      expect(res.headers.get("Access-Control-Allow-Origin")).toBe("https://api.techclip.app");
-    });
   });
 
   describe("拒否されるオリジン", () => {
@@ -83,6 +79,51 @@ describe("corsMiddleware", () => {
 
       // Assert
       expect(res.headers.get("Access-Control-Allow-Origin")).not.toBe("https://evil.example.com");
+    });
+
+    it("techclip.app サフィックスを悪用した不正オリジンを拒否すること", async () => {
+      // Arrange
+      const app = createTestApp();
+
+      // Act
+      const res = await app.request("/test", {
+        headers: { Origin: "https://evil.techclip.app.attacker.com" },
+      });
+
+      // Assert
+      expect(res.headers.get("Access-Control-Allow-Origin")).not.toBe(
+        "https://evil.techclip.app.attacker.com",
+      );
+    });
+
+    it("techclip.app をサブドメインとして含む不正オリジンを拒否すること", async () => {
+      // Arrange
+      const app = createTestApp();
+
+      // Act
+      const res = await app.request("/test", {
+        headers: { Origin: "https://notatechclip.app" },
+      });
+
+      // Assert
+      expect(res.headers.get("Access-Control-Allow-Origin")).not.toBe(
+        "https://notatechclip.app",
+      );
+    });
+
+    it("ホワイトリストに登録されていないサブドメインを拒否すること", async () => {
+      // Arrange
+      const app = createTestApp();
+
+      // Act
+      const res = await app.request("/test", {
+        headers: { Origin: "https://unknown-sub.techclip.app" },
+      });
+
+      // Assert
+      expect(res.headers.get("Access-Control-Allow-Origin")).not.toBe(
+        "https://unknown-sub.techclip.app",
+      );
     });
   });
 
@@ -193,6 +234,75 @@ describe("corsMiddleware", () => {
 
       // Assert
       expect(res.headers.get("Access-Control-Max-Age")).toBe("86400");
+    });
+  });
+
+  describe("createCorsMiddleware", () => {
+    it("空のオリジンリストではすべてのオリジンを拒否すること", async () => {
+      // Arrange
+      const app = createTestAppWithOrigins([]);
+
+      // Act
+      const res = await app.request("/test", {
+        headers: { Origin: "https://any.example.com" },
+      });
+
+      // Assert
+      expect(res.headers.get("Access-Control-Allow-Origin")).not.toBe("https://any.example.com");
+    });
+
+    it("複数オリジンのリストから一致するオリジンを許可すること", async () => {
+      // Arrange
+      const app = createTestAppWithOrigins([
+        "https://app1.example.com",
+        "https://app2.example.com",
+      ]);
+
+      // Act
+      const res1 = await app.request("/test", {
+        headers: { Origin: "https://app1.example.com" },
+      });
+      const res2 = await app.request("/test", {
+        headers: { Origin: "https://app2.example.com" },
+      });
+
+      // Assert
+      expect(res1.headers.get("Access-Control-Allow-Origin")).toBe("https://app1.example.com");
+      expect(res2.headers.get("Access-Control-Allow-Origin")).toBe("https://app2.example.com");
+    });
+
+    it("明示的に許可された https://app.techclip.app を許可すること", async () => {
+      // Arrange
+      const app = createTestAppWithOrigins([
+        "techclip://",
+        "http://localhost:8081",
+        "http://localhost:19006",
+        "https://app.techclip.app",
+      ]);
+
+      // Act
+      const res = await app.request("/test", {
+        headers: { Origin: "https://app.techclip.app" },
+      });
+
+      // Assert
+      expect(res.status).toBe(200);
+      expect(res.headers.get("Access-Control-Allow-Origin")).toBe("https://app.techclip.app");
+    });
+
+    it("ホワイトリスト外のオリジンをリストに追加しても既存の拒否ルールが維持されること", async () => {
+      // Arrange
+      const app = createTestAppWithOrigins(["https://allowed.example.com"]);
+
+      // Act
+      const res = await app.request("/test", {
+        headers: { Origin: "https://not-allowed.example.com" },
+      });
+
+      // Assert
+      expect(res.headers.get("Access-Control-Allow-Origin")).not.toBe(
+        "https://not-allowed.example.com",
+      );
     });
   });
 });
