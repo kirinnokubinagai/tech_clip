@@ -1,8 +1,8 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { act, renderHook, waitFor } from "@testing-library/react-native";
+import { renderHook, waitFor } from "@testing-library/react-native";
 import React from "react";
 
-import { useSearchArticles } from "../use-articles";
+import { useSearchArticles } from "./use-articles";
 
 jest.mock("@/lib/api", () => ({
   apiFetch: jest.fn(),
@@ -63,7 +63,7 @@ describe("useSearchArticles", () => {
       apiFetch.mockResolvedValue(mockArticlesResponse);
 
       // Act
-      const { result } = await renderHook(() => useSearchArticles("typescript"), {
+      await renderHook(() => useSearchArticles("typescript"), {
         wrapper: Wrapper,
       });
 
@@ -78,7 +78,7 @@ describe("useSearchArticles", () => {
       apiFetch.mockResolvedValue(mockArticlesResponse);
 
       // Act
-      const { result } = await renderHook(() => useSearchArticles("typescript"), {
+      await renderHook(() => useSearchArticles("typescript"), {
         wrapper: Wrapper,
       });
 
@@ -94,7 +94,7 @@ describe("useSearchArticles", () => {
       apiFetch.mockResolvedValue(mockArticlesResponse);
 
       // Act
-      const { result } = await renderHook(() => useSearchArticles("typescript"), {
+      await renderHook(() => useSearchArticles("typescript"), {
         wrapper: Wrapper,
       });
 
@@ -111,7 +111,7 @@ describe("useSearchArticles", () => {
       apiFetch.mockResolvedValue(mockArticlesResponse);
 
       // Act
-      const { result } = await renderHook(() => useSearchArticles("typescript"), {
+      await renderHook(() => useSearchArticles("typescript"), {
         wrapper: Wrapper,
       });
 
@@ -131,9 +131,10 @@ describe("useSearchArticles", () => {
         wrapper: Wrapper,
       });
 
-      // Assert - enabled: false なのでAPIは呼ばれない
-      await new Promise((resolve) => setTimeout(resolve, 100));
-      expect(apiFetch).not.toHaveBeenCalled();
+      // Assert
+      await waitFor(() => {
+        expect(apiFetch).not.toHaveBeenCalled();
+      });
     });
 
     it("検索結果が正常に返ること", async () => {
@@ -146,16 +147,11 @@ describe("useSearchArticles", () => {
       });
 
       // Assert
-      await act(async () => {
-        await new Promise((resolve) => setTimeout(resolve, 0));
+      await waitFor(() => {
+        expect(result.current.data?.pages).toBeDefined();
+        expect(result.current.data?.pages[0].items).toHaveLength(1);
+        expect(result.current.data?.pages[0].items[0].title).toBe("TypeScriptの基礎");
       });
-
-      await waitFor(() => expect(apiFetch).toHaveBeenCalled());
-
-      const pages = result.current.data?.pages;
-      expect(pages).toBeDefined();
-      expect(pages?.[0].items).toHaveLength(1);
-      expect(pages?.[0].items[0].title).toBe("TypeScriptの基礎");
     });
 
     it("APIエラー時にエラー状態になること", async () => {
@@ -174,14 +170,10 @@ describe("useSearchArticles", () => {
       });
 
       // Assert
-      await act(async () => {
-        await new Promise((resolve) => setTimeout(resolve, 0));
+      await waitFor(() => {
+        expect(result.current.isError).toBe(true);
+        expect(result.current.error?.message).toBe("サーバーエラーが発生しました");
       });
-
-      await waitFor(() => expect(apiFetch).toHaveBeenCalled());
-
-      expect(result.current.isError).toBe(true);
-      expect(result.current.error).not.toBeNull();
     });
   });
 });
