@@ -70,9 +70,7 @@ describe("useSearchArticles", () => {
       // Assert
       await waitFor(() => expect(apiFetch).toHaveBeenCalled());
 
-      expect(apiFetch).toHaveBeenCalledWith(
-        expect.stringContaining("/api/articles/search"),
-      );
+      expect(apiFetch).toHaveBeenCalledWith(expect.stringContaining("/api/articles/search"));
     });
 
     it("検索クエリがURLパラメータqとして渡されること", async () => {
