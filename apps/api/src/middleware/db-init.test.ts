@@ -1,5 +1,5 @@
 import { Hono } from "hono";
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { createDbInitMiddleware } from "./db-init";
 
 /** テスト用DBモック */
@@ -69,6 +69,12 @@ function createTestApp(env: Partial<TestBindings> = {}) {
 }
 
 describe("createDbInitMiddleware", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockCreateDatabase.mockReturnValue(mockDb);
+    mockCreateAuth.mockReturnValue(mockAuth);
+  });
+
   describe("db の初期化", () => {
     it("リクエストスコープで db が Context にセットされること", async () => {
       // Arrange
@@ -84,8 +90,6 @@ describe("createDbInitMiddleware", () => {
 
     it("createDatabase が正しい接続情報で呼び出されること", async () => {
       // Arrange
-      vi.clearAllMocks();
-      mockCreateDatabase.mockReturnValue(mockDb);
       const { app, defaultEnv } = createTestApp();
 
       // Act
@@ -126,10 +130,6 @@ describe("createDbInitMiddleware", () => {
 
     it("auth ファクトリを呼び出すと createAuth が実行されること", async () => {
       // Arrange
-      vi.clearAllMocks();
-      mockCreateDatabase.mockReturnValue(mockDb);
-      mockCreateAuth.mockReturnValue(mockAuth);
-
       const capturedGetAuth: Array<() => typeof mockAuth> = [];
       const app = new Hono<{ Bindings: TestBindings; Variables: TestVariables }>();
 
@@ -163,10 +163,6 @@ describe("createDbInitMiddleware", () => {
 
     it("createAuth が db と secret で呼び出されること", async () => {
       // Arrange
-      vi.clearAllMocks();
-      mockCreateDatabase.mockReturnValue(mockDb);
-      mockCreateAuth.mockReturnValue(mockAuth);
-
       const capturedGetAuth: Array<() => typeof mockAuth> = [];
       const app = new Hono<{ Bindings: TestBindings; Variables: TestVariables }>();
 
@@ -198,10 +194,6 @@ describe("createDbInitMiddleware", () => {
 
     it("GOOGLE_CLIENT_ID と GOOGLE_CLIENT_SECRET が設定されている場合 createAuth に渡されること", async () => {
       // Arrange
-      vi.clearAllMocks();
-      mockCreateDatabase.mockReturnValue(mockDb);
-      mockCreateAuth.mockReturnValue(mockAuth);
-
       const capturedGetAuth: Array<() => typeof mockAuth> = [];
       const app = new Hono<{ Bindings: TestBindings; Variables: TestVariables }>();
 
@@ -245,10 +237,6 @@ describe("createDbInitMiddleware", () => {
 
     it("APP_URL が設定されている場合 createAuth に baseURL として渡されること", async () => {
       // Arrange
-      vi.clearAllMocks();
-      mockCreateDatabase.mockReturnValue(mockDb);
-      mockCreateAuth.mockReturnValue(mockAuth);
-
       const capturedGetAuth: Array<() => typeof mockAuth> = [];
       const app = new Hono<{ Bindings: TestBindings; Variables: TestVariables }>();
 
@@ -286,10 +274,6 @@ describe("createDbInitMiddleware", () => {
 
     it("auth ファクトリを複数回呼び出しても createAuth は1回しか実行されないこと（メモ化）", async () => {
       // Arrange
-      vi.clearAllMocks();
-      mockCreateDatabase.mockReturnValue(mockDb);
-      mockCreateAuth.mockReturnValue(mockAuth);
-
       const capturedGetAuth: Array<() => typeof mockAuth> = [];
       const app = new Hono<{ Bindings: TestBindings; Variables: TestVariables }>();
 
@@ -329,8 +313,6 @@ describe("createDbInitMiddleware", () => {
   describe("ミドルウェア適用外のルート", () => {
     it("/api/* 以外のパスではミドルウェアが実行されないこと", async () => {
       // Arrange
-      vi.clearAllMocks();
-      mockCreateDatabase.mockReturnValue(mockDb);
       const { app, defaultEnv } = createTestApp();
       app.get("/health", (c) => c.json({ ok: true }));
 

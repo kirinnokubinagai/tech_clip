@@ -1,17 +1,12 @@
 import type { MiddlewareHandler } from "hono";
 
-import type { Auth, OAuthProviderConfig } from "../auth";
+import type { Auth, OAuthProviderConfig, createAuth } from "../auth";
 import type { Database, DatabaseEnv } from "../db";
 
 /** createDbInitMiddleware の依存関数型 */
 type DbInitOptions = {
   createDatabaseFn: (env: DatabaseEnv) => Database;
-  createAuthFn: (
-    db: Database,
-    secret: string,
-    oauthProviders?: OAuthProviderConfig,
-    baseURL?: string,
-  ) => Auth;
+  createAuthFn: typeof createAuth;
 };
 
 /** Bindings に必要な環境変数 */
@@ -58,6 +53,10 @@ export function createDbInitMiddleware(
     c.set("auth", () => {
       if (authInstance) {
         return authInstance;
+      }
+
+      if (!c.env.BETTER_AUTH_SECRET) {
+        throw new Error("環境変数 BETTER_AUTH_SECRET が設定されていません");
       }
 
       const oauthProviders: OAuthProviderConfig = {};
