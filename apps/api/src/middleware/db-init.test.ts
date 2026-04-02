@@ -181,7 +181,7 @@ describe("createDbInitMiddleware", () => {
       const defaultEnv: TestBindings = {
         TURSO_DATABASE_URL: "libsql://test.turso.io",
         TURSO_AUTH_TOKEN: "test-token",
-        BETTER_AUTH_SECRET: "my-test-secret",
+        BETTER_AUTH_SECRET: "test-secret-min-32-chars-long-enough!!",
       };
 
       // Act
@@ -189,7 +189,7 @@ describe("createDbInitMiddleware", () => {
       capturedGetAuth[0]();
 
       // Assert
-      expect(mockCreateAuth).toHaveBeenCalledWith(mockDb, "my-test-secret", {}, undefined);
+      expect(mockCreateAuth).toHaveBeenCalledWith(mockDb, "test-secret-min-32-chars-long-enough!!", {}, undefined);
     });
 
     it("GOOGLE_CLIENT_ID と GOOGLE_CLIENT_SECRET が設定されている場合 createAuth に渡されること", async () => {

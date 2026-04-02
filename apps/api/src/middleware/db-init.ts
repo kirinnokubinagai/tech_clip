@@ -48,7 +48,7 @@ export function createDbInitMiddleware(
 
     c.set("db", db);
 
-    let authInstance: ReturnType<typeof createAuthFn> | null = null;
+    let authInstance: Auth | null = null;
 
     c.set("auth", () => {
       if (authInstance) {
