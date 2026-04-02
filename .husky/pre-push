@@ -30,13 +30,15 @@ ZAP_DAEMON_PID=""
 zap_cleanup() {
   if [ -n "${ZAP_DAEMON_PID}" ]; then
     kill "${ZAP_DAEMON_PID}" 2>/dev/null
-    wait "${ZAP_DAEMON_PID}" 2>/dev/null
+    wait "${ZAP_DAEMON_PID}" 2>/dev/null || true
   fi
   if [ -n "${ZAP_SERVER_PID}" ]; then
     kill "${ZAP_SERVER_PID}" 2>/dev/null
-    wait "${ZAP_SERVER_PID}" 2>/dev/null
+    wait "${ZAP_SERVER_PID}" 2>/dev/null || true
   fi
   rm -f "${ZAP_DB_FILE}"
+  rm -f "/tmp/zap-api-server-${ZAP_API_PORT}.log"
+  rm -f "/tmp/zap-daemon.log"
 }
 trap zap_cleanup EXIT INT TERM
 
@@ -56,6 +58,7 @@ until curl -s "http://localhost:${ZAP_API_PORT}/health" > /dev/null 2>&1; do
   ZAP_WAIT_COUNT=$((ZAP_WAIT_COUNT + 1))
   if [ "${ZAP_WAIT_COUNT}" -ge "${ZAP_MAX_WAIT}" ]; then
     echo "警告: APIサーバーが${ZAP_MAX_WAIT}秒以内に起動しませんでした。ZAPスキャンをスキップします。"
+    echo "  ログ: /tmp/zap-api-server-${ZAP_API_PORT}.log を確認してください。"
     echo "全チェック通過（ZAPスキャンはスキップ）"
     exit 0
   fi
@@ -95,6 +98,7 @@ until curl -s "http://localhost:${ZAP_PORT}/JSON/core/view/version/" > /dev/null
   ZAP_WAIT_COUNT=$((ZAP_WAIT_COUNT + 1))
   if [ "${ZAP_WAIT_COUNT}" -ge 60 ]; then
     echo "警告: ZAPデーモンが60秒以内に起動しませんでした。ZAPスキャンをスキップします。"
+    echo "  ログ: /tmp/zap-daemon.log を確認してください。"
     echo "全チェック通過（ZAPスキャンはスキップ）"
     exit 0
   fi
