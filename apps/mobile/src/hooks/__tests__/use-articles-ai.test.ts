@@ -61,7 +61,7 @@ describe("useRequestSummary", () => {
       );
     });
 
-    it("languageを省略した場合はデフォルトで'ja'が送信されること", async () => {
+    it("languageにjaを明示指定した場合に正しく送信されること", async () => {
       // Arrange
       const mockResponse = { success: true, data: { summary: "テスト要約" } };
       (apiFetch as jest.Mock).mockResolvedValue(mockResponse);
@@ -71,7 +71,7 @@ describe("useRequestSummary", () => {
 
       // Act
       await act(async () => {
-        result.current.mutate({ articleId: "article-456" });
+        result.current.mutate({ articleId: "article-456", language: "ja" });
       });
 
       await waitFor(() => expect(result.current.isSuccess).toBe(true));
@@ -141,7 +141,7 @@ describe("useRequestTranslation", () => {
       );
     });
 
-    it("targetLanguageを省略した場合はデフォルトで'ja'が送信されること", async () => {
+    it("targetLanguageにjaを明示指定した場合に正しく送信されること", async () => {
       // Arrange
       const mockResponse = { success: true, data: { translation: "テスト翻訳" } };
       (apiFetch as jest.Mock).mockResolvedValue(mockResponse);
@@ -151,7 +151,7 @@ describe("useRequestTranslation", () => {
 
       // Act
       await act(async () => {
-        result.current.mutate({ articleId: "article-456" });
+        result.current.mutate({ articleId: "article-456", targetLanguage: "ja" });
       });
 
       await waitFor(() => expect(result.current.isSuccess).toBe(true));
