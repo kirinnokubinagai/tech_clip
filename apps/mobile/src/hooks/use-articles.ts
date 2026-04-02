@@ -146,23 +146,23 @@ export function useToggleFavorite() {
   });
 }
 
+/** 要約でサポートされる言語 */
+type SummaryLanguage = "ja" | "en" | "zh" | "ko";
+
+/** 翻訳でサポートされる言語 */
+type TranslationLanguage = "en" | "ja";
+
 /** 要約リクエストのパラメータ */
 type RequestSummaryParams = {
   articleId: string;
-  language?: string;
+  language: SummaryLanguage;
 };
 
 /** 翻訳リクエストのパラメータ */
 type RequestTranslationParams = {
   articleId: string;
-  targetLanguage?: string;
+  targetLanguage: TranslationLanguage;
 };
-
-/** 要約リクエストのデフォルト言語 */
-const DEFAULT_SUMMARY_LANGUAGE = "ja";
-
-/** 翻訳リクエストのデフォルト言語 */
-const DEFAULT_TRANSLATION_LANGUAGE = "ja";
 
 /**
  * AI要約リクエストのmutation hook
@@ -173,10 +173,7 @@ export function useRequestSummary() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({
-      articleId,
-      language = DEFAULT_SUMMARY_LANGUAGE,
-    }: RequestSummaryParams) => {
+    mutationFn: async ({ articleId, language }: RequestSummaryParams) => {
       const response = await apiFetch<{ success: boolean; data: { summary: string } }>(
         `/api/articles/${articleId}/summary`,
         {
@@ -201,10 +198,7 @@ export function useRequestTranslation() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({
-      articleId,
-      targetLanguage = DEFAULT_TRANSLATION_LANGUAGE,
-    }: RequestTranslationParams) => {
+    mutationFn: async ({ articleId, targetLanguage }: RequestTranslationParams) => {
       const response = await apiFetch<{ success: boolean; data: { translation: string } }>(
         `/api/articles/${articleId}/translate`,
         {
