@@ -195,6 +195,135 @@ describe("createDbInitMiddleware", () => {
       // Assert
       expect(mockCreateAuth).toHaveBeenCalledWith(mockDb, "my-test-secret", {}, undefined);
     });
+
+    it("GOOGLE_CLIENT_ID と GOOGLE_CLIENT_SECRET が設定されている場合 createAuth に渡されること", async () => {
+      // Arrange
+      vi.clearAllMocks();
+      mockCreateDatabase.mockReturnValue(mockDb);
+      mockCreateAuth.mockReturnValue(mockAuth);
+
+      const capturedGetAuth: Array<() => typeof mockAuth> = [];
+      const app = new Hono<{ Bindings: TestBindings; Variables: TestVariables }>();
+
+      app.use(
+        "/api/*",
+        createDbInitMiddleware({
+          createDatabaseFn: mockCreateDatabase,
+          createAuthFn: mockCreateAuth,
+        }),
+      );
+      app.get("/api/test", (c) => {
+        capturedGetAuth.push(c.get("auth"));
+        return c.json({ ok: true });
+      });
+
+      const envWithGoogle: TestBindings = {
+        TURSO_DATABASE_URL: "libsql://test.turso.io",
+        TURSO_AUTH_TOKEN: "test-token",
+        BETTER_AUTH_SECRET: "test-secret",
+        GOOGLE_CLIENT_ID: "google-client-id",
+        GOOGLE_CLIENT_SECRET: "google-client-secret",
+      };
+
+      // Act
+      await app.request("/api/test", {}, envWithGoogle);
+      capturedGetAuth[0]();
+
+      // Assert
+      expect(mockCreateAuth).toHaveBeenCalledWith(
+        mockDb,
+        "test-secret",
+        {
+          google: {
+            clientId: "google-client-id",
+            clientSecret: "google-client-secret",
+          },
+        },
+        undefined,
+      );
+    });
+
+    it("APP_URL が設定されている場合 createAuth に baseURL として渡されること", async () => {
+      // Arrange
+      vi.clearAllMocks();
+      mockCreateDatabase.mockReturnValue(mockDb);
+      mockCreateAuth.mockReturnValue(mockAuth);
+
+      const capturedGetAuth: Array<() => typeof mockAuth> = [];
+      const app = new Hono<{ Bindings: TestBindings; Variables: TestVariables }>();
+
+      app.use(
+        "/api/*",
+        createDbInitMiddleware({
+          createDatabaseFn: mockCreateDatabase,
+          createAuthFn: mockCreateAuth,
+        }),
+      );
+      app.get("/api/test", (c) => {
+        capturedGetAuth.push(c.get("auth"));
+        return c.json({ ok: true });
+      });
+
+      const envWithAppUrl: TestBindings = {
+        TURSO_DATABASE_URL: "libsql://test.turso.io",
+        TURSO_AUTH_TOKEN: "test-token",
+        BETTER_AUTH_SECRET: "test-secret",
+        APP_URL: "https://app.techclip.io",
+      };
+
+      // Act
+      await app.request("/api/test", {}, envWithAppUrl);
+      capturedGetAuth[0]();
+
+      // Assert
+      expect(mockCreateAuth).toHaveBeenCalledWith(
+        mockDb,
+        "test-secret",
+        {},
+        "https://app.techclip.io",
+      );
+    });
+
+    it("auth ファクトリを複数回呼び出しても createAuth は1回しか実行されないこと（メモ化）", async () => {
+      // Arrange
+      vi.clearAllMocks();
+      mockCreateDatabase.mockReturnValue(mockDb);
+      mockCreateAuth.mockReturnValue(mockAuth);
+
+      const capturedGetAuth: Array<() => typeof mockAuth> = [];
+      const app = new Hono<{ Bindings: TestBindings; Variables: TestVariables }>();
+
+      app.use(
+        "/api/*",
+        createDbInitMiddleware({
+          createDatabaseFn: mockCreateDatabase,
+          createAuthFn: mockCreateAuth,
+        }),
+      );
+      app.get("/api/test", (c) => {
+        capturedGetAuth.push(c.get("auth"));
+        return c.json({ ok: true });
+      });
+
+      const defaultEnv: TestBindings = {
+        TURSO_DATABASE_URL: "libsql://test.turso.io",
+        TURSO_AUTH_TOKEN: "test-token",
+        BETTER_AUTH_SECRET: "test-secret",
+      };
+
+      // Act
+      await app.request("/api/test", {}, defaultEnv);
+      const getAuth = capturedGetAuth[0];
+      const first = getAuth();
+      const second = getAuth();
+      const third = getAuth();
+
+      // Assert
+      expect(mockCreateAuth).toHaveBeenCalledOnce();
+      expect(first).toBe(mockAuth);
+      expect(second).toBe(mockAuth);
+      expect(third).toBe(mockAuth);
+    });
   });
 
   describe("ミドルウェア適用外のルート", () => {

@@ -107,10 +107,7 @@ app.get("/health", (c) => {
 });
 
 app.on(["GET"], "/api/health", async (c) => {
-  const db = createDatabase({
-    TURSO_DATABASE_URL: c.env.TURSO_DATABASE_URL,
-    TURSO_AUTH_TOKEN: c.env.TURSO_AUTH_TOKEN,
-  });
+  const db = c.get("db");
 
   const healthRoute = createHealthRoute({
     pingFn: async () => {

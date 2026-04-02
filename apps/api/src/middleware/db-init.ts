@@ -53,7 +53,13 @@ export function createDbInitMiddleware(
 
     c.set("db", db);
 
+    let authInstance: ReturnType<typeof createAuthFn> | null = null;
+
     c.set("auth", () => {
+      if (authInstance) {
+        return authInstance;
+      }
+
       const oauthProviders: OAuthProviderConfig = {};
 
       if (c.env.GOOGLE_CLIENT_ID && c.env.GOOGLE_CLIENT_SECRET) {
@@ -75,7 +81,8 @@ export function createDbInitMiddleware(
         };
       }
 
-      return createAuthFn(db, c.env.BETTER_AUTH_SECRET, oauthProviders, c.env.APP_URL);
+      authInstance = createAuthFn(db, c.env.BETTER_AUTH_SECRET, oauthProviders, c.env.APP_URL);
+      return authInstance;
     });
 
     await next();
