@@ -57,10 +57,9 @@ ZAP_WAIT_COUNT=0
 until curl -s "http://localhost:${ZAP_API_PORT}/health" > /dev/null 2>&1; do
   ZAP_WAIT_COUNT=$((ZAP_WAIT_COUNT + 1))
   if [ "${ZAP_WAIT_COUNT}" -ge "${ZAP_MAX_WAIT}" ]; then
-    echo "警告: APIサーバーが${ZAP_MAX_WAIT}秒以内に起動しませんでした。ZAPスキャンをスキップします。"
+    echo "ZAPスキャン失敗: APIサーバーが${ZAP_MAX_WAIT}秒以内に起動しませんでした。"
     echo "  ログ: /tmp/zap-api-server-${ZAP_API_PORT}.log を確認してください。"
-    echo "全チェック通過（ZAPスキャンはスキップ）"
-    exit 0
+    exit 1
   fi
   sleep 1
 done
@@ -97,10 +96,9 @@ ZAP_WAIT_COUNT=0
 until curl -s "http://localhost:${ZAP_PORT}/JSON/core/view/version/" > /dev/null 2>&1; do
   ZAP_WAIT_COUNT=$((ZAP_WAIT_COUNT + 1))
   if [ "${ZAP_WAIT_COUNT}" -ge 60 ]; then
-    echo "警告: ZAPデーモンが60秒以内に起動しませんでした。ZAPスキャンをスキップします。"
+    echo "ZAPスキャン失敗: ZAPデーモンが60秒以内に起動しませんでした。"
     echo "  ログ: /tmp/zap-daemon-${ZAP_PORT}.log を確認してください。"
-    echo "全チェック通過（ZAPスキャンはスキップ）"
-    exit 0
+    exit 1
   fi
   sleep 1
 done
