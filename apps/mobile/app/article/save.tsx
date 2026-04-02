@@ -80,7 +80,7 @@ export default function SaveScreen() {
     setIsFetching(true);
 
     try {
-      const data = await apiFetch<ParseArticleResponse>("/articles/parse", {
+      const data = await apiFetch<ParseArticleResponse>("/api/articles/parse", {
         method: "POST",
         body: JSON.stringify({ url: url.trim() }),
       });
@@ -111,7 +111,7 @@ export default function SaveScreen() {
     setIsSaving(true);
 
     try {
-      const data = await apiFetch<SaveArticleResponse>("/articles", {
+      const data = await apiFetch<SaveArticleResponse>("/api/articles", {
         method: "POST",
         body: JSON.stringify({ url: url.trim() }),
       });

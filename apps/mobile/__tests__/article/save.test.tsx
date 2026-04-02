@@ -25,6 +25,17 @@ jest.mock("expo-haptics", () => ({
   ImpactFeedbackStyle: { Medium: "medium" },
 }));
 
+/** Toastのshowモック関数（呼び出し検証用） */
+const mockShowToast = jest.fn();
+
+jest.mock("@/hooks/use-toast", () => ({
+  useToast: () => ({
+    toast: { message: "", variant: "success" as const, visible: false },
+    show: (...args: unknown[]) => mockShowToast(...args),
+    dismiss: jest.fn(),
+  }),
+}));
+
 /** テスト用のプレビューレスポンス */
 const MOCK_PREVIEW_RESPONSE = {
   success: true,
@@ -65,6 +76,7 @@ const MOCK_SAVE_RESPONSE = {
 describe("SaveScreen", () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    mockShowToast.mockClear();
   });
 
   describe("初期表示", () => {
@@ -287,7 +299,7 @@ describe("SaveScreen", () => {
       // Assert
       await waitFor(() => {
         expect(mockApiFetch).toHaveBeenCalledWith(
-          "/articles",
+          "/api/articles",
           expect.objectContaining({
             method: "POST",
             body: JSON.stringify({ url: "https://zenn.dev/test/articles/test-article" }),
@@ -318,7 +330,7 @@ describe("SaveScreen", () => {
 
       // Assert
       await waitFor(() => {
-        expect(getByText("記事を保存しました")).toBeDefined();
+        expect(mockShowToast).toHaveBeenCalledWith("記事を保存しました", "success");
       });
     });
 
