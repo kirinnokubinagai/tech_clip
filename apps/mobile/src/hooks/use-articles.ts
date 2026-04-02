@@ -146,6 +146,24 @@ export function useToggleFavorite() {
   });
 }
 
+/** 要約でサポートされる言語 */
+type SummaryLanguage = "ja" | "en" | "zh" | "ko";
+
+/** 翻訳でサポートされる言語 */
+type TranslationLanguage = "en" | "ja";
+
+/** 要約リクエストのパラメータ */
+type RequestSummaryParams = {
+  articleId: string;
+  language: SummaryLanguage;
+};
+
+/** 翻訳リクエストのパラメータ */
+type RequestTranslationParams = {
+  articleId: string;
+  targetLanguage: TranslationLanguage;
+};
+
 /**
  * AI要約リクエストのmutation hook
  *
@@ -155,14 +173,17 @@ export function useRequestSummary() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (articleId: string) => {
+    mutationFn: async ({ articleId, language }: RequestSummaryParams) => {
       const response = await apiFetch<{ success: boolean; data: { summary: string } }>(
         `/api/articles/${articleId}/summary`,
-        { method: "POST" },
+        {
+          method: "POST",
+          body: JSON.stringify({ language }),
+        },
       );
       return response;
     },
-    onSuccess: (_data, articleId) => {
+    onSuccess: (_data, { articleId }) => {
       queryClient.invalidateQueries({ queryKey: [ARTICLE_DETAIL_QUERY_KEY, articleId] });
     },
   });
@@ -177,14 +198,17 @@ export function useRequestTranslation() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (articleId: string) => {
+    mutationFn: async ({ articleId, targetLanguage }: RequestTranslationParams) => {
       const response = await apiFetch<{ success: boolean; data: { translation: string } }>(
         `/api/articles/${articleId}/translate`,
-        { method: "POST" },
+        {
+          method: "POST",
+          body: JSON.stringify({ targetLanguage }),
+        },
       );
       return response;
     },
-    onSuccess: (_data, articleId) => {
+    onSuccess: (_data, { articleId }) => {
       queryClient.invalidateQueries({ queryKey: [ARTICLE_DETAIL_QUERY_KEY, articleId] });
     },
   });
