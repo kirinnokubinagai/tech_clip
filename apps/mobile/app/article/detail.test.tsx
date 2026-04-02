@@ -1,6 +1,6 @@
 import { fireEvent, render, waitFor } from "@testing-library/react-native";
 
-import ArticleDetailScreen from "../../app/article/[id]";
+import ArticleDetailScreen from "./[id]";
 
 /** 要約リクエストのmutate関数 */
 const mockRequestSummaryMutate = jest.fn();
