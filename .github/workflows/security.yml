@@ -36,12 +36,10 @@ jobs:
       - name: Register test user and obtain auth token
         id: auth
         run: |
-          # テスト用ユーザー登録（Better Auth catch-allハンドラ経由）
           SIGNUP_STATUS=$(curl -s -o /dev/null -w '%{http_code}' -X POST http://localhost:8787/api/auth/sign-up/email \
             -H 'Content-Type: application/json' \
             -d '{"email":"zap-test@techclip.test","password":"ZapTest1234!","name":"ZAP Test User"}')
           echo "サインアップHTTPステータス: $SIGNUP_STATUS"
-          # サインインしてセッショントークンを取得
           RESPONSE=$(curl -s -X POST http://localhost:8787/api/auth/sign-in \
             -H 'Content-Type: application/json' \
             -d '{"email":"zap-test@techclip.test","password":"ZapTest1234!"}')
@@ -51,9 +49,6 @@ jobs:
             TOKEN="dummy-token-for-unauthenticated-scan"
           fi
           echo "token=$TOKEN" >> "$GITHUB_OUTPUT"
-      # TODO: Cloudflare Workers 本番環境のスキャンは現状 localhost でのみ実施。
-      #       Workers 環境（wrangler dev --remote など）でのリモートスキャンは
-      #       ネットワーク構成の違いにより別途対応が必要。
       - name: OWASP ZAP API Scan
         uses: zaproxy/action-api-scan@v0.9.0
         env:
