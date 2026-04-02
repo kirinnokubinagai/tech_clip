@@ -3,14 +3,6 @@ import { render, screen } from "@testing-library/react-native";
 import type { ArticleCardArticle } from "../ArticleCard";
 import { ArticleList } from "../ArticleList";
 
-jest.mock("../ui/Skeleton", () => ({
-  Skeleton: ({ width, height }: { width?: number | string; height?: number | string }) =>
-    require("react").createElement(require("react-native").View, {
-      testID: "skeleton-item",
-      style: { width, height },
-    }),
-}));
-
 /** テスト用の記事データ */
 const makeArticle = (id: string): ArticleCardArticle => ({
   id,

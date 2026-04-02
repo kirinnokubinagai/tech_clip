@@ -2,14 +2,6 @@ import { render } from "@testing-library/react-native";
 
 import { ArticleListSkeleton } from "../ArticleListSkeleton";
 
-jest.mock("../../Skeleton", () => ({
-  Skeleton: ({ width, height }: { width?: number | string; height?: number | string }) =>
-    require("react").createElement(require("react-native").View, {
-      testID: "skeleton-item",
-      style: { width, height },
-    }),
-}));
-
 describe("ArticleListSkeleton", () => {
   describe("レンダリング", () => {
     it("デフォルトで5件のスケルトンが表示されること", async () => {
