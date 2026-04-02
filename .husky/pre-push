@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 echo "Pre-push チェック実行中..."
 
 echo "  Lint..."
@@ -21,8 +21,8 @@ fi
 
 echo "  OWASP ZAP セキュリティスキャン..."
 
-ZAP_API_PORT=8787
-ZAP_DB_FILE="/tmp/zap-prepush-local.db"
+ZAP_API_PORT=$((9000 + (RANDOM % 1000)))
+ZAP_DB_FILE="/tmp/zap-prepush-${ZAP_API_PORT}.db"
 ZAP_MAX_WAIT=30
 ZAP_SERVER_PID=""
 ZAP_DAEMON_PID=""
@@ -30,11 +30,15 @@ ZAP_DAEMON_PID=""
 zap_cleanup() {
   if [ -n "${ZAP_DAEMON_PID}" ]; then
     kill "${ZAP_DAEMON_PID}" 2>/dev/null
+    wait "${ZAP_DAEMON_PID}" 2>/dev/null || true
   fi
   if [ -n "${ZAP_SERVER_PID}" ]; then
     kill "${ZAP_SERVER_PID}" 2>/dev/null
+    wait "${ZAP_SERVER_PID}" 2>/dev/null || true
   fi
   rm -f "${ZAP_DB_FILE}"
+  rm -f "/tmp/zap-api-server-${ZAP_API_PORT}.log"
+  rm -f "/tmp/zap-daemon-${ZAP_PORT}.log"
 }
 trap zap_cleanup EXIT INT TERM
 
@@ -44,7 +48,7 @@ RUNPOD_API_KEY="dummy" \
 RUNPOD_ENDPOINT_ID="dummy" \
 BETTER_AUTH_SECRET="${BETTER_AUTH_SECRET:-$(openssl rand -hex 32)}" \
 ENVIRONMENT="test" \
-  pnpm --filter @tech-clip/api dev > /tmp/zap-api-server.log 2>&1 &
+  pnpm --filter @tech-clip/api exec wrangler dev --port "${ZAP_API_PORT}" > /tmp/zap-api-server-${ZAP_API_PORT}.log 2>&1 &
 ZAP_SERVER_PID=$!
 
 # サーバー起動を待機
@@ -54,6 +58,7 @@ until curl -s "http://localhost:${ZAP_API_PORT}/health" > /dev/null 2>&1; do
   ZAP_WAIT_COUNT=$((ZAP_WAIT_COUNT + 1))
   if [ "${ZAP_WAIT_COUNT}" -ge "${ZAP_MAX_WAIT}" ]; then
     echo "ZAPスキャン失敗: APIサーバーが${ZAP_MAX_WAIT}秒以内に起動しませんでした。"
+    echo "  ログ: /tmp/zap-api-server-${ZAP_API_PORT}.log を確認してください。"
     exit 1
   fi
   sleep 1
@@ -81,8 +86,8 @@ if [ -z "${ZAP_TOKEN}" ]; then
 fi
 
 # ZAP をデーモンモードで起動
-ZAP_PORT=8090
-zap -daemon -port "${ZAP_PORT}" -config api.disablekey=true > /tmp/zap-daemon.log 2>&1 &
+ZAP_PORT=$((10000 + (RANDOM % 1000)))
+zap -daemon -port "${ZAP_PORT}" -config api.disablekey=true > /tmp/zap-daemon-${ZAP_PORT}.log 2>&1 &
 ZAP_DAEMON_PID=$!
 
 # ZAP デーモン起動を待機
@@ -92,6 +97,7 @@ until curl -s "http://localhost:${ZAP_PORT}/JSON/core/view/version/" > /dev/null
   ZAP_WAIT_COUNT=$((ZAP_WAIT_COUNT + 1))
   if [ "${ZAP_WAIT_COUNT}" -ge 60 ]; then
     echo "ZAPスキャン失敗: ZAPデーモンが60秒以内に起動しませんでした。"
+    echo "  ログ: /tmp/zap-daemon-${ZAP_PORT}.log を確認してください。"
     exit 1
   fi
   sleep 1
