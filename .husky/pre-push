@@ -47,12 +47,19 @@ ZAP_MAX_WAIT=30
 ZAP_SCAN_MAX_WAIT=300
 ZAP_SERVER_PID=""
 ZAP_DAEMON_PID=""
+ZAP_PORT=""
 
 zap_cleanup() {
   if [ -n "${ZAP_DAEMON_PID}" ]; then
     pkill -P "${ZAP_DAEMON_PID}" 2>/dev/null
     kill "${ZAP_DAEMON_PID}" 2>/dev/null
     wait "${ZAP_DAEMON_PID}" 2>/dev/null || true
+  fi
+  if [ -n "${ZAP_PORT}" ]; then
+    for pid in $(pgrep -f -- "-daemon -port ${ZAP_PORT}" 2>/dev/null || true); do
+      kill "${pid}" 2>/dev/null || true
+      wait "${pid}" 2>/dev/null || true
+    done
   fi
   if [ -n "${ZAP_SERVER_PID}" ]; then
     pkill -P "${ZAP_SERVER_PID}" 2>/dev/null
