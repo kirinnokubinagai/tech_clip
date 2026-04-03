@@ -9,8 +9,8 @@ declare const process: {
 import { createClient } from "@libsql/client";
 import { drizzle } from "drizzle-orm/libsql";
 import {
-  articles,
   articleTags,
+  articles,
   follows,
   notifications,
   summaries,

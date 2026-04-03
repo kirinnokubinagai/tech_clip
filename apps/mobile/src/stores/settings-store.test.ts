@@ -7,8 +7,8 @@ jest.mock("@/lib/api", () => ({
   apiFetch: jest.fn(),
 }));
 
-import * as SecureStore from "expo-secure-store";
 import { apiFetch } from "@/lib/api";
+import * as SecureStore from "expo-secure-store";
 import { useSettingsStore } from "./settings-store";
 
 /** モック型キャスト */

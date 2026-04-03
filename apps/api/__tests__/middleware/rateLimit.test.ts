@@ -1,10 +1,10 @@
 import { Hono } from "hono";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
-  createKvStore,
-  createRateLimitMiddleware,
   type RateLimitConfig,
   type RateLimitStore,
+  createKvStore,
+  createRateLimitMiddleware,
 } from "../../src/middleware/rateLimit";
 
 /** レスポンスボディの型定義 */

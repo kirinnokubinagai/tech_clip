@@ -1,12 +1,12 @@
+import { Badge, Button, Card, Input, Toast } from "@/components/ui";
+import { useToast } from "@/hooks/use-toast";
+import { apiFetch } from "@/lib/api";
+import type { ArticlePreview, ParseArticleResponse, SaveArticleResponse } from "@/types/article";
 import * as Haptics from "expo-haptics";
 import { router, useLocalSearchParams } from "expo-router";
 import { AlertCircle, ArrowLeft, ExternalLink, Loader2 } from "lucide-react-native";
 import { useCallback, useState } from "react";
 import { Image, Pressable, ScrollView, Text, View } from "react-native";
-import { Badge, Button, Card, Input, Toast } from "@/components/ui";
-import { useToast } from "@/hooks/use-toast";
-import { apiFetch } from "@/lib/api";
-import type { ArticlePreview, ParseArticleResponse, SaveArticleResponse } from "@/types/article";
 
 /** URL正規表現パターン */
 const URL_PATTERN = /^https?:\/\/.+/;

@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
-  createMonthlyResetDeps,
   type MonthlyResetDeps,
+  createMonthlyResetDeps,
   resetFreeAiUsesMonthly,
 } from "../../src/cron/monthlyReset";
 

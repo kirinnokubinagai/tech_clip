@@ -1,12 +1,12 @@
 import {
   APP_SCHEME,
-  getApiBaseUrl,
   IMAGE_SIZES,
   MAX_FREE_AI_USES,
   PAGINATION_LIMIT,
   STALE_TIME_MS,
   SUPPORTED_SOURCES,
   THEME_COLORS,
+  getApiBaseUrl,
 } from "@/lib/constants";
 
 describe("constants", () => {
