@@ -39,6 +39,8 @@ describe("createSentryMiddleware", () => {
 
   beforeEach(() => {
     fetchMock = vi.fn().mockResolvedValue(new Response(null, { status: 200 }));
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    vi.spyOn(console, "log").mockImplementation(() => {});
   });
 
   afterEach(() => {

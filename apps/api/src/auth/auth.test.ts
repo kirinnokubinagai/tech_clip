@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import app from "../index";
 
 /** テスト用のシークレットキー（32文字以上） */
@@ -21,6 +21,15 @@ const TEST_BINDINGS = {
 };
 
 describe("Better Auth", () => {
+  beforeEach(() => {
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    vi.spyOn(console, "warn").mockImplementation(() => {});
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
   describe("createAuth", () => {
     it("createAuth関数がエクスポートされていること", async () => {
       // Arrange
