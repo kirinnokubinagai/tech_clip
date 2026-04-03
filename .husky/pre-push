@@ -1,4 +1,24 @@
 #!/bin/bash
+set -euo pipefail
+
+# force-push / non-fast-forward push をブロック
+while read -r LOCAL_REF LOCAL_SHA REMOTE_REF REMOTE_SHA; do
+  if [ "${LOCAL_SHA}" = "0000000000000000000000000000000000000000" ]; then
+    continue
+  fi
+
+  if [ "${REMOTE_SHA}" = "0000000000000000000000000000000000000000" ]; then
+    continue
+  fi
+
+  if ! git merge-base --is-ancestor "${REMOTE_SHA}" "${LOCAL_SHA}"; then
+    echo "非 fast-forward push は禁止されています。rebase後の force-push は行わず、merge で取り込んでください。"
+    echo "  local:  ${LOCAL_REF} ${LOCAL_SHA}"
+    echo "  remote: ${REMOTE_REF} ${REMOTE_SHA}"
+    exit 1
+  fi
+done
+
 echo "Pre-push チェック実行中..."
 
 echo "  Lint..."
@@ -13,32 +33,41 @@ pnpm test || { echo "Test失敗。修正してからpushしてください。"; 
 # OWASP ZAP ローカルセキュリティスキャン
 # Nix 環境の zap コマンドを使用（Docker 不要）
 if ! command -v zap > /dev/null 2>&1; then
-  echo "警告: zap コマンドが見つかりません。ZAPスキャンをスキップします。"
+  echo "ZAPスキャン失敗: zap コマンドが見つかりません。"
   echo "  nix develop で開発環境に入ってください。"
-  echo "全チェック通過（ZAPスキャンはスキップ）"
-  exit 0
+  exit 1
 fi
 
 echo "  OWASP ZAP セキュリティスキャン..."
 
 ZAP_API_PORT=$((9000 + (RANDOM % 1000)))
 ZAP_DB_FILE="/tmp/zap-prepush-${ZAP_API_PORT}.db"
+ZAP_WRAPPER_HOME="$(mktemp -d "/tmp/zap-home-${ZAP_API_PORT}-XXXXXX")"
 ZAP_MAX_WAIT=30
+ZAP_SCAN_MAX_WAIT=300
 ZAP_SERVER_PID=""
 ZAP_DAEMON_PID=""
+ZAP_PORT=""
 
 zap_cleanup() {
   if [ -n "${ZAP_DAEMON_PID}" ]; then
-    pkill -P "${ZAP_DAEMON_PID}" 2>/dev/null
-    kill "${ZAP_DAEMON_PID}" 2>/dev/null
+    pkill -P "${ZAP_DAEMON_PID}" 2>/dev/null || true
+    kill "${ZAP_DAEMON_PID}" 2>/dev/null || true
     wait "${ZAP_DAEMON_PID}" 2>/dev/null || true
   fi
+  if [ -n "${ZAP_PORT}" ]; then
+    for pid in $(pgrep -f -- "-daemon -port ${ZAP_PORT}" 2>/dev/null || true); do
+      kill "${pid}" 2>/dev/null || true
+      wait "${pid}" 2>/dev/null || true
+    done
+  fi
   if [ -n "${ZAP_SERVER_PID}" ]; then
-    pkill -P "${ZAP_SERVER_PID}" 2>/dev/null
-    kill "${ZAP_SERVER_PID}" 2>/dev/null
+    pkill -P "${ZAP_SERVER_PID}" 2>/dev/null || true
+    kill "${ZAP_SERVER_PID}" 2>/dev/null || true
     wait "${ZAP_SERVER_PID}" 2>/dev/null || true
   fi
   rm -f "${ZAP_DB_FILE}"
+  rm -rf "${ZAP_WRAPPER_HOME}"
   rm -f "/tmp/zap-api-server-${ZAP_API_PORT}.log"
   rm -f "/tmp/zap-daemon-${ZAP_PORT}.log"
   return 0
@@ -90,7 +119,8 @@ fi
 
 # ZAP をデーモンモードで起動
 ZAP_PORT=$((10000 + (RANDOM % 1000)))
-zap -daemon -port "${ZAP_PORT}" -config api.disablekey=true > /tmp/zap-daemon-${ZAP_PORT}.log 2>&1 &
+HOME="${ZAP_WRAPPER_HOME}" \
+  zap -daemon -port "${ZAP_PORT}" -config api.disablekey=true > /tmp/zap-daemon-${ZAP_PORT}.log 2>&1 &
 ZAP_DAEMON_PID=$!
 
 # ZAP デーモン起動を待機
@@ -131,10 +161,17 @@ SCAN_ID=$(curl -s "http://localhost:${ZAP_PORT}/JSON/ascan/action/scan/" \
   | jq -r '.scan')
 
 # スキャン完了を待機
+ZAP_SCAN_WAIT_COUNT=0
 while true; do
   STATUS=$(curl -s "http://localhost:${ZAP_PORT}/JSON/ascan/view/status/?scanId=${SCAN_ID}" | jq -r '.status')
   if [ "${STATUS}" = "100" ]; then
     break
+  fi
+  ZAP_SCAN_WAIT_COUNT=$((ZAP_SCAN_WAIT_COUNT + 1))
+  if [ "${ZAP_SCAN_WAIT_COUNT}" -ge "${ZAP_SCAN_MAX_WAIT}" ]; then
+    echo "ZAPスキャン失敗: アクティブスキャンが${ZAP_SCAN_MAX_WAIT}回の待機内に完了しませんでした。"
+    echo "  ログ: /tmp/zap-daemon-${ZAP_PORT}.log を確認してください。"
+    exit 1
   fi
   sleep 2
 done
