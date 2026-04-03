@@ -9,6 +9,7 @@ export type User = {
 
 export type Session = {
   token: string;
+  refreshToken: string;
   expiresAt: string;
 };
 

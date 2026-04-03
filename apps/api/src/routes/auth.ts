@@ -144,6 +144,7 @@ export function createAuthRoute({ db, getAuth }: AuthRouteOptions) {
             },
             session: {
               token: sessionRow.token,
+              refreshToken: sessionRow.id,
               expiresAt: sessionRow.expiresAt,
             },
           },
@@ -244,7 +245,7 @@ export function createAuthRoute({ db, getAuth }: AuthRouteOptions) {
 
   /**
    * トークンリフレッシュ
-   * リフレッシュトークン（セッショントークン）が有効であれば同じトークンを返す
+   * リフレッシュトークン（セッション ID）が有効であれば現在のアクセストークンを返す
    * セッションの有効期限を確認し、期限切れの場合は 401 を返す
    */
   app.post("/refresh", async (c) => {
@@ -268,7 +269,7 @@ export function createAuthRoute({ db, getAuth }: AuthRouteOptions) {
       const [sessionRow] = await db
         .select()
         .from(sessions)
-        .where(eq(sessions.token, parsed.data.refreshToken));
+        .where(eq(sessions.id, parsed.data.refreshToken));
 
       if (!sessionRow) {
         return c.json(
