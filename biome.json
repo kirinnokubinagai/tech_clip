@@ -32,7 +32,7 @@
       "!.expo",
       "!.claude",
       "!drizzle",
-      "!.omc",
+      "!**/.omc",
       "!.worktrees",
       "!.zap",
       "!apps/api/.wrangler",
