@@ -1,7 +1,6 @@
+import type { ArticleDetailResponse, ArticlesListResponse } from "@/types/article";
 import { apiFetch } from "./api";
 import { upsertArticle, upsertSummary, upsertTranslation } from "./localDb";
-
-import type { ArticleDetailResponse, ArticlesListResponse } from "@/types/article";
 
 /** 同期結果 */
 export type SyncResult = {
@@ -20,7 +19,7 @@ export type SyncDetailResult = { success: true } | { success: false; error: stri
 export async function syncArticles(): Promise<SyncResult> {
   try {
     let synced = 0;
-    let cursor: string | undefined = undefined;
+    let cursor: string | undefined;
 
     do {
       const url: string = cursor ? `/api/articles?cursor=${cursor}` : "/api/articles";

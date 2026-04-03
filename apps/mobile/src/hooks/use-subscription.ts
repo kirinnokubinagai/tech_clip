@@ -1,8 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import type { PurchasesPackage } from "react-native-purchases";
-
-import { checkSubscriptionStatus, purchasePackage, restorePurchases } from "@/lib/revenueCat";
 import type { SubscriptionStatus } from "@/lib/revenueCat";
+import { checkSubscriptionStatus, purchasePackage, restorePurchases } from "@/lib/revenueCat";
 
 /** サブスクリプション状態hookの戻り値の型 */
 type UseSubscriptionResult = {

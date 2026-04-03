@@ -158,7 +158,7 @@ async function fetchReadme(owner: string, repo: string): Promise<ParsedArticle> 
 
   const data = (await response.json()) as GitHubReadmeResponse;
   const content = atob(data.content);
-  const plainText = content.replace(/[#*`\[\]()>\-_~|]/g, "").replace(/\n+/g, " ");
+  const plainText = content.replace(/[#*`[\]()>\-_~|]/g, "").replace(/\n+/g, " ");
 
   return {
     title: `${owner}/${repo}`,
@@ -198,7 +198,7 @@ async function fetchIssueOrPr(
 
   const data = (await response.json()) as GitHubIssueOrPrResponse;
   const content = data.body ?? "";
-  const plainText = content.replace(/[#*`\[\]()>\-_~|]/g, "").replace(/\n+/g, " ");
+  const plainText = content.replace(/[#*`[\]()>\-_~|]/g, "").replace(/\n+/g, " ");
 
   return {
     title: data.title,
