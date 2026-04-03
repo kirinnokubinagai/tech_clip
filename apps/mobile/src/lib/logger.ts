@@ -30,14 +30,14 @@ function getConsoleMethod(level: LogLevel): (message: string, ...args: unknown[]
 /**
  * ログを出力する
  *
- * 本番環境（__DEV__ が false）では debug レベルのログを抑制する。
+ * 本番環境（__DEV__ が false）では debug と info レベルのログを抑制する。
  *
  * @param level - ログレベル
  * @param message - ログメッセージ
  * @param context - 追加コンテキスト
  */
 function writeLog(level: LogLevel, message: string, context?: Record<string, unknown>): void {
-  if (level === "debug" && !__DEV__) {
+  if (!__DEV__ && (level === "debug" || level === "info")) {
     return;
   }
   const method = getConsoleMethod(level);
