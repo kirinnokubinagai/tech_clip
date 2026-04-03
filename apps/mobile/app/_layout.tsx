@@ -12,6 +12,7 @@ import {
   startBackgroundSync,
 } from "../src/lib/backgroundSync";
 import { logger } from "../src/lib/logger";
+import { initSentry } from "../src/lib/sentry";
 import {
   registerForPushNotifications,
   registerTokenWithApi,
@@ -23,6 +24,8 @@ import { requestTrackingPermission } from "../src/lib/tracking";
 import { useAuthStore } from "../src/stores/auth-store";
 import { useSettingsStore } from "../src/stores/settings-store";
 import { useUIStore } from "../src/stores/ui-store";
+
+initSentry(process.env.EXPO_PUBLIC_SENTRY_DSN);
 
 export default function RootLayout() {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);

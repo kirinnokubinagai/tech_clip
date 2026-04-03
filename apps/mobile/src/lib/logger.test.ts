@@ -1,6 +1,22 @@
+import * as Sentry from "@sentry/react-native";
+import { afterEach, beforeEach, describe, expect, it } from "@jest/globals";
 import { createLogger } from "./logger";
 
+jest.mock("@sentry/react-native");
+
+const mockCaptureException = jest.mocked(Sentry.captureException);
+const mockIsInitialized = jest.mocked(Sentry.isInitialized);
+
 describe("createLogger", () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    mockIsInitialized.mockReturnValue(false);
+  });
+
+  afterEach(() => {
+    jest.clearAllMocks();
+  });
+
   describe("info", () => {
     it("開発環境でinfoメッセージをログ出力できること", () => {
       // Arrange
@@ -104,6 +120,51 @@ describe("createLogger", () => {
 
       // Assert
       expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining("コンテキストなしエラー"));
+      consoleSpy.mockRestore();
+    });
+
+    it("Sentryが初期化済みかつcontextにerrorがある場合にcaptureExceptionを呼び出せること", () => {
+      // Arrange
+      const consoleSpy = jest.spyOn(console, "error").mockImplementation(() => {});
+      mockIsInitialized.mockReturnValue(true);
+      const logger = createLogger();
+      const error = new Error("Sentryキャプチャテスト");
+
+      // Act
+      logger.error("エラー発生", { error });
+
+      // Assert
+      expect(mockCaptureException).toHaveBeenCalledTimes(1);
+      expect(mockCaptureException).toHaveBeenCalledWith(error);
+      consoleSpy.mockRestore();
+    });
+
+    it("Sentryが未初期化の場合にcaptureExceptionを呼び出さないこと", () => {
+      // Arrange
+      const consoleSpy = jest.spyOn(console, "error").mockImplementation(() => {});
+      mockIsInitialized.mockReturnValue(false);
+      const logger = createLogger();
+      const error = new Error("未初期化テスト");
+
+      // Act
+      logger.error("エラー発生", { error });
+
+      // Assert
+      expect(mockCaptureException).not.toHaveBeenCalled();
+      consoleSpy.mockRestore();
+    });
+
+    it("contextにerrorキーがない場合にcaptureExceptionを呼び出さないこと", () => {
+      // Arrange
+      const consoleSpy = jest.spyOn(console, "error").mockImplementation(() => {});
+      mockIsInitialized.mockReturnValue(true);
+      const logger = createLogger();
+
+      // Act
+      logger.error("エラー発生", { message: "errorキーなし" });
+
+      // Assert
+      expect(mockCaptureException).not.toHaveBeenCalled();
       consoleSpy.mockRestore();
     });
   });
