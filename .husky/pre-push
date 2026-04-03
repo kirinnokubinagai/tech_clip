@@ -29,10 +29,12 @@ ZAP_DAEMON_PID=""
 
 zap_cleanup() {
   if [ -n "${ZAP_DAEMON_PID}" ]; then
+    pkill -P "${ZAP_DAEMON_PID}" 2>/dev/null
     kill "${ZAP_DAEMON_PID}" 2>/dev/null
     wait "${ZAP_DAEMON_PID}" 2>/dev/null || true
   fi
   if [ -n "${ZAP_SERVER_PID}" ]; then
+    pkill -P "${ZAP_SERVER_PID}" 2>/dev/null
     kill "${ZAP_SERVER_PID}" 2>/dev/null
     wait "${ZAP_SERVER_PID}" 2>/dev/null || true
   fi
