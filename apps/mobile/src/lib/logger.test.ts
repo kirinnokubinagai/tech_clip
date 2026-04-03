@@ -1,5 +1,5 @@
-import * as Sentry from "@sentry/react-native";
 import { afterEach, beforeEach, describe, expect, it } from "@jest/globals";
+import * as Sentry from "@sentry/react-native";
 import { createLogger } from "./logger";
 
 jest.mock("@sentry/react-native");

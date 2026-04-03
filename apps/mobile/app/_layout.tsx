@@ -12,7 +12,6 @@ import {
   startBackgroundSync,
 } from "../src/lib/backgroundSync";
 import { logger } from "../src/lib/logger";
-import { initSentry } from "../src/lib/sentry";
 import {
   registerForPushNotifications,
   registerTokenWithApi,
@@ -20,6 +19,7 @@ import {
 } from "../src/lib/notifications";
 import { queryClient } from "../src/lib/query-client";
 import { configureRevenueCat } from "../src/lib/revenueCat";
+import { initSentry } from "../src/lib/sentry";
 import { requestTrackingPermission } from "../src/lib/tracking";
 import { useAuthStore } from "../src/stores/auth-store";
 import { useSettingsStore } from "../src/stores/settings-store";
