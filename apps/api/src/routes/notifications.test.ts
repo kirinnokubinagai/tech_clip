@@ -82,8 +82,6 @@ type MockQueryFn = ReturnType<typeof vi.fn<NotificationsQueryFn>>;
 
 /** モックのDB操作 */
 const mockInsertValues = vi.fn();
-const _mockInsertReturning = vi.fn();
-const _mockInsertOnConflict = vi.fn();
 const mockInsert = vi.fn().mockReturnValue({
   values: mockInsertValues,
 });

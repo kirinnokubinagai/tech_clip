@@ -66,9 +66,6 @@ const paginatedSuccessResponse = (itemSchema: Record<string, unknown>) => ({
   },
 });
 
-/** 共通エラーレスポンス参照 */
-const _errorRef = (ref: string) => ({ $ref: ref });
-
 /** 認証エラーレスポンス */
 const unauthorizedResponse = {
   description: "未認証",

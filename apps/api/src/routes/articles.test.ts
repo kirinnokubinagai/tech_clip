@@ -213,25 +213,6 @@ function createPostTestApp() {
 }
 
 /**
- * 未認証のPOSTテスト用Honoアプリを作成する
- *
- * @returns テスト用Honoアプリ（認証ミドルウェアなし）
- */
-function _createPostTestAppWithoutAuth() {
-  const app = new Hono();
-
-  const mockQueryFn = vi.fn<ArticlesQueryFn>().mockResolvedValue([]);
-  const articlesRoute = createArticlesRoute({
-    db: mockDb as never,
-    parseArticleFn: mockParseArticle,
-    queryFn: mockQueryFn,
-  });
-  app.route("/api/articles", articlesRoute);
-
-  return app;
-}
-
-/**
  * POST リクエストを送信するヘルパー
  */
 function postArticle(app: { request: Hono["request"] }, body: Record<string, unknown>) {
