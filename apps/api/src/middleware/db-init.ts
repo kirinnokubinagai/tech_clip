@@ -15,6 +15,8 @@ type DbInitBindings = {
   TURSO_AUTH_TOKEN: string;
   BETTER_AUTH_SECRET: string;
   APP_URL?: string;
+  /** カンマ区切りの追加 trustedOrigins（例: "https://staging.example.com,https://dev.example.com"） */
+  TRUSTED_ORIGINS?: string;
   GOOGLE_CLIENT_ID?: string;
   GOOGLE_CLIENT_SECRET?: string;
   APPLE_CLIENT_ID?: string;
@@ -80,7 +82,19 @@ export function createDbInitMiddleware(
         };
       }
 
-      authInstance = createAuthFn(db, c.env.BETTER_AUTH_SECRET, oauthProviders, c.env.APP_URL);
+      const additionalTrustedOrigins = c.env.TRUSTED_ORIGINS
+        ? c.env.TRUSTED_ORIGINS.split(",")
+            .map((origin) => origin.trim())
+            .filter((origin) => origin.length > 0)
+        : [];
+
+      authInstance = createAuthFn(
+        db,
+        c.env.BETTER_AUTH_SECRET,
+        oauthProviders,
+        c.env.APP_URL,
+        additionalTrustedOrigins,
+      );
       return authInstance;
     });
 

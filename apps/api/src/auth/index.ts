@@ -27,6 +27,9 @@ const LOCAL_APP_URL = "http://localhost:8081";
 /** モバイルアプリのカスタムスキーム */
 const MOBILE_APP_SCHEME = "techclip://";
 
+/** Better Auth インスタンスの型 */
+export type Auth = ReturnType<typeof createAuth>;
+
 /**
  * Better Auth インスタンスを生成する
  *
@@ -34,17 +37,24 @@ const MOBILE_APP_SCHEME = "techclip://";
  * @param secret - Better Auth 暗号化用シークレットキー
  * @param oauthProviders - OAuthプロバイダー設定（省略可）
  * @param baseURL - Better Auth のベースURL（省略時はLOCAL_APP_URLを使用）
+ * @param additionalTrustedOrigins - 環境変数から追加するtrustedOrigins（省略可）
  * @returns Better Auth インスタンス
  */
-/** Better Auth インスタンスの型 */
-export type Auth = ReturnType<typeof createAuth>;
-
 export function createAuth(
   db: Database,
   secret: string,
   oauthProviders?: OAuthProviderConfig,
   baseURL?: string,
+  additionalTrustedOrigins?: string[],
 ) {
+  const trustedOrigins = [
+    MOBILE_APP_SCHEME,
+    LOCAL_APP_URL,
+    PRODUCTION_APP_URL,
+    PRODUCTION_API_URL,
+    ...(additionalTrustedOrigins ?? []),
+  ];
+
   return betterAuth({
     database: drizzleAdapter(db, { provider: "sqlite" }),
     secret,
@@ -72,6 +82,6 @@ export function createAuth(
         },
       }),
     },
-    trustedOrigins: [MOBILE_APP_SCHEME, LOCAL_APP_URL, PRODUCTION_APP_URL, PRODUCTION_API_URL],
+    trustedOrigins,
   });
 }
