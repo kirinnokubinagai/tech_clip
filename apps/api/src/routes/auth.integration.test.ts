@@ -1,5 +1,5 @@
 /**
- * E2E: 認証クリティカルパステスト
+ * 認証クリティカルパス統合テスト
  *
  * サインイン → セッション確認 → トークンリフレッシュ のフローを
  * インメモリ SQLite + 実 Hono アプリ (app.request) で検証する。
@@ -9,8 +9,8 @@ import { drizzle } from "drizzle-orm/libsql";
 import { Hono } from "hono";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { accounts, sessions, users } from "../../apps/api/src/db/schema/index";
-import { createAuthRoute } from "../../apps/api/src/routes/auth";
+import { accounts, sessions, users } from "../db/schema/index";
+import { createAuthRoute } from "./auth";
 
 /** HTTP ステータスコード定数 */
 const HTTP_OK = 200;
