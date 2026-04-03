@@ -10,11 +10,7 @@ import { Hono } from "hono";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { accounts, sessions, users } from "../db/schema/index";
-import {
-  HTTP_OK,
-  HTTP_UNAUTHORIZED,
-  HTTP_UNPROCESSABLE_ENTITY,
-} from "../lib/http-status";
+import { HTTP_OK, HTTP_UNAUTHORIZED, HTTP_UNPROCESSABLE_ENTITY } from "../lib/http-status";
 import { createAuthRoute } from "./auth";
 
 /** テスト用固定値 */
