@@ -16,19 +16,20 @@
     "enabled": true
   },
   "files": {
-    "ignore": [
-      "node_modules",
-      "dist",
-      ".turbo",
-      ".wrangler",
-      ".expo",
-      ".claude",
-      "drizzle",
-      ".omc",
-      ".worktrees",
-      ".zap",
-      "apps/api/.wrangler",
-      "apps/api/drizzle"
+    "includes": [
+      "**",
+      "!node_modules",
+      "!dist",
+      "!.turbo",
+      "!.wrangler",
+      "!.expo",
+      "!.claude",
+      "!drizzle",
+      "!**/.omc",
+      "!.worktrees",
+      "!.zap",
+      "!apps/api/.wrangler",
+      "!apps/api/drizzle"
     ]
   },
   "javascript": {

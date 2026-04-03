@@ -1,3 +1,13 @@
+// React 19 act() warning を抑制
+// RNTL が内部で act() を使用しているが、非同期の状態更新で警告が出る既知の問題
+const originalConsoleError = console.error;
+console.error = (...args) => {
+  if (typeof args[0] === "string" && args[0].includes("was not wrapped in act")) {
+    return;
+  }
+  originalConsoleError(...args);
+};
+
 // jest-expo setup workaround for React Native compatibility
 
 // NativeWind v4 CSS interop mock for Jest environment

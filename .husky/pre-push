@@ -29,16 +29,19 @@ ZAP_DAEMON_PID=""
 
 zap_cleanup() {
   if [ -n "${ZAP_DAEMON_PID}" ]; then
+    pkill -P "${ZAP_DAEMON_PID}" 2>/dev/null
     kill "${ZAP_DAEMON_PID}" 2>/dev/null
     wait "${ZAP_DAEMON_PID}" 2>/dev/null || true
   fi
   if [ -n "${ZAP_SERVER_PID}" ]; then
+    pkill -P "${ZAP_SERVER_PID}" 2>/dev/null
     kill "${ZAP_SERVER_PID}" 2>/dev/null
     wait "${ZAP_SERVER_PID}" 2>/dev/null || true
   fi
   rm -f "${ZAP_DB_FILE}"
   rm -f "/tmp/zap-api-server-${ZAP_API_PORT}.log"
   rm -f "/tmp/zap-daemon-${ZAP_PORT}.log"
+  return 0
 }
 trap zap_cleanup EXIT INT TERM
 
