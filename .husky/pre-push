@@ -1,4 +1,6 @@
 #!/bin/bash
+set -euo pipefail
+
 echo "Pre-push チェック実行中..."
 
 echo "  Lint..."
@@ -13,10 +15,9 @@ pnpm test || { echo "Test失敗。修正してからpushしてください。"; 
 # OWASP ZAP ローカルセキュリティスキャン
 # Nix 環境の zap コマンドを使用（Docker 不要）
 if ! command -v zap > /dev/null 2>&1; then
-  echo "警告: zap コマンドが見つかりません。ZAPスキャンをスキップします。"
+  echo "ZAPスキャン失敗: zap コマンドが見つかりません。"
   echo "  nix develop で開発環境に入ってください。"
-  echo "全チェック通過（ZAPスキャンはスキップ）"
-  exit 0
+  exit 1
 fi
 
 echo "  OWASP ZAP セキュリティスキャン..."
@@ -24,6 +25,7 @@ echo "  OWASP ZAP セキュリティスキャン..."
 ZAP_API_PORT=$((9000 + (RANDOM % 1000)))
 ZAP_DB_FILE="/tmp/zap-prepush-${ZAP_API_PORT}.db"
 ZAP_MAX_WAIT=30
+ZAP_SCAN_MAX_WAIT=300
 ZAP_SERVER_PID=""
 ZAP_DAEMON_PID=""
 
@@ -131,10 +133,17 @@ SCAN_ID=$(curl -s "http://localhost:${ZAP_PORT}/JSON/ascan/action/scan/" \
   | jq -r '.scan')
 
 # スキャン完了を待機
+ZAP_SCAN_WAIT_COUNT=0
 while true; do
   STATUS=$(curl -s "http://localhost:${ZAP_PORT}/JSON/ascan/view/status/?scanId=${SCAN_ID}" | jq -r '.status')
   if [ "${STATUS}" = "100" ]; then
     break
+  fi
+  ZAP_SCAN_WAIT_COUNT=$((ZAP_SCAN_WAIT_COUNT + 1))
+  if [ "${ZAP_SCAN_WAIT_COUNT}" -ge "${ZAP_SCAN_MAX_WAIT}" ]; then
+    echo "ZAPスキャン失敗: アクティブスキャンが${ZAP_SCAN_MAX_WAIT}回の待機内に完了しませんでした。"
+    echo "  ログ: /tmp/zap-daemon-${ZAP_PORT}.log を確認してください。"
+    exit 1
   fi
   sleep 2
 done

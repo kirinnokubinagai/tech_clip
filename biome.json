@@ -25,16 +25,16 @@
   "files": {
     "includes": [
       "**",
-      "!node_modules",
-      "!dist",
-      "!.turbo",
-      "!.wrangler",
-      "!.expo",
-      "!.claude",
-      "!drizzle",
+      "!**/node_modules",
+      "!**/dist",
+      "!**/.turbo",
+      "!**/.wrangler",
+      "!**/.expo",
+      "!**/.claude",
+      "!**/drizzle",
       "!**/.omc",
-      "!.worktrees",
-      "!.zap",
+      "!**/.worktrees",
+      "!**/.zap",
       "!apps/api/.wrangler",
       "!apps/api/drizzle"
     ]
