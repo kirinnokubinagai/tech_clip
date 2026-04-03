@@ -20,8 +20,8 @@ import * as BackgroundFetch from "expo-background-fetch";
 import { AppState } from "react-native";
 import {
   BACKGROUND_FETCH_OPTIONS,
-  DEFAULT_BACKGROUND_SYNC_CONFIG,
   createAppStateHandler,
+  DEFAULT_BACKGROUND_SYNC_CONFIG,
   getLastSyncedAt,
   isSyncDue,
   registerNativeBackgroundFetch,

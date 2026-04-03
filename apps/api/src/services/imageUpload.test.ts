@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
-  type ImageUploadConfig,
   generateUniqueFileName,
+  type ImageUploadConfig,
   uploadAvatarToR2,
   validateImageFile,
 } from "./imageUpload";

@@ -2,8 +2,8 @@ jest.mock("expo-sqlite", () => ({
   openDatabaseAsync: jest.fn(),
 }));
 
-import type { ArticleDetail, ArticleListItem } from "@/types/article";
 import { openDatabaseAsync } from "expo-sqlite";
+import type { ArticleDetail, ArticleListItem } from "@/types/article";
 import {
   clearAllOfflineData,
   getOfflineArticleById,

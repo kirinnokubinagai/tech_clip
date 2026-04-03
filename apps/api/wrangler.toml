@@ -24,6 +24,7 @@ bucket_name = "tech-clip-avatars"
 # RUNPOD_API_KEY
 # RUNPOD_ENDPOINT_ID
 # RUNPOD_LOCAL_ENDPOINT_ID
+# TRUSTED_ORIGINS     # カンマ区切りの追加 trustedOrigins（例: "https://staging.example.com,https://dev.example.com"）
 # SENTRY_DSN          # Sentry エラー監視用 DSN（例: https://<key>@oXXXXXX.ingest.sentry.io/<project_id>）
 
 [triggers]

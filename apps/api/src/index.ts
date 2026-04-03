@@ -2,7 +2,7 @@ import { and, desc, eq, like, lt, or, sql } from "drizzle-orm";
 import { Hono } from "hono";
 import type { Auth } from "./auth";
 import { createAuth } from "./auth";
-import { type Database, createDatabase } from "./db";
+import { createDatabase, type Database } from "./db";
 import { articles, follows, notifications, users } from "./db/schema";
 
 import { fetchWithAuth } from "./lib/route-helpers";
@@ -10,9 +10,9 @@ import { createAiLimitMiddleware } from "./middleware/ai-limit";
 import { corsMiddleware } from "./middleware/cors";
 import { createDbInitMiddleware } from "./middleware/db-init";
 import {
-  RATE_LIMIT_CONFIG,
   createKvStore,
   createRateLimitMiddleware,
+  RATE_LIMIT_CONFIG,
 } from "./middleware/rateLimit";
 import { securityHeadersMiddleware } from "./middleware/security-headers";
 import { createSentryMiddleware } from "./middleware/sentry";
@@ -67,6 +67,8 @@ type Bindings = {
   AVATARS_BUCKET: R2Bucket;
   /** アプリのベースURL（パスワードリセットリンク生成用） */
   APP_URL?: string;
+  /** カンマ区切りの追加 trustedOrigins（例: "https://staging.example.com,https://dev.example.com"） */
+  TRUSTED_ORIGINS?: string;
   /** Sentry DSN（エラー監視用） */
   SENTRY_DSN?: string;
   /** RevenueCat Webhook シークレット */
