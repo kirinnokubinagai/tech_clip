@@ -11,9 +11,6 @@ const TAB_ACTIVE_COLOR = "#6366f1";
 /** タブバーの非アクティブ色 */
 const TAB_INACTIVE_COLOR = "#64748b";
 
-/** ダークテーマの背景色 */
-const _DARK_BACKGROUND = "#0a0a0f";
-
 /** ダークテーマのヘッダー背景色 */
 const DARK_HEADER_BACKGROUND = "#13131a";
 

@@ -6,9 +6,6 @@ import {
   validateImageFile,
 } from "./imageUpload";
 
-/** HTTP 200 OK ステータスコード */
-const _HTTP_OK = 200;
-
 /** テスト用のモックR2バケット */
 const mockR2Put = vi.fn();
 const mockR2Bucket = {
