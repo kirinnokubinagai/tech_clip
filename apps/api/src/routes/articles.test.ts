@@ -159,7 +159,7 @@ function createGetTestApp(mockQueryFn: MockQueryFn) {
     parseArticleFn: mockParseArticle,
     queryFn: mockQueryFn,
   });
-  app.route("/api", articlesRoute);
+  app.route("/api/articles", articlesRoute);
 
   return app;
 }
@@ -178,7 +178,7 @@ function createGetTestAppWithoutAuth(mockQueryFn: MockQueryFn) {
     parseArticleFn: mockParseArticle,
     queryFn: mockQueryFn,
   });
-  app.route("/api", articlesRoute);
+  app.route("/api/articles", articlesRoute);
 
   return app;
 }
