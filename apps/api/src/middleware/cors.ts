@@ -10,10 +10,14 @@ const LOCAL_ORIGINS = ["http://localhost:8081", "http://localhost:19006"];
 /** プリフライトキャッシュ有効期限（秒） */
 const PREFLIGHT_MAX_AGE_SECONDS = 86400;
 
+/** 本番環境の許可オリジン */
+const PRODUCTION_ORIGINS = ["https://techclip.app", "https://api.techclip.app"];
+
 /** デフォルトの許可オリジン一覧 */
 const DEFAULT_ALLOWED_ORIGINS: string[] = [
   EXPO_CUSTOM_SCHEME,
   ...LOCAL_ORIGINS,
+  ...PRODUCTION_ORIGINS,
 ];
 
 /**
