@@ -13,6 +13,8 @@ import {
   useToggleFavorite,
   useTranslationJobStatus,
 } from "@/hooks/use-articles";
+import { toSummaryLanguageCode, toTranslationLanguageCode } from "@/lib/language-code";
+import { useSettingsStore } from "@/stores/settings-store";
 
 /** 戻るアイコンサイズ */
 const BACK_ICON_SIZE = 24;
@@ -166,6 +168,7 @@ export default function ArticleDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
 
+  const language = useSettingsStore((s) => s.language);
   const { data: article, isLoading, isError, refetch } = useArticleDetail(id);
   const toggleFavorite = useToggleFavorite();
   const requestSummary = useRequestSummary();
@@ -193,13 +196,16 @@ export default function ArticleDetailScreen() {
 
   const handleRequestSummary = useCallback(() => {
     if (!article) return;
-    requestSummary.mutate({ articleId: article.id, language: "ja" });
-  }, [article, requestSummary]);
+    requestSummary.mutate({ articleId: article.id, language: toSummaryLanguageCode(language) });
+  }, [article, language, requestSummary]);
 
   const handleRequestTranslation = useCallback(() => {
     if (!article) return;
-    requestTranslation.mutate({ articleId: article.id, targetLanguage: "ja" });
-  }, [article, requestTranslation]);
+    requestTranslation.mutate({
+      articleId: article.id,
+      targetLanguage: toTranslationLanguageCode(language),
+    });
+  }, [article, language, requestTranslation]);
 
   useEffect(() => {
     if (!article || !requestSummary.data?.success) return;
@@ -381,6 +387,7 @@ export default function ArticleDetailScreen() {
             }}
             accessibilityRole="button"
             accessibilityLabel="要約を生成"
+            testID="summary-button"
           >
             {requestSummary.isPending || summaryJob ? (
               <ActivityIndicator size="small" color={PRIMARY_COLOR} />
@@ -408,6 +415,7 @@ export default function ArticleDetailScreen() {
             }}
             accessibilityRole="button"
             accessibilityLabel="翻訳する"
+            testID="translation-button"
           >
             {requestTranslation.isPending || translationJob ? (
               <ActivityIndicator size="small" color={PRIMARY_COLOR} />
