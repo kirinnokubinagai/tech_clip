@@ -51,8 +51,8 @@ ZAP_PORT=""
 
 zap_cleanup() {
   if [ -n "${ZAP_DAEMON_PID}" ]; then
-    pkill -P "${ZAP_DAEMON_PID}" 2>/dev/null
-    kill "${ZAP_DAEMON_PID}" 2>/dev/null
+    pkill -P "${ZAP_DAEMON_PID}" 2>/dev/null || true
+    kill "${ZAP_DAEMON_PID}" 2>/dev/null || true
     wait "${ZAP_DAEMON_PID}" 2>/dev/null || true
   fi
   if [ -n "${ZAP_PORT}" ]; then
@@ -62,8 +62,8 @@ zap_cleanup() {
     done
   fi
   if [ -n "${ZAP_SERVER_PID}" ]; then
-    pkill -P "${ZAP_SERVER_PID}" 2>/dev/null
-    kill "${ZAP_SERVER_PID}" 2>/dev/null
+    pkill -P "${ZAP_SERVER_PID}" 2>/dev/null || true
+    kill "${ZAP_SERVER_PID}" 2>/dev/null || true
     wait "${ZAP_SERVER_PID}" 2>/dev/null || true
   fi
   rm -f "${ZAP_DB_FILE}"
