@@ -15,7 +15,7 @@ type AuthResponseBody = {
 };
 
 /** テスト用のBetter Auth シークレット */
-const TEST_SECRET = "test-secret-key-for-better-auth-min-32-chars!!";
+const _TEST_SECRET = "test-secret-key-for-better-auth-min-32-chars!!";
 
 /** テスト用のモックユーザー */
 const MOCK_USER = {

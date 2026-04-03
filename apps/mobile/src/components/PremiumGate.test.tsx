@@ -24,8 +24,6 @@ jest.mock("lucide-react-native", () => {
 });
 
 import { fireEvent, render } from "@testing-library/react-native";
-import type React from "react";
-import { Text } from "react-native";
 
 import { PremiumGate } from "./PremiumGate";
 

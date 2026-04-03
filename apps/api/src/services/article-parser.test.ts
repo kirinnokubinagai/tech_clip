@@ -1,4 +1,3 @@
-import type { ArticleSource } from "@tech-clip/types";
 import { beforeEach, describe, expect, it, type Mock, vi } from "vitest";
 
 import { parseArticle } from "./article-parser";

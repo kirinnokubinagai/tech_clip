@@ -445,7 +445,7 @@ export function createUsersRoute(options: UsersRouteOptions) {
       .from(accounts)
       .where(and(eq(accounts.userId, userId), eq(accounts.providerId, "credential")));
 
-    if (!account || !account.password) {
+    if (!account?.password) {
       return c.json(
         {
           success: false,

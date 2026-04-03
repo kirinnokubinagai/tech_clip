@@ -197,7 +197,7 @@ describe("parseHackerNews", () => {
       const url = "https://news.ycombinator.com/item?id=12345678";
 
       // Act
-      const result = await parseHackerNews(url);
+      const _result = await parseHackerNews(url);
 
       // Assert
       expect(mockParseGeneric).toHaveBeenCalledWith("https://example.com/typescript-tooling");

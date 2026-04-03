@@ -12,7 +12,6 @@ import {
 } from "../lib/error-codes";
 import {
   HTTP_INTERNAL_SERVER_ERROR,
-  HTTP_OK,
   HTTP_UNAUTHORIZED,
   HTTP_UNPROCESSABLE_ENTITY,
 } from "../lib/http-status";

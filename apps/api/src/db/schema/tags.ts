@@ -1,4 +1,3 @@
-import { sql } from "drizzle-orm";
 import { index, integer, primaryKey, sqliteTable, text, unique } from "drizzle-orm/sqlite-core";
 import { articles } from "./articles";
 import { users } from "./users";

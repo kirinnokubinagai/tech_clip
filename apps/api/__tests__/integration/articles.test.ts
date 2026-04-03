@@ -193,7 +193,7 @@ describe("記事API 統合テスト", () => {
 
       // Act
       const res = await app.fetch(req);
-      const body = (await res.json()) as ArticlesListResponse;
+      const _body = (await res.json()) as ArticlesListResponse;
 
       // Assert
       expect(res.status).toBe(HTTP_OK);
