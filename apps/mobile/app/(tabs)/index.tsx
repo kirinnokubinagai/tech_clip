@@ -5,7 +5,10 @@ import { useTranslation } from "react-i18next";
 import { ActivityIndicator, FlatList, Pressable, RefreshControl, Text, View } from "react-native";
 
 import { ArticleCard } from "@/components/ArticleCard";
+import { OfflineBanner } from "@/components/OfflineBanner";
 import { useArticles, useToggleFavorite } from "@/hooks/use-articles";
+import { useNetworkStatus } from "@/hooks/use-network-status";
+import { useOfflineArticles } from "@/hooks/use-offline-articles";
 import type { ArticleListItem, ArticleSource } from "@/types/article";
 
 /** フィルターチップのアクティブ背景色 */
@@ -52,6 +55,8 @@ export default function HomeScreen() {
   const [selectedSource, setSelectedSource] = useState<ArticleSource | undefined>(undefined);
   const [isFavoriteOnly, setIsFavoriteOnly] = useState(false);
 
+  const { isOffline } = useNetworkStatus();
+
   const {
     data,
     fetchNextPage,
@@ -66,9 +71,16 @@ export default function HomeScreen() {
     isFavorite: isFavoriteOnly || undefined,
   });
 
+  const { articles: offlineArticles, isLoading: isOfflineLoading } = useOfflineArticles();
+
   const toggleFavorite = useToggleFavorite();
 
-  const articles = useMemo(() => data?.pages.flatMap((page) => page.items) ?? [], [data]);
+  const onlineArticles = useMemo(() => data?.pages.flatMap((page) => page.items) ?? [], [data]);
+
+  const articles = useMemo(
+    () => (isOffline ? offlineArticles : onlineArticles),
+    [isOffline, offlineArticles, onlineArticles],
+  );
 
   const sourceFilters = useMemo(
     () =>
@@ -122,7 +134,14 @@ export default function HomeScreen() {
   }, [isFetchingNextPage]);
 
   const renderEmpty = useCallback(() => {
-    if (isLoading) return null;
+    if (isLoading || isOfflineLoading) return null;
+    if (isOffline) {
+      return (
+        <View className="flex-1 items-center justify-center py-20">
+          <Text className="text-text-muted text-base">{t("home.offlineNoCache")}</Text>
+        </View>
+      );
+    }
     return (
       <View className="flex-1 items-center justify-center py-20">
         <Text className="text-text-muted text-base">
@@ -142,10 +161,11 @@ export default function HomeScreen() {
         )}
       </View>
     );
-  }, [isLoading, isError, refetch, t]);
+  }, [isLoading, isOfflineLoading, isOffline, isError, refetch, t]);
 
   return (
     <View className="flex-1 bg-background">
+      <OfflineBanner />
       <View className="px-4 pt-2 pb-3">
         <FlatList
           horizontal
@@ -211,7 +231,7 @@ export default function HomeScreen() {
         </View>
       </View>
 
-      {isLoading ? (
+      {isLoading || isOfflineLoading ? (
         <View className="flex-1 items-center justify-center">
           <ActivityIndicator size="large" color={FILTER_ACTIVE_BG} />
           <Text className="text-text-muted mt-3">{t("home.loadingArticles")}</Text>
