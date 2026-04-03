@@ -25,17 +25,16 @@
   "files": {
     "includes": [
       "**",
-      "!node_modules",
-      "!dist",
-      "!.turbo",
-      "!.wrangler",
+      "!**/node_modules",
+      "!**/dist",
+      "!**/.turbo",
       "!**/.wrangler",
-      "!.expo",
-      "!.claude",
-      "!drizzle",
-      "!.omc",
-      "!.worktrees",
-      "!.zap"
+      "!**/.expo",
+      "!**/.claude",
+      "!**/drizzle",
+      "!**/.omc",
+      "!**/.worktrees",
+      "!**/.zap"
     ]
   },
   "javascript": {
