@@ -217,7 +217,7 @@ function createPostTestApp() {
  *
  * @returns テスト用Honoアプリ（認証ミドルウェアなし）
  */
-function createPostTestAppWithoutAuth() {
+function _createPostTestAppWithoutAuth() {
   const app = new Hono();
 
   const mockQueryFn = vi.fn<ArticlesQueryFn>().mockResolvedValue([]);

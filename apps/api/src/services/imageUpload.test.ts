@@ -7,7 +7,7 @@ import {
 } from "./imageUpload";
 
 /** HTTP 200 OK ステータスコード */
-const HTTP_OK = 200;
+const _HTTP_OK = 200;
 
 /** テスト用のモックR2バケット */
 const mockR2Put = vi.fn();

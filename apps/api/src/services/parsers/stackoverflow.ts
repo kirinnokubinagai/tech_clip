@@ -80,7 +80,7 @@ function extractQuestionId(url: string): string {
 
   const match = parsed.pathname.match(QUESTION_ID_PATTERN);
 
-  if (!match || !match[1]) {
+  if (!match?.[1]) {
     throw new Error("Stack OverflowのURLからquestion_idを抽出できません");
   }
 

@@ -17,7 +17,7 @@ const TAG_MAX_LENGTH = 30;
 const PLACEHOLDER_COLOR = "#64748b";
 
 /** アイコンカラー（プライマリ） */
-const ICON_COLOR_PRIMARY = "#6366f1";
+const _ICON_COLOR_PRIMARY = "#6366f1";
 
 /** アイコンカラー（ミュート） */
 const ICON_COLOR_MUTED = "#94a3b8";

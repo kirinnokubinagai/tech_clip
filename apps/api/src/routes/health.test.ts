@@ -21,7 +21,7 @@ describe("createHealthRoute", () => {
       const res = await app.request("/api/health");
       const body = (await res.json()) as Record<string, unknown>;
       const data = body.data as Record<string, unknown>;
-      const error = body.error as Record<string, unknown> | undefined;
+      const _error = body.error as Record<string, unknown> | undefined;
 
       // Assert
       expect(res.status).toBe(HTTP_OK);
