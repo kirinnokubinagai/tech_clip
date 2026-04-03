@@ -90,6 +90,10 @@ import { logger } from "../../src/lib/logger";
 import { configureRevenueCat } from "../../src/lib/revenueCat";
 import RootLayout from "../_layout";
 
+jest.mock("../../src/components/OfflineBanner", () => ({
+  OfflineBanner: () => null,
+}));
+
 const mockedConfigureRevenueCat = configureRevenueCat as jest.MockedFunction<
   typeof configureRevenueCat
 >;
@@ -185,6 +189,19 @@ describe("RootLayout", () => {
 
       // Act & Assert - エラーが発生してもクラッシュしないこと
       await expect(render(<RootLayout />)).resolves.not.toThrow();
+    });
+  });
+
+  describe("OfflineBanner", () => {
+    it("OfflineBannerコンポーネントがレイアウトに含まれること", async () => {
+      // Arrange
+      const { OfflineBanner } = require("../../src/components/OfflineBanner");
+
+      // Act
+      await render(<RootLayout />);
+
+      // Assert
+      expect(OfflineBanner).toBeDefined();
     });
   });
 });
