@@ -157,7 +157,7 @@ export async function parseHashnode(url: string): Promise<ParsedArticle> {
   }
 
   const content = post.contentMarkdown;
-  const plainText = content.replace(/[#*`\[\]()>\-_~|]/g, "").replace(/\n+/g, " ");
+  const plainText = content.replace(/[#*`[\]()>\-_~|]/g, "").replace(/\n+/g, " ");
 
   return {
     title: post.title,

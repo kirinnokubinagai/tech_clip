@@ -18,8 +18,8 @@ import {
   HTTP_CREATED,
   HTTP_FORBIDDEN,
   HTTP_INTERNAL_SERVER_ERROR,
-  HTTP_NOT_FOUND,
   HTTP_NO_CONTENT,
+  HTTP_NOT_FOUND,
   HTTP_OK,
   HTTP_UNAUTHORIZED,
   HTTP_UNPROCESSABLE_ENTITY,
@@ -138,7 +138,7 @@ export function createArticlesRoute(options: ArticlesRouteOptions) {
   const { db, parseArticleFn, queryFn } = options;
   const route = new Hono<{ Variables: { user?: Record<string, unknown> } }>();
 
-  route.get("/articles", async (c) => {
+  route.get("/", async (c) => {
     const user = c.get("user");
     if (!user) {
       return c.json(

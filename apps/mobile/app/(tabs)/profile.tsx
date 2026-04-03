@@ -1,8 +1,7 @@
 import { useRouter } from "expo-router";
 import { ScrollView, Text, View } from "react-native";
-
-import { ProfileHeader } from "@/components/ProfileHeader";
 import type { ProfileHeaderUser } from "@/components/ProfileHeader";
+import { ProfileHeader } from "@/components/ProfileHeader";
 
 /** プロフィール画面のプレースホルダーユーザーデータ */
 const PLACEHOLDER_USER: ProfileHeaderUser = {

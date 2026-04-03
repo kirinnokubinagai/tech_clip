@@ -1,5 +1,5 @@
 /**
- * E2E: 認証クリティカルパステスト
+ * 認証クリティカルパス統合テスト
  *
  * サインイン → セッション確認 → トークンリフレッシュ のフローを
  * インメモリ SQLite + 実 Hono アプリ (app.request) で検証する。
@@ -9,18 +9,16 @@ import { drizzle } from "drizzle-orm/libsql";
 import { Hono } from "hono";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { accounts, sessions, users } from "../../apps/api/src/db/schema/index";
-import { createAuthRoute } from "../../apps/api/src/routes/auth";
-
-/** HTTP ステータスコード定数 */
-const HTTP_OK = 200;
-const HTTP_UNAUTHORIZED = 401;
-const HTTP_UNPROCESSABLE_ENTITY = 422;
+import { accounts, sessions, users } from "../db/schema/index";
+import { HTTP_OK, HTTP_UNAUTHORIZED, HTTP_UNPROCESSABLE_ENTITY } from "../lib/http-status";
+import { createAuthRoute } from "./auth";
 
 /** テスト用固定値 */
 const TEST_USER_ID = "user_e2e_01";
 const TEST_EMAIL = "e2e@example.com";
 const TEST_TOKEN = "e2e-session-token-abc123";
+/** リフレッシュトークンはセッションID（sessions.id）を使用する */
+const TEST_SESSION_ID = "session_e2e_01";
 const TEST_REFRESH_TOKEN = "e2e-refresh-token-xyz789";
 const FUTURE_EXPIRES = new Date(Date.now() + 86_400_000).toISOString();
 const PAST_EXPIRES = new Date(Date.now() - 1_000).toISOString();
@@ -300,11 +298,11 @@ describe("E2E: 認証クリティカルパス", () => {
         const mockAuth = createMockAuth();
         const app = buildTestApp(db, mockAuth);
 
-        // Act
+        // Act: リフレッシュトークンはセッションID（sessions.id）を使用する
         const res = await app.request("/api/auth/refresh", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ refreshToken: TEST_TOKEN }),
+          body: JSON.stringify({ refreshToken: TEST_SESSION_ID }),
         });
 
         // Assert
@@ -406,9 +404,10 @@ describe("E2E: 認証クリティカルパス", () => {
       expect(signInRes.status).toBe(HTTP_OK);
       const signInBody = (await signInRes.json()) as {
         success: true;
-        data: { session: { token: string } };
+        data: { session: { token: string; refreshToken: string } };
       };
       const token = signInBody.data.session.token;
+      const refreshToken = signInBody.data.session.refreshToken;
 
       // Act: Step 2 - セッション確認
       const sessionRes = await app.request("/api/auth/session", {
@@ -422,11 +421,11 @@ describe("E2E: 認証クリティカルパス", () => {
       };
       expect(sessionBody.data.user.email).toBe(TEST_EMAIL);
 
-      // Act: Step 3 - トークンリフレッシュ
+      // Act: Step 3 - トークンリフレッシュ（refreshTokenはセッションID）
       const refreshRes = await app.request("/api/auth/refresh", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ refreshToken: token }),
+        body: JSON.stringify({ refreshToken }),
       });
       expect(refreshRes.status).toBe(HTTP_OK);
       const refreshBody = (await refreshRes.json()) as {

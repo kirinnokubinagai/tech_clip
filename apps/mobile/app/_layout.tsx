@@ -4,13 +4,12 @@ import { QueryClientProvider } from "@tanstack/react-query";
 import { Redirect, Stack } from "expo-router";
 import { useEffect } from "react";
 import { ActivityIndicator, View } from "react-native";
-import i18n from "../src/lib/i18n";
-
 import {
   DEFAULT_BACKGROUND_SYNC_CONFIG,
   registerNativeBackgroundFetch,
   startBackgroundSync,
 } from "../src/lib/backgroundSync";
+import i18n from "../src/lib/i18n";
 import { logger } from "../src/lib/logger";
 import {
   registerForPushNotifications,

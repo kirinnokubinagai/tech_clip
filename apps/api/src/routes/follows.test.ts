@@ -4,8 +4,8 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
   HTTP_CONFLICT,
   HTTP_CREATED,
-  HTTP_NOT_FOUND,
   HTTP_NO_CONTENT,
+  HTTP_NOT_FOUND,
   HTTP_OK,
   HTTP_UNAUTHORIZED,
   HTTP_UNPROCESSABLE_ENTITY,

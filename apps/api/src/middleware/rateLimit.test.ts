@@ -1,10 +1,10 @@
 import { Hono } from "hono";
-import { beforeEach, describe, expect, it } from "vitest";
+import { describe, expect, it } from "vitest";
 import {
-  RATE_LIMIT_CONFIG,
   createInMemoryStore,
   createKvStore,
   createRateLimitMiddleware,
+  RATE_LIMIT_CONFIG,
 } from "./rateLimit";
 
 /** HTTP 200 OK ステータスコード */

@@ -16,9 +16,8 @@ jest.mock("./secure-store", () => ({
   clearAuthTokens: jest.fn(),
 }));
 
+import { apiFetch, SessionExpiredError } from "./api";
 import { clearAuthTokens, getAuthToken, getRefreshToken, setAuthToken } from "./secure-store";
-
-import { SessionExpiredError, apiFetch } from "./api";
 
 /** モック型キャスト */
 const mockGetAuthToken = getAuthToken as jest.MockedFunction<typeof getAuthToken>;

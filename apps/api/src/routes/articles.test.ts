@@ -6,8 +6,8 @@ import {
   HTTP_CREATED,
   HTTP_FORBIDDEN,
   HTTP_INTERNAL_SERVER_ERROR,
-  HTTP_NOT_FOUND,
   HTTP_NO_CONTENT,
+  HTTP_NOT_FOUND,
   HTTP_OK,
   HTTP_UNAUTHORIZED,
   HTTP_UNPROCESSABLE_ENTITY,
@@ -159,7 +159,7 @@ function createGetTestApp(mockQueryFn: MockQueryFn) {
     parseArticleFn: mockParseArticle,
     queryFn: mockQueryFn,
   });
-  app.route("/api", articlesRoute);
+  app.route("/api/articles", articlesRoute);
 
   return app;
 }
@@ -178,7 +178,7 @@ function createGetTestAppWithoutAuth(mockQueryFn: MockQueryFn) {
     parseArticleFn: mockParseArticle,
     queryFn: mockQueryFn,
   });
-  app.route("/api", articlesRoute);
+  app.route("/api/articles", articlesRoute);
 
   return app;
 }
@@ -200,25 +200,6 @@ function createPostTestApp() {
     c.set("session", { id: "session_01" });
     await next();
   });
-
-  const mockQueryFn = vi.fn<ArticlesQueryFn>().mockResolvedValue([]);
-  const articlesRoute = createArticlesRoute({
-    db: mockDb as never,
-    parseArticleFn: mockParseArticle,
-    queryFn: mockQueryFn,
-  });
-  app.route("/api/articles", articlesRoute);
-
-  return app;
-}
-
-/**
- * 未認証のPOSTテスト用Honoアプリを作成する
- *
- * @returns テスト用Honoアプリ（認証ミドルウェアなし）
- */
-function createPostTestAppWithoutAuth() {
-  const app = new Hono();
 
   const mockQueryFn = vi.fn<ArticlesQueryFn>().mockResolvedValue([]);
   const articlesRoute = createArticlesRoute({

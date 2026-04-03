@@ -1,5 +1,5 @@
-import { openDatabaseAsync } from "expo-sqlite";
 import type { SQLiteDatabase } from "expo-sqlite";
+import { openDatabaseAsync } from "expo-sqlite";
 
 import type { ArticleDetail, ArticleListItem } from "@/types/article";
 

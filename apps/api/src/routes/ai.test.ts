@@ -80,9 +80,6 @@ const mockInsertReturning = vi.fn();
 const mockInsertValues = vi.fn().mockReturnValue({
   returning: mockInsertReturning,
 });
-const mockInsertOnConflict = vi.fn().mockReturnValue({
-  returning: mockInsertReturning,
-});
 const mockInsert = vi.fn().mockReturnValue({
   values: mockInsertValues,
 });

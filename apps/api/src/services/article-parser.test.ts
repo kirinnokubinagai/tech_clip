@@ -1,6 +1,4 @@
-import { type Mock, beforeEach, describe, expect, it, vi } from "vitest";
-
-import type { ArticleSource } from "@tech-clip/types";
+import { beforeEach, describe, expect, it, type Mock, vi } from "vitest";
 
 import { parseArticle } from "./article-parser";
 import * as sourceDetectorModule from "./source-detector";

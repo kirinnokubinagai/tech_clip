@@ -1,6 +1,6 @@
 import { Platform } from "react-native";
-import Purchases from "react-native-purchases";
 import type { PurchasesPackage } from "react-native-purchases";
+import Purchases from "react-native-purchases";
 
 /** RevenueCat プレミアムエンタイトルメント識別子 */
 const PREMIUM_ENTITLEMENT_ID = "premium";

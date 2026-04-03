@@ -1,6 +1,6 @@
 import type { MiddlewareHandler } from "hono";
 
-import type { Auth, OAuthProviderConfig, createAuth } from "../auth";
+import type { Auth, createAuth, OAuthProviderConfig } from "../auth";
 import type { Database, DatabaseEnv } from "../db";
 
 /** createDbInitMiddleware の依存関数型 */

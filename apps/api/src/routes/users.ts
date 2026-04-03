@@ -16,8 +16,8 @@ import {
   HTTP_BAD_REQUEST,
   HTTP_CONFLICT,
   HTTP_INTERNAL_SERVER_ERROR,
-  HTTP_NOT_FOUND,
   HTTP_NO_CONTENT,
+  HTTP_NOT_FOUND,
   HTTP_OK,
   HTTP_UNAUTHORIZED,
   HTTP_UNPROCESSABLE_ENTITY,
@@ -445,7 +445,7 @@ export function createUsersRoute(options: UsersRouteOptions) {
       .from(accounts)
       .where(and(eq(accounts.userId, userId), eq(accounts.providerId, "credential")));
 
-    if (!account || !account.password) {
+    if (!account?.password) {
       return c.json(
         {
           success: false,

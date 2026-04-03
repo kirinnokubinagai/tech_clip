@@ -1,4 +1,3 @@
-import { Hono } from "hono";
 import { describe, expect, it, vi } from "vitest";
 import { fetchWithAuth } from "./route-helpers";
 
