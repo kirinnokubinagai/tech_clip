@@ -124,7 +124,7 @@ export async function parseZennBook(url: string): Promise<ParsedArticle> {
   });
   const markdown = turndown.turndown(combinedHtml);
 
-  const plainText = markdown.replace(/[#*`\[\]()_~>-]/g, "");
+  const plainText = markdown.replace(/[#*`[\]()_~>-]/g, "");
 
   return {
     title: bookData.book.title,

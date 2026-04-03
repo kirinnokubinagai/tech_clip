@@ -14,11 +14,10 @@ jest.mock("./api", () => ({
   apiFetch: jest.fn(),
 }));
 
+import type { ArticleDetail, ArticleListItem } from "@/types/article";
 import { apiFetch } from "./api";
 import { initLocalDb, upsertArticle, upsertSummary, upsertTranslation } from "./localDb";
 import { syncArticleDetail, syncArticles } from "./syncManager";
-
-import type { ArticleDetail, ArticleListItem } from "@/types/article";
 
 /** モック型キャスト */
 const mockApiFetch = jest.mocked(apiFetch);

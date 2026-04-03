@@ -1,11 +1,11 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import type { EmailEnv } from "../../src/services/emailService";
 import {
   sendEmail,
   sendEmailVerification,
   sendNotificationDigest,
   sendPasswordReset,
 } from "../../src/services/emailService";
-import type { EmailEnv } from "../../src/services/emailService";
 
 /** テスト用宛先メールアドレス */
 const TEST_TO = "user@example.com";

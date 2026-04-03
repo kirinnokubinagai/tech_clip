@@ -1,10 +1,8 @@
 import * as BackgroundFetch from "expo-background-fetch";
 import * as TaskManager from "expo-task-manager";
-import { AppState } from "react-native";
-
-import { syncArticles } from "./syncManager";
-
 import type { AppStateStatus, NativeEventSubscription } from "react-native";
+import { AppState } from "react-native";
+import { syncArticles } from "./syncManager";
 
 /**
  * バックグラウンド同期の最小間隔（ミリ秒）

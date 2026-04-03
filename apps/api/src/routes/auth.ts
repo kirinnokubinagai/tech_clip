@@ -100,7 +100,7 @@ export function createAuthRoute({ db, getAuth }: AuthRouteOptions) {
         body: { email: parsed.data.email, password: parsed.data.password },
       });
 
-      if (!result || !result.token) {
+      if (!result?.token) {
         return c.json(
           {
             success: false,
@@ -172,7 +172,7 @@ export function createAuthRoute({ db, getAuth }: AuthRouteOptions) {
   app.get("/session", async (c) => {
     const authHeader = c.req.header("Authorization");
 
-    if (!authHeader || !authHeader.startsWith("Bearer ")) {
+    if (!authHeader?.startsWith("Bearer ")) {
       return c.json(
         {
           success: false,

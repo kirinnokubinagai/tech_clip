@@ -99,7 +99,7 @@ export async function parseQiita(url: string): Promise<ParsedArticle> {
     content = turndown.turndown(data.rendered_body);
   }
 
-  const plainText = content.replace(/[#*`\[\]()>\-_~|]/g, "").replace(/\n+/g, " ");
+  const plainText = content.replace(/[#*`[\]()>\-_~|]/g, "").replace(/\n+/g, " ");
 
   return {
     title: data.title,

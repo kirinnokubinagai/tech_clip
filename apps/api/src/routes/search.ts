@@ -1,6 +1,4 @@
 import { Hono } from "hono";
-import { omitContent } from "../lib/response-utils";
-
 import {
   AUTH_ERROR_CODE,
   AUTH_ERROR_MESSAGE,
@@ -8,6 +6,7 @@ import {
   VALIDATION_ERROR_MESSAGE,
 } from "../lib/error-codes";
 import { HTTP_UNAUTHORIZED, HTTP_UNPROCESSABLE_ENTITY } from "../lib/http-status";
+import { omitContent } from "../lib/response-utils";
 
 /**
  * LIKE検索のワイルドカード文字をエスケープする

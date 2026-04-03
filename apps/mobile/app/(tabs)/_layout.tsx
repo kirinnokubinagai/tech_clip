@@ -1,7 +1,7 @@
 import { Tabs } from "expo-router";
 import { Bell, Home, Search, Settings, User } from "lucide-react-native";
 import { useTranslation } from "react-i18next";
-import { Text, View, useColorScheme } from "react-native";
+import { Text, useColorScheme, View } from "react-native";
 
 import { useUnreadNotificationCount } from "@/hooks/use-notifications";
 
@@ -10,9 +10,6 @@ const TAB_ACTIVE_COLOR = "#6366f1";
 
 /** タブバーの非アクティブ色 */
 const TAB_INACTIVE_COLOR = "#64748b";
-
-/** ダークテーマの背景色 */
-const DARK_BACKGROUND = "#0a0a0f";
 
 /** ダークテーマのヘッダー背景色 */
 const DARK_HEADER_BACKGROUND = "#13131a";

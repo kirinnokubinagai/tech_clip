@@ -1,8 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
-  type SubscriptionCheckDeps,
   createSubscriptionCheckDeps,
   disableExpiredSubscriptions,
+  type SubscriptionCheckDeps,
 } from "../../src/cron/subscriptionCheck";
 
 vi.mock("drizzle-orm", () => ({

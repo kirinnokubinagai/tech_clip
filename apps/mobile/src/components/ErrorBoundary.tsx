@@ -1,8 +1,8 @@
 import { AlertTriangle, RefreshCw } from "lucide-react-native";
-import { Component } from "react";
 import type { ErrorInfo, ReactNode } from "react";
-import { withTranslation } from "react-i18next";
+import { Component } from "react";
 import type { WithTranslation } from "react-i18next";
+import { withTranslation } from "react-i18next";
 import { Pressable, Text, View } from "react-native";
 
 type ErrorBoundaryOwnProps = {

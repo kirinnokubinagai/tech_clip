@@ -17,12 +17,11 @@ jest.mock("expo-background-fetch", () => ({
 }));
 
 import * as BackgroundFetch from "expo-background-fetch";
-import * as TaskManager from "expo-task-manager";
 import { AppState } from "react-native";
 import {
   BACKGROUND_FETCH_OPTIONS,
-  DEFAULT_BACKGROUND_SYNC_CONFIG,
   createAppStateHandler,
+  DEFAULT_BACKGROUND_SYNC_CONFIG,
   getLastSyncedAt,
   isSyncDue,
   registerNativeBackgroundFetch,

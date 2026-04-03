@@ -1,7 +1,6 @@
 import { fireEvent, render } from "@testing-library/react-native";
-
-import { ProfileHeader } from "./ProfileHeader";
 import type { ProfileHeaderUser } from "./ProfileHeader";
+import { ProfileHeader } from "./ProfileHeader";
 
 describe("ProfileHeader", () => {
   const baseUser: ProfileHeaderUser = {
