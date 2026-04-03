@@ -1,6 +1,24 @@
 #!/bin/bash
 set -euo pipefail
 
+# force-push / non-fast-forward push をブロック
+while read -r LOCAL_REF LOCAL_SHA REMOTE_REF REMOTE_SHA; do
+  if [ "${LOCAL_SHA}" = "0000000000000000000000000000000000000000" ]; then
+    continue
+  fi
+
+  if [ "${REMOTE_SHA}" = "0000000000000000000000000000000000000000" ]; then
+    continue
+  fi
+
+  if ! git merge-base --is-ancestor "${REMOTE_SHA}" "${LOCAL_SHA}"; then
+    echo "非 fast-forward push は禁止されています。rebase後の force-push は行わず、merge で取り込んでください。"
+    echo "  local:  ${LOCAL_REF} ${LOCAL_SHA}"
+    echo "  remote: ${REMOTE_REF} ${REMOTE_SHA}"
+    exit 1
+  fi
+done
+
 echo "Pre-push チェック実行中..."
 
 echo "  Lint..."
