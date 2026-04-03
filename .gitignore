@@ -29,7 +29,7 @@ android/
 .env.*.local
 
 # Maestro E2E テスト認証情報
-tests/e2e/.env.yaml
+apps/mobile/.maestro/.env.yaml
 
 # OS files
 .DS_Store
