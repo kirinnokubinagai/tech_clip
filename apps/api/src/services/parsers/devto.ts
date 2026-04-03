@@ -124,7 +124,7 @@ export async function parseDevto(url: string): Promise<ParsedArticle> {
     content = turndown.turndown(data.body_html);
   }
 
-  const plainText = content.replace(/[#*`\[\]()>\-_~|]/g, "").replace(/\n+/g, " ");
+  const plainText = content.replace(/[#*`[\]()>\-_~|]/g, "").replace(/\n+/g, " ");
 
   return {
     title: data.title,

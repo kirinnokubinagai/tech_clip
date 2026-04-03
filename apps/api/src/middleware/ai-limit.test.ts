@@ -18,10 +18,7 @@ const HTTP_OK = 200;
 const HTTP_UNAUTHORIZED = 401;
 
 /** テスト用のフリーユーザーデータ */
-function createFreeUserData(options?: {
-  remaining?: number;
-  resetAt?: string | null;
-}) {
+function createFreeUserData(options?: { remaining?: number; resetAt?: string | null }) {
   return {
     id: TEST_USER_ID,
     email: "test@example.com",

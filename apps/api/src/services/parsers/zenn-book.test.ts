@@ -71,7 +71,7 @@ describe("parseZennBook", () => {
         });
 
       // Act
-      const result = await parseZennBook("https://zenn.dev/testuser/books/test-book");
+      await parseZennBook("https://zenn.dev/testuser/books/test-book");
 
       // Assert
       expect(mockFetch).toHaveBeenCalledWith(

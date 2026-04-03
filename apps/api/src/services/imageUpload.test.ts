@@ -1,13 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
-  type ImageUploadConfig,
   generateUniqueFileName,
+  type ImageUploadConfig,
   uploadAvatarToR2,
   validateImageFile,
 } from "./imageUpload";
-
-/** HTTP 200 OK ステータスコード */
-const HTTP_OK = 200;
 
 /** テスト用のモックR2バケット */
 const mockR2Put = vi.fn();

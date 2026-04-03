@@ -1,7 +1,6 @@
 import { render } from "@testing-library/react-native";
-
-import { SOURCE_CONFIG, SourceBadge } from "./SourceBadge";
 import type { SourceName } from "./SourceBadge";
+import { SOURCE_CONFIG, SourceBadge } from "./SourceBadge";
 
 describe("SourceBadge", () => {
   describe("レンダリング", () => {

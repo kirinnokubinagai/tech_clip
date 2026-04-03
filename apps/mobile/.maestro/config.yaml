@@ -1,4 +1,15 @@
 appId: com.techclip.app
 ---
 # TechClip Maestro E2E テスト設定
-# 実行方法: maestro test .maestro/
+# 実行方法: maestro test apps/mobile/.maestro/
+
+# デフォルトタイムアウト（ミリ秒）
+# 要素が見つかるまで待機する最大時間
+waitForAppToSettleTimeout: 3000
+
+# 環境変数（.env.yaml で上書き可能、コミット禁止）
+env:
+  TEST_EMAIL: test-e2e@techclip.example.com
+  TEST_PASSWORD: E2ETestPass123!
+  TEST_NAME: E2Eテストユーザー
+  API_BASE_URL: http://localhost:8787

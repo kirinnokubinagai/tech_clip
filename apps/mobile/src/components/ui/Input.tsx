@@ -1,5 +1,5 @@
-import { Text, TextInput, View } from "react-native";
 import type { TextInputProps } from "react-native";
+import { Text, TextInput, View } from "react-native";
 
 /** プレースホルダーの色（テーマのtext-dimに対応） */
 const PLACEHOLDER_COLOR = "#64748b";
