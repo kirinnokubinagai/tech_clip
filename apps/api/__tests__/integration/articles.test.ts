@@ -139,7 +139,7 @@ function createTestApp(
     await next();
   });
 
-  app.route("/", route);
+  app.route("/articles", route);
   return { app, mockParseArticle };
 }
 
@@ -299,7 +299,7 @@ describe("記事API 統合テスト", () => {
       mockDb.returning.mockResolvedValue([newArticle]);
 
       const { app } = createTestApp(mockDb, mockQueryFn);
-      const req = new Request("http://localhost/", {
+      const req = new Request("http://localhost/articles", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ url: "https://zenn.dev/new-article" }),
@@ -315,7 +315,7 @@ describe("記事API 統合テスト", () => {
     it("未認証の場合に401エラーを返すこと", async () => {
       // Arrange
       const { app } = createTestApp(mockDb, mockQueryFn, false);
-      const req = new Request("http://localhost/", {
+      const req = new Request("http://localhost/articles", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ url: "https://example.com/article" }),
@@ -333,7 +333,7 @@ describe("記事API 統合テスト", () => {
     it("URLが無効な場合に422エラーを返すこと", async () => {
       // Arrange
       const { app } = createTestApp(mockDb, mockQueryFn);
-      const req = new Request("http://localhost/", {
+      const req = new Request("http://localhost/articles", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ url: "not-a-valid-url" }),
@@ -351,7 +351,7 @@ describe("記事API 統合テスト", () => {
     it("URLが空の場合に422エラーを返すこと", async () => {
       // Arrange
       const { app } = createTestApp(mockDb, mockQueryFn);
-      const req = new Request("http://localhost/", {
+      const req = new Request("http://localhost/articles", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ url: "" }),
@@ -370,7 +370,7 @@ describe("記事API 統合テスト", () => {
       // Arrange
       mockDb.where.mockResolvedValue([MOCK_ARTICLES[0]]);
       const { app } = createTestApp(mockDb, mockQueryFn);
-      const req = new Request("http://localhost/", {
+      const req = new Request("http://localhost/articles", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ url: MOCK_ARTICLES[0].url }),
@@ -390,7 +390,7 @@ describe("記事API 統合テスト", () => {
       mockDb.where.mockResolvedValue([]);
       const { app, mockParseArticle } = createTestApp(mockDb, mockQueryFn);
       mockParseArticle.mockRejectedValue(new Error("パース失敗"));
-      const req = new Request("http://localhost/", {
+      const req = new Request("http://localhost/articles", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ url: "https://example.com/new-article" }),
@@ -411,7 +411,7 @@ describe("記事API 統合テスト", () => {
       // Arrange
       mockDb.where.mockResolvedValue([MOCK_ARTICLES[0]]);
       const { app } = createTestApp(mockDb, mockQueryFn);
-      const req = new Request(`http://localhost/${MOCK_ARTICLES[0].id}`);
+      const req = new Request(`http://localhost/articles/${MOCK_ARTICLES[0].id}`);
 
       // Act
       const res = await app.fetch(req);
@@ -426,7 +426,7 @@ describe("記事API 統合テスト", () => {
     it("未認証の場合に401エラーを返すこと", async () => {
       // Arrange
       const { app } = createTestApp(mockDb, mockQueryFn, false);
-      const req = new Request("http://localhost/article_001");
+      const req = new Request("http://localhost/articles/article_001");
 
       // Act
       const res = await app.fetch(req);
@@ -441,7 +441,7 @@ describe("記事API 統合テスト", () => {
       // Arrange
       mockDb.where.mockResolvedValue([]);
       const { app } = createTestApp(mockDb, mockQueryFn);
-      const req = new Request("http://localhost/nonexistent_article");
+      const req = new Request("http://localhost/articles/nonexistent_article");
 
       // Act
       const res = await app.fetch(req);
@@ -457,7 +457,7 @@ describe("記事API 統合テスト", () => {
       const otherUserArticle = { ...MOCK_ARTICLES[0], userId: "other_user_id" };
       mockDb.where.mockResolvedValue([otherUserArticle]);
       const { app } = createTestApp(mockDb, mockQueryFn);
-      const req = new Request(`http://localhost/${otherUserArticle.id}`);
+      const req = new Request(`http://localhost/articles/${otherUserArticle.id}`);
 
       // Act
       const res = await app.fetch(req);
@@ -476,7 +476,7 @@ describe("記事API 統合テスト", () => {
       mockDb.update.mockReturnThis();
       mockDb.set.mockReturnThis();
       const { app } = createTestApp(mockDb, mockQueryFn);
-      const req = new Request(`http://localhost/${MOCK_ARTICLES[0].id}`, {
+      const req = new Request(`http://localhost/articles/${MOCK_ARTICLES[0].id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ isRead: true }),
@@ -494,7 +494,7 @@ describe("記事API 統合テスト", () => {
     it("未認証の場合に401エラーを返すこと", async () => {
       // Arrange
       const { app } = createTestApp(mockDb, mockQueryFn, false);
-      const req = new Request("http://localhost/article_001", {
+      const req = new Request("http://localhost/articles/article_001", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ isRead: true }),
@@ -512,7 +512,7 @@ describe("記事API 統合テスト", () => {
     it("フィールドが指定されていない場合に422エラーを返すこと", async () => {
       // Arrange
       const { app } = createTestApp(mockDb, mockQueryFn);
-      const req = new Request("http://localhost/article_001", {
+      const req = new Request("http://localhost/articles/article_001", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({}),
@@ -531,7 +531,7 @@ describe("記事API 統合テスト", () => {
       // Arrange
       mockDb.where.mockResolvedValue([]);
       const { app } = createTestApp(mockDb, mockQueryFn);
-      const req = new Request("http://localhost/nonexistent_article", {
+      const req = new Request("http://localhost/articles/nonexistent_article", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ isRead: true }),
@@ -553,7 +553,7 @@ describe("記事API 統合テスト", () => {
       mockDb.where.mockResolvedValue([MOCK_ARTICLES[0]]);
       mockDb.delete.mockReturnThis();
       const { app } = createTestApp(mockDb, mockQueryFn);
-      const req = new Request(`http://localhost/${MOCK_ARTICLES[0].id}`, {
+      const req = new Request(`http://localhost/articles/${MOCK_ARTICLES[0].id}`, {
         method: "DELETE",
       });
 
@@ -567,7 +567,7 @@ describe("記事API 統合テスト", () => {
     it("未認証の場合に401エラーを返すこと", async () => {
       // Arrange
       const { app } = createTestApp(mockDb, mockQueryFn, false);
-      const req = new Request("http://localhost/article_001", {
+      const req = new Request("http://localhost/articles/article_001", {
         method: "DELETE",
       });
 
@@ -584,7 +584,7 @@ describe("記事API 統合テスト", () => {
       // Arrange
       mockDb.where.mockResolvedValue([]);
       const { app } = createTestApp(mockDb, mockQueryFn);
-      const req = new Request("http://localhost/nonexistent_article", {
+      const req = new Request("http://localhost/articles/nonexistent_article", {
         method: "DELETE",
       });
 
@@ -602,7 +602,7 @@ describe("記事API 統合テスト", () => {
       const otherUserArticle = { ...MOCK_ARTICLES[0], userId: "other_user_id" };
       mockDb.where.mockResolvedValue([otherUserArticle]);
       const { app } = createTestApp(mockDb, mockQueryFn);
-      const req = new Request(`http://localhost/${otherUserArticle.id}`, {
+      const req = new Request(`http://localhost/articles/${otherUserArticle.id}`, {
         method: "DELETE",
       });
 

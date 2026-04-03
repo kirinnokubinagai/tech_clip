@@ -138,7 +138,7 @@ export function createArticlesRoute(options: ArticlesRouteOptions) {
   const { db, parseArticleFn, queryFn } = options;
   const route = new Hono<{ Variables: { user?: Record<string, unknown> } }>();
 
-  route.get("/articles", async (c) => {
+  route.get("/", async (c) => {
     const user = c.get("user");
     if (!user) {
       return c.json(

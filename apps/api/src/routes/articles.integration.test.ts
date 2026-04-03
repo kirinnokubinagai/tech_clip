@@ -46,6 +46,12 @@ async function initTables(db: ReturnType<typeof createTestDb>) {
     "CREATE TABLE IF NOT EXISTS articles (id TEXT PRIMARY KEY, user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE, url TEXT NOT NULL, source TEXT NOT NULL, title TEXT NOT NULL, author TEXT, content TEXT, excerpt TEXT, thumbnail_url TEXT, reading_time_minutes INTEGER, is_read INTEGER DEFAULT 0, is_favorite INTEGER DEFAULT 0, is_public INTEGER DEFAULT 0, published_at INTEGER, created_at INTEGER NOT NULL, updated_at INTEGER NOT NULL, UNIQUE(user_id, url))",
   );
   await db.run("CREATE INDEX IF NOT EXISTS idx_articles_user_id ON articles(user_id)");
+  await db.run(
+    "CREATE TABLE IF NOT EXISTS summaries (id TEXT PRIMARY KEY, article_id TEXT NOT NULL REFERENCES articles(id) ON DELETE CASCADE, language TEXT NOT NULL, summary TEXT NOT NULL, model TEXT NOT NULL, created_at INTEGER NOT NULL, UNIQUE(article_id, language))",
+  );
+  await db.run(
+    "CREATE TABLE IF NOT EXISTS translations (id TEXT PRIMARY KEY, article_id TEXT NOT NULL REFERENCES articles(id) ON DELETE CASCADE, target_language TEXT NOT NULL, translated_title TEXT NOT NULL, translated_content TEXT NOT NULL, model TEXT NOT NULL, created_at INTEGER NOT NULL, UNIQUE(article_id, target_language))",
+  );
 }
 
 /** テスト用シードデータを挿入する */
