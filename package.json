@@ -9,8 +9,8 @@
     "build": "turbo run build",
     "typecheck": "turbo run typecheck",
     "test": "turbo run test",
-    "lint": "biome check .",
-    "lint:fix": "biome check --write .",
+    "lint": "./scripts/run-biome-check.sh",
+    "lint:fix": "./scripts/run-biome-check.sh --write",
     "deploy:staging": "turbo run deploy:staging --filter=@tech-clip/api",
     "deploy:production": "turbo run deploy:production --filter=@tech-clip/api",
     "prepare": "husky"

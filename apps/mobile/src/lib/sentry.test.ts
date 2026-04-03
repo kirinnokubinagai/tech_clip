@@ -1,4 +1,3 @@
-import { afterEach, beforeEach, describe, expect, it } from "@jest/globals";
 import * as Sentry from "@sentry/react-native";
 import { captureException, initSentry } from "./sentry";
 
@@ -6,7 +5,7 @@ jest.mock("@sentry/react-native");
 
 const mockInit = jest.mocked(Sentry.init);
 const mockCaptureException = jest.mocked(Sentry.captureException);
-const mockIsInitialized = jest.mocked(Sentry.isInitialized);
+const mockGetClient = jest.mocked(Sentry.getClient);
 
 describe("initSentry", () => {
   beforeEach(() => {
@@ -55,7 +54,7 @@ describe("initSentry", () => {
     expect(mockInit).not.toHaveBeenCalled();
   });
 
-  it("enableInExpoDevelopmentがfalseで設定されること", () => {
+  it("開発環境ではSentry送信が無効になること", () => {
     // Arrange
     const dsn = "https://examplePublicKey@o0.ingest.sentry.io/0";
 
@@ -66,7 +65,7 @@ describe("initSentry", () => {
     expect(mockInit).toHaveBeenCalledWith(
       expect.objectContaining({
         dsn,
-        enableInExpoDevelopment: false,
+        enabled: false,
       }),
     );
   });
@@ -81,9 +80,9 @@ describe("captureException", () => {
     jest.clearAllMocks();
   });
 
-  it("Sentryが初期化済みの場合にErrorオブジェクトをキャプチャできること", () => {
+  it("Sentryクライアントが初期化済みの場合にErrorオブジェクトをキャプチャできること", () => {
     // Arrange
-    mockIsInitialized.mockReturnValue(true);
+    mockGetClient.mockReturnValue({} as ReturnType<typeof Sentry.getClient>);
     const error = new Error("テストエラー");
 
     // Act
@@ -94,9 +93,9 @@ describe("captureException", () => {
     expect(mockCaptureException).toHaveBeenCalledWith(error);
   });
 
-  it("Sentryが未初期化の場合にcaptureExceptionを呼び出さないこと", () => {
+  it("Sentryクライアントが未初期化の場合にcaptureExceptionを呼び出さないこと", () => {
     // Arrange
-    mockIsInitialized.mockReturnValue(false);
+    mockGetClient.mockReturnValue(undefined);
     const error = new Error("テストエラー");
 
     // Act
@@ -106,9 +105,9 @@ describe("captureException", () => {
     expect(mockCaptureException).not.toHaveBeenCalled();
   });
 
-  it("Sentryが初期化済みの場合にErrorでない値もキャプチャできること", () => {
+  it("Sentryクライアントが初期化済みの場合にErrorでない値もキャプチャできること", () => {
     // Arrange
-    mockIsInitialized.mockReturnValue(true);
+    mockGetClient.mockReturnValue({} as ReturnType<typeof Sentry.getClient>);
     const error = "文字列エラー";
 
     // Act

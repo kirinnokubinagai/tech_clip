@@ -1,11 +1,4 @@
-<<<<<<< HEAD
-import {
-  toSummaryLanguageCode,
-  toTranslationLanguageCode,
-} from "./language-code";
-=======
 import { toSummaryLanguageCode, toTranslationLanguageCode } from "./language-code";
->>>>>>> origin/main
 
 describe("toSummaryLanguageCode", () => {
   it("日本語を ja に変換できること", () => {

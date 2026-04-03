@@ -1,16 +1,15 @@
-import { afterEach, beforeEach, describe, expect, it } from "@jest/globals";
 import * as Sentry from "@sentry/react-native";
 import { createLogger } from "./logger";
 
 jest.mock("@sentry/react-native");
 
 const mockCaptureException = jest.mocked(Sentry.captureException);
-const mockIsInitialized = jest.mocked(Sentry.isInitialized);
+const mockGetClient = jest.mocked(Sentry.getClient);
 
 describe("createLogger", () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    mockIsInitialized.mockReturnValue(false);
+    mockGetClient.mockReturnValue(undefined);
   });
 
   afterEach(() => {
@@ -123,10 +122,10 @@ describe("createLogger", () => {
       consoleSpy.mockRestore();
     });
 
-    it("Sentryが初期化済みかつcontextにerrorがある場合にcaptureExceptionを呼び出せること", () => {
+    it("Sentryクライアントが初期化済みかつcontextにerrorがある場合にcaptureExceptionを呼び出せること", () => {
       // Arrange
       const consoleSpy = jest.spyOn(console, "error").mockImplementation(() => {});
-      mockIsInitialized.mockReturnValue(true);
+      mockGetClient.mockReturnValue({} as ReturnType<typeof Sentry.getClient>);
       const logger = createLogger();
       const error = new Error("Sentryキャプチャテスト");
 
@@ -139,10 +138,10 @@ describe("createLogger", () => {
       consoleSpy.mockRestore();
     });
 
-    it("Sentryが未初期化の場合にcaptureExceptionを呼び出さないこと", () => {
+    it("Sentryクライアントが未初期化の場合にcaptureExceptionを呼び出さないこと", () => {
       // Arrange
       const consoleSpy = jest.spyOn(console, "error").mockImplementation(() => {});
-      mockIsInitialized.mockReturnValue(false);
+      mockGetClient.mockReturnValue(undefined);
       const logger = createLogger();
       const error = new Error("未初期化テスト");
 
@@ -157,7 +156,7 @@ describe("createLogger", () => {
     it("contextにerrorキーがない場合にcaptureExceptionを呼び出さないこと", () => {
       // Arrange
       const consoleSpy = jest.spyOn(console, "error").mockImplementation(() => {});
-      mockIsInitialized.mockReturnValue(true);
+      mockGetClient.mockReturnValue({} as ReturnType<typeof Sentry.getClient>);
       const logger = createLogger();
 
       // Act

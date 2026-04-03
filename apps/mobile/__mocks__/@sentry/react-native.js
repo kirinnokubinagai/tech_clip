@@ -2,7 +2,7 @@ module.exports = {
   init: jest.fn(),
   captureException: jest.fn(),
   captureMessage: jest.fn(),
-  isInitialized: jest.fn(() => false),
+  getClient: jest.fn(() => undefined),
   addBreadcrumb: jest.fn(),
   setUser: jest.fn(),
   setTag: jest.fn(),

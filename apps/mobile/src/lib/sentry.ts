@@ -15,7 +15,7 @@ export function initSentry(dsn: string | undefined): void {
 
   Sentry.init({
     dsn,
-    enableInExpoDevelopment: false,
+    enabled: !__DEV__,
     debug: __DEV__,
   });
 }
@@ -28,7 +28,7 @@ export function initSentry(dsn: string | undefined): void {
  * @param error - キャプチャするエラー（Error オブジェクトまたは任意の値）
  */
 export function captureException(error: unknown): void {
-  if (!Sentry.isInitialized()) {
+  if (!Sentry.getClient()) {
     return;
   }
 
