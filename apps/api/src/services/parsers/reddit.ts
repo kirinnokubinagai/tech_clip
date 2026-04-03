@@ -126,7 +126,7 @@ function generateExcerpt(selftext: string): string | null {
   }
 
   const plainText = selftext
-    .replace(/[#*`\[\]()>\-_~|]/g, "")
+    .replace(/[#*`[\]()>\-_~|]/g, "")
     .replace(/\n+/g, " ")
     .trim();
 
@@ -171,7 +171,7 @@ export async function parseReddit(url: string): Promise<ParsedArticle> {
   const isSelfPost = postData.is_self;
   const content = isSelfPost ? postData.selftext : postData.url;
   const plainText = isSelfPost
-    ? postData.selftext.replace(/[#*`\[\]()>\-_~|]/g, "").replace(/\n+/g, " ")
+    ? postData.selftext.replace(/[#*`[\]()>\-_~|]/g, "").replace(/\n+/g, " ")
     : postData.title;
 
   return {

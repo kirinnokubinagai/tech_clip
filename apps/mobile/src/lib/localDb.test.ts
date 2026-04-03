@@ -3,6 +3,7 @@ jest.mock("expo-sqlite", () => ({
 }));
 
 import { openDatabaseAsync } from "expo-sqlite";
+import type { ArticleDetail, ArticleListItem } from "@/types/article";
 import {
   clearAllOfflineData,
   getOfflineArticleById,
@@ -12,8 +13,6 @@ import {
   upsertSummary,
   upsertTranslation,
 } from "./localDb";
-
-import type { ArticleDetail, ArticleListItem } from "@/types/article";
 
 /** モック型キャスト */
 const mockOpenDatabaseAsync = openDatabaseAsync as jest.MockedFunction<typeof openDatabaseAsync>;

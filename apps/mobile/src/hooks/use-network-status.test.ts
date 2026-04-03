@@ -1,4 +1,4 @@
-import NetInfo, { NetInfoStateType, type NetInfoState } from "@react-native-community/netinfo";
+import NetInfo, { type NetInfoState, NetInfoStateType } from "@react-native-community/netinfo";
 import { act, renderHook } from "@testing-library/react-native";
 
 import { useNetworkStatus } from "./use-network-status";

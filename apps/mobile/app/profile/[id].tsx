@@ -4,8 +4,8 @@ import { useCallback, useState } from "react";
 import { ActivityIndicator, Pressable, ScrollView, Text, View } from "react-native";
 
 import { FollowButton } from "@/components/FollowButton";
-import { ProfileHeader } from "@/components/ProfileHeader";
 import type { ProfileHeaderUser } from "@/components/ProfileHeader";
+import { ProfileHeader } from "@/components/ProfileHeader";
 
 /** 戻るアイコンのサイズ（px） */
 const BACK_ICON_SIZE = 24;

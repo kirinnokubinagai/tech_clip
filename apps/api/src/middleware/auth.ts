@@ -14,9 +14,7 @@ const HTTP_UNAUTHORIZED = 401;
  */
 type AuthInstance = {
   api: {
-    getSession: (options: {
-      headers: Headers;
-    }) => Promise<{
+    getSession: (options: { headers: Headers }) => Promise<{
       session: Record<string, unknown>;
       user: Record<string, unknown>;
     } | null>;
