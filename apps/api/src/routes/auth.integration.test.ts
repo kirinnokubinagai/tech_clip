@@ -10,12 +10,12 @@ import { Hono } from "hono";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { accounts, sessions, users } from "../db/schema/index";
+import {
+  HTTP_OK,
+  HTTP_UNAUTHORIZED,
+  HTTP_UNPROCESSABLE_ENTITY,
+} from "../lib/http-status";
 import { createAuthRoute } from "./auth";
-
-/** HTTP ステータスコード定数 */
-const HTTP_OK = 200;
-const HTTP_UNAUTHORIZED = 401;
-const HTTP_UNPROCESSABLE_ENTITY = 422;
 
 /** テスト用固定値 */
 const TEST_USER_ID = "user_e2e_01";

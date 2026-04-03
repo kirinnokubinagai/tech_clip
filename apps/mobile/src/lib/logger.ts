@@ -23,11 +23,20 @@ function writeLog(level: LogLevel, message: string, context?: Record<string, unk
     return;
   }
   const formatted = `[${level.toUpperCase()}] ${message}`;
-  if (context !== undefined) {
-    console[level](formatted, context);
-    return;
+  switch (level) {
+    case "info":
+      context !== undefined ? console.info(formatted, context) : console.info(formatted);
+      break;
+    case "warn":
+      context !== undefined ? console.warn(formatted, context) : console.warn(formatted);
+      break;
+    case "error":
+      context !== undefined ? console.error(formatted, context) : console.error(formatted);
+      break;
+    case "debug":
+      context !== undefined ? console.debug(formatted, context) : console.debug(formatted);
+      break;
   }
-  console[level](formatted);
 }
 
 /**
