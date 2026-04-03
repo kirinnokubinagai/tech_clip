@@ -13,7 +13,6 @@ jobs:
     permissions:
       contents: read
       pull-requests: write
-      issues: write
       id-token: write
     steps:
       - uses: actions/checkout@v4
@@ -29,8 +28,8 @@ jobs:
 
             レビュー完了後、以下のルールに従いラベルを操作してください（gh pr edit コマンドを使用）。
             - 重大な問題（🔴）が0件かつ軽微な問題（🟡）が0件かつ改善提案（💡）が0件の場合:
-              gh pr edit <PR番号> --add-label "AI Review: PASS" --remove-label "AI Review: NEEDS WORK"
+              gh pr edit ${{ github.event.pull_request.number }} --add-label "AI Review: PASS" --remove-label "AI Review: NEEDS WORK"
             - 1つでも問題や改善提案がある場合:
-              gh pr edit <PR番号> --add-label "AI Review: NEEDS WORK" --remove-label "AI Review: PASS"
+              gh pr edit ${{ github.event.pull_request.number }} --add-label "AI Review: NEEDS WORK" --remove-label "AI Review: PASS"
 
             重要: gh pr review --approve は絶対に実行しないでください。最終承認は人間が行います。
