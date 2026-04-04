@@ -35,6 +35,14 @@ jest.mock("expo-router", () => ({
   useRouter: () => ({ back: jest.fn() }),
 }));
 
+jest.mock("../../src/hooks/use-network-status", () => ({
+  useNetworkStatus: jest.fn(() => ({ isOnline: true, isOffline: false })),
+}));
+
+jest.mock("../../src/lib/localDb", () => ({
+  getOfflineArticleById: jest.fn(),
+}));
+
 jest.mock("../../src/hooks/use-articles", () => ({
   useArticleDetail: () => ({
     data: MOCK_ARTICLE,
@@ -84,9 +92,74 @@ beforeEach(() => {
     (selector: (state: Record<string, unknown>) => unknown) =>
       selector({ language: "日本語", isLanguageLoaded: true }),
   );
+  const { useNetworkStatus } = require("../../src/hooks/use-network-status");
+  (useNetworkStatus as jest.Mock).mockReturnValue({ isOnline: true, isOffline: false });
 });
 
 describe("ArticleDetailScreen", () => {
+  describe("オフラインフォールバック", () => {
+    it("オフライン時にgetOfflineArticleByIdが呼ばれること", async () => {
+      // Arrange
+      const { useNetworkStatus } = require("../../src/hooks/use-network-status");
+      (useNetworkStatus as jest.Mock).mockReturnValue({ isOnline: false, isOffline: true });
+      const { getOfflineArticleById } = require("../../src/lib/localDb");
+      (getOfflineArticleById as jest.Mock).mockResolvedValue(MOCK_ARTICLE);
+
+      // Act
+      await render(<ArticleDetailScreen />);
+
+      // Assert
+      await waitFor(() => {
+        expect(getOfflineArticleById).toHaveBeenCalledWith("article-1");
+      });
+    });
+
+    it("オフライン時にローカルDBの記事が表示されること", async () => {
+      // Arrange
+      const { useNetworkStatus } = require("../../src/hooks/use-network-status");
+      (useNetworkStatus as jest.Mock).mockReturnValue({ isOnline: false, isOffline: true });
+      const { getOfflineArticleById } = require("../../src/lib/localDb");
+      (getOfflineArticleById as jest.Mock).mockResolvedValue(MOCK_ARTICLE);
+
+      // Act
+      const { getByText } = await render(<ArticleDetailScreen />);
+
+      // Assert
+      await waitFor(() => {
+        expect(getByText("テスト記事")).toBeTruthy();
+      });
+    });
+
+    it("オフライン時にローカルDBに記事がない場合はエラー表示になること", async () => {
+      // Arrange
+      const { useNetworkStatus } = require("../../src/hooks/use-network-status");
+      (useNetworkStatus as jest.Mock).mockReturnValue({ isOnline: false, isOffline: true });
+      const { getOfflineArticleById } = require("../../src/lib/localDb");
+      (getOfflineArticleById as jest.Mock).mockResolvedValue(null);
+
+      // Act
+      const { getByText } = await render(<ArticleDetailScreen />);
+
+      // Assert
+      await waitFor(() => {
+        expect(getByText("記事の取得に失敗しました")).toBeTruthy();
+      });
+    });
+
+    it("オンライン時はgetOfflineArticleByIdが呼ばれないこと", async () => {
+      // Arrange
+      const { getOfflineArticleById } = require("../../src/lib/localDb");
+
+      // Act
+      await render(<ArticleDetailScreen />);
+
+      // Assert
+      await waitFor(() => {
+        expect(getOfflineArticleById).not.toHaveBeenCalled();
+      });
+    });
+  });
+
   describe("要約ボタン", () => {
     it("要約ボタンを押すと言語設定の言語コードでrequestSummaryが呼ばれること", async () => {
       // Arrange

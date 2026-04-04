@@ -13,8 +13,11 @@ import {
   useToggleFavorite,
   useTranslationJobStatus,
 } from "@/hooks/use-articles";
+import { useNetworkStatus } from "@/hooks/use-network-status";
 import { toSummaryLanguageCode, toTranslationLanguageCode } from "@/lib/language-code";
+import { getOfflineArticleById } from "@/lib/localDb";
 import { useSettingsStore } from "@/stores/settings-store";
+import type { ArticleDetail } from "@/types/article";
 
 /** 戻るアイコンサイズ */
 const BACK_ICON_SIZE = 24;
@@ -163,13 +166,53 @@ function formatDate(isoString: string): string {
  * 記事詳細画面
  *
  * Markdownレンダリング、要約/翻訳ボタン、お気に入りトグルを提供する。
+ * オフライン時はローカルDBからキャッシュ済み記事を取得する。
  */
 export default function ArticleDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
 
   const language = useSettingsStore((s) => s.language);
-  const { data: article, isLoading, isError, refetch } = useArticleDetail(id);
+  const { isOffline } = useNetworkStatus();
+  const {
+    data: onlineArticle,
+    isLoading: isOnlineLoading,
+    isError: isOnlineError,
+    refetch,
+  } = useArticleDetail(id);
+  const [offlineArticle, setOfflineArticle] = useState<ArticleDetail | null>(null);
+  const [isOfflineLoading, setIsOfflineLoading] = useState(false);
+  const [isOfflineError, setIsOfflineError] = useState(false);
+
+  useEffect(() => {
+    if (!isOffline) {
+      setOfflineArticle(null);
+      setIsOfflineError(false);
+      return;
+    }
+
+    setIsOfflineLoading(true);
+    setIsOfflineError(false);
+
+    getOfflineArticleById(id)
+      .then((cached) => {
+        setOfflineArticle(cached);
+        if (cached === null) {
+          setIsOfflineError(true);
+        }
+      })
+      .catch(() => {
+        setOfflineArticle(null);
+        setIsOfflineError(true);
+      })
+      .finally(() => {
+        setIsOfflineLoading(false);
+      });
+  }, [isOffline, id]);
+
+  const article = isOffline ? offlineArticle : onlineArticle;
+  const isLoading = isOffline ? isOfflineLoading : isOnlineLoading;
+  const isError = isOffline ? isOfflineError : isOnlineError;
   const toggleFavorite = useToggleFavorite();
   const requestSummary = useRequestSummary();
   const requestTranslation = useRequestTranslation();
