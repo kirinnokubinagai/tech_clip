@@ -24,8 +24,8 @@ export default function TabLayout() {
   return (
     <Tabs
       screenOptions={{
-        tabBarActiveTintColor: DARK_COLORS.primary,
-        tabBarInactiveTintColor: DARK_COLORS.textDim,
+        tabBarActiveTintColor: isDark ? DARK_COLORS.primary : LIGHT_COLORS.primary,
+        tabBarInactiveTintColor: isDark ? DARK_COLORS.textDim : LIGHT_COLORS.textDim,
         tabBarStyle: {
           backgroundColor: isDark ? DARK_COLORS.surface : LIGHT_COLORS.card,
           borderTopColor: isDark ? DARK_COLORS.border : LIGHT_COLORS.border,

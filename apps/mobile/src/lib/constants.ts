@@ -97,7 +97,7 @@ const SEMANTIC_COLORS = {
  * ライトテーマカラー定義
  * SEMANTIC_COLORS の共有セマンティック色 + ライト固有のレイアウト色で構成
  */
-export const LIGHT_COLORS: ThemeColors = {
+export const LIGHT_COLORS = {
   /** 背景色 */
   background: "#fafaf9",
   /** セクション背景色 */
@@ -123,13 +123,13 @@ export const LIGHT_COLORS: ThemeColors = {
   /** 成功状態の背景色 */
   successSurface: "#f0fdf4",
   ...SEMANTIC_COLORS,
-};
+} as const satisfies ThemeColors;
 
 /**
  * ダークテーマカラー定義
  * SEMANTIC_COLORS の共有セマンティック色 + ダーク固有のレイアウト色で構成
  */
-export const DARK_COLORS: ThemeColors = {
+export const DARK_COLORS = {
   /** アプリ全体の背景色 */
   background: "#0a0a0f",
   /** セクション背景色 */
@@ -155,4 +155,4 @@ export const DARK_COLORS: ThemeColors = {
   /** 成功状態の背景色 */
   successSurface: "#1a2e1a",
   ...SEMANTIC_COLORS,
-};
+} as const satisfies ThemeColors;
