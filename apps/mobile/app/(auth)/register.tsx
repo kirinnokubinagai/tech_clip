@@ -14,10 +14,8 @@ import {
 import { AuthAlert } from "@/components/auth/AuthAlert";
 import { AuthSubmitButton } from "@/components/auth/AuthSubmitButton";
 import { AUTH_PLACEHOLDER_TEXT_COLOR } from "@/lib/ui-colors";
+import { PASSWORD_MIN_LENGTH } from "@/lib/validation";
 import { useAuthStore } from "../../src/stores/auth-store";
-
-/** パスワード最小文字数 */
-const PASSWORD_MIN_LENGTH = 8;
 
 export default function RegisterScreen() {
   const { t } = useTranslation();
@@ -137,6 +135,7 @@ export default function RegisterScreen() {
           className="mt-6 items-center rounded-lg bg-primary py-3.5"
           onPress={handleRegister}
           disabled={isSubmitting}
+          isLoading={isSubmitting}
           label={t("auth.createAccount")}
           accessibilityHint={t("auth.registerHint")}
           textClassName="text-base font-semibold text-white"

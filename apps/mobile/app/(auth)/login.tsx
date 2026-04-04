@@ -15,22 +15,37 @@ import {
 import { AuthAlert } from "@/components/auth/AuthAlert";
 import { AuthSubmitButton } from "@/components/auth/AuthSubmitButton";
 import { fetchWithTimeout, getBaseUrl } from "@/lib/api";
+import { APP_SCHEME } from "@/lib/constants";
 import { AUTH_PLACEHOLDER_TEXT_COLOR } from "@/lib/ui-colors";
-import { EMAIL_SIMPLE_REGEX } from "@/lib/validation";
+import { EMAIL_SIMPLE_REGEX, PASSWORD_MIN_LENGTH } from "@/lib/validation";
 import { useAuthStore } from "@/stores/auth-store";
-
-/** パスワード最小文字数 */
-const PASSWORD_MIN_LENGTH = 8;
 /** ソーシャルサインインAPIのパス */
 const SOCIAL_SIGN_IN_PATH = "/api/auth/sign-in/social";
 /** ソーシャルログイン後のコールバックURL */
-const SOCIAL_CALLBACK_URL = "techclip://";
+const SOCIAL_CALLBACK_URL = `${APP_SCHEME}://`;
 
 type SocialProvider = "google" | "github";
 
 type SocialSignInResponse = {
   url?: string;
 };
+
+const SOCIAL_PROVIDERS: ReadonlyArray<{ provider: SocialProvider; translationKey: string }> = [
+  { provider: "google", translationKey: "auth.continueWithGoogle" },
+  { provider: "github", translationKey: "auth.continueWithGithub" },
+];
+
+function isSocialSignInResponse(value: unknown): value is SocialSignInResponse {
+  if (typeof value !== "object" || value === null) {
+    return false;
+  }
+
+  if (!("url" in value)) {
+    return true;
+  }
+
+  return typeof (value as { url?: unknown }).url === "string";
+}
 
 /**
  * ログイン画面
@@ -125,7 +140,8 @@ export default function LoginScreen() {
         return;
       }
 
-      const data = (await response.json()) as SocialSignInResponse;
+      const responseBody: unknown = await response.json();
+      const data = isSocialSignInResponse(responseBody) ? responseBody : {};
 
       if (!data.url?.startsWith("https://")) {
         setErrorMessage(t("auth.socialLoginFailed"));
@@ -227,6 +243,7 @@ export default function LoginScreen() {
           <AuthSubmitButton
             onPress={handleSubmit}
             disabled={isAnySubmitting}
+            isLoading={isEmailSubmitting}
             className="items-center rounded-lg bg-primary py-4"
             testID="login-submit-button"
             accessibilityHint={t("auth.loginHint")}
@@ -241,37 +258,22 @@ export default function LoginScreen() {
           </View>
 
           <View className="gap-3">
-            <Pressable
-              onPress={() => handleSocialSignIn("google")}
-              disabled={isAnySubmitting}
-              className="items-center rounded-lg border border-border bg-card py-3.5"
-              style={({ pressed }) => ({
-                opacity: pressed || isAnySubmitting ? 0.7 : 1,
-              })}
-              accessibilityRole="button"
-              accessibilityLabel={t("auth.continueWithGoogle")}
-              accessibilityState={{ disabled: isAnySubmitting }}
-            >
-              <Text className="text-base font-medium text-text">
-                {t("auth.continueWithGoogle")}
-              </Text>
-            </Pressable>
-
-            <Pressable
-              onPress={() => handleSocialSignIn("github")}
-              disabled={isAnySubmitting}
-              className="items-center rounded-lg border border-border bg-card py-3.5"
-              style={({ pressed }) => ({
-                opacity: pressed || isAnySubmitting ? 0.7 : 1,
-              })}
-              accessibilityRole="button"
-              accessibilityLabel={t("auth.continueWithGithub")}
-              accessibilityState={{ disabled: isAnySubmitting }}
-            >
-              <Text className="text-base font-medium text-text">
-                {t("auth.continueWithGithub")}
-              </Text>
-            </Pressable>
+            {SOCIAL_PROVIDERS.map(({ provider, translationKey }) => (
+              <Pressable
+                key={provider}
+                onPress={() => handleSocialSignIn(provider)}
+                disabled={isAnySubmitting}
+                className="items-center rounded-lg border border-border bg-card py-3.5"
+                style={({ pressed }) => ({
+                  opacity: pressed || isAnySubmitting ? 0.7 : 1,
+                })}
+                accessibilityRole="button"
+                accessibilityLabel={t(translationKey)}
+                accessibilityState={{ disabled: isAnySubmitting }}
+              >
+                <Text className="text-base font-medium text-text">{t(translationKey)}</Text>
+              </Pressable>
+            ))}
           </View>
         </View>
 

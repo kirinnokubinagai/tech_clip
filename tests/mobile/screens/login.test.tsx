@@ -149,7 +149,7 @@ describe("LoginScreen", () => {
           resolveFetch = resolve;
         }),
     );
-    const { getByLabelText, getByTestId } = await render(<LoginScreen />);
+    const { getByLabelText, getByTestId, getAllByText } = await render(<LoginScreen />);
 
     // Act
     fireEvent.press(getByLabelText("Google でログイン"));
@@ -159,6 +159,7 @@ describe("LoginScreen", () => {
       expect(getByTestId("login-email-input").props.editable).toBe(false);
       expect(getByTestId("login-password-input").props.editable).toBe(false);
       expect(getByTestId("login-submit-button").props.accessibilityState.disabled).toBe(true);
+      expect(getAllByText("ログイン").length).toBeGreaterThan(0);
       expect(getByLabelText("Google でログイン").props.accessibilityState.disabled).toBe(true);
       expect(getByLabelText("GitHub でログイン").props.accessibilityState.disabled).toBe(true);
     });

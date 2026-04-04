@@ -22,6 +22,27 @@ type ForgotPasswordSuccessResponse = {
   data: { message: string };
 };
 
+function isForgotPasswordSuccessResponse(value: unknown): value is Partial<ForgotPasswordSuccessResponse> {
+  if (typeof value !== "object" || value === null) {
+    return false;
+  }
+
+  if (!("data" in value)) {
+    return true;
+  }
+
+  const data = (value as { data?: unknown }).data;
+  if (typeof data !== "object" || data === null) {
+    return false;
+  }
+
+  if (!("message" in data)) {
+    return true;
+  }
+
+  return typeof (data as { message?: unknown }).message === "string";
+}
+
 /** パスワードリセットAPIのパス */
 const FORGOT_PASSWORD_PATH = "/api/auth/forgot-password";
 
@@ -66,7 +87,8 @@ export default function ForgotPasswordScreen() {
         return;
       }
 
-      const data = (await response.json()) as Partial<ForgotPasswordSuccessResponse>;
+      const responseBody: unknown = await response.json();
+      const data = isForgotPasswordSuccessResponse(responseBody) ? responseBody : {};
       setSuccessMessage(data.data?.message || t("auth.forgotPasswordSuccess"));
     } catch {
       setErrorMessage(t("common.error"));
@@ -117,6 +139,7 @@ export default function ForgotPasswordScreen() {
           className="mt-6 items-center rounded-lg bg-primary py-3.5"
           onPress={handleSubmit}
           disabled={isSubmitting}
+          isLoading={isSubmitting}
           label={t("auth.forgotPasswordSubmit")}
         />
 
