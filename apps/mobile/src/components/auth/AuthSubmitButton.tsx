@@ -6,6 +6,7 @@ type AuthSubmitButtonProps = {
   onPress: () => void;
   disabled?: boolean;
   isLoading?: boolean;
+  indicatorColor?: string;
   testID?: string;
   accessibilityHint?: string;
   textClassName?: string;
@@ -19,9 +20,10 @@ type AuthSubmitButtonProps = {
  * @param onPress - 押下時の処理
  * @param disabled - 無効状態
  * @param isLoading - ローディング状態
+ * @param indicatorColor - ローディングインジケーターの色
  * @param testID - テストID
  * @param accessibilityHint - 補足説明
- * @param textClassName - ラベルの文字色
+ * @param textClassName - ラベルのテキストスタイル（サイズ・ウェイト・色）
  * @param className - 追加クラス
  */
 export function AuthSubmitButton({
@@ -29,6 +31,7 @@ export function AuthSubmitButton({
   onPress,
   disabled = false,
   isLoading = false,
+  indicatorColor = DARK_COLORS.white,
   testID,
   accessibilityHint,
   textClassName = "text-base font-semibold text-white",
@@ -49,7 +52,7 @@ export function AuthSubmitButton({
       accessibilityState={{ disabled }}
     >
       {isLoading ? (
-        <ActivityIndicator color={DARK_COLORS.white} />
+        <ActivityIndicator color={indicatorColor} />
       ) : (
         <Text className={textClassName}>{label}</Text>
       )}

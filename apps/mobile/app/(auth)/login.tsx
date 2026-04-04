@@ -149,7 +149,6 @@ export default function LoginScreen() {
       }
 
       await Linking.openURL(data.url);
-      // TODO(issue #656): OAuthコールバック復帰後の画面状態遷移をアプリ側で扱う
     } catch {
       setErrorMessage(t("auth.socialLoginFailed"));
     } finally {
@@ -248,6 +247,7 @@ export default function LoginScreen() {
             testID="login-submit-button"
             accessibilityHint={t("auth.loginHint")}
             label={t("auth.login")}
+            indicatorColor={DARK_COLORS.text}
             textClassName="text-base font-semibold text-text"
           />
 
