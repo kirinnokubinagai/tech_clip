@@ -15,6 +15,7 @@ type AuthSubmitButtonProps = {
 };
 
 const BASE_BUTTON_CLASS_NAME = "items-center rounded-lg bg-primary py-3.5";
+const BASE_TEXT_CLASS_NAME = "text-base font-semibold text-white";
 
 /**
  * 認証画面用の送信ボタン
@@ -37,7 +38,7 @@ export function AuthSubmitButton({
   indicatorColor = DARK_COLORS.white,
   testID,
   accessibilityHint,
-  textClassName = "text-base font-semibold text-white",
+  textClassName,
   className,
 }: AuthSubmitButtonProps) {
   return (
@@ -57,7 +58,7 @@ export function AuthSubmitButton({
       {isLoading ? (
         <ActivityIndicator color={indicatorColor} />
       ) : (
-        <Text className={textClassName}>{label}</Text>
+        <Text className={twMerge(BASE_TEXT_CLASS_NAME, textClassName)}>{label}</Text>
       )}
     </Pressable>
   );
