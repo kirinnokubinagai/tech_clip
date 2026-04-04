@@ -11,7 +11,7 @@ import {
   View,
 } from "react-native";
 
-import { UI_COLORS } from "@/lib/constants";
+import { DARK_COLORS } from "@/lib/constants";
 import { useAuthStore } from "@/stores/auth-store";
 
 /** パスワード最小文字数 */
@@ -108,7 +108,7 @@ export default function LoginScreen() {
             <TextInput
               className="rounded-lg border border-border bg-card px-4 py-3 text-base text-text"
               placeholder={t("auth.emailPlaceholder")}
-              placeholderTextColor={UI_COLORS.textDim}
+              placeholderTextColor={DARK_COLORS.textDim}
               value={email}
               onChangeText={setEmail}
               keyboardType="email-address"
@@ -128,7 +128,7 @@ export default function LoginScreen() {
               <TextInput
                 className="flex-1 px-4 py-3 text-base text-text"
                 placeholder={t("auth.passwordPlaceholder")}
-                placeholderTextColor={UI_COLORS.textDim}
+                placeholderTextColor={DARK_COLORS.textDim}
                 value={password}
                 onChangeText={setPassword}
                 secureTextEntry={!isPasswordVisible}
@@ -168,7 +168,7 @@ export default function LoginScreen() {
             accessibilityState={{ disabled: isSubmitting || !isFormValid }}
           >
             {isSubmitting ? (
-              <ActivityIndicator color={UI_COLORS.text} />
+              <ActivityIndicator color={DARK_COLORS.text} />
             ) : (
               <Text className="text-base font-semibold text-text">{t("auth.login")}</Text>
             )}

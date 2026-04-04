@@ -4,7 +4,7 @@ import { memo } from "react";
 import { Pressable, Text, View } from "react-native";
 
 import { SourceBadge } from "@/components/ui";
-import { UI_COLORS } from "@/lib/constants";
+import { DARK_COLORS } from "@/lib/constants";
 import type { ArticleListItem } from "@/types/article";
 
 /** ArticleCardに渡す記事データ */
@@ -26,10 +26,10 @@ const THUMBNAIL_HEIGHT = 160;
 const FAVORITE_ICON_SIZE = 20;
 
 /** お気に入り済みのアイコンカラー */
-const FAVORITE_ACTIVE_COLOR = UI_COLORS.favorite;
+const FAVORITE_ACTIVE_COLOR = DARK_COLORS.favorite;
 
 /** お気に入り未設定のアイコンカラー */
-const FAVORITE_INACTIVE_COLOR = UI_COLORS.textMuted;
+const FAVORITE_INACTIVE_COLOR = DARK_COLORS.textMuted;
 
 /**
  * 日付文字列をYYYY/MM/DD形式にフォーマットする

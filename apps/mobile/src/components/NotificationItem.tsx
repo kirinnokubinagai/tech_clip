@@ -2,7 +2,7 @@ import { Bell, Heart, MessageCircle, Newspaper, UserPlus } from "lucide-react-na
 import type { ReactNode } from "react";
 import { Pressable, Text, View } from "react-native";
 
-import { UI_COLORS } from "@/lib/constants";
+import { DARK_COLORS } from "@/lib/constants";
 import type { NotificationType } from "@/types/notification";
 
 /** NotificationItemに渡す通知データ */
@@ -24,15 +24,15 @@ type NotificationItemProps = {
 const NOTIFICATION_ICON_SIZE = 20;
 
 /** 未読インジケーターの色 */
-const UNREAD_INDICATOR_COLOR = UI_COLORS.primary;
+const UNREAD_INDICATOR_COLOR = DARK_COLORS.primary;
 
 /** 通知種別ごとのアイコン色 */
 const TYPE_ICON_COLORS: Record<NotificationType, string> = {
-  like: UI_COLORS.favorite,
-  comment: UI_COLORS.info,
-  follow: UI_COLORS.success,
-  system: UI_COLORS.warning,
-  article: UI_COLORS.primary,
+  like: DARK_COLORS.favorite,
+  comment: DARK_COLORS.info,
+  follow: DARK_COLORS.success,
+  system: DARK_COLORS.warning,
+  article: DARK_COLORS.primary,
 };
 
 /**

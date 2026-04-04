@@ -4,7 +4,7 @@ import { ArrowLeft } from "lucide-react-native";
 import { useCallback, useState } from "react";
 import { ActivityIndicator, FlatList, Pressable, Text, View } from "react-native";
 
-import { UI_COLORS } from "@/lib/constants";
+import { DARK_COLORS } from "@/lib/constants";
 
 /** タブの種類 */
 type TabType = "followers" | "following";
@@ -24,19 +24,19 @@ const BACK_ICON_SIZE = 24;
 const AVATAR_SIZE = 48;
 
 /** テキストカラー */
-const TEXT_COLOR = UI_COLORS.text;
+const TEXT_COLOR = DARK_COLORS.text;
 
 /** プライマリカラー */
-const PRIMARY_COLOR = UI_COLORS.primary;
+const PRIMARY_COLOR = DARK_COLORS.primary;
 
 /** アバターのフォールバック背景色 */
-const AVATAR_FALLBACK_BG = UI_COLORS.border;
+const AVATAR_FALLBACK_BG = DARK_COLORS.border;
 
 /** アバターのフォールバックテキスト色 */
-const AVATAR_FALLBACK_TEXT_COLOR = UI_COLORS.text;
+const AVATAR_FALLBACK_TEXT_COLOR = DARK_COLORS.text;
 
 /** アクティブタブの下線カラー */
-const ACTIVE_TAB_BORDER_COLOR = UI_COLORS.primary;
+const ACTIVE_TAB_BORDER_COLOR = DARK_COLORS.primary;
 
 /**
  * ユーザー名の頭文字を取得する

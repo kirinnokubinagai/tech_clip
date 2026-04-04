@@ -3,7 +3,7 @@ import { ArrowRight, BookMarked, Sparkles, Tag } from "lucide-react-native";
 import { useState } from "react";
 import { Pressable, ScrollView, Text, View } from "react-native";
 
-import { SUPPORTED_SOURCE_COUNT, UI_COLORS } from "@/lib/constants";
+import { DARK_COLORS, SUPPORTED_SOURCE_COUNT } from "@/lib/constants";
 import { useUIStore } from "../src/stores/ui-store";
 
 /** オンボーディングページのデータ */
@@ -73,7 +73,7 @@ export default function OnboardingScreen() {
       <ScrollView contentContainerStyle={{ flexGrow: 1 }} scrollEnabled={false}>
         <View className="flex-1 items-center justify-center px-8">
           <View className="mb-8 h-24 w-24 items-center justify-center rounded-2xl bg-stone-100">
-            <currentPage.Icon size={48} color={UI_COLORS.neutral} strokeWidth={1.5} />
+            <currentPage.Icon size={48} color={DARK_COLORS.neutral} strokeWidth={1.5} />
           </View>
           <Text
             testID="onboarding-title"

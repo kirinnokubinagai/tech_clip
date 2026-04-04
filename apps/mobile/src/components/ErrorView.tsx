@@ -3,7 +3,7 @@ import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { Pressable, Text, View } from "react-native";
 
-import { UI_COLORS } from "@/lib/constants";
+import { DARK_COLORS } from "@/lib/constants";
 
 /** エラー種別 */
 type ErrorType = "network" | "server" | "generic";
@@ -24,9 +24,9 @@ const RETRY_VIEW_ICON_SIZE = 16;
 
 /** エラー種別ごとのアイコン色 */
 const ERROR_TYPE_COLORS: Record<ErrorType, string> = {
-  network: UI_COLORS.warning,
-  server: UI_COLORS.error,
-  generic: UI_COLORS.error,
+  network: DARK_COLORS.warning,
+  server: DARK_COLORS.error,
+  generic: DARK_COLORS.error,
 };
 
 /**
@@ -109,7 +109,7 @@ export function ErrorView({
           accessibilityRole="button"
           accessibilityLabel={displayRetryLabel}
         >
-          <RefreshCw size={RETRY_VIEW_ICON_SIZE} color={UI_COLORS.white} />
+          <RefreshCw size={RETRY_VIEW_ICON_SIZE} color={DARK_COLORS.white} />
           <Text className="text-white font-semibold">{displayRetryLabel}</Text>
         </Pressable>
       )}

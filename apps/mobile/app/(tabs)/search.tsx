@@ -5,7 +5,7 @@ import { ActivityIndicator, FlatList, Pressable, Text, TextInput, View } from "r
 
 import { ArticleCard } from "@/components/ArticleCard";
 import { SEARCH_DEBOUNCE_MS, useSearchArticles, useToggleFavorite } from "@/hooks/use-articles";
-import { UI_COLORS } from "@/lib/constants";
+import { DARK_COLORS } from "@/lib/constants";
 import type { ArticleListItem } from "@/types/article";
 
 /** 検索アイコンサイズ */
@@ -15,10 +15,10 @@ const SEARCH_ICON_SIZE = 20;
 const CLEAR_ICON_SIZE = 18;
 
 /** プライマリカラー */
-const PRIMARY_COLOR = UI_COLORS.primary;
+const PRIMARY_COLOR = DARK_COLORS.primary;
 
 /** 検索アイコンカラー */
-const SEARCH_ICON_COLOR = UI_COLORS.textDim;
+const SEARCH_ICON_COLOR = DARK_COLORS.textDim;
 
 /**
  * 検索画面
@@ -100,7 +100,7 @@ export default function SearchScreen() {
     if (!debouncedQuery) {
       return (
         <View className="flex-1 items-center justify-center py-20">
-          <Search size={48} color={UI_COLORS.border} />
+          <Search size={48} color={DARK_COLORS.border} />
           <Text className="text-text-muted text-base mt-4">キーワードで記事を検索</Text>
           <Text className="text-text-dim text-sm mt-1">タイトルや内容から検索できます</Text>
         </View>
@@ -129,7 +129,7 @@ export default function SearchScreen() {
             ref={inputRef}
             className="flex-1 text-text text-base py-1"
             placeholder="記事を検索..."
-            placeholderTextColor={UI_COLORS.textDim}
+            placeholderTextColor={DARK_COLORS.textDim}
             value={inputValue}
             onChangeText={setInputValue}
             returnKeyType="search"

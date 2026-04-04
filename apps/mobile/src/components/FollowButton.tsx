@@ -2,19 +2,19 @@ import { UserMinus, UserPlus } from "lucide-react-native";
 import { useCallback, useState } from "react";
 import { ActivityIndicator, Pressable, Text } from "react-native";
 
-import { UI_COLORS } from "@/lib/constants";
+import { DARK_COLORS } from "@/lib/constants";
 
 /** フォローボタンのアイコンサイズ（px） */
 const ICON_SIZE = 16;
 
 /** フォロー済みボタンのアイコンカラー */
-const FOLLOWING_ICON_COLOR = UI_COLORS.text;
+const FOLLOWING_ICON_COLOR = DARK_COLORS.text;
 
 /** 未フォローボタンのアイコンカラー */
-const NOT_FOLLOWING_ICON_COLOR = UI_COLORS.white;
+const NOT_FOLLOWING_ICON_COLOR = DARK_COLORS.white;
 
 /** ローディングインジケーターカラー */
-const LOADING_COLOR = UI_COLORS.primary;
+const LOADING_COLOR = DARK_COLORS.primary;
 
 type FollowButtonProps = {
   userId: string;

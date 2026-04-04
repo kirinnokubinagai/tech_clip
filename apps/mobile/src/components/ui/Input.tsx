@@ -1,10 +1,10 @@
 import type { TextInputProps } from "react-native";
 import { Text, TextInput, View } from "react-native";
 
-import { UI_COLORS } from "@/lib/constants";
+import { DARK_COLORS } from "@/lib/constants";
 
 /** プレースホルダーの色（テーマのtext-dimに対応） */
-const PLACEHOLDER_COLOR = UI_COLORS.textDim;
+const PLACEHOLDER_COLOR = DARK_COLORS.textDim;
 
 type InputProps = {
   label?: string;

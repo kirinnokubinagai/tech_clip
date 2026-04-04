@@ -8,20 +8,20 @@ import { ArticleCard } from "@/components/ArticleCard";
 import { useArticles, useToggleFavorite } from "@/hooks/use-articles";
 import { useNetworkStatus } from "@/hooks/use-network-status";
 import { useOfflineArticles } from "@/hooks/use-offline-articles";
-import { UI_COLORS } from "@/lib/constants";
+import { DARK_COLORS } from "@/lib/constants";
 import type { ArticleListItem, ArticleSource } from "@/types/article";
 
 /** フィルターチップのアクティブ背景色 */
-const FILTER_ACTIVE_BG = UI_COLORS.primary;
+const FILTER_ACTIVE_BG = DARK_COLORS.primary;
 
 /** フィルターチップの非アクティブ背景色 */
-const FILTER_INACTIVE_BG = UI_COLORS.card;
+const FILTER_INACTIVE_BG = DARK_COLORS.card;
 
 /** お気に入りフィルターのアクティブ色 */
-const FAVORITE_ACTIVE_COLOR = UI_COLORS.favorite;
+const FAVORITE_ACTIVE_COLOR = DARK_COLORS.favorite;
 
 /** お気に入りフィルターの非アクティブ色 */
-const FAVORITE_INACTIVE_COLOR = UI_COLORS.textMuted;
+const FAVORITE_INACTIVE_COLOR = DARK_COLORS.textMuted;
 
 /** フィルターアイコンサイズ */
 const FILTER_ICON_SIZE = 16;
@@ -188,7 +188,7 @@ export default function HomeScreen() {
               <Text
                 className="text-sm"
                 style={{
-                  color: selectedSource === item.value ? UI_COLORS.white : UI_COLORS.textMuted,
+                  color: selectedSource === item.value ? DARK_COLORS.white : DARK_COLORS.textMuted,
                 }}
               >
                 {item.label}
@@ -201,7 +201,7 @@ export default function HomeScreen() {
             onPress={() => setIsFavoriteOnly((prev) => !prev)}
             className="flex-row items-center gap-1.5 rounded-full px-3 py-1.5"
             style={{
-              backgroundColor: isFavoriteOnly ? UI_COLORS.dangerSurface : FILTER_INACTIVE_BG,
+              backgroundColor: isFavoriteOnly ? DARK_COLORS.dangerSurface : FILTER_INACTIVE_BG,
             }}
             accessibilityRole="button"
             accessibilityLabel={
@@ -215,7 +215,7 @@ export default function HomeScreen() {
             />
             <Text
               className="text-sm"
-              style={{ color: isFavoriteOnly ? FAVORITE_ACTIVE_COLOR : UI_COLORS.textMuted }}
+              style={{ color: isFavoriteOnly ? FAVORITE_ACTIVE_COLOR : DARK_COLORS.textMuted }}
             >
               {t("home.favorites")}
             </Text>
@@ -241,7 +241,7 @@ export default function HomeScreen() {
             <RefreshControl
               refreshing={isRefetching}
               onRefresh={() => refetch()}
-              tintColor={UI_COLORS.primary}
+              tintColor={DARK_COLORS.primary}
             />
           }
           contentContainerStyle={{ paddingTop: 4, paddingBottom: 20 }}

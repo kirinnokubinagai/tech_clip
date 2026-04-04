@@ -4,28 +4,28 @@ import { useTranslation } from "react-i18next";
 import { Text, useColorScheme, View } from "react-native";
 
 import { useUnreadNotificationCount } from "@/hooks/use-notifications";
-import { THEME_COLORS, UI_COLORS } from "@/lib/constants";
+import { DARK_COLORS, THEME_COLORS } from "@/lib/constants";
 
 /** タブバーのアクティブ色 */
-const TAB_ACTIVE_COLOR = UI_COLORS.primary;
+const TAB_ACTIVE_COLOR = DARK_COLORS.primary;
 
 /** タブバーの非アクティブ色 */
-const TAB_INACTIVE_COLOR = UI_COLORS.textDim;
+const TAB_INACTIVE_COLOR = DARK_COLORS.textDim;
 
 /** ダークテーマのヘッダー背景色 */
-const DARK_HEADER_BACKGROUND = UI_COLORS.surface;
+const DARK_HEADER_BACKGROUND = DARK_COLORS.surface;
 
 /** ダークテーマのボーダー色 */
-const DARK_BORDER_COLOR = UI_COLORS.border;
+const DARK_BORDER_COLOR = DARK_COLORS.border;
 
 /** ダークテーマのテキスト色 */
-const DARK_TEXT_COLOR = UI_COLORS.text;
+const DARK_TEXT_COLOR = DARK_COLORS.text;
 
 /** タブアイコンサイズ */
 const TAB_ICON_SIZE = 24;
 
 /** 未読バッジの背景色 */
-const BADGE_BG_COLOR = UI_COLORS.error;
+const BADGE_BG_COLOR = DARK_COLORS.error;
 
 /** 未読バッジの最大表示数 */
 const BADGE_MAX_COUNT = 99;

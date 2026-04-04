@@ -6,7 +6,7 @@ import { Image, Pressable, ScrollView, Text, View } from "react-native";
 import { Button, Card, Input, SourceBadge, Toast } from "@/components/ui";
 import { useToast } from "@/hooks/use-toast";
 import { apiFetch } from "@/lib/api";
-import { UI_COLORS } from "@/lib/constants";
+import { DARK_COLORS } from "@/lib/constants";
 import type { ArticlePreview, ParseArticleResponse, SaveArticleResponse } from "@/types/article";
 
 /** URL正規表現パターン */
@@ -25,10 +25,10 @@ const ICON_SIZE_LG = 24;
 const ERROR_ICON_SIZE = 16;
 
 /** エラーメッセージの表示色 */
-const ERROR_COLOR = UI_COLORS.error;
+const ERROR_COLOR = DARK_COLORS.error;
 
 /** ローディングスピナーの色 */
-const SPINNER_COLOR = UI_COLORS.primary;
+const SPINNER_COLOR = DARK_COLORS.primary;
 
 /**
  * URL入力のクライアントバリデーション
@@ -148,7 +148,7 @@ export default function SaveScreen() {
               accessibilityHint="前の画面に戻ります"
               className="mr-3 p-1"
             >
-              <ArrowLeft size={ICON_SIZE_LG} color={UI_COLORS.text} />
+              <ArrowLeft size={ICON_SIZE_LG} color={DARK_COLORS.text} />
             </Pressable>
             <Text className="text-xl font-bold text-text">記事を保存</Text>
           </View>
@@ -249,7 +249,7 @@ export default function SaveScreen() {
 
                 {/* URL表示 */}
                 <View className="flex-row items-center gap-1">
-                  <ExternalLink size={ICON_SIZE_SM} color={UI_COLORS.textDim} />
+                  <ExternalLink size={ICON_SIZE_SM} color={DARK_COLORS.textDim} />
                   <Text className="text-text-dim text-xs flex-1" numberOfLines={1}>
                     {url.trim()}
                   </Text>

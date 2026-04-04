@@ -45,7 +45,14 @@ export const IMAGE_SIZES = {
   full: { width: 800, height: 600 },
 } as const;
 
-/** ライト/ダーク共通で使う意味ベースのカラー */
+/**
+ * ライト/ダーク共通で使う意味ベースのカラー
+ *
+ * アーキテクチャ:
+ * - SEMANTIC_COLORS（共有）→ THEME_COLORS（ライトテーマ）にスプレッド
+ * - SEMANTIC_COLORS（共有）→ DARK_COLORS（ダークテーマ）にスプレッド
+ * - error / success / warning / accent / favorite はここで一元管理
+ */
 const SEMANTIC_COLORS = {
   /** アクセントカラー */
   accent: "#14b8a6",
@@ -59,7 +66,10 @@ const SEMANTIC_COLORS = {
   favorite: "#ef4444",
 } as const;
 
-/** テーマカラー定義 */
+/**
+ * ライトテーマカラー定義
+ * SEMANTIC_COLORS の共有セマンティック色 + ライト固有のレイアウト色で構成
+ */
 export const THEME_COLORS = {
   /** 背景色 */
   background: "#fafaf9",
@@ -72,8 +82,11 @@ export const THEME_COLORS = {
   ...SEMANTIC_COLORS,
 } as const;
 
-/** モバイルUIの共有カラートークン */
-export const UI_COLORS = {
+/**
+ * ダークテーマカラー定義
+ * SEMANTIC_COLORS の共有セマンティック色 + ダーク固有のレイアウト色で構成
+ */
+export const DARK_COLORS = {
   /** アプリ全体の背景色 */
   background: "#0a0a0f",
   /** セクション背景色 */

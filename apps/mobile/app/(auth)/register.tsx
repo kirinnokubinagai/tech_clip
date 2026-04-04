@@ -12,7 +12,7 @@ import {
   View,
 } from "react-native";
 
-import { UI_COLORS } from "@/lib/constants";
+import { DARK_COLORS } from "@/lib/constants";
 import { useAuthStore } from "../../src/stores/auth-store";
 
 export default function RegisterScreen() {
@@ -89,7 +89,7 @@ export default function RegisterScreen() {
             <TextInput
               className="rounded-lg border border-border bg-surface px-4 py-3 text-base text-text"
               placeholder={t("auth.namePlaceholder")}
-              placeholderTextColor={UI_COLORS.textDim}
+              placeholderTextColor={DARK_COLORS.textDim}
               value={name}
               onChangeText={setName}
               autoCapitalize="words"
@@ -106,7 +106,7 @@ export default function RegisterScreen() {
             <TextInput
               className="rounded-lg border border-border bg-surface px-4 py-3 text-base text-text"
               placeholder="example@domain.com"
-              placeholderTextColor={UI_COLORS.textDim}
+              placeholderTextColor={DARK_COLORS.textDim}
               value={email}
               onChangeText={setEmail}
               autoCapitalize="none"
@@ -124,7 +124,7 @@ export default function RegisterScreen() {
             <TextInput
               className="rounded-lg border border-border bg-surface px-4 py-3 text-base text-text"
               placeholder={t("auth.passwordPlaceholder")}
-              placeholderTextColor={UI_COLORS.textDim}
+              placeholderTextColor={DARK_COLORS.textDim}
               value={password}
               onChangeText={setPassword}
               secureTextEntry
@@ -150,7 +150,7 @@ export default function RegisterScreen() {
           accessibilityState={{ disabled: isSubmitting }}
         >
           {isSubmitting ? (
-            <ActivityIndicator color={UI_COLORS.white} />
+            <ActivityIndicator color={DARK_COLORS.white} />
           ) : (
             <Text className="text-base font-semibold text-white">{t("auth.createAccount")}</Text>
           )}

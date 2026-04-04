@@ -6,16 +6,16 @@ import { ActivityIndicator, Pressable, ScrollView, Text, View } from "react-nati
 import { FollowButton } from "@/components/FollowButton";
 import type { ProfileHeaderUser } from "@/components/ProfileHeader";
 import { ProfileHeader } from "@/components/ProfileHeader";
-import { UI_COLORS } from "@/lib/constants";
+import { DARK_COLORS } from "@/lib/constants";
 
 /** 戻るアイコンのサイズ（px） */
 const BACK_ICON_SIZE = 24;
 
 /** テキストカラー */
-const TEXT_COLOR = UI_COLORS.text;
+const TEXT_COLOR = DARK_COLORS.text;
 
 /** プライマリカラー */
-const PRIMARY_COLOR = UI_COLORS.primary;
+const PRIMARY_COLOR = DARK_COLORS.primary;
 
 /**
  * プレースホルダーのユーザーデータを生成する
