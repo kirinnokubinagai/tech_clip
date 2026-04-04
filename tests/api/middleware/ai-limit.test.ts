@@ -74,7 +74,12 @@ const mockDb = {
 /** HTTP 500 Internal Server Error ステータスコード */
 const HTTP_INTERNAL_SERVER_ERROR = 500;
 
-/** SQL式のqueryChunksから文字列部分を連結して取得する */
+/**
+ * SQL式のqueryChunksから文字列部分を連結して取得する
+ *
+ * Drizzle ORM の内部表現 `queryChunks` に依存しているため、メジャーアップデート時は
+ * このヘルパーと関連アサーションの見直しが必要になる可能性がある。
+ */
 function extractSqlText(sqlExpression: { queryChunks: unknown[] }): string {
   return sqlExpression.queryChunks
     .flatMap((chunk) => {

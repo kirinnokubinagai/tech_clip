@@ -180,6 +180,38 @@ async function executeWithRollback(
 }
 
 /**
+ * クォータ予約の競合時に警告を出し、402レスポンスを返す
+ *
+ * @param c - Hono コンテキスト
+ * @param logger - リクエストスコープのロガー
+ * @param userId - ユーザーID
+ * @param path - 競合が発生した予約経路
+ * @returns Payment Required レスポンス
+ */
+function respondReservationConflict(
+  c: Context,
+  logger: ReturnType<typeof createLogger>,
+  userId: string,
+  path: "existing-free-use" | "reset-free-use",
+) {
+  logger.warn("AIクォータ予約が競合で失敗しました", {
+    userId,
+    path,
+  });
+
+  return c.json(
+    {
+      success: false,
+      error: {
+        code: AI_LIMIT_ERROR_CODE,
+        message: AI_LIMIT_ERROR_MESSAGE,
+      },
+    },
+    HTTP_PAYMENT_REQUIRED,
+  );
+}
+
+/**
  * AI使用回数制限ミドルウェアを生成する
  *
  * 要約/翻訳API呼び出し前にユーザーのfreeAiUsesRemainingをチェックし、
@@ -241,20 +273,7 @@ export function createAiLimitMiddleware(db: Database): MiddlewareHandler {
       const didReserve = await reserveExistingFreeUse(db, userId);
 
       if (!didReserve) {
-        logger.warn("AIクォータ予約が競合で失敗しました", {
-          userId,
-          path: "existing-free-use",
-        });
-        return c.json(
-          {
-            success: false,
-            error: {
-              code: AI_LIMIT_ERROR_CODE,
-              message: AI_LIMIT_ERROR_MESSAGE,
-            },
-          },
-          HTTP_PAYMENT_REQUIRED,
-        );
+        return respondReservationConflict(c, logger, userId, "existing-free-use");
       }
 
       await executeWithRollback(c, next, db, userId);
@@ -267,20 +286,7 @@ export function createAiLimitMiddleware(db: Database): MiddlewareHandler {
       const didReserve = await reserveResetFreeUse(db, userId, resetReferenceTime, nextResetAt);
 
       if (!didReserve) {
-        logger.warn("AIクォータ予約が競合で失敗しました", {
-          userId,
-          path: "reset-free-use",
-        });
-        return c.json(
-          {
-            success: false,
-            error: {
-              code: AI_LIMIT_ERROR_CODE,
-              message: AI_LIMIT_ERROR_MESSAGE,
-            },
-          },
-          HTTP_PAYMENT_REQUIRED,
-        );
+        return respondReservationConflict(c, logger, userId, "reset-free-use");
       }
 
       await executeWithRollback(c, next, db, userId);
