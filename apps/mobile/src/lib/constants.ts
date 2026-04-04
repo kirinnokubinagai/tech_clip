@@ -51,7 +51,7 @@ export const IMAGE_SIZES = {
  * アーキテクチャ:
  * - SEMANTIC_COLORS（共有）→ LIGHT_COLORS（ライトテーマ）にスプレッド
  * - SEMANTIC_COLORS（共有）→ DARK_COLORS（ダークテーマ）にスプレッド
- * - error / success / warning / accent / favorite / neutral はここで一元管理
+ * - error / success / warning / accent / favorite / neutral / white はここで一元管理
  */
 const SEMANTIC_COLORS = {
   /** アクセントカラー */
@@ -66,6 +66,8 @@ const SEMANTIC_COLORS = {
   favorite: "#ef4444",
   /** テーマ共通で使う中立色 */
   neutral: "#44403c",
+  /** テーマ共通で使う白色 */
+  white: "#ffffff",
 } as const;
 
 /**
@@ -83,9 +85,6 @@ export const LIGHT_COLORS = {
   border: "#e7e5e4",
   ...SEMANTIC_COLORS,
 } as const;
-
-/** 互換性維持のためのライトテーマカラー別名 */
-export const THEME_COLORS = LIGHT_COLORS;
 
 /**
  * ダークテーマカラー定義
@@ -110,8 +109,6 @@ export const DARK_COLORS = {
   textMuted: "#94a3b8",
   /** さらに弱い補助テキスト色 */
   textDim: "#64748b",
-  /** 白色 */
-  white: "#ffffff",
   /** 情報色 */
   info: "#3b82f6",
   /** 危険操作の背景色 */

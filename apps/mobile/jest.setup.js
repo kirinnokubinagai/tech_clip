@@ -49,8 +49,6 @@ const originalTiming = Animated.timing;
 Animated.timing = (value, config) => originalTiming(value, { ...config, useNativeDriver: false });
 const originalSpring = Animated.spring;
 Animated.spring = (value, config) => originalSpring(value, { ...config, useNativeDriver: false });
-const originalParallel = Animated.parallel;
-Animated.parallel = (animations, config) => originalParallel(animations, config);
 
 // react-native-web TextInput uses document in a useEffect; provide a minimal stub
 // so tests using TextInput don't crash in the Node test environment.
