@@ -89,6 +89,25 @@ describe("LoginScreen", () => {
     ).toBeDefined();
   });
 
+  it("非OKレスポンス時はJSONを読まずにエラーメッセージを表示すること", async () => {
+    // Arrange
+    const json = jest.fn();
+    (global.fetch as jest.Mock).mockResolvedValue({
+      ok: false,
+      json,
+    });
+    const { getByLabelText, findByLabelText } = await render(<LoginScreen />);
+
+    // Act
+    await fireEvent.press(getByLabelText("GitHub でログイン"));
+
+    // Assert
+    expect(
+      await findByLabelText("ソーシャルログインの開始に失敗しました。もう一度お試しください。"),
+    ).toBeDefined();
+    expect(json).not.toHaveBeenCalled();
+  });
+
   it("https以外のURLが返された場合は遷移せずエラーメッセージを表示すること", async () => {
     // Arrange
     (global.fetch as jest.Mock).mockResolvedValue({

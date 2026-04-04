@@ -113,9 +113,15 @@ export default function LoginScreen() {
           disableRedirect: true,
         }),
       });
+
+      if (!response.ok) {
+        setErrorMessage(t("auth.socialLoginFailed"));
+        return;
+      }
+
       const data = (await response.json()) as SocialSignInResponse;
 
-      if (!response.ok || !data.url?.startsWith("https://")) {
+      if (!data.url?.startsWith("https://")) {
         setErrorMessage(t("auth.socialLoginFailed"));
         return;
       }
