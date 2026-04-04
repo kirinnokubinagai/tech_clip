@@ -995,17 +995,17 @@ describe("POST /api/users/me/avatar", () => {
       mockProcessImage.mockResolvedValue({
         isValid: true,
         image: {
-          buffer: new Uint8Array([0x52, 0x49, 0x46, 0x46]),
-          contentType: "image/webp",
-          extension: "webp",
+          buffer: new Uint8Array([0xff, 0xd8, 0xff, 0xe0]),
+          contentType: "image/jpeg",
+          extension: "jpg",
         },
       });
       mockUpload.mockResolvedValue({
-        avatarUrl: "https://cdn.example.com/avatars/user_01HXYZ_123.webp",
+        avatarUrl: "https://cdn.example.com/avatars/user_01HXYZ_123.jpg",
       });
       const updatedUser = {
         ...MOCK_USER,
-        avatarUrl: "https://cdn.example.com/avatars/user_01HXYZ_123.webp",
+        avatarUrl: "https://cdn.example.com/avatars/user_01HXYZ_123.jpg",
       };
       mockUpdateReturning.mockResolvedValue([updatedUser]);
       const app = createAvatarTestApp();
@@ -1021,7 +1021,7 @@ describe("POST /api/users/me/avatar", () => {
       const body = (await res.json()) as UserResponseBody;
       expect(body.success).toBe(true);
       expect(body.data).toMatchObject({
-        avatarUrl: "https://cdn.example.com/avatars/user_01HXYZ_123.webp",
+        avatarUrl: "https://cdn.example.com/avatars/user_01HXYZ_123.jpg",
       });
     });
 
@@ -1034,17 +1034,17 @@ describe("POST /api/users/me/avatar", () => {
       mockProcessImage.mockResolvedValue({
         isValid: true,
         image: {
-          buffer: new Uint8Array([0x52, 0x49, 0x46, 0x46]),
-          contentType: "image/webp",
-          extension: "webp",
+          buffer: new Uint8Array([0x89, 0x50, 0x4e, 0x47]),
+          contentType: "image/png",
+          extension: "png",
         },
       });
       mockUpload.mockResolvedValue({
-        avatarUrl: "https://cdn.example.com/avatars/user_01HXYZ_456.webp",
+        avatarUrl: "https://cdn.example.com/avatars/user_01HXYZ_456.png",
       });
       const updatedUser = {
         ...MOCK_USER,
-        avatarUrl: "https://cdn.example.com/avatars/user_01HXYZ_456.webp",
+        avatarUrl: "https://cdn.example.com/avatars/user_01HXYZ_456.png",
       };
       mockUpdateReturning.mockResolvedValue([updatedUser]);
       const app = createAvatarTestApp();
