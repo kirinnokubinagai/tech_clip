@@ -1,6 +1,38 @@
 #!/bin/bash
 set -euo pipefail
 
+SCRIPT_PATH="${BASH_SOURCE[0]}"
+SCRIPT_DIR="$(cd "$(dirname "${SCRIPT_PATH}")" && pwd)"
+REPO_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
+NIX_BIN="${NIX_BIN:-$(command -v nix 2>/dev/null || true)}"
+
+if [ -z "${NIX_BIN}" ] && [ -x "/nix/var/nix/profiles/default/bin/nix" ]; then
+  NIX_BIN="/nix/var/nix/profiles/default/bin/nix"
+fi
+
+if [ "${TECH_CLIP_PRE_PUSH_NIX_BOOTSTRAPPED:-0}" != "1" ]; then
+  if [ -n "${NIX_BIN}" ]; then
+    if [ -z "${IN_NIX_SHELL:-}" ] || ! command -v pnpm > /dev/null 2>&1 || ! command -v zap > /dev/null 2>&1; then
+      echo "Pre-push チェックを Nix 開発環境で再実行中..."
+      exec "${NIX_BIN}" develop "${REPO_ROOT}" --command env TECH_CLIP_PRE_PUSH_NIX_BOOTSTRAPPED=1 bash "${SCRIPT_PATH}" "$@"
+    fi
+  fi
+fi
+
+if ! command -v pnpm > /dev/null 2>&1; then
+  echo "Pre-push チェック失敗: pnpm コマンドが見つかりません。"
+  echo "  Nix が使える環境で実行するか、pnpm をインストールしてください。"
+  exit 1
+fi
+
+if ! command -v zap > /dev/null 2>&1; then
+  echo "Pre-push チェック失敗: ZAP コマンドが見つかりません。"
+  echo "  Nix 開発環境の再起動に失敗した可能性があります。nix develop の状態を確認してください。"
+  exit 1
+fi
+
+cd "${REPO_ROOT}"
+
 # force-push / non-fast-forward push をブロック
 while read -r LOCAL_REF LOCAL_SHA REMOTE_REF REMOTE_SHA; do
   if [ "${LOCAL_SHA}" = "0000000000000000000000000000000000000000" ]; then
@@ -35,12 +67,6 @@ pnpm --filter @tech-clip/mobile exec jest --runInBand --passWithNoTests --openHa
 
 # OWASP ZAP ローカルセキュリティスキャン
 # Nix 環境の zap コマンドを使用（Docker 不要）
-if ! command -v zap > /dev/null 2>&1; then
-  echo "ZAPスキャン失敗: zap コマンドが見つかりません。"
-  echo "  nix develop で開発環境に入ってください。"
-  exit 1
-fi
-
 echo "  OWASP ZAP セキュリティスキャン..."
 
 ZAP_API_PORT=$((9000 + (RANDOM % 1000)))
