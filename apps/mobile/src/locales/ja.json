@@ -53,6 +53,7 @@
     "loginToRegister": "新規登録",
     "loginToRegisterPrompt": "アカウントをお持ちでない方は",
     "registerToLoginPrompt": "すでにアカウントをお持ちですか？",
+    "registerHint": "入力した情報で新規アカウントを作成します",
     "registerFailed": "登録に失敗しました",
     "loginFailed": "ログインに失敗しました。もう一度お試しください",
     "validation": {

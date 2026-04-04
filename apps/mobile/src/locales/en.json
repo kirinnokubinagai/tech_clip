@@ -53,6 +53,7 @@
     "loginToRegister": "Sign up",
     "loginToRegisterPrompt": "Don't have an account?",
     "registerToLoginPrompt": "Already have an account?",
+    "registerHint": "Create a new account with the entered information.",
     "registerFailed": "Registration failed",
     "loginFailed": "Login failed. Please try again.",
     "validation": {

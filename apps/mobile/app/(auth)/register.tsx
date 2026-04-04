@@ -16,6 +16,9 @@ import { AuthSubmitButton } from "@/components/auth/AuthSubmitButton";
 import { AUTH_PLACEHOLDER_TEXT_COLOR } from "@/lib/ui-colors";
 import { useAuthStore } from "../../src/stores/auth-store";
 
+/** パスワード最小文字数 */
+const PASSWORD_MIN_LENGTH = 8;
+
 export default function RegisterScreen() {
   const { t } = useTranslation();
   const signUp = useAuthStore((s) => s.signUp);
@@ -89,8 +92,8 @@ export default function RegisterScreen() {
               autoComplete="name"
               textContentType="name"
               editable={!isSubmitting}
-              accessibilityLabel="名前"
-              accessibilityHint="お名前を入力してください"
+              accessibilityLabel={t("auth.name")}
+              accessibilityHint={t("auth.namePlaceholder")}
             />
           </View>
 
@@ -107,8 +110,8 @@ export default function RegisterScreen() {
               keyboardType="email-address"
               textContentType="emailAddress"
               editable={!isSubmitting}
-              accessibilityLabel="メールアドレス"
-              accessibilityHint="メールアドレスを入力してください"
+              accessibilityLabel={t("auth.email")}
+              accessibilityHint={t("auth.emailHint")}
             />
           </View>
 
@@ -124,8 +127,8 @@ export default function RegisterScreen() {
               autoComplete="new-password"
               textContentType="newPassword"
               editable={!isSubmitting}
-              accessibilityLabel="パスワード"
-              accessibilityHint="8文字以上のパスワードを入力してください"
+              accessibilityLabel={t("auth.password")}
+              accessibilityHint={t("auth.passwordHint", { min: PASSWORD_MIN_LENGTH })}
             />
           </View>
         </View>
@@ -135,7 +138,7 @@ export default function RegisterScreen() {
           onPress={handleRegister}
           disabled={isSubmitting}
           label={t("auth.createAccount")}
-          accessibilityHint="入力した情報で新規アカウントを作成します"
+          accessibilityHint={t("auth.registerHint")}
           textClassName="text-base font-semibold text-white"
         />
 
