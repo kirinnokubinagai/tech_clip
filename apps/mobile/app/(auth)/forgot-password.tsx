@@ -77,7 +77,6 @@ function ForgotPasswordFooter({ hasSuccess }: { hasSuccess: boolean }) {
 
 export default function ForgotPasswordScreen() {
   const { t } = useTranslation();
-  const router = useRouter();
 
   const [email, setEmail] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
