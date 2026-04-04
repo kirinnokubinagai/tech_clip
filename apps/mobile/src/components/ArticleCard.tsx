@@ -106,7 +106,10 @@ export const ArticleCard = memo(function ArticleCard({
             <Pressable
               testID="favorite-button"
               nativeID="favorite-button"
-              onPress={onToggleFavorite}
+              onPress={(e) => {
+                e?.stopPropagation();
+                onToggleFavorite();
+              }}
               accessibilityRole="button"
               accessibilityLabel={article.isFavorite ? "お気に入り解除" : "お気に入り追加"}
               hitSlop={8}
