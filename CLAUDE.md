@@ -392,16 +392,32 @@ PRマージは CI（GitHub Actions auto-approve workflow）のみが行う。Cla
 
 1. 実装エージェントが PR を作成（**マージはしない**）
 2. code-reviewer エージェントが PR をレビュー
-3. 指摘が1つでもあれば **該当 PR 内で** 全て修正 → 再 push → 再レビュー
-4. 全件 PASS になるまで 3 を繰り返す
-5. CI（auto-approve.yml）が自動で Approve → マージ
+3. **GitHub レビューコメントを確認**（必須）: `gh pr view <PR番号> --json reviews,reviewRequests` を実行し、GitHub 側のレビューコメントをすべて取得する
+4. ローカルレビューと GitHub レビューの両方で指摘が1つでもあれば **該当 PR 内で** 全て修正 → 再 push → 再レビュー
+5. 全件 PASS になるまで 4 を繰り返す
+6. CI（auto-approve.yml）が自動で Approve → マージ
 
 ### PRレビュー修正ルール
 
 - レビュー指摘は **該当 PR 内で修正** する（別 Issue に分離しない）
 - 修正コミットは `fix: <内容> #<元のIssue番号>` の形式
 - 修正後は必ず再レビューを実行し、全件 PASS を確認する
+- **改善提案（💡）や軽微な問題（🟡）も含め、すべての指摘を修正すること**
 - 全件 PASS になるまでユーザーにマージを提案しない
+
+### GitHub レビューコメント確認ルール（必須）
+
+**レビュー完了報告前に必ず以下を実行すること:**
+
+```bash
+gh pr view <PR番号> --json reviews,reviewRequests
+gh pr view <PR番号> --comments
+```
+
+- ローカルの code-reviewer エージェントと GitHub CI レビューは**別物**
+- GitHub 側のレビューコメント（auto-approve ワークフロー等が投稿したもの）は `gh pr view` で確認しなければ見えない
+- GitHub レビューに未解決コメントがある場合は修正してから完了報告する
+- 改善提案（💡）・軽微な問題（🟡）・重大な問題（🔴）すべて対応必須
 
 ### Claude に禁止されている操作
 
@@ -443,6 +459,7 @@ coder (実装)
   ├── コミット・push・PR作成（/finish スキル）
   ├── Agent(code-reviewer) を起動（/review/code-review スキル）
   │     └── レビュー結果を返す
+  ├── gh pr view <PR番号> --json reviews,reviewRequests でGitHub レビューを確認（必須）
   ├── 問題・改善提案が1つでもあれば → 全て修正→再push→再レビュー（0件になるまで繰り返す）
   └── 全件 PASS を確認して報告（マージは CI が自動で行う）
 ```
