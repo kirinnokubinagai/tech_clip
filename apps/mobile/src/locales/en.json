@@ -42,6 +42,7 @@
     "forgotPasswordDescription": "We'll send reset instructions to your email address",
     "forgotPasswordSubmit": "Send reset email",
     "forgotPasswordSuccess": "We sent a password reset email. Please check your inbox.",
+    "forgotPasswordEmailHint": "Enter the email address where you want to receive the password reset email.",
     "socialSeparator": "Or",
     "continueWithGoogle": "Continue with Google",
     "continueWithGithub": "Continue with GitHub",

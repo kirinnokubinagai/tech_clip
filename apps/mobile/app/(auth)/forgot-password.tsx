@@ -62,7 +62,7 @@ export default function ForgotPasswordScreen() {
         return;
       }
 
-      setSuccessMessage(data.data.message);
+      setSuccessMessage(data.data.message || t("auth.forgotPasswordSuccess"));
     } catch {
       setErrorMessage(t("common.error"));
     } finally {
@@ -119,8 +119,8 @@ export default function ForgotPasswordScreen() {
             keyboardType="email-address"
             textContentType="emailAddress"
             editable={!isSubmitting}
-            accessibilityLabel="メールアドレス"
-            accessibilityHint="パスワードリセットを受け取るメールアドレスを入力してください"
+            accessibilityLabel={t("auth.email")}
+            accessibilityHint={t("auth.forgotPasswordEmailHint")}
           />
         </View>
 

@@ -42,6 +42,7 @@
     "forgotPasswordDescription": "登録済みメールアドレスにリセット手順を送信します",
     "forgotPasswordSubmit": "リセットメールを送信",
     "forgotPasswordSuccess": "パスワードリセットのメールを送信しました。メールをご確認ください。",
+    "forgotPasswordEmailHint": "パスワードリセットを受け取るメールアドレスを入力してください",
     "socialSeparator": "または",
     "continueWithGoogle": "Google でログイン",
     "continueWithGithub": "GitHub でログイン",
