@@ -1,3 +1,23 @@
+const { mockLogger, mockCreateLogger } = vi.hoisted(() => {
+  const logger = {
+    info: vi.fn(),
+    warn: vi.fn(),
+    error: vi.fn(),
+    debug: vi.fn(),
+    withRequestId: vi.fn(),
+  };
+  logger.withRequestId.mockReturnValue(logger);
+
+  return {
+    mockLogger: logger,
+    mockCreateLogger: vi.fn(() => logger),
+  };
+});
+
+vi.mock("@api/lib/logger", () => ({
+  createLogger: mockCreateLogger,
+}));
+
 import { createAiLimitMiddleware } from "@api/middleware/ai-limit";
 import { Hono } from "hono";
 import { beforeEach, describe, expect, it, vi } from "vitest";
@@ -142,6 +162,8 @@ function createThrowingTestApp(userId?: string) {
 describe("aiLimitMiddleware", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockCreateLogger.mockReturnValue(mockLogger);
+    mockLogger.withRequestId.mockReturnValue(mockLogger);
     mockSelectFrom.mockReturnValue({ where: mockSelectWhere });
     mockSelect.mockReturnValue({ from: mockSelectFrom });
     mockUpdateReturning.mockResolvedValue([{ id: TEST_USER_ID }]);
@@ -404,6 +426,10 @@ describe("aiLimitMiddleware", () => {
           code: "AI_LIMIT_EXCEEDED",
         },
       });
+      expect(mockLogger.warn).toHaveBeenCalledWith("AIクォータ予約が競合で失敗しました", {
+        userId: TEST_USER_ID,
+        path: "existing-free-use",
+      });
     });
 
     it("残回数ありでreserveExistingFreeUseが失敗した場合にdb.updateが1回だけ呼ばれること", async () => {
@@ -445,6 +471,10 @@ describe("aiLimitMiddleware", () => {
         error: {
           code: "AI_LIMIT_EXCEEDED",
         },
+      });
+      expect(mockLogger.warn).toHaveBeenCalledWith("AIクォータ予約が競合で失敗しました", {
+        userId: TEST_USER_ID,
+        path: "reset-free-use",
       });
     });
 
@@ -588,6 +618,30 @@ describe("aiLimitMiddleware", () => {
         freeAiUsesRemaining: { queryChunks: unknown[] };
       };
       expect(extractSqlText(rollbackSetArg.freeAiUsesRemaining)).toContain("MIN(");
+    });
+
+    it("ロールバックが失敗してもリクエストがクラッシュせずerrorログが出ること", async () => {
+      // Arrange
+      const userData = createFreeUserData({ remaining: 3 });
+      mockSelectWhere.mockResolvedValue([userData]);
+      mockUpdateWhere
+        .mockReturnValueOnce({ returning: mockUpdateReturning })
+        .mockRejectedValueOnce(new Error("DB接続エラー"));
+      mockUpdateReturning.mockResolvedValueOnce([{ id: TEST_USER_ID }]);
+      const app = createTestApp(TEST_USER_ID, HTTP_INTERNAL_SERVER_ERROR);
+
+      // Act
+      const res = await app.request("/ai/summarize", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+      });
+
+      // Assert
+      expect(res.status).toBe(HTTP_INTERNAL_SERVER_ERROR);
+      expect(mockLogger.error).toHaveBeenCalledWith("AIクォータのロールバックに失敗しました", {
+        userId: TEST_USER_ID,
+        error: expect.any(Error),
+      });
     });
   });
 });
