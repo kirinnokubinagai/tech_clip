@@ -22,15 +22,15 @@ type ForgotPasswordSuccessResponse = {
   data: { message: string };
 };
 
-function hasForgotPasswordResponseShape(
+function hasForgotPasswordMessageShape(
   value: unknown,
-): value is Partial<ForgotPasswordSuccessResponse> {
+): value is { data: { message: string } } {
   if (typeof value !== "object" || value === null) {
     return false;
   }
 
   if (!("data" in value)) {
-    return true;
+    return false;
   }
 
   const data = (value as { data?: unknown }).data;
@@ -39,7 +39,7 @@ function hasForgotPasswordResponseShape(
   }
 
   if (!("message" in data)) {
-    return true;
+    return false;
   }
 
   return typeof (data as { message?: unknown }).message === "string";
@@ -85,13 +85,14 @@ export default function ForgotPasswordScreen() {
       });
 
       if (!response.ok) {
+        // ユーザー列挙攻撃を防ぐため、エラー時も成功と同じ文言を返して存在有無を隠す。
         setSuccessMessage(t("auth.forgotPasswordSuccess"));
         return;
       }
 
       const responseBody: unknown = await response.json();
-      const data = hasForgotPasswordResponseShape(responseBody) ? responseBody : {};
-      setSuccessMessage(data.data?.message || t("auth.forgotPasswordSuccess"));
+      const data = hasForgotPasswordMessageShape(responseBody) ? responseBody : undefined;
+      setSuccessMessage(data?.data?.message || t("auth.forgotPasswordSuccess"));
     } catch {
       setErrorMessage(t("common.error"));
     } finally {

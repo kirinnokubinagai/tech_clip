@@ -22,7 +22,7 @@ import { useAuthStore } from "@/stores/auth-store";
 
 /** ソーシャルサインインAPIのパス */
 const SOCIAL_SIGN_IN_PATH = "/api/auth/sign-in/social";
-/** ソーシャルログイン後のコールバックURL */
+/** ソーシャルログイン後のコールバックURL。deep link path が必要になったら constants 側へ移す。 */
 const SOCIAL_CALLBACK_URL = `${APP_SCHEME}://`;
 
 type SocialProvider = "google" | "github";
