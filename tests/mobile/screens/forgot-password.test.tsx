@@ -60,19 +60,19 @@ describe("ForgotPasswordScreen", () => {
       json: async () => ({
         success: false,
         error: {
-          message: "メールアドレスの形式が正しくありません",
+          message: "該当するメールアドレスが見つかりません",
         },
       }),
     });
     const { getByLabelText, findByLabelText } = await render(<ForgotPasswordScreen />);
 
-    await fireEvent.changeText(getByLabelText("メールアドレス"), "invalid-email");
+    await fireEvent.changeText(getByLabelText("メールアドレス"), "missing@example.com");
 
     // Act
     await fireEvent.press(getByLabelText("リセットメールを送信"));
 
     // Assert
-    expect(await findByLabelText("メールアドレスの形式が正しくありません")).toBeDefined();
+    expect(await findByLabelText("該当するメールアドレスが見つかりません")).toBeDefined();
   });
 
   it("ネットワークエラー時に共通エラーメッセージを表示すること", async () => {

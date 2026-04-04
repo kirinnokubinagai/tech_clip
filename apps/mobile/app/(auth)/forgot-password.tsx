@@ -27,6 +27,12 @@ type ForgotPasswordErrorResponse = {
 
 const FORGOT_PASSWORD_PATH = "/api/auth/forgot-password";
 
+function isForgotPasswordErrorResponse(
+  data: ForgotPasswordSuccessResponse | ForgotPasswordErrorResponse,
+): data is ForgotPasswordErrorResponse {
+  return !data.success && "error" in data && typeof data.error?.message === "string";
+}
+
 export default function ForgotPasswordScreen() {
   const { t } = useTranslation();
   const router = useRouter();
@@ -37,8 +43,15 @@ export default function ForgotPasswordScreen() {
   const [successMessage, setSuccessMessage] = useState("");
 
   const handleSubmit = async () => {
-    if (!email.trim()) {
+    const trimmedEmail = email.trim();
+    const hasValidEmailFormat = trimmedEmail.includes("@");
+
+    if (!trimmedEmail) {
       setErrorMessage(t("auth.validation.emailRequired"));
+      return;
+    }
+    if (!hasValidEmailFormat) {
+      setErrorMessage(t("auth.validation.emailInvalid"));
       return;
     }
 
@@ -50,7 +63,7 @@ export default function ForgotPasswordScreen() {
       const response = await fetchWithTimeout(`${getBaseUrl()}${FORGOT_PASSWORD_PATH}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: email.trim() }),
+        body: JSON.stringify({ email: trimmedEmail }),
       });
       const data = (await response.json()) as
         | ForgotPasswordSuccessResponse
@@ -58,7 +71,7 @@ export default function ForgotPasswordScreen() {
 
       if (!response.ok || !data.success) {
         setErrorMessage(
-          data.success ? t("common.error") : (data as ForgotPasswordErrorResponse).error.message,
+          isForgotPasswordErrorResponse(data) ? data.error.message : t("common.error"),
         );
         return;
       }
@@ -110,7 +123,7 @@ export default function ForgotPasswordScreen() {
         <View>
           <Text className="mb-1.5 text-sm font-medium text-text-muted">{t("auth.email")}</Text>
           <TextInput
-            className="rounded-lg border border-border bg-surface px-4 py-3 text-base text-text"
+            className="rounded-lg border border-border bg-card px-4 py-3 text-base text-text"
             placeholder={t("auth.emailPlaceholder")}
             placeholderTextColor={AUTH_PLACEHOLDER_TEXT_COLOR}
             value={email}

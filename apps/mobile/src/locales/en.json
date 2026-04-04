@@ -57,6 +57,7 @@
     "loginFailed": "Login failed. Please try again.",
     "validation": {
       "emailRequired": "Please enter your email address",
+      "emailInvalid": "Please enter a valid email address",
       "passwordRequired": "Please enter your password",
       "nameRequired": "Please enter your name",
       "passwordMinLength": "Password must be at least {{min}} characters"

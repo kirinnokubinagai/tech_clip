@@ -102,4 +102,61 @@ describe("LoginScreen", () => {
       await findByLabelText("ソーシャルログインの開始に失敗しました。もう一度お試しください。"),
     ).toBeDefined();
   });
+
+  it("メールアドレス未入力時にバリデーションエラーを表示すること", async () => {
+    // Arrange
+    const { getByTestId, findByLabelText } = await render(<LoginScreen />);
+
+    // Act
+    await fireEvent.press(getByTestId("login-submit-button"));
+
+    // Assert
+    expect(await findByLabelText("メールアドレスを入力してください")).toBeDefined();
+  });
+
+  it("パスワードが短い場合にバリデーションエラーを表示すること", async () => {
+    // Arrange
+    const { getByTestId, findByLabelText } = await render(<LoginScreen />);
+    await fireEvent.changeText(getByTestId("login-email-input"), "test@example.com");
+    await fireEvent.changeText(getByTestId("login-password-input"), "1234");
+
+    // Act
+    await fireEvent.press(getByTestId("login-submit-button"));
+
+    // Assert
+    expect(await findByLabelText("パスワードは8文字以上で入力してください")).toBeDefined();
+  });
+
+  it("メールログイン成功時に認証ストアへ委譲すること", async () => {
+    // Arrange
+    mockSignIn.mockResolvedValue(undefined);
+    const { getByTestId } = await render(<LoginScreen />);
+    await fireEvent.changeText(getByTestId("login-email-input"), "test@example.com");
+    await fireEvent.changeText(getByTestId("login-password-input"), "password123");
+
+    // Act
+    await fireEvent.press(getByTestId("login-submit-button"));
+
+    // Assert
+    await waitFor(() => {
+      expect(mockSignIn).toHaveBeenCalledWith({
+        email: "test@example.com",
+        password: "password123",
+      });
+    });
+  });
+
+  it("メールログイン失敗時にエラーメッセージを表示すること", async () => {
+    // Arrange
+    mockSignIn.mockRejectedValue(new Error("ログインに失敗しました"));
+    const { getByTestId, findByLabelText } = await render(<LoginScreen />);
+    await fireEvent.changeText(getByTestId("login-email-input"), "test@example.com");
+    await fireEvent.changeText(getByTestId("login-password-input"), "password123");
+
+    // Act
+    await fireEvent.press(getByTestId("login-submit-button"));
+
+    // Assert
+    expect(await findByLabelText("ログインに失敗しました")).toBeDefined();
+  });
 });

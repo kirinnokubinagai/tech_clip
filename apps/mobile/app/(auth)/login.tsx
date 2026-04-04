@@ -7,6 +7,7 @@ import {
   Linking,
   Platform,
   Pressable,
+  ScrollView,
   Text,
   TextInput,
   View,
@@ -24,7 +25,6 @@ const SOCIAL_CALLBACK_URL = "techclip://";
 type SocialProvider = "google" | "github";
 
 type SocialSignInResponse = {
-  redirect: boolean;
   url?: string;
 };
 
@@ -122,7 +122,10 @@ export default function LoginScreen() {
       behavior={Platform.OS === "ios" ? "padding" : "height"}
       className="flex-1 bg-background"
     >
-      <View className="flex-1 justify-center px-6">
+      <ScrollView
+        contentContainerClassName="flex-1 justify-center px-6 py-8"
+        keyboardShouldPersistTaps="handled"
+      >
         <View className="mb-12 items-center">
           <Text className="text-4xl font-bold text-text">TechClip</Text>
           <Text className="mt-2 text-base text-text-muted">{t("auth.appTagline")}</Text>
@@ -207,7 +210,7 @@ export default function LoginScreen() {
 
           <Pressable
             onPress={handleSubmit}
-            disabled={isSubmitting || !isFormValid}
+            disabled={isSubmitting}
             className={`items-center rounded-lg py-4 ${
               isSubmitting || !isFormValid ? "bg-primary/50" : "bg-primary"
             }`}
@@ -215,7 +218,7 @@ export default function LoginScreen() {
             accessibilityRole="button"
             accessibilityLabel={t("auth.login")}
             accessibilityHint={t("auth.loginHint")}
-            accessibilityState={{ disabled: isSubmitting || !isFormValid }}
+            accessibilityState={{ disabled: isSubmitting }}
           >
             {isSubmitting ? (
               <ActivityIndicator color={AUTH_LOADING_INDICATOR_COLOR} />
@@ -235,6 +238,9 @@ export default function LoginScreen() {
               onPress={() => handleSocialSignIn("google")}
               disabled={isSubmitting}
               className="items-center rounded-lg border border-border bg-card py-3.5"
+              style={({ pressed }) => ({
+                opacity: pressed || isSubmitting ? 0.7 : 1,
+              })}
               accessibilityRole="button"
               accessibilityLabel={t("auth.continueWithGoogle")}
               accessibilityState={{ disabled: isSubmitting }}
@@ -248,6 +254,9 @@ export default function LoginScreen() {
               onPress={() => handleSocialSignIn("github")}
               disabled={isSubmitting}
               className="items-center rounded-lg border border-border bg-card py-3.5"
+              style={({ pressed }) => ({
+                opacity: pressed || isSubmitting ? 0.7 : 1,
+              })}
               accessibilityRole="button"
               accessibilityLabel={t("auth.continueWithGithub")}
               accessibilityState={{ disabled: isSubmitting }}
@@ -269,7 +278,7 @@ export default function LoginScreen() {
             </Pressable>
           </Link>
         </View>
-      </View>
+      </ScrollView>
     </KeyboardAvoidingView>
   );
 }
