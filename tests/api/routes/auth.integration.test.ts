@@ -5,6 +5,8 @@
  * インメモリ SQLite + 実 Hono アプリ (app.request) で検証する。
  */
 
+import { rmSync } from "node:fs";
+
 import { accounts, refreshTokens, sessions, users } from "@api/db/schema/index";
 import { HTTP_OK, HTTP_UNAUTHORIZED, HTTP_UNPROCESSABLE_ENTITY } from "@api/lib/http-status";
 import { createAuthRoute } from "@api/routes/auth";
@@ -33,19 +35,20 @@ async function hashRefreshToken(token: string): Promise<string> {
 
 /** テスト用の一時 SQLite DB を作成する */
 function createTestDb() {
-  const client = createClient({ url: `file:/tmp/auth-${crypto.randomUUID()}.db` });
-  return drizzle(client);
+  const dbPath = `/tmp/auth-${crypto.randomUUID()}.db`;
+  const client = createClient({ url: `file:${dbPath}` });
+  return { db: drizzle(client), dbPath };
 }
 
 /** テスト用のシードデータを挿入する */
 async function seedTestData(db: ReturnType<typeof createTestDb>) {
-  await db.insert(users).values({
+  await db.db.insert(users).values({
     id: TEST_USER_ID,
     email: TEST_EMAIL,
     name: "E2Eテストユーザー",
   });
 
-  await db.insert(accounts).values({
+  await db.db.insert(accounts).values({
     id: "account_e2e_01",
     userId: TEST_USER_ID,
     accountId: TEST_USER_ID,
@@ -53,14 +56,14 @@ async function seedTestData(db: ReturnType<typeof createTestDb>) {
     password: "hashed_password",
   });
 
-  await db.insert(sessions).values({
+  await db.db.insert(sessions).values({
     id: "session_e2e_01",
     userId: TEST_USER_ID,
     token: TEST_TOKEN,
     expiresAt: FUTURE_EXPIRES,
   });
 
-  await db.insert(refreshTokens).values({
+  await db.db.insert(refreshTokens).values({
     id: "refresh_e2e_01",
     sessionId: TEST_SESSION_ID,
     userId: TEST_USER_ID,
@@ -120,7 +123,7 @@ function buildTestApp(
 ) {
   const app = new Hono();
   const authRoute = createAuthRoute({
-    db: db as never,
+    db: db.db as never,
     getAuth: () => mockAuth as never,
   });
   app.route("/api/auth", authRoute);
@@ -132,16 +135,16 @@ describe("E2E: 認証クリティカルパス", () => {
 
   beforeEach(async () => {
     db = createTestDb();
-    await db.run(
+    await db.db.run(
       "CREATE TABLE IF NOT EXISTS users (id TEXT PRIMARY KEY, email TEXT NOT NULL UNIQUE, name TEXT, image TEXT, email_verified INTEGER DEFAULT 0, username TEXT UNIQUE, bio TEXT, website_url TEXT, github_username TEXT, twitter_username TEXT, avatar_url TEXT, is_profile_public INTEGER DEFAULT 1, preferred_language TEXT DEFAULT 'ja', is_premium INTEGER DEFAULT 0, premium_expires_at TEXT, free_ai_uses_remaining INTEGER DEFAULT 5, free_ai_reset_at TEXT, push_token TEXT, push_enabled INTEGER DEFAULT 1, created_at TEXT NOT NULL DEFAULT (datetime('now')), updated_at TEXT NOT NULL DEFAULT (datetime('now')))",
     );
-    await db.run(
+    await db.db.run(
       "CREATE TABLE IF NOT EXISTS accounts (id TEXT PRIMARY KEY, user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE, account_id TEXT NOT NULL, provider_id TEXT NOT NULL, access_token TEXT, refresh_token TEXT, access_token_expires_at TEXT, refresh_token_expires_at TEXT, scope TEXT, id_token TEXT, password TEXT, created_at TEXT NOT NULL DEFAULT (datetime('now')), updated_at TEXT NOT NULL DEFAULT (datetime('now')))",
     );
-    await db.run(
+    await db.db.run(
       "CREATE TABLE IF NOT EXISTS sessions (id TEXT PRIMARY KEY, user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE, token TEXT NOT NULL UNIQUE, expires_at TEXT NOT NULL, ip_address TEXT, user_agent TEXT, created_at TEXT NOT NULL DEFAULT (datetime('now')), updated_at TEXT NOT NULL DEFAULT (datetime('now')))",
     );
-    await db.run(
+    await db.db.run(
       "CREATE TABLE IF NOT EXISTS refresh_tokens (id TEXT PRIMARY KEY, session_id TEXT NOT NULL REFERENCES sessions(id) ON DELETE CASCADE, user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE, token_hash TEXT NOT NULL UNIQUE, previous_token_hash TEXT, expires_at TEXT NOT NULL, created_at TEXT NOT NULL DEFAULT (datetime('now')), updated_at TEXT NOT NULL DEFAULT (datetime('now')))",
     );
     await seedTestData(db);
@@ -149,6 +152,7 @@ describe("E2E: 認証クリティカルパス", () => {
 
   afterEach(() => {
     vi.clearAllMocks();
+    rmSync(db.dbPath, { force: true });
   });
 
   describe("サインイン (POST /api/auth/sign-in)", () => {
@@ -360,13 +364,13 @@ describe("E2E: 認証クリティカルパス", () => {
 
       it("有効期限切れのトークンの場合401が返ること", async () => {
         // Arrange — 期限切れセッションを追加
-        await db.insert(sessions).values({
+        await db.db.insert(sessions).values({
           id: "session_e2e_expired",
           userId: TEST_USER_ID,
           token: TEST_REFRESH_TOKEN,
           expiresAt: PAST_EXPIRES,
         });
-        await db.insert(refreshTokens).values({
+        await db.db.insert(refreshTokens).values({
           id: "refresh_e2e_expired",
           sessionId: "session_e2e_expired",
           userId: TEST_USER_ID,

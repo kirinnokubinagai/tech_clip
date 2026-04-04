@@ -347,6 +347,10 @@ export function createAuthRoute({ db, getAuth }: AuthRouteOptions) {
             .where(eq(refreshTokens.previousTokenHash, refreshTokenHash));
 
           if (reusedRefreshTokenRow) {
+            logger.warn("リフレッシュトークンの再利用を検知しました", {
+              sessionId: reusedRefreshTokenRow.sessionId,
+              userId: reusedRefreshTokenRow.userId,
+            });
             const revokedAt = new Date(0).toISOString();
 
             await tx
