@@ -1,5 +1,5 @@
+import { captureException, initSentry } from "@mobile/lib/sentry";
 import * as Sentry from "@sentry/react-native";
-import { captureException, initSentry } from "./sentry";
 
 jest.mock("@sentry/react-native");
 
@@ -12,18 +12,11 @@ describe("initSentry", () => {
     jest.clearAllMocks();
   });
 
-  afterEach(() => {
-    jest.clearAllMocks();
-  });
-
-  it("DSNが設定されている場合にSentry.initを呼び出せること", () => {
-    // Arrange
+  it("DSN が設定されている場合に Sentry.init を呼び出せること", () => {
     const dsn = "https://examplePublicKey@o0.ingest.sentry.io/0";
 
-    // Act
     initSentry(dsn);
 
-    // Assert
     expect(mockInit).toHaveBeenCalledTimes(1);
     expect(mockInit).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -32,36 +25,23 @@ describe("initSentry", () => {
     );
   });
 
-  it("DSNが空文字の場合にSentry.initを呼び出さないこと", () => {
-    // Arrange
-    const dsn = "";
+  it("DSN が空文字の場合に Sentry.init を呼び出さないこと", () => {
+    initSentry("");
 
-    // Act
-    initSentry(dsn);
-
-    // Assert
     expect(mockInit).not.toHaveBeenCalled();
   });
 
-  it("DSNがundefinedの場合にSentry.initを呼び出さないこと", () => {
-    // Arrange
-    const dsn = undefined;
+  it("DSN が undefined の場合に Sentry.init を呼び出さないこと", () => {
+    initSentry(undefined);
 
-    // Act
-    initSentry(dsn);
-
-    // Assert
     expect(mockInit).not.toHaveBeenCalled();
   });
 
-  it("開発環境ではSentry送信が無効になること", () => {
-    // Arrange
+  it("開発環境では Sentry 送信が無効になること", () => {
     const dsn = "https://examplePublicKey@o0.ingest.sentry.io/0";
 
-    // Act
     initSentry(dsn);
 
-    // Assert
     expect(mockInit).toHaveBeenCalledWith(
       expect.objectContaining({
         dsn,
@@ -76,45 +56,31 @@ describe("captureException", () => {
     jest.clearAllMocks();
   });
 
-  afterEach(() => {
-    jest.clearAllMocks();
-  });
-
-  it("Sentryクライアントが初期化済みの場合にErrorオブジェクトをキャプチャできること", () => {
-    // Arrange
+  it("Sentry クライアントが初期化済みの場合に Error をキャプチャできること", () => {
     mockGetClient.mockReturnValue({} as ReturnType<typeof Sentry.getClient>);
     const error = new Error("テストエラー");
 
-    // Act
     captureException(error);
 
-    // Assert
     expect(mockCaptureException).toHaveBeenCalledTimes(1);
     expect(mockCaptureException).toHaveBeenCalledWith(error);
   });
 
-  it("Sentryクライアントが未初期化の場合にcaptureExceptionを呼び出さないこと", () => {
-    // Arrange
+  it("Sentry クライアントが未初期化の場合に captureException を呼び出さないこと", () => {
     mockGetClient.mockReturnValue(undefined);
     const error = new Error("テストエラー");
 
-    // Act
     captureException(error);
 
-    // Assert
     expect(mockCaptureException).not.toHaveBeenCalled();
   });
 
-  it("Sentryクライアントが初期化済みの場合にErrorでない値もキャプチャできること", () => {
-    // Arrange
+  it("Sentry クライアントが初期化済みの場合に Error でない値もキャプチャできること", () => {
     mockGetClient.mockReturnValue({} as ReturnType<typeof Sentry.getClient>);
-    const error = "文字列エラー";
 
-    // Act
-    captureException(error);
+    captureException("文字列エラー");
 
-    // Assert
     expect(mockCaptureException).toHaveBeenCalledTimes(1);
-    expect(mockCaptureException).toHaveBeenCalledWith(error);
+    expect(mockCaptureException).toHaveBeenCalledWith("文字列エラー");
   });
 });
