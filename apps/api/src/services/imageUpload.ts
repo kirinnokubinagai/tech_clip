@@ -91,6 +91,10 @@ function readUint24LE(bytes: Uint8Array, offset: number): number {
   return bytes[offset] | (bytes[offset + 1] << 8) | (bytes[offset + 2] << 16);
 }
 
+function readUint16LE(bytes: Uint8Array, offset: number): number {
+  return bytes[offset] | (bytes[offset + 1] << 8);
+}
+
 function isPng(bytes: Uint8Array): boolean {
   return (
     bytes.length >= 24 &&
@@ -224,8 +228,13 @@ function detectWebp(bytes: Uint8Array): DetectedImageMetadata | null {
   }
 
   if (chunkType === "VP8 " && bytes.length >= 30) {
-    const width = readUint16BE(Uint8Array.from([bytes[27], bytes[26]]), 0) & 0x3fff;
-    const height = readUint16BE(Uint8Array.from([bytes[29], bytes[28]]), 0) & 0x3fff;
+    const hasStartCode = bytes[23] === 0x9d && bytes[24] === 0x01 && bytes[25] === 0x2a;
+    if (!hasStartCode) {
+      return null;
+    }
+
+    const width = readUint16LE(bytes, 26) & 0x3fff;
+    const height = readUint16LE(bytes, 28) & 0x3fff;
 
     return {
       format: "webp",
@@ -302,7 +311,7 @@ export async function processAvatarImage(file: File): Promise<ProcessAvatarImage
     return { isValid: false, error: IMAGE_CONTENT_ERROR_MESSAGE };
   }
 
-  if (!ALLOWED_IMAGE_FORMATS.has(metadata.format as "jpeg" | "png" | "webp")) {
+  if (!ALLOWED_IMAGE_FORMATS.has(metadata.format)) {
     return {
       isValid: false,
       error: IMAGE_CONTENT_ERROR_MESSAGE,

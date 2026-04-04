@@ -217,6 +217,32 @@ describe("processAvatarImage", () => {
     }
     expect(result.error).toContain("4096px");
   });
+
+  it("寸法がちょうど4096pxの画像は受け付けること", async () => {
+    // Arrange
+    const file = await createImageFile("png", 4096, 4096);
+
+    // Act
+    const result = await processAvatarImage(file);
+
+    // Assert
+    expect(result.isValid).toBe(true);
+  });
+
+  it("高さのみが寸法上限を超える画像は拒否されること", async () => {
+    // Arrange
+    const file = await createImageFile("png", 1, 4097);
+
+    // Act
+    const result = await processAvatarImage(file);
+
+    // Assert
+    expect(result.isValid).toBe(false);
+    if (result.isValid) {
+      throw new Error("画像処理が拒否されませんでした");
+    }
+    expect(result.error).toContain("4096px");
+  });
 });
 
 describe("generateUniqueFileName", () => {
