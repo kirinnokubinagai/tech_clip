@@ -118,7 +118,7 @@ export default function LoginScreen() {
       });
       const data = (await response.json()) as SocialSignInResponse;
 
-      if (!response.ok || !data.url || !data.url.startsWith("https://")) {
+      if (!response.ok || !data.url?.startsWith("https://")) {
         setErrorMessage(t("auth.socialLoginFailed"));
         return;
       }
