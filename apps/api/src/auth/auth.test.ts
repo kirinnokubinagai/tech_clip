@@ -148,6 +148,48 @@ describe("Better Auth", () => {
     });
   });
 
+  describe("trustedOrigins設定", () => {
+    it("追加のtrustedOriginsを渡してauthインスタンスを生成できること", async () => {
+      // Arrange
+      const { createAuth } = await import("./index");
+      const mockDb = {} as Parameters<typeof createAuth>[0];
+      const additionalOrigins = ["https://staging.techclip.app", "https://dev.techclip.app"];
+
+      // Act
+      const auth = createAuth(mockDb, TEST_SECRET, undefined, undefined, additionalOrigins);
+
+      // Assert
+      expect(auth).toBeDefined();
+      expect(auth.handler).toBeDefined();
+    });
+
+    it("trustedOriginsが未指定の場合もauthインスタンスを生成できること", async () => {
+      // Arrange
+      const { createAuth } = await import("./index");
+      const mockDb = {} as Parameters<typeof createAuth>[0];
+
+      // Act
+      const auth = createAuth(mockDb, TEST_SECRET, undefined, undefined, undefined);
+
+      // Assert
+      expect(auth).toBeDefined();
+      expect(auth.handler).toBeDefined();
+    });
+
+    it("空配列のtrustedOriginsでもauthインスタンスを生成できること", async () => {
+      // Arrange
+      const { createAuth } = await import("./index");
+      const mockDb = {} as Parameters<typeof createAuth>[0];
+
+      // Act
+      const auth = createAuth(mockDb, TEST_SECRET, undefined, undefined, []);
+
+      // Assert
+      expect(auth).toBeDefined();
+      expect(auth.handler).toBeDefined();
+    });
+  });
+
   describe("認証ルート統合", () => {
     it("認証ルートがアプリに登録されていること", async () => {
       // Arrange
