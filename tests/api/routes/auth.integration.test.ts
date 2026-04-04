@@ -31,9 +31,9 @@ async function hashRefreshToken(token: string): Promise<string> {
   );
 }
 
-/** インメモリ SQLite DB を作成する */
+/** テスト用の一時 SQLite DB を作成する */
 function createTestDb() {
-  const client = createClient({ url: "file::memory:" });
+  const client = createClient({ url: `file:/tmp/auth-${crypto.randomUUID()}.db` });
   return drizzle(client);
 }
 
@@ -142,7 +142,7 @@ describe("E2E: 認証クリティカルパス", () => {
       "CREATE TABLE IF NOT EXISTS sessions (id TEXT PRIMARY KEY, user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE, token TEXT NOT NULL UNIQUE, expires_at TEXT NOT NULL, ip_address TEXT, user_agent TEXT, created_at TEXT NOT NULL DEFAULT (datetime('now')), updated_at TEXT NOT NULL DEFAULT (datetime('now')))",
     );
     await db.run(
-      "CREATE TABLE IF NOT EXISTS refresh_tokens (id TEXT PRIMARY KEY, session_id TEXT NOT NULL REFERENCES sessions(id) ON DELETE CASCADE, user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE, token_hash TEXT NOT NULL UNIQUE, expires_at TEXT NOT NULL, created_at TEXT NOT NULL DEFAULT (datetime('now')), updated_at TEXT NOT NULL DEFAULT (datetime('now')))",
+      "CREATE TABLE IF NOT EXISTS refresh_tokens (id TEXT PRIMARY KEY, session_id TEXT NOT NULL REFERENCES sessions(id) ON DELETE CASCADE, user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE, token_hash TEXT NOT NULL UNIQUE, previous_token_hash TEXT, expires_at TEXT NOT NULL, created_at TEXT NOT NULL DEFAULT (datetime('now')), updated_at TEXT NOT NULL DEFAULT (datetime('now')))",
     );
     await seedTestData(db);
   });
@@ -411,6 +411,47 @@ describe("E2E: 認証クリティカルパス", () => {
         };
         expect(body.success).toBe(false);
         expect(body.error.code).toBe("VALIDATION_FAILED");
+      });
+
+      it("ローテーション済みの旧リフレッシュトークン再利用時はセッション全体を無効化すること", async () => {
+        // Arrange
+        const app = buildTestApp(db, createMockAuth());
+
+        const firstRefreshRes = await app.request("/api/auth/refresh", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ refreshToken: TEST_REFRESH_TOKEN }),
+        });
+        expect(firstRefreshRes.status).toBe(HTTP_OK);
+        const firstRefreshBody = (await firstRefreshRes.json()) as {
+          success: true;
+          data: { refreshToken: string };
+        };
+
+        // Act: 旧トークンを再利用
+        const reusedOldTokenRes = await app.request("/api/auth/refresh", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ refreshToken: TEST_REFRESH_TOKEN }),
+        });
+        const reusedOldTokenText = await reusedOldTokenRes.text();
+
+        // Assert: 再利用検知で失敗
+        expect(reusedOldTokenRes.status).toBe(HTTP_UNAUTHORIZED);
+        const reusedOldTokenBody = JSON.parse(reusedOldTokenText) as {
+          success: false;
+          error: { code: string };
+        };
+        expect(reusedOldTokenBody.success).toBe(false);
+        expect(reusedOldTokenBody.error.code).toBe("AUTH_EXPIRED");
+
+        // Assert: 新しいトークンも使えなくなり、セッション全体が無効化される
+        const revokedSessionRes = await app.request("/api/auth/refresh", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ refreshToken: firstRefreshBody.data.refreshToken }),
+        });
+        expect(revokedSessionRes.status).toBe(HTTP_UNAUTHORIZED);
       });
     });
   });
