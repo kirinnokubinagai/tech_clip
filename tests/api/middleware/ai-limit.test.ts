@@ -74,6 +74,19 @@ const mockDb = {
 /** HTTP 500 Internal Server Error ステータスコード */
 const HTTP_INTERNAL_SERVER_ERROR = 500;
 
+/** SQL式のqueryChunksから文字列部分を連結して取得する */
+function extractSqlText(sqlExpression: { queryChunks: unknown[] }): string {
+  return sqlExpression.queryChunks
+    .flatMap((chunk) => {
+      if (typeof chunk !== "object" || chunk === null || !("value" in chunk)) {
+        return [];
+      }
+      const value = (chunk as { value?: unknown }).value;
+      return Array.isArray(value) ? value.map((part) => String(part)) : [];
+    })
+    .join(" ");
+}
+
 /** テスト用のHonoアプリを作成する */
 function createTestApp(userId?: string, downstreamStatus = HTTP_OK) {
   const app = new Hono<{ Variables: { user?: Record<string, unknown> } }>();
@@ -464,6 +477,10 @@ describe("aiLimitMiddleware", () => {
 
       // Assert: 予約とロールバックの2回更新される
       expect(mockUpdate).toHaveBeenCalledTimes(2);
+      const rollbackSetArg = mockUpdateSet.mock.calls[1][0] as {
+        freeAiUsesRemaining: { queryChunks: unknown[] };
+      };
+      expect(extractSqlText(rollbackSetArg.freeAiUsesRemaining)).toContain("MIN(");
     });
 
     it("ダウンストリームが400を返した場合に無料使用回数が消費されないこと", async () => {
@@ -480,6 +497,10 @@ describe("aiLimitMiddleware", () => {
 
       // Assert
       expect(mockUpdate).toHaveBeenCalledTimes(2);
+      const rollbackSetArg = mockUpdateSet.mock.calls[1][0] as {
+        freeAiUsesRemaining: { queryChunks: unknown[] };
+      };
+      expect(extractSqlText(rollbackSetArg.freeAiUsesRemaining)).toContain("MIN(");
     });
 
     it("月次リセット対象でもダウンストリーム失敗時に無料使用回数が消費されないこと", async () => {
@@ -497,6 +518,10 @@ describe("aiLimitMiddleware", () => {
 
       // Assert
       expect(mockUpdate).toHaveBeenCalledTimes(2);
+      const rollbackSetArg = mockUpdateSet.mock.calls[1][0] as {
+        freeAiUsesRemaining: { queryChunks: unknown[] };
+      };
+      expect(extractSqlText(rollbackSetArg.freeAiUsesRemaining)).toContain("MIN(");
     });
   });
 
@@ -533,6 +558,10 @@ describe("aiLimitMiddleware", () => {
 
       // Assert: 予約とロールバックの2回更新される
       expect(mockUpdate).toHaveBeenCalledTimes(2);
+      const rollbackSetArg = mockUpdateSet.mock.calls[1][0] as {
+        freeAiUsesRemaining: { queryChunks: unknown[] };
+      };
+      expect(extractSqlText(rollbackSetArg.freeAiUsesRemaining)).toContain("MIN(");
     });
 
     it("月次リセット対象でダウンストリームが例外をスローした場合もロールバックが呼ばれること", async () => {
@@ -550,6 +579,10 @@ describe("aiLimitMiddleware", () => {
 
       // Assert: 予約とロールバックの2回更新される
       expect(mockUpdate).toHaveBeenCalledTimes(2);
+      const rollbackSetArg = mockUpdateSet.mock.calls[1][0] as {
+        freeAiUsesRemaining: { queryChunks: unknown[] };
+      };
+      expect(extractSqlText(rollbackSetArg.freeAiUsesRemaining)).toContain("MIN(");
     });
   });
 });
