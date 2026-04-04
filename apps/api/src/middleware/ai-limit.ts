@@ -5,9 +5,6 @@ import type { Database } from "../db";
 import { users } from "../db/schema";
 import { createLogger } from "../lib/logger";
 
-/** AIクォータロールバック用ロガー */
-const logger = createLogger();
-
 /** HTTP 401 Unauthorized ステータスコード */
 const HTTP_UNAUTHORIZED = 401;
 
@@ -143,10 +140,15 @@ async function rollbackReservedFreeUse(db: Database, userId: string): Promise<vo
  * @param db - Drizzle ORMデータベースインスタンス
  * @param userId - ユーザーID
  */
-async function safeRollback(db: Database, userId: string): Promise<void> {
+async function safeRollback(
+  db: Database,
+  userId: string,
+  requestId?: string,
+): Promise<void> {
   try {
     await rollbackReservedFreeUse(db, userId);
   } catch (rollbackError) {
+    const logger = requestId ? createLogger(requestId) : createLogger();
     logger.error("AIクォータのロールバックに失敗しました", { userId, error: rollbackError });
   }
 }
@@ -168,13 +170,14 @@ async function executeWithRollback(
   db: Database,
   userId: string,
 ): Promise<void> {
+  const requestId = c.get("requestId") as string | undefined;
   try {
     await next();
     if (c.res.status >= HTTP_CLIENT_ERROR_MIN) {
-      await safeRollback(db, userId);
+      await safeRollback(db, userId, requestId);
     }
   } catch (error) {
-    await safeRollback(db, userId);
+    await safeRollback(db, userId, requestId);
     throw error;
   }
 }
@@ -194,6 +197,8 @@ async function executeWithRollback(
  */
 export function createAiLimitMiddleware(db: Database): MiddlewareHandler {
   return async (c, next) => {
+    const requestId = c.get("requestId") as string | undefined;
+    const logger = requestId ? createLogger(requestId) : createLogger();
     const user = c.get("user") as Record<string, unknown> | undefined;
 
     if (!user?.id) {
@@ -239,6 +244,10 @@ export function createAiLimitMiddleware(db: Database): MiddlewareHandler {
       const didReserve = await reserveExistingFreeUse(db, userId);
 
       if (!didReserve) {
+        logger.warn("AIクォータ予約が競合で失敗しました", {
+          userId,
+          path: "existing-free-use",
+        });
         return c.json(
           {
             success: false,
@@ -261,6 +270,10 @@ export function createAiLimitMiddleware(db: Database): MiddlewareHandler {
       const didReserve = await reserveResetFreeUse(db, userId, resetReferenceTime, nextResetAt);
 
       if (!didReserve) {
+        logger.warn("AIクォータ予約が競合で失敗しました", {
+          userId,
+          path: "reset-free-use",
+        });
         return c.json(
           {
             success: false,
