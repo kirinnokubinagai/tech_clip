@@ -225,9 +225,10 @@ export default function LoginScreen() {
           <Pressable
             onPress={handleSubmit}
             disabled={isSubmitting}
-            className={`items-center rounded-lg py-4 ${
-              isSubmitting || !isFormValid ? "bg-primary/50" : "bg-primary"
-            }`}
+            className="items-center rounded-lg bg-primary py-4"
+            style={({ pressed }) => ({
+              opacity: pressed || isSubmitting ? 0.7 : 1,
+            })}
             testID="login-submit-button"
             accessibilityRole="button"
             accessibilityLabel={t("auth.login")}

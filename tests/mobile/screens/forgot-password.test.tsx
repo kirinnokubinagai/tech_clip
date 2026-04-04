@@ -93,13 +93,14 @@ describe("ForgotPasswordScreen", () => {
     expect(queryByLabelText("該当するメールアドレスが見つかりません")).toBeNull();
   });
 
-  it("JSONでないAPIエラー時も成功メッセージを表示すること", async () => {
+  it("APIエラー時にJSONを読まずに成功メッセージを返すこと", async () => {
     // Arrange
+    const mockJson = jest.fn(async () => {
+      throw new Error("invalid json");
+    });
     (global.fetch as jest.Mock).mockResolvedValue({
       ok: false,
-      json: async () => {
-        throw new Error("invalid json");
-      },
+      json: mockJson,
     });
     const { getByLabelText, findByLabelText } = await render(<ForgotPasswordScreen />);
 
@@ -112,6 +113,7 @@ describe("ForgotPasswordScreen", () => {
     expect(
       await findByLabelText("パスワードリセットのメールを送信しました。メールをご確認ください。"),
     ).toBeDefined();
+    expect(mockJson).not.toHaveBeenCalled();
   });
 
   it("ネットワークエラー時に共通エラーメッセージを表示すること", async () => {
