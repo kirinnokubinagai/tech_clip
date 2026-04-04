@@ -165,7 +165,7 @@ describe("processAvatarImage", () => {
     "jpeg",
     "png",
     "webp",
-  ] as const)("実体が%sの画像をWebPへ正規化できること", async (format) => {
+  ] as const)("実体が%sの画像を検証済み形式として保持できること", async (format) => {
     // Arrange
     const file = await createImageFile(format);
 
@@ -178,12 +178,12 @@ describe("processAvatarImage", () => {
       throw new Error("画像処理に失敗しました");
     }
 
-    expect(result.image.contentType).toBe("image/webp");
-    expect(result.image.extension).toBe("webp");
+    expect(result.image.contentType).toBe(format === "jpeg" ? "image/jpeg" : `image/${format}`);
+    expect(result.image.extension).toBe(format === "jpeg" ? "jpg" : format);
     const output = await sharp(Buffer.from(result.image.buffer)).metadata();
-    expect(output.format).toBe("webp");
-    expect(output.width).toBeLessThanOrEqual(512);
-    expect(output.height).toBeLessThanOrEqual(512);
+    expect(output.format).toBe(format);
+    expect(output.width).toBe(640);
+    expect(output.height).toBe(480);
   });
 
   it("画像でない実体は拒否されること", async () => {
@@ -263,9 +263,9 @@ describe("uploadAvatarToR2", () => {
   });
 
   describe("正常系", () => {
-    it("WebP画像をR2にアップロードできること", async () => {
+    it("検証済み画像を元フォーマットでR2にアップロードできること", async () => {
       // Arrange
-      mockR2Put.mockResolvedValue({ key: "avatars/user_01HXYZ_123.webp" });
+      mockR2Put.mockResolvedValue({ key: "avatars/user_01HXYZ_123.jpg" });
       const sourceFile = await createImageFile("jpeg");
       const processed = await processAvatarImage(sourceFile);
       if (!processed.isValid) {
@@ -281,18 +281,18 @@ describe("uploadAvatarToR2", () => {
 
       // Assert
       expect(result.avatarUrl).toMatch(/^https:\/\/cdn\.example\.com\/avatars\//);
-      expect(result.avatarUrl).toContain(".webp");
+      expect(result.avatarUrl).toContain(".jpg");
       expect(mockR2Put).toHaveBeenCalledOnce();
 
       const callArgs = mockR2Put.mock.calls[0];
       expect(callArgs[0]).toMatch(/^avatars\/user_01HXYZ_/);
-      expect(callArgs[0]).toContain(".webp");
+      expect(callArgs[0]).toContain(".jpg");
       expect(callArgs[2]).toMatchObject({
-        httpMetadata: { contentType: "image/webp" },
+        httpMetadata: { contentType: "image/jpeg" },
       });
 
       const uploaded = await sharp(Buffer.from(callArgs[1] as Uint8Array)).metadata();
-      expect(uploaded.format).toBe("webp");
+      expect(uploaded.format).toBe("jpeg");
     });
   });
 
