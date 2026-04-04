@@ -3,7 +3,7 @@ import { Hono } from "hono";
 import { z } from "zod";
 
 import type { Database } from "../db";
-import { sessions, users } from "../db/schema";
+import { refreshTokens, sessions, users } from "../db/schema";
 import {
   AUTH_EXPIRED_CODE,
   AUTH_INVALID_CODE,
@@ -17,6 +17,7 @@ import {
   HTTP_UNAUTHORIZED,
   HTTP_UNPROCESSABLE_ENTITY,
 } from "../lib/http-status";
+import { createLogger } from "../lib/logger";
 
 /**
  * Better Auth インスタンスの型定義
@@ -44,6 +45,65 @@ type AuthRouteOptions = {
   db: Database;
   getAuth: () => AuthInstance;
 };
+
+/** リフレッシュトークンの文字数 */
+const REFRESH_TOKEN_LENGTH = 48;
+
+/** セッション期限切れエラーメッセージ */
+const REFRESH_TOKEN_EXPIRED_MESSAGE = "セッションの有効期限が切れました。再度ログインしてください";
+
+/** 認証ルート用ロガー */
+const logger = createLogger();
+
+/**
+ * リフレッシュトークンを SHA-256 でハッシュ化する
+ *
+ * @param token - 平文のリフレッシュトークン
+ * @returns 16進文字列のハッシュ値
+ */
+async function hashRefreshToken(token: string): Promise<string> {
+  const encoded = new TextEncoder().encode(token);
+  const digest = await crypto.subtle.digest("SHA-256", encoded);
+  return Array.from(new Uint8Array(digest), (value) => value.toString(16).padStart(2, "0")).join(
+    "",
+  );
+}
+
+/**
+ * ランダムなリフレッシュトークン文字列を生成する
+ *
+ * @returns 平文のリフレッシュトークン
+ */
+function generateRefreshToken(): string {
+  const bytes = new Uint8Array(REFRESH_TOKEN_LENGTH / 2);
+  crypto.getRandomValues(bytes);
+  return Array.from(bytes, (b) => b.toString(16).padStart(2, "0")).join("");
+}
+
+/**
+ * セッションに紐づくリフレッシュトークンを発行して保存する
+ *
+ * @param db - データベース接続
+ * @param session - セッション情報
+ * @returns クライアントへ返す平文のリフレッシュトークン
+ */
+async function createRefreshTokenRecord(
+  db: Database,
+  session: { id: string; userId: string; expiresAt: string },
+): Promise<string> {
+  const refreshToken = generateRefreshToken();
+  const tokenHash = await hashRefreshToken(refreshToken);
+
+  await db.insert(refreshTokens).values({
+    id: crypto.randomUUID(),
+    sessionId: session.id,
+    userId: session.userId,
+    tokenHash,
+    expiresAt: session.expiresAt,
+  });
+
+  return refreshToken;
+}
 
 /** サインインリクエストのスキーマ */
 const SignInSchema = z.object({
@@ -129,6 +189,30 @@ export function createAuthRoute({ db, getAuth }: AuthRouteOptions) {
       }
 
       const user = result.user;
+      let refreshToken: string;
+      try {
+        refreshToken = await createRefreshTokenRecord(db, {
+          id: sessionRow.id,
+          userId: sessionRow.userId,
+          expiresAt: sessionRow.expiresAt,
+        });
+      } catch (error) {
+        logger.error("リフレッシュトークンの発行に失敗しました", {
+          sessionId: sessionRow.id,
+          userId: sessionRow.userId,
+          error,
+        });
+        return c.json(
+          {
+            success: false,
+            error: {
+              code: INTERNAL_ERROR_CODE,
+              message: "サーバーエラーが発生しました",
+            },
+          },
+          HTTP_INTERNAL_SERVER_ERROR,
+        );
+      }
 
       return c.json(
         {
@@ -144,14 +228,15 @@ export function createAuthRoute({ db, getAuth }: AuthRouteOptions) {
             },
             session: {
               token: sessionRow.token,
-              refreshToken: sessionRow.id,
+              refreshToken,
               expiresAt: sessionRow.expiresAt,
             },
           },
         },
         HTTP_OK,
       );
-    } catch {
+    } catch (error) {
+      logger.error("サインインに失敗しました", { error });
       return c.json(
         {
           success: false,
@@ -245,8 +330,8 @@ export function createAuthRoute({ db, getAuth }: AuthRouteOptions) {
 
   /**
    * トークンリフレッシュ
-   * リフレッシュトークン（セッション ID）が有効であれば現在のアクセストークンを返す
-   * セッションの有効期限を確認し、期限切れの場合は 401 を返す
+   * リフレッシュトークンが有効であれば現在のアクセストークンを返し、
+   * リフレッシュトークンは毎回ローテーションする
    */
   app.post("/refresh", async (c) => {
     const body: unknown = await c.req.json().catch(() => ({}));
@@ -266,48 +351,114 @@ export function createAuthRoute({ db, getAuth }: AuthRouteOptions) {
     }
 
     try {
-      const [sessionRow] = await db
-        .select()
-        .from(sessions)
-        .where(eq(sessions.id, parsed.data.refreshToken));
+      const refreshTokenHash = await hashRefreshToken(parsed.data.refreshToken);
 
-      if (!sessionRow) {
-        return c.json(
-          {
-            success: false,
+      const result = await db.transaction(async (tx) => {
+        const [refreshTokenRow] = await tx
+          .select()
+          .from(refreshTokens)
+          .where(eq(refreshTokens.tokenHash, refreshTokenHash));
+
+        if (!refreshTokenRow) {
+          const [reusedRefreshTokenRow] = await tx
+            .select()
+            .from(refreshTokens)
+            .where(eq(refreshTokens.previousTokenHash, refreshTokenHash));
+
+          if (reusedRefreshTokenRow) {
+            logger.warn("リフレッシュトークンの再利用を検知しました", {
+              sessionId: reusedRefreshTokenRow.sessionId,
+              userId: reusedRefreshTokenRow.userId,
+            });
+            const revokedAt = new Date(0).toISOString();
+
+            await tx
+              .update(refreshTokens)
+              .set({
+                expiresAt: revokedAt,
+                updatedAt: new Date().toISOString(),
+              })
+              .where(eq(refreshTokens.id, reusedRefreshTokenRow.id));
+
+            await tx
+              .update(sessions)
+              .set({
+                expiresAt: revokedAt,
+                updatedAt: new Date().toISOString(),
+              })
+              .where(eq(sessions.id, reusedRefreshTokenRow.sessionId));
+          }
+
+          return {
             error: {
               code: AUTH_EXPIRED_CODE,
-              message: "セッションの有効期限が切れました。再度ログインしてください",
+              message: REFRESH_TOKEN_EXPIRED_MESSAGE,
             },
+          } as const;
+        }
+
+        const [sessionRow] = await tx
+          .select()
+          .from(sessions)
+          .where(eq(sessions.id, refreshTokenRow.sessionId));
+
+        if (!sessionRow) {
+          return {
+            error: {
+              code: AUTH_EXPIRED_CODE,
+              message: REFRESH_TOKEN_EXPIRED_MESSAGE,
+            },
+          } as const;
+        }
+
+        const refreshExpiresAt = new Date(refreshTokenRow.expiresAt);
+        const expiresAt = new Date(sessionRow.expiresAt);
+        if (refreshExpiresAt <= new Date() || expiresAt <= new Date()) {
+          return {
+            error: {
+              code: AUTH_EXPIRED_CODE,
+              message: REFRESH_TOKEN_EXPIRED_MESSAGE,
+            },
+          } as const;
+        }
+
+        const [userRow] = await tx.select().from(users).where(eq(users.id, sessionRow.userId));
+
+        if (!userRow) {
+          return {
+            error: {
+              code: AUTH_EXPIRED_CODE,
+              message: REFRESH_TOKEN_EXPIRED_MESSAGE,
+            },
+          } as const;
+        }
+
+        const nextRefreshToken = generateRefreshToken();
+        const nextRefreshTokenHash = await hashRefreshToken(nextRefreshToken);
+
+        await tx
+          .update(refreshTokens)
+          .set({
+            previousTokenHash: refreshTokenRow.tokenHash,
+            tokenHash: nextRefreshTokenHash,
+            expiresAt: sessionRow.expiresAt,
+            updatedAt: new Date().toISOString(),
+          })
+          .where(eq(refreshTokens.id, refreshTokenRow.id));
+
+        return {
+          data: {
+            token: sessionRow.token,
+            refreshToken: nextRefreshToken,
           },
-          HTTP_UNAUTHORIZED,
-        );
-      }
+        } as const;
+      });
 
-      const expiresAt = new Date(sessionRow.expiresAt);
-      if (expiresAt <= new Date()) {
+      if ("error" in result) {
         return c.json(
           {
             success: false,
-            error: {
-              code: AUTH_EXPIRED_CODE,
-              message: "セッションの有効期限が切れました。再度ログインしてください",
-            },
-          },
-          HTTP_UNAUTHORIZED,
-        );
-      }
-
-      const [userRow] = await db.select().from(users).where(eq(users.id, sessionRow.userId));
-
-      if (!userRow) {
-        return c.json(
-          {
-            success: false,
-            error: {
-              code: AUTH_EXPIRED_CODE,
-              message: "セッションの有効期限が切れました。再度ログインしてください",
-            },
+            error: result.error,
           },
           HTTP_UNAUTHORIZED,
         );
@@ -316,9 +467,7 @@ export function createAuthRoute({ db, getAuth }: AuthRouteOptions) {
       return c.json(
         {
           success: true,
-          data: {
-            token: sessionRow.token,
-          },
+          data: result.data,
         },
         HTTP_OK,
       );

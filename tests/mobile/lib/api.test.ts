@@ -13,6 +13,7 @@ jest.mock("@mobile/lib/secure-store", () => ({
   getAuthToken: jest.fn(),
   getRefreshToken: jest.fn(),
   setAuthToken: jest.fn(),
+  setRefreshToken: jest.fn(),
   clearAuthTokens: jest.fn(),
 }));
 
@@ -22,12 +23,14 @@ import {
   getAuthToken,
   getRefreshToken,
   setAuthToken,
+  setRefreshToken,
 } from "@mobile/lib/secure-store";
 
 /** モック型キャスト */
 const mockGetAuthToken = getAuthToken as jest.MockedFunction<typeof getAuthToken>;
 const mockGetRefreshToken = getRefreshToken as jest.MockedFunction<typeof getRefreshToken>;
 const mockSetAuthToken = setAuthToken as jest.MockedFunction<typeof setAuthToken>;
+const mockSetRefreshToken = setRefreshToken as jest.MockedFunction<typeof setRefreshToken>;
 const mockClearAuthTokens = clearAuthTokens as jest.MockedFunction<typeof clearAuthTokens>;
 
 /** fetchモック */
@@ -51,6 +54,7 @@ describe("apiFetch", () => {
     mockGetAuthToken.mockResolvedValue("valid-access-token");
     mockGetRefreshToken.mockResolvedValue("valid-refresh-token");
     mockSetAuthToken.mockResolvedValue(undefined);
+    mockSetRefreshToken.mockResolvedValue(undefined);
     mockClearAuthTokens.mockResolvedValue(undefined);
   });
 
@@ -93,11 +97,17 @@ describe("apiFetch", () => {
     it("401レスポンス時にリフレッシュトークンでトークンを更新して再試行できること", async () => {
       // Arrange
       const newToken = "new-access-token";
+      const newRefreshToken = "next-refresh-token";
       mockFetch
         .mockResolvedValueOnce(
           createFetchResponse({ success: false, error: { code: "AUTH_EXPIRED" } }, 401),
         )
-        .mockResolvedValueOnce(createFetchResponse({ success: true, data: { token: newToken } }))
+        .mockResolvedValueOnce(
+          createFetchResponse({
+            success: true,
+            data: { token: newToken, refreshToken: newRefreshToken },
+          }),
+        )
         .mockResolvedValueOnce(createFetchResponse({ success: true, data: { id: "1" } }));
 
       // Act
@@ -105,6 +115,7 @@ describe("apiFetch", () => {
 
       // Assert
       expect(mockSetAuthToken).toHaveBeenCalledWith(newToken);
+      expect(mockSetRefreshToken).toHaveBeenCalledWith(newRefreshToken);
       expect(mockFetch).toHaveBeenCalledTimes(3);
       expect(result).toEqual({ success: true, data: { id: "1" } });
     });
@@ -139,11 +150,17 @@ describe("apiFetch", () => {
     it("リフレッシュ後の再試行が401を返した場合はSessionExpiredErrorをスローすること", async () => {
       // Arrange
       const newToken = "new-access-token";
+      const newRefreshToken = "next-refresh-token";
       mockFetch
         .mockResolvedValueOnce(
           createFetchResponse({ success: false, error: { code: "AUTH_EXPIRED" } }, 401),
         )
-        .mockResolvedValueOnce(createFetchResponse({ success: true, data: { token: newToken } }))
+        .mockResolvedValueOnce(
+          createFetchResponse({
+            success: true,
+            data: { token: newToken, refreshToken: newRefreshToken },
+          }),
+        )
         .mockResolvedValueOnce(
           createFetchResponse({ success: false, error: { code: "AUTH_EXPIRED" } }, 401),
         );

@@ -7,7 +7,6 @@ jest.mock("@/components/ui/Toast", () => ({
 }));
 
 const { Toast } = jest.requireMock("@/components/ui/Toast") as { Toast: jest.Mock };
-
 const mockBack = jest.fn();
 
 jest.mock("expo-router", () => ({
