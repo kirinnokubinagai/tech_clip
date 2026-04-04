@@ -24,7 +24,7 @@ export async function registerForPushNotifications(): Promise<string | null> {
       name: NOTIFICATION_CHANNEL_ID,
       importance: Notifications.AndroidImportance.MAX,
       vibrationPattern: [0, 250, 250, 250],
-      lightColor: UI_COLORS.primary,
+      lightColor: UI_COLORS.accent,
     });
   }
 

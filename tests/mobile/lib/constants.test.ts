@@ -115,6 +115,7 @@ describe("constants", () => {
       expect(UI_COLORS.card).toBe("#1a1a2e");
       expect(UI_COLORS.border).toBe("#2d2d44");
       expect(UI_COLORS.primary).toBe("#6366f1");
+      expect(UI_COLORS.accent).toBe("#14b8a6");
       expect(UI_COLORS.primaryLight).toBe("#818cf8");
       expect(UI_COLORS.text).toBe("#e2e8f0");
       expect(UI_COLORS.textMuted).toBe("#94a3b8");

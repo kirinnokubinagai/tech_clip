@@ -77,22 +77,42 @@ export const THEME_COLORS = {
 
 /** モバイルUIの共有カラートークン */
 export const UI_COLORS = {
+  /** アプリ全体の背景色 */
   background: "#0a0a0f",
+  /** セクション背景色 */
   surface: "#13131a",
+  /** カード背景色 */
   card: "#1a1a2e",
+  /** 境界線色 */
   border: "#2d2d44",
+  /** プライマリアクション色 */
   primary: "#6366f1",
+  /** Android通知LEDなどに使うアクセント色 */
+  accent: "#14b8a6",
+  /** プライマリの明色 */
   primaryLight: "#818cf8",
+  /** プライマリの濃色 */
   primaryDark: "#4f46e5",
+  /** 主要テキスト色 */
   text: "#e2e8f0",
+  /** 補助テキスト色 */
   textMuted: "#94a3b8",
+  /** さらに弱い補助テキスト色 */
   textDim: "#64748b",
+  /** 白色 */
   white: "#ffffff",
+  /** エラー色 */
   error: "#ef4444",
+  /** 成功色 */
   success: "#22c55e",
+  /** 警告色 */
   warning: "#f59e0b",
+  /** 情報色 */
   info: "#3b82f6",
+  /** 危険操作の背景色 */
   dangerSurface: "#2d1a1a",
+  /** 成功状態の背景色 */
   successSurface: "#1a2e1a",
+  /** 中立色 */
   neutral: "#44403c",
 } as const;
