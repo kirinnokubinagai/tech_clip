@@ -36,14 +36,17 @@ jobs:
           echo "IMAGE_DIGEST=$DIGEST" >> "$GITHUB_ENV"
       - name: Update RunPod endpoint
         run: |
-          HTTP_CODE=$(curl -s -o /tmp/runpod-response.json -w '%{http_code}' -X PATCH \
+          response_file="$(mktemp)"
+          trap 'rm -f "$response_file"' EXIT
+
+          HTTP_CODE=$(curl -s -o "$response_file" -w '%{http_code}' -X PATCH \
             "https://api.runpod.io/v2/endpoint/${{ secrets.RUNPOD_ENDPOINT_ID }}" \
             -H "Content-Type: application/json" \
             -H "Authorization: Bearer ${{ secrets.RUNPOD_API_KEY }}" \
             -d "{\"imageName\": \"$IMAGE_TAG\"}")
           if [ "$HTTP_CODE" -lt 200 ] || [ "$HTTP_CODE" -ge 300 ]; then
             echo "RunPod API エラー (HTTP $HTTP_CODE):"
-            cat /tmp/runpod-response.json
+            cat "$response_file"
             exit 1
           fi
-          cat /tmp/runpod-response.json
+          cat "$response_file"
