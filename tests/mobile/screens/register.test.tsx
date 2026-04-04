@@ -106,6 +106,24 @@ describe("RegisterScreen", () => {
       });
     });
 
+    it("パスワードが最小文字数未満の場合signUpが呼ばれないこと", async () => {
+      // Arrange
+      const { getByLabelText } = await render(<RegisterScreen />);
+
+      await fireEvent.changeText(getByLabelText("名前"), "テストユーザー");
+      await fireEvent.changeText(getByLabelText("メールアドレス"), "test@example.com");
+      await fireEvent.changeText(getByLabelText("パスワード"), "1234567");
+
+      // Act
+      await fireEvent.press(getByLabelText("アカウントを作成"));
+
+      // Assert
+      await waitFor(() => {
+        expect(mockSignUp).not.toHaveBeenCalled();
+      });
+      expect(getByLabelText("パスワードは8文字以上で入力してください")).toBeDefined();
+    });
+
     it("signUpが失敗した場合エラーメッセージが表示されること", async () => {
       // Arrange
       mockSignUp.mockRejectedValue(new Error("メールアドレスはすでに使用されています"));

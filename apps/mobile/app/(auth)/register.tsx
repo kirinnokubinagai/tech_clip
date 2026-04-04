@@ -50,6 +50,10 @@ export default function RegisterScreen() {
       setErrorMessage(t("auth.validation.passwordRequired"));
       return;
     }
+    if (password.length < PASSWORD_MIN_LENGTH) {
+      setErrorMessage(t("auth.validation.passwordMinLength", { min: PASSWORD_MIN_LENGTH }));
+      return;
+    }
 
     setIsSubmitting(true);
 
