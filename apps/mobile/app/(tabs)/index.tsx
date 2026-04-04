@@ -220,7 +220,6 @@ export default function HomeScreen() {
               {t("home.favorites")}
             </Text>
           </Pressable>
-<<<<<<< HEAD
         </View>
       </View>
 
