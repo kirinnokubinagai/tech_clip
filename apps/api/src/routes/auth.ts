@@ -17,6 +17,7 @@ import {
   HTTP_UNAUTHORIZED,
   HTTP_UNPROCESSABLE_ENTITY,
 } from "../lib/http-status";
+import { createLogger } from "../lib/logger";
 
 /**
  * Better Auth インスタンスの型定義
@@ -50,6 +51,9 @@ const REFRESH_TOKEN_LENGTH = 48;
 
 /** セッション期限切れエラーメッセージ */
 const REFRESH_TOKEN_EXPIRED_MESSAGE = "セッションの有効期限が切れました。再度ログインしてください";
+
+/** 認証ルート用ロガー */
+const logger = createLogger();
 
 /**
  * リフレッシュトークンを SHA-256 でハッシュ化する
@@ -213,8 +217,7 @@ export function createAuthRoute({ db, getAuth }: AuthRouteOptions) {
         HTTP_OK,
       );
     } catch (error) {
-      // eslint-disable-next-line no-console
-      console.log("refresh error", error);
+      logger.error("サインインに失敗しました", { error });
       return c.json(
         {
           success: false,
