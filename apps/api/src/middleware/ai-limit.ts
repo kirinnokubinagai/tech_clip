@@ -139,13 +139,16 @@ async function rollbackReservedFreeUse(db: Database, userId: string): Promise<vo
  *
  * @param db - Drizzle ORMデータベースインスタンス
  * @param userId - ユーザーID
- * @param requestId - リクエストID（ログ出力用）
+ * @param logger - リクエストスコープのロガー
  */
-async function safeRollback(db: Database, userId: string, requestId?: string): Promise<void> {
+async function safeRollback(
+  db: Database,
+  userId: string,
+  logger: ReturnType<typeof createLogger>,
+): Promise<void> {
   try {
     await rollbackReservedFreeUse(db, userId);
   } catch (rollbackError) {
-    const logger = requestId ? createLogger(requestId) : createLogger();
     logger.error("AIクォータのロールバックに失敗しました", { userId, error: rollbackError });
   }
 }
@@ -160,21 +163,22 @@ async function safeRollback(db: Database, userId: string, requestId?: string): P
  * @param next - 次のハンドラ
  * @param db - Drizzle ORMデータベースインスタンス
  * @param userId - ユーザーID
+ * @param logger - リクエストスコープのロガー
  */
 async function executeWithRollback(
   c: Context,
   next: Next,
   db: Database,
   userId: string,
+  logger: ReturnType<typeof createLogger>,
 ): Promise<void> {
-  const requestId = c.get("requestId") as string | undefined;
   try {
     await next();
     if (c.res.status >= HTTP_CLIENT_ERROR_MIN) {
-      await safeRollback(db, userId, requestId);
+      await safeRollback(db, userId, logger);
     }
   } catch (error) {
-    await safeRollback(db, userId, requestId);
+    await safeRollback(db, userId, logger);
     throw error;
   }
 }
@@ -276,7 +280,7 @@ export function createAiLimitMiddleware(db: Database): MiddlewareHandler {
         return respondReservationConflict(c, logger, userId, "existing-free-use");
       }
 
-      await executeWithRollback(c, next, db, userId);
+      await executeWithRollback(c, next, db, userId, logger);
       return;
     }
 
@@ -289,7 +293,7 @@ export function createAiLimitMiddleware(db: Database): MiddlewareHandler {
         return respondReservationConflict(c, logger, userId, "reset-free-use");
       }
 
-      await executeWithRollback(c, next, db, userId);
+      await executeWithRollback(c, next, db, userId, logger);
       return;
     }
 
