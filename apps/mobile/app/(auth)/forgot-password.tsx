@@ -167,7 +167,7 @@ export default function ForgotPasswordScreen() {
         </View>
 
         <AuthSubmitButton
-          className="mt-6 items-center rounded-lg bg-primary py-3.5"
+          className="mt-6"
           onPress={handleSubmit}
           disabled={isSubmitting}
           isLoading={isSubmitting}

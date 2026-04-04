@@ -141,7 +141,7 @@ export default function RegisterScreen() {
         </View>
 
         <AuthSubmitButton
-          className="mt-6 items-center rounded-lg bg-primary py-3.5"
+          className="mt-6"
           onPress={handleRegister}
           disabled={isSubmitting}
           isLoading={isSubmitting}

@@ -244,7 +244,7 @@ export default function LoginScreen() {
             onPress={handleSubmit}
             disabled={isAnySubmitting}
             isLoading={isEmailSubmitting}
-            className="items-center rounded-lg bg-primary py-4"
+            className="py-4"
             testID="login-submit-button"
             accessibilityHint={t("auth.loginHint")}
             label={t("auth.login")}
