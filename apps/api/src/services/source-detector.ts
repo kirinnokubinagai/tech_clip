@@ -57,6 +57,9 @@ const CSS_TRICKS_PATTERN = /^css-tricks\.com/;
 /** Smashing Magazine判定パターン */
 const SMASHING_PATTERN = /^(www\.)?smashingmagazine\.com/;
 
+/** YouTube判定パターン */
+const YOUTUBE_PATTERN = /^(www\.)?youtube\.com|^youtu\.be/;
+
 /** URLホスト+パスとArticleSourceの対応表 */
 const SOURCE_MAPPINGS: SourceMapping[] = [
   { pattern: ZENN_BOOKS_PATTERN, source: "zenn" },
@@ -76,6 +79,7 @@ const SOURCE_MAPPINGS: SourceMapping[] = [
   { pattern: LOGROCKET_PATTERN, source: "logrocket" },
   { pattern: CSS_TRICKS_PATTERN, source: "css-tricks" },
   { pattern: SMASHING_PATTERN, source: "smashing" },
+  { pattern: YOUTUBE_PATTERN, source: "youtube" },
 ];
 
 /**
