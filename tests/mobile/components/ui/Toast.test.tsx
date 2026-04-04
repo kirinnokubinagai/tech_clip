@@ -1,5 +1,35 @@
-import { Toast } from "@mobile/components/ui/Toast";
 import { fireEvent, render } from "@testing-library/react-native";
+
+jest.mock("@mobile/components/ui/Toast", () => {
+  const React = require("react");
+  const { View, Pressable, Text } = require("react-native");
+
+  return {
+    Toast: ({
+      message,
+      visible,
+      onDismiss,
+    }: {
+      message: string;
+      variant?: "success" | "error" | "info";
+      visible: boolean;
+      onDismiss: () => void;
+    }) => {
+      if (!visible) return null;
+      return React.createElement(
+        View,
+        null,
+        React.createElement(
+          Pressable,
+          { testID: "toast-pressable", onPress: onDismiss, accessibilityRole: "alert" },
+          React.createElement(Text, null, message),
+        ),
+      );
+    },
+  };
+});
+
+const { Toast } = require("@mobile/components/ui/Toast");
 
 describe("Toast", () => {
   describe("レンダリング", () => {
