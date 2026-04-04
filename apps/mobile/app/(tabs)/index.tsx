@@ -5,7 +5,6 @@ import { useTranslation } from "react-i18next";
 import { ActivityIndicator, FlatList, Pressable, RefreshControl, Text, View } from "react-native";
 
 import { ArticleCard } from "@/components/ArticleCard";
-import { OfflineBanner } from "@/components/OfflineBanner";
 import { useArticles, useToggleFavorite } from "@/hooks/use-articles";
 import { useNetworkStatus } from "@/hooks/use-network-status";
 import { useOfflineArticles } from "@/hooks/use-offline-articles";
@@ -165,7 +164,6 @@ export default function HomeScreen() {
 
   return (
     <View className="flex-1 bg-background">
-      <OfflineBanner />
       <View className="px-4 pt-2 pb-3">
         <FlatList
           horizontal
