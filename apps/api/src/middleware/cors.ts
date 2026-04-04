@@ -21,6 +21,23 @@ const DEFAULT_ALLOWED_ORIGINS: string[] = [
 ];
 
 /**
+ * TRUSTED_ORIGINS の文字列をオリジン配列に変換する
+ *
+ * @param value - カンマ区切りのオリジン文字列
+ * @returns 空文字を除去したオリジン配列
+ */
+function parseTrustedOrigins(value?: string): string[] {
+  if (!value) {
+    return [];
+  }
+
+  return value
+    .split(",")
+    .map((origin) => origin.trim())
+    .filter((origin) => origin.length > 0);
+}
+
+/**
  * オリジン判定関数を生成する
  *
  * @param allowedOrigins - 許可するオリジンの配列（完全一致）
@@ -56,12 +73,15 @@ export function createCorsMiddleware(additionalOrigins: string[] = []): Middlewa
 }
 
 /**
- * CORS ミドルウェア（デフォルトオリジンのみ）
+ * CORS ミドルウェア
  *
  * Hono組み込みのcors()を使用し、許可オリジン・メソッド・ヘッダーを設定する。
  * サフィックスマッチングではなく完全一致ホワイトリスト方式を採用し、
  * 任意サブドメインからのアクセスを防ぐ。
- * 追加オリジンは createCorsMiddleware() に配列で渡すか、
- * index.ts で c.env.CORS_ALLOWED_ORIGINS をパースして渡す。
+ * 追加オリジンは各リクエストの `TRUSTED_ORIGINS` から読み込む。
  */
-export const corsMiddleware: MiddlewareHandler = createCorsMiddleware();
+export const corsMiddleware: MiddlewareHandler = async (c, next) => {
+  const additionalOrigins = parseTrustedOrigins(c.env?.TRUSTED_ORIGINS);
+  const middleware = createCorsMiddleware(additionalOrigins);
+  return middleware(c, next);
+};

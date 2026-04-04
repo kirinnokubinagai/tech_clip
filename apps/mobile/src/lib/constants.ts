@@ -1,3 +1,6 @@
+import { SUPPORTED_SOURCES } from "@/lib/sources";
+import type { ArticleSource } from "@/types/article";
+
 /** ローカル開発用APIベースURL */
 const DEFAULT_API_URL = "http://localhost:8787";
 
@@ -19,25 +22,12 @@ export const APP_SCHEME = "techclip";
 export const MAX_FREE_AI_USES = 5;
 
 /** 対応するすべての記事ソース */
-export const SUPPORTED_SOURCES: readonly string[] = [
-  "zenn",
-  "qiita",
-  "note",
-  "hatena",
-  "devto",
-  "medium",
-  "hackernews",
-  "hashnode",
-  "github",
-  "stackoverflow",
-  "reddit",
-  "speakerdeck",
-  "freecodecamp",
-  "logrocket",
-  "css-tricks",
-  "smashing",
-  "other",
-] as const;
+export { SUPPORTED_SOURCES };
+
+/** 対応するすべての記事ソース数（`other` を含む） */
+export const SUPPORTED_SOURCE_COUNT = SUPPORTED_SOURCES.length;
+
+export type { ArticleSource };
 
 /** ページネーションのデフォルト取得件数 */
 export const PAGINATION_LIMIT = 20;

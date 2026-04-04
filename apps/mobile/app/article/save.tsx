@@ -3,7 +3,7 @@ import { router, useLocalSearchParams } from "expo-router";
 import { AlertCircle, ArrowLeft, ExternalLink, Loader2 } from "lucide-react-native";
 import { useCallback, useState } from "react";
 import { Image, Pressable, ScrollView, Text, View } from "react-native";
-import { Badge, Button, Card, Input, Toast } from "@/components/ui";
+import { Button, Card, Input, SourceBadge, Toast } from "@/components/ui";
 import { useToast } from "@/hooks/use-toast";
 import { apiFetch } from "@/lib/api";
 import type { ArticlePreview, ParseArticleResponse, SaveArticleResponse } from "@/types/article";
@@ -223,7 +223,7 @@ export default function SaveScreen() {
 
                 {/* ソースバッジ + 読了時間 */}
                 <View className="flex-row items-center gap-2 mb-2">
-                  <Badge>{preview.source}</Badge>
+                  <SourceBadge source={preview.source} />
                   {preview.readingTimeMinutes && (
                     <Text className="text-text-dim text-xs">
                       {preview.readingTimeMinutes}分で読了
