@@ -255,7 +255,7 @@ GitHub Actions で以下のワークフローが自動実行される:
 |-------------|---------|------|
 | `ci.yml` | PR / push | Lint, Typecheck, Test, Audit |
 | `security.yml` | PR / push | OWASP ZAP セキュリティスキャン |
-| `e2e.yml` | EAS Build 完了後 | Maestro E2E テスト (`apps/mobile/.maestro/`) |
+| `e2e.yml` | EAS Build 完了後 | Maestro E2E テスト (`tests/e2e/maestro/`) |
 | `eas-build.yml` | main push | EAS iOS / Android ビルド |
 | `deploy.yml` | main push | API を Cloudflare Workers にデプロイ |
 | `auto-approve.yml` | PR | 自動承認 (条件付き) |

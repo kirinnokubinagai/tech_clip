@@ -15,9 +15,27 @@ export type AvatarUploadResult = {
   avatarUrl: string;
 };
 
+/** 正規化済みアバター画像 */
+export type PreparedAvatarImage = {
+  buffer: Uint8Array;
+  contentType: AllowedMimeType;
+  extension: AllowedImageExtension;
+};
+
+/** 画像処理結果 */
+export type ProcessAvatarImageResult =
+  | {
+      isValid: true;
+      image: PreparedAvatarImage;
+    }
+  | {
+      isValid: false;
+      error: string;
+    };
+
 /** uploadAvatarToR2のパラメータ */
 type UploadAvatarParams = {
-  file: File;
+  image: PreparedAvatarImage;
   userId: string;
   config: ImageUploadConfig;
 };
@@ -25,18 +43,233 @@ type UploadAvatarParams = {
 /** 許可するMIMEタイプ */
 const ALLOWED_MIME_TYPES = ["image/jpeg", "image/png", "image/webp"] as const;
 
+/** 許可する実体フォーマット */
+const ALLOWED_IMAGE_FORMATS = new Set(["jpeg", "png", "webp"] as const);
+
+type AllowedMimeType = (typeof ALLOWED_MIME_TYPES)[number];
+type AllowedImageFormat = "jpeg" | "png" | "webp";
+type AllowedImageExtension = "jpg" | "png" | "webp";
+
 /** アバター画像の最大ファイルサイズ（5MB） */
 const MAX_FILE_SIZE_BYTES = 5 * 1024 * 1024;
+
+/** アバター画像の最大寸法 */
+const MAX_IMAGE_DIMENSION = 4096;
 
 /** アバター保存ディレクトリ */
 const AVATARS_DIR = "avatars";
 
-/** MIMEタイプと拡張子のマッピング */
-const MIME_TO_EXTENSION: Record<string, string> = {
-  "image/jpeg": "jpg",
-  "image/png": "png",
-  "image/webp": "webp",
+/** 画像の内容を検査できなかった場合のメッセージ */
+const IMAGE_CONTENT_ERROR_MESSAGE = "画像の内容を確認できませんでした";
+
+/** 画像の寸法上限エラーメッセージ */
+const IMAGE_DIMENSION_ERROR_MESSAGE = `画像は${MAX_IMAGE_DIMENSION}px以下でアップロードしてください`;
+
+type DetectedImageMetadata = {
+  format: AllowedImageFormat;
+  width: number;
+  height: number;
+  contentType: AllowedMimeType;
+  extension: AllowedImageExtension;
 };
+
+function readUint16BE(bytes: Uint8Array, offset: number): number {
+  return (bytes[offset] << 8) | bytes[offset + 1];
+}
+
+function readUint32BE(bytes: Uint8Array, offset: number): number {
+  return (
+    ((bytes[offset] << 24) |
+      (bytes[offset + 1] << 16) |
+      (bytes[offset + 2] << 8) |
+      bytes[offset + 3]) >>>
+    0
+  );
+}
+
+function readUint24LE(bytes: Uint8Array, offset: number): number {
+  return bytes[offset] | (bytes[offset + 1] << 8) | (bytes[offset + 2] << 16);
+}
+
+function readUint16LE(bytes: Uint8Array, offset: number): number {
+  return bytes[offset] | (bytes[offset + 1] << 8);
+}
+
+function isPng(bytes: Uint8Array): boolean {
+  return (
+    bytes.length >= 24 &&
+    bytes[0] === 0x89 &&
+    bytes[1] === 0x50 &&
+    bytes[2] === 0x4e &&
+    bytes[3] === 0x47 &&
+    bytes[4] === 0x0d &&
+    bytes[5] === 0x0a &&
+    bytes[6] === 0x1a &&
+    bytes[7] === 0x0a
+  );
+}
+
+function isJpeg(bytes: Uint8Array): boolean {
+  return bytes.length >= 4 && bytes[0] === 0xff && bytes[1] === 0xd8;
+}
+
+function isWebp(bytes: Uint8Array): boolean {
+  return (
+    bytes.length >= 30 &&
+    bytes[0] === 0x52 &&
+    bytes[1] === 0x49 &&
+    bytes[2] === 0x46 &&
+    bytes[3] === 0x46 &&
+    bytes[8] === 0x57 &&
+    bytes[9] === 0x45 &&
+    bytes[10] === 0x42 &&
+    bytes[11] === 0x50
+  );
+}
+
+function detectPng(bytes: Uint8Array): DetectedImageMetadata | null {
+  if (!isPng(bytes)) {
+    return null;
+  }
+
+  const width = readUint32BE(bytes, 16);
+  const height = readUint32BE(bytes, 20);
+
+  return {
+    format: "png",
+    width,
+    height,
+    contentType: "image/png",
+    extension: "png",
+  };
+}
+
+function detectJpeg(bytes: Uint8Array): DetectedImageMetadata | null {
+  if (!isJpeg(bytes)) {
+    return null;
+  }
+
+  let offset = 2;
+
+  while (offset + 9 < bytes.length) {
+    if (bytes[offset] !== 0xff) {
+      offset += 1;
+      continue;
+    }
+
+    const marker = bytes[offset + 1];
+
+    if (marker === 0xd8 || marker === 0xd9 || (marker >= 0xd0 && marker <= 0xd7)) {
+      offset += 2;
+      continue;
+    }
+
+    if (offset + 4 > bytes.length) {
+      return null;
+    }
+
+    const segmentLength = readUint16BE(bytes, offset + 2);
+    if (segmentLength < 2 || offset + 2 + segmentLength > bytes.length) {
+      return null;
+    }
+
+    const isStartOfFrame =
+      marker === 0xc0 ||
+      marker === 0xc1 ||
+      marker === 0xc2 ||
+      marker === 0xc3 ||
+      marker === 0xc5 ||
+      marker === 0xc6 ||
+      marker === 0xc7 ||
+      marker === 0xc9 ||
+      marker === 0xca ||
+      marker === 0xcb ||
+      marker === 0xcd ||
+      marker === 0xce ||
+      marker === 0xcf;
+
+    if (isStartOfFrame) {
+      const height = readUint16BE(bytes, offset + 5);
+      const width = readUint16BE(bytes, offset + 7);
+
+      return {
+        format: "jpeg",
+        width,
+        height,
+        contentType: "image/jpeg",
+        extension: "jpg",
+      };
+    }
+
+    offset += 2 + segmentLength;
+  }
+
+  return null;
+}
+
+function detectWebp(bytes: Uint8Array): DetectedImageMetadata | null {
+  if (!isWebp(bytes)) {
+    return null;
+  }
+
+  const chunkType = String.fromCharCode(bytes[12], bytes[13], bytes[14], bytes[15]);
+
+  if (chunkType === "VP8X" && bytes.length >= 30) {
+    const width = 1 + readUint24LE(bytes, 24);
+    const height = 1 + readUint24LE(bytes, 27);
+
+    return {
+      format: "webp",
+      width,
+      height,
+      contentType: "image/webp",
+      extension: "webp",
+    };
+  }
+
+  if (chunkType === "VP8 " && bytes.length >= 30) {
+    const hasStartCode = bytes[23] === 0x9d && bytes[24] === 0x01 && bytes[25] === 0x2a;
+    if (!hasStartCode) {
+      return null;
+    }
+
+    const width = readUint16LE(bytes, 26) & 0x3fff;
+    const height = readUint16LE(bytes, 28) & 0x3fff;
+
+    return {
+      format: "webp",
+      width,
+      height,
+      contentType: "image/webp",
+      extension: "webp",
+    };
+  }
+
+  if (chunkType === "VP8L" && bytes.length >= 25 && bytes[20] === 0x2f) {
+    const width = 1 + (((bytes[22] & 0x3f) << 8) | bytes[21]);
+    const height = 1 + (((bytes[24] & 0x0f) << 10) | (bytes[23] << 2) | (bytes[22] >> 6));
+
+    return {
+      format: "webp",
+      width,
+      height,
+      contentType: "image/webp",
+      extension: "webp",
+    };
+  }
+
+  return null;
+}
+
+/**
+ * 画像バイト列からフォーマットと寸法を抽出する
+ *
+ * @param bytes - 画像ファイルのバイト列
+ * @returns 検出された画像メタデータ。対応外の場合はnull
+ */
+function detectImageMetadata(bytes: Uint8Array): DetectedImageMetadata | null {
+  return detectPng(bytes) ?? detectJpeg(bytes) ?? detectWebp(bytes);
+}
 
 /**
  * アップロードされたファイルを検証する
@@ -65,6 +298,41 @@ export function validateImageFile(file: File): ValidationResult {
 }
 
 /**
+ * 画像の実体を検査し、検出したフォーマット情報を付与して返す
+ *
+ * @param file - 検査対象の画像ファイル
+ * @returns 画像処理結果
+ */
+export async function processAvatarImage(file: File): Promise<ProcessAvatarImageResult> {
+  const input = new Uint8Array(await file.arrayBuffer());
+  const metadata = detectImageMetadata(input);
+
+  if (!metadata?.width || !metadata?.height || !metadata?.format) {
+    return { isValid: false, error: IMAGE_CONTENT_ERROR_MESSAGE };
+  }
+
+  if (!ALLOWED_IMAGE_FORMATS.has(metadata.format)) {
+    return {
+      isValid: false,
+      error: IMAGE_CONTENT_ERROR_MESSAGE,
+    };
+  }
+
+  if (metadata.width > MAX_IMAGE_DIMENSION || metadata.height > MAX_IMAGE_DIMENSION) {
+    return { isValid: false, error: IMAGE_DIMENSION_ERROR_MESSAGE };
+  }
+
+  return {
+    isValid: true,
+    image: {
+      buffer: input,
+      contentType: metadata.contentType,
+      extension: metadata.extension,
+    },
+  };
+}
+
+/**
  * ユニークなファイル名を生成する
  *
  * @param userId - ユーザーID
@@ -80,24 +348,20 @@ export function generateUniqueFileName(userId: string, extension: string): strin
 /**
  * アバター画像をCloudflare R2にアップロードする
  *
- * TODO: Cloudflare Workers では sharp が使用できないため、現在はオリジナルの
- * ファイル形式のままアップロードしている。将来的には Cloudflare Images や
- * Workers AI を利用して WebP への変換・リサイズを実装することを検討する。
+ * 画像は事前に `processAvatarImage` で実体検証済みであることを前提とする。
  *
- * @param params - ファイル、ユーザーID、R2設定
+ * @param params - 画像、ユーザーID、R2設定
  * @returns アップロードされた画像のURL
  * @throws Error - アップロードに失敗した場合
  */
 export async function uploadAvatarToR2(params: UploadAvatarParams): Promise<AvatarUploadResult> {
-  const { file, userId, config } = params;
+  const { image, userId, config } = params;
 
-  const extension = MIME_TO_EXTENSION[file.type] ?? "jpg";
-  const fileName = generateUniqueFileName(userId, extension);
-  const arrayBuffer = await file.arrayBuffer();
+  const fileName = generateUniqueFileName(userId, image.extension);
 
   try {
-    await config.r2Bucket.put(fileName, arrayBuffer, {
-      httpMetadata: { contentType: file.type },
+    await config.r2Bucket.put(fileName, image.buffer, {
+      httpMetadata: { contentType: image.contentType },
     });
   } catch {
     throw new Error("アバター画像のアップロードに失敗しました");

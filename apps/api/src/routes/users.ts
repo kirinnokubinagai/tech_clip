@@ -22,7 +22,7 @@ import {
   HTTP_UNAUTHORIZED,
   HTTP_UNPROCESSABLE_ENTITY,
 } from "../lib/http-status";
-import { uploadAvatarToR2, validateImageFile } from "../services/imageUpload";
+import { processAvatarImage, uploadAvatarToR2, validateImageFile } from "../services/imageUpload";
 
 /** 名前最大文字数 */
 const NAME_MAX_LENGTH = 100;
@@ -342,6 +342,20 @@ export function createUsersRoute(options: UsersRouteOptions) {
       );
     }
 
+    const processedImage = await processAvatarImage(avatarField);
+    if (!processedImage.isValid) {
+      return c.json(
+        {
+          success: false,
+          error: {
+            code: "INVALID_REQUEST",
+            message: processedImage.error,
+          },
+        },
+        HTTP_BAD_REQUEST,
+      );
+    }
+
     if (!r2Bucket || !r2PublicUrl) {
       return c.json(
         {
@@ -364,7 +378,7 @@ export function createUsersRoute(options: UsersRouteOptions) {
     let avatarUrl: string;
     try {
       const result = await uploadAvatarToR2({
-        file: avatarField,
+        image: processedImage.image,
         userId,
         config: { r2Bucket, r2PublicUrl },
       });
