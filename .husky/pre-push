@@ -28,7 +28,8 @@ echo "  Typecheck..."
 pnpm typecheck || { echo "Typecheck失敗。修正してからpushしてください。"; exit 1; }
 
 echo "  Test..."
-pnpm test || { echo "Test失敗。修正してからpushしてください。"; exit 1; }
+pnpm --filter @tech-clip/api test || { echo "API Test失敗。修正してからpushしてください。"; exit 1; }
+pnpm --filter @tech-clip/mobile test || { echo "Mobile Test失敗。修正してからpushしてください。"; exit 1; }
 
 # OWASP ZAP ローカルセキュリティスキャン
 # Nix 環境の zap コマンドを使用（Docker 不要）
