@@ -4,11 +4,6 @@ import type { MiddlewareHandler } from "hono";
 import type { Database } from "../db";
 import { users } from "../db/schema";
 
-/** ロールバック失敗時の警告ログ出力関数 */
-function warnRollbackFailed(userId: string, error: unknown): void {
-  console.warn("無料枠ロールバックに失敗しました", { userId, error });
-}
-
 /** HTTP 401 Unauthorized ステータスコード */
 const HTTP_UNAUTHORIZED = 401;
 
@@ -137,6 +132,20 @@ async function rollbackReservedFreeUse(db: Database, userId: string): Promise<vo
 }
 
 /**
+ * ロールバックを安全に実行する。失敗してもクラッシュせずエラーをログ出力する
+ *
+ * @param db - Drizzle ORMデータベースインスタンス
+ * @param userId - ユーザーID
+ */
+async function safeRollback(db: Database, userId: string): Promise<void> {
+  try {
+    await rollbackReservedFreeUse(db, userId);
+  } catch (rollbackError) {
+    console.error("AIクォータのロールバックに失敗しました", { userId, error: rollbackError });
+  }
+}
+
+/**
  * AI使用回数制限ミドルウェアを生成する
  *
  * 要約/翻訳API呼び出し前にユーザーのfreeAiUsesRemainingをチェックし、
@@ -211,18 +220,10 @@ export function createAiLimitMiddleware(db: Database): MiddlewareHandler {
       try {
         await next();
         if (c.res.status >= HTTP_CLIENT_ERROR_MIN) {
-          try {
-            await rollbackReservedFreeUse(db, userId);
-          } catch (rollbackError) {
-            warnRollbackFailed(userId, rollbackError);
-          }
+          await safeRollback(db, userId);
         }
       } catch (error) {
-        try {
-          await rollbackReservedFreeUse(db, userId);
-        } catch (rollbackError) {
-          warnRollbackFailed(userId, rollbackError);
-        }
+        await safeRollback(db, userId);
         throw error;
       }
 
@@ -250,18 +251,10 @@ export function createAiLimitMiddleware(db: Database): MiddlewareHandler {
       try {
         await next();
         if (c.res.status >= HTTP_CLIENT_ERROR_MIN) {
-          try {
-            await rollbackReservedFreeUse(db, userId);
-          } catch (rollbackError) {
-            warnRollbackFailed(userId, rollbackError);
-          }
+          await safeRollback(db, userId);
         }
       } catch (error) {
-        try {
-          await rollbackReservedFreeUse(db, userId);
-        } catch (rollbackError) {
-          warnRollbackFailed(userId, rollbackError);
-        }
+        await safeRollback(db, userId);
         throw error;
       }
 
