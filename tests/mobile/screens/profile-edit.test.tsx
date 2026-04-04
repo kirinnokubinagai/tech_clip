@@ -2,6 +2,10 @@ import ProfileEditScreen from "@mobile-app/profile/edit";
 import { fireEvent, render, waitFor } from "@testing-library/react-native";
 import { Alert } from "react-native";
 
+jest.mock("@/components/ui/Toast", () => ({
+  Toast: jest.fn(() => null),
+}));
+
 const mockBack = jest.fn();
 
 jest.mock("expo-router", () => ({
@@ -41,16 +45,20 @@ describe("ProfileEditScreen", () => {
       });
     });
 
-    it("保存成功後にトーストメッセージが表示されること", async () => {
+    it("保存成功後にトーストが表示状態になること", async () => {
       // Arrange
-      const { getByTestId, getByText } = await render(<ProfileEditScreen />);
+      const { Toast } = require("@/components/ui/Toast");
+      const { getByTestId } = await render(<ProfileEditScreen />);
 
       // Act
       await fireEvent.press(getByTestId("button"));
 
       // Assert
       await waitFor(() => {
-        expect(getByText("プロフィールを更新しました")).toBeDefined();
+        expect(Toast).toHaveBeenLastCalledWith(
+          expect.objectContaining({ visible: true, message: "プロフィールを更新しました" }),
+          undefined,
+        );
       });
     });
   });
