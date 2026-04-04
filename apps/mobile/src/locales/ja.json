@@ -74,7 +74,6 @@
     "favorites": "お気に入り",
     "favoritesFilterLabel": "お気に入りのみ表示",
     "favoritesFilterClearLabel": "お気に入りフィルター解除",
-    "filter": "フィルター",
     "loadingArticles": "読み込み中...",
     "fetchError": "記事の取得に失敗しました",
     "noArticles": "記事がありません",

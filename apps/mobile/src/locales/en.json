@@ -74,7 +74,6 @@
     "favorites": "Favorites",
     "favoritesFilterLabel": "Show favorites only",
     "favoritesFilterClearLabel": "Clear favorites filter",
-    "filter": "Filter",
     "loadingArticles": "Loading...",
     "fetchError": "Failed to fetch articles",
     "noArticles": "No articles"
