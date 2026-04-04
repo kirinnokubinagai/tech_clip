@@ -3,39 +3,14 @@ import { Heart } from "lucide-react-native";
 import { memo } from "react";
 import { Pressable, Text, View } from "react-native";
 
-import { Badge } from "@/components/ui";
-
-/** 記事ソースの型定義 */
-type ArticleSource =
-  | "zenn"
-  | "qiita"
-  | "note"
-  | "hatena"
-  | "devto"
-  | "medium"
-  | "hackernews"
-  | "hashnode"
-  | "github"
-  | "stackoverflow"
-  | "reddit"
-  | "speakerdeck"
-  | "freecodecamp"
-  | "logrocket"
-  | "css-tricks"
-  | "smashing"
-  | "other";
+import { SourceBadge } from "@/components/ui";
+import type { ArticleListItem } from "@/types/article";
 
 /** ArticleCardに渡す記事データ */
-export type ArticleCardArticle = {
-  id: string;
-  title: string;
-  author: string | null;
-  source: ArticleSource;
-  publishedAt: string | null;
-  excerpt: string | null;
-  thumbnailUrl: string | null;
-  isFavorite: boolean;
-};
+export type ArticleCardArticle = Pick<
+  ArticleListItem,
+  "id" | "title" | "author" | "source" | "publishedAt" | "excerpt" | "thumbnailUrl" | "isFavorite"
+>;
 
 type ArticleCardProps = {
   article: ArticleCardArticle;
@@ -105,7 +80,7 @@ export const ArticleCard = memo(function ArticleCard({
 
       <View className="p-4 gap-2">
         <View className="flex-row items-center justify-between">
-          <Badge>{article.source}</Badge>
+          <SourceBadge source={article.source} />
           {article.publishedAt && (
             <Text className="text-xs text-text-muted">
               {formatPublishedDate(article.publishedAt)}
