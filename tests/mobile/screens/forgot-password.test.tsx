@@ -66,6 +66,27 @@ describe("ForgotPasswordScreen", () => {
     ).toBeDefined();
   });
 
+  it("成功レスポンスのJSON解析に失敗しても成功メッセージを表示すること", async () => {
+    // Arrange
+    (global.fetch as jest.Mock).mockResolvedValue({
+      ok: true,
+      json: async () => {
+        throw new Error("invalid json");
+      },
+    });
+    const { getByLabelText, findByLabelText } = await render(<ForgotPasswordScreen />);
+
+    await fireEvent.changeText(getByLabelText("メールアドレス"), "test@example.com");
+
+    // Act
+    await fireEvent.press(getByLabelText("リセットメールを送信"));
+
+    // Assert
+    expect(
+      await findByLabelText("パスワードリセットのメールを送信しました。メールをご確認ください。"),
+    ).toBeDefined();
+  });
+
   it("APIエラー時も成功メッセージを表示すること", async () => {
     // Arrange
     (global.fetch as jest.Mock).mockResolvedValue({

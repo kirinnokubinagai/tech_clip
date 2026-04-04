@@ -109,9 +109,18 @@ export default function ForgotPasswordScreen() {
         return;
       }
 
-      const responseBody: unknown = await response.json();
-      const data = hasForgotPasswordMessageShape(responseBody) ? responseBody : undefined;
-      setSuccessMessage(data?.data?.message || t("auth.forgotPasswordSuccess"));
+      let serverMessage: string | undefined;
+
+      try {
+        const responseBody: unknown = await response.json();
+        if (hasForgotPasswordMessageShape(responseBody)) {
+          serverMessage = responseBody.data.message;
+        }
+      } catch {
+        // レスポンス JSON が壊れていても、サーバー側の送信処理自体は成功している可能性がある。
+      }
+
+      setSuccessMessage(serverMessage ?? t("auth.forgotPasswordSuccess"));
     } catch {
       setErrorMessage(t("common.error"));
     } finally {
