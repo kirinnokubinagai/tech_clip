@@ -93,6 +93,11 @@ export default function LoginScreen() {
     }
   };
 
+  /**
+   * ソーシャルログインを開始する
+   *
+   * @param provider - 利用するソーシャルプロバイダー
+   */
   const handleSocialSignIn = async (provider: SocialProvider) => {
     setErrorMessage("");
     setIsSubmitting(true);

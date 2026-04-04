@@ -42,6 +42,9 @@ export default function ForgotPasswordScreen() {
   const [errorMessage, setErrorMessage] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
 
+  /**
+   * パスワードリセットメール送信フォームを送信する
+   */
   const handleSubmit = async () => {
     const trimmedEmail = email.trim();
     const hasValidEmailFormat = trimmedEmail.includes("@");
