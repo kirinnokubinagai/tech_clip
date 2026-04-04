@@ -3,8 +3,22 @@ name: CI
 on:
   push:
     branches: [main]
+    paths-ignore:
+      - '**/*.md'
+      - 'docs/**'
+      - '.claude/**'
+      - 'LICENSE'
+      - '.omc/**'
+      - 'tests/e2e/maestro/**'
   pull_request:
     branches: [main]
+    paths-ignore:
+      - '**/*.md'
+      - 'docs/**'
+      - '.claude/**'
+      - 'LICENSE'
+      - '.omc/**'
+      - 'tests/e2e/maestro/**'
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
