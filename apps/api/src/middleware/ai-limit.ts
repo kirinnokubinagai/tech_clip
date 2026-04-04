@@ -4,6 +4,11 @@ import type { MiddlewareHandler } from "hono";
 import type { Database } from "../db";
 import { users } from "../db/schema";
 
+/** ロールバック失敗時の警告ログ出力関数 */
+function warnRollbackFailed(userId: string, error: unknown): void {
+  console.warn("無料枠ロールバックに失敗しました", { userId, error });
+}
+
 /** HTTP 401 Unauthorized ステータスコード */
 const HTTP_UNAUTHORIZED = 401;
 
@@ -203,10 +208,22 @@ export function createAiLimitMiddleware(db: Database): MiddlewareHandler {
         );
       }
 
-      await next();
-
-      if (c.res.status >= HTTP_CLIENT_ERROR_MIN) {
-        await rollbackReservedFreeUse(db, userId);
+      try {
+        await next();
+        if (c.res.status >= HTTP_CLIENT_ERROR_MIN) {
+          try {
+            await rollbackReservedFreeUse(db, userId);
+          } catch (rollbackError) {
+            warnRollbackFailed(userId, rollbackError);
+          }
+        }
+      } catch (error) {
+        try {
+          await rollbackReservedFreeUse(db, userId);
+        } catch (rollbackError) {
+          warnRollbackFailed(userId, rollbackError);
+        }
+        throw error;
       }
 
       return;
@@ -230,10 +247,22 @@ export function createAiLimitMiddleware(db: Database): MiddlewareHandler {
         );
       }
 
-      await next();
-
-      if (c.res.status >= HTTP_CLIENT_ERROR_MIN) {
-        await rollbackReservedFreeUse(db, userId);
+      try {
+        await next();
+        if (c.res.status >= HTTP_CLIENT_ERROR_MIN) {
+          try {
+            await rollbackReservedFreeUse(db, userId);
+          } catch (rollbackError) {
+            warnRollbackFailed(userId, rollbackError);
+          }
+        }
+      } catch (error) {
+        try {
+          await rollbackReservedFreeUse(db, userId);
+        } catch (rollbackError) {
+          warnRollbackFailed(userId, rollbackError);
+        }
+        throw error;
       }
 
       return;

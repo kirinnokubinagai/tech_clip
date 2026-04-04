@@ -344,6 +344,57 @@ describe("aiLimitMiddleware", () => {
     });
   });
 
+  describe("TOCTOU競合（予約失敗）", () => {
+    it("残回数ありでもreserveExistingFreeUseが失敗した場合に402が返ること", async () => {
+      // Arrange
+      const userData = createFreeUserData({ remaining: 3 });
+      mockSelectWhere.mockResolvedValue([userData]);
+      mockUpdateReturning.mockResolvedValue([]);
+      const app = createTestApp(TEST_USER_ID);
+
+      // Act
+      const res = await app.request("/ai/summarize", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+      });
+
+      // Assert
+      expect(res.status).toBe(HTTP_PAYMENT_REQUIRED);
+      const body = await res.json();
+      expect(body).toMatchObject({
+        success: false,
+        error: {
+          code: "AI_LIMIT_EXCEEDED",
+        },
+      });
+    });
+
+    it("リセット対象でもreserveResetFreeUseが失敗した場合に402が返ること", async () => {
+      // Arrange
+      const pastDate = new Date("2025-01-01T00:00:00Z").toISOString();
+      const userData = createFreeUserData({ remaining: 0, resetAt: pastDate });
+      mockSelectWhere.mockResolvedValue([userData]);
+      mockUpdateReturning.mockResolvedValue([]);
+      const app = createTestApp(TEST_USER_ID);
+
+      // Act
+      const res = await app.request("/ai/summarize", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+      });
+
+      // Assert
+      expect(res.status).toBe(HTTP_PAYMENT_REQUIRED);
+      const body = await res.json();
+      expect(body).toMatchObject({
+        success: false,
+        error: {
+          code: "AI_LIMIT_EXCEEDED",
+        },
+      });
+    });
+  });
+
   describe("ダウンストリーム失敗時", () => {
     it("ダウンストリームが500を返した場合に無料使用回数が消費されないこと", async () => {
       // Arrange
