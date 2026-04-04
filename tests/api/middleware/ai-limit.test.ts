@@ -17,6 +17,9 @@ const HTTP_OK = 200;
 /** HTTP 401 Unauthorized ステータスコード */
 const HTTP_UNAUTHORIZED = 401;
 
+/** HTTP 400 Bad Request ステータスコード */
+const HTTP_BAD_REQUEST = 400;
+
 /** テスト用のフリーユーザーデータ */
 function createFreeUserData(options?: { remaining?: number; resetAt?: string | null }) {
   return {
@@ -271,8 +274,12 @@ describe("aiLimitMiddleware", () => {
       expect(mockUpdate).toHaveBeenCalledTimes(1);
       expect(mockUpdateSet).toHaveBeenCalledTimes(1);
       const setArg = mockUpdateSet.mock.calls[0][0];
-      expect(setArg.freeAiUsesRemaining).toBeDefined();
-      expect(setArg.freeAiResetAt).toBeDefined();
+      expect(setArg.freeAiUsesRemaining).toMatchObject({
+        queryChunks: expect.any(Array),
+      });
+      expect(setArg.freeAiResetAt).toMatchObject({
+        queryChunks: expect.any(Array),
+      });
       expect(setArg.updatedAt).toEqual(expect.any(String));
     });
 
@@ -344,6 +351,39 @@ describe("aiLimitMiddleware", () => {
       });
 
       // Assert: 失敗時は更新しない
+      expect(mockUpdate).not.toHaveBeenCalled();
+    });
+
+    it("ダウンストリームが400を返した場合に無料使用回数が消費されないこと", async () => {
+      // Arrange
+      const userData = createFreeUserData({ remaining: 3 });
+      mockSelectWhere.mockResolvedValue([userData]);
+      const app = createTestApp(TEST_USER_ID, HTTP_BAD_REQUEST);
+
+      // Act
+      await app.request("/ai/summarize", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+      });
+
+      // Assert
+      expect(mockUpdate).not.toHaveBeenCalled();
+    });
+
+    it("月次リセット対象でもダウンストリーム失敗時に無料使用回数が消費されないこと", async () => {
+      // Arrange
+      const pastDate = new Date("2025-01-01T00:00:00Z").toISOString();
+      const userData = createFreeUserData({ remaining: 0, resetAt: pastDate });
+      mockSelectWhere.mockResolvedValue([userData]);
+      const app = createTestApp(TEST_USER_ID, HTTP_INTERNAL_SERVER_ERROR);
+
+      // Act
+      await app.request("/ai/summarize", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+      });
+
+      // Assert
       expect(mockUpdate).not.toHaveBeenCalled();
     });
   });

@@ -127,26 +127,29 @@ export function createAiLimitMiddleware(db: Database): MiddlewareHandler {
     }
 
     if (isResetExpired(dbUser.freeAiResetAt)) {
-      const nowIso = new Date().toISOString();
+      const resetReferenceTime = new Date().toISOString();
       const nextResetAt = calculateNextResetAt();
 
       await next();
 
       if (c.res.status < HTTP_CLIENT_ERROR_MIN) {
+        const updatedAt = new Date().toISOString();
         await db
           .update(users)
           .set({
             freeAiUsesRemaining: sql`CASE
-              WHEN ${users.freeAiResetAt} IS NULL OR ${users.freeAiResetAt} <= ${nowIso}
+              WHEN ${users.freeAiResetAt} IS NULL OR ${users.freeAiResetAt} <= ${resetReferenceTime}
                 THEN ${FREE_AI_USES_PER_MONTH - 1}
-              ELSE ${users.freeAiUsesRemaining} - 1
+              WHEN ${users.freeAiUsesRemaining} > 0
+                THEN ${users.freeAiUsesRemaining} - 1
+              ELSE 0
             END`,
             freeAiResetAt: sql`CASE
-              WHEN ${users.freeAiResetAt} IS NULL OR ${users.freeAiResetAt} <= ${nowIso}
+              WHEN ${users.freeAiResetAt} IS NULL OR ${users.freeAiResetAt} <= ${resetReferenceTime}
                 THEN ${nextResetAt}
               ELSE ${users.freeAiResetAt}
             END`,
-            updatedAt: nowIso,
+            updatedAt,
           })
           .where(eq(users.id, userId));
       }
