@@ -24,30 +24,27 @@ env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
-  lint:
+  ci:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/nix-setup
-      - run: nix develop --command pnpm lint
+      - name: Run lint, typecheck, test, audit in parallel
+        run: |
+          nix develop --command bash -c '
+            pnpm lint &
+            PID_LINT=$!
+            pnpm typecheck &
+            PID_TC=$!
+            pnpm test &
+            PID_TEST=$!
+            pnpm audit &
+            PID_AUDIT=$!
 
-  typecheck:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: ./.github/actions/nix-setup
-      - run: nix develop --command pnpm typecheck
-
-  test:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: ./.github/actions/nix-setup
-      - run: nix develop --command pnpm test
-
-  audit:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: ./.github/actions/nix-setup
-      - run: nix develop --command pnpm audit
+            FAILED=0
+            wait $PID_LINT   || { echo "::error::lint failed"; FAILED=1; }
+            wait $PID_TC     || { echo "::error::typecheck failed"; FAILED=1; }
+            wait $PID_TEST   || { echo "::error::test failed"; FAILED=1; }
+            wait $PID_AUDIT  || { echo "::error::audit failed"; FAILED=1; }
+            exit $FAILED
+          '
