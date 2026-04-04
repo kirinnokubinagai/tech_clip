@@ -7,6 +7,10 @@ import { users } from "./users";
 /**
  * refresh_tokensテーブル
  * モバイルクライアント向けのリフレッシュトークンを管理する
+ *
+ * @todo 期限切れトークンの定期クリーンアップ - 将来的にCronジョブで実装する
+ *   例: `DELETE FROM refresh_tokens WHERE expires_at < datetime('now')`
+ *   を定期的に実行して、DBの肥大化を防ぐ
  */
 export const refreshTokens = sqliteTable("refresh_tokens", {
   id: text("id").primaryKey(),
