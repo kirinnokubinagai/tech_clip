@@ -1,3 +1,4 @@
+import { useSubscription } from "@/hooks/use-subscription";
 import { AdBanner } from "@mobile/components/AdBanner";
 import { render } from "@testing-library/react-native";
 import React from "react";
@@ -16,8 +17,6 @@ jest.mock("react-native-google-mobile-ads", () => ({
 jest.mock("@/hooks/use-subscription", () => ({
   useSubscription: jest.fn(),
 }));
-
-import { useSubscription } from "@/hooks/use-subscription";
 
 const { BannerAd } = jest.requireMock("react-native-google-mobile-ads") as {
   BannerAd: jest.Mock;
