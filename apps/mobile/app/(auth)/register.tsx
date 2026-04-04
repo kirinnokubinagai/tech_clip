@@ -12,6 +12,7 @@ import {
   View,
 } from "react-native";
 
+import { DARK_COLORS } from "@/lib/constants";
 import { useAuthStore } from "../../src/stores/auth-store";
 
 export default function RegisterScreen() {
@@ -88,7 +89,7 @@ export default function RegisterScreen() {
             <TextInput
               className="rounded-lg border border-border bg-surface px-4 py-3 text-base text-text"
               placeholder={t("auth.namePlaceholder")}
-              placeholderTextColor="#64748b"
+              placeholderTextColor={DARK_COLORS.textDim}
               value={name}
               onChangeText={setName}
               autoCapitalize="words"
@@ -105,7 +106,7 @@ export default function RegisterScreen() {
             <TextInput
               className="rounded-lg border border-border bg-surface px-4 py-3 text-base text-text"
               placeholder="example@domain.com"
-              placeholderTextColor="#64748b"
+              placeholderTextColor={DARK_COLORS.textDim}
               value={email}
               onChangeText={setEmail}
               autoCapitalize="none"
@@ -123,7 +124,7 @@ export default function RegisterScreen() {
             <TextInput
               className="rounded-lg border border-border bg-surface px-4 py-3 text-base text-text"
               placeholder={t("auth.passwordPlaceholder")}
-              placeholderTextColor="#64748b"
+              placeholderTextColor={DARK_COLORS.textDim}
               value={password}
               onChangeText={setPassword}
               secureTextEntry
@@ -149,7 +150,7 @@ export default function RegisterScreen() {
           accessibilityState={{ disabled: isSubmitting }}
         >
           {isSubmitting ? (
-            <ActivityIndicator color="#ffffff" />
+            <ActivityIndicator color={DARK_COLORS.white} />
           ) : (
             <Text className="text-base font-semibold text-white">{t("auth.createAccount")}</Text>
           )}

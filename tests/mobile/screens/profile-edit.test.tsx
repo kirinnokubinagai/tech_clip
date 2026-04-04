@@ -6,6 +6,7 @@ jest.mock("@/components/ui/Toast", () => ({
   Toast: jest.fn(() => null),
 }));
 
+const { Toast } = jest.requireMock("@/components/ui/Toast") as { Toast: jest.Mock };
 const mockBack = jest.fn();
 
 jest.mock("expo-router", () => ({
@@ -47,7 +48,6 @@ describe("ProfileEditScreen", () => {
 
     it("保存成功後にトーストが表示状態になること", async () => {
       // Arrange
-      const { Toast } = require("@/components/ui/Toast");
       const { getByTestId } = await render(<ProfileEditScreen />);
 
       // Act

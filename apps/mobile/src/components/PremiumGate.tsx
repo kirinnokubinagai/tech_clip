@@ -1,6 +1,8 @@
 import { Check, X } from "lucide-react-native";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 
+import { DARK_COLORS } from "@/lib/constants";
+
 /** PremiumGateコンポーネントのprops */
 export type PremiumGateProps = {
   /** 現在のAI機能使用回数 */
@@ -22,31 +24,31 @@ const CHECK_ICON_SIZE = 16;
 const CLOSE_ICON_SIZE = 20;
 
 /** プライマリカラー */
-const COLOR_PRIMARY = "#6366f1";
+const COLOR_PRIMARY = DARK_COLORS.primary;
 
 /** テキストミュートカラー */
-const COLOR_TEXT_MUTED = "#94a3b8";
+const COLOR_TEXT_MUTED = DARK_COLORS.textMuted;
 
 /** エラーカラー */
-const COLOR_ERROR = "#ef4444";
+const COLOR_ERROR = DARK_COLORS.error;
 
 /** テキストカラー */
-const COLOR_TEXT = "#e2e8f0";
+const COLOR_TEXT = DARK_COLORS.text;
 
 /** 背景カラー */
-const COLOR_BACKGROUND = "#0a0a0f";
+const COLOR_BACKGROUND = DARK_COLORS.background;
 
 /** サーフェスカラー */
-const COLOR_SURFACE = "#13131a";
+const COLOR_SURFACE = DARK_COLORS.surface;
 
 /** カードカラー */
-const COLOR_CARD = "#1a1a2e";
+const COLOR_CARD = DARK_COLORS.card;
 
 /** ボーダーカラー */
-const COLOR_BORDER = "#2d2d44";
+const COLOR_BORDER = DARK_COLORS.border;
 
 /** ホワイト */
-const COLOR_WHITE = "#ffffff";
+const COLOR_WHITE = DARK_COLORS.white;
 
 const styles = StyleSheet.create({
   container: {
