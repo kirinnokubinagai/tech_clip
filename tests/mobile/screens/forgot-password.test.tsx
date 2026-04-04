@@ -1,0 +1,76 @@
+import ForgotPasswordScreen from "@mobile-app/(auth)/forgot-password";
+import { fireEvent, render, waitFor } from "@testing-library/react-native";
+
+jest.mock("@/lib/api", () => ({
+  getBaseUrl: jest.fn(() => "http://localhost:8787"),
+}));
+
+beforeEach(() => {
+  jest.clearAllMocks();
+  global.fetch = jest.fn();
+});
+
+describe("ForgotPasswordScreen", () => {
+  it("メールアドレス未入力時にバリデーションエラーを表示すること", async () => {
+    // Arrange
+    const { getByLabelText, findByLabelText } = await render(<ForgotPasswordScreen />);
+
+    // Act
+    await fireEvent.press(getByLabelText("リセットメールを送信"));
+
+    // Assert
+    expect(await findByLabelText("メールアドレスを入力してください")).toBeDefined();
+  });
+
+  it("送信成功時に成功メッセージを表示すること", async () => {
+    // Arrange
+    (global.fetch as jest.Mock).mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        success: true,
+        data: {
+          message: "パスワードリセットのメールを送信しました。メールをご確認ください。",
+        },
+      }),
+    });
+    const { getByLabelText, findByLabelText } = await render(<ForgotPasswordScreen />);
+
+    await fireEvent.changeText(getByLabelText("メールアドレス"), "test@example.com");
+
+    // Act
+    await fireEvent.press(getByLabelText("リセットメールを送信"));
+
+    // Assert
+    await waitFor(() => {
+      expect(global.fetch).toHaveBeenCalledWith(
+        "http://localhost:8787/api/auth/forgot-password",
+        expect.objectContaining({ method: "POST" }),
+      );
+    });
+    expect(
+      await findByLabelText("パスワードリセットのメールを送信しました。メールをご確認ください。"),
+    ).toBeDefined();
+  });
+
+  it("送信失敗時にAPIのエラーメッセージを表示すること", async () => {
+    // Arrange
+    (global.fetch as jest.Mock).mockResolvedValue({
+      ok: false,
+      json: async () => ({
+        success: false,
+        error: {
+          message: "メールアドレスの形式が正しくありません",
+        },
+      }),
+    });
+    const { getByLabelText, findByLabelText } = await render(<ForgotPasswordScreen />);
+
+    await fireEvent.changeText(getByLabelText("メールアドレス"), "invalid-email");
+
+    // Act
+    await fireEvent.press(getByLabelText("リセットメールを送信"));
+
+    // Assert
+    expect(await findByLabelText("メールアドレスの形式が正しくありません")).toBeDefined();
+  });
+});

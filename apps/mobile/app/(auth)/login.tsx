@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 import {
   ActivityIndicator,
   KeyboardAvoidingView,
+  Linking,
   Platform,
   Pressable,
   Text,
@@ -11,10 +12,20 @@ import {
   View,
 } from "react-native";
 
+import { getBaseUrl } from "@/lib/api";
 import { useAuthStore } from "@/stores/auth-store";
 
 /** パスワード最小文字数 */
 const PASSWORD_MIN_LENGTH = 8;
+const SOCIAL_SIGN_IN_PATH = "/api/auth/sign-in/social";
+const SOCIAL_CALLBACK_URL = "techclip://";
+
+type SocialProvider = "google" | "github";
+
+type SocialSignInResponse = {
+  redirect: boolean;
+  url?: string;
+};
 
 /**
  * ログイン画面
@@ -71,6 +82,35 @@ export default function LoginScreen() {
       } else {
         setErrorMessage(t("auth.loginFailed"));
       }
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleSocialSignIn = async (provider: SocialProvider) => {
+    setErrorMessage("");
+    setIsSubmitting(true);
+
+    try {
+      const response = await fetch(`${getBaseUrl()}${SOCIAL_SIGN_IN_PATH}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          provider,
+          callbackURL: SOCIAL_CALLBACK_URL,
+          disableRedirect: true,
+        }),
+      });
+      const data = (await response.json()) as SocialSignInResponse;
+
+      if (!response.ok || !data.url) {
+        setErrorMessage(t("auth.socialLoginFailed"));
+        return;
+      }
+
+      await Linking.openURL(data.url);
+    } catch {
+      setErrorMessage(t("auth.socialLoginFailed"));
     } finally {
       setIsSubmitting(false);
     }
@@ -154,6 +194,16 @@ export default function LoginScreen() {
             </View>
           </View>
 
+          <Link href="/(auth)/forgot-password" asChild>
+            <Pressable
+              className="mb-6 self-start"
+              accessibilityRole="link"
+              accessibilityLabel={t("auth.forgotPassword")}
+            >
+              <Text className="text-sm font-medium text-primary">{t("auth.forgotPassword")}</Text>
+            </Pressable>
+          </Link>
+
           <Pressable
             onPress={handleSubmit}
             disabled={isSubmitting || !isFormValid}
@@ -172,6 +222,40 @@ export default function LoginScreen() {
               <Text className="text-base font-semibold text-text">{t("auth.login")}</Text>
             )}
           </Pressable>
+
+          <View className="my-6 flex-row items-center">
+            <View className="h-px flex-1 bg-border" />
+            <Text className="mx-3 text-sm text-text-muted">{t("auth.socialSeparator")}</Text>
+            <View className="h-px flex-1 bg-border" />
+          </View>
+
+          <View className="gap-3">
+            <Pressable
+              onPress={() => handleSocialSignIn("google")}
+              disabled={isSubmitting}
+              className="items-center rounded-lg border border-border bg-card py-3.5"
+              accessibilityRole="button"
+              accessibilityLabel={t("auth.continueWithGoogle")}
+              accessibilityState={{ disabled: isSubmitting }}
+            >
+              <Text className="text-base font-medium text-text">
+                {t("auth.continueWithGoogle")}
+              </Text>
+            </Pressable>
+
+            <Pressable
+              onPress={() => handleSocialSignIn("github")}
+              disabled={isSubmitting}
+              className="items-center rounded-lg border border-border bg-card py-3.5"
+              accessibilityRole="button"
+              accessibilityLabel={t("auth.continueWithGithub")}
+              accessibilityState={{ disabled: isSubmitting }}
+            >
+              <Text className="text-base font-medium text-text">
+                {t("auth.continueWithGithub")}
+              </Text>
+            </Pressable>
+          </View>
         </View>
 
         <View className="mt-6 flex-row items-center justify-center">

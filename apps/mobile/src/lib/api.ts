@@ -32,7 +32,7 @@ type RefreshTokenResponse = {
  *
  * @returns Workers APIのベースURL
  */
-function getBaseUrl(): string {
+export function getBaseUrl(): string {
   const extra = Constants.expoConfig?.extra;
   if (extra && typeof extra === "object" && "apiUrl" in extra) {
     return extra.apiUrl as string;
