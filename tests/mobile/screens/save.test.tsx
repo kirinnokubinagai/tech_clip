@@ -240,7 +240,7 @@ describe("SaveScreen", () => {
 
       // Assert
       await waitFor(() => {
-        expect(getByText("zenn")).toBeDefined();
+        expect(getByText("Zenn")).toBeDefined();
       });
     });
 
