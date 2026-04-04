@@ -53,10 +53,14 @@ export const THEME_COLORS = {
   card: "#ffffff",
   /** テキスト色 */
   text: "#1c1917",
+  /** 弱い補助テキスト色 */
+  textDim: "#64748b",
   /** アクセントカラー（プライマリ） */
   accent: "#14b8a6",
   /** 境界線色 */
   border: "#e7e5e4",
+  /** 白色 */
+  white: "#ffffff",
   /** エラー色 */
   error: "#ef4444",
   /** 成功色 */

@@ -86,8 +86,10 @@ describe("constants", () => {
       expect(THEME_COLORS.background).toBe("#fafaf9");
       expect(THEME_COLORS.card).toBe("#ffffff");
       expect(THEME_COLORS.text).toBe("#1c1917");
+      expect(THEME_COLORS.textDim).toBe("#64748b");
       expect(THEME_COLORS.accent).toBe("#14b8a6");
       expect(THEME_COLORS.border).toBe("#e7e5e4");
+      expect(THEME_COLORS.white).toBe("#ffffff");
       expect(THEME_COLORS.error).toBe("#ef4444");
       expect(THEME_COLORS.success).toBe("#22c55e");
       expect(THEME_COLORS.warning).toBe("#f59e0b");
