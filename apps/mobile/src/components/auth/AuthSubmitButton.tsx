@@ -1,4 +1,5 @@
 import { ActivityIndicator, Pressable, Text } from "react-native";
+import { twMerge } from "tailwind-merge";
 import { DARK_COLORS } from "@/lib/constants";
 
 type AuthSubmitButtonProps = {
@@ -12,6 +13,8 @@ type AuthSubmitButtonProps = {
   textClassName?: string;
   className?: string;
 };
+
+const BASE_BUTTON_CLASS_NAME = "items-center rounded-lg bg-primary py-3.5";
 
 /**
  * 認証画面用の送信ボタン
@@ -35,11 +38,11 @@ export function AuthSubmitButton({
   testID,
   accessibilityHint,
   textClassName = "text-base font-semibold text-white",
-  className = "items-center rounded-lg bg-primary py-3.5",
+  className,
 }: AuthSubmitButtonProps) {
   return (
     <Pressable
-      className={className}
+      className={twMerge(BASE_BUTTON_CLASS_NAME, className)}
       onPress={onPress}
       disabled={disabled}
       style={({ pressed }) => ({

@@ -2,6 +2,7 @@ import { Link } from "expo-router";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
+  ActivityIndicator,
   KeyboardAvoidingView,
   Linking,
   Platform,
@@ -270,8 +271,17 @@ export default function LoginScreen() {
                 accessibilityRole="button"
                 accessibilityLabel={t(translationKey)}
                 accessibilityState={{ disabled: isAnySubmitting }}
+                testID={`social-signin-${provider}`}
               >
-                <Text className="text-base font-medium text-text">{t(translationKey)}</Text>
+                {socialSigningInProvider === provider ? (
+                  <ActivityIndicator
+                    color={DARK_COLORS.text}
+                    size="small"
+                    testID={`social-signin-${provider}-loading`}
+                  />
+                ) : (
+                  <Text className="text-base font-medium text-text">{t(translationKey)}</Text>
+                )}
               </Pressable>
             ))}
           </View>

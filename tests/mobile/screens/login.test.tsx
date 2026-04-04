@@ -174,6 +174,37 @@ describe("LoginScreen", () => {
     });
   });
 
+  it("ソーシャルログイン中は押下したプロバイダーだけローディング表示になること", async () => {
+    // Arrange
+    let resolveFetch: ((value: unknown) => void) | undefined;
+    (global.fetch as jest.Mock).mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          resolveFetch = resolve;
+        }),
+    );
+    const { getByLabelText, getByTestId, queryByText } = await render(<LoginScreen />);
+
+    // Act
+    fireEvent.press(getByLabelText("Google でログイン"));
+
+    // Assert
+    await waitFor(() => {
+      expect(getByTestId("social-signin-google-loading")).toBeDefined();
+      expect(queryByText("Google でログイン")).toBeNull();
+      expect(queryByText("GitHub でログイン")).toBeDefined();
+    });
+
+    resolveFetch?.({
+      ok: true,
+      json: async () => ({ url: "https://accounts.google.com/o/oauth2/auth" }),
+    });
+
+    await waitFor(() => {
+      expect(mockOpenUrl).toHaveBeenCalledWith("https://accounts.google.com/o/oauth2/auth");
+    });
+  });
+
   it("メールアドレス未入力時にバリデーションエラーを表示すること", async () => {
     // Arrange
     const { getByTestId, findByLabelText } = await render(<LoginScreen />);
