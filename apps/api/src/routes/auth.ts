@@ -68,10 +68,9 @@ async function hashRefreshToken(token: string): Promise<string> {
  * @returns 平文のリフレッシュトークン
  */
 function generateRefreshToken(): string {
-  return (crypto.randomUUID().replaceAll("-", "") + crypto.randomUUID().replaceAll("-", "")).slice(
-    0,
-    REFRESH_TOKEN_LENGTH,
-  );
+  const bytes = new Uint8Array(REFRESH_TOKEN_LENGTH / 2);
+  crypto.getRandomValues(bytes);
+  return Array.from(bytes, (b) => b.toString(16).padStart(2, "0")).join("");
 }
 
 /**
@@ -326,91 +325,92 @@ export function createAuthRoute({ db, getAuth }: AuthRouteOptions) {
 
     try {
       const refreshTokenHash = await hashRefreshToken(parsed.data.refreshToken);
-      const [refreshTokenRow] = await db
-        .select()
-        .from(refreshTokens)
-        .where(eq(refreshTokens.tokenHash, refreshTokenHash));
 
-      if (!refreshTokenRow) {
-        return c.json(
-          {
-            success: false,
+      const result = await db.transaction(async (tx) => {
+        const [refreshTokenRow] = await tx
+          .select()
+          .from(refreshTokens)
+          .where(eq(refreshTokens.tokenHash, refreshTokenHash));
+
+        if (!refreshTokenRow) {
+          return {
             error: {
               code: AUTH_EXPIRED_CODE,
               message: "セッションの有効期限が切れました。再度ログインしてください",
             },
-          },
-          HTTP_UNAUTHORIZED,
-        );
-      }
+          } as const;
+        }
 
-      const [sessionRow] = await db
-        .select()
-        .from(sessions)
-        .where(eq(sessions.id, refreshTokenRow.sessionId));
+        const [sessionRow] = await tx
+          .select()
+          .from(sessions)
+          .where(eq(sessions.id, refreshTokenRow.sessionId));
 
-      if (!sessionRow) {
-        return c.json(
-          {
-            success: false,
+        if (!sessionRow) {
+          return {
             error: {
               code: AUTH_EXPIRED_CODE,
               message: "セッションの有効期限が切れました。再度ログインしてください",
             },
-          },
-          HTTP_UNAUTHORIZED,
-        );
-      }
+          } as const;
+        }
 
-      const refreshExpiresAt = new Date(refreshTokenRow.expiresAt);
-      const expiresAt = new Date(sessionRow.expiresAt);
-      if (refreshExpiresAt <= new Date() || expiresAt <= new Date()) {
-        return c.json(
-          {
-            success: false,
+        const refreshExpiresAt = new Date(refreshTokenRow.expiresAt);
+        const expiresAt = new Date(sessionRow.expiresAt);
+        if (refreshExpiresAt <= new Date() || expiresAt <= new Date()) {
+          return {
             error: {
               code: AUTH_EXPIRED_CODE,
               message: "セッションの有効期限が切れました。再度ログインしてください",
             },
-          },
-          HTTP_UNAUTHORIZED,
-        );
-      }
+          } as const;
+        }
 
-      const [userRow] = await db.select().from(users).where(eq(users.id, sessionRow.userId));
+        const [userRow] = await tx.select().from(users).where(eq(users.id, sessionRow.userId));
 
-      if (!userRow) {
-        return c.json(
-          {
-            success: false,
+        if (!userRow) {
+          return {
             error: {
               code: AUTH_EXPIRED_CODE,
               message: "セッションの有効期限が切れました。再度ログインしてください",
             },
-          },
-          HTTP_UNAUTHORIZED,
-        );
-      }
+          } as const;
+        }
 
-      const nextRefreshToken = generateRefreshToken();
-      const nextRefreshTokenHash = await hashRefreshToken(nextRefreshToken);
+        const nextRefreshToken = generateRefreshToken();
+        const nextRefreshTokenHash = await hashRefreshToken(nextRefreshToken);
 
-      await db
-        .update(refreshTokens)
-        .set({
-          tokenHash: nextRefreshTokenHash,
-          expiresAt: sessionRow.expiresAt,
-          updatedAt: new Date().toISOString(),
-        })
-        .where(eq(refreshTokens.id, refreshTokenRow.id));
+        await tx
+          .update(refreshTokens)
+          .set({
+            tokenHash: nextRefreshTokenHash,
+            expiresAt: sessionRow.expiresAt,
+            updatedAt: new Date().toISOString(),
+          })
+          .where(eq(refreshTokens.id, refreshTokenRow.id));
 
-      return c.json(
-        {
-          success: true,
+        return {
           data: {
             token: sessionRow.token,
             refreshToken: nextRefreshToken,
           },
+        } as const;
+      });
+
+      if ("error" in result) {
+        return c.json(
+          {
+            success: false,
+            error: result.error,
+          },
+          HTTP_UNAUTHORIZED,
+        );
+      }
+
+      return c.json(
+        {
+          success: true,
+          data: result.data,
         },
         HTTP_OK,
       );
