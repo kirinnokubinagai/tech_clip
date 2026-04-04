@@ -34,3 +34,21 @@ jobs:
               gh pr edit ${{ github.event.pull_request.number }} --add-label "AI Review: NEEDS WORK" --remove-label "AI Review: PASS"
 
             重要: gh pr review --approve は絶対に実行しないでください。最終承認は人間が行います。
+
+  review-gate:
+    name: Review Gate
+    needs: review-and-label
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: read
+    steps:
+      - name: Check review label
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          LABELS=$(gh api repos/${{ github.repository }}/pulls/${{ github.event.pull_request.number }} --jq '.labels[].name')
+          if echo "$LABELS" | grep -q "AI Review: NEEDS WORK"; then
+            echo "::error::AIレビューで問題または改善提案があります。修正してください。"
+            exit 1
+          fi
+          echo "AIレビュー: PASS"
