@@ -1,6 +1,21 @@
 import { createLogger } from "@mobile/lib/logger";
+import * as Sentry from "@sentry/react-native";
+
+jest.mock("@sentry/react-native");
+
+const mockCaptureException = jest.mocked(Sentry.captureException);
+const mockGetClient = jest.mocked(Sentry.getClient);
 
 describe("createLogger", () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    mockGetClient.mockReturnValue(undefined);
+  });
+
+  afterEach(() => {
+    jest.clearAllMocks();
+  });
+
   describe("info", () => {
     it("開発環境でinfoメッセージをログ出力できること", () => {
       // Arrange
@@ -104,6 +119,51 @@ describe("createLogger", () => {
 
       // Assert
       expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining("コンテキストなしエラー"));
+      consoleSpy.mockRestore();
+    });
+
+    it("Sentryクライアントが初期化済みかつcontextにerrorがある場合にcaptureExceptionを呼び出せること", () => {
+      // Arrange
+      const consoleSpy = jest.spyOn(console, "error").mockImplementation(() => {});
+      mockGetClient.mockReturnValue({} as ReturnType<typeof Sentry.getClient>);
+      const logger = createLogger();
+      const error = new Error("Sentryキャプチャテスト");
+
+      // Act
+      logger.error("エラー発生", { error });
+
+      // Assert
+      expect(mockCaptureException).toHaveBeenCalledTimes(1);
+      expect(mockCaptureException).toHaveBeenCalledWith(error);
+      consoleSpy.mockRestore();
+    });
+
+    it("Sentryクライアントが未初期化の場合にcaptureExceptionを呼び出さないこと", () => {
+      // Arrange
+      const consoleSpy = jest.spyOn(console, "error").mockImplementation(() => {});
+      mockGetClient.mockReturnValue(undefined);
+      const logger = createLogger();
+      const error = new Error("未初期化テスト");
+
+      // Act
+      logger.error("エラー発生", { error });
+
+      // Assert
+      expect(mockCaptureException).not.toHaveBeenCalled();
+      consoleSpy.mockRestore();
+    });
+
+    it("contextにerrorキーがない場合にcaptureExceptionを呼び出さないこと", () => {
+      // Arrange
+      const consoleSpy = jest.spyOn(console, "error").mockImplementation(() => {});
+      mockGetClient.mockReturnValue({} as ReturnType<typeof Sentry.getClient>);
+      const logger = createLogger();
+
+      // Act
+      logger.error("エラー発生", { message: "errorキーなし" });
+
+      // Assert
+      expect(mockCaptureException).not.toHaveBeenCalled();
       consoleSpy.mockRestore();
     });
   });

@@ -65,7 +65,9 @@
     "filter": "フィルター",
     "loadingArticles": "読み込み中...",
     "fetchError": "記事の取得に失敗しました",
-    "noArticles": "記事がありません"
+    "noArticles": "記事がありません",
+    "offlineCachedArticles": "オフライン：キャッシュ済み記事を表示中",
+    "offlineNoCache": "オフライン：キャッシュがありません"
   },
   "article": {
     "save": "記事を保存",

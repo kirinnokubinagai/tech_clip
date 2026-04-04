@@ -18,6 +18,7 @@ module.exports = {
     "^@mobile/(.*)$": "<rootDir>/src/$1",
     "^@mobile-app/(.*)$": "<rootDir>/app/$1",
     "^nativewind$": "<rootDir>/__mocks__/nativewind.js",
+    "^@sentry/react-native$": "<rootDir>/__mocks__/@sentry/react-native.js",
     "^lucide-react-native$": "<rootDir>/__mocks__/lucide-react-native.js",
     "^react-native-css-interop$": "<rootDir>/__mocks__/react-native-css-interop.js",
     "^react-native-css-interop/jsx-runtime$": "react/jsx-runtime",

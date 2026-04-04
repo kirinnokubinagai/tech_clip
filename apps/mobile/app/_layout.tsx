@@ -4,6 +4,7 @@ import { QueryClientProvider } from "@tanstack/react-query";
 import { Redirect, Stack } from "expo-router";
 import { useEffect } from "react";
 import { ActivityIndicator, View } from "react-native";
+import { OfflineBanner } from "../src/components/OfflineBanner";
 import {
   DEFAULT_BACKGROUND_SYNC_CONFIG,
   registerNativeBackgroundFetch,
@@ -18,10 +19,13 @@ import {
 } from "../src/lib/notifications";
 import { queryClient } from "../src/lib/query-client";
 import { configureRevenueCat } from "../src/lib/revenueCat";
+import { initSentry } from "../src/lib/sentry";
 import { requestTrackingPermission } from "../src/lib/tracking";
 import { useAuthStore } from "../src/stores/auth-store";
 import { useSettingsStore } from "../src/stores/settings-store";
 import { useUIStore } from "../src/stores/ui-store";
+
+initSentry(process.env.EXPO_PUBLIC_SENTRY_DSN);
 
 export default function RootLayout() {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
@@ -78,6 +82,7 @@ export default function RootLayout() {
 
   return (
     <QueryClientProvider client={queryClient}>
+      <OfflineBanner />
       <Stack screenOptions={{ headerShown: false }}>
         <Stack.Screen name="(tabs)" />
         <Stack.Screen name="(auth)" />
