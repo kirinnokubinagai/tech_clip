@@ -42,6 +42,14 @@ configure({ defaultIncludeHiddenElements: true });
 global.requestAnimationFrame = (callback) => setTimeout(callback, 0);
 global.cancelAnimationFrame = (id) => clearTimeout(id);
 
+// Patch Animated to ignore useNativeDriver in test environment to prevent
+// "Unable to locate attached view in the native tree" errors
+const { Animated } = require("react-native");
+const originalTiming = Animated.timing;
+Animated.timing = (value, config) => originalTiming(value, { ...config, useNativeDriver: false });
+const originalSpring = Animated.spring;
+Animated.spring = (value, config) => originalSpring(value, { ...config, useNativeDriver: false });
+
 // react-native-web TextInput uses document in a useEffect; provide a minimal stub
 // so tests using TextInput don't crash in the Node test environment.
 if (typeof global.document === "undefined") {

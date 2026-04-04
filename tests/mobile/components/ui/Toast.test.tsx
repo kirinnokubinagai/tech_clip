@@ -1,11 +1,17 @@
 import { fireEvent, render } from "@testing-library/react-native";
+import { Pressable, Text, View } from "react-native";
 
-jest.mock("@mobile/components/ui/Toast", () => {
-  const React = require("react");
-  const { View, Pressable, Text } = require("react-native");
+jest.mock("@mobile/components/ui/Toast", () => ({
+  Toast: jest.fn(),
+}));
 
-  return {
-    Toast: ({
+const { Toast } = require("@mobile/components/ui/Toast");
+
+const React = require("react");
+
+beforeEach(() => {
+  Toast.mockImplementation(
+    ({
       message,
       visible,
       onDismiss,
@@ -26,10 +32,8 @@ jest.mock("@mobile/components/ui/Toast", () => {
         ),
       );
     },
-  };
+  );
 });
-
-const { Toast } = require("@mobile/components/ui/Toast");
 
 describe("Toast", () => {
   describe("レンダリング", () => {
