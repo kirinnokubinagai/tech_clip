@@ -7,8 +7,13 @@ jest.mock("@/lib/api", () => ({
   apiFetch: jest.fn(),
 }));
 
+jest.mock("expo-localization", () => ({
+  getLocales: jest.fn(() => [{ languageCode: "ja" }]),
+}));
+
 import { useSettingsStore } from "@mobile/stores/settings-store";
 import * as SecureStore from "expo-secure-store";
+import { getLocales } from "expo-localization";
 import { apiFetch } from "@/lib/api";
 
 /** モック型キャスト */
@@ -19,6 +24,7 @@ const mockSetItemAsync = SecureStore.setItemAsync as jest.MockedFunction<
   typeof SecureStore.setItemAsync
 >;
 const mockApiFetch = apiFetch as jest.MockedFunction<typeof apiFetch>;
+const mockGetLocales = getLocales as jest.MockedFunction<typeof getLocales>;
 
 /** テスト用通知設定データ */
 const TEST_NOTIFICATION_SETTINGS = {
@@ -34,9 +40,12 @@ const TEST_NOTIFICATION_SETTINGS = {
 describe("useSettingsStore", () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    mockGetLocales.mockReturnValue([{ languageCode: "ja" }] as ReturnType<typeof getLocales>);
     useSettingsStore.setState({
       language: "日本語",
       isLanguageLoaded: false,
+      summaryLanguage: "ja",
+      isSummaryLanguageLoaded: false,
       notificationSettings: null,
       isNotificationSettingsLoaded: false,
     });
@@ -206,6 +215,109 @@ describe("useSettingsStore", () => {
           "通知設定の更新に失敗しました",
         );
         expect(useSettingsStore.getState().notificationSettings?.newArticle).toBe(true);
+      });
+    });
+  });
+
+  describe("要約言語設定", () => {
+    describe("loadSummaryLanguage", () => {
+      it("保存済みの要約言語設定を読み込めること", async () => {
+        // Arrange
+        mockGetItemAsync.mockResolvedValue('"en"');
+
+        // Act
+        await useSettingsStore.getState().loadSummaryLanguage();
+
+        // Assert
+        const state = useSettingsStore.getState();
+        expect(state.summaryLanguage).toBe("en");
+        expect(state.isSummaryLanguageLoaded).toBe(true);
+      });
+
+      it("保存済みの設定がない場合はデバイス言語（ja）になること", async () => {
+        // Arrange
+        mockGetItemAsync.mockResolvedValue(null);
+        mockGetLocales.mockReturnValue([{ languageCode: "ja" }] as ReturnType<typeof getLocales>);
+
+        // Act
+        await useSettingsStore.getState().loadSummaryLanguage();
+
+        // Assert
+        const state = useSettingsStore.getState();
+        expect(state.summaryLanguage).toBe("ja");
+        expect(state.isSummaryLanguageLoaded).toBe(true);
+      });
+
+      it("デバイス言語が非サポート言語の場合はデフォルト（ja）になること", async () => {
+        // Arrange
+        mockGetItemAsync.mockResolvedValue(null);
+        mockGetLocales.mockReturnValue([
+          { languageCode: "fr" },
+        ] as ReturnType<typeof getLocales>);
+
+        // Act
+        await useSettingsStore.getState().loadSummaryLanguage();
+
+        // Assert
+        expect(useSettingsStore.getState().summaryLanguage).toBe("ja");
+      });
+
+      it("デバイスのロケールが空の場合はデフォルト（ja）になること", async () => {
+        // Arrange
+        mockGetItemAsync.mockResolvedValue(null);
+        mockGetLocales.mockReturnValue([]);
+
+        // Act
+        await useSettingsStore.getState().loadSummaryLanguage();
+
+        // Assert
+        expect(useSettingsStore.getState().summaryLanguage).toBe("ja");
+      });
+
+      it("デバイス言語がenの場合はenになること", async () => {
+        // Arrange
+        mockGetItemAsync.mockResolvedValue(null);
+        mockGetLocales.mockReturnValue([
+          { languageCode: "en" },
+        ] as ReturnType<typeof getLocales>);
+
+        // Act
+        await useSettingsStore.getState().loadSummaryLanguage();
+
+        // Assert
+        expect(useSettingsStore.getState().summaryLanguage).toBe("en");
+      });
+    });
+
+    describe("setSummaryLanguage", () => {
+      it("要約言語をzhに変更してSecureStoreに永続化できること", async () => {
+        // Arrange
+        const newLanguage = "zh" as const;
+
+        // Act
+        await useSettingsStore.getState().setSummaryLanguage(newLanguage);
+
+        // Assert
+        expect(useSettingsStore.getState().summaryLanguage).toBe("zh");
+        expect(mockSetItemAsync).toHaveBeenCalledWith(
+          "settings_summary_language",
+          JSON.stringify("zh"),
+        );
+      });
+
+      it("要約言語をkoに変更してSecureStoreに永続化できること", async () => {
+        // Arrange
+        const newLanguage = "ko" as const;
+
+        // Act
+        await useSettingsStore.getState().setSummaryLanguage(newLanguage);
+
+        // Assert
+        expect(useSettingsStore.getState().summaryLanguage).toBe("ko");
+        expect(mockSetItemAsync).toHaveBeenCalledWith(
+          "settings_summary_language",
+          JSON.stringify("ko"),
+        );
       });
     });
   });
