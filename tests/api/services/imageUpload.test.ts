@@ -205,7 +205,7 @@ describe("processAvatarImage", () => {
 
   it("寸法上限を超える画像は拒否されること", async () => {
     // Arrange
-    const file = await createImageFile("png", 4097, 1);
+    const file = await createImageFile("png", 2049, 1);
 
     // Act
     const result = await processAvatarImage(file);
@@ -215,12 +215,12 @@ describe("processAvatarImage", () => {
     if (result.isValid) {
       throw new Error("画像処理が拒否されませんでした");
     }
-    expect(result.error).toContain("4096px");
+    expect(result.error).toContain("2048px");
   });
 
-  it("寸法がちょうど4096pxの画像は受け付けること", async () => {
+  it("寸法がちょうど2048pxの画像は受け付けること", async () => {
     // Arrange
-    const file = await createImageFile("png", 4096, 4096);
+    const file = await createImageFile("png", 2048, 2048);
 
     // Act
     const result = await processAvatarImage(file);
@@ -231,7 +231,7 @@ describe("processAvatarImage", () => {
 
   it("高さのみが寸法上限を超える画像は拒否されること", async () => {
     // Arrange
-    const file = await createImageFile("png", 1, 4097);
+    const file = await createImageFile("png", 1, 2049);
 
     // Act
     const result = await processAvatarImage(file);
@@ -241,7 +241,59 @@ describe("processAvatarImage", () => {
     if (result.isValid) {
       throw new Error("画像処理が拒否されませんでした");
     }
-    expect(result.error).toContain("4096px");
+    expect(result.error).toContain("2048px");
+  });
+
+  it("GIFヘッダーをもつファイルをimage/jpegで偽装した場合は拒否されること", async () => {
+    // Arrange
+    /** GIF87aマジックバイト */
+    const GIF_HEADER = new Uint8Array([0x47, 0x49, 0x46, 0x38, 0x37, 0x61, 0x10, 0x00, 0x10, 0x00]);
+    const file = new File([GIF_HEADER], "avatar.jpg", { type: "image/jpeg" });
+
+    // Act
+    const result = await processAvatarImage(file);
+
+    // Assert
+    expect(result.isValid).toBe(false);
+    if (result.isValid) {
+      throw new Error("MIME偽装が検出されませんでした");
+    }
+    expect(result.error).toBeDefined();
+  });
+
+  it("GIF89aヘッダーをもつファイルをimage/pngで偽装した場合は拒否されること", async () => {
+    // Arrange
+    /** GIF89aマジックバイト */
+    const GIF89A_HEADER = new Uint8Array([0x47, 0x49, 0x46, 0x38, 0x39, 0x61, 0x10, 0x00, 0x10, 0x00]);
+    const file = new File([GIF89A_HEADER], "avatar.png", { type: "image/png" });
+
+    // Act
+    const result = await processAvatarImage(file);
+
+    // Assert
+    expect(result.isValid).toBe(false);
+    if (result.isValid) {
+      throw new Error("MIME偽装が検出されませんでした");
+    }
+    expect(result.error).toBeDefined();
+  });
+
+  it("Content-TypeがjpegでもPNGヘッダーの実体は正常に受け付けること", async () => {
+    // Arrange
+    const pngFile = await createImageFile("png");
+    const file = new File([await pngFile.arrayBuffer()], "avatar.jpg", {
+      type: "image/jpeg",
+    });
+
+    // Act
+    const result = await processAvatarImage(file);
+
+    // Assert
+    expect(result.isValid).toBe(true);
+    if (!result.isValid) {
+      throw new Error("正常な画像が拒否されました");
+    }
+    expect(result.image.contentType).toBe("image/png");
   });
 });
 
