@@ -89,6 +89,24 @@ describe("LoginScreen", () => {
     ).toBeDefined();
   });
 
+  it("https以外のURLが返された場合は遷移せずエラーメッセージを表示すること", async () => {
+    // Arrange
+    (global.fetch as jest.Mock).mockResolvedValue({
+      ok: true,
+      json: async () => ({ url: "javascript:alert('xss')" }),
+    });
+    const { getByLabelText, findByLabelText } = await render(<LoginScreen />);
+
+    // Act
+    await fireEvent.press(getByLabelText("GitHub でログイン"));
+
+    // Assert
+    expect(
+      await findByLabelText("ソーシャルログインの開始に失敗しました。もう一度お試しください。"),
+    ).toBeDefined();
+    expect(mockOpenUrl).not.toHaveBeenCalled();
+  });
+
   it("ソーシャルログインでネットワークエラーが発生した場合エラーメッセージを表示すること", async () => {
     // Arrange
     (global.fetch as jest.Mock).mockRejectedValue(new Error("network error"));

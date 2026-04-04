@@ -59,13 +59,13 @@ export default function ForgotPasswordScreen() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email: trimmedEmail }),
       });
-      const data = (await response.json()) as Partial<ForgotPasswordSuccessResponse>;
 
       if (!response.ok) {
         setSuccessMessage(t("auth.forgotPasswordSuccess"));
         return;
       }
 
+      const data = (await response.json()) as Partial<ForgotPasswordSuccessResponse>;
       setSuccessMessage(data.data?.message || t("auth.forgotPasswordSuccess"));
     } catch {
       setErrorMessage(t("common.error"));

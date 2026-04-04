@@ -68,7 +68,8 @@ export default function LoginScreen() {
     return "";
   };
 
-  const isFormValid = email.trim().length > 0 && password.length >= PASSWORD_MIN_LENGTH;
+  const isFormValid =
+    EMAIL_SIMPLE_REGEX.test(email.trim()) && password.length >= PASSWORD_MIN_LENGTH;
 
   /**
    * ログインフォームを送信する
@@ -117,7 +118,7 @@ export default function LoginScreen() {
       });
       const data = (await response.json()) as SocialSignInResponse;
 
-      if (!response.ok || !data.url) {
+      if (!response.ok || !data.url || !data.url.startsWith("https://")) {
         setErrorMessage(t("auth.socialLoginFailed"));
         return;
       }
