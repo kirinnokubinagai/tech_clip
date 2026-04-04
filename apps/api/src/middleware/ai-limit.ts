@@ -1,4 +1,4 @@
-import { and, eq, gt, sql } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import type { MiddlewareHandler } from "hono";
 
 import type { Database } from "../db";
@@ -50,9 +50,6 @@ function isResetExpired(resetAt: string | null): boolean {
   }
   return new Date(resetAt).getTime() <= Date.now();
 }
-
-/** レスポンスが成功とみなす最大ステータスコード */
-const HTTP_SUCCESS_MAX_STATUS = 399;
 
 /**
  * AI使用回数制限ミドルウェアを生成する
@@ -112,31 +109,9 @@ export function createAiLimitMiddleware(db: Database): MiddlewareHandler {
     const remaining = dbUser.freeAiUsesRemaining ?? 0;
 
     if (remaining > 0) {
-      const updated = await db
-        .update(users)
-        .set({
-          freeAiUsesRemaining: sql`${users.freeAiUsesRemaining} - 1`,
-          updatedAt: new Date().toISOString(),
-        })
-        .where(and(eq(users.id, userId), gt(users.freeAiUsesRemaining, 0)))
-        .returning();
-
-      if (updated.length === 0) {
-        return c.json(
-          {
-            success: false,
-            error: {
-              code: AI_LIMIT_ERROR_CODE,
-              message: AI_LIMIT_ERROR_MESSAGE,
-            },
-          },
-          HTTP_PAYMENT_REQUIRED,
-        );
-      }
-
       await next();
 
-      if (c.res.status <= HTTP_SUCCESS_MAX_STATUS) {
+      if (c.res.status < 400) {
         await db
           .update(users)
           .set({
@@ -154,7 +129,7 @@ export function createAiLimitMiddleware(db: Database): MiddlewareHandler {
 
       await next();
 
-      if (c.res.status <= HTTP_SUCCESS_MAX_STATUS) {
+      if (c.res.status < 400) {
         await db
           .update(users)
           .set({

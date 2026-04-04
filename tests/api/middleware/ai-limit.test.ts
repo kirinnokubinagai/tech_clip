@@ -50,11 +50,8 @@ const mockSelect = vi.fn().mockReturnValue({
   from: mockSelectFrom,
 });
 
-/** モックの db.update クエリ結果（.returning()付きアトミック更新用） */
-const mockUpdateReturning = vi.fn();
-const mockUpdateWhere = vi.fn().mockReturnValue({
-  returning: mockUpdateReturning,
-});
+/** モックの db.update クエリ結果 */
+const mockUpdateWhere = vi.fn();
 const mockUpdateSet = vi.fn().mockReturnValue({
   where: mockUpdateWhere,
 });
@@ -104,10 +101,8 @@ describe("aiLimitMiddleware", () => {
     vi.clearAllMocks();
     mockSelectFrom.mockReturnValue({ where: mockSelectWhere });
     mockSelect.mockReturnValue({ from: mockSelectFrom });
-    mockUpdateWhere.mockReturnValue({ returning: mockUpdateReturning });
     mockUpdateSet.mockReturnValue({ where: mockUpdateWhere });
     mockUpdate.mockReturnValue({ set: mockUpdateSet });
-    mockUpdateReturning.mockResolvedValue([]);
   });
 
   describe("無料ユーザー - 残回数あり", () => {
@@ -115,7 +110,6 @@ describe("aiLimitMiddleware", () => {
       // Arrange
       const userData = createFreeUserData({ remaining: 3 });
       mockSelectWhere.mockResolvedValue([userData]);
-      mockUpdateReturning.mockResolvedValue([userData]);
       const app = createTestApp(TEST_USER_ID);
 
       // Act
@@ -132,7 +126,6 @@ describe("aiLimitMiddleware", () => {
       // Arrange
       const userData = createFreeUserData({ remaining: 3 });
       mockSelectWhere.mockResolvedValue([userData]);
-      mockUpdateReturning.mockResolvedValue([userData]);
       const app = createTestApp(TEST_USER_ID);
 
       // Act
@@ -141,44 +134,10 @@ describe("aiLimitMiddleware", () => {
         headers: { "Content-Type": "application/json" },
       });
 
-      // Assert: アトミック更新 + 成功時デクリメント = 2回
-      expect(mockUpdate).toHaveBeenCalledTimes(2);
-      expect(mockUpdateSet).toHaveBeenCalledTimes(2);
-      expect(mockUpdateWhere).toHaveBeenCalledTimes(2);
-    });
-
-    it("アトミック更新でreturningが呼ばれること（TOCTOU競合防止）", async () => {
-      // Arrange
-      const userData = createFreeUserData({ remaining: 3 });
-      mockSelectWhere.mockResolvedValue([userData]);
-      mockUpdateReturning.mockResolvedValue([userData]);
-      const app = createTestApp(TEST_USER_ID);
-
-      // Act
-      await app.request("/ai/summarize", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-      });
-
-      // Assert: アトミック更新には.returning()が必須
-      expect(mockUpdateReturning).toHaveBeenCalledTimes(1);
-    });
-
-    it("アトミック更新が0件返した場合（競合負け）402を返すこと", async () => {
-      // Arrange: SELECT時点では残回数ありだが、UPDATE時点で他リクエストに先を越された場合
-      const userData = createFreeUserData({ remaining: 1 });
-      mockSelectWhere.mockResolvedValue([userData]);
-      mockUpdateReturning.mockResolvedValue([]);
-      const app = createTestApp(TEST_USER_ID);
-
-      // Act
-      const res = await app.request("/ai/summarize", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-      });
-
-      // Assert
-      expect(res.status).toBe(HTTP_PAYMENT_REQUIRED);
+      // Assert: 成功時のみ1回更新される
+      expect(mockUpdate).toHaveBeenCalledTimes(1);
+      expect(mockUpdateSet).toHaveBeenCalledTimes(1);
+      expect(mockUpdateWhere).toHaveBeenCalledTimes(1);
     });
   });
 
@@ -283,7 +242,6 @@ describe("aiLimitMiddleware", () => {
       const pastDate = new Date("2025-01-01T00:00:00Z").toISOString();
       const userData = createFreeUserData({ remaining: 0, resetAt: pastDate });
       mockSelectWhere.mockResolvedValue([userData]);
-      mockUpdateReturning.mockResolvedValue(undefined);
       const app = createTestApp(TEST_USER_ID);
 
       // Act
@@ -301,7 +259,6 @@ describe("aiLimitMiddleware", () => {
       const pastDate = new Date("2025-01-01T00:00:00Z").toISOString();
       const userData = createFreeUserData({ remaining: 0, resetAt: pastDate });
       mockSelectWhere.mockResolvedValue([userData]);
-      mockUpdateReturning.mockResolvedValue(undefined);
       const app = createTestApp(TEST_USER_ID);
 
       // Act
@@ -323,7 +280,6 @@ describe("aiLimitMiddleware", () => {
       // Arrange
       const userData = createFreeUserData({ remaining: 0, resetAt: null });
       mockSelectWhere.mockResolvedValue([userData]);
-      mockUpdateReturning.mockResolvedValue(undefined);
       const app = createTestApp(TEST_USER_ID);
 
       // Act
@@ -375,11 +331,10 @@ describe("aiLimitMiddleware", () => {
   });
 
   describe("ダウンストリーム失敗時", () => {
-    it("ダウンストリームが500を返した場合に成功時デクリメントが呼ばれないこと", async () => {
+    it("ダウンストリームが500を返した場合に無料使用回数が消費されないこと", async () => {
       // Arrange
       const userData = createFreeUserData({ remaining: 3 });
       mockSelectWhere.mockResolvedValue([userData]);
-      mockUpdateReturning.mockResolvedValue([userData]);
       const app = createTestApp(TEST_USER_ID, HTTP_INTERNAL_SERVER_ERROR);
 
       // Act
@@ -388,8 +343,8 @@ describe("aiLimitMiddleware", () => {
         headers: { "Content-Type": "application/json" },
       });
 
-      // Assert: アトミック更新の1回のみ（成功時デクリメントは呼ばれない）
-      expect(mockUpdate).toHaveBeenCalledTimes(1);
+      // Assert: 失敗時は更新しない
+      expect(mockUpdate).not.toHaveBeenCalled();
     });
   });
 
