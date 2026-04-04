@@ -1,3 +1,23 @@
+const { mockLogger, mockCreateLogger } = vi.hoisted(() => {
+  const logger = {
+    info: vi.fn(),
+    warn: vi.fn(),
+    error: vi.fn(),
+    debug: vi.fn(),
+    withRequestId: vi.fn(),
+  };
+  logger.withRequestId.mockReturnValue(logger);
+
+  return {
+    mockLogger: logger,
+    mockCreateLogger: vi.fn(() => logger),
+  };
+});
+
+vi.mock("@api/lib/logger", () => ({
+  createLogger: mockCreateLogger,
+}));
+
 import { createAiLimitMiddleware } from "@api/middleware/ai-limit";
 import { Hono } from "hono";
 import { beforeEach, describe, expect, it, vi } from "vitest";
@@ -16,6 +36,9 @@ const HTTP_OK = 200;
 
 /** HTTP 401 Unauthorized ステータスコード */
 const HTTP_UNAUTHORIZED = 401;
+
+/** HTTP 400 Bad Request ステータスコード */
+const HTTP_BAD_REQUEST = 400;
 
 /** テスト用のフリーユーザーデータ */
 function createFreeUserData(options?: { remaining?: number; resetAt?: string | null }) {
@@ -50,7 +73,7 @@ const mockSelect = vi.fn().mockReturnValue({
   from: mockSelectFrom,
 });
 
-/** モックの db.update クエリ結果（.returning()付きアトミック更新用） */
+/** モックの db.update クエリ結果 */
 const mockUpdateReturning = vi.fn();
 const mockUpdateWhere = vi.fn().mockReturnValue({
   returning: mockUpdateReturning,
@@ -70,6 +93,24 @@ const mockDb = {
 
 /** HTTP 500 Internal Server Error ステータスコード */
 const HTTP_INTERNAL_SERVER_ERROR = 500;
+
+/**
+ * SQL式のqueryChunksから文字列部分を連結して取得する
+ *
+ * Drizzle ORM の内部表現 `queryChunks` に依存しているため、メジャーアップデート時は
+ * このヘルパーと関連アサーションの見直しが必要になる可能性がある。
+ */
+function extractSqlText(sqlExpression: { queryChunks: unknown[] }): string {
+  return sqlExpression.queryChunks
+    .flatMap((chunk) => {
+      if (typeof chunk !== "object" || chunk === null || !("value" in chunk)) {
+        return [];
+      }
+      const value = (chunk as { value?: unknown }).value;
+      return Array.isArray(value) ? value.map((part) => String(part)) : [];
+    })
+    .join(" ");
+}
 
 /** テスト用のHonoアプリを作成する */
 function createTestApp(userId?: string, downstreamStatus = HTTP_OK) {
@@ -99,15 +140,36 @@ function createTestApp(userId?: string, downstreamStatus = HTTP_OK) {
   return app;
 }
 
+/** 例外をスローするダウンストリームを持つテスト用Honoアプリを作成する */
+function createThrowingTestApp(userId?: string) {
+  const app = new Hono<{ Variables: { user?: Record<string, unknown> } }>();
+
+  if (userId) {
+    app.use("/ai/*", async (c, next) => {
+      c.set("user", { id: userId });
+      await next();
+    });
+  }
+
+  app.use("/ai/*", createAiLimitMiddleware(mockDb as never));
+  app.post("/ai/summarize", () => {
+    throw new Error("ダウンストリームで予期しない例外が発生しました");
+  });
+
+  return app;
+}
+
 describe("aiLimitMiddleware", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockCreateLogger.mockReturnValue(mockLogger);
+    mockLogger.withRequestId.mockReturnValue(mockLogger);
     mockSelectFrom.mockReturnValue({ where: mockSelectWhere });
     mockSelect.mockReturnValue({ from: mockSelectFrom });
+    mockUpdateReturning.mockResolvedValue([{ id: TEST_USER_ID }]);
     mockUpdateWhere.mockReturnValue({ returning: mockUpdateReturning });
     mockUpdateSet.mockReturnValue({ where: mockUpdateWhere });
     mockUpdate.mockReturnValue({ set: mockUpdateSet });
-    mockUpdateReturning.mockResolvedValue([]);
   });
 
   describe("無料ユーザー - 残回数あり", () => {
@@ -115,7 +177,6 @@ describe("aiLimitMiddleware", () => {
       // Arrange
       const userData = createFreeUserData({ remaining: 3 });
       mockSelectWhere.mockResolvedValue([userData]);
-      mockUpdateReturning.mockResolvedValue([userData]);
       const app = createTestApp(TEST_USER_ID);
 
       // Act
@@ -128,11 +189,10 @@ describe("aiLimitMiddleware", () => {
       expect(res.status).toBe(HTTP_OK);
     });
 
-    it("リクエスト後にdb.updateが呼ばれデクリメントされること", async () => {
+    it("予約のためのdb.updateが1回呼ばれること", async () => {
       // Arrange
       const userData = createFreeUserData({ remaining: 3 });
       mockSelectWhere.mockResolvedValue([userData]);
-      mockUpdateReturning.mockResolvedValue([userData]);
       const app = createTestApp(TEST_USER_ID);
 
       // Act
@@ -141,44 +201,11 @@ describe("aiLimitMiddleware", () => {
         headers: { "Content-Type": "application/json" },
       });
 
-      // Assert: アトミック更新 + 成功時デクリメント = 2回
-      expect(mockUpdate).toHaveBeenCalledTimes(2);
-      expect(mockUpdateSet).toHaveBeenCalledTimes(2);
-      expect(mockUpdateWhere).toHaveBeenCalledTimes(2);
-    });
-
-    it("アトミック更新でreturningが呼ばれること（TOCTOU競合防止）", async () => {
-      // Arrange
-      const userData = createFreeUserData({ remaining: 3 });
-      mockSelectWhere.mockResolvedValue([userData]);
-      mockUpdateReturning.mockResolvedValue([userData]);
-      const app = createTestApp(TEST_USER_ID);
-
-      // Act
-      await app.request("/ai/summarize", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-      });
-
-      // Assert: アトミック更新には.returning()が必須
+      // Assert: 成功時のみ1回更新される
+      expect(mockUpdate).toHaveBeenCalledTimes(1);
+      expect(mockUpdateSet).toHaveBeenCalledTimes(1);
+      expect(mockUpdateWhere).toHaveBeenCalledTimes(1);
       expect(mockUpdateReturning).toHaveBeenCalledTimes(1);
-    });
-
-    it("アトミック更新が0件返した場合（競合負け）402を返すこと", async () => {
-      // Arrange: SELECT時点では残回数ありだが、UPDATE時点で他リクエストに先を越された場合
-      const userData = createFreeUserData({ remaining: 1 });
-      mockSelectWhere.mockResolvedValue([userData]);
-      mockUpdateReturning.mockResolvedValue([]);
-      const app = createTestApp(TEST_USER_ID);
-
-      // Act
-      const res = await app.request("/ai/summarize", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-      });
-
-      // Assert
-      expect(res.status).toBe(HTTP_PAYMENT_REQUIRED);
     });
   });
 
@@ -283,7 +310,6 @@ describe("aiLimitMiddleware", () => {
       const pastDate = new Date("2025-01-01T00:00:00Z").toISOString();
       const userData = createFreeUserData({ remaining: 0, resetAt: pastDate });
       mockSelectWhere.mockResolvedValue([userData]);
-      mockUpdateReturning.mockResolvedValue(undefined);
       const app = createTestApp(TEST_USER_ID);
 
       // Act
@@ -296,12 +322,11 @@ describe("aiLimitMiddleware", () => {
       expect(res.status).toBe(HTTP_OK);
     });
 
-    it("リセット時にfreeAiUsesRemainingが4にセットされること（5 - 今回1使用）", async () => {
+    it("リセット時にfreeAiUsesRemainingとfreeAiResetAtが更新されること", async () => {
       // Arrange
       const pastDate = new Date("2025-01-01T00:00:00Z").toISOString();
       const userData = createFreeUserData({ remaining: 0, resetAt: pastDate });
       mockSelectWhere.mockResolvedValue([userData]);
-      mockUpdateReturning.mockResolvedValue(undefined);
       const app = createTestApp(TEST_USER_ID);
 
       // Act
@@ -314,16 +339,20 @@ describe("aiLimitMiddleware", () => {
       expect(mockUpdate).toHaveBeenCalledTimes(1);
       expect(mockUpdateSet).toHaveBeenCalledTimes(1);
       const setArg = mockUpdateSet.mock.calls[0][0];
-      expect(setArg.freeAiUsesRemaining).toBe(4);
-      expect(setArg.freeAiResetAt).not.toBe(pastDate);
-      expect(setArg.freeAiResetAt).not.toBeNull();
+      expect(setArg.freeAiUsesRemaining).toMatchObject({
+        queryChunks: expect.any(Array),
+      });
+      expect(setArg.freeAiResetAt).toMatchObject({
+        queryChunks: expect.any(Array),
+      });
+      expect(setArg.updatedAt).toEqual(expect.any(String));
+      expect(mockUpdateReturning).toHaveBeenCalledTimes(1);
     });
 
     it("freeAiResetAtがnullの場合もリセットされて通過すること", async () => {
       // Arrange
       const userData = createFreeUserData({ remaining: 0, resetAt: null });
       mockSelectWhere.mockResolvedValue([userData]);
-      mockUpdateReturning.mockResolvedValue(undefined);
       const app = createTestApp(TEST_USER_ID);
 
       // Act
@@ -374,12 +403,105 @@ describe("aiLimitMiddleware", () => {
     });
   });
 
-  describe("ダウンストリーム失敗時", () => {
-    it("ダウンストリームが500を返した場合に成功時デクリメントが呼ばれないこと", async () => {
+  describe("TOCTOU競合（予約失敗）", () => {
+    it("残回数ありでもreserveExistingFreeUseが失敗した場合に402が返ること", async () => {
       // Arrange
       const userData = createFreeUserData({ remaining: 3 });
       mockSelectWhere.mockResolvedValue([userData]);
-      mockUpdateReturning.mockResolvedValue([userData]);
+      mockUpdateReturning.mockResolvedValue([]);
+      const app = createTestApp(TEST_USER_ID);
+
+      // Act
+      const res = await app.request("/ai/summarize", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+      });
+
+      // Assert
+      expect(res.status).toBe(HTTP_PAYMENT_REQUIRED);
+      const body = await res.json();
+      expect(body).toMatchObject({
+        success: false,
+        error: {
+          code: "AI_LIMIT_EXCEEDED",
+        },
+      });
+      expect(mockLogger.warn).toHaveBeenCalledWith("AIクォータ予約が競合で失敗しました", {
+        userId: TEST_USER_ID,
+        path: "existing-free-use",
+      });
+    });
+
+    it("残回数ありでreserveExistingFreeUseが失敗した場合にdb.updateが1回だけ呼ばれること", async () => {
+      // Arrange
+      const userData = createFreeUserData({ remaining: 3 });
+      mockSelectWhere.mockResolvedValue([userData]);
+      mockUpdateReturning.mockResolvedValue([]);
+      const app = createTestApp(TEST_USER_ID);
+
+      // Act
+      await app.request("/ai/summarize", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+      });
+
+      // Assert: 予約の試みは1回のみ。ロールバックは呼ばれない
+      expect(mockUpdate).toHaveBeenCalledTimes(1);
+    });
+
+    it("リセット対象でもreserveResetFreeUseが失敗した場合に402が返ること", async () => {
+      // Arrange
+      const pastDate = new Date("2025-01-01T00:00:00Z").toISOString();
+      const userData = createFreeUserData({ remaining: 0, resetAt: pastDate });
+      mockSelectWhere.mockResolvedValue([userData]);
+      mockUpdateReturning.mockResolvedValue([]);
+      const app = createTestApp(TEST_USER_ID);
+
+      // Act
+      const res = await app.request("/ai/summarize", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+      });
+
+      // Assert
+      expect(res.status).toBe(HTTP_PAYMENT_REQUIRED);
+      const body = await res.json();
+      expect(body).toMatchObject({
+        success: false,
+        error: {
+          code: "AI_LIMIT_EXCEEDED",
+        },
+      });
+      expect(mockLogger.warn).toHaveBeenCalledWith("AIクォータ予約が競合で失敗しました", {
+        userId: TEST_USER_ID,
+        path: "reset-free-use",
+      });
+    });
+
+    it("リセット対象でreserveResetFreeUseが失敗した場合にdb.updateが1回だけ呼ばれること", async () => {
+      // Arrange
+      const pastDate = new Date("2025-01-01T00:00:00Z").toISOString();
+      const userData = createFreeUserData({ remaining: 0, resetAt: pastDate });
+      mockSelectWhere.mockResolvedValue([userData]);
+      mockUpdateReturning.mockResolvedValue([]);
+      const app = createTestApp(TEST_USER_ID);
+
+      // Act
+      await app.request("/ai/summarize", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+      });
+
+      // Assert: 予約の試みは1回のみ。ロールバックは呼ばれない
+      expect(mockUpdate).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  describe("ダウンストリーム失敗時", () => {
+    it("ダウンストリームが500を返した場合に無料使用回数が消費されないこと", async () => {
+      // Arrange
+      const userData = createFreeUserData({ remaining: 3 });
+      mockSelectWhere.mockResolvedValue([userData]);
       const app = createTestApp(TEST_USER_ID, HTTP_INTERNAL_SERVER_ERROR);
 
       // Act
@@ -388,8 +510,53 @@ describe("aiLimitMiddleware", () => {
         headers: { "Content-Type": "application/json" },
       });
 
-      // Assert: アトミック更新の1回のみ（成功時デクリメントは呼ばれない）
-      expect(mockUpdate).toHaveBeenCalledTimes(1);
+      // Assert: 予約とロールバックの2回更新される
+      expect(mockUpdate).toHaveBeenCalledTimes(2);
+      const rollbackSetArg = mockUpdateSet.mock.calls[1][0] as {
+        freeAiUsesRemaining: { queryChunks: unknown[] };
+      };
+      expect(extractSqlText(rollbackSetArg.freeAiUsesRemaining)).toContain("MIN(");
+    });
+
+    it("ダウンストリームが400を返した場合に無料使用回数が消費されないこと", async () => {
+      // Arrange
+      const userData = createFreeUserData({ remaining: 3 });
+      mockSelectWhere.mockResolvedValue([userData]);
+      const app = createTestApp(TEST_USER_ID, HTTP_BAD_REQUEST);
+
+      // Act
+      await app.request("/ai/summarize", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+      });
+
+      // Assert
+      expect(mockUpdate).toHaveBeenCalledTimes(2);
+      const rollbackSetArg = mockUpdateSet.mock.calls[1][0] as {
+        freeAiUsesRemaining: { queryChunks: unknown[] };
+      };
+      expect(extractSqlText(rollbackSetArg.freeAiUsesRemaining)).toContain("MIN(");
+    });
+
+    it("月次リセット対象でもダウンストリーム失敗時に無料使用回数が消費されないこと", async () => {
+      // Arrange
+      const pastDate = new Date("2025-01-01T00:00:00Z").toISOString();
+      const userData = createFreeUserData({ remaining: 0, resetAt: pastDate });
+      mockSelectWhere.mockResolvedValue([userData]);
+      const app = createTestApp(TEST_USER_ID, HTTP_INTERNAL_SERVER_ERROR);
+
+      // Act
+      await app.request("/ai/summarize", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+      });
+
+      // Assert
+      expect(mockUpdate).toHaveBeenCalledTimes(2);
+      const rollbackSetArg = mockUpdateSet.mock.calls[1][0] as {
+        freeAiUsesRemaining: { queryChunks: unknown[] };
+      };
+      expect(extractSqlText(rollbackSetArg.freeAiUsesRemaining)).toContain("MIN(");
     });
   });
 
@@ -408,6 +575,73 @@ describe("aiLimitMiddleware", () => {
 
       // Assert
       expect(res.headers.get("Content-Type")).toContain("application/json");
+    });
+  });
+
+  describe("ダウンストリーム例外スロー時", () => {
+    it("ダウンストリームが例外をスローした場合にロールバックが呼ばれること", async () => {
+      // Arrange
+      const userData = createFreeUserData({ remaining: 3 });
+      mockSelectWhere.mockResolvedValue([userData]);
+      const app = createThrowingTestApp(TEST_USER_ID);
+
+      // Act
+      await app.request("/ai/summarize", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+      });
+
+      // Assert: 予約とロールバックの2回更新される
+      expect(mockUpdate).toHaveBeenCalledTimes(2);
+      const rollbackSetArg = mockUpdateSet.mock.calls[1][0] as {
+        freeAiUsesRemaining: { queryChunks: unknown[] };
+      };
+      expect(extractSqlText(rollbackSetArg.freeAiUsesRemaining)).toContain("MIN(");
+    });
+
+    it("月次リセット対象でダウンストリームが例外をスローした場合もロールバックが呼ばれること", async () => {
+      // Arrange
+      const pastDate = new Date("2025-01-01T00:00:00Z").toISOString();
+      const userData = createFreeUserData({ remaining: 0, resetAt: pastDate });
+      mockSelectWhere.mockResolvedValue([userData]);
+      const app = createThrowingTestApp(TEST_USER_ID);
+
+      // Act
+      await app.request("/ai/summarize", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+      });
+
+      // Assert: 予約とロールバックの2回更新される
+      expect(mockUpdate).toHaveBeenCalledTimes(2);
+      const rollbackSetArg = mockUpdateSet.mock.calls[1][0] as {
+        freeAiUsesRemaining: { queryChunks: unknown[] };
+      };
+      expect(extractSqlText(rollbackSetArg.freeAiUsesRemaining)).toContain("MIN(");
+    });
+
+    it("ロールバックが失敗してもリクエストがクラッシュせずerrorログが出ること", async () => {
+      // Arrange
+      const userData = createFreeUserData({ remaining: 3 });
+      mockSelectWhere.mockResolvedValue([userData]);
+      mockUpdateWhere
+        .mockReturnValueOnce({ returning: mockUpdateReturning })
+        .mockRejectedValueOnce(new Error("DB接続エラー"));
+      mockUpdateReturning.mockResolvedValueOnce([{ id: TEST_USER_ID }]);
+      const app = createTestApp(TEST_USER_ID, HTTP_INTERNAL_SERVER_ERROR);
+
+      // Act
+      const res = await app.request("/ai/summarize", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+      });
+
+      // Assert
+      expect(res.status).toBe(HTTP_INTERNAL_SERVER_ERROR);
+      expect(mockLogger.error).toHaveBeenCalledWith("AIクォータのロールバックに失敗しました", {
+        userId: TEST_USER_ID,
+        error: expect.any(Error),
+      });
     });
   });
 });

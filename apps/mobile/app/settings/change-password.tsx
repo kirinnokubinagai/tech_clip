@@ -8,13 +8,14 @@ import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Toast } from "@/components/ui/Toast";
 import { useToast } from "@/hooks/use-toast";
+import { DARK_COLORS } from "@/lib/constants";
 import { useAuthStore } from "@/stores/auth-store";
 
 /** 戻るアイコンのサイズ（px） */
 const BACK_ICON_SIZE = 24;
 
 /** テキストカラー */
-const TEXT_COLOR = "#e2e8f0";
+const TEXT_COLOR = DARK_COLORS.text;
 
 /** パスワード最小文字数 */
 const PASSWORD_MIN_LENGTH = 8;

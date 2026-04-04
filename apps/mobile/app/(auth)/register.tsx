@@ -15,7 +15,7 @@ import { AuthAlert } from "@/components/auth/AuthAlert";
 import { AuthSubmitButton } from "@/components/auth/AuthSubmitButton";
 import { AUTH_PLACEHOLDER_TEXT_COLOR } from "@/lib/ui-colors";
 import { PASSWORD_MIN_LENGTH } from "@/lib/validation";
-import { useAuthStore } from "../../src/stores/auth-store";
+import { useAuthStore } from "@/stores/auth-store";
 
 export default function RegisterScreen() {
   const { t } = useTranslation();

@@ -1,14 +1,18 @@
 import { and, eq, gt, sql } from "drizzle-orm";
-import type { MiddlewareHandler } from "hono";
+import type { Context, MiddlewareHandler, Next } from "hono";
 
 import type { Database } from "../db";
 import { users } from "../db/schema";
+import { createLogger } from "../lib/logger";
 
 /** HTTP 401 Unauthorized ステータスコード */
 const HTTP_UNAUTHORIZED = 401;
 
 /** HTTP 402 Payment Required ステータスコード */
 const HTTP_PAYMENT_REQUIRED = 402;
+
+/** HTTP 400 Bad Request 以上はエラーレスポンス */
+const HTTP_CLIENT_ERROR_MIN = 400;
 
 /** 未認証エラーコード */
 const AUTH_ERROR_CODE = "AUTH_REQUIRED";
@@ -51,8 +55,166 @@ function isResetExpired(resetAt: string | null): boolean {
   return new Date(resetAt).getTime() <= Date.now();
 }
 
-/** レスポンスが成功とみなす最大ステータスコード */
-const HTTP_SUCCESS_MAX_STATUS = 399;
+/**
+ * 既存の無料枠から1回分を予約する
+ *
+ * @param db - Drizzle ORMデータベースインスタンス
+ * @param userId - ユーザーID
+ * @returns 予約に成功した場合true
+ */
+async function reserveExistingFreeUse(db: Database, userId: string): Promise<boolean> {
+  const reserved = await db
+    .update(users)
+    .set({
+      freeAiUsesRemaining: sql`${users.freeAiUsesRemaining} - 1`,
+      updatedAt: new Date().toISOString(),
+    })
+    .where(and(eq(users.id, userId), gt(users.freeAiUsesRemaining, 0)))
+    .returning({ id: users.id });
+
+  return reserved.length > 0;
+}
+
+/**
+ * 月次リセットを伴う無料枠を1回分予約する
+ *
+ * @param db - Drizzle ORMデータベースインスタンス
+ * @param userId - ユーザーID
+ * @param resetReferenceTime - リセット判定に使う基準時刻
+ * @param nextResetAt - 次回リセット日時
+ * @returns 予約に成功した場合true
+ */
+async function reserveResetFreeUse(
+  db: Database,
+  userId: string,
+  resetReferenceTime: string,
+  nextResetAt: string,
+): Promise<boolean> {
+  const reserved = await db
+    .update(users)
+    .set({
+      freeAiUsesRemaining: sql`CASE
+        WHEN ${users.freeAiResetAt} IS NULL OR ${users.freeAiResetAt} <= ${resetReferenceTime}
+          THEN ${FREE_AI_USES_PER_MONTH - 1}
+        ELSE ${users.freeAiUsesRemaining} - 1
+      END`,
+      freeAiResetAt: sql`CASE
+        WHEN ${users.freeAiResetAt} IS NULL OR ${users.freeAiResetAt} <= ${resetReferenceTime}
+          THEN ${nextResetAt}
+        ELSE ${users.freeAiResetAt}
+      END`,
+      updatedAt: new Date().toISOString(),
+    })
+    .where(
+      and(
+        eq(users.id, userId),
+        // 先行リクエストが月次リセットを完了した場合でも、ELSE 句で通常デクリメントへフォールバックする。
+        sql`(${users.freeAiResetAt} IS NULL OR ${users.freeAiResetAt} <= ${resetReferenceTime} OR ${users.freeAiUsesRemaining} > 0)`,
+      ),
+    )
+    .returning({ id: users.id });
+
+  return reserved.length > 0;
+}
+
+/**
+ * 失敗したリクエスト分の無料枠予約を戻す
+ *
+ * 上限値（FREE_AI_USES_PER_MONTH）を超えないよう MIN でキャップする
+ *
+ * @param db - Drizzle ORMデータベースインスタンス
+ * @param userId - ユーザーID
+ */
+async function rollbackReservedFreeUse(db: Database, userId: string): Promise<void> {
+  await db
+    .update(users)
+    .set({
+      freeAiUsesRemaining: sql`MIN(${users.freeAiUsesRemaining} + 1, ${FREE_AI_USES_PER_MONTH})`,
+      updatedAt: new Date().toISOString(),
+    })
+    .where(eq(users.id, userId));
+}
+
+/**
+ * ロールバックを安全に実行する。失敗してもクラッシュせずエラーをログ出力する
+ *
+ * @param db - Drizzle ORMデータベースインスタンス
+ * @param userId - ユーザーID
+ * @param logger - リクエストスコープのロガー
+ */
+async function safeRollback(
+  db: Database,
+  userId: string,
+  logger: ReturnType<typeof createLogger>,
+): Promise<void> {
+  try {
+    await rollbackReservedFreeUse(db, userId);
+  } catch (rollbackError) {
+    logger.error("AIクォータのロールバックに失敗しました", { userId, error: rollbackError });
+  }
+}
+
+/**
+ * 予約済みの無料枠を保護しつつ下流ハンドラを実行する
+ *
+ * 下流が 4xx 以上のステータスを返した場合、または例外をスローした場合は
+ * ロールバックを実行して消費回数を元に戻す
+ *
+ * @param c - Hono コンテキスト
+ * @param next - 次のハンドラ
+ * @param db - Drizzle ORMデータベースインスタンス
+ * @param userId - ユーザーID
+ * @param logger - リクエストスコープのロガー
+ */
+async function executeWithRollback(
+  c: Context,
+  next: Next,
+  db: Database,
+  userId: string,
+  logger: ReturnType<typeof createLogger>,
+): Promise<void> {
+  try {
+    await next();
+    if (c.res.status >= HTTP_CLIENT_ERROR_MIN) {
+      await safeRollback(db, userId, logger);
+    }
+  } catch (error) {
+    await safeRollback(db, userId, logger);
+    throw error;
+  }
+}
+
+/**
+ * クォータ予約の競合時に警告を出し、402レスポンスを返す
+ *
+ * @param c - Hono コンテキスト
+ * @param logger - リクエストスコープのロガー
+ * @param userId - ユーザーID
+ * @param path - 競合が発生した予約経路
+ * @returns Payment Required レスポンス
+ */
+function respondReservationConflict(
+  c: Context,
+  logger: ReturnType<typeof createLogger>,
+  userId: string,
+  path: "existing-free-use" | "reset-free-use",
+): Response {
+  logger.warn("AIクォータ予約が競合で失敗しました", {
+    userId,
+    path,
+  });
+
+  return c.json(
+    {
+      success: false,
+      error: {
+        code: AI_LIMIT_ERROR_CODE,
+        message: AI_LIMIT_ERROR_MESSAGE,
+      },
+    },
+    HTTP_PAYMENT_REQUIRED,
+  );
+}
 
 /**
  * AI使用回数制限ミドルウェアを生成する
@@ -60,9 +222,8 @@ const HTTP_SUCCESS_MAX_STATUS = 399;
  * 要約/翻訳API呼び出し前にユーザーのfreeAiUsesRemainingをチェックし、
  * 無料ユーザーの使用回数を制限する。
  * - プレミアムユーザー: 制限なし（通過）
- * - 無料ユーザー（残回数あり）: アトミックUPDATE（WHERE freeAiUsesRemaining > 0）で
- *   デクリメント。更新0件の場合はTOCTOU競合とみなし402を返却
- * - 無料ユーザー（残回数なし、リセット期限切れ）: リセットして通過
+ * - 無料ユーザー（残回数あり）: 下流ハンドラ実行前に1回分を予約し、失敗時はロールバック
+ * - 無料ユーザー（残回数なし、リセット期限切れ）: 月次枠を再設定しつつ1回分を予約し、失敗時はロールバック
  * - 無料ユーザー（残回数なし、リセット期限内）: 402を返却
  *
  * @param db - Drizzle ORMデータベースインスタンス
@@ -70,6 +231,7 @@ const HTTP_SUCCESS_MAX_STATUS = 399;
  */
 export function createAiLimitMiddleware(db: Database): MiddlewareHandler {
   return async (c, next) => {
+    const logger = createLogger(c.get("requestId") as string | undefined);
     const user = c.get("user") as Record<string, unknown> | undefined;
 
     if (!user?.id) {
@@ -112,59 +274,26 @@ export function createAiLimitMiddleware(db: Database): MiddlewareHandler {
     const remaining = dbUser.freeAiUsesRemaining ?? 0;
 
     if (remaining > 0) {
-      const updated = await db
-        .update(users)
-        .set({
-          freeAiUsesRemaining: sql`${users.freeAiUsesRemaining} - 1`,
-          updatedAt: new Date().toISOString(),
-        })
-        .where(and(eq(users.id, userId), gt(users.freeAiUsesRemaining, 0)))
-        .returning();
+      const didReserve = await reserveExistingFreeUse(db, userId);
 
-      if (updated.length === 0) {
-        return c.json(
-          {
-            success: false,
-            error: {
-              code: AI_LIMIT_ERROR_CODE,
-              message: AI_LIMIT_ERROR_MESSAGE,
-            },
-          },
-          HTTP_PAYMENT_REQUIRED,
-        );
+      if (!didReserve) {
+        return respondReservationConflict(c, logger, userId, "existing-free-use");
       }
 
-      await next();
-
-      if (c.res.status <= HTTP_SUCCESS_MAX_STATUS) {
-        await db
-          .update(users)
-          .set({
-            freeAiUsesRemaining: remaining - 1,
-            updatedAt: new Date().toISOString(),
-          })
-          .where(eq(users.id, userId));
-      }
-
+      await executeWithRollback(c, next, db, userId, logger);
       return;
     }
 
     if (isResetExpired(dbUser.freeAiResetAt)) {
+      const resetReferenceTime = new Date().toISOString();
       const nextResetAt = calculateNextResetAt();
+      const didReserve = await reserveResetFreeUse(db, userId, resetReferenceTime, nextResetAt);
 
-      await next();
-
-      if (c.res.status <= HTTP_SUCCESS_MAX_STATUS) {
-        await db
-          .update(users)
-          .set({
-            freeAiUsesRemaining: FREE_AI_USES_PER_MONTH - 1,
-            freeAiResetAt: nextResetAt,
-            updatedAt: new Date().toISOString(),
-          })
-          .where(eq(users.id, userId));
+      if (!didReserve) {
+        return respondReservationConflict(c, logger, userId, "reset-free-use");
       }
 
+      await executeWithRollback(c, next, db, userId, logger);
       return;
     }
 

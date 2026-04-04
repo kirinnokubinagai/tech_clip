@@ -2,12 +2,13 @@ import { WifiOff } from "lucide-react-native";
 import { Text, View } from "react-native";
 
 import { useNetworkStatus } from "@/hooks/use-network-status";
+import { DARK_COLORS } from "@/lib/constants";
 
 /** オフラインアイコンのサイズ（px） */
 const OFFLINE_ICON_SIZE = 16;
 
 /** オフラインアイコンのカラー */
-const OFFLINE_ICON_COLOR = "#ffffff";
+const OFFLINE_ICON_COLOR = DARK_COLORS.white;
 
 /**
  * オフライン時に画面上部に表示するバナーコンポーネント

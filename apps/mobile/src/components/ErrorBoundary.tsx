@@ -5,6 +5,8 @@ import type { WithTranslation } from "react-i18next";
 import { withTranslation } from "react-i18next";
 import { Pressable, Text, View } from "react-native";
 
+import { DARK_COLORS } from "@/lib/constants";
+
 type ErrorBoundaryOwnProps = {
   children: ReactNode;
   fallback?: ReactNode;
@@ -21,7 +23,7 @@ type ErrorBoundaryState = {
 const ERROR_ICON_SIZE = 48;
 
 /** エラーアイコン色 */
-const ERROR_ICON_COLOR = "#ef4444";
+const ERROR_ICON_COLOR = DARK_COLORS.error;
 
 /** リトライアイコンサイズ（px） */
 const RETRY_ICON_SIZE = 20;
@@ -95,7 +97,7 @@ class ErrorBoundaryBase extends Component<ErrorBoundaryProps, ErrorBoundaryState
           accessibilityRole="button"
           accessibilityLabel={t("errorBoundary.retry")}
         >
-          <RefreshCw size={RETRY_ICON_SIZE} color="#ffffff" />
+          <RefreshCw size={RETRY_ICON_SIZE} color={DARK_COLORS.white} />
           <Text className="text-white font-semibold">{t("errorBoundary.retry")}</Text>
         </Pressable>
       </View>

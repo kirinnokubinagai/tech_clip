@@ -1,13 +1,14 @@
 import {
   APP_SCHEME,
+  DARK_COLORS,
   getApiBaseUrl,
   IMAGE_SIZES,
+  LIGHT_COLORS,
   MAX_FREE_AI_USES,
   PAGINATION_LIMIT,
   STALE_TIME_MS,
   SUPPORTED_SOURCE_COUNT,
   SUPPORTED_SOURCES,
-  THEME_COLORS,
 } from "@/lib/constants";
 import { SOURCE_DEFINITIONS } from "@/lib/sources";
 
@@ -81,18 +82,51 @@ describe("constants", () => {
     });
   });
 
-  describe("THEME_COLORS", () => {
+  describe("LIGHT_COLORS", () => {
     it("必須カラーが定義されていること", () => {
-      expect(THEME_COLORS.background).toBe("#fafaf9");
-      expect(THEME_COLORS.card).toBe("#ffffff");
-      expect(THEME_COLORS.text).toBe("#1c1917");
-      expect(THEME_COLORS.textDim).toBe("#64748b");
-      expect(THEME_COLORS.accent).toBe("#14b8a6");
-      expect(THEME_COLORS.border).toBe("#e7e5e4");
-      expect(THEME_COLORS.white).toBe("#ffffff");
-      expect(THEME_COLORS.error).toBe("#ef4444");
-      expect(THEME_COLORS.success).toBe("#22c55e");
-      expect(THEME_COLORS.warning).toBe("#f59e0b");
+      expect(LIGHT_COLORS.background).toBe("#fafaf9");
+      expect(LIGHT_COLORS.surface).toBe("#ffffff");
+      expect(LIGHT_COLORS.card).toBe("#ffffff");
+      expect(LIGHT_COLORS.primary).toBe("#14b8a6");
+      expect(LIGHT_COLORS.primaryLight).toBe("#5eead4");
+      expect(LIGHT_COLORS.text).toBe("#1c1917");
+      expect(LIGHT_COLORS.textMuted).toBe("#57534e");
+      expect(LIGHT_COLORS.textDim).toBe("#78716c");
+      expect(LIGHT_COLORS.accent).toBe("#14b8a6");
+      expect(LIGHT_COLORS.border).toBe("#e7e5e4");
+      expect(LIGHT_COLORS.white).toBe("#ffffff");
+      expect(LIGHT_COLORS.info).toBe("#3b82f6");
+      expect(LIGHT_COLORS.dangerSurface).toBe("#fef2f2");
+      expect(LIGHT_COLORS.successSurface).toBe("#f0fdf4");
+      expect(LIGHT_COLORS.error).toBe("#ef4444");
+      expect(LIGHT_COLORS.success).toBe("#22c55e");
+      expect(LIGHT_COLORS.warning).toBe("#f59e0b");
+      expect(LIGHT_COLORS.favorite).toBe("#ef4444");
+      expect(LIGHT_COLORS.neutral).toBe("#44403c");
+    });
+  });
+
+  describe("DARK_COLORS", () => {
+    it("ダークテーマカラートークンが定義されていること", () => {
+      expect(DARK_COLORS.background).toBe("#0a0a0f");
+      expect(DARK_COLORS.surface).toBe("#13131a");
+      expect(DARK_COLORS.card).toBe("#1a1a2e");
+      expect(DARK_COLORS.border).toBe("#2d2d44");
+      expect(DARK_COLORS.primary).toBe("#6366f1");
+      expect(DARK_COLORS.accent).toBe("#14b8a6");
+      expect(DARK_COLORS.primaryLight).toBe("#818cf8");
+      expect(DARK_COLORS.text).toBe("#e2e8f0");
+      expect(DARK_COLORS.textMuted).toBe("#94a3b8");
+      expect(DARK_COLORS.textDim).toBe("#64748b");
+      expect(DARK_COLORS.white).toBe("#ffffff");
+      expect(DARK_COLORS.error).toBe("#ef4444");
+      expect(DARK_COLORS.success).toBe("#22c55e");
+      expect(DARK_COLORS.warning).toBe("#f59e0b");
+      expect(DARK_COLORS.favorite).toBe("#ef4444");
+      expect(DARK_COLORS.info).toBe("#3b82f6");
+      expect(DARK_COLORS.dangerSurface).toBe("#2d1a1a");
+      expect(DARK_COLORS.successSurface).toBe("#1a2e1a");
+      expect(DARK_COLORS.neutral).toBe("#44403c");
     });
   });
 });

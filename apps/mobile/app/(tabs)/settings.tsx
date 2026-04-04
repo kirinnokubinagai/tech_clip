@@ -14,6 +14,7 @@ import { useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { Alert, Pressable, ScrollView, Switch, Text, View } from "react-native";
 import { confirm } from "@/components/ConfirmDialog";
+import { DARK_COLORS } from "@/lib/constants";
 import { useSubscription } from "../../src/hooks/use-subscription";
 import { useAuthStore } from "../../src/stores/auth-store";
 import { useSettingsStore } from "../../src/stores/settings-store";
@@ -46,7 +47,7 @@ type SettingsRowProps = {
 const ICON_SIZE = 20;
 
 /** アイコンカラー */
-const ICON_COLOR = "#94a3b8";
+const ICON_COLOR = DARK_COLORS.textMuted;
 
 /**
  * 設定画面の行アイテムコンポーネント
@@ -203,7 +204,7 @@ export default function SettingsScreen() {
         <SectionDivider />
         <SettingsRow
           testID="settings-logout-button"
-          icon={<LogOut size={ICON_SIZE} color="#ef4444" />}
+          icon={<LogOut size={ICON_SIZE} color={DARK_COLORS.error} />}
           label={t("settings.items.logout")}
           onPress={handleLogout}
           trailing={<View />}
@@ -237,8 +238,8 @@ export default function SettingsScreen() {
               testID="settings-notification-switch"
               value={isNotificationsEnabled}
               onValueChange={handleNotificationToggle}
-              trackColor={{ false: "#2d2d44", true: "#6366f1" }}
-              thumbColor="#ffffff"
+              trackColor={{ false: DARK_COLORS.border, true: DARK_COLORS.primary }}
+              thumbColor={DARK_COLORS.white}
               accessibilityLabel={t("settings.items.notifications")}
               accessibilityHint={
                 isNotificationsEnabled
@@ -255,7 +256,7 @@ export default function SettingsScreen() {
       <View className="bg-surface mx-4 rounded-xl border border-border">
         <SettingsRow
           testID="settings-delete-account-button"
-          icon={<Trash2 size={ICON_SIZE} color="#ef4444" />}
+          icon={<Trash2 size={ICON_SIZE} color={DARK_COLORS.error} />}
           label={t("settings.items.deleteAccount")}
           onPress={handleDeleteAccount}
           trailing={<View />}

@@ -2,6 +2,8 @@ import { Plus, X } from "lucide-react-native";
 import { useState } from "react";
 import { Pressable, Text, TextInput, View } from "react-native";
 
+import { DARK_COLORS } from "@/lib/constants";
+
 type TagPickerProps = {
   tags: readonly string[];
   selectedTags: readonly string[];
@@ -14,10 +16,10 @@ type TagPickerProps = {
 const TAG_MAX_LENGTH = 30;
 
 /** 新規タグ入力欄のプレースホルダー色 */
-const PLACEHOLDER_COLOR = "#64748b";
+const PLACEHOLDER_COLOR = DARK_COLORS.textDim;
 
 /** アイコンカラー（ミュート） */
-const ICON_COLOR_MUTED = "#94a3b8";
+const ICON_COLOR_MUTED = DARK_COLORS.textMuted;
 
 /** アイコンサイズ（px） */
 const ICON_SIZE = 14;
@@ -93,7 +95,7 @@ export function TagPicker({
               <Text className={`text-sm font-medium ${isSelected ? "text-white" : "text-text"}`}>
                 {tag}
               </Text>
-              {isSelected && <X size={ICON_SIZE} color="#ffffff" />}
+              {isSelected && <X size={ICON_SIZE} color={DARK_COLORS.white} />}
             </Pressable>
           );
         })}
@@ -125,7 +127,10 @@ export function TagPicker({
                 : "bg-surface border-border opacity-50"
             }`}
           >
-            <Plus size={ICON_SIZE + 2} color={newTagText.trim() ? "#ffffff" : ICON_COLOR_MUTED} />
+            <Plus
+              size={ICON_SIZE + 2}
+              color={newTagText.trim() ? DARK_COLORS.white : ICON_COLOR_MUTED}
+            />
           </Pressable>
         </View>
       )}

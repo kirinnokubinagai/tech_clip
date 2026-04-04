@@ -1,6 +1,8 @@
 import { useEffect, useRef } from "react";
 import { Animated, type DimensionValue, View } from "react-native";
 
+import { DARK_COLORS } from "@/lib/constants";
+
 type SkeletonProps = {
   width?: DimensionValue;
   height?: DimensionValue;
@@ -65,7 +67,7 @@ export function Skeleton({ width, height, borderRadius = 8, className = "" }: Sk
           borderRadius,
           opacity,
           /** Animated APIはNativeWindクラス（bg-card等）と直接統合できないため、テーマ定数を直接参照 */
-          backgroundColor: "#1a1a2e",
+          backgroundColor: DARK_COLORS.card,
         }}
       />
     </View>
