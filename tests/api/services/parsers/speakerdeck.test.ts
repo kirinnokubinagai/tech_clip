@@ -1,6 +1,5 @@
+import { parseSpeakerdeck } from "@api/services/parsers/speakerdeck";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-
-import { parseSpeakerdeck } from "../../../../apps/api/src/services/parsers/speakerdeck";
 
 /** SpeakerdeckページのHTMLモック（OGPメタタグあり） */
 const SAMPLE_HTML = `

@@ -1,15 +1,10 @@
+import { HTTP_BAD_REQUEST, HTTP_OK, HTTP_UNPROCESSABLE_ENTITY } from "@api/lib/http-status";
+import { createPasswordResetRoute } from "@api/routes/password-reset";
+import { sendPasswordReset } from "@api/services/emailService";
 import { Hono } from "hono";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import {
-  HTTP_BAD_REQUEST,
-  HTTP_OK,
-  HTTP_UNPROCESSABLE_ENTITY,
-} from "../../../apps/api/src/lib/http-status";
-import { createPasswordResetRoute } from "../../../apps/api/src/routes/password-reset";
-import { sendPasswordReset } from "../../../apps/api/src/services/emailService";
-
-vi.mock("../../../apps/api/src/services/emailService", () => ({
+vi.mock("@api/services/emailService", () => ({
   sendPasswordReset: vi.fn(),
 }));
 

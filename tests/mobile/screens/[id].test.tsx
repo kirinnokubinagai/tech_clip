@@ -1,6 +1,5 @@
+import ArticleDetailScreen from "@mobile-app/article/[id]";
 import { fireEvent, render, waitFor } from "@testing-library/react-native";
-
-import ArticleDetailScreen from "../../../apps/mobile/app/article/[id]";
 
 /** 要約リクエストのmutate関数 */
 const mockRequestSummaryMutate = jest.fn();
@@ -35,7 +34,7 @@ jest.mock("expo-router", () => ({
   useRouter: () => ({ back: jest.fn() }),
 }));
 
-jest.mock("../../../apps/mobile/src/hooks/use-articles", () => ({
+jest.mock("@mobile/hooks/use-articles", () => ({
   useArticleDetail: () => ({
     data: MOCK_ARTICLE,
     isLoading: false,
@@ -64,7 +63,7 @@ jest.mock("../../../apps/mobile/src/hooks/use-articles", () => ({
   }),
 }));
 
-jest.mock("../../../apps/mobile/src/stores/settings-store", () => ({
+jest.mock("@mobile/stores/settings-store", () => ({
   useSettingsStore: jest.fn((selector: (state: Record<string, unknown>) => unknown) =>
     selector({
       language: "日本語",
@@ -79,7 +78,7 @@ jest.mock("react-native/Libraries/Linking/Linking", () => ({
 
 beforeEach(() => {
   jest.clearAllMocks();
-  const { useSettingsStore } = require("../../../apps/mobile/src/stores/settings-store");
+  const { useSettingsStore } = require("@mobile/stores/settings-store");
   (useSettingsStore as jest.Mock).mockImplementation(
     (selector: (state: Record<string, unknown>) => unknown) =>
       selector({ language: "日本語", isLanguageLoaded: true }),
@@ -106,7 +105,7 @@ describe("ArticleDetailScreen", () => {
 
     it("言語設定がEnglishの場合、要約リクエストに en が渡されること", async () => {
       // Arrange
-      const { useSettingsStore } = require("../../../apps/mobile/src/stores/settings-store");
+      const { useSettingsStore } = require("@mobile/stores/settings-store");
       (useSettingsStore as jest.Mock).mockImplementation(
         (selector: (state: Record<string, unknown>) => unknown) =>
           selector({ language: "English", isLanguageLoaded: true }),
@@ -145,7 +144,7 @@ describe("ArticleDetailScreen", () => {
 
     it("言語設定がEnglishの場合、翻訳リクエストに en が渡されること", async () => {
       // Arrange
-      const { useSettingsStore } = require("../../../apps/mobile/src/stores/settings-store");
+      const { useSettingsStore } = require("@mobile/stores/settings-store");
       (useSettingsStore as jest.Mock).mockImplementation(
         (selector: (state: Record<string, unknown>) => unknown) =>
           selector({ language: "English", isLanguageLoaded: true }),

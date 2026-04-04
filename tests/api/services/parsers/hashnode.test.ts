@@ -1,6 +1,5 @@
+import { parseHashnode } from "@api/services/parsers/hashnode";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-
-import { parseHashnode } from "../../../../apps/api/src/services/parsers/hashnode";
 
 /** Hashnode GraphQL API 正常レスポンスのモックデータ */
 const SAMPLE_GRAPHQL_RESPONSE = {

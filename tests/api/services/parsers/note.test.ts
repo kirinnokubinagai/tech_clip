@@ -1,6 +1,5 @@
+import { parseNote } from "@api/services/parsers/note";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-
-import { parseNote } from "../../../../apps/api/src/services/parsers/note";
 
 /** note.com記事の標準的なHTML */
 const SAMPLE_NOTE_HTML = `

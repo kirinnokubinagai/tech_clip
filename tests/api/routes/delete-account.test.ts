@@ -1,12 +1,11 @@
-import { Hono } from "hono";
-import { beforeEach, describe, expect, it, vi } from "vitest";
-
 import {
   HTTP_INTERNAL_SERVER_ERROR,
   HTTP_NO_CONTENT,
   HTTP_UNAUTHORIZED,
-} from "../../../apps/api/src/lib/http-status";
-import { createUsersRoute } from "../../../apps/api/src/routes/users";
+} from "@api/lib/http-status";
+import { createUsersRoute } from "@api/routes/users";
+import { Hono } from "hono";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 /** テスト用のモックユーザー */
 const MOCK_USER = {

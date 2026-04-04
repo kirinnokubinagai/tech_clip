@@ -1,6 +1,6 @@
+import type { ProfileHeaderUser } from "@mobile/components/ProfileHeader";
+import { ProfileHeader } from "@mobile/components/ProfileHeader";
 import { fireEvent, render } from "@testing-library/react-native";
-import type { ProfileHeaderUser } from "../../../apps/mobile/src/components/ProfileHeader";
-import { ProfileHeader } from "../../../apps/mobile/src/components/ProfileHeader";
 
 describe("ProfileHeader", () => {
   const baseUser: ProfileHeaderUser = {

@@ -1,6 +1,5 @@
+import { parseGeneric } from "@api/services/parsers/generic";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-
-import { parseGeneric } from "../../../../apps/api/src/services/parsers/generic";
 
 /** テスト用HTMLテンプレート */
 const SAMPLE_HTML = `

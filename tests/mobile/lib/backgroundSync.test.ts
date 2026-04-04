@@ -1,4 +1,4 @@
-jest.mock("../../../apps/mobile/src/lib/syncManager", () => ({
+jest.mock("@mobile/lib/syncManager", () => ({
   syncArticles: jest.fn(),
 }));
 
@@ -16,8 +16,6 @@ jest.mock("expo-background-fetch", () => ({
   },
 }));
 
-import * as BackgroundFetch from "expo-background-fetch";
-import { AppState } from "react-native";
 import {
   BACKGROUND_FETCH_OPTIONS,
   createAppStateHandler,
@@ -28,8 +26,10 @@ import {
   resetBackgroundSyncState,
   startBackgroundSync,
   unregisterNativeBackgroundFetch,
-} from "../../../apps/mobile/src/lib/backgroundSync";
-import { syncArticles } from "../../../apps/mobile/src/lib/syncManager";
+} from "@mobile/lib/backgroundSync";
+import { syncArticles } from "@mobile/lib/syncManager";
+import * as BackgroundFetch from "expo-background-fetch";
+import { AppState } from "react-native";
 
 /** NativeEventSubscription モック */
 function makeMockSubscription(): { remove: jest.Mock } {

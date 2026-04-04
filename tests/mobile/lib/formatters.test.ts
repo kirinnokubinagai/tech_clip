@@ -1,8 +1,4 @@
-import {
-  formatCompactNumber,
-  formatRelativeTime,
-  truncateText,
-} from "../../../apps/mobile/src/utils/formatters";
+import { formatCompactNumber, formatRelativeTime, truncateText } from "@mobile/utils/formatters";
 
 describe("formatRelativeTime", () => {
   describe("秒単位", () => {

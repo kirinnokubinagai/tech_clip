@@ -1,6 +1,6 @@
+import { createAiLimitMiddleware } from "@api/middleware/ai-limit";
 import { Hono } from "hono";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { createAiLimitMiddleware } from "../../../apps/api/src/middleware/ai-limit";
 
 /** テスト用ユーザーID */
 const TEST_USER_ID = "user_test_01";

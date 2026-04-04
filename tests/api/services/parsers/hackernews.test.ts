@@ -1,6 +1,5 @@
+import { parseHackerNews } from "@api/services/parsers/hackernews";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-
-import { parseHackerNews } from "../../../../apps/api/src/services/parsers/hackernews";
 
 /** HN APIレスポンスのモックデータ（外部URL記事） */
 const SAMPLE_HN_STORY = {
@@ -49,7 +48,7 @@ const MOCK_GENERIC_RESULT = {
   source: "example.com",
 };
 
-vi.mock("../../../../apps/api/src/services/parsers/generic", () => ({
+vi.mock("@api/services/parsers/generic", () => ({
   parseGeneric: vi.fn(),
 }));
 
@@ -186,7 +185,7 @@ describe("parseHackerNews", () => {
   describe("正常系（外部URL記事）", () => {
     it("外部URLがある場合genericパーサーにフォールバックすること", async () => {
       // Arrange
-      const { parseGeneric } = await import("../../../../apps/api/src/services/parsers/generic");
+      const { parseGeneric } = await import("@api/services/parsers/generic");
       const mockParseGeneric = vi.mocked(parseGeneric);
       mockParseGeneric.mockResolvedValueOnce(MOCK_GENERIC_RESULT);
 
@@ -205,7 +204,7 @@ describe("parseHackerNews", () => {
 
     it("genericパーサーの結果にHNのタイトルと著者を優先的に使用すること", async () => {
       // Arrange
-      const { parseGeneric } = await import("../../../../apps/api/src/services/parsers/generic");
+      const { parseGeneric } = await import("@api/services/parsers/generic");
       const mockParseGeneric = vi.mocked(parseGeneric);
       mockParseGeneric.mockResolvedValueOnce(MOCK_GENERIC_RESULT);
 
@@ -226,7 +225,7 @@ describe("parseHackerNews", () => {
 
     it("genericパーサーのコンテンツが使用されること", async () => {
       // Arrange
-      const { parseGeneric } = await import("../../../../apps/api/src/services/parsers/generic");
+      const { parseGeneric } = await import("@api/services/parsers/generic");
       const mockParseGeneric = vi.mocked(parseGeneric);
       mockParseGeneric.mockResolvedValueOnce(MOCK_GENERIC_RESULT);
 
@@ -245,7 +244,7 @@ describe("parseHackerNews", () => {
 
     it("genericパーサーが失敗した場合HN情報のみで返すこと", async () => {
       // Arrange
-      const { parseGeneric } = await import("../../../../apps/api/src/services/parsers/generic");
+      const { parseGeneric } = await import("@api/services/parsers/generic");
       const mockParseGeneric = vi.mocked(parseGeneric);
       mockParseGeneric.mockRejectedValueOnce(new Error("HTMLの取得に失敗しました"));
 
@@ -272,7 +271,7 @@ describe("parseHackerNews", () => {
         ok: true,
         json: () => Promise.resolve(SAMPLE_HN_STORY_NO_AUTHOR),
       });
-      const { parseGeneric } = await import("../../../../apps/api/src/services/parsers/generic");
+      const { parseGeneric } = await import("@api/services/parsers/generic");
       const mockParseGeneric = vi.mocked(parseGeneric);
       mockParseGeneric.mockResolvedValueOnce(MOCK_GENERIC_RESULT);
 

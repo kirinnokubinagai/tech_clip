@@ -1,7 +1,7 @@
+import type { NotificationsQueryFn } from "@api/routes/notifications";
+import { createNotificationsRoute } from "@api/routes/notifications";
 import { Hono } from "hono";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import type { NotificationsQueryFn } from "../../../apps/api/src/routes/notifications";
-import { createNotificationsRoute } from "../../../apps/api/src/routes/notifications";
 
 /** HTTP ステータスコード定数 */
 const HTTP_OK = 200;

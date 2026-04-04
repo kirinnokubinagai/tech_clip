@@ -1,6 +1,3 @@
-import { Hono } from "hono";
-import { beforeEach, describe, expect, it, vi } from "vitest";
-
 import {
   HTTP_CREATED,
   HTTP_FORBIDDEN,
@@ -9,8 +6,10 @@ import {
   HTTP_OK,
   HTTP_UNAUTHORIZED,
   HTTP_UNPROCESSABLE_ENTITY,
-} from "../../../apps/api/src/lib/http-status";
-import { createSummaryRoute } from "../../../apps/api/src/routes/summary";
+} from "@api/lib/http-status";
+import { createSummaryRoute } from "@api/routes/summary";
+import { Hono } from "hono";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 /** テスト用のモックユーザー */
 const MOCK_USER = {

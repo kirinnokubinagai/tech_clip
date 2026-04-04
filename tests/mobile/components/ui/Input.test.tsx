@@ -1,6 +1,5 @@
+import { Input } from "@mobile/components/ui/Input";
 import { fireEvent, render } from "@testing-library/react-native";
-
-import { Input } from "../../../../apps/mobile/src/components/ui/Input";
 
 describe("Input", () => {
   describe("レンダリング", () => {

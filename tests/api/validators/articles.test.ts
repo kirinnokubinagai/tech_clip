@@ -1,9 +1,9 @@
-import { describe, expect, it } from "vitest";
 import {
   CreateArticleSchema,
   SearchArticlesSchema,
   UpdateArticleSchema,
-} from "../../../apps/api/src/validators/articles";
+} from "@api/validators/articles";
+import { describe, expect, it } from "vitest";
 
 describe("CreateArticleSchema", () => {
   describe("正常系", () => {

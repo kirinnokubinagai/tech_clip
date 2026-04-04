@@ -1,7 +1,6 @@
+import { EmptyState } from "@mobile/components/ui/EmptyState";
 import { fireEvent, render } from "@testing-library/react-native";
 import { Text } from "react-native";
-
-import { EmptyState } from "../../../../apps/mobile/src/components/ui/EmptyState";
 
 describe("EmptyState", () => {
   describe("レンダリング", () => {

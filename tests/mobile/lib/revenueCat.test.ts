@@ -3,7 +3,7 @@ import {
   configureRevenueCat,
   purchasePackage,
   restorePurchases,
-} from "../../../apps/mobile/src/lib/revenueCat";
+} from "@mobile/lib/revenueCat";
 
 /** react-native-purchases モック */
 jest.mock("react-native-purchases", () => ({

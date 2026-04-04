@@ -1,6 +1,5 @@
+import { parseZennBook } from "@api/services/parsers/zenn-book";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-
-import { parseZennBook } from "../../../../apps/api/src/services/parsers/zenn-book";
 
 /** Zenn Books API のブック情報レスポンス */
 const BOOK_RESPONSE = {

@@ -7,9 +7,9 @@ jest.mock("@/lib/api", () => ({
   apiFetch: jest.fn(),
 }));
 
+import { useSettingsStore } from "@mobile/stores/settings-store";
 import * as SecureStore from "expo-secure-store";
 import { apiFetch } from "@/lib/api";
-import { useSettingsStore } from "../../../apps/mobile/src/stores/settings-store";
 
 /** モック型キャスト */
 const mockGetItemAsync = SecureStore.getItemAsync as jest.MockedFunction<

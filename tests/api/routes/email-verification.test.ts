@@ -1,6 +1,3 @@
-import { Hono } from "hono";
-import { beforeEach, describe, expect, it, vi } from "vitest";
-
 import {
   HTTP_BAD_REQUEST,
   HTTP_INTERNAL_SERVER_ERROR,
@@ -8,14 +5,16 @@ import {
   HTTP_OK,
   HTTP_UNAUTHORIZED,
   HTTP_UNPROCESSABLE_ENTITY,
-} from "../../../apps/api/src/lib/http-status";
-import { createEmailVerificationRoute } from "../../../apps/api/src/routes/email-verification";
+} from "@api/lib/http-status";
+import { createEmailVerificationRoute } from "@api/routes/email-verification";
+import { Hono } from "hono";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
-vi.mock("../../../apps/api/src/services/emailService", () => ({
+vi.mock("@api/services/emailService", () => ({
   sendEmailVerification: vi.fn(),
 }));
 
-import { sendEmailVerification } from "../../../apps/api/src/services/emailService";
+import { sendEmailVerification } from "@api/services/emailService";
 
 /** テスト用のモックユーザー */
 const MOCK_USER = {

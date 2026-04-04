@@ -1,10 +1,6 @@
+import type { SummaryResult } from "@api/services/summary";
+import { createSummaryJob, getSummaryJobStatus, summarizeArticle } from "@api/services/summary";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import type { SummaryResult } from "../../../apps/api/src/services/summary";
-import {
-  createSummaryJob,
-  getSummaryJobStatus,
-  summarizeArticle,
-} from "../../../apps/api/src/services/summary";
 
 const MOCK_RUNPOD_SUCCESS_RESPONSE = {
   id: "run_abc123",

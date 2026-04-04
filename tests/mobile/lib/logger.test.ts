@@ -1,4 +1,4 @@
-import { createLogger } from "../../../apps/mobile/src/lib/logger";
+import { createLogger } from "@mobile/lib/logger";
 
 describe("createLogger", () => {
   describe("info", () => {

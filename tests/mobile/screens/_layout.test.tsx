@@ -6,7 +6,7 @@ jest.mock("expo-secure-store", () => ({
   deleteItemAsync: jest.fn().mockResolvedValue(undefined),
 }));
 
-jest.mock("../../../apps/mobile/src/stores/settings-store", () => ({
+jest.mock("@mobile/stores/settings-store", () => ({
   useSettingsStore: jest.fn((selector: (s: Record<string, unknown>) => unknown) =>
     selector({
       loadLanguage: jest.fn(),
@@ -14,32 +14,32 @@ jest.mock("../../../apps/mobile/src/stores/settings-store", () => ({
   ),
 }));
 
-jest.mock("../../../apps/mobile/src/lib/i18n", () => ({
+jest.mock("@mobile/lib/i18n", () => ({
   __esModule: true,
   default: { changeLanguage: jest.fn(), language: "ja" },
 }));
 
-jest.mock("../../../apps/mobile/src/lib/backgroundSync", () => ({
+jest.mock("@mobile/lib/backgroundSync", () => ({
   DEFAULT_BACKGROUND_SYNC_CONFIG: { intervalMs: 900000, taskName: "TEST_TASK" },
   registerNativeBackgroundFetch: jest.fn().mockResolvedValue(undefined),
   startBackgroundSync: jest.fn().mockReturnValue(() => {}),
 }));
 
-jest.mock("../../../apps/mobile/src/lib/revenueCat", () => ({
+jest.mock("@mobile/lib/revenueCat", () => ({
   configureRevenueCat: jest.fn().mockResolvedValue(undefined),
 }));
 
-jest.mock("../../../apps/mobile/src/lib/notifications", () => ({
+jest.mock("@mobile/lib/notifications", () => ({
   registerForPushNotifications: jest.fn().mockResolvedValue(null),
   registerTokenWithApi: jest.fn(),
   setupNotificationHandlers: jest.fn().mockReturnValue(() => {}),
 }));
 
-jest.mock("../../../apps/mobile/src/lib/tracking", () => ({
+jest.mock("@mobile/lib/tracking", () => ({
   requestTrackingPermission: jest.fn().mockResolvedValue(undefined),
 }));
 
-jest.mock("../../../apps/mobile/src/lib/logger", () => ({
+jest.mock("@mobile/lib/logger", () => ({
   logger: {
     info: jest.fn(),
     warn: jest.fn(),
@@ -48,7 +48,7 @@ jest.mock("../../../apps/mobile/src/lib/logger", () => ({
   },
 }));
 
-jest.mock("../../../apps/mobile/src/lib/query-client", () => ({
+jest.mock("@mobile/lib/query-client", () => ({
   queryClient: {},
 }));
 
@@ -56,7 +56,7 @@ jest.mock("@tanstack/react-query", () => ({
   QueryClientProvider: ({ children }: { children: unknown }) => children,
 }));
 
-jest.mock("../../../apps/mobile/src/stores/auth-store", () => ({
+jest.mock("@mobile/stores/auth-store", () => ({
   useAuthStore: jest.fn(
     (
       selector: (s: {
@@ -68,7 +68,7 @@ jest.mock("../../../apps/mobile/src/stores/auth-store", () => ({
   ),
 }));
 
-jest.mock("../../../apps/mobile/src/stores/ui-store", () => ({
+jest.mock("@mobile/stores/ui-store", () => ({
   useUIStore: jest.fn(
     (
       selector: (s: {
@@ -85,10 +85,10 @@ jest.mock("../../../apps/mobile/src/stores/ui-store", () => ({
   ),
 }));
 
-import RootLayout from "../../../apps/mobile/app/_layout";
-import { registerNativeBackgroundFetch } from "../../../apps/mobile/src/lib/backgroundSync";
-import { logger } from "../../../apps/mobile/src/lib/logger";
-import { configureRevenueCat } from "../../../apps/mobile/src/lib/revenueCat";
+import { registerNativeBackgroundFetch } from "@mobile/lib/backgroundSync";
+import { logger } from "@mobile/lib/logger";
+import { configureRevenueCat } from "@mobile/lib/revenueCat";
+import RootLayout from "@mobile-app/_layout";
 
 const mockedConfigureRevenueCat = configureRevenueCat as jest.MockedFunction<
   typeof configureRevenueCat

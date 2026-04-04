@@ -23,9 +23,8 @@ jest.mock("lucide-react-native", () => {
   };
 });
 
+import { PremiumGate } from "@mobile/components/PremiumGate";
 import { fireEvent, render } from "@testing-library/react-native";
-
-import { PremiumGate } from "../../../apps/mobile/src/components/PremiumGate";
 
 /** テスト用のデフォルトprops */
 const BASE_PROPS = {

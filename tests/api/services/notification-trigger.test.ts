@@ -1,8 +1,8 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
   createFollowNotification,
   createSummaryCompleteNotification,
-} from "../../../apps/api/src/services/notification-trigger";
+} from "@api/services/notification-trigger";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 /** テスト用ユーザーID */
 const FOLLOWER_USER_ID = "user_follower_01";

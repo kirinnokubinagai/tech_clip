@@ -1,7 +1,6 @@
+import SettingsScreen from "@mobile-app/(tabs)/settings";
 import { fireEvent, render } from "@testing-library/react-native";
 import { Alert } from "react-native";
-
-import SettingsScreen from "../../../apps/mobile/app/(tabs)/settings";
 
 const mockSignOut = jest.fn();
 const mockDeleteAccount = jest.fn();
@@ -10,11 +9,11 @@ const mockLoadLanguage = jest.fn().mockResolvedValue(undefined);
 const mockFetchNotificationSettings = jest.fn().mockResolvedValue(undefined);
 const mockUpdateNotificationEnabled = jest.fn().mockResolvedValue(undefined);
 
-jest.mock("../../../apps/mobile/src/hooks/use-subscription", () => ({
+jest.mock("@mobile/hooks/use-subscription", () => ({
   useSubscription: () => ({ isSubscribed: false }),
 }));
 
-jest.mock("../../../apps/mobile/src/stores/auth-store", () => ({
+jest.mock("@mobile/stores/auth-store", () => ({
   useAuthStore: jest.fn((selector: (state: Record<string, unknown>) => unknown) =>
     selector({
       signOut: mockSignOut,
@@ -24,7 +23,7 @@ jest.mock("../../../apps/mobile/src/stores/auth-store", () => ({
   ),
 }));
 
-jest.mock("../../../apps/mobile/src/stores/settings-store", () => ({
+jest.mock("@mobile/stores/settings-store", () => ({
   useSettingsStore: jest.fn((selector: (state: Record<string, unknown>) => unknown) =>
     selector({
       language: "日本語",

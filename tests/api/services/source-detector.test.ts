@@ -1,6 +1,5 @@
+import { detectSource } from "@api/services/source-detector";
 import { describe, expect, it } from "vitest";
-
-import { detectSource } from "../../../apps/api/src/services/source-detector";
 
 describe("detectSource", () => {
   describe("Zenn", () => {

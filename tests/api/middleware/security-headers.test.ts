@@ -1,6 +1,6 @@
+import { securityHeadersMiddleware } from "@api/middleware/security-headers";
 import { Hono } from "hono";
 import { describe, expect, it } from "vitest";
-import { securityHeadersMiddleware } from "../../../apps/api/src/middleware/security-headers";
 
 /** テスト用Honoアプリを作成する */
 function createTestApp(env: Record<string, string> = {}) {

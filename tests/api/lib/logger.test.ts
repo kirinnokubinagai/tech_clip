@@ -1,5 +1,5 @@
+import { createLogger } from "@api/lib/logger";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { createLogger } from "../../../apps/api/src/lib/logger";
 
 describe("createLogger", () => {
   beforeEach(() => {

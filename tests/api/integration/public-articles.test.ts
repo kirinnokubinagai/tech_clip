@@ -1,10 +1,7 @@
+import type { PublicArticlesQueryFn, UserExistsFn } from "@api/routes/public-articles";
+import { createPublicArticlesRoute } from "@api/routes/public-articles";
 import { Hono } from "hono";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import type {
-  PublicArticlesQueryFn,
-  UserExistsFn,
-} from "../../../apps/api/src/routes/public-articles";
-import { createPublicArticlesRoute } from "../../../apps/api/src/routes/public-articles";
 
 /** HTTP ステータスコード定数 */
 const HTTP_OK = 200;

@@ -1,13 +1,12 @@
-import { Hono } from "hono";
-import { beforeEach, describe, expect, it, vi } from "vitest";
-
 import {
   HTTP_INTERNAL_SERVER_ERROR,
   HTTP_OK,
   HTTP_UNAUTHORIZED,
   HTTP_UNPROCESSABLE_ENTITY,
-} from "../../../apps/api/src/lib/http-status";
-import { createAuthRoute } from "../../../apps/api/src/routes/auth";
+} from "@api/lib/http-status";
+import { createAuthRoute } from "@api/routes/auth";
+import { Hono } from "hono";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 /** テスト用セッショントークン */
 const MOCK_TOKEN = "mock-session-token-abc123";

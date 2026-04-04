@@ -1,9 +1,9 @@
+import { createUsersRoute } from "@api/routes/users";
+import { uploadAvatarToR2, validateImageFile } from "@api/services/imageUpload";
 import { Hono } from "hono";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { createUsersRoute } from "../../../apps/api/src/routes/users";
-import { uploadAvatarToR2, validateImageFile } from "../../../apps/api/src/services/imageUpload";
 
-vi.mock("../../../apps/api/src/services/imageUpload", () => ({
+vi.mock("@api/services/imageUpload", () => ({
   validateImageFile: vi.fn(),
   uploadAvatarToR2: vi.fn(),
 }));

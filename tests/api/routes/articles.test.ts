@@ -1,6 +1,3 @@
-import { Hono } from "hono";
-import { beforeEach, describe, expect, it, vi } from "vitest";
-
 import {
   HTTP_CONFLICT,
   HTTP_CREATED,
@@ -11,9 +8,11 @@ import {
   HTTP_OK,
   HTTP_UNAUTHORIZED,
   HTTP_UNPROCESSABLE_ENTITY,
-} from "../../../apps/api/src/lib/http-status";
-import type { ArticlesQueryFn } from "../../../apps/api/src/routes/articles";
-import { createArticlesRoute } from "../../../apps/api/src/routes/articles";
+} from "@api/lib/http-status";
+import type { ArticlesQueryFn } from "@api/routes/articles";
+import { createArticlesRoute } from "@api/routes/articles";
+import { Hono } from "hono";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 /** テスト用のモックユーザー */
 const MOCK_USER = {

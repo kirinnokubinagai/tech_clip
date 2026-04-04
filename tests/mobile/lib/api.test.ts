@@ -9,20 +9,20 @@ jest.mock("expo-constants", () => ({
   },
 }));
 
-jest.mock("../../../apps/mobile/src/lib/secure-store", () => ({
+jest.mock("@mobile/lib/secure-store", () => ({
   getAuthToken: jest.fn(),
   getRefreshToken: jest.fn(),
   setAuthToken: jest.fn(),
   clearAuthTokens: jest.fn(),
 }));
 
-import { apiFetch, SessionExpiredError } from "../../../apps/mobile/src/lib/api";
+import { apiFetch, SessionExpiredError } from "@mobile/lib/api";
 import {
   clearAuthTokens,
   getAuthToken,
   getRefreshToken,
   setAuthToken,
-} from "../../../apps/mobile/src/lib/secure-store";
+} from "@mobile/lib/secure-store";
 
 /** モック型キャスト */
 const mockGetAuthToken = getAuthToken as jest.MockedFunction<typeof getAuthToken>;

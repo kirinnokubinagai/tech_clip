@@ -1,6 +1,5 @@
+import ShareIntentScreen from "@mobile-app/share-intent";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react-native";
-
-import ShareIntentScreen from "../../../apps/mobile/app/share-intent";
 
 /** expo-share-intentのモック */
 const mockUseShareIntent = jest.fn();

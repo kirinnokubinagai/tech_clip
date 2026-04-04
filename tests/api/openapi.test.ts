@@ -1,5 +1,5 @@
+import { openApiSpec } from "@api/openapi";
 import { describe, expect, it } from "vitest";
-import { openApiSpec } from "../../apps/api/src/openapi";
 
 describe("openApiSpec", () => {
   it("有効なOpenAPI 3.0仕様オブジェクトであること", () => {

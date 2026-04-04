@@ -1,12 +1,7 @@
+import { HTTP_BAD_REQUEST, HTTP_OK, HTTP_UNAUTHORIZED } from "@api/lib/http-status";
+import { createSubscriptionRoute } from "@api/routes/subscription";
 import { Hono } from "hono";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-
-import {
-  HTTP_BAD_REQUEST,
-  HTTP_OK,
-  HTTP_UNAUTHORIZED,
-} from "../../../apps/api/src/lib/http-status";
-import { createSubscriptionRoute } from "../../../apps/api/src/routes/subscription";
 
 /** テスト用のモックユーザー（無料プラン） */
 const MOCK_FREE_USER = {

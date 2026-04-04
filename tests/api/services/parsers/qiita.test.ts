@@ -1,6 +1,5 @@
+import { parseQiita } from "@api/services/parsers/qiita";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-
-import { parseQiita } from "../../../../apps/api/src/services/parsers/qiita";
 
 /** Qiita API v2 正常レスポンスのモックデータ */
 const SAMPLE_QIITA_RESPONSE = {

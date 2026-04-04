@@ -1,13 +1,13 @@
-import { Hono } from "hono";
-import { beforeEach, describe, expect, it, vi } from "vitest";
 import type {
   FollowFn,
   GetFollowListFn,
   IsFollowingFn,
   UnfollowFn,
   UserExistsFn,
-} from "../../../apps/api/src/routes/follows";
-import { createFollowsRoute } from "../../../apps/api/src/routes/follows";
+} from "@api/routes/follows";
+import { createFollowsRoute } from "@api/routes/follows";
+import { Hono } from "hono";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 /** HTTP ステータスコード定数 */
 const HTTP_OK = 200;

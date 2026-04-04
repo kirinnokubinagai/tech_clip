@@ -1,6 +1,6 @@
+import { articleTags, tags } from "@api/db/schema/tags";
 import { getTableColumns } from "drizzle-orm";
 import { describe, expect, it } from "vitest";
-import { articleTags, tags } from "../../../../apps/api/src/db/schema/tags";
 
 describe("tags schema", () => {
   it("必須フィールドが定義されていること", () => {

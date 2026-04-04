@@ -4,18 +4,14 @@
  * サインイン → セッション確認 → トークンリフレッシュ のフローを
  * インメモリ SQLite + 実 Hono アプリ (app.request) で検証する。
  */
+
+import { accounts, sessions, users } from "@api/db/schema/index";
+import { HTTP_OK, HTTP_UNAUTHORIZED, HTTP_UNPROCESSABLE_ENTITY } from "@api/lib/http-status";
+import { createAuthRoute } from "@api/routes/auth";
 import { createClient } from "@libsql/client";
 import { drizzle } from "drizzle-orm/libsql";
 import { Hono } from "hono";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-
-import { accounts, sessions, users } from "../../../apps/api/src/db/schema/index";
-import {
-  HTTP_OK,
-  HTTP_UNAUTHORIZED,
-  HTTP_UNPROCESSABLE_ENTITY,
-} from "../../../apps/api/src/lib/http-status";
-import { createAuthRoute } from "../../../apps/api/src/routes/auth";
 
 /** テスト用固定値 */
 const TEST_USER_ID = "user_e2e_01";

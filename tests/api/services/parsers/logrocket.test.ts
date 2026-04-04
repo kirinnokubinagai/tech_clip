@@ -1,6 +1,5 @@
+import { parseLogrocket } from "@api/services/parsers/logrocket";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-
-import { parseLogrocket } from "../../../../apps/api/src/services/parsers/logrocket";
 
 /** LogRocket記事のHTMLテンプレート */
 const SAMPLE_LOGROCKET_HTML = `

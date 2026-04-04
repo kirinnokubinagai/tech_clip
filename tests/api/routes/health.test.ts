@@ -1,6 +1,6 @@
+import { createHealthRoute } from "@api/routes/health";
 import { Hono } from "hono";
 import { describe, expect, it, vi } from "vitest";
-import { createHealthRoute } from "../../../apps/api/src/routes/health";
 
 /** HTTP 200 OK ステータスコード */
 const HTTP_OK = 200;

@@ -1,4 +1,3 @@
-import { describe, expect, it } from "vitest";
 import {
   buildArticleData,
   buildFollowData,
@@ -7,7 +6,8 @@ import {
   buildTagData,
   buildTranslationData,
   buildUserData,
-} from "../../../apps/api/src/db/seed";
+} from "@api/db/seed";
+import { describe, expect, it } from "vitest";
 
 describe("seed", () => {
   describe("buildUserData", () => {

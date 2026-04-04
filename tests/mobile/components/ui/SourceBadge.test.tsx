@@ -1,6 +1,6 @@
+import type { SourceName } from "@mobile/components/ui/SourceBadge";
+import { SOURCE_CONFIG, SourceBadge } from "@mobile/components/ui/SourceBadge";
 import { render } from "@testing-library/react-native";
-import type { SourceName } from "../../../../apps/mobile/src/components/ui/SourceBadge";
-import { SOURCE_CONFIG, SourceBadge } from "../../../../apps/mobile/src/components/ui/SourceBadge";
 
 describe("SourceBadge", () => {
   describe("レンダリング", () => {

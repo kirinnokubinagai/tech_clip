@@ -1,6 +1,6 @@
+import { notifications } from "@api/db/schema/notifications";
 import { getTableColumns } from "drizzle-orm";
 import { describe, expect, it } from "vitest";
-import { notifications } from "../../../../apps/api/src/db/schema/notifications";
 
 describe("notifications schema", () => {
   it("必須フィールドが定義されていること", () => {

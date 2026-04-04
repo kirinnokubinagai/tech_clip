@@ -1,81 +1,80 @@
+import { parseArticle } from "@api/services/article-parser";
+import * as sourceDetectorModule from "@api/services/source-detector";
 import { beforeEach, describe, expect, it, type Mock, vi } from "vitest";
 
-import { parseArticle } from "../../../apps/api/src/services/article-parser";
-import * as sourceDetectorModule from "../../../apps/api/src/services/source-detector";
-
-vi.mock("../../../apps/api/src/services/source-detector", () => ({
+vi.mock("@api/services/source-detector", () => ({
   detectSource: vi.fn(),
 }));
 
-vi.mock("../../../apps/api/src/services/parsers/generic", () => ({
+vi.mock("@api/services/parsers/generic", () => ({
   parseGeneric: vi.fn(),
 }));
 
-vi.mock("../../../apps/api/src/services/parsers/zenn", () => ({
+vi.mock("@api/services/parsers/zenn", () => ({
   parseZenn: vi.fn(),
 }));
 
-vi.mock("../../../apps/api/src/services/parsers/zenn-book", () => ({
+vi.mock("@api/services/parsers/zenn-book", () => ({
   parseZennBook: vi.fn(),
 }));
 
-vi.mock("../../../apps/api/src/services/parsers/qiita", () => ({
+vi.mock("@api/services/parsers/qiita", () => ({
   parseQiita: vi.fn(),
 }));
 
-vi.mock("../../../apps/api/src/services/parsers/note", () => ({
+vi.mock("@api/services/parsers/note", () => ({
   parseNote: vi.fn(),
 }));
 
-vi.mock("../../../apps/api/src/services/parsers/hatena", () => ({
+vi.mock("@api/services/parsers/hatena", () => ({
   parseHatena: vi.fn(),
 }));
 
-vi.mock("../../../apps/api/src/services/parsers/devto", () => ({
+vi.mock("@api/services/parsers/devto", () => ({
   parseDevto: vi.fn(),
 }));
 
-vi.mock("../../../apps/api/src/services/parsers/medium", () => ({
+vi.mock("@api/services/parsers/medium", () => ({
   parseMedium: vi.fn(),
 }));
 
-vi.mock("../../../apps/api/src/services/parsers/github", () => ({
+vi.mock("@api/services/parsers/github", () => ({
   parseGitHub: vi.fn(),
 }));
 
-vi.mock("../../../apps/api/src/services/parsers/hackernews", () => ({
+vi.mock("@api/services/parsers/hackernews", () => ({
   parseHackerNews: vi.fn(),
 }));
 
-vi.mock("../../../apps/api/src/services/parsers/hashnode", () => ({
+vi.mock("@api/services/parsers/hashnode", () => ({
   parseHashnode: vi.fn(),
 }));
 
-vi.mock("../../../apps/api/src/services/parsers/stackoverflow", () => ({
+vi.mock("@api/services/parsers/stackoverflow", () => ({
   parseStackOverflow: vi.fn(),
 }));
 
-vi.mock("../../../apps/api/src/services/parsers/reddit", () => ({
+vi.mock("@api/services/parsers/reddit", () => ({
   parseReddit: vi.fn(),
 }));
 
-vi.mock("../../../apps/api/src/services/parsers/freecodecamp", () => ({
+vi.mock("@api/services/parsers/freecodecamp", () => ({
   parseFreecodecamp: vi.fn(),
 }));
 
-vi.mock("../../../apps/api/src/services/parsers/logrocket", () => ({
+vi.mock("@api/services/parsers/logrocket", () => ({
   parseLogrocket: vi.fn(),
 }));
 
-vi.mock("../../../apps/api/src/services/parsers/css-tricks", () => ({
+vi.mock("@api/services/parsers/css-tricks", () => ({
   parseCssTricks: vi.fn(),
 }));
 
-vi.mock("../../../apps/api/src/services/parsers/smashing", () => ({
+vi.mock("@api/services/parsers/smashing", () => ({
   parseSmashing: vi.fn(),
 }));
 
-vi.mock("../../../apps/api/src/services/parsers/speakerdeck", () => ({
+vi.mock("@api/services/parsers/speakerdeck", () => ({
   parseSpeakerdeck: vi.fn(),
 }));
 
@@ -104,7 +103,7 @@ describe("parseArticle", () => {
       // Arrange
       const url = "https://zenn.dev/user/articles/example";
       mockDetectSource.mockReturnValue("zenn");
-      const { parseZenn } = await import("../../../apps/api/src/services/parsers/zenn");
+      const { parseZenn } = await import("@api/services/parsers/zenn");
       (parseZenn as Mock).mockResolvedValue(MOCK_PARSE_RESULT);
 
       // Act
@@ -120,7 +119,7 @@ describe("parseArticle", () => {
       // Arrange
       const url = "https://qiita.com/user/items/abc123";
       mockDetectSource.mockReturnValue("qiita");
-      const { parseQiita } = await import("../../../apps/api/src/services/parsers/qiita");
+      const { parseQiita } = await import("@api/services/parsers/qiita");
       (parseQiita as Mock).mockResolvedValue(MOCK_PARSE_RESULT);
 
       // Act
@@ -135,7 +134,7 @@ describe("parseArticle", () => {
       // Arrange
       const url = "https://note.com/user/n/nxxxxxxx";
       mockDetectSource.mockReturnValue("note");
-      const { parseNote } = await import("../../../apps/api/src/services/parsers/note");
+      const { parseNote } = await import("@api/services/parsers/note");
       (parseNote as Mock).mockResolvedValue(MOCK_PARSE_RESULT);
 
       // Act
@@ -150,7 +149,7 @@ describe("parseArticle", () => {
       // Arrange
       const url = "https://example.hatenablog.com/entry/2024/01/01/title";
       mockDetectSource.mockReturnValue("hatena");
-      const { parseHatena } = await import("../../../apps/api/src/services/parsers/hatena");
+      const { parseHatena } = await import("@api/services/parsers/hatena");
       (parseHatena as Mock).mockResolvedValue(MOCK_PARSE_RESULT);
 
       // Act
@@ -165,7 +164,7 @@ describe("parseArticle", () => {
       // Arrange
       const url = "https://dev.to/user/article-title";
       mockDetectSource.mockReturnValue("devto");
-      const { parseDevto } = await import("../../../apps/api/src/services/parsers/devto");
+      const { parseDevto } = await import("@api/services/parsers/devto");
       (parseDevto as Mock).mockResolvedValue(MOCK_PARSE_RESULT);
 
       // Act
@@ -180,7 +179,7 @@ describe("parseArticle", () => {
       // Arrange
       const url = "https://medium.com/@user/article-title-abc123";
       mockDetectSource.mockReturnValue("medium");
-      const { parseMedium } = await import("../../../apps/api/src/services/parsers/medium");
+      const { parseMedium } = await import("@api/services/parsers/medium");
       (parseMedium as Mock).mockResolvedValue(MOCK_PARSE_RESULT);
 
       // Act
@@ -195,7 +194,7 @@ describe("parseArticle", () => {
       // Arrange
       const url = "https://github.com/user/repo";
       mockDetectSource.mockReturnValue("github");
-      const { parseGitHub } = await import("../../../apps/api/src/services/parsers/github");
+      const { parseGitHub } = await import("@api/services/parsers/github");
       (parseGitHub as Mock).mockResolvedValue(MOCK_PARSE_RESULT);
 
       // Act
@@ -210,9 +209,7 @@ describe("parseArticle", () => {
       // Arrange
       const url = "https://stackoverflow.com/questions/12345/title";
       mockDetectSource.mockReturnValue("stackoverflow");
-      const { parseStackOverflow } = await import(
-        "../../../apps/api/src/services/parsers/stackoverflow"
-      );
+      const { parseStackOverflow } = await import("@api/services/parsers/stackoverflow");
       (parseStackOverflow as Mock).mockResolvedValue(MOCK_PARSE_RESULT);
 
       // Act
@@ -227,7 +224,7 @@ describe("parseArticle", () => {
       // Arrange
       const url = "https://news.ycombinator.com/item?id=12345";
       mockDetectSource.mockReturnValue("hackernews");
-      const { parseHackerNews } = await import("../../../apps/api/src/services/parsers/hackernews");
+      const { parseHackerNews } = await import("@api/services/parsers/hackernews");
       (parseHackerNews as Mock).mockResolvedValue(MOCK_PARSE_RESULT);
 
       // Act
@@ -242,7 +239,7 @@ describe("parseArticle", () => {
       // Arrange
       const url = "https://hashnode.com/post/example-post";
       mockDetectSource.mockReturnValue("hashnode");
-      const { parseHashnode } = await import("../../../apps/api/src/services/parsers/hashnode");
+      const { parseHashnode } = await import("@api/services/parsers/hashnode");
       (parseHashnode as Mock).mockResolvedValue(MOCK_PARSE_RESULT);
 
       // Act
@@ -257,7 +254,7 @@ describe("parseArticle", () => {
       // Arrange
       const url = "https://www.reddit.com/r/programming/comments/abc123/title";
       mockDetectSource.mockReturnValue("reddit");
-      const { parseReddit } = await import("../../../apps/api/src/services/parsers/reddit");
+      const { parseReddit } = await import("@api/services/parsers/reddit");
       (parseReddit as Mock).mockResolvedValue(MOCK_PARSE_RESULT);
 
       // Act
@@ -272,9 +269,7 @@ describe("parseArticle", () => {
       // Arrange
       const url = "https://www.freecodecamp.org/news/article-title";
       mockDetectSource.mockReturnValue("freecodecamp");
-      const { parseFreecodecamp } = await import(
-        "../../../apps/api/src/services/parsers/freecodecamp"
-      );
+      const { parseFreecodecamp } = await import("@api/services/parsers/freecodecamp");
       (parseFreecodecamp as Mock).mockResolvedValue(MOCK_PARSE_RESULT);
 
       // Act
@@ -289,7 +284,7 @@ describe("parseArticle", () => {
       // Arrange
       const url = "https://blog.logrocket.com/article-title";
       mockDetectSource.mockReturnValue("logrocket");
-      const { parseLogrocket } = await import("../../../apps/api/src/services/parsers/logrocket");
+      const { parseLogrocket } = await import("@api/services/parsers/logrocket");
       (parseLogrocket as Mock).mockResolvedValue(MOCK_PARSE_RESULT);
 
       // Act
@@ -304,7 +299,7 @@ describe("parseArticle", () => {
       // Arrange
       const url = "https://css-tricks.com/article-title";
       mockDetectSource.mockReturnValue("css-tricks");
-      const { parseCssTricks } = await import("../../../apps/api/src/services/parsers/css-tricks");
+      const { parseCssTricks } = await import("@api/services/parsers/css-tricks");
       (parseCssTricks as Mock).mockResolvedValue(MOCK_PARSE_RESULT);
 
       // Act
@@ -319,7 +314,7 @@ describe("parseArticle", () => {
       // Arrange
       const url = "https://www.smashingmagazine.com/article-title";
       mockDetectSource.mockReturnValue("smashing");
-      const { parseSmashing } = await import("../../../apps/api/src/services/parsers/smashing");
+      const { parseSmashing } = await import("@api/services/parsers/smashing");
       (parseSmashing as Mock).mockResolvedValue(MOCK_PARSE_RESULT);
 
       // Act
@@ -334,9 +329,7 @@ describe("parseArticle", () => {
       // Arrange
       const url = "https://speakerdeck.com/user/slide-title";
       mockDetectSource.mockReturnValue("speakerdeck");
-      const { parseSpeakerdeck } = await import(
-        "../../../apps/api/src/services/parsers/speakerdeck"
-      );
+      const { parseSpeakerdeck } = await import("@api/services/parsers/speakerdeck");
       (parseSpeakerdeck as Mock).mockResolvedValue(MOCK_PARSE_RESULT);
 
       // Act
@@ -353,7 +346,7 @@ describe("parseArticle", () => {
       // Arrange
       const url = "https://example.com/article";
       mockDetectSource.mockReturnValue("other");
-      const { parseGeneric } = await import("../../../apps/api/src/services/parsers/generic");
+      const { parseGeneric } = await import("@api/services/parsers/generic");
       (parseGeneric as Mock).mockResolvedValue(MOCK_PARSE_RESULT);
 
       // Act
@@ -369,9 +362,9 @@ describe("parseArticle", () => {
       // Arrange
       const url = "https://zenn.dev/user/articles/example";
       mockDetectSource.mockReturnValue("zenn");
-      const { parseZenn } = await import("../../../apps/api/src/services/parsers/zenn");
+      const { parseZenn } = await import("@api/services/parsers/zenn");
       (parseZenn as Mock).mockRejectedValue(new Error("Zenn記事の取得に失敗しました"));
-      const { parseGeneric } = await import("../../../apps/api/src/services/parsers/generic");
+      const { parseGeneric } = await import("@api/services/parsers/generic");
       (parseGeneric as Mock).mockResolvedValue(MOCK_PARSE_RESULT);
 
       // Act
@@ -387,9 +380,9 @@ describe("parseArticle", () => {
       // Arrange
       const url = "https://zenn.dev/user/articles/example";
       mockDetectSource.mockReturnValue("zenn");
-      const { parseZenn } = await import("../../../apps/api/src/services/parsers/zenn");
+      const { parseZenn } = await import("@api/services/parsers/zenn");
       (parseZenn as Mock).mockRejectedValue(new Error("Zenn記事の取得に失敗しました"));
-      const { parseGeneric } = await import("../../../apps/api/src/services/parsers/generic");
+      const { parseGeneric } = await import("@api/services/parsers/generic");
       (parseGeneric as Mock).mockRejectedValue(new Error("HTMLの取得に失敗しました"));
 
       // Act & Assert
@@ -402,7 +395,7 @@ describe("parseArticle", () => {
       // Arrange
       const url = "https://zenn.dev/user/articles/example";
       mockDetectSource.mockReturnValue("zenn");
-      const { parseZenn } = await import("../../../apps/api/src/services/parsers/zenn");
+      const { parseZenn } = await import("@api/services/parsers/zenn");
       (parseZenn as Mock).mockResolvedValue({
         ...MOCK_PARSE_RESULT,
         source: "zenn.dev",
@@ -419,7 +412,7 @@ describe("parseArticle", () => {
       // Arrange
       const url = "https://example.com/article";
       mockDetectSource.mockReturnValue("other");
-      const { parseGeneric } = await import("../../../apps/api/src/services/parsers/generic");
+      const { parseGeneric } = await import("@api/services/parsers/generic");
       (parseGeneric as Mock).mockResolvedValue(MOCK_PARSE_RESULT);
 
       // Act
@@ -443,7 +436,7 @@ describe("parseArticle", () => {
       // Arrange
       const url = "https://example.com/article";
       mockDetectSource.mockReturnValue("other");
-      const { parseGeneric } = await import("../../../apps/api/src/services/parsers/generic");
+      const { parseGeneric } = await import("@api/services/parsers/generic");
       (parseGeneric as Mock).mockRejectedValue(new Error("記事の取得に失敗しました"));
 
       // Act & Assert

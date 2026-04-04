@@ -1,6 +1,6 @@
+import { createNotificationSettingsRoute } from "@api/routes/notification-settings";
 import { Hono } from "hono";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { createNotificationSettingsRoute } from "../../../apps/api/src/routes/notification-settings";
 
 /** HTTP ステータスコード定数 */
 const HTTP_OK = 200;

@@ -1,5 +1,3 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
-
 import {
   buildPrompt,
   createTranslationJob,
@@ -9,7 +7,8 @@ import {
   restoreCodeBlocks,
   type TranslateOptions,
   translateArticle,
-} from "../../../apps/api/src/services/translator";
+} from "@api/services/translator";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const mockFetch = vi.fn();
 vi.stubGlobal("fetch", mockFetch);

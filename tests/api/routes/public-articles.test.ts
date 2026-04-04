@@ -1,12 +1,7 @@
+import { HTTP_NOT_FOUND, HTTP_OK, HTTP_UNPROCESSABLE_ENTITY } from "@api/lib/http-status";
+import { createPublicArticlesRoute } from "@api/routes/public-articles";
 import { Hono } from "hono";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-
-import {
-  HTTP_NOT_FOUND,
-  HTTP_OK,
-  HTTP_UNPROCESSABLE_ENTITY,
-} from "../../../apps/api/src/lib/http-status";
-import { createPublicArticlesRoute } from "../../../apps/api/src/routes/public-articles";
 
 /** テスト用のユーザーID */
 const TARGET_USER_ID = "user_01HXYZ";

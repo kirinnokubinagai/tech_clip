@@ -1,6 +1,5 @@
+import { parseReddit } from "@api/services/parsers/reddit";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-
-import { parseReddit } from "../../../../apps/api/src/services/parsers/reddit";
 
 /** selftext投稿（Markdown本文あり）のReddit APIレスポンス */
 const SELFTEXT_POST_RESPONSE = [

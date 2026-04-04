@@ -1,7 +1,6 @@
+import { useConfirm } from "@mobile/hooks/use-confirm";
 import { renderHook } from "@testing-library/react-native";
 import { Alert } from "react-native";
-
-import { useConfirm } from "../../../apps/mobile/src/hooks/use-confirm";
 
 jest.spyOn(Alert, "alert");
 

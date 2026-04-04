@@ -1,7 +1,6 @@
+import ProfileEditScreen from "@mobile-app/profile/edit";
 import { fireEvent, render, waitFor } from "@testing-library/react-native";
 import { Alert } from "react-native";
-
-import ProfileEditScreen from "../../../apps/mobile/app/profile/edit";
 
 const mockBack = jest.fn();
 

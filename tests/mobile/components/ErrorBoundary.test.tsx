@@ -1,7 +1,6 @@
+import { ErrorBoundary } from "@mobile/components/ErrorBoundary";
 import { fireEvent, render } from "@testing-library/react-native";
 import { Text } from "react-native";
-
-import { ErrorBoundary } from "../../../apps/mobile/src/components/ErrorBoundary";
 
 function ThrowingComponent({ shouldThrow }: { shouldThrow: boolean }) {
   if (shouldThrow) {

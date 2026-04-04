@@ -1,6 +1,5 @@
+import { confirm } from "@mobile/components/ConfirmDialog";
 import { Alert } from "react-native";
-
-import { confirm } from "../../../apps/mobile/src/components/ConfirmDialog";
 
 jest.spyOn(Alert, "alert");
 

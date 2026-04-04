@@ -1,12 +1,7 @@
+import { HTTP_OK, HTTP_UNAUTHORIZED, HTTP_UNPROCESSABLE_ENTITY } from "@api/lib/http-status";
+import { createNotificationSettingsRoute } from "@api/routes/notification-settings";
 import { Hono } from "hono";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-
-import {
-  HTTP_OK,
-  HTTP_UNAUTHORIZED,
-  HTTP_UNPROCESSABLE_ENTITY,
-} from "../../../apps/api/src/lib/http-status";
-import { createNotificationSettingsRoute } from "../../../apps/api/src/routes/notification-settings";
 
 /** テスト用のモックユーザー */
 const MOCK_USER = {

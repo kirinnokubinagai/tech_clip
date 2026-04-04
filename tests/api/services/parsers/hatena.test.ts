@@ -1,6 +1,5 @@
+import { parseHatena } from "@api/services/parsers/hatena";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-
-import { parseHatena } from "../../../../apps/api/src/services/parsers/hatena";
 
 /** はてなブログ記事のHTMLモック */
 const SAMPLE_HATENA_HTML = `

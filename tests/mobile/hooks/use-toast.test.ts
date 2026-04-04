@@ -1,6 +1,5 @@
+import { useToast } from "@mobile/hooks/use-toast";
 import { act, renderHook } from "@testing-library/react-native";
-
-import { useToast } from "../../../apps/mobile/src/hooks/use-toast";
 
 describe("useToast", () => {
   describe("初期状態", () => {

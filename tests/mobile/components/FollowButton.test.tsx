@@ -1,6 +1,5 @@
+import { FollowButton } from "@mobile/components/FollowButton";
 import { act, fireEvent, render, waitFor } from "@testing-library/react-native";
-
-import { FollowButton } from "../../../apps/mobile/src/components/FollowButton";
 
 describe("FollowButton", () => {
   beforeEach(() => {

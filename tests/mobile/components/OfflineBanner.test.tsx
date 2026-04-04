@@ -8,8 +8,8 @@ jest.mock("@/hooks/use-network-status", () => ({
   useNetworkStatus: jest.fn(),
 }));
 
-import { OfflineBanner } from "../../../apps/mobile/src/components/OfflineBanner";
-import { useNetworkStatus } from "../../../apps/mobile/src/hooks/use-network-status";
+import { OfflineBanner } from "@mobile/components/OfflineBanner";
+import { useNetworkStatus } from "@mobile/hooks/use-network-status";
 
 describe("OfflineBanner", () => {
   describe("オフライン時", () => {

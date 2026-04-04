@@ -1,6 +1,5 @@
+import { Button } from "@mobile/components/ui/Button";
 import { fireEvent, render } from "@testing-library/react-native";
-
-import { Button } from "../../../../apps/mobile/src/components/ui/Button";
 
 describe("Button", () => {
   describe("レンダリング", () => {

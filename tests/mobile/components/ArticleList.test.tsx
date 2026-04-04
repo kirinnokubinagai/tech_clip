@@ -1,7 +1,6 @@
+import type { ArticleCardArticle } from "@mobile/components/ArticleCard";
+import { ArticleList } from "@mobile/components/ArticleList";
 import { render, screen } from "@testing-library/react-native";
-
-import type { ArticleCardArticle } from "../../../apps/mobile/src/components/ArticleCard";
-import { ArticleList } from "../../../apps/mobile/src/components/ArticleList";
 
 /** テスト用の記事データ */
 const makeArticle = (id: string): ArticleCardArticle => ({

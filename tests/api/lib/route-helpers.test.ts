@@ -1,5 +1,5 @@
+import { fetchWithAuth } from "@api/lib/route-helpers";
 import { describe, expect, it, vi } from "vitest";
-import { fetchWithAuth } from "../../../apps/api/src/lib/route-helpers";
 
 describe("fetchWithAuth", () => {
   it("セッションが存在する場合にuserを変数にセットしてルートを処理すること", async () => {

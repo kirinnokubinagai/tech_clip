@@ -1,6 +1,6 @@
+import { createDbInitMiddleware } from "@api/middleware/db-init";
 import { Hono } from "hono";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { createDbInitMiddleware } from "../../../apps/api/src/middleware/db-init";
 
 /** テスト用DBモック */
 const mockDb = { run: vi.fn(), select: vi.fn() };

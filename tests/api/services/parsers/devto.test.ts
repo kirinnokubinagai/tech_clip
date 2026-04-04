@@ -1,6 +1,5 @@
+import { parseDevto } from "@api/services/parsers/devto";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-
-import { parseDevto } from "../../../../apps/api/src/services/parsers/devto";
 
 /** Dev.to API 正常レスポンスのモックデータ */
 const SAMPLE_DEVTO_RESPONSE = {

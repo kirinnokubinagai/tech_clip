@@ -1,6 +1,6 @@
+import { corsMiddleware, createCorsMiddleware } from "@api/middleware/cors";
 import { Hono } from "hono";
 import { describe, expect, it } from "vitest";
-import { corsMiddleware, createCorsMiddleware } from "../../../apps/api/src/middleware/cors";
 
 /**
  * CORSミドルウェアのテスト用Honoアプリを生成する

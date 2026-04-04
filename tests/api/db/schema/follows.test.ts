@@ -1,6 +1,6 @@
+import { follows } from "@api/db/schema/follows";
 import { getTableColumns } from "drizzle-orm";
 import { describe, expect, it } from "vitest";
-import { follows } from "../../../../apps/api/src/db/schema/follows";
 
 describe("follows schema", () => {
   it("followerIdフィールドが定義されていること", () => {

@@ -1,6 +1,6 @@
+import { createUsersRoute } from "@api/routes/users";
 import { Hono } from "hono";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { createUsersRoute } from "../../../apps/api/src/routes/users";
 
 /** HTTP ステータスコード定数 */
 const HTTP_OK = 200;

@@ -1,4 +1,4 @@
-import { getErrorMessage } from "../../../apps/mobile/src/lib/error-messages";
+import { getErrorMessage } from "@mobile/lib/error-messages";
 
 describe("getErrorMessage", () => {
   describe("日本語メッセージ", () => {

@@ -1,7 +1,7 @@
+import { validateJson, validateQuery } from "@api/middleware/validate";
 import { Hono } from "hono";
 import { describe, expect, it } from "vitest";
 import { z } from "zod";
-import { validateJson, validateQuery } from "../../../apps/api/src/middleware/validate";
 
 /** HTTP 200 OK ステータスコード */
 const HTTP_OK = 200;

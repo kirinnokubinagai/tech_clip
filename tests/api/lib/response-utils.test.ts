@@ -1,5 +1,5 @@
+import { omitContent } from "@api/lib/response-utils";
 import { describe, expect, it } from "vitest";
-import { omitContent } from "../../../apps/api/src/lib/response-utils";
 
 describe("omitContent", () => {
   it("contentフィールドを除外した記事データを返すこと", () => {

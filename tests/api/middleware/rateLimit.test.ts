@@ -1,11 +1,11 @@
-import { Hono } from "hono";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   createKvStore,
   createRateLimitMiddleware,
   type RateLimitConfig,
   type RateLimitStore,
-} from "../../../apps/api/src/middleware/rateLimit";
+} from "@api/middleware/rateLimit";
+import { Hono } from "hono";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 /** レスポンスボディの型定義 */
 type RateLimitResponseBody = {
@@ -479,7 +479,7 @@ describe("createRateLimitMiddleware", () => {
 
   describe("定義済みレート制限設定", () => {
     it("RATE_LIMIT_CONFIGにauth設定が存在すること", async () => {
-      const { RATE_LIMIT_CONFIG } = await import("../../../apps/api/src/middleware/rateLimit");
+      const { RATE_LIMIT_CONFIG } = await import("@api/middleware/rateLimit");
       expect(RATE_LIMIT_CONFIG.auth).toMatchObject({
         limit: 10,
         windowMs: 60_000,
@@ -488,7 +488,7 @@ describe("createRateLimitMiddleware", () => {
     });
 
     it("RATE_LIMIT_CONFIGにarticleSave設定が存在すること", async () => {
-      const { RATE_LIMIT_CONFIG } = await import("../../../apps/api/src/middleware/rateLimit");
+      const { RATE_LIMIT_CONFIG } = await import("@api/middleware/rateLimit");
       expect(RATE_LIMIT_CONFIG.articleSave).toMatchObject({
         limit: 30,
         windowMs: 60_000,
@@ -497,7 +497,7 @@ describe("createRateLimitMiddleware", () => {
     });
 
     it("RATE_LIMIT_CONFIGにai設定が存在すること", async () => {
-      const { RATE_LIMIT_CONFIG } = await import("../../../apps/api/src/middleware/rateLimit");
+      const { RATE_LIMIT_CONFIG } = await import("@api/middleware/rateLimit");
       expect(RATE_LIMIT_CONFIG.ai).toMatchObject({
         limit: 10,
         windowMs: 60_000,
@@ -506,7 +506,7 @@ describe("createRateLimitMiddleware", () => {
     });
 
     it("RATE_LIMIT_CONFIGにgeneral設定が存在すること", async () => {
-      const { RATE_LIMIT_CONFIG } = await import("../../../apps/api/src/middleware/rateLimit");
+      const { RATE_LIMIT_CONFIG } = await import("@api/middleware/rateLimit");
       expect(RATE_LIMIT_CONFIG.general).toMatchObject({
         limit: 100,
         windowMs: 60_000,

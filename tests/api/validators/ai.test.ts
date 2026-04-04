@@ -1,8 +1,5 @@
+import { GenerateSummarySchema, GenerateTranslationSchema } from "@api/validators/ai";
 import { describe, expect, it } from "vitest";
-import {
-  GenerateSummarySchema,
-  GenerateTranslationSchema,
-} from "../../../apps/api/src/validators/ai";
 
 describe("GenerateTranslationSchema", () => {
   describe("正常系", () => {

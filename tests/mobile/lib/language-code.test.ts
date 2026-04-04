@@ -1,7 +1,4 @@
-import {
-  toSummaryLanguageCode,
-  toTranslationLanguageCode,
-} from "../../../apps/mobile/src/lib/language-code";
+import { toSummaryLanguageCode, toTranslationLanguageCode } from "@mobile/lib/language-code";
 
 describe("toSummaryLanguageCode", () => {
   it("日本語を ja に変換できること", () => {

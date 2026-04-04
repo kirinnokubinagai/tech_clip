@@ -1,6 +1,5 @@
+import OnboardingScreen from "@mobile-app/onboarding";
 import { fireEvent, render, waitFor } from "@testing-library/react-native";
-
-import OnboardingScreen from "../../../apps/mobile/app/onboarding";
 
 jest.mock("expo-router", () => ({
   router: {
@@ -11,7 +10,7 @@ jest.mock("expo-router", () => ({
 const mockSetHasSeenOnboarding = jest.fn().mockResolvedValue(undefined);
 const mockHasSeenOnboarding = { current: false };
 
-jest.mock("../../../apps/mobile/src/stores/ui-store", () => ({
+jest.mock("@mobile/stores/ui-store", () => ({
   useUIStore: (
     selector: (state: {
       hasSeenOnboarding: boolean;

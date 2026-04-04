@@ -1,6 +1,5 @@
+import { parseSmashing } from "@api/services/parsers/smashing";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-
-import { parseSmashing } from "../../../../apps/api/src/services/parsers/smashing";
 
 /** Smashing Magazine記事のHTMLテンプレート */
 const SAMPLE_SMASHING_HTML = `

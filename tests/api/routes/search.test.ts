@@ -1,12 +1,8 @@
+import { HTTP_UNAUTHORIZED, HTTP_UNPROCESSABLE_ENTITY } from "@api/lib/http-status";
+import type { SearchQueryFn } from "@api/routes/search";
+import { createSearchRoute, escapeLikeWildcards } from "@api/routes/search";
 import { Hono } from "hono";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-
-import {
-  HTTP_UNAUTHORIZED,
-  HTTP_UNPROCESSABLE_ENTITY,
-} from "../../../apps/api/src/lib/http-status";
-import type { SearchQueryFn } from "../../../apps/api/src/routes/search";
-import { createSearchRoute, escapeLikeWildcards } from "../../../apps/api/src/routes/search";
 
 /** テスト用のモックユーザー */
 const MOCK_USER = {

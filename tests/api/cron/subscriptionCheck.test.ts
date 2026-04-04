@@ -1,9 +1,9 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
   createSubscriptionCheckDeps,
   disableExpiredSubscriptions,
   type SubscriptionCheckDeps,
-} from "../../../apps/api/src/cron/subscriptionCheck";
+} from "@api/cron/subscriptionCheck";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("drizzle-orm", () => ({
   and: vi.fn((...args: unknown[]) => ({ op: "and", args })),
@@ -11,7 +11,7 @@ vi.mock("drizzle-orm", () => ({
   lt: vi.fn((col: unknown, val: unknown) => ({ col, val, op: "lt" })),
 }));
 
-vi.mock("../../../apps/api/src/db/schema", () => ({
+vi.mock("@api/db/schema", () => ({
   users: { isPremium: "isPremium", premiumExpiresAt: "premiumExpiresAt" },
 }));
 

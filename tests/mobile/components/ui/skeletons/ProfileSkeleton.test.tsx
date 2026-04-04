@@ -1,6 +1,5 @@
+import { ProfileSkeleton } from "@mobile/components/ui/skeletons/ProfileSkeleton";
 import { render } from "@testing-library/react-native";
-
-import { ProfileSkeleton } from "../../../../../apps/mobile/src/components/ui/skeletons/ProfileSkeleton";
 
 describe("ProfileSkeleton", () => {
   describe("レンダリング", () => {

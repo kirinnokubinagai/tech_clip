@@ -1,6 +1,5 @@
+import { parseZenn } from "@api/services/parsers/zenn";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-
-import { parseZenn } from "../../../../apps/api/src/services/parsers/zenn";
 
 /** Zenn APIレスポンスのモックデータ */
 const SAMPLE_API_RESPONSE = {

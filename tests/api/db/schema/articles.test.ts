@@ -1,6 +1,6 @@
+import { articles } from "@api/db/schema/articles";
 import { getTableColumns } from "drizzle-orm";
 import { describe, expect, it } from "vitest";
-import { articles } from "../../../../apps/api/src/db/schema/articles";
 
 describe("articles schema", () => {
   it("必須フィールドが定義されていること", () => {

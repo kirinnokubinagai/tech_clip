@@ -1,6 +1,5 @@
+import { Skeleton } from "@mobile/components/ui/Skeleton";
 import { render } from "@testing-library/react-native";
-
-import { Skeleton } from "../../../../apps/mobile/src/components/ui/Skeleton";
 
 describe("Skeleton", () => {
   describe("レンダリング", () => {

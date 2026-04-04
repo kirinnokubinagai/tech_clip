@@ -1,6 +1,6 @@
+import { createSummaryRoute } from "@api/routes/summary";
 import { Hono } from "hono";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { createSummaryRoute } from "../../../apps/api/src/routes/summary";
 
 /** HTTP ステータスコード定数 */
 const HTTP_OK = 200;

@@ -1,8 +1,7 @@
+import { useSearchArticles } from "@mobile/hooks/use-articles";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { renderHook, waitFor } from "@testing-library/react-native";
 import React from "react";
-
-import { useSearchArticles } from "../../../apps/mobile/src/hooks/use-articles";
 
 jest.mock("@/lib/api", () => ({
   apiFetch: jest.fn(),

@@ -1,6 +1,5 @@
+import { Badge } from "@mobile/components/ui/Badge";
 import { render } from "@testing-library/react-native";
-
-import { Badge } from "../../../../apps/mobile/src/components/ui/Badge";
 
 describe("Badge", () => {
   describe("レンダリング", () => {

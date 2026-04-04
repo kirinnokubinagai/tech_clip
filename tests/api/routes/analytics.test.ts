@@ -1,8 +1,7 @@
+import type { Database } from "@api/db";
+import { createAnalyticsRoute } from "@api/routes/analytics";
 import { Hono } from "hono";
 import { describe, expect, it, vi } from "vitest";
-
-import type { Database } from "../../../apps/api/src/db";
-import { createAnalyticsRoute } from "../../../apps/api/src/routes/analytics";
 
 /** テスト用ユーザー */
 const TEST_USER = { id: "user-123", email: "test@example.com" };

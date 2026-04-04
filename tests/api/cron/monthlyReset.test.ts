@@ -1,15 +1,15 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
   createMonthlyResetDeps,
   type MonthlyResetDeps,
   resetFreeAiUsesMonthly,
-} from "../../../apps/api/src/cron/monthlyReset";
+} from "@api/cron/monthlyReset";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("drizzle-orm", () => ({
   eq: vi.fn((col: unknown, val: unknown) => ({ col, val, op: "eq" })),
 }));
 
-vi.mock("../../../apps/api/src/db/schema", () => ({
+vi.mock("@api/db/schema", () => ({
   users: { isPremium: "isPremium", freeAiUsesRemaining: "freeAiUsesRemaining" },
 }));
 

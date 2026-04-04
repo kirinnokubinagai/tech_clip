@@ -1,6 +1,6 @@
+import { createSentryMiddleware } from "@api/middleware/sentry";
 import { Hono } from "hono";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { createSentryMiddleware } from "../../../apps/api/src/middleware/sentry";
 
 /** fetch のモック型 */
 type MockFetch = ReturnType<typeof vi.fn>;

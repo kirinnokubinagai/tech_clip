@@ -1,13 +1,9 @@
+import { useRequestSummary, useRequestTranslation } from "@mobile/hooks/use-articles";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { act, renderHook, waitFor } from "@testing-library/react-native";
 import type { ReactNode } from "react";
 import React from "react";
-
 import { apiFetch } from "@/lib/api";
-import {
-  useRequestSummary,
-  useRequestTranslation,
-} from "../../../apps/mobile/src/hooks/use-articles";
 
 jest.mock("@/lib/api", () => ({
   apiFetch: jest.fn(),

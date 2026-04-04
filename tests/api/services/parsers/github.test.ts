@@ -1,6 +1,5 @@
+import { parseGitHub } from "@api/services/parsers/github";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-
-import { parseGitHub } from "../../../../apps/api/src/services/parsers/github";
 
 /** GitHub REST API README正常レスポンスのモックデータ */
 const SAMPLE_README_RESPONSE = {

@@ -1,6 +1,6 @@
+import { translations } from "@api/db/schema/translations";
 import { getTableColumns, getTableName } from "drizzle-orm";
 import { describe, expect, it } from "vitest";
-import { translations } from "../../../../apps/api/src/db/schema/translations";
 
 describe("translations schema", () => {
   it("テーブル名がtranslationsであること", () => {

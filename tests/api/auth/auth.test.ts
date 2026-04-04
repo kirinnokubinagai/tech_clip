@@ -1,5 +1,5 @@
+import app from "@api/index";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import app from "../../../apps/api/src/index";
 
 /** テスト用のシークレットキー（32文字以上） */
 const TEST_SECRET = "test-secret-key-for-better-auth-min-32-chars!!";
@@ -33,7 +33,7 @@ describe("Better Auth", () => {
   describe("createAuth", () => {
     it("createAuth関数がエクスポートされていること", async () => {
       // Arrange
-      const { createAuth } = await import("../../../apps/api/src/auth/index");
+      const { createAuth } = await import("@api/auth/index");
 
       // Assert
       expect(typeof createAuth).toBe("function");
@@ -41,7 +41,7 @@ describe("Better Auth", () => {
 
     it("DB引数とシークレットを渡してauthインスタンスを生成できること", async () => {
       // Arrange
-      const { createAuth } = await import("../../../apps/api/src/auth/index");
+      const { createAuth } = await import("@api/auth/index");
       const mockDb = {} as Parameters<typeof createAuth>[0];
 
       // Act
@@ -55,7 +55,7 @@ describe("Better Auth", () => {
 
     it("baseURLを指定してauthインスタンスを生成できること", async () => {
       // Arrange
-      const { createAuth } = await import("../../../apps/api/src/auth/index");
+      const { createAuth } = await import("@api/auth/index");
       const mockDb = {} as Parameters<typeof createAuth>[0];
 
       // Act
@@ -68,7 +68,7 @@ describe("Better Auth", () => {
 
     it("baseURLを省略した場合もauthインスタンスを生成できること", async () => {
       // Arrange
-      const { createAuth } = await import("../../../apps/api/src/auth/index");
+      const { createAuth } = await import("@api/auth/index");
       const mockDb = {} as Parameters<typeof createAuth>[0];
 
       // Act
@@ -83,7 +83,7 @@ describe("Better Auth", () => {
   describe("OAuth設定", () => {
     it("socialProviders付きでauthインスタンスを生成できること", async () => {
       // Arrange
-      const { createAuth } = await import("../../../apps/api/src/auth/index");
+      const { createAuth } = await import("@api/auth/index");
       const mockDb = {} as Parameters<typeof createAuth>[0];
 
       // Act
@@ -110,7 +110,7 @@ describe("Better Auth", () => {
 
     it("socialProvidersが未指定でもauthインスタンスを生成できること", async () => {
       // Arrange
-      const { createAuth } = await import("../../../apps/api/src/auth/index");
+      const { createAuth } = await import("@api/auth/index");
       const mockDb = {} as Parameters<typeof createAuth>[0];
 
       // Act
@@ -123,7 +123,7 @@ describe("Better Auth", () => {
 
     it("一部のプロバイダーのみ指定してもauthインスタンスを生成できること", async () => {
       // Arrange
-      const { createAuth } = await import("../../../apps/api/src/auth/index");
+      const { createAuth } = await import("@api/auth/index");
       const mockDb = {} as Parameters<typeof createAuth>[0];
 
       // Act
@@ -141,7 +141,7 @@ describe("Better Auth", () => {
 
     it("OAuthProviderConfig型がエクスポートされていること", async () => {
       // Arrange
-      const authModule = await import("../../../apps/api/src/auth/index");
+      const authModule = await import("@api/auth/index");
 
       // Assert
       expect(authModule.createAuth).toBeDefined();
@@ -151,7 +151,7 @@ describe("Better Auth", () => {
   describe("trustedOrigins設定", () => {
     it("追加のtrustedOriginsを渡してauthインスタンスを生成できること", async () => {
       // Arrange
-      const { createAuth } = await import("../../../apps/api/src/auth/index");
+      const { createAuth } = await import("@api/auth/index");
       const mockDb = {} as Parameters<typeof createAuth>[0];
       const additionalOrigins = ["https://staging.techclip.app", "https://dev.techclip.app"];
 
@@ -165,7 +165,7 @@ describe("Better Auth", () => {
 
     it("trustedOriginsが未指定の場合もauthインスタンスを生成できること", async () => {
       // Arrange
-      const { createAuth } = await import("../../../apps/api/src/auth/index");
+      const { createAuth } = await import("@api/auth/index");
       const mockDb = {} as Parameters<typeof createAuth>[0];
 
       // Act
@@ -178,7 +178,7 @@ describe("Better Auth", () => {
 
     it("空配列のtrustedOriginsでもauthインスタンスを生成できること", async () => {
       // Arrange
-      const { createAuth } = await import("../../../apps/api/src/auth/index");
+      const { createAuth } = await import("@api/auth/index");
       const mockDb = {} as Parameters<typeof createAuth>[0];
 
       // Act

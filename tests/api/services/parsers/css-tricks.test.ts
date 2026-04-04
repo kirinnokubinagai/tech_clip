@@ -1,6 +1,5 @@
+import { parseCssTricks } from "@api/services/parsers/css-tricks";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-
-import { parseCssTricks } from "../../../../apps/api/src/services/parsers/css-tricks";
 
 /** CSS-Tricks記事のHTMLテンプレート */
 const SAMPLE_CSS_TRICKS_HTML = `

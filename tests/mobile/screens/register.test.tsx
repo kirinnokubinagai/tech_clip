@@ -1,10 +1,9 @@
+import RegisterScreen from "@mobile-app/(auth)/register";
 import { act, fireEvent, render, waitFor } from "@testing-library/react-native";
-
-import RegisterScreen from "../../../apps/mobile/app/(auth)/register";
 
 const mockSignUp = jest.fn();
 
-jest.mock("../../../apps/mobile/src/stores/auth-store", () => ({
+jest.mock("@mobile/stores/auth-store", () => ({
   useAuthStore: jest.fn((selector: (state: Record<string, unknown>) => unknown) =>
     selector({
       signUp: mockSignUp,

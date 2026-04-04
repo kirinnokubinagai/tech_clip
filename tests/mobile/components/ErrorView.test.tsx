@@ -1,6 +1,5 @@
+import { ErrorView } from "@mobile/components/ErrorView";
 import { fireEvent, render } from "@testing-library/react-native";
-
-import { ErrorView } from "../../../apps/mobile/src/components/ErrorView";
 
 describe("ErrorView", () => {
   describe("デフォルト表示", () => {

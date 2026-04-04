@@ -1,7 +1,7 @@
+import type { SearchQueryFn } from "@api/routes/search";
+import { createSearchRoute } from "@api/routes/search";
 import { Hono } from "hono";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import type { SearchQueryFn } from "../../../apps/api/src/routes/search";
-import { createSearchRoute } from "../../../apps/api/src/routes/search";
 
 /** HTTP ステータスコード定数 */
 const HTTP_OK = 200;

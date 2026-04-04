@@ -1,6 +1,6 @@
+import { createSubscriptionRoute } from "@api/routes/subscription";
 import { Hono } from "hono";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { createSubscriptionRoute } from "../../../apps/api/src/routes/subscription";
 
 /** HTTP ステータスコード定数 */
 const HTTP_OK = 200;

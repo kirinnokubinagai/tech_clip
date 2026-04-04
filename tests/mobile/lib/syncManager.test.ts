@@ -2,7 +2,7 @@ jest.mock("expo-sqlite", () => ({
   openDatabaseAsync: jest.fn(),
 }));
 
-jest.mock("../../../apps/mobile/src/lib/localDb", () => ({
+jest.mock("@mobile/lib/localDb", () => ({
   initLocalDb: jest.fn().mockResolvedValue(undefined),
   upsertArticle: jest.fn().mockResolvedValue(undefined),
   upsertSummary: jest.fn().mockResolvedValue(undefined),
@@ -10,19 +10,14 @@ jest.mock("../../../apps/mobile/src/lib/localDb", () => ({
   getOfflineArticles: jest.fn().mockResolvedValue([]),
 }));
 
-jest.mock("../../../apps/mobile/src/lib/api", () => ({
+jest.mock("@mobile/lib/api", () => ({
   apiFetch: jest.fn(),
 }));
 
+import { apiFetch } from "@mobile/lib/api";
+import { initLocalDb, upsertArticle, upsertSummary, upsertTranslation } from "@mobile/lib/localDb";
+import { syncArticleDetail, syncArticles } from "@mobile/lib/syncManager";
 import type { ArticleDetail, ArticleListItem } from "@/types/article";
-import { apiFetch } from "../../../apps/mobile/src/lib/api";
-import {
-  initLocalDb,
-  upsertArticle,
-  upsertSummary,
-  upsertTranslation,
-} from "../../../apps/mobile/src/lib/localDb";
-import { syncArticleDetail, syncArticles } from "../../../apps/mobile/src/lib/syncManager";
 
 /** モック型キャスト */
 const mockApiFetch = jest.mocked(apiFetch);

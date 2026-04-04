@@ -1,6 +1,6 @@
+import { createRequestLoggerMiddleware } from "@api/middleware/logger";
 import { Hono } from "hono";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { createRequestLoggerMiddleware } from "../../../apps/api/src/middleware/logger";
 
 /** テスト用のレスポンスボディ型 */
 type TestResponseBody = {

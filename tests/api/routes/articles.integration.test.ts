@@ -4,13 +4,14 @@
  * 記事保存 → 一覧取得 → 詳細取得 → 削除 のフローを
  * インメモリ SQLite + 実 Hono アプリ (app.request) で検証する。
  */
+
+import { articles, sessions, users } from "@api/db/schema/index";
+import { createArticlesRoute } from "@api/routes/articles";
 import { createClient } from "@libsql/client";
 import { and, desc, eq, lt } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/libsql";
 import { Hono } from "hono";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { articles, sessions, users } from "../../../apps/api/src/db/schema/index";
-import { createArticlesRoute } from "../../../apps/api/src/routes/articles";
 
 /** HTTP ステータスコード定数 */
 const HTTP_OK = 200;

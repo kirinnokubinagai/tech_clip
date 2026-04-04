@@ -1,6 +1,6 @@
+import { summaries } from "@api/db/schema/summaries";
 import { getTableColumns, getTableName } from "drizzle-orm";
 import { describe, expect, it } from "vitest";
-import { summaries } from "../../../../apps/api/src/db/schema/summaries";
 
 describe("summaries schema", () => {
   it("テーブル名がsummariesであること", () => {

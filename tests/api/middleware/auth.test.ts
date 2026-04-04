@@ -1,6 +1,6 @@
+import { createAuthMiddleware } from "@api/middleware/auth";
 import { Hono } from "hono";
 import { describe, expect, it, vi } from "vitest";
-import { createAuthMiddleware } from "../../../apps/api/src/middleware/auth";
 
 /** レスポンスボディの型定義 */
 type AuthResponseBody = {

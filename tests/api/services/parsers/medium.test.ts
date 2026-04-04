@@ -1,6 +1,5 @@
+import { parseMedium } from "@api/services/parsers/medium";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-
-import { parseMedium } from "../../../../apps/api/src/services/parsers/medium";
 
 /** Medium記事のHTMLテンプレート（medium.comドメイン） */
 const SAMPLE_MEDIUM_HTML = `

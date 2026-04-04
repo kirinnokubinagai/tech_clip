@@ -1,6 +1,6 @@
+import { verifications } from "@api/db/schema/verifications";
 import { getTableColumns } from "drizzle-orm";
 import { describe, expect, it } from "vitest";
-import { verifications } from "../../../../apps/api/src/db/schema/verifications";
 
 describe("verifications schema", () => {
   it("Better Auth必須フィールドが定義されていること", () => {

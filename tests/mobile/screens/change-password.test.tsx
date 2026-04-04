@@ -1,10 +1,9 @@
-import { fireEvent, render, waitFor } from "@testing-library/react-native";
-import { Alert } from "react-native";
-
+import jaTranslations from "@mobile/locales/ja.json";
 import ChangePasswordScreen, {
   validateChangePasswordForm,
-} from "../../../apps/mobile/app/settings/change-password";
-import jaTranslations from "../../../apps/mobile/src/locales/ja.json";
+} from "@mobile-app/settings/change-password";
+import { fireEvent, render, waitFor } from "@testing-library/react-native";
+import { Alert } from "react-native";
 
 /**
  * テスト用翻訳関数（ja.jsonから実際の日本語テキストを解決する）
@@ -41,7 +40,7 @@ jest.mock("expo-router", () => ({
   useRouter: () => ({ back: mockBack }),
 }));
 
-jest.mock("../../../apps/mobile/src/stores/auth-store", () => ({
+jest.mock("@mobile/stores/auth-store", () => ({
   useAuthStore: jest.fn((selector: (state: Record<string, unknown>) => unknown) =>
     selector({
       changePassword: mockChangePassword,

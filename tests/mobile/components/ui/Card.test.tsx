@@ -1,7 +1,6 @@
+import { Card } from "@mobile/components/ui/Card";
 import { render } from "@testing-library/react-native";
 import { Text } from "react-native";
-
-import { Card } from "../../../../apps/mobile/src/components/ui/Card";
 
 describe("Card", () => {
   describe("レンダリング", () => {

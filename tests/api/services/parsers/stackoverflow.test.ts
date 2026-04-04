@@ -1,6 +1,5 @@
+import { parseStackOverflow } from "@api/services/parsers/stackoverflow";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-
-import { parseStackOverflow } from "../../../../apps/api/src/services/parsers/stackoverflow";
 
 /** SO APIレスポンスのモックデータ（accepted_answer付き） */
 const SAMPLE_SO_QUESTION_WITH_ANSWER = {

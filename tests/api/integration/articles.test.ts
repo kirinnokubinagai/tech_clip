@@ -1,7 +1,7 @@
+import type { ArticlesQueryFn } from "@api/routes/articles";
+import { createArticlesRoute } from "@api/routes/articles";
 import { Hono } from "hono";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import type { ArticlesQueryFn } from "../../../apps/api/src/routes/articles";
-import { createArticlesRoute } from "../../../apps/api/src/routes/articles";
 
 /** HTTP ステータスコード定数 */
 const HTTP_OK = 200;

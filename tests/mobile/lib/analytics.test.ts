@@ -16,7 +16,7 @@ import {
   trackEvent,
   trackScreenView,
   trackSearch,
-} from "../../../apps/mobile/src/lib/analytics";
+} from "@mobile/lib/analytics";
 
 /** fetchモック */
 const mockFetch = jest.fn().mockResolvedValue({

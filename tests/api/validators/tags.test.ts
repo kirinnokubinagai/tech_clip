@@ -1,5 +1,5 @@
+import { CreateTagSchema, UpdateArticleTagsSchema } from "@api/validators/tags";
 import { describe, expect, it } from "vitest";
-import { CreateTagSchema, UpdateArticleTagsSchema } from "../../../apps/api/src/validators/tags";
 
 describe("CreateTagSchema", () => {
   describe("正常系", () => {

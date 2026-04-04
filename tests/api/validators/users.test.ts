@@ -1,5 +1,5 @@
+import { UpdateProfileSchema, UploadAvatarSchema } from "@api/validators/users";
 import { describe, expect, it } from "vitest";
-import { UpdateProfileSchema, UploadAvatarSchema } from "../../../apps/api/src/validators/users";
 
 describe("UpdateProfileSchema", () => {
   describe("正常系", () => {

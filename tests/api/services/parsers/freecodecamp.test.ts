@@ -1,6 +1,5 @@
+import { parseFreecodecamp } from "@api/services/parsers/freecodecamp";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-
-import { parseFreecodecamp } from "../../../../apps/api/src/services/parsers/freecodecamp";
 
 /** freeCodeCamp記事のHTMLテンプレート */
 const SAMPLE_FREECODECAMP_HTML = `

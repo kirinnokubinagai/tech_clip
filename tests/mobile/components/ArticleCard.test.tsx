@@ -1,6 +1,5 @@
+import { ArticleCard } from "@mobile/components/ArticleCard";
 import { fireEvent, render } from "@testing-library/react-native";
-
-import { ArticleCard } from "../../../apps/mobile/src/components/ArticleCard";
 
 /** テスト用の記事データ（thumbnailUrlはnullで画像レンダリングを回避） */
 const BASE_ARTICLE = {

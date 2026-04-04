@@ -1,6 +1,6 @@
+import { createTagsRoute } from "@api/routes/tags";
 import { Hono } from "hono";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { createTagsRoute } from "../../../apps/api/src/routes/tags";
 
 /** HTTP ステータスコード定数 */
 const HTTP_OK = 200;

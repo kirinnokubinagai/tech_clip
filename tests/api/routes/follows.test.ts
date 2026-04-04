@@ -1,6 +1,3 @@
-import { Hono } from "hono";
-import { beforeEach, describe, expect, it, vi } from "vitest";
-
 import {
   HTTP_CONFLICT,
   HTTP_CREATED,
@@ -9,15 +6,17 @@ import {
   HTTP_OK,
   HTTP_UNAUTHORIZED,
   HTTP_UNPROCESSABLE_ENTITY,
-} from "../../../apps/api/src/lib/http-status";
+} from "@api/lib/http-status";
 import type {
   FollowFn,
   GetFollowListFn,
   IsFollowingFn,
   UnfollowFn,
   UserExistsFn,
-} from "../../../apps/api/src/routes/follows";
-import { createFollowsRoute } from "../../../apps/api/src/routes/follows";
+} from "@api/routes/follows";
+import { createFollowsRoute } from "@api/routes/follows";
+import { Hono } from "hono";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 /** テスト用のモックユーザー */
 const MOCK_USER = {

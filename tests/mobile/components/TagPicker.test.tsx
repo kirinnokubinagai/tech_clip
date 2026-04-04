@@ -1,6 +1,5 @@
+import { TagPicker } from "@mobile/components/TagPicker";
 import { fireEvent, render } from "@testing-library/react-native";
-
-import { TagPicker } from "../../../apps/mobile/src/components/TagPicker";
 
 describe("TagPicker", () => {
   const defaultTags = ["React", "TypeScript", "Expo", "NativeWind"];

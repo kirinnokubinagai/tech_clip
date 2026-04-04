@@ -1,7 +1,6 @@
+import { useNetworkStatus } from "@mobile/hooks/use-network-status";
 import NetInfo, { type NetInfoState, NetInfoStateType } from "@react-native-community/netinfo";
 import { act, renderHook } from "@testing-library/react-native";
-
-import { useNetworkStatus } from "../../../apps/mobile/src/hooks/use-network-status";
 
 jest.mock("@react-native-community/netinfo", () => ({
   addEventListener: jest.fn(),

@@ -1,10 +1,10 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
   generateUniqueFileName,
   type ImageUploadConfig,
   uploadAvatarToR2,
   validateImageFile,
-} from "../../../apps/api/src/services/imageUpload";
+} from "@api/services/imageUpload";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 /** テスト用のモックR2バケット */
 const mockR2Put = vi.fn();

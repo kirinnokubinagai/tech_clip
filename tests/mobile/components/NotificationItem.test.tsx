@@ -1,6 +1,5 @@
+import { NotificationItem } from "@mobile/components/NotificationItem";
 import { fireEvent, render } from "@testing-library/react-native";
-
-import { NotificationItem } from "../../../apps/mobile/src/components/NotificationItem";
 
 /** テスト用の通知データ（未読） */
 const UNREAD_NOTIFICATION = {

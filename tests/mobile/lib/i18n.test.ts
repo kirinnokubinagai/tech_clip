@@ -1,4 +1,4 @@
-import i18n from "../../../apps/mobile/src/lib/i18n";
+import i18n from "@mobile/lib/i18n";
 
 describe("i18n", () => {
   describe("初期化", () => {

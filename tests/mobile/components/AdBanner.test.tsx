@@ -1,6 +1,5 @@
+import { AdBanner } from "@mobile/components/AdBanner";
 import { render } from "@testing-library/react-native";
-
-import { AdBanner } from "../../../apps/mobile/src/components/AdBanner";
 
 jest.mock("react-native-google-mobile-ads", () => {
   const { View } = require("react-native");

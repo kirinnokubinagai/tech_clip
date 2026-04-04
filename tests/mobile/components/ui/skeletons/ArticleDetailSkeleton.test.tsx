@@ -1,6 +1,5 @@
+import { ArticleDetailSkeleton } from "@mobile/components/ui/skeletons/ArticleDetailSkeleton";
 import { render } from "@testing-library/react-native";
-
-import { ArticleDetailSkeleton } from "../../../../../apps/mobile/src/components/ui/skeletons/ArticleDetailSkeleton";
 
 describe("ArticleDetailSkeleton", () => {
   describe("レンダリング", () => {

@@ -1,6 +1,5 @@
+import { Toast } from "@mobile/components/ui/Toast";
 import { fireEvent, render } from "@testing-library/react-native";
-
-import { Toast } from "../../../../apps/mobile/src/components/ui/Toast";
 
 describe("Toast", () => {
   describe("レンダリング", () => {

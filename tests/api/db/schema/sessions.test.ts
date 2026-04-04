@@ -1,6 +1,6 @@
+import { sessions } from "@api/db/schema/sessions";
 import { getTableColumns } from "drizzle-orm";
 import { describe, expect, it } from "vitest";
-import { sessions } from "../../../../apps/api/src/db/schema/sessions";
 
 describe("sessions schema", () => {
   it("Better Auth必須フィールドが定義されていること", () => {
