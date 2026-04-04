@@ -268,6 +268,37 @@ describe("POST /api/auth/sign-in", () => {
       expect(body.success).toBe(false);
       expect(body.error.code).toBe("AUTH_INVALID");
     });
+
+    it("refresh token 発行時にDBエラーが発生した場合500が返ること", async () => {
+      // Arrange
+      mockAuth.api.signInEmail.mockResolvedValue({
+        token: MOCK_TOKEN,
+        user: MOCK_USER,
+      });
+      const selectChain = {
+        from: vi.fn().mockReturnThis(),
+        where: vi.fn().mockResolvedValue([MOCK_SESSION_ROW]),
+      };
+      const insertChain = {
+        values: vi.fn().mockRejectedValue(new Error("insert failed")),
+      };
+      mockDb.select.mockReturnValue(selectChain);
+      mockDb.insert.mockReturnValue(insertChain);
+      const app = createTestApp();
+
+      // Act
+      const res = await app.request("/api/auth/sign-in", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: "test@example.com", password: "Password123" }),
+      });
+
+      // Assert
+      expect(res.status).toBe(HTTP_INTERNAL_SERVER_ERROR);
+      const body = (await res.json()) as ErrorResponseBody;
+      expect(body.success).toBe(false);
+      expect(body.error.code).toBe("INTERNAL_ERROR");
+    });
   });
 });
 

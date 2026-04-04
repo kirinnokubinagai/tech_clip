@@ -189,11 +189,30 @@ export function createAuthRoute({ db, getAuth }: AuthRouteOptions) {
       }
 
       const user = result.user;
-      const refreshToken = await createRefreshTokenRecord(db, {
-        id: sessionRow.id,
-        userId: sessionRow.userId,
-        expiresAt: sessionRow.expiresAt,
-      });
+      let refreshToken: string;
+      try {
+        refreshToken = await createRefreshTokenRecord(db, {
+          id: sessionRow.id,
+          userId: sessionRow.userId,
+          expiresAt: sessionRow.expiresAt,
+        });
+      } catch (error) {
+        logger.error("リフレッシュトークンの発行に失敗しました", {
+          sessionId: sessionRow.id,
+          userId: sessionRow.userId,
+          error,
+        });
+        return c.json(
+          {
+            success: false,
+            error: {
+              code: INTERNAL_ERROR_CODE,
+              message: "サーバーエラーが発生しました",
+            },
+          },
+          HTTP_INTERNAL_SERVER_ERROR,
+        );
+      }
 
       return c.json(
         {
