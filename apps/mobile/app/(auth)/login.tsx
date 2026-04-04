@@ -48,8 +48,13 @@ export default function LoginScreen() {
    * @returns バリデーションエラーメッセージ。正常時は空文字
    */
   const validate = (): string => {
-    if (!email.trim()) {
+    const trimmedEmail = email.trim();
+
+    if (!trimmedEmail) {
       return t("auth.validation.emailRequired");
+    }
+    if (!trimmedEmail.includes("@")) {
+      return t("auth.validation.emailInvalid");
     }
     if (!password) {
       return t("auth.validation.passwordRequired");
@@ -131,7 +136,7 @@ export default function LoginScreen() {
           <Text className="mt-2 text-base text-text-muted">{t("auth.appTagline")}</Text>
         </View>
 
-        <View className="rounded-2xl bg-surface p-6">
+        <View className="rounded-2xl bg-card p-6">
           <Text className="mb-6 text-center text-xl font-semibold text-text">
             {t("auth.loginTitle")}
           </Text>
