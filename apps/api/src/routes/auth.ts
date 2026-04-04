@@ -68,7 +68,10 @@ async function hashRefreshToken(token: string): Promise<string> {
  * @returns 平文のリフレッシュトークン
  */
 function generateRefreshToken(): string {
-  return crypto.randomUUID().replaceAll("-", "") + crypto.randomUUID().replaceAll("-", "");
+  return (crypto.randomUUID().replaceAll("-", "") + crypto.randomUUID().replaceAll("-", "")).slice(
+    0,
+    REFRESH_TOKEN_LENGTH,
+  );
 }
 
 /**
@@ -81,8 +84,8 @@ function generateRefreshToken(): string {
 async function createRefreshTokenRecord(
   db: Database,
   session: { id: string; userId: string; expiresAt: string },
-) {
-  const refreshToken = generateRefreshToken().slice(0, REFRESH_TOKEN_LENGTH);
+): Promise<string> {
+  const refreshToken = generateRefreshToken();
   const tokenHash = await hashRefreshToken(refreshToken);
 
   await db.insert(refreshTokens).values({
@@ -389,7 +392,7 @@ export function createAuthRoute({ db, getAuth }: AuthRouteOptions) {
         );
       }
 
-      const nextRefreshToken = generateRefreshToken().slice(0, REFRESH_TOKEN_LENGTH);
+      const nextRefreshToken = generateRefreshToken();
       const nextRefreshTokenHash = await hashRefreshToken(nextRefreshToken);
 
       await db
