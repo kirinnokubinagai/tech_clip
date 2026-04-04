@@ -108,7 +108,7 @@ export default function RegisterScreen() {
             <Text className="mb-1.5 text-sm font-medium text-text-muted">{t("auth.email")}</Text>
             <TextInput
               className="rounded-lg border border-border bg-surface px-4 py-3 text-base text-text"
-              placeholder="example@domain.com"
+              placeholder={t("auth.emailPlaceholder")}
               placeholderTextColor={DARK_COLORS.textDim}
               value={email}
               onChangeText={setEmail}
