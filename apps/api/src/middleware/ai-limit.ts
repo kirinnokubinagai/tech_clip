@@ -55,13 +55,90 @@ function isResetExpired(resetAt: string | null): boolean {
 }
 
 /**
+ * 既存の無料枠から1回分を予約する
+ *
+ * @param db - Drizzle ORMデータベースインスタンス
+ * @param userId - ユーザーID
+ * @returns 予約に成功した場合true
+ */
+async function reserveExistingFreeUse(db: Database, userId: string): Promise<boolean> {
+  const reserved = await db
+    .update(users)
+    .set({
+      freeAiUsesRemaining: sql`${users.freeAiUsesRemaining} - 1`,
+      updatedAt: new Date().toISOString(),
+    })
+    .where(and(eq(users.id, userId), gt(users.freeAiUsesRemaining, 0)))
+    .returning({ id: users.id });
+
+  return reserved.length > 0;
+}
+
+/**
+ * 月次リセットを伴う無料枠を1回分予約する
+ *
+ * @param db - Drizzle ORMデータベースインスタンス
+ * @param userId - ユーザーID
+ * @param resetReferenceTime - リセット判定に使う基準時刻
+ * @param nextResetAt - 次回リセット日時
+ * @returns 予約に成功した場合true
+ */
+async function reserveResetFreeUse(
+  db: Database,
+  userId: string,
+  resetReferenceTime: string,
+  nextResetAt: string,
+): Promise<boolean> {
+  const reserved = await db
+    .update(users)
+    .set({
+      freeAiUsesRemaining: sql`CASE
+        WHEN ${users.freeAiResetAt} IS NULL OR ${users.freeAiResetAt} <= ${resetReferenceTime}
+          THEN ${FREE_AI_USES_PER_MONTH - 1}
+        ELSE ${users.freeAiUsesRemaining} - 1
+      END`,
+      freeAiResetAt: sql`CASE
+        WHEN ${users.freeAiResetAt} IS NULL OR ${users.freeAiResetAt} <= ${resetReferenceTime}
+          THEN ${nextResetAt}
+        ELSE ${users.freeAiResetAt}
+      END`,
+      updatedAt: new Date().toISOString(),
+    })
+    .where(
+      and(
+        eq(users.id, userId),
+        sql`(${users.freeAiResetAt} IS NULL OR ${users.freeAiResetAt} <= ${resetReferenceTime} OR ${users.freeAiUsesRemaining} > 0)`,
+      ),
+    )
+    .returning({ id: users.id });
+
+  return reserved.length > 0;
+}
+
+/**
+ * 失敗したリクエスト分の無料枠予約を戻す
+ *
+ * @param db - Drizzle ORMデータベースインスタンス
+ * @param userId - ユーザーID
+ */
+async function rollbackReservedFreeUse(db: Database, userId: string): Promise<void> {
+  await db
+    .update(users)
+    .set({
+      freeAiUsesRemaining: sql`${users.freeAiUsesRemaining} + 1`,
+      updatedAt: new Date().toISOString(),
+    })
+    .where(eq(users.id, userId));
+}
+
+/**
  * AI使用回数制限ミドルウェアを生成する
  *
  * 要約/翻訳API呼び出し前にユーザーのfreeAiUsesRemainingをチェックし、
  * 無料ユーザーの使用回数を制限する。
  * - プレミアムユーザー: 制限なし（通過）
- * - 無料ユーザー（残回数あり）: 下流ハンドラ成功後にDBレベルでアトミックにデクリメント
- * - 無料ユーザー（残回数なし、リセット期限切れ）: 下流ハンドラ成功後に月次枠を再設定して通過
+ * - 無料ユーザー（残回数あり）: 下流ハンドラ実行前に1回分を予約し、失敗時はロールバック
+ * - 無料ユーザー（残回数なし、リセット期限切れ）: 月次枠を再設定しつつ1回分を予約し、失敗時はロールバック
  * - 無料ユーザー（残回数なし、リセット期限内）: 402を返却
  *
  * @param db - Drizzle ORMデータベースインスタンス
@@ -111,16 +188,25 @@ export function createAiLimitMiddleware(db: Database): MiddlewareHandler {
     const remaining = dbUser.freeAiUsesRemaining ?? 0;
 
     if (remaining > 0) {
+      const didReserve = await reserveExistingFreeUse(db, userId);
+
+      if (!didReserve) {
+        return c.json(
+          {
+            success: false,
+            error: {
+              code: AI_LIMIT_ERROR_CODE,
+              message: AI_LIMIT_ERROR_MESSAGE,
+            },
+          },
+          HTTP_PAYMENT_REQUIRED,
+        );
+      }
+
       await next();
 
-      if (c.res.status < HTTP_CLIENT_ERROR_MIN) {
-        await db
-          .update(users)
-          .set({
-            freeAiUsesRemaining: sql`${users.freeAiUsesRemaining} - 1`,
-            updatedAt: new Date().toISOString(),
-          })
-          .where(and(eq(users.id, userId), gt(users.freeAiUsesRemaining, 0)));
+      if (c.res.status >= HTTP_CLIENT_ERROR_MIN) {
+        await rollbackReservedFreeUse(db, userId);
       }
 
       return;
@@ -129,29 +215,25 @@ export function createAiLimitMiddleware(db: Database): MiddlewareHandler {
     if (isResetExpired(dbUser.freeAiResetAt)) {
       const resetReferenceTime = new Date().toISOString();
       const nextResetAt = calculateNextResetAt();
+      const didReserve = await reserveResetFreeUse(db, userId, resetReferenceTime, nextResetAt);
+
+      if (!didReserve) {
+        return c.json(
+          {
+            success: false,
+            error: {
+              code: AI_LIMIT_ERROR_CODE,
+              message: AI_LIMIT_ERROR_MESSAGE,
+            },
+          },
+          HTTP_PAYMENT_REQUIRED,
+        );
+      }
 
       await next();
 
-      if (c.res.status < HTTP_CLIENT_ERROR_MIN) {
-        const updatedAt = new Date().toISOString();
-        await db
-          .update(users)
-          .set({
-            freeAiUsesRemaining: sql`CASE
-              WHEN ${users.freeAiResetAt} IS NULL OR ${users.freeAiResetAt} <= ${resetReferenceTime}
-                THEN ${FREE_AI_USES_PER_MONTH - 1}
-              WHEN ${users.freeAiUsesRemaining} > 0
-                THEN ${users.freeAiUsesRemaining} - 1
-              ELSE 0
-            END`,
-            freeAiResetAt: sql`CASE
-              WHEN ${users.freeAiResetAt} IS NULL OR ${users.freeAiResetAt} <= ${resetReferenceTime}
-                THEN ${nextResetAt}
-              ELSE ${users.freeAiResetAt}
-            END`,
-            updatedAt,
-          })
-          .where(eq(users.id, userId));
+      if (c.res.status >= HTTP_CLIENT_ERROR_MIN) {
+        await rollbackReservedFreeUse(db, userId);
       }
 
       return;

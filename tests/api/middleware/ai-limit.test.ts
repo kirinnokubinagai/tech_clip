@@ -54,7 +54,10 @@ const mockSelect = vi.fn().mockReturnValue({
 });
 
 /** モックの db.update クエリ結果 */
-const mockUpdateWhere = vi.fn();
+const mockUpdateReturning = vi.fn();
+const mockUpdateWhere = vi.fn().mockReturnValue({
+  returning: mockUpdateReturning,
+});
 const mockUpdateSet = vi.fn().mockReturnValue({
   where: mockUpdateWhere,
 });
@@ -104,6 +107,8 @@ describe("aiLimitMiddleware", () => {
     vi.clearAllMocks();
     mockSelectFrom.mockReturnValue({ where: mockSelectWhere });
     mockSelect.mockReturnValue({ from: mockSelectFrom });
+    mockUpdateReturning.mockResolvedValue([{ id: TEST_USER_ID }]);
+    mockUpdateWhere.mockReturnValue({ returning: mockUpdateReturning });
     mockUpdateSet.mockReturnValue({ where: mockUpdateWhere });
     mockUpdate.mockReturnValue({ set: mockUpdateSet });
   });
@@ -141,6 +146,7 @@ describe("aiLimitMiddleware", () => {
       expect(mockUpdate).toHaveBeenCalledTimes(1);
       expect(mockUpdateSet).toHaveBeenCalledTimes(1);
       expect(mockUpdateWhere).toHaveBeenCalledTimes(1);
+      expect(mockUpdateReturning).toHaveBeenCalledTimes(1);
     });
   });
 
@@ -281,6 +287,7 @@ describe("aiLimitMiddleware", () => {
         queryChunks: expect.any(Array),
       });
       expect(setArg.updatedAt).toEqual(expect.any(String));
+      expect(mockUpdateReturning).toHaveBeenCalledTimes(1);
     });
 
     it("freeAiResetAtがnullの場合もリセットされて通過すること", async () => {
@@ -350,8 +357,8 @@ describe("aiLimitMiddleware", () => {
         headers: { "Content-Type": "application/json" },
       });
 
-      // Assert: 失敗時は更新しない
-      expect(mockUpdate).not.toHaveBeenCalled();
+      // Assert: 予約とロールバックの2回更新される
+      expect(mockUpdate).toHaveBeenCalledTimes(2);
     });
 
     it("ダウンストリームが400を返した場合に無料使用回数が消費されないこと", async () => {
@@ -367,7 +374,7 @@ describe("aiLimitMiddleware", () => {
       });
 
       // Assert
-      expect(mockUpdate).not.toHaveBeenCalled();
+      expect(mockUpdate).toHaveBeenCalledTimes(2);
     });
 
     it("月次リセット対象でもダウンストリーム失敗時に無料使用回数が消費されないこと", async () => {
@@ -384,7 +391,7 @@ describe("aiLimitMiddleware", () => {
       });
 
       // Assert
-      expect(mockUpdate).not.toHaveBeenCalled();
+      expect(mockUpdate).toHaveBeenCalledTimes(2);
     });
   });
 
