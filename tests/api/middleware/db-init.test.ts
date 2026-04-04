@@ -20,6 +20,7 @@ type TestBindings = {
   TURSO_AUTH_TOKEN: string;
   BETTER_AUTH_SECRET: string;
   APP_URL?: string;
+  TRUSTED_ORIGINS?: string;
   GOOGLE_CLIENT_ID?: string;
   GOOGLE_CLIENT_SECRET?: string;
   APPLE_CLIENT_ID?: string;
@@ -194,6 +195,7 @@ describe("createDbInitMiddleware", () => {
         "test-secret-min-32-chars-long-enough!!",
         {},
         undefined,
+        [],
       );
     });
 
@@ -237,6 +239,7 @@ describe("createDbInitMiddleware", () => {
           },
         },
         undefined,
+        [],
       );
     });
 
@@ -274,6 +277,82 @@ describe("createDbInitMiddleware", () => {
         "test-secret-min-32-chars-long-enough!!",
         {},
         "https://app.techclip.io",
+        [],
+      );
+    });
+
+    it("TRUSTED_ORIGINS が設定されている場合 createAuth にパース済み配列として渡されること", async () => {
+      // Arrange
+      const capturedGetAuth: Array<() => typeof mockAuth> = [];
+      const app = new Hono<{ Bindings: TestBindings; Variables: TestVariables }>();
+
+      app.use(
+        "/api/*",
+        createDbInitMiddleware({
+          createDatabaseFn: mockCreateDatabase,
+          createAuthFn: mockCreateAuth,
+        }),
+      );
+      app.get("/api/test", (c) => {
+        capturedGetAuth.push(c.get("auth"));
+        return c.json({ ok: true });
+      });
+
+      const envWithTrustedOrigins: TestBindings = {
+        TURSO_DATABASE_URL: "libsql://test.turso.io",
+        TURSO_AUTH_TOKEN: "test-token",
+        BETTER_AUTH_SECRET: "test-secret-min-32-chars-long-enough!!",
+        TRUSTED_ORIGINS: "https://staging.techclip.app,https://dev.techclip.app",
+      };
+
+      // Act
+      await app.request("/api/test", {}, envWithTrustedOrigins);
+      capturedGetAuth[0]();
+
+      // Assert
+      expect(mockCreateAuth).toHaveBeenCalledWith(
+        mockDb,
+        "test-secret-min-32-chars-long-enough!!",
+        {},
+        undefined,
+        ["https://staging.techclip.app", "https://dev.techclip.app"],
+      );
+    });
+
+    it("TRUSTED_ORIGINS が未設定の場合 createAuth に空配列が渡されること", async () => {
+      // Arrange
+      const capturedGetAuth: Array<() => typeof mockAuth> = [];
+      const app = new Hono<{ Bindings: TestBindings; Variables: TestVariables }>();
+
+      app.use(
+        "/api/*",
+        createDbInitMiddleware({
+          createDatabaseFn: mockCreateDatabase,
+          createAuthFn: mockCreateAuth,
+        }),
+      );
+      app.get("/api/test", (c) => {
+        capturedGetAuth.push(c.get("auth"));
+        return c.json({ ok: true });
+      });
+
+      const envWithoutTrustedOrigins: TestBindings = {
+        TURSO_DATABASE_URL: "libsql://test.turso.io",
+        TURSO_AUTH_TOKEN: "test-token",
+        BETTER_AUTH_SECRET: "test-secret-min-32-chars-long-enough!!",
+      };
+
+      // Act
+      await app.request("/api/test", {}, envWithoutTrustedOrigins);
+      capturedGetAuth[0]();
+
+      // Assert
+      expect(mockCreateAuth).toHaveBeenCalledWith(
+        mockDb,
+        "test-secret-min-32-chars-long-enough!!",
+        {},
+        undefined,
+        [],
       );
     });
 

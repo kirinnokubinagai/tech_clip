@@ -67,6 +67,8 @@ type Bindings = {
   AVATARS_BUCKET: R2Bucket;
   /** アプリのベースURL（パスワードリセットリンク生成用） */
   APP_URL?: string;
+  /** カンマ区切りの追加 trustedOrigins（例: "https://staging.example.com,https://dev.example.com"） */
+  TRUSTED_ORIGINS?: string;
   /** Sentry DSN（エラー監視用） */
   SENTRY_DSN?: string;
   /** RevenueCat Webhook シークレット */
