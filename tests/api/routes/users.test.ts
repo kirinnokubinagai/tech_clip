@@ -1,10 +1,11 @@
 import { createUsersRoute } from "@api/routes/users";
-import { uploadAvatarToR2, validateImageFile } from "@api/services/imageUpload";
+import { processAvatarImage, uploadAvatarToR2, validateImageFile } from "@api/services/imageUpload";
 import { Hono } from "hono";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("@api/services/imageUpload", () => ({
   validateImageFile: vi.fn(),
+  processAvatarImage: vi.fn(),
   uploadAvatarToR2: vi.fn(),
 }));
 
@@ -988,14 +989,23 @@ describe("POST /api/users/me/avatar", () => {
     it("有効なJPEGファイルをアップロードできること", async () => {
       // Arrange
       const mockValidate = vi.mocked(validateImageFile);
+      const mockProcessImage = vi.mocked(processAvatarImage);
       const mockUpload = vi.mocked(uploadAvatarToR2);
       mockValidate.mockReturnValue({ isValid: true });
+      mockProcessImage.mockResolvedValue({
+        isValid: true,
+        image: {
+          buffer: new Uint8Array([0xff, 0xd8, 0xff, 0xe0]),
+          contentType: "image/jpeg",
+          extension: "jpg",
+        },
+      });
       mockUpload.mockResolvedValue({
-        avatarUrl: "https://cdn.example.com/avatars/user_01HXYZ_123.webp",
+        avatarUrl: "https://cdn.example.com/avatars/user_01HXYZ_123.jpg",
       });
       const updatedUser = {
         ...MOCK_USER,
-        avatarUrl: "https://cdn.example.com/avatars/user_01HXYZ_123.webp",
+        avatarUrl: "https://cdn.example.com/avatars/user_01HXYZ_123.jpg",
       };
       mockUpdateReturning.mockResolvedValue([updatedUser]);
       const app = createAvatarTestApp();
@@ -1011,21 +1021,30 @@ describe("POST /api/users/me/avatar", () => {
       const body = (await res.json()) as UserResponseBody;
       expect(body.success).toBe(true);
       expect(body.data).toMatchObject({
-        avatarUrl: "https://cdn.example.com/avatars/user_01HXYZ_123.webp",
+        avatarUrl: "https://cdn.example.com/avatars/user_01HXYZ_123.jpg",
       });
     });
 
     it("有効なPNGファイルをアップロードできること", async () => {
       // Arrange
       const mockValidate = vi.mocked(validateImageFile);
+      const mockProcessImage = vi.mocked(processAvatarImage);
       const mockUpload = vi.mocked(uploadAvatarToR2);
       mockValidate.mockReturnValue({ isValid: true });
+      mockProcessImage.mockResolvedValue({
+        isValid: true,
+        image: {
+          buffer: new Uint8Array([0x89, 0x50, 0x4e, 0x47]),
+          contentType: "image/png",
+          extension: "png",
+        },
+      });
       mockUpload.mockResolvedValue({
-        avatarUrl: "https://cdn.example.com/avatars/user_01HXYZ_456.webp",
+        avatarUrl: "https://cdn.example.com/avatars/user_01HXYZ_456.png",
       });
       const updatedUser = {
         ...MOCK_USER,
-        avatarUrl: "https://cdn.example.com/avatars/user_01HXYZ_456.webp",
+        avatarUrl: "https://cdn.example.com/avatars/user_01HXYZ_456.png",
       };
       mockUpdateReturning.mockResolvedValue([updatedUser]);
       const app = createAvatarTestApp();
@@ -1045,9 +1064,18 @@ describe("POST /api/users/me/avatar", () => {
     it("アップロード後にavatarUrlがDBに保存されること", async () => {
       // Arrange
       const mockValidate = vi.mocked(validateImageFile);
+      const mockProcessImage = vi.mocked(processAvatarImage);
       const mockUpload = vi.mocked(uploadAvatarToR2);
       const AVATAR_URL = "https://cdn.example.com/avatars/user_01HXYZ_789.webp";
       mockValidate.mockReturnValue({ isValid: true });
+      mockProcessImage.mockResolvedValue({
+        isValid: true,
+        image: {
+          buffer: new Uint8Array([0x52, 0x49, 0x46, 0x46]),
+          contentType: "image/webp",
+          extension: "webp",
+        },
+      });
       mockUpload.mockResolvedValue({ avatarUrl: AVATAR_URL });
       const updatedUser = { ...MOCK_USER, avatarUrl: AVATAR_URL };
       mockUpdateReturning.mockResolvedValue([updatedUser]);
@@ -1063,6 +1091,32 @@ describe("POST /api/users/me/avatar", () => {
       expect(mockUpdateSet).toHaveBeenCalledWith(
         expect.objectContaining({ avatarUrl: AVATAR_URL }),
       );
+    });
+
+    it("実体画像の検証で失敗した場合400が返ること", async () => {
+      // Arrange
+      const mockValidate = vi.mocked(validateImageFile);
+      const mockProcessImage = vi.mocked(processAvatarImage);
+      const mockUpload = vi.mocked(uploadAvatarToR2);
+      mockValidate.mockReturnValue({ isValid: true });
+      mockProcessImage.mockResolvedValue({
+        isValid: false,
+        error: "画像は4096px以下でアップロードしてください",
+      });
+      const app = createAvatarTestApp();
+      const file = new File([new Uint8Array([0xff, 0xd8, 0xff])], "avatar.jpg", {
+        type: "image/jpeg",
+      });
+
+      // Act
+      const res = await postAvatar(app, file);
+
+      // Assert
+      expect(res.status).toBe(HTTP_BAD_REQUEST);
+      const body = (await res.json()) as ErrorResponseBody;
+      expect(body.success).toBe(false);
+      expect(body.error.code).toBe("INVALID_REQUEST");
+      expect(mockUpload).not.toHaveBeenCalled();
     });
   });
 
@@ -1112,8 +1166,17 @@ describe("POST /api/users/me/avatar", () => {
     it("R2アップロードに失敗した場合500が返ること", async () => {
       // Arrange
       const mockValidate = vi.mocked(validateImageFile);
+      const mockProcessImage = vi.mocked(processAvatarImage);
       const mockUpload = vi.mocked(uploadAvatarToR2);
       mockValidate.mockReturnValue({ isValid: true });
+      mockProcessImage.mockResolvedValue({
+        isValid: true,
+        image: {
+          buffer: new Uint8Array([0x52, 0x49, 0x46, 0x46]),
+          contentType: "image/webp",
+          extension: "webp",
+        },
+      });
       mockUpload.mockRejectedValue(new Error("アバター画像のアップロードに失敗しました"));
       const app = createAvatarTestApp();
       const file = new File([new Uint8Array([0xff, 0xd8, 0xff])], "avatar.jpg", {
