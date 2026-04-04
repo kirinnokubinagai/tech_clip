@@ -21,6 +21,7 @@ export const refreshTokens = sqliteTable("refresh_tokens", {
     .notNull()
     .references(() => users.id, { onDelete: "cascade" }),
   tokenHash: text("token_hash").notNull().unique(),
+  previousTokenHash: text("previous_token_hash"),
   expiresAt: text("expires_at").notNull(),
   createdAt: text("created_at").notNull().default(sql`(datetime('now'))`),
   updatedAt: text("updated_at").notNull().default(sql`(datetime('now'))`),

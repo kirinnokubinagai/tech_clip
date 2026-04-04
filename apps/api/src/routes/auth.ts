@@ -48,6 +48,10 @@ type AuthRouteOptions = {
 /** リフレッシュトークンの文字数 */
 const REFRESH_TOKEN_LENGTH = 48;
 
+/** セッション期限切れエラーメッセージ */
+const REFRESH_TOKEN_EXPIRED_MESSAGE =
+  "セッションの有効期限が切れました。再度ログインしてください";
+
 /**
  * リフレッシュトークンを SHA-256 でハッシュ化する
  *
@@ -209,7 +213,9 @@ export function createAuthRoute({ db, getAuth }: AuthRouteOptions) {
         },
         HTTP_OK,
       );
-    } catch {
+    } catch (error) {
+      // eslint-disable-next-line no-console
+      console.log("refresh error", error);
       return c.json(
         {
           success: false,
@@ -333,10 +339,35 @@ export function createAuthRoute({ db, getAuth }: AuthRouteOptions) {
           .where(eq(refreshTokens.tokenHash, refreshTokenHash));
 
         if (!refreshTokenRow) {
+          const [reusedRefreshTokenRow] = await tx
+            .select()
+            .from(refreshTokens)
+            .where(eq(refreshTokens.previousTokenHash, refreshTokenHash));
+
+          if (reusedRefreshTokenRow) {
+            const revokedAt = new Date(0).toISOString();
+
+            await tx
+              .update(refreshTokens)
+              .set({
+                expiresAt: revokedAt,
+                updatedAt: new Date().toISOString(),
+              })
+              .where(eq(refreshTokens.id, reusedRefreshTokenRow.id));
+
+            await tx
+              .update(sessions)
+              .set({
+                expiresAt: revokedAt,
+                updatedAt: new Date().toISOString(),
+              })
+              .where(eq(sessions.id, reusedRefreshTokenRow.sessionId));
+          }
+
           return {
             error: {
               code: AUTH_EXPIRED_CODE,
-              message: "セッションの有効期限が切れました。再度ログインしてください",
+              message: REFRESH_TOKEN_EXPIRED_MESSAGE,
             },
           } as const;
         }
@@ -350,7 +381,7 @@ export function createAuthRoute({ db, getAuth }: AuthRouteOptions) {
           return {
             error: {
               code: AUTH_EXPIRED_CODE,
-              message: "セッションの有効期限が切れました。再度ログインしてください",
+              message: REFRESH_TOKEN_EXPIRED_MESSAGE,
             },
           } as const;
         }
@@ -361,7 +392,7 @@ export function createAuthRoute({ db, getAuth }: AuthRouteOptions) {
           return {
             error: {
               code: AUTH_EXPIRED_CODE,
-              message: "セッションの有効期限が切れました。再度ログインしてください",
+              message: REFRESH_TOKEN_EXPIRED_MESSAGE,
             },
           } as const;
         }
@@ -372,7 +403,7 @@ export function createAuthRoute({ db, getAuth }: AuthRouteOptions) {
           return {
             error: {
               code: AUTH_EXPIRED_CODE,
-              message: "セッションの有効期限が切れました。再度ログインしてください",
+              message: REFRESH_TOKEN_EXPIRED_MESSAGE,
             },
           } as const;
         }
@@ -383,6 +414,7 @@ export function createAuthRoute({ db, getAuth }: AuthRouteOptions) {
         await tx
           .update(refreshTokens)
           .set({
+            previousTokenHash: refreshTokenRow.tokenHash,
             tokenHash: nextRefreshTokenHash,
             expiresAt: sessionRow.expiresAt,
             updatedAt: new Date().toISOString(),

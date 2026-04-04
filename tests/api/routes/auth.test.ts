@@ -43,6 +43,7 @@ const mockDb = {
   select: vi.fn(),
   insert: vi.fn(),
   update: vi.fn(),
+  delete: vi.fn(),
   transaction: vi.fn(async (cb: (tx: typeof mockDb) => Promise<unknown>) => cb(mockDb)),
 };
 
@@ -365,6 +366,7 @@ describe("POST /api/auth/refresh", () => {
         sessionId: MOCK_SESSION_ID,
         userId: MOCK_USER.id,
         tokenHash: "hashed-refresh-token",
+        previousTokenHash: null,
         expiresAt: MOCK_SESSION_ROW.expiresAt,
         createdAt: "2024-01-15T00:00:00.000Z",
         updatedAt: "2024-01-15T00:00:00.000Z",
@@ -415,6 +417,7 @@ describe("POST /api/auth/refresh", () => {
         sessionId: MOCK_SESSION_ID,
         userId: MOCK_USER.id,
         tokenHash: "hashed-refresh-token",
+        previousTokenHash: null,
         expiresAt: MOCK_SESSION_ROW.expiresAt,
         createdAt: "2024-01-15T00:00:00.000Z",
         updatedAt: "2024-01-15T00:00:00.000Z",
@@ -512,6 +515,7 @@ describe("POST /api/auth/refresh", () => {
             sessionId: MOCK_SESSION_ID,
             userId: MOCK_USER.id,
             tokenHash: "hashed-refresh-token",
+            previousTokenHash: null,
             expiresAt: expiredSession.expiresAt,
             createdAt: "2024-01-15T00:00:00.000Z",
             updatedAt: "2024-01-15T00:00:00.000Z",
@@ -558,6 +562,49 @@ describe("POST /api/auth/refresh", () => {
       // Assert
       const body = (await res.json()) as ErrorResponseBody;
       expect(body.error.message).toContain("セッション");
+    });
+
+    it("ローテーション済みの旧リフレッシュトークン再利用時はセッションを無効化すること", async () => {
+      // Arrange
+      const reusedRefreshTokenRow = {
+        id: MOCK_REFRESH_TOKEN_ID,
+        sessionId: MOCK_SESSION_ID,
+        userId: MOCK_USER.id,
+        tokenHash: "hashed-current-refresh-token",
+        previousTokenHash: "hashed-previous-refresh-token",
+        expiresAt: MOCK_SESSION_ROW.expiresAt,
+        createdAt: "2024-01-15T00:00:00.000Z",
+        updatedAt: "2024-01-15T00:00:00.000Z",
+      };
+      const selectChain = {
+        from: vi.fn().mockReturnThis(),
+        where: vi.fn().mockResolvedValue([]),
+      };
+      const selectChain2 = {
+        from: vi.fn().mockReturnThis(),
+        where: vi.fn().mockResolvedValue([reusedRefreshTokenRow]),
+      };
+      const updateChain = {
+        set: vi.fn().mockReturnThis(),
+        where: vi.fn().mockResolvedValue(undefined),
+      };
+      mockDb.select.mockReturnValueOnce(selectChain).mockReturnValueOnce(selectChain2);
+      mockDb.update.mockReturnValueOnce(updateChain).mockReturnValueOnce(updateChain);
+      const app = createTestApp();
+
+      // Act
+      const res = await app.request("/api/auth/refresh", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ refreshToken: MOCK_REFRESH_TOKEN }),
+      });
+
+      // Assert
+      expect(res.status).toBe(HTTP_UNAUTHORIZED);
+      const body = (await res.json()) as ErrorResponseBody;
+      expect(body.success).toBe(false);
+      expect(body.error.code).toBe("AUTH_EXPIRED");
+      expect(mockDb.update).toHaveBeenCalledTimes(2);
     });
   });
 });
