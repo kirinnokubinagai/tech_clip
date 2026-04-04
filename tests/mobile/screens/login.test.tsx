@@ -124,7 +124,7 @@ describe("LoginScreen", () => {
     await fireEvent.press(getByTestId("login-submit-button"));
 
     // Assert
-    expect(await findByLabelText("有効なメールアドレスを入力してください")).toBeDefined();
+    expect(await findByLabelText("メールアドレスの形式が正しくありません")).toBeDefined();
   });
 
   it("パスワードが短い場合にバリデーションエラーを表示すること", async () => {
