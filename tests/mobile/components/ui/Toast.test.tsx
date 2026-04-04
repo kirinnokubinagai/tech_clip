@@ -1,5 +1,5 @@
 import { Toast } from "@mobile/components/ui/Toast";
-import { fireEvent, render } from "@testing-library/react-native";
+import { act, fireEvent, render } from "@testing-library/react-native";
 
 describe("Toast", () => {
   describe("レンダリング", () => {
@@ -65,7 +65,9 @@ describe("Toast", () => {
       );
 
       // Act
-      await fireEvent.press(getByTestId("toast-pressable"));
+      await act(async () => {
+        fireEvent.press(getByTestId("toast-pressable"));
+      });
 
       // Assert
       expect(onDismiss).toHaveBeenCalledTimes(1);
