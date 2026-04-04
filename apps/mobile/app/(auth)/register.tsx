@@ -2,7 +2,6 @@ import { Link } from "expo-router";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
-  ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -12,6 +11,9 @@ import {
   View,
 } from "react-native";
 
+import { AuthAlert } from "@/components/auth/AuthAlert";
+import { AuthSubmitButton } from "@/components/auth/AuthSubmitButton";
+import { AUTH_PLACEHOLDER_TEXT_COLOR } from "@/lib/ui-colors";
 import { useAuthStore } from "../../src/stores/auth-store";
 
 export default function RegisterScreen() {
@@ -72,15 +74,7 @@ export default function RegisterScreen() {
           <Text className="mt-2 text-base text-text-muted">{t("auth.createAccount")}</Text>
         </View>
 
-        {errorMessage !== "" && (
-          <View
-            className="mb-4 rounded-lg border border-error/30 bg-error/10 px-4 py-3"
-            accessibilityRole="alert"
-            accessibilityLabel={errorMessage}
-          >
-            <Text className="text-sm text-error">{errorMessage}</Text>
-          </View>
-        )}
+        {errorMessage !== "" && <AuthAlert message={errorMessage} />}
 
         <View className="gap-4">
           <View>
@@ -88,7 +82,7 @@ export default function RegisterScreen() {
             <TextInput
               className="rounded-lg border border-border bg-surface px-4 py-3 text-base text-text"
               placeholder={t("auth.namePlaceholder")}
-              placeholderTextColor="#64748b"
+              placeholderTextColor={AUTH_PLACEHOLDER_TEXT_COLOR}
               value={name}
               onChangeText={setName}
               autoCapitalize="words"
@@ -105,7 +99,7 @@ export default function RegisterScreen() {
             <TextInput
               className="rounded-lg border border-border bg-surface px-4 py-3 text-base text-text"
               placeholder="example@domain.com"
-              placeholderTextColor="#64748b"
+              placeholderTextColor={AUTH_PLACEHOLDER_TEXT_COLOR}
               value={email}
               onChangeText={setEmail}
               autoCapitalize="none"
@@ -123,7 +117,7 @@ export default function RegisterScreen() {
             <TextInput
               className="rounded-lg border border-border bg-surface px-4 py-3 text-base text-text"
               placeholder={t("auth.passwordPlaceholder")}
-              placeholderTextColor="#64748b"
+              placeholderTextColor={AUTH_PLACEHOLDER_TEXT_COLOR}
               value={password}
               onChangeText={setPassword}
               secureTextEntry
@@ -136,24 +130,14 @@ export default function RegisterScreen() {
           </View>
         </View>
 
-        <Pressable
+        <AuthSubmitButton
           className="mt-6 items-center rounded-lg bg-primary py-3.5"
           onPress={handleRegister}
           disabled={isSubmitting}
-          style={({ pressed }) => ({
-            opacity: pressed || isSubmitting ? 0.7 : 1,
-          })}
-          accessibilityRole="button"
-          accessibilityLabel="アカウントを作成"
+          label="アカウントを作成"
           accessibilityHint="入力した情報で新規アカウントを作成します"
-          accessibilityState={{ disabled: isSubmitting }}
-        >
-          {isSubmitting ? (
-            <ActivityIndicator color="#ffffff" />
-          ) : (
-            <Text className="text-base font-semibold text-white">{t("auth.createAccount")}</Text>
-          )}
-        </Pressable>
+          textClassName="text-base font-semibold text-white"
+        />
 
         <View className="mt-6 flex-row items-center justify-center">
           <Text className="text-sm text-text-muted">{t("auth.registerToLoginPrompt")}</Text>

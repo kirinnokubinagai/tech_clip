@@ -2,7 +2,6 @@ import { Link } from "expo-router";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
-  ActivityIndicator,
   KeyboardAvoidingView,
   Linking,
   Platform,
@@ -13,8 +12,10 @@ import {
   View,
 } from "react-native";
 
+import { AuthAlert } from "@/components/auth/AuthAlert";
+import { AuthSubmitButton } from "@/components/auth/AuthSubmitButton";
 import { fetchWithTimeout, getBaseUrl } from "@/lib/api";
-import { AUTH_LOADING_INDICATOR_COLOR, AUTH_PLACEHOLDER_TEXT_COLOR } from "@/lib/ui-colors";
+import { AUTH_PLACEHOLDER_TEXT_COLOR } from "@/lib/ui-colors";
 import { EMAIL_SIMPLE_REGEX } from "@/lib/validation";
 import { useAuthStore } from "@/stores/auth-store";
 
@@ -41,9 +42,13 @@ export default function LoginScreen() {
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isEmailSubmitting, setIsEmailSubmitting] = useState(false);
+  const [socialSigningInProvider, setSocialSigningInProvider] = useState<SocialProvider | null>(
+    null,
+  );
   const [errorMessage, setErrorMessage] = useState("");
   const [isPasswordVisible, setIsPasswordVisible] = useState(false);
+  const isSocialSubmitting = socialSigningInProvider !== null;
 
   /**
    * フォームのバリデーションを実行する
@@ -79,7 +84,7 @@ export default function LoginScreen() {
     }
 
     setErrorMessage("");
-    setIsSubmitting(true);
+    setIsEmailSubmitting(true);
 
     try {
       await signIn({ email: email.trim(), password });
@@ -90,7 +95,7 @@ export default function LoginScreen() {
         setErrorMessage(t("auth.loginFailed"));
       }
     } finally {
-      setIsSubmitting(false);
+      setIsEmailSubmitting(false);
     }
   };
 
@@ -101,7 +106,7 @@ export default function LoginScreen() {
    */
   const handleSocialSignIn = async (provider: SocialProvider) => {
     setErrorMessage("");
-    setIsSubmitting(true);
+    setSocialSigningInProvider(provider);
 
     try {
       const response = await fetchWithTimeout(`${getBaseUrl()}${SOCIAL_SIGN_IN_PATH}`, {
@@ -127,10 +132,11 @@ export default function LoginScreen() {
       }
 
       await Linking.openURL(data.url);
+      // TODO(issue #656): OAuthコールバック復帰後の画面状態遷移をアプリ側で扱う
     } catch {
       setErrorMessage(t("auth.socialLoginFailed"));
     } finally {
-      setIsSubmitting(false);
+      setSocialSigningInProvider(null);
     }
   };
 
@@ -153,15 +159,7 @@ export default function LoginScreen() {
             {t("auth.loginTitle")}
           </Text>
 
-          {errorMessage !== "" && (
-            <View
-              className="mb-4 rounded-lg bg-error/10 px-4 py-3"
-              accessibilityRole="alert"
-              accessibilityLabel={errorMessage}
-            >
-              <Text className="text-sm text-error">{errorMessage}</Text>
-            </View>
-          )}
+          {errorMessage !== "" && <AuthAlert message={errorMessage} />}
 
           <View className="mb-4">
             <Text className="mb-2 text-sm font-medium text-text-muted">{t("auth.email")}</Text>
@@ -175,7 +173,7 @@ export default function LoginScreen() {
               autoCapitalize="none"
               autoCorrect={false}
               autoComplete="email"
-              editable={!isSubmitting}
+              editable={!isEmailSubmitting}
               testID="login-email-input"
               accessibilityLabel={t("auth.email")}
               accessibilityHint={t("auth.emailHint")}
@@ -195,7 +193,7 @@ export default function LoginScreen() {
                 autoCapitalize="none"
                 autoCorrect={false}
                 autoComplete="password"
-                editable={!isSubmitting}
+                editable={!isEmailSubmitting}
                 testID="login-password-input"
                 accessibilityLabel={t("auth.password")}
                 accessibilityHint={t("auth.passwordHint", { min: PASSWORD_MIN_LENGTH })}
@@ -225,25 +223,15 @@ export default function LoginScreen() {
             </Pressable>
           </Link>
 
-          <Pressable
+          <AuthSubmitButton
             onPress={handleSubmit}
-            disabled={isSubmitting}
+            disabled={isEmailSubmitting}
             className="items-center rounded-lg bg-primary py-4"
-            style={({ pressed }) => ({
-              opacity: pressed || isSubmitting ? 0.7 : 1,
-            })}
             testID="login-submit-button"
-            accessibilityRole="button"
-            accessibilityLabel={t("auth.login")}
             accessibilityHint={t("auth.loginHint")}
-            accessibilityState={{ disabled: isSubmitting }}
-          >
-            {isSubmitting ? (
-              <ActivityIndicator color={AUTH_LOADING_INDICATOR_COLOR} />
-            ) : (
-              <Text className="text-base font-semibold text-text">{t("auth.login")}</Text>
-            )}
-          </Pressable>
+            label={t("auth.login")}
+            textClassName="text-base font-semibold text-text"
+          />
 
           <View className="my-6 flex-row items-center">
             <View className="h-px flex-1 bg-border" />
@@ -254,14 +242,14 @@ export default function LoginScreen() {
           <View className="gap-3">
             <Pressable
               onPress={() => handleSocialSignIn("google")}
-              disabled={isSubmitting}
+              disabled={isSocialSubmitting}
               className="items-center rounded-lg border border-border bg-card py-3.5"
               style={({ pressed }) => ({
-                opacity: pressed || isSubmitting ? 0.7 : 1,
+                opacity: pressed || isSocialSubmitting ? 0.7 : 1,
               })}
               accessibilityRole="button"
               accessibilityLabel={t("auth.continueWithGoogle")}
-              accessibilityState={{ disabled: isSubmitting }}
+              accessibilityState={{ disabled: isSocialSubmitting }}
             >
               <Text className="text-base font-medium text-text">
                 {t("auth.continueWithGoogle")}
@@ -270,14 +258,14 @@ export default function LoginScreen() {
 
             <Pressable
               onPress={() => handleSocialSignIn("github")}
-              disabled={isSubmitting}
+              disabled={isSocialSubmitting}
               className="items-center rounded-lg border border-border bg-card py-3.5"
               style={({ pressed }) => ({
-                opacity: pressed || isSubmitting ? 0.7 : 1,
+                opacity: pressed || isSocialSubmitting ? 0.7 : 1,
               })}
               accessibilityRole="button"
               accessibilityLabel={t("auth.continueWithGithub")}
-              accessibilityState={{ disabled: isSubmitting }}
+              accessibilityState={{ disabled: isSocialSubmitting }}
             >
               <Text className="text-base font-medium text-text">
                 {t("auth.continueWithGithub")}

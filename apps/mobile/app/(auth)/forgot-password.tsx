@@ -2,7 +2,6 @@ import { Link, useRouter } from "expo-router";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
-  ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -12,8 +11,10 @@ import {
   View,
 } from "react-native";
 
+import { AuthAlert } from "@/components/auth/AuthAlert";
+import { AuthSubmitButton } from "@/components/auth/AuthSubmitButton";
 import { fetchWithTimeout, getBaseUrl } from "@/lib/api";
-import { AUTH_LOADING_INDICATOR_COLOR, AUTH_PLACEHOLDER_TEXT_COLOR } from "@/lib/ui-colors";
+import { AUTH_PLACEHOLDER_TEXT_COLOR } from "@/lib/ui-colors";
 import { EMAIL_SIMPLE_REGEX } from "@/lib/validation";
 
 type ForgotPasswordSuccessResponse = {
@@ -90,25 +91,9 @@ export default function ForgotPasswordScreen() {
           </Text>
         </View>
 
-        {errorMessage !== "" && (
-          <View
-            className="mb-4 rounded-lg border border-error/30 bg-error/10 px-4 py-3"
-            accessibilityRole="alert"
-            accessibilityLabel={errorMessage}
-          >
-            <Text className="text-sm text-error">{errorMessage}</Text>
-          </View>
-        )}
+        {errorMessage !== "" && <AuthAlert message={errorMessage} />}
 
-        {successMessage !== "" && (
-          <View
-            className="mb-4 rounded-lg border border-primary/30 bg-primary/10 px-4 py-3"
-            accessibilityRole="alert"
-            accessibilityLabel={successMessage}
-          >
-            <Text className="text-sm text-primary">{successMessage}</Text>
-          </View>
-        )}
+        {successMessage !== "" && <AuthAlert message={successMessage} variant="success" />}
 
         <View>
           <Text className="mb-1.5 text-sm font-medium text-text-muted">{t("auth.email")}</Text>
@@ -128,25 +113,12 @@ export default function ForgotPasswordScreen() {
           />
         </View>
 
-        <Pressable
+        <AuthSubmitButton
           className="mt-6 items-center rounded-lg bg-primary py-3.5"
           onPress={handleSubmit}
           disabled={isSubmitting}
-          style={({ pressed }) => ({
-            opacity: pressed || isSubmitting ? 0.7 : 1,
-          })}
-          accessibilityRole="button"
-          accessibilityLabel={t("auth.forgotPasswordSubmit")}
-          accessibilityState={{ disabled: isSubmitting }}
-        >
-          {isSubmitting ? (
-            <ActivityIndicator color={AUTH_LOADING_INDICATOR_COLOR} />
-          ) : (
-            <Text className="text-base font-semibold text-white">
-              {t("auth.forgotPasswordSubmit")}
-            </Text>
-          )}
-        </Pressable>
+          label={t("auth.forgotPasswordSubmit")}
+        />
 
         {successMessage !== "" ? (
           <Pressable
