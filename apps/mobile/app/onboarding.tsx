@@ -3,7 +3,7 @@ import { ArrowRight, BookMarked, Sparkles, Tag } from "lucide-react-native";
 import { useState } from "react";
 import { Pressable, ScrollView, Text, View } from "react-native";
 
-import { UI_COLORS } from "@/lib/constants";
+import { SUPPORTED_SOURCE_COUNT, UI_COLORS } from "@/lib/constants";
 import { useUIStore } from "../src/stores/ui-store";
 
 /** オンボーディングページのデータ */
@@ -11,7 +11,7 @@ const ONBOARDING_PAGES = [
   {
     id: "save",
     title: "技術記事をワンタップで保存",
-    description: "Zenn、Qiita、dev.toなど18サイトに対応。気になった記事をすぐ保存できます。",
+    description: `Zenn、Qiita、dev.toなど${SUPPORTED_SOURCE_COUNT}ソースに対応。気になった記事をすぐ保存できます。`,
     Icon: BookMarked,
   },
   {

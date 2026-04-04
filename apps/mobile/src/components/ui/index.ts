@@ -4,7 +4,6 @@ export { Card } from "./Card";
 export { EmptyState } from "./EmptyState";
 export { Input } from "./Input";
 export { Skeleton } from "./Skeleton";
-export type { SourceName } from "./SourceBadge";
 export { SourceBadge } from "./SourceBadge";
 export {
   ArticleDetailSkeleton,

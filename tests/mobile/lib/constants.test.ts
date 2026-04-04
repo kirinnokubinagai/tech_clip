@@ -5,10 +5,12 @@ import {
   MAX_FREE_AI_USES,
   PAGINATION_LIMIT,
   STALE_TIME_MS,
+  SUPPORTED_SOURCE_COUNT,
   SUPPORTED_SOURCES,
   THEME_COLORS,
   UI_COLORS,
 } from "@/lib/constants";
+import { SOURCE_DEFINITIONS } from "@/lib/sources";
 
 describe("constants", () => {
   describe("getApiBaseUrl", () => {
@@ -35,24 +37,9 @@ describe("constants", () => {
   });
 
   describe("SUPPORTED_SOURCES", () => {
-    it("全ソースが定義されていること", () => {
-      expect(SUPPORTED_SOURCES).toContain("zenn");
-      expect(SUPPORTED_SOURCES).toContain("qiita");
-      expect(SUPPORTED_SOURCES).toContain("note");
-      expect(SUPPORTED_SOURCES).toContain("hatena");
-      expect(SUPPORTED_SOURCES).toContain("devto");
-      expect(SUPPORTED_SOURCES).toContain("medium");
-      expect(SUPPORTED_SOURCES).toContain("hackernews");
-      expect(SUPPORTED_SOURCES).toContain("hashnode");
-      expect(SUPPORTED_SOURCES).toContain("github");
-      expect(SUPPORTED_SOURCES).toContain("stackoverflow");
-      expect(SUPPORTED_SOURCES).toContain("reddit");
-      expect(SUPPORTED_SOURCES).toContain("speakerdeck");
-      expect(SUPPORTED_SOURCES).toContain("freecodecamp");
-      expect(SUPPORTED_SOURCES).toContain("logrocket");
-      expect(SUPPORTED_SOURCES).toContain("css-tricks");
-      expect(SUPPORTED_SOURCES).toContain("smashing");
-      expect(SUPPORTED_SOURCES).toContain("other");
+    it("source定義と一致していること", () => {
+      expect(SUPPORTED_SOURCES).toEqual(SOURCE_DEFINITIONS.map(({ id }) => id));
+      expect(SUPPORTED_SOURCES).toHaveLength(SUPPORTED_SOURCE_COUNT);
     });
 
     it("重複がないこと", () => {

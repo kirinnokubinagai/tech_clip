@@ -10,7 +10,7 @@ Zenn、Qiita、dev.to、YouTube などの技術コンテンツを保存するだ
 - 他アプリの共有ボタンから直接保存（Share Intent 対応）
 - AI による要約生成（長文記事を数行に凝縮、デバイス言語に自動対応）
 - AI による翻訳（任意の言語間で翻訳可能）
-- 16 ソース対応（Zenn, Qiita, Medium, GitHub, Reddit, StackOverflow 等）
+- 17 ソース対応（`other` を含む。対応定義は `apps/mobile/src/lib/sources.ts` に集約）
 - オフライン閲覧（バックグラウンド同期実装済み）
 - タグ・お気に入りで整理
 - プレミアムプラン（RevenueCat によるサブスクリプション）
@@ -18,6 +18,7 @@ Zenn、Qiita、dev.to、YouTube などの技術コンテンツを保存するだ
 
 ## 対応ソース
 
+> 対応ソースは `apps/mobile/src/lib/sources.ts` を source-of-truth として README / onboarding / UI と同期している。
 > URL からソース種別を判定し、対応するパーサーへディスパッチする実装は接続済み。個別パーサーが失敗した場合のみ汎用パーサーへフォールバックする。
 
 | ソース | 種別 | 状態 |

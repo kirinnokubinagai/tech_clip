@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { ActivityIndicator, Linking, Pressable, ScrollView, Text, View } from "react-native";
 import Markdown from "react-native-markdown-display";
 
-import { Badge } from "@/components/ui";
+import { SourceBadge } from "@/components/ui";
 import {
   useArticleDetail,
   useRequestSummary,
@@ -404,7 +404,7 @@ export default function ArticleDetailScreen() {
       <ScrollView className="flex-1" contentContainerStyle={{ paddingBottom: 40 }}>
         <View className="px-4 pt-4 gap-3">
           <View className="flex-row items-center gap-2">
-            <Badge>{article.source}</Badge>
+            <SourceBadge source={article.source} />
             {article.publishedAt && (
               <Text className="text-xs text-text-muted">{formatDate(article.publishedAt)}</Text>
             )}
