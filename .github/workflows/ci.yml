@@ -24,30 +24,41 @@ env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
-  lint:
+  ci:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/nix-setup
-      - run: nix develop --command pnpm lint
+      - name: Run lint, typecheck, test, audit in parallel
+        run: |
+          nix develop --command bash -c '
+            set -uo pipefail
+            LOGDIR=$(mktemp -d)
 
-  typecheck:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: ./.github/actions/nix-setup
-      - run: nix develop --command pnpm typecheck
+            pnpm lint       > "${LOGDIR}/lint.log" 2>&1 &
+            PID_LINT=$!
+            pnpm typecheck  > "${LOGDIR}/typecheck.log" 2>&1 &
+            PID_TC=$!
+            pnpm test       > "${LOGDIR}/test.log" 2>&1 &
+            PID_TEST=$!
+            pnpm audit      > "${LOGDIR}/audit.log" 2>&1 &
+            PID_AUDIT=$!
 
-  test:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: ./.github/actions/nix-setup
-      - run: nix develop --command pnpm test
+            FAILED=0
+            wait $PID_LINT   || FAILED=1
+            wait $PID_TC     || FAILED=1
+            wait $PID_TEST   || FAILED=1
+            wait $PID_AUDIT  || FAILED=1
 
-  audit:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: ./.github/actions/nix-setup
-      - run: nix develop --command pnpm audit
+            echo "========== lint =========="
+            cat "${LOGDIR}/lint.log"
+            echo "========== typecheck =========="
+            cat "${LOGDIR}/typecheck.log"
+            echo "========== test =========="
+            cat "${LOGDIR}/test.log"
+            echo "========== audit =========="
+            cat "${LOGDIR}/audit.log"
+
+            rm -rf "${LOGDIR}"
+            exit $FAILED
+          '
