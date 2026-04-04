@@ -5,7 +5,7 @@
  * インメモリ SQLite + 実 Hono アプリ (app.request) で検証する。
  */
 
-import { accounts, sessions, users } from "@api/db/schema/index";
+import { accounts, refreshTokens, sessions, users } from "@api/db/schema/index";
 import { HTTP_OK, HTTP_UNAUTHORIZED, HTTP_UNPROCESSABLE_ENTITY } from "@api/lib/http-status";
 import { createAuthRoute } from "@api/routes/auth";
 import { createClient } from "@libsql/client";
@@ -17,11 +17,19 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 const TEST_USER_ID = "user_e2e_01";
 const TEST_EMAIL = "e2e@example.com";
 const TEST_TOKEN = "e2e-session-token-abc123";
-/** リフレッシュトークンはセッションID（sessions.id）を使用する */
 const TEST_SESSION_ID = "session_e2e_01";
 const TEST_REFRESH_TOKEN = "e2e-refresh-token-xyz789";
+const TEST_EXPIRED_REFRESH_TOKEN = "e2e-refresh-token-expired";
 const FUTURE_EXPIRES = new Date(Date.now() + 86_400_000).toISOString();
 const PAST_EXPIRES = new Date(Date.now() - 1_000).toISOString();
+
+async function hashRefreshToken(token: string): Promise<string> {
+  const encoded = new TextEncoder().encode(token);
+  const digest = await crypto.subtle.digest("SHA-256", encoded);
+  return Array.from(new Uint8Array(digest), (value) => value.toString(16).padStart(2, "0")).join(
+    "",
+  );
+}
 
 /** インメモリ SQLite DB を作成する */
 function createTestDb() {
@@ -49,6 +57,14 @@ async function seedTestData(db: ReturnType<typeof createTestDb>) {
     id: "session_e2e_01",
     userId: TEST_USER_ID,
     token: TEST_TOKEN,
+    expiresAt: FUTURE_EXPIRES,
+  });
+
+  await db.insert(refreshTokens).values({
+    id: "refresh_e2e_01",
+    sessionId: TEST_SESSION_ID,
+    userId: TEST_USER_ID,
+    tokenHash: await hashRefreshToken(TEST_REFRESH_TOKEN),
     expiresAt: FUTURE_EXPIRES,
   });
 }
@@ -124,6 +140,9 @@ describe("E2E: 認証クリティカルパス", () => {
     );
     await db.run(
       "CREATE TABLE IF NOT EXISTS sessions (id TEXT PRIMARY KEY, user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE, token TEXT NOT NULL UNIQUE, expires_at TEXT NOT NULL, ip_address TEXT, user_agent TEXT, created_at TEXT NOT NULL DEFAULT (datetime('now')), updated_at TEXT NOT NULL DEFAULT (datetime('now')))",
+    );
+    await db.run(
+      "CREATE TABLE IF NOT EXISTS refresh_tokens (id TEXT PRIMARY KEY, session_id TEXT NOT NULL REFERENCES sessions(id) ON DELETE CASCADE, user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE, token_hash TEXT NOT NULL UNIQUE, expires_at TEXT NOT NULL, created_at TEXT NOT NULL DEFAULT (datetime('now')), updated_at TEXT NOT NULL DEFAULT (datetime('now')))",
     );
     await seedTestData(db);
   });
@@ -298,21 +317,21 @@ describe("E2E: 認証クリティカルパス", () => {
         const mockAuth = createMockAuth();
         const app = buildTestApp(db, mockAuth);
 
-        // Act: リフレッシュトークンはセッションID（sessions.id）を使用する
         const res = await app.request("/api/auth/refresh", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ refreshToken: TEST_SESSION_ID }),
+          body: JSON.stringify({ refreshToken: TEST_REFRESH_TOKEN }),
         });
 
         // Assert
         expect(res.status).toBe(HTTP_OK);
         const body = (await res.json()) as {
           success: true;
-          data: { token: string };
+          data: { token: string; refreshToken: string };
         };
         expect(body.success).toBe(true);
         expect(body.data.token).toBe(TEST_TOKEN);
+        expect(body.data.refreshToken).not.toBe(TEST_REFRESH_TOKEN);
       });
     });
 
@@ -347,13 +366,20 @@ describe("E2E: 認証クリティカルパス", () => {
           token: TEST_REFRESH_TOKEN,
           expiresAt: PAST_EXPIRES,
         });
+        await db.insert(refreshTokens).values({
+          id: "refresh_e2e_expired",
+          sessionId: "session_e2e_expired",
+          userId: TEST_USER_ID,
+          tokenHash: await hashRefreshToken(TEST_EXPIRED_REFRESH_TOKEN),
+          expiresAt: PAST_EXPIRES,
+        });
         const app = buildTestApp(db, createMockAuth());
 
         // Act
         const res = await app.request("/api/auth/refresh", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ refreshToken: TEST_REFRESH_TOKEN }),
+          body: JSON.stringify({ refreshToken: TEST_EXPIRED_REFRESH_TOKEN }),
         });
 
         // Assert
@@ -421,7 +447,7 @@ describe("E2E: 認証クリティカルパス", () => {
       };
       expect(sessionBody.data.user.email).toBe(TEST_EMAIL);
 
-      // Act: Step 3 - トークンリフレッシュ（refreshTokenはセッションID）
+      // Act: Step 3 - トークンリフレッシュ
       const refreshRes = await app.request("/api/auth/refresh", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -430,9 +456,10 @@ describe("E2E: 認証クリティカルパス", () => {
       expect(refreshRes.status).toBe(HTTP_OK);
       const refreshBody = (await refreshRes.json()) as {
         success: true;
-        data: { token: string };
+        data: { token: string; refreshToken: string };
       };
       expect(refreshBody.data.token).toBeDefined();
+      expect(refreshBody.data.refreshToken).toBeDefined();
     });
   });
 });

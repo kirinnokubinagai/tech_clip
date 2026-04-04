@@ -1,6 +1,12 @@
 import Constants from "expo-constants";
 
-import { clearAuthTokens, getAuthToken, getRefreshToken, setAuthToken } from "./secure-store";
+import {
+  clearAuthTokens,
+  getAuthToken,
+  getRefreshToken,
+  setAuthToken,
+  setRefreshToken,
+} from "./secure-store";
 
 /** API通信のタイムアウト（ミリ秒） */
 const REQUEST_TIMEOUT_MS = 15000;
@@ -24,7 +30,7 @@ export class SessionExpiredError extends Error {
  */
 type RefreshTokenResponse = {
   success: true;
-  data: { token: string };
+  data: { token: string; refreshToken: string };
 };
 
 /**
@@ -109,7 +115,9 @@ async function refreshAccessToken(): Promise<string> {
   }
 
   const newToken = (data as RefreshTokenResponse).data.token;
+  const newRefreshToken = (data as RefreshTokenResponse).data.refreshToken;
   await setAuthToken(newToken);
+  await setRefreshToken(newRefreshToken);
   return newToken;
 }
 
