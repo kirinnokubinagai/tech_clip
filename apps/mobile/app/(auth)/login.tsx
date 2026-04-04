@@ -23,8 +23,8 @@ const PASSWORD_MIN_LENGTH = 8;
 const SOCIAL_SIGN_IN_PATH = "/api/auth/sign-in/social";
 /** ソーシャルログイン後のコールバックURL */
 const SOCIAL_CALLBACK_URL = "techclip://";
-/** メールアドレスの簡易バリデーション正規表現（@の後にドットを含むドメインが必要） */
-const EMAIL_REGEX = /@.+\..+/;
+/** メールアドレスの簡易バリデーション正規表現（空白なし・@あり・ドメインにドットあり） */
+const EMAIL_SIMPLE_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 type SocialProvider = "google" | "github";
 
@@ -57,7 +57,7 @@ export default function LoginScreen() {
     if (!trimmedEmail) {
       return t("auth.validation.emailRequired");
     }
-    if (!EMAIL_REGEX.test(trimmedEmail)) {
+    if (!EMAIL_SIMPLE_REGEX.test(trimmedEmail)) {
       return t("auth.validation.emailInvalid");
     }
     if (!password) {

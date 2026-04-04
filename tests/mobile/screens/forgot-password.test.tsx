@@ -12,6 +12,19 @@ beforeEach(() => {
 });
 
 describe("ForgotPasswordScreen", () => {
+  it("メールアドレス形式が不正な場合にバリデーションエラーを表示すること", async () => {
+    // Arrange
+    const { getByLabelText, findByLabelText } = await render(<ForgotPasswordScreen />);
+
+    await fireEvent.changeText(getByLabelText("メールアドレス"), "invalid-email");
+
+    // Act
+    await fireEvent.press(getByLabelText("リセットメールを送信"));
+
+    // Assert
+    expect(await findByLabelText("メールアドレスの形式が正しくありません")).toBeDefined();
+  });
+
   it("メールアドレス未入力時にバリデーションエラーを表示すること", async () => {
     // Arrange
     const { getByLabelText, findByLabelText } = await render(<ForgotPasswordScreen />);
