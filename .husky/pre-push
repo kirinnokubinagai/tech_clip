@@ -241,4 +241,95 @@ if [ "${HIGH_ALERTS}" -gt 0 ] || [ "${MEDIUM_ALERTS}" -gt 0 ]; then
   exit 1
 fi
 
+
+# Claude Code AI レビューセクション（pre-push hookに追加）
+echo "  Claude Code AIレビュー..."
+
+CLAUDE_REVIEW_TIMEOUT=60
+REVIEWS_DIR="${REPO_ROOT}/.reviews"
+
+if ! command -v claude > /dev/null 2>&1; then
+  echo "    警告: claude コマンドが見つかりません。AIレビューをスキップします。"
+else
+  DIFF_CONTENT="$(git diff origin/main...HEAD -- . ':(exclude)*.md' ':(exclude)*.txt' 2>/dev/null || true)"
+
+  if [ -z "${DIFF_CONTENT}" ]; then
+    echo "    差分なし。AIレビューをスキップします。"
+  else
+    DIFF_LINE_COUNT="$(echo "${DIFF_CONTENT}" | wc -l | tr -d ' ')"
+    if [ "${DIFF_LINE_COUNT}" -gt 5000 ]; then
+      DIFF_CONTENT="$(echo "${DIFF_CONTENT}" | head -5000)"
+      echo "    警告: 差分が大きいため、先頭5000行のみレビューします。"
+    fi
+
+    REVIEW_RESULT="$(echo "${DIFF_CONTENT}" | timeout "${CLAUDE_REVIEW_TIMEOUT}" claude \
+      --output-format json \
+      -p 'あなたはコードレビュアーです。このgit diffをレビューし、CRITICALおよびHIGHの深刻度の問題のみを報告してください。必ず以下のJSON形式のみで応答してください（説明文なし）: {"critical": <number>, "high": <number>, "issues": [{"severity": "CRITICAL"|"HIGH", "file": "<filepath>", "line": <number_or_null>, "message": "<日本語で問題の説明>"}]}' \
+      2>/dev/null || true)"
+
+    if [ -z "${REVIEW_RESULT}" ]; then
+      echo "    警告: AIレビューの実行に失敗しました。pushを続行します。"
+    else
+      CLEAN_RESULT="$(echo "${REVIEW_RESULT}" | python3 -c "
+import sys, json
+data = sys.stdin.read()
+start = data.find('{')
+end = data.rfind('}')
+if start == -1 or end == -1:
+    print('{}')
+    sys.exit(0)
+try:
+    obj = json.loads(data[start:end+1])
+    print(json.dumps(obj))
+except Exception:
+    print('{}')
+" 2>/dev/null || echo "")"
+
+      if [ -z "${CLEAN_RESULT}" ] || [ "${CLEAN_RESULT}" = "{}" ]; then
+        echo "    警告: AIレビュー結果のパースに失敗しました。pushを続行します。"
+      else
+        CRITICAL_COUNT="$(echo "${CLEAN_RESULT}" | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('critical',0))" 2>/dev/null || echo "0")"
+        HIGH_COUNT="$(echo "${CLEAN_RESULT}" | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('high',0))" 2>/dev/null || echo "0")"
+
+        mkdir -p "${REVIEWS_DIR}"
+        REVIEW_LOG="${REVIEWS_DIR}/pre-push-$(date +%Y%m%d-%H%M%S).json"
+        CURRENT_BRANCH="$(git branch --show-current 2>/dev/null || echo "unknown")"
+        SAVE_PAYLOAD="$(python3 -c "
+import json, sys
+data = json.loads(sys.argv[1])
+data['timestamp'] = sys.argv[2]
+data['branch'] = sys.argv[3]
+print(json.dumps(data, ensure_ascii=False, indent=2))
+" "${CLEAN_RESULT}" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "${CURRENT_BRANCH}" 2>/dev/null || echo "${CLEAN_RESULT}")"
+        echo "${SAVE_PAYLOAD}" > "${REVIEW_LOG}"
+
+        if [ "${CRITICAL_COUNT}" -gt 0 ] || [ "${HIGH_COUNT}" -gt 0 ]; then
+          echo "AIレビュー失敗: CRITICAL ${CRITICAL_COUNT}件、HIGH ${HIGH_COUNT}件の問題が検出されました。"
+          echo "  詳細: ${REVIEW_LOG}"
+          echo ""
+          echo "${CLEAN_RESULT}" | python3 -c "
+import sys, json
+try:
+    d = json.load(sys.stdin)
+    for issue in d.get('issues', []):
+        sev = issue.get('severity', '?')
+        f = issue.get('file', '?')
+        ln = issue.get('line', '')
+        msg = issue.get('message', '?')
+        loc = str(f) + ':' + str(ln) if ln else str(f)
+        print('  [' + sev + '] ' + loc + ': ' + msg)
+except Exception:
+    pass
+" 2>/dev/null || true
+          echo ""
+          echo "問題を修正してから再度pushしてください。"
+          exit 1
+        fi
+
+        echo "    AIレビュー完了（CRITICAL: ${CRITICAL_COUNT}, HIGH: ${HIGH_COUNT}）"
+      fi
+    fi
+  fi
+fi
+
 echo "全チェック通過"
