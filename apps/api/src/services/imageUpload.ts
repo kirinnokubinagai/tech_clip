@@ -1,3 +1,5 @@
+import sharp from "sharp";
+
 /** R2バケットへのアップロード設定 */
 export type ImageUploadConfig = {
   r2Bucket: R2Bucket;
@@ -15,9 +17,27 @@ export type AvatarUploadResult = {
   avatarUrl: string;
 };
 
+/** 正規化済みアバター画像 */
+export type PreparedAvatarImage = {
+  buffer: Uint8Array;
+  contentType: "image/webp";
+  extension: "webp";
+};
+
+/** 画像処理結果 */
+export type ProcessAvatarImageResult =
+  | {
+      isValid: true;
+      image: PreparedAvatarImage;
+    }
+  | {
+      isValid: false;
+      error: string;
+    };
+
 /** uploadAvatarToR2のパラメータ */
 type UploadAvatarParams = {
-  file: File;
+  image: PreparedAvatarImage;
   userId: string;
   config: ImageUploadConfig;
 };
@@ -25,18 +45,32 @@ type UploadAvatarParams = {
 /** 許可するMIMEタイプ */
 const ALLOWED_MIME_TYPES = ["image/jpeg", "image/png", "image/webp"] as const;
 
+/** 許可する実体フォーマット */
+const ALLOWED_IMAGE_FORMATS = new Set(["jpeg", "png", "webp"] as const);
+
 /** アバター画像の最大ファイルサイズ（5MB） */
 const MAX_FILE_SIZE_BYTES = 5 * 1024 * 1024;
+
+/** アバター画像の最大寸法 */
+const MAX_IMAGE_DIMENSION = 4096;
+
+/** アバター画像の出力寸法上限 */
+const MAX_OUTPUT_DIMENSION = 512;
+
+/** 出力WebPの品質 */
+const WEBP_QUALITY = 82;
 
 /** アバター保存ディレクトリ */
 const AVATARS_DIR = "avatars";
 
-/** MIMEタイプと拡張子のマッピング */
-const MIME_TO_EXTENSION: Record<string, string> = {
-  "image/jpeg": "jpg",
-  "image/png": "png",
-  "image/webp": "webp",
-};
+/** 画像の内容を検査できなかった場合のメッセージ */
+const IMAGE_CONTENT_ERROR_MESSAGE = "画像の内容を確認できませんでした";
+
+/** 画像の寸法上限エラーメッセージ */
+const IMAGE_DIMENSION_ERROR_MESSAGE = `画像は${MAX_IMAGE_DIMENSION}px以下でアップロードしてください`;
+
+/** 画像の再エンコード失敗メッセージ */
+const IMAGE_REENCODE_ERROR_MESSAGE = "画像の再エンコードに失敗しました";
 
 /**
  * アップロードされたファイルを検証する
@@ -65,6 +99,59 @@ export function validateImageFile(file: File): ValidationResult {
 }
 
 /**
+ * 画像の実体を検査し、アバター用のWebPに正規化する
+ *
+ * @param file - 検査対象の画像ファイル
+ * @returns 画像処理結果
+ */
+export async function processAvatarImage(file: File): Promise<ProcessAvatarImageResult> {
+  const input = new Uint8Array(await file.arrayBuffer());
+
+  const metadata = await sharp(input)
+    .metadata()
+    .catch(() => undefined);
+
+  if (!metadata?.width || !metadata?.height || !metadata?.format) {
+    return { isValid: false, error: IMAGE_CONTENT_ERROR_MESSAGE };
+  }
+
+  if (!ALLOWED_IMAGE_FORMATS.has(metadata.format as "jpeg" | "png" | "webp")) {
+    return {
+      isValid: false,
+      error: IMAGE_CONTENT_ERROR_MESSAGE,
+    };
+  }
+
+  if (metadata.width > MAX_IMAGE_DIMENSION || metadata.height > MAX_IMAGE_DIMENSION) {
+    return { isValid: false, error: IMAGE_DIMENSION_ERROR_MESSAGE };
+  }
+
+  try {
+    const output = await sharp(input)
+      .rotate()
+      .resize({
+        width: MAX_OUTPUT_DIMENSION,
+        height: MAX_OUTPUT_DIMENSION,
+        fit: "inside",
+        withoutEnlargement: true,
+      })
+      .webp({ quality: WEBP_QUALITY })
+      .toBuffer();
+
+    return {
+      isValid: true,
+      image: {
+        buffer: Uint8Array.from(output),
+        contentType: "image/webp",
+        extension: "webp",
+      },
+    };
+  } catch {
+    return { isValid: false, error: IMAGE_REENCODE_ERROR_MESSAGE };
+  }
+}
+
+/**
  * ユニークなファイル名を生成する
  *
  * @param userId - ユーザーID
@@ -80,24 +167,20 @@ export function generateUniqueFileName(userId: string, extension: string): strin
 /**
  * アバター画像をCloudflare R2にアップロードする
  *
- * TODO: Cloudflare Workers では sharp が使用できないため、現在はオリジナルの
- * ファイル形式のままアップロードしている。将来的には Cloudflare Images や
- * Workers AI を利用して WebP への変換・リサイズを実装することを検討する。
+ * 画像は事前に `processAvatarImage` で WebP に正規化されていることを前提とする。
  *
- * @param params - ファイル、ユーザーID、R2設定
+ * @param params - 画像、ユーザーID、R2設定
  * @returns アップロードされた画像のURL
  * @throws Error - アップロードに失敗した場合
  */
 export async function uploadAvatarToR2(params: UploadAvatarParams): Promise<AvatarUploadResult> {
-  const { file, userId, config } = params;
+  const { image, userId, config } = params;
 
-  const extension = MIME_TO_EXTENSION[file.type] ?? "jpg";
-  const fileName = generateUniqueFileName(userId, extension);
-  const arrayBuffer = await file.arrayBuffer();
+  const fileName = generateUniqueFileName(userId, image.extension);
 
   try {
-    await config.r2Bucket.put(fileName, arrayBuffer, {
-      httpMetadata: { contentType: file.type },
+    await config.r2Bucket.put(fileName, image.buffer, {
+      httpMetadata: { contentType: image.contentType },
     });
   } catch {
     throw new Error("アバター画像のアップロードに失敗しました");

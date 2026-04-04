@@ -1,9 +1,11 @@
 import {
   generateUniqueFileName,
   type ImageUploadConfig,
+  processAvatarImage,
   uploadAvatarToR2,
   validateImageFile,
 } from "@api/services/imageUpload";
+import sharp from "sharp";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 /** テスト用のモックR2バケット */
@@ -12,14 +14,6 @@ const mockR2Bucket = {
   put: mockR2Put,
 };
 
-/** テスト用のJPEG画像バイナリ（最小限のJPEGヘッダー） */
-const JPEG_HEADER = new Uint8Array([0xff, 0xd8, 0xff, 0xe0]);
-/** テスト用のPNG画像バイナリ（最小限のPNGヘッダー） */
-const PNG_HEADER = new Uint8Array([0x89, 0x50, 0x4e, 0x47]);
-/** テスト用のWebP画像バイナリ（最小限のWebPヘッダー） */
-const WEBP_HEADER = new Uint8Array([
-  0x52, 0x49, 0x46, 0x46, 0x00, 0x00, 0x00, 0x00, 0x57, 0x45, 0x42, 0x50,
-]);
 /** テスト用の不正ファイルバイナリ */
 const INVALID_HEADER = new Uint8Array([0x00, 0x00, 0x00, 0x00]);
 
@@ -41,11 +35,40 @@ function createTestFile(header: Uint8Array, type: string, name: string): File {
   return new File([header], name, { type });
 }
 
+/**
+ * 実体のある画像ファイルを生成する
+ *
+ * @param format - 出力フォーマット
+ * @param width - 画像幅
+ * @param height - 画像高さ
+ * @returns Fileオブジェクト
+ */
+async function createImageFile(
+  format: "jpeg" | "png" | "webp",
+  width = 640,
+  height = 480,
+): Promise<File> {
+  const buffer = await sharp({
+    create: {
+      width,
+      height,
+      channels: 3,
+      background: { r: 240, g: 240, b: 240 },
+    },
+  })
+    .toFormat(format)
+    .toBuffer();
+
+  return new File([buffer], `avatar.${format === "jpeg" ? "jpg" : format}`, {
+    type: `image/${format}`,
+  });
+}
+
 describe("validateImageFile", () => {
   describe("正常系", () => {
     it("JPEGファイルを受け付けること", () => {
       // Arrange
-      const file = createTestFile(JPEG_HEADER, "image/jpeg", "avatar.jpg");
+      const file = createTestFile(INVALID_HEADER, "image/jpeg", "avatar.jpg");
 
       // Act
       const result = validateImageFile(file);
@@ -57,7 +80,7 @@ describe("validateImageFile", () => {
 
     it("PNGファイルを受け付けること", () => {
       // Arrange
-      const file = createTestFile(PNG_HEADER, "image/png", "avatar.png");
+      const file = createTestFile(INVALID_HEADER, "image/png", "avatar.png");
 
       // Act
       const result = validateImageFile(file);
@@ -69,7 +92,7 @@ describe("validateImageFile", () => {
 
     it("WebPファイルを受け付けること", () => {
       // Arrange
-      const file = createTestFile(WEBP_HEADER, "image/webp", "avatar.webp");
+      const file = createTestFile(INVALID_HEADER, "image/webp", "avatar.webp");
 
       // Act
       const result = validateImageFile(file);
@@ -99,7 +122,7 @@ describe("validateImageFile", () => {
       /** 5MB超のファイルサイズ */
       const OVER_5MB = 5 * 1024 * 1024 + 1;
       const largeData = new Uint8Array(OVER_5MB);
-      largeData.set(JPEG_HEADER, 0);
+      largeData.set(INVALID_HEADER, 0);
       const file = new File([largeData], "large.jpg", { type: "image/jpeg" });
 
       // Act
@@ -134,6 +157,65 @@ describe("validateImageFile", () => {
       expect(result.isValid).toBe(false);
       expect(result.error).toBeDefined();
     });
+  });
+});
+
+describe("processAvatarImage", () => {
+  it.each([
+    "jpeg",
+    "png",
+    "webp",
+  ] as const)("実体が%sの画像をWebPへ正規化できること", async (format) => {
+    // Arrange
+    const file = await createImageFile(format);
+
+    // Act
+    const result = await processAvatarImage(file);
+
+    // Assert
+    expect(result.isValid).toBe(true);
+    if (!result.isValid) {
+      throw new Error("画像処理に失敗しました");
+    }
+
+    expect(result.image.contentType).toBe("image/webp");
+    expect(result.image.extension).toBe("webp");
+    const output = await sharp(Buffer.from(result.image.buffer)).metadata();
+    expect(output.format).toBe("webp");
+    expect(output.width).toBeLessThanOrEqual(512);
+    expect(output.height).toBeLessThanOrEqual(512);
+  });
+
+  it("画像でない実体は拒否されること", async () => {
+    // Arrange
+    const file = new File([new TextEncoder().encode("not an image")], "avatar.jpg", {
+      type: "image/jpeg",
+    });
+
+    // Act
+    const result = await processAvatarImage(file);
+
+    // Assert
+    expect(result.isValid).toBe(false);
+    if (result.isValid) {
+      throw new Error("画像処理が拒否されませんでした");
+    }
+    expect(result.error).toContain("確認できませんでした");
+  });
+
+  it("寸法上限を超える画像は拒否されること", async () => {
+    // Arrange
+    const file = await createImageFile("png", 4097, 1);
+
+    // Act
+    const result = await processAvatarImage(file);
+
+    // Assert
+    expect(result.isValid).toBe(false);
+    if (result.isValid) {
+      throw new Error("画像処理が拒否されませんでした");
+    }
+    expect(result.error).toContain("4096px");
   });
 });
 
@@ -181,90 +263,36 @@ describe("uploadAvatarToR2", () => {
   });
 
   describe("正常系", () => {
-    it("JPEGファイルをR2にアップロードできること", async () => {
+    it("WebP画像をR2にアップロードできること", async () => {
       // Arrange
       mockR2Put.mockResolvedValue({ key: "avatars/user_01HXYZ_123.webp" });
-      const file = createTestFile(JPEG_HEADER, "image/jpeg", "avatar.jpg");
+      const sourceFile = await createImageFile("jpeg");
+      const processed = await processAvatarImage(sourceFile);
+      if (!processed.isValid) {
+        throw new Error(processed.error);
+      }
 
       // Act
       const result = await uploadAvatarToR2({
-        file,
+        image: processed.image,
         userId: "user_01HXYZ",
         config: TEST_CONFIG,
       });
 
       // Assert
       expect(result.avatarUrl).toMatch(/^https:\/\/cdn\.example\.com\/avatars\//);
+      expect(result.avatarUrl).toContain(".webp");
       expect(mockR2Put).toHaveBeenCalledOnce();
-    });
 
-    it("PNGファイルをR2にアップロードできること", async () => {
-      // Arrange
-      mockR2Put.mockResolvedValue({ key: "avatars/user_01HXYZ_123.webp" });
-      const file = createTestFile(PNG_HEADER, "image/png", "avatar.png");
-
-      // Act
-      const result = await uploadAvatarToR2({
-        file,
-        userId: "user_01HXYZ",
-        config: TEST_CONFIG,
-      });
-
-      // Assert
-      expect(result.avatarUrl).toMatch(/^https:\/\/cdn\.example\.com\/avatars\//);
-      expect(mockR2Put).toHaveBeenCalledOnce();
-    });
-
-    it("WebPファイルをR2にアップロードできること", async () => {
-      // Arrange
-      mockR2Put.mockResolvedValue({ key: "avatars/user_01HXYZ_123.webp" });
-      const file = createTestFile(WEBP_HEADER, "image/webp", "avatar.webp");
-
-      // Act
-      const result = await uploadAvatarToR2({
-        file,
-        userId: "user_01HXYZ",
-        config: TEST_CONFIG,
-      });
-
-      // Assert
-      expect(result.avatarUrl).toMatch(/^https:\/\/cdn\.example\.com\/avatars\//);
-      expect(mockR2Put).toHaveBeenCalledOnce();
-    });
-
-    it("アップロード時にオリジナルファイルのContent-Typeが設定されること", async () => {
-      // Arrange
-      mockR2Put.mockResolvedValue({});
-      const file = createTestFile(JPEG_HEADER, "image/jpeg", "avatar.jpg");
-
-      // Act
-      await uploadAvatarToR2({
-        file,
-        userId: "user_01HXYZ",
-        config: TEST_CONFIG,
-      });
-
-      // Assert
       const callArgs = mockR2Put.mock.calls[0];
+      expect(callArgs[0]).toMatch(/^avatars\/user_01HXYZ_/);
+      expect(callArgs[0]).toContain(".webp");
       expect(callArgs[2]).toMatchObject({
-        httpMetadata: { contentType: "image/jpeg" },
-      });
-    });
-
-    it("R2にアップロードされたURLが返ること", async () => {
-      // Arrange
-      mockR2Put.mockResolvedValue({});
-      const file = createTestFile(JPEG_HEADER, "image/jpeg", "avatar.jpg");
-
-      // Act
-      const result = await uploadAvatarToR2({
-        file,
-        userId: "user_01HXYZ",
-        config: TEST_CONFIG,
+        httpMetadata: { contentType: "image/webp" },
       });
 
-      // Assert
-      expect(result.avatarUrl).toMatch(/^https:\/\/cdn\.example\.com\//);
+      const uploaded = await sharp(Buffer.from(callArgs[1] as Uint8Array)).metadata();
+      expect(uploaded.format).toBe("webp");
     });
   });
 
@@ -272,12 +300,16 @@ describe("uploadAvatarToR2", () => {
     it("R2アップロードが失敗した場合にエラーが発生すること", async () => {
       // Arrange
       mockR2Put.mockRejectedValue(new Error("R2 upload failed"));
-      const file = createTestFile(JPEG_HEADER, "image/jpeg", "avatar.jpg");
+      const sourceFile = await createImageFile("jpeg");
+      const processed = await processAvatarImage(sourceFile);
+      if (!processed.isValid) {
+        throw new Error(processed.error);
+      }
 
       // Act & Assert
       await expect(
         uploadAvatarToR2({
-          file,
+          image: processed.image,
           userId: "user_01HXYZ",
           config: TEST_CONFIG,
         }),
