@@ -140,11 +140,7 @@ async function rollbackReservedFreeUse(db: Database, userId: string): Promise<vo
  * @param db - Drizzle ORMデータベースインスタンス
  * @param userId - ユーザーID
  */
-async function safeRollback(
-  db: Database,
-  userId: string,
-  requestId?: string,
-): Promise<void> {
+async function safeRollback(db: Database, userId: string, requestId?: string): Promise<void> {
   try {
     await rollbackReservedFreeUse(db, userId);
   } catch (rollbackError) {
