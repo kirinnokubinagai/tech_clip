@@ -13,6 +13,8 @@ const MOCK_TOKEN = "mock-session-token-abc123";
 
 /** テスト用セッション ID（リフレッシュトークンとして使用） */
 const MOCK_SESSION_ID = "session_01";
+const MOCK_REFRESH_TOKEN_ID = "refresh_01";
+const MOCK_REFRESH_TOKEN = "refresh-token-opaque-value";
 
 /** テスト用ユーザー */
 const MOCK_USER = {
@@ -39,6 +41,10 @@ const MOCK_SESSION_ROW = {
 /** モック DB */
 const mockDb = {
   select: vi.fn(),
+  insert: vi.fn(),
+  update: vi.fn(),
+  delete: vi.fn(),
+  transaction: vi.fn(async (cb: (tx: typeof mockDb) => Promise<unknown>) => cb(mockDb)),
 };
 
 /** モック Better Auth インスタンス */
@@ -70,7 +76,7 @@ type AuthSuccessBody = {
 /** 成功レスポンスの型（リフレッシュ） */
 type RefreshSuccessBody = {
   success: true;
-  data: { token: string };
+  data: { token: string; refreshToken: string };
 };
 
 /**
@@ -102,7 +108,11 @@ describe("POST /api/auth/sign-in", () => {
         from: vi.fn().mockReturnThis(),
         where: vi.fn().mockResolvedValue([MOCK_SESSION_ROW]),
       };
+      const insertChain = {
+        values: vi.fn().mockResolvedValue(undefined),
+      };
       mockDb.select.mockReturnValue(selectChain);
+      mockDb.insert.mockReturnValue(insertChain);
 
       const app = createTestApp();
 
@@ -131,7 +141,11 @@ describe("POST /api/auth/sign-in", () => {
         from: vi.fn().mockReturnThis(),
         where: vi.fn().mockResolvedValue([MOCK_SESSION_ROW]),
       };
+      const insertChain = {
+        values: vi.fn().mockResolvedValue(undefined),
+      };
       mockDb.select.mockReturnValue(selectChain);
+      mockDb.insert.mockReturnValue(insertChain);
 
       const app = createTestApp();
 
@@ -145,7 +159,8 @@ describe("POST /api/auth/sign-in", () => {
       // Assert
       expect(res.status).toBe(HTTP_OK);
       const body = (await res.json()) as AuthSuccessBody;
-      expect(body.data.session.refreshToken).toBe(MOCK_SESSION_ID);
+      expect(body.data.session.refreshToken).toBeDefined();
+      expect(body.data.session.refreshToken).not.toBe(MOCK_SESSION_ID);
     });
 
     it("サインイン時のrefreshTokenとtokenが異なる値であること", async () => {
@@ -158,7 +173,11 @@ describe("POST /api/auth/sign-in", () => {
         from: vi.fn().mockReturnThis(),
         where: vi.fn().mockResolvedValue([MOCK_SESSION_ROW]),
       };
+      const insertChain = {
+        values: vi.fn().mockResolvedValue(undefined),
+      };
       mockDb.select.mockReturnValue(selectChain);
+      mockDb.insert.mockReturnValue(insertChain);
 
       const app = createTestApp();
 
@@ -248,6 +267,37 @@ describe("POST /api/auth/sign-in", () => {
       const body = (await res.json()) as ErrorResponseBody;
       expect(body.success).toBe(false);
       expect(body.error.code).toBe("AUTH_INVALID");
+    });
+
+    it("refresh token 発行時にDBエラーが発生した場合500が返ること", async () => {
+      // Arrange
+      mockAuth.api.signInEmail.mockResolvedValue({
+        token: MOCK_TOKEN,
+        user: MOCK_USER,
+      });
+      const selectChain = {
+        from: vi.fn().mockReturnThis(),
+        where: vi.fn().mockResolvedValue([MOCK_SESSION_ROW]),
+      };
+      const insertChain = {
+        values: vi.fn().mockRejectedValue(new Error("insert failed")),
+      };
+      mockDb.select.mockReturnValue(selectChain);
+      mockDb.insert.mockReturnValue(insertChain);
+      const app = createTestApp();
+
+      // Act
+      const res = await app.request("/api/auth/sign-in", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: "test@example.com", password: "Password123" }),
+      });
+
+      // Assert
+      expect(res.status).toBe(HTTP_INTERNAL_SERVER_ERROR);
+      const body = (await res.json()) as ErrorResponseBody;
+      expect(body.success).toBe(false);
+      expect(body.error.code).toBe("INTERNAL_ERROR");
     });
   });
 });
@@ -340,24 +390,46 @@ describe("POST /api/auth/refresh", () => {
   });
 
   describe("正常系", () => {
-    it("有効なリフレッシュトークン（セッションID）で新しいアクセストークンを取得できること", async () => {
+    it("有効なリフレッシュトークンで新しいアクセストークンを取得できること", async () => {
       // Arrange
+      const refreshTokenRow = {
+        id: MOCK_REFRESH_TOKEN_ID,
+        sessionId: MOCK_SESSION_ID,
+        userId: MOCK_USER.id,
+        tokenHash: "hashed-refresh-token",
+        previousTokenHash: null,
+        expiresAt: MOCK_SESSION_ROW.expiresAt,
+        createdAt: "2024-01-15T00:00:00.000Z",
+        updatedAt: "2024-01-15T00:00:00.000Z",
+      };
       const selectChain = {
         from: vi.fn().mockReturnThis(),
-        where: vi.fn().mockResolvedValue([MOCK_SESSION_ROW]),
+        where: vi.fn().mockResolvedValue([refreshTokenRow]),
       };
       const selectChain2 = {
         from: vi.fn().mockReturnThis(),
+        where: vi.fn().mockResolvedValue([MOCK_SESSION_ROW]),
+      };
+      const selectChain3 = {
+        from: vi.fn().mockReturnThis(),
         where: vi.fn().mockResolvedValue([MOCK_USER]),
       };
-      mockDb.select.mockReturnValueOnce(selectChain).mockReturnValueOnce(selectChain2);
+      const updateChain = {
+        set: vi.fn().mockReturnThis(),
+        where: vi.fn().mockResolvedValue(undefined),
+      };
+      mockDb.select
+        .mockReturnValueOnce(selectChain)
+        .mockReturnValueOnce(selectChain2)
+        .mockReturnValueOnce(selectChain3);
+      mockDb.update.mockReturnValue(updateChain);
       const app = createTestApp();
 
       // Act
       const res = await app.request("/api/auth/refresh", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ refreshToken: MOCK_SESSION_ID }),
+        body: JSON.stringify({ refreshToken: MOCK_REFRESH_TOKEN }),
       });
 
       // Assert
@@ -365,26 +437,50 @@ describe("POST /api/auth/refresh", () => {
       const body = (await res.json()) as RefreshSuccessBody;
       expect(body.success).toBe(true);
       expect(body.data.token).toBe(MOCK_TOKEN);
+      expect(body.data.refreshToken).toBeDefined();
+      expect(body.data.refreshToken).not.toBe(MOCK_REFRESH_TOKEN);
     });
 
     it("リフレッシュ成功時にレスポンスのtokenがセッションのアクセストークンであること", async () => {
       // Arrange
+      const refreshTokenRow = {
+        id: MOCK_REFRESH_TOKEN_ID,
+        sessionId: MOCK_SESSION_ID,
+        userId: MOCK_USER.id,
+        tokenHash: "hashed-refresh-token",
+        previousTokenHash: null,
+        expiresAt: MOCK_SESSION_ROW.expiresAt,
+        createdAt: "2024-01-15T00:00:00.000Z",
+        updatedAt: "2024-01-15T00:00:00.000Z",
+      };
       const selectChain = {
         from: vi.fn().mockReturnThis(),
-        where: vi.fn().mockResolvedValue([MOCK_SESSION_ROW]),
+        where: vi.fn().mockResolvedValue([refreshTokenRow]),
       };
       const selectChain2 = {
         from: vi.fn().mockReturnThis(),
+        where: vi.fn().mockResolvedValue([MOCK_SESSION_ROW]),
+      };
+      const selectChain3 = {
+        from: vi.fn().mockReturnThis(),
         where: vi.fn().mockResolvedValue([MOCK_USER]),
       };
-      mockDb.select.mockReturnValueOnce(selectChain).mockReturnValueOnce(selectChain2);
+      const updateChain = {
+        set: vi.fn().mockReturnThis(),
+        where: vi.fn().mockResolvedValue(undefined),
+      };
+      mockDb.select
+        .mockReturnValueOnce(selectChain)
+        .mockReturnValueOnce(selectChain2)
+        .mockReturnValueOnce(selectChain3);
+      mockDb.update.mockReturnValue(updateChain);
       const app = createTestApp();
 
       // Act
       const res = await app.request("/api/auth/refresh", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ refreshToken: MOCK_SESSION_ID }),
+        body: JSON.stringify({ refreshToken: MOCK_REFRESH_TOKEN }),
       });
 
       // Assert
@@ -444,16 +540,31 @@ describe("POST /api/auth/refresh", () => {
       };
       const selectChain = {
         from: vi.fn().mockReturnThis(),
+        where: vi.fn().mockResolvedValue([
+          {
+            id: MOCK_REFRESH_TOKEN_ID,
+            sessionId: MOCK_SESSION_ID,
+            userId: MOCK_USER.id,
+            tokenHash: "hashed-refresh-token",
+            previousTokenHash: null,
+            expiresAt: expiredSession.expiresAt,
+            createdAt: "2024-01-15T00:00:00.000Z",
+            updatedAt: "2024-01-15T00:00:00.000Z",
+          },
+        ]),
+      };
+      const selectChain2 = {
+        from: vi.fn().mockReturnThis(),
         where: vi.fn().mockResolvedValue([expiredSession]),
       };
-      mockDb.select.mockReturnValue(selectChain);
+      mockDb.select.mockReturnValueOnce(selectChain).mockReturnValueOnce(selectChain2);
       const app = createTestApp();
 
       // Act
       const res = await app.request("/api/auth/refresh", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ refreshToken: MOCK_SESSION_ID }),
+        body: JSON.stringify({ refreshToken: MOCK_REFRESH_TOKEN }),
       });
 
       // Assert
@@ -482,6 +593,49 @@ describe("POST /api/auth/refresh", () => {
       // Assert
       const body = (await res.json()) as ErrorResponseBody;
       expect(body.error.message).toContain("セッション");
+    });
+
+    it("ローテーション済みの旧リフレッシュトークン再利用時はセッションを無効化すること", async () => {
+      // Arrange
+      const reusedRefreshTokenRow = {
+        id: MOCK_REFRESH_TOKEN_ID,
+        sessionId: MOCK_SESSION_ID,
+        userId: MOCK_USER.id,
+        tokenHash: "hashed-current-refresh-token",
+        previousTokenHash: "hashed-previous-refresh-token",
+        expiresAt: MOCK_SESSION_ROW.expiresAt,
+        createdAt: "2024-01-15T00:00:00.000Z",
+        updatedAt: "2024-01-15T00:00:00.000Z",
+      };
+      const selectChain = {
+        from: vi.fn().mockReturnThis(),
+        where: vi.fn().mockResolvedValue([]),
+      };
+      const selectChain2 = {
+        from: vi.fn().mockReturnThis(),
+        where: vi.fn().mockResolvedValue([reusedRefreshTokenRow]),
+      };
+      const updateChain = {
+        set: vi.fn().mockReturnThis(),
+        where: vi.fn().mockResolvedValue(undefined),
+      };
+      mockDb.select.mockReturnValueOnce(selectChain).mockReturnValueOnce(selectChain2);
+      mockDb.update.mockReturnValueOnce(updateChain).mockReturnValueOnce(updateChain);
+      const app = createTestApp();
+
+      // Act
+      const res = await app.request("/api/auth/refresh", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ refreshToken: MOCK_REFRESH_TOKEN }),
+      });
+
+      // Assert
+      expect(res.status).toBe(HTTP_UNAUTHORIZED);
+      const body = (await res.json()) as ErrorResponseBody;
+      expect(body.success).toBe(false);
+      expect(body.error.code).toBe("AUTH_EXPIRED");
+      expect(mockDb.update).toHaveBeenCalledTimes(2);
     });
   });
 });
