@@ -151,7 +151,7 @@ describe("Better Auth", () => {
   describe("trustedOrigins設定", () => {
     it("追加のtrustedOriginsを渡してauthインスタンスを生成できること", async () => {
       // Arrange
-      const { createAuth } = await import("./index");
+      const { createAuth } = await import("../../../apps/api/src/auth/index");
       const mockDb = {} as Parameters<typeof createAuth>[0];
       const additionalOrigins = ["https://staging.techclip.app", "https://dev.techclip.app"];
 
@@ -165,7 +165,7 @@ describe("Better Auth", () => {
 
     it("trustedOriginsが未指定の場合もauthインスタンスを生成できること", async () => {
       // Arrange
-      const { createAuth } = await import("./index");
+      const { createAuth } = await import("../../../apps/api/src/auth/index");
       const mockDb = {} as Parameters<typeof createAuth>[0];
 
       // Act
@@ -178,7 +178,7 @@ describe("Better Auth", () => {
 
     it("空配列のtrustedOriginsでもauthインスタンスを生成できること", async () => {
       // Arrange
-      const { createAuth } = await import("./index");
+      const { createAuth } = await import("../../../apps/api/src/auth/index");
       const mockDb = {} as Parameters<typeof createAuth>[0];
 
       // Act
