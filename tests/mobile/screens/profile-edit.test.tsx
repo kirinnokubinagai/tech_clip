@@ -55,9 +55,10 @@ describe("ProfileEditScreen", () => {
 
       // Assert
       await waitFor(() => {
-        const lastCall = Toast.mock.calls[Toast.mock.calls.length - 1];
-        expect(lastCall[0].visible).toBe(true);
-        expect(lastCall[0].message).toBe("プロフィールを更新しました");
+        expect(Toast).toHaveBeenLastCalledWith(
+          expect.objectContaining({ visible: true, message: "プロフィールを更新しました" }),
+          undefined,
+        );
       });
     });
   });
