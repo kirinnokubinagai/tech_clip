@@ -38,7 +38,7 @@ type RefreshTokenResponse = {
  *
  * @returns Workers APIのベースURL
  */
-function getBaseUrl(): string {
+export function getBaseUrl(): string {
   const extra = Constants.expoConfig?.extra;
   if (extra && typeof extra === "object" && "apiUrl" in extra) {
     return extra.apiUrl as string;
@@ -53,7 +53,7 @@ function getBaseUrl(): string {
  * @param options - fetchオプション
  * @returns fetchレスポンス
  */
-async function fetchWithTimeout(url: string, options: RequestInit): Promise<Response> {
+export async function fetchWithTimeout(url: string, options: RequestInit): Promise<Response> {
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
 

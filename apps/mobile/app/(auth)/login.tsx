@@ -4,18 +4,45 @@ import { useTranslation } from "react-i18next";
 import {
   ActivityIndicator,
   KeyboardAvoidingView,
+  Linking,
   Platform,
   Pressable,
+  ScrollView,
   Text,
   TextInput,
   View,
 } from "react-native";
 
-import { DARK_COLORS } from "@/lib/constants";
+import { AuthAlert } from "@/components/auth/AuthAlert";
+import { AuthSubmitButton } from "@/components/auth/AuthSubmitButton";
+import { fetchWithTimeout, getBaseUrl } from "@/lib/api";
+import { APP_SCHEME, DARK_COLORS } from "@/lib/constants";
+import { EMAIL_SIMPLE_REGEX, PASSWORD_MIN_LENGTH } from "@/lib/validation";
 import { useAuthStore } from "@/stores/auth-store";
 
-/** パスワード最小文字数 */
-const PASSWORD_MIN_LENGTH = 8;
+/** ソーシャルサインインAPIのパス */
+const SOCIAL_SIGN_IN_PATH = "/api/auth/sign-in/social";
+/** ソーシャルログイン後のコールバックURL。deep link path が必要になったら constants 側へ移す。 */
+const SOCIAL_CALLBACK_URL = `${APP_SCHEME}://`;
+
+/**
+ * ソーシャルログインAPIレスポンスにリダイレクトURLが含まれるか判定する
+ */
+function hasSocialRedirectUrl(value: unknown): value is { url: string } {
+  return (
+    typeof value === "object" &&
+    value !== null &&
+    "url" in value &&
+    typeof (value as { url?: unknown }).url === "string"
+  );
+}
+
+type SocialProvider = "google" | "github";
+
+const SOCIAL_PROVIDERS: ReadonlyArray<{ provider: SocialProvider; translationKey: string }> = [
+  { provider: "google", translationKey: "auth.continueWithGoogle" },
+  { provider: "github", translationKey: "auth.continueWithGithub" },
+];
 
 /**
  * ログイン画面
@@ -27,9 +54,14 @@ export default function LoginScreen() {
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isEmailSubmitting, setIsEmailSubmitting] = useState(false);
+  const [socialSigningInProvider, setSocialSigningInProvider] = useState<SocialProvider | null>(
+    null,
+  );
   const [errorMessage, setErrorMessage] = useState("");
   const [isPasswordVisible, setIsPasswordVisible] = useState(false);
+  const isSocialSubmitting = socialSigningInProvider !== null;
+  const isAnySubmitting = isEmailSubmitting || isSocialSubmitting;
 
   /**
    * フォームのバリデーションを実行する
@@ -37,8 +69,13 @@ export default function LoginScreen() {
    * @returns バリデーションエラーメッセージ。正常時は空文字
    */
   const validate = (): string => {
-    if (!email.trim()) {
+    const trimmedEmail = email.trim();
+
+    if (!trimmedEmail) {
       return t("auth.validation.emailRequired");
+    }
+    if (!EMAIL_SIMPLE_REGEX.test(trimmedEmail)) {
+      return t("auth.validation.emailInvalid");
     }
     if (!password) {
       return t("auth.validation.passwordRequired");
@@ -48,8 +85,6 @@ export default function LoginScreen() {
     }
     return "";
   };
-
-  const isFormValid = email.trim().length > 0 && password.length >= PASSWORD_MIN_LENGTH;
 
   /**
    * ログインフォームを送信する
@@ -62,7 +97,7 @@ export default function LoginScreen() {
     }
 
     setErrorMessage("");
-    setIsSubmitting(true);
+    setIsEmailSubmitting(true);
 
     try {
       await signIn({ email: email.trim(), password });
@@ -73,7 +108,46 @@ export default function LoginScreen() {
         setErrorMessage(t("auth.loginFailed"));
       }
     } finally {
-      setIsSubmitting(false);
+      setIsEmailSubmitting(false);
+    }
+  };
+
+  /**
+   * ソーシャルログインを開始する
+   *
+   * @param provider - 利用するソーシャルプロバイダー
+   */
+  const handleSocialSignIn = async (provider: SocialProvider) => {
+    setErrorMessage("");
+    setSocialSigningInProvider(provider);
+
+    try {
+      const response = await fetchWithTimeout(`${getBaseUrl()}${SOCIAL_SIGN_IN_PATH}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          provider,
+          callbackURL: SOCIAL_CALLBACK_URL,
+          disableRedirect: true,
+        }),
+      });
+
+      if (!response.ok) {
+        setErrorMessage(t("auth.socialLoginFailed"));
+        return;
+      }
+
+      const responseBody: unknown = await response.json();
+      if (!hasSocialRedirectUrl(responseBody) || !responseBody.url.startsWith("https://")) {
+        setErrorMessage(t("auth.socialLoginFailed"));
+        return;
+      }
+
+      await Linking.openURL(responseBody.url);
+    } catch {
+      setErrorMessage(t("auth.socialLoginFailed"));
+    } finally {
+      setSocialSigningInProvider(null);
     }
   };
 
@@ -82,7 +156,10 @@ export default function LoginScreen() {
       behavior={Platform.OS === "ios" ? "padding" : "height"}
       className="flex-1 bg-background"
     >
-      <View className="flex-1 justify-center px-6">
+      <ScrollView
+        contentContainerClassName="flex-1 justify-center px-6 py-8"
+        keyboardShouldPersistTaps="handled"
+      >
         <View className="mb-12 items-center">
           <Text className="text-4xl font-bold text-text">TechClip</Text>
           <Text className="mt-2 text-base text-text-muted">{t("auth.appTagline")}</Text>
@@ -93,15 +170,7 @@ export default function LoginScreen() {
             {t("auth.loginTitle")}
           </Text>
 
-          {errorMessage !== "" && (
-            <View
-              className="mb-4 rounded-lg bg-error/10 px-4 py-3"
-              accessibilityRole="alert"
-              accessibilityLabel={errorMessage}
-            >
-              <Text className="text-sm text-error">{errorMessage}</Text>
-            </View>
-          )}
+          {errorMessage !== "" && <AuthAlert message={errorMessage} />}
 
           <View className="mb-4">
             <Text className="mb-2 text-sm font-medium text-text-muted">{t("auth.email")}</Text>
@@ -115,10 +184,10 @@ export default function LoginScreen() {
               autoCapitalize="none"
               autoCorrect={false}
               autoComplete="email"
-              editable={!isSubmitting}
+              editable={!isAnySubmitting}
               testID="login-email-input"
-              accessibilityLabel="メールアドレス"
-              accessibilityHint="メールアドレスを入力してください"
+              accessibilityLabel={t("auth.email")}
+              accessibilityHint={t("auth.emailHint")}
             />
           </View>
 
@@ -135,10 +204,10 @@ export default function LoginScreen() {
                 autoCapitalize="none"
                 autoCorrect={false}
                 autoComplete="password"
-                editable={!isSubmitting}
+                editable={!isAnySubmitting}
                 testID="login-password-input"
-                accessibilityLabel="パスワード"
-                accessibilityHint="8文字以上のパスワードを入力してください"
+                accessibilityLabel={t("auth.password")}
+                accessibilityHint={t("auth.passwordHint", { min: PASSWORD_MIN_LENGTH })}
               />
               <Pressable
                 onPress={() => setIsPasswordVisible((prev) => !prev)}
@@ -155,24 +224,61 @@ export default function LoginScreen() {
             </View>
           </View>
 
-          <Pressable
+          <Link href="/(auth)/forgot-password" asChild>
+            <Pressable
+              className="mb-6 self-start"
+              accessibilityRole="link"
+              accessibilityLabel={t("auth.forgotPassword")}
+            >
+              <Text className="text-sm font-medium text-primary">{t("auth.forgotPassword")}</Text>
+            </Pressable>
+          </Link>
+
+          <AuthSubmitButton
             onPress={handleSubmit}
-            disabled={isSubmitting || !isFormValid}
-            className={`items-center rounded-lg py-4 ${
-              isSubmitting || !isFormValid ? "bg-primary/50" : "bg-primary"
-            }`}
+            disabled={isAnySubmitting}
+            isLoading={isEmailSubmitting}
+            className="py-4"
             testID="login-submit-button"
-            accessibilityRole="button"
-            accessibilityLabel="ログイン"
-            accessibilityHint="メールアドレスとパスワードでログインします"
-            accessibilityState={{ disabled: isSubmitting || !isFormValid }}
-          >
-            {isSubmitting ? (
-              <ActivityIndicator color={DARK_COLORS.text} />
-            ) : (
-              <Text className="text-base font-semibold text-text">{t("auth.login")}</Text>
-            )}
-          </Pressable>
+            accessibilityHint={t("auth.loginHint")}
+            label={t("auth.login")}
+            indicatorColor={DARK_COLORS.text}
+            textClassName="text-base font-semibold text-text"
+          />
+
+          <View className="my-6 flex-row items-center">
+            <View className="h-px flex-1 bg-border" />
+            <Text className="mx-3 text-sm text-text-muted">{t("auth.socialSeparator")}</Text>
+            <View className="h-px flex-1 bg-border" />
+          </View>
+
+          <View className="gap-3">
+            {SOCIAL_PROVIDERS.map(({ provider, translationKey }) => (
+              <Pressable
+                key={provider}
+                onPress={() => handleSocialSignIn(provider)}
+                disabled={isAnySubmitting}
+                className="items-center rounded-lg border border-border bg-card py-3.5"
+                style={({ pressed }) => ({
+                  opacity: pressed || isAnySubmitting ? 0.7 : 1,
+                })}
+                accessibilityRole="button"
+                accessibilityLabel={t(translationKey)}
+                accessibilityState={{ disabled: isAnySubmitting }}
+                testID={`social-signin-${provider}`}
+              >
+                {socialSigningInProvider === provider ? (
+                  <ActivityIndicator
+                    color={DARK_COLORS.text}
+                    size="small"
+                    testID={`social-signin-${provider}-loading`}
+                  />
+                ) : (
+                  <Text className="text-base font-medium text-text">{t(translationKey)}</Text>
+                )}
+              </Pressable>
+            ))}
+          </View>
         </View>
 
         <View className="mt-6 flex-row items-center justify-center">
@@ -185,7 +291,7 @@ export default function LoginScreen() {
             </Pressable>
           </Link>
         </View>
-      </View>
+      </ScrollView>
     </KeyboardAvoidingView>
   );
 }

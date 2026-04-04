@@ -1,7 +1,6 @@
 import {
   APP_SCHEME,
   DARK_COLORS,
-  getApiBaseUrl,
   IMAGE_SIZES,
   LIGHT_COLORS,
   MAX_FREE_AI_USES,
@@ -13,17 +12,6 @@ import {
 import { SOURCE_DEFINITIONS } from "@/lib/sources";
 
 describe("constants", () => {
-  describe("getApiBaseUrl", () => {
-    it("URLを返すこと", () => {
-      // Act
-      const url = getApiBaseUrl();
-
-      // Assert
-      expect(typeof url).toBe("string");
-      expect(url.length).toBeGreaterThan(0);
-    });
-  });
-
   describe("APP_SCHEME", () => {
     it("techclipであること", () => {
       expect(APP_SCHEME).toBe("techclip");

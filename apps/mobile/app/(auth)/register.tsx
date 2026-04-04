@@ -2,7 +2,6 @@ import { Link } from "expo-router";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
-  ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -12,8 +11,11 @@ import {
   View,
 } from "react-native";
 
+import { AuthAlert } from "@/components/auth/AuthAlert";
+import { AuthSubmitButton } from "@/components/auth/AuthSubmitButton";
 import { DARK_COLORS } from "@/lib/constants";
-import { useAuthStore } from "../../src/stores/auth-store";
+import { EMAIL_SIMPLE_REGEX, PASSWORD_MIN_LENGTH } from "@/lib/validation";
+import { useAuthStore } from "@/stores/auth-store";
 
 export default function RegisterScreen() {
   const { t } = useTranslation();
@@ -30,17 +32,26 @@ export default function RegisterScreen() {
    */
   async function handleRegister() {
     setErrorMessage("");
+    const trimmedEmail = email.trim();
 
     if (!name.trim()) {
       setErrorMessage(t("auth.validation.nameRequired"));
       return;
     }
-    if (!email.trim()) {
+    if (!trimmedEmail) {
       setErrorMessage(t("auth.validation.emailRequired"));
       return;
     }
-    if (!password.trim()) {
+    if (!EMAIL_SIMPLE_REGEX.test(trimmedEmail)) {
+      setErrorMessage(t("auth.validation.emailInvalid"));
+      return;
+    }
+    if (!password) {
       setErrorMessage(t("auth.validation.passwordRequired"));
+      return;
+    }
+    if (password.length < PASSWORD_MIN_LENGTH) {
+      setErrorMessage(t("auth.validation.passwordMinLength", { min: PASSWORD_MIN_LENGTH }));
       return;
     }
 
@@ -73,15 +84,7 @@ export default function RegisterScreen() {
           <Text className="mt-2 text-base text-text-muted">{t("auth.createAccount")}</Text>
         </View>
 
-        {errorMessage !== "" && (
-          <View
-            className="mb-4 rounded-lg border border-error/30 bg-error/10 px-4 py-3"
-            accessibilityRole="alert"
-            accessibilityLabel={errorMessage}
-          >
-            <Text className="text-sm text-error">{errorMessage}</Text>
-          </View>
-        )}
+        {errorMessage !== "" && <AuthAlert message={errorMessage} />}
 
         <View className="gap-4">
           <View>
@@ -96,8 +99,8 @@ export default function RegisterScreen() {
               autoComplete="name"
               textContentType="name"
               editable={!isSubmitting}
-              accessibilityLabel="名前"
-              accessibilityHint="お名前を入力してください"
+              accessibilityLabel={t("auth.name")}
+              accessibilityHint={t("auth.nameHint")}
             />
           </View>
 
@@ -105,7 +108,7 @@ export default function RegisterScreen() {
             <Text className="mb-1.5 text-sm font-medium text-text-muted">{t("auth.email")}</Text>
             <TextInput
               className="rounded-lg border border-border bg-surface px-4 py-3 text-base text-text"
-              placeholder="example@domain.com"
+              placeholder={t("auth.emailPlaceholder")}
               placeholderTextColor={DARK_COLORS.textDim}
               value={email}
               onChangeText={setEmail}
@@ -114,8 +117,8 @@ export default function RegisterScreen() {
               keyboardType="email-address"
               textContentType="emailAddress"
               editable={!isSubmitting}
-              accessibilityLabel="メールアドレス"
-              accessibilityHint="メールアドレスを入力してください"
+              accessibilityLabel={t("auth.email")}
+              accessibilityHint={t("auth.emailHint")}
             />
           </View>
 
@@ -131,30 +134,21 @@ export default function RegisterScreen() {
               autoComplete="new-password"
               textContentType="newPassword"
               editable={!isSubmitting}
-              accessibilityLabel="パスワード"
-              accessibilityHint="8文字以上のパスワードを入力してください"
+              accessibilityLabel={t("auth.password")}
+              accessibilityHint={t("auth.passwordHint", { min: PASSWORD_MIN_LENGTH })}
             />
           </View>
         </View>
 
-        <Pressable
-          className="mt-6 items-center rounded-lg bg-primary py-3.5"
+        <AuthSubmitButton
+          className="mt-6"
           onPress={handleRegister}
           disabled={isSubmitting}
-          style={({ pressed }) => ({
-            opacity: pressed || isSubmitting ? 0.7 : 1,
-          })}
-          accessibilityRole="button"
-          accessibilityLabel="アカウントを作成"
-          accessibilityHint="入力した情報で新規アカウントを作成します"
-          accessibilityState={{ disabled: isSubmitting }}
-        >
-          {isSubmitting ? (
-            <ActivityIndicator color={DARK_COLORS.white} />
-          ) : (
-            <Text className="text-base font-semibold text-white">{t("auth.createAccount")}</Text>
-          )}
-        </Pressable>
+          isLoading={isSubmitting}
+          label={t("auth.createAccount")}
+          accessibilityHint={t("auth.registerHint")}
+          textClassName="text-base font-semibold text-white"
+        />
 
         <View className="mt-6 flex-row items-center justify-center">
           <Text className="text-sm text-text-muted">{t("auth.registerToLoginPrompt")}</Text>

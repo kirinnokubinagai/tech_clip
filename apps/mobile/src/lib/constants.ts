@@ -1,20 +1,6 @@
 import { SUPPORTED_SOURCES } from "@/lib/sources";
 import type { ArticleSource } from "@/types/article";
 
-/** ローカル開発用APIベースURL */
-const DEFAULT_API_URL = "http://localhost:8787";
-
-/**
- * APIのベースURLを取得する
- * Expo app.jsonのextra.apiUrlが設定されていればそれを使用し、
- * 未設定の場合はローカル開発用URLを返す
- *
- * @returns APIのベースURL
- */
-export function getApiBaseUrl(): string {
-  return DEFAULT_API_URL;
-}
-
 /** アプリのURLスキーム */
 export const APP_SCHEME = "techclip";
 
