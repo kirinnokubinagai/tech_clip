@@ -27,16 +27,16 @@ const SIZE_STYLES: Record<BadgeSize, { container: string; text: string }> = {
 export function SourceBadge({ source, size = "sm" }: SourceBadgeProps) {
   const config = getSourceDefinition(source);
   const sizeStyle = SIZE_STYLES[size];
+  const [badgeBackgroundClassName, badgeTextClassName = "text-slate-100"] =
+    config.badgeClassName.split(" ");
 
   return (
     <View
       testID="source-badge"
-      className={`rounded-full self-start ${sizeStyle.container} ${config.badgeClassName.split(" ")[0]}`}
+      className={`rounded-full self-start ${sizeStyle.container} ${badgeBackgroundClassName}`}
       accessibilityLabel={config.label}
     >
-      <Text className={`font-medium ${sizeStyle.text} ${config.badgeClassName.split(" ")[1]}`}>
-        {config.label}
-      </Text>
+      <Text className={`font-medium ${sizeStyle.text} ${badgeTextClassName}`}>{config.label}</Text>
     </View>
   );
 }

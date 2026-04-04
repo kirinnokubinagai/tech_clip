@@ -1,4 +1,4 @@
-import type { ArticleSource } from "../../../../packages/types/src/article";
+import type { ArticleSource } from "@tech-clip/types";
 
 export type { ArticleSource };
 
