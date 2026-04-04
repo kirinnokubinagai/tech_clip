@@ -12,15 +12,10 @@ import {
 } from "../src/lib/backgroundSync";
 import i18n from "../src/lib/i18n";
 import { logger } from "../src/lib/logger";
-import {
-  registerForPushNotifications,
-  registerTokenWithApi,
-  setupNotificationHandlers,
-} from "../src/lib/notifications";
+import { setupNotificationHandlers } from "../src/lib/notifications";
 import { queryClient } from "../src/lib/query-client";
 import { configureRevenueCat } from "../src/lib/revenueCat";
 import { initSentry } from "../src/lib/sentry";
-import { requestTrackingPermission } from "../src/lib/tracking";
 import { useAuthStore } from "../src/stores/auth-store";
 import { useSettingsStore } from "../src/stores/settings-store";
 import { useUIStore } from "../src/stores/ui-store";
@@ -41,7 +36,6 @@ export default function RootLayout() {
     checkSession();
     loadOnboardingState();
     void loadLanguage();
-    void requestTrackingPermission();
     void configureRevenueCat().catch((error: unknown) => {
       logger.warn("RevenueCat設定に失敗しました", { error });
     });
@@ -56,16 +50,6 @@ export default function RootLayout() {
     const cleanup = setupNotificationHandlers();
     return cleanup;
   }, []);
-
-  useEffect(() => {
-    if (!isAuthenticated) return;
-
-    registerForPushNotifications().then((token) => {
-      if (token) {
-        registerTokenWithApi(token);
-      }
-    });
-  }, [isAuthenticated]);
 
   useEffect(() => {
     const i18nLanguage = language === "English" ? "en" : "ja";

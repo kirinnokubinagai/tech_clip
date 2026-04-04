@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Pressable, ScrollView, Text, View } from "react-native";
 
 import { LIGHT_COLORS, SUPPORTED_SOURCE_COUNT } from "@/lib/constants";
+import { requestTrackingPermission } from "../src/lib/tracking";
 import { useUIStore } from "../src/stores/ui-store";
 
 /** オンボーディングページのデータ */
@@ -51,6 +52,7 @@ export default function OnboardingScreen() {
   const currentPage = ONBOARDING_PAGES[currentIndex];
 
   const handleFinish = async () => {
+    await requestTrackingPermission();
     await setHasSeenOnboarding(true);
     router.replace("/(auth)/login");
   };

@@ -4,9 +4,34 @@ import { Platform } from "react-native";
 
 import { apiFetch } from "@/lib/api";
 import { LIGHT_COLORS } from "@/lib/constants";
+import { logger } from "@/lib/logger";
 
 /** Android通知チャンネルID */
 const NOTIFICATION_CHANNEL_ID = "default";
+
+/** 通知権限ステータス */
+export type NotificationPermissionStatus = "granted" | "denied" | "undetermined";
+
+/**
+ * 現在の通知権限ステータスを確認する
+ * シミュレータでは "undetermined" を返す
+ *
+ * @returns 通知権限ステータス
+ */
+export async function requestNotificationPermission(): Promise<NotificationPermissionStatus> {
+  if (!Device.isDevice) {
+    return "undetermined";
+  }
+
+  const { status: existingStatus } = await Notifications.getPermissionsAsync();
+
+  if (existingStatus === "granted") {
+    return "granted";
+  }
+
+  const { status } = await Notifications.requestPermissionsAsync();
+  return status as NotificationPermissionStatus;
+}
 
 /**
  * プッシュ通知の権限を要求し、Expoプッシュトークンを取得する
@@ -56,6 +81,26 @@ export async function registerTokenWithApi(token: string): Promise<void> {
     method: "POST",
     body: JSON.stringify({ token, platform: Platform.OS }),
   });
+}
+
+/**
+ * プッシュ通知権限を要求し、トークンを取得してAPIに登録する
+ * エラーはすべてログに記録し、例外を外部に伝播させない
+ * 通知関連機能の初回使用時またはユーザーが設定から許可した際に呼び出す
+ */
+export async function registerForPushNotificationsWithLogging(): Promise<void> {
+  const token = await registerForPushNotifications();
+
+  if (!token) {
+    return;
+  }
+
+  try {
+    await registerTokenWithApi(token);
+    logger.info("プッシュトークンのAPI登録に成功しました", { token });
+  } catch (error: unknown) {
+    logger.error("プッシュトークンのAPI登録に失敗しました", { error });
+  }
 }
 
 /**

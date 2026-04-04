@@ -1,6 +1,7 @@
 import { useRouter } from "expo-router";
 import {
   Bell,
+  BellOff,
   ChevronRight,
   CreditCard,
   Globe,
@@ -10,11 +11,15 @@ import {
   User,
 } from "lucide-react-native";
 import type { ReactNode } from "react";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Alert, Pressable, ScrollView, Switch, Text, View } from "react-native";
 import { confirm } from "@/components/ConfirmDialog";
 import { DARK_COLORS } from "@/lib/constants";
+import {
+  registerForPushNotificationsWithLogging,
+  requestNotificationPermission,
+} from "@/lib/notifications";
 import { useSubscription } from "../../src/hooks/use-subscription";
 import { useAuthStore } from "../../src/stores/auth-store";
 import { useSettingsStore } from "../../src/stores/settings-store";
@@ -105,6 +110,11 @@ export default function SettingsScreen() {
   const fetchNotificationSettings = useSettingsStore((s) => s.fetchNotificationSettings);
   const updateNotificationEnabled = useSettingsStore((s) => s.updateNotificationEnabled);
 
+  /** 通知権限ステータス */
+  const [notificationPermission, setNotificationPermission] = useState<
+    "granted" | "denied" | "undetermined" | "loading"
+  >("loading");
+
   /** 通知が有効かどうか（全通知がONの場合にtrue） */
   const isNotificationsEnabled =
     notificationSettings !== null
@@ -118,6 +128,12 @@ export default function SettingsScreen() {
     loadLanguage();
     fetchNotificationSettings();
   }, [loadLanguage, fetchNotificationSettings]);
+
+  useEffect(() => {
+    requestNotificationPermission().then((status) => {
+      setNotificationPermission(status === "undetermined" ? "undetermined" : status);
+    });
+  }, []);
 
   /**
    * ログアウト確認ダイアログを表示し、確認後にサインアウトを実行する
@@ -185,6 +201,17 @@ export default function SettingsScreen() {
     });
   }
 
+  /**
+   * 通知権限を要求し、許可された場合はプッシュトークンを登録する
+   */
+  async function handleRequestNotificationPermission() {
+    const status = await requestNotificationPermission();
+    setNotificationPermission(status === "undetermined" ? "undetermined" : status);
+    if (status === "granted") {
+      await registerForPushNotificationsWithLogging();
+    }
+  }
+
   return (
     <ScrollView className="flex-1 bg-background">
       <SectionTitle title={t("settings.sections.account")} />
@@ -250,6 +277,28 @@ export default function SettingsScreen() {
             />
           }
         />
+        {notificationPermission === "denied" && (
+          <>
+            <SectionDivider />
+            <SettingsRow
+              testID="settings-notification-permission-button"
+              icon={<BellOff size={ICON_SIZE} color={DARK_COLORS.error} />}
+              label={t("settings.items.notificationPermissionDenied")}
+              onPress={handleRequestNotificationPermission}
+            />
+          </>
+        )}
+        {notificationPermission === "undetermined" && (
+          <>
+            <SectionDivider />
+            <SettingsRow
+              testID="settings-notification-permission-button"
+              icon={<Bell size={ICON_SIZE} color={ICON_COLOR} />}
+              label={t("settings.items.notificationPermissionRequest")}
+              onPress={handleRequestNotificationPermission}
+            />
+          </>
+        )}
       </View>
 
       <SectionTitle title={t("settings.sections.accountManagement")} />
