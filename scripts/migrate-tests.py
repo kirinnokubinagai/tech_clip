@@ -10,7 +10,7 @@ import re
 import shutil
 from pathlib import Path
 
-BASE = Path("/Users/kirinnokubinagaiyo/tech_clip/.worktrees/issue-633")
+BASE = Path(__file__).resolve().parent.parent
 TESTS_DIR = BASE / "tests"
 
 # ディレクトリ作成
