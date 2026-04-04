@@ -201,5 +201,15 @@ describe("HomeScreen", () => {
         expect(getByText("再試行")).toBeDefined();
       });
     });
+
+    it("未実装の詳細フィルター導線が表示されないこと", async () => {
+      // Arrange & Act
+      const { queryByLabelText } = await render(<HomeScreen />);
+
+      // Assert
+      await waitFor(() => {
+        expect(queryByLabelText("フィルター")).toBeNull();
+      });
+    });
   });
 });
