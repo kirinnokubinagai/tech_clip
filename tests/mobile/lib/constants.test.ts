@@ -85,13 +85,23 @@ describe("constants", () => {
   describe("LIGHT_COLORS", () => {
     it("必須カラーが定義されていること", () => {
       expect(LIGHT_COLORS.background).toBe("#fafaf9");
+      expect(LIGHT_COLORS.surface).toBe("#ffffff");
       expect(LIGHT_COLORS.card).toBe("#ffffff");
+      expect(LIGHT_COLORS.primary).toBe("#14b8a6");
+      expect(LIGHT_COLORS.primaryLight).toBe("#5eead4");
       expect(LIGHT_COLORS.text).toBe("#1c1917");
+      expect(LIGHT_COLORS.textMuted).toBe("#57534e");
+      expect(LIGHT_COLORS.textDim).toBe("#78716c");
       expect(LIGHT_COLORS.accent).toBe("#14b8a6");
       expect(LIGHT_COLORS.border).toBe("#e7e5e4");
+      expect(LIGHT_COLORS.white).toBe("#ffffff");
+      expect(LIGHT_COLORS.info).toBe("#3b82f6");
+      expect(LIGHT_COLORS.dangerSurface).toBe("#fef2f2");
+      expect(LIGHT_COLORS.successSurface).toBe("#f0fdf4");
       expect(LIGHT_COLORS.error).toBe("#ef4444");
       expect(LIGHT_COLORS.success).toBe("#22c55e");
       expect(LIGHT_COLORS.warning).toBe("#f59e0b");
+      expect(LIGHT_COLORS.favorite).toBe("#ef4444");
       expect(LIGHT_COLORS.neutral).toBe("#44403c");
     });
   });

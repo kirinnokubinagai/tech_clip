@@ -45,6 +45,29 @@ export const IMAGE_SIZES = {
   full: { width: 800, height: 600 },
 } as const;
 
+/** ライト/ダークテーマで共通に扱うカラートークンの型 */
+type ThemeColors = {
+  background: string;
+  surface: string;
+  card: string;
+  border: string;
+  primary: string;
+  primaryLight: string;
+  text: string;
+  textMuted: string;
+  textDim: string;
+  white: string;
+  info: string;
+  dangerSurface: string;
+  successSurface: string;
+  accent: string;
+  error: string;
+  success: string;
+  warning: string;
+  favorite: string;
+  neutral: string;
+};
+
 /**
  * ライト/ダーク共通で使う意味ベースのカラー
  *
@@ -74,23 +97,39 @@ const SEMANTIC_COLORS = {
  * ライトテーマカラー定義
  * SEMANTIC_COLORS の共有セマンティック色 + ライト固有のレイアウト色で構成
  */
-export const LIGHT_COLORS = {
+export const LIGHT_COLORS: ThemeColors = {
   /** 背景色 */
   background: "#fafaf9",
+  /** セクション背景色 */
+  surface: "#ffffff",
   /** カード背景色 */
   card: "#ffffff",
+  /** プライマリアクション色 */
+  primary: "#14b8a6",
+  /** プライマリの明色 */
+  primaryLight: "#5eead4",
   /** テキスト色 */
   text: "#1c1917",
+  /** 補助テキスト色 */
+  textMuted: "#57534e",
+  /** さらに弱い補助テキスト色 */
+  textDim: "#78716c",
   /** 境界線色 */
   border: "#e7e5e4",
+  /** 情報色 */
+  info: "#3b82f6",
+  /** 危険操作の背景色 */
+  dangerSurface: "#fef2f2",
+  /** 成功状態の背景色 */
+  successSurface: "#f0fdf4",
   ...SEMANTIC_COLORS,
-} as const;
+};
 
 /**
  * ダークテーマカラー定義
  * SEMANTIC_COLORS の共有セマンティック色 + ダーク固有のレイアウト色で構成
  */
-export const DARK_COLORS = {
+export const DARK_COLORS: ThemeColors = {
   /** アプリ全体の背景色 */
   background: "#0a0a0f",
   /** セクション背景色 */
@@ -116,4 +155,4 @@ export const DARK_COLORS = {
   /** 成功状態の背景色 */
   successSurface: "#1a2e1a",
   ...SEMANTIC_COLORS,
-} as const;
+};
