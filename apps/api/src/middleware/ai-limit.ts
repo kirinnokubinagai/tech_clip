@@ -108,6 +108,7 @@ async function reserveResetFreeUse(
     .where(
       and(
         eq(users.id, userId),
+        // 先行リクエストが月次リセットを完了した場合でも、ELSE 句で通常デクリメントへフォールバックする。
         sql`(${users.freeAiResetAt} IS NULL OR ${users.freeAiResetAt} <= ${resetReferenceTime} OR ${users.freeAiUsesRemaining} > 0)`,
       ),
     )
@@ -230,8 +231,7 @@ function respondReservationConflict(
  */
 export function createAiLimitMiddleware(db: Database): MiddlewareHandler {
   return async (c, next) => {
-    const requestId = c.get("requestId") as string | undefined;
-    const logger = requestId ? createLogger(requestId) : createLogger();
+    const logger = createLogger(c.get("requestId") as string | undefined);
     const user = c.get("user") as Record<string, unknown> | undefined;
 
     if (!user?.id) {

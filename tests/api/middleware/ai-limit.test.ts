@@ -189,7 +189,7 @@ describe("aiLimitMiddleware", () => {
       expect(res.status).toBe(HTTP_OK);
     });
 
-    it("リクエスト後にdb.updateが呼ばれデクリメントされること", async () => {
+    it("予約のためのdb.updateが1回呼ばれること", async () => {
       // Arrange
       const userData = createFreeUserData({ remaining: 3 });
       mockSelectWhere.mockResolvedValue([userData]);
