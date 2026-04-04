@@ -5,6 +5,8 @@ import { Pressable, Text, View } from "react-native";
 
 import { SourceBadge } from "@/components/ui";
 import { DARK_COLORS } from "@/lib/constants";
+import { formatArticleDate } from "@/lib/date-format";
+import { useSettingsStore } from "@/stores/settings-store";
 import type { ArticleListItem } from "@/types/article";
 
 /** ArticleCardに渡す記事データ */
@@ -32,20 +34,6 @@ const FAVORITE_ACTIVE_COLOR = DARK_COLORS.favorite;
 const FAVORITE_INACTIVE_COLOR = DARK_COLORS.textMuted;
 
 /**
- * 日付文字列をYYYY/MM/DD形式にフォーマットする
- *
- * @param isoString - ISO 8601形式の日付文字列
- * @returns フォーマットされた日付文字列
- */
-function formatPublishedDate(isoString: string): string {
-  const date = new Date(isoString);
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, "0");
-  const day = String(date.getDate()).padStart(2, "0");
-  return `${year}/${month}/${day}`;
-}
-
-/**
  * 記事カードコンポーネント
  *
  * 記事一覧で使用するカード型UIコンポーネント。
@@ -61,6 +49,8 @@ export const ArticleCard = memo(function ArticleCard({
   onPress,
   onToggleFavorite,
 }: ArticleCardProps) {
+  const language = useSettingsStore((s) => s.language);
+
   return (
     <Pressable
       testID="article-card"
@@ -84,7 +74,7 @@ export const ArticleCard = memo(function ArticleCard({
           <SourceBadge source={article.source} />
           {article.publishedAt && (
             <Text className="text-xs text-text-muted">
-              {formatPublishedDate(article.publishedAt)}
+              {formatArticleDate(article.publishedAt, language)}
             </Text>
           )}
         </View>
