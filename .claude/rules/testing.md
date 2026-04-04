@@ -7,24 +7,32 @@
 ## 📁 ファイル配置
 
 ```
-src/
-├── domain/
-│   ├── entities/
-│   │   ├── user.ts
-│   │   └── user.test.ts       # ✅ 同一ディレクトリ
-│   └── services/
-│       ├── auth-service.ts
-│       └── auth-service.test.ts
-├── api/
-│   └── routes/
-│       ├── users.ts
-│       └── users.test.ts
+tests/
+├── api/              # API テスト（apps/api/src/ 配下の実装に対応）
+│   ├── routes/       # ルートテスト
+│   ├── middleware/   # ミドルウェアテスト
+│   ├── services/     # サービステスト（parsers/ サブディレクトリ含む）
+│   ├── db/           # スキーマ・シードテスト（schema/ サブディレクトリ含む）
+│   ├── lib/          # ユーティリティテスト
+│   ├── auth/         # 認証テスト
+│   ├── validators/   # バリデータテスト
+│   ├── cron/         # Cronジョブテスト
+│   └── integration/  # 統合テスト
+├── mobile/           # Mobile テスト（apps/mobile/ 配下の実装に対応）
+│   ├── screens/      # 画面テスト
+│   ├── components/   # コンポーネントテスト（ui/ サブディレクトリ含む）
+│   ├── stores/       # ストアテスト
+│   ├── hooks/        # フックテスト
+│   └── lib/          # ユーティリティテスト（utils/ も含む）
+└── e2e/              # E2Eテスト（既存のまま）
 ```
 
 **規約：**
-- テストファイルは対象ファイルと同じディレクトリ
-- `*.test.ts` または `*.spec.ts` 形式
-- E2Eテストのみ `tests/e2e/` に分離
+- テストファイルは `tests/` ディレクトリに集約する
+- `*.test.ts` または `*.test.tsx` 形式
+- 実装ファイルのディレクトリ構造に対応したサブディレクトリに配置する
+- importパスは `tests/` から実装ファイルへの相対パスを使用する（例: `../../../apps/api/src/routes/articles`）
+- `@/` エイリアスは jest/vitest の moduleNameMapper 設定により引き続き利用可能
 
 ---
 

@@ -2,16 +2,32 @@
 // RNTL が内部で act() を使用しているが、非同期の状態更新で警告が出る既知の問題
 const originalConsoleError = console.error;
 console.error = (...args) => {
-  if (typeof args[0] === "string" && args[0].includes("was not wrapped in act")) {
+  if (
+    typeof args[0] === "string" &&
+    (args[0].includes("was not wrapped in act") ||
+      args[0].includes("The current testing environment is not configured to support act"))
+  ) {
     return;
   }
   originalConsoleError(...args);
+};
+
+const originalConsoleInfo = console.info;
+console.info = (...args) => {
+  if (
+    typeof args[0] === "string" &&
+    args[0].includes("i18next is made possible by our own product, Locize")
+  ) {
+    return;
+  }
+  originalConsoleInfo(...args);
 };
 
 // jest-expo setup workaround for React Native compatibility
 
 // NativeWind v4 CSS interop mock for Jest environment
 const React = require("react");
+globalThis.IS_REACT_ACT_ENVIRONMENT = true;
 global._ReactNativeCSSInterop = {
   createInteropElement: (type, props, ...children) => React.createElement(type, props, ...children),
   cssInterop: () => {},
