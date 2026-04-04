@@ -15,8 +15,7 @@ import {
 import { AuthAlert } from "@/components/auth/AuthAlert";
 import { AuthSubmitButton } from "@/components/auth/AuthSubmitButton";
 import { fetchWithTimeout, getBaseUrl } from "@/lib/api";
-import { APP_SCHEME } from "@/lib/constants";
-import { AUTH_PLACEHOLDER_TEXT_COLOR } from "@/lib/ui-colors";
+import { APP_SCHEME, DARK_COLORS } from "@/lib/constants";
 import { EMAIL_SIMPLE_REGEX, PASSWORD_MIN_LENGTH } from "@/lib/validation";
 import { useAuthStore } from "@/stores/auth-store";
 
@@ -184,7 +183,7 @@ export default function LoginScreen() {
             <TextInput
               className="rounded-lg border border-border bg-card px-4 py-3 text-base text-text"
               placeholder={t("auth.emailPlaceholder")}
-              placeholderTextColor={AUTH_PLACEHOLDER_TEXT_COLOR}
+              placeholderTextColor={DARK_COLORS.textDim}
               value={email}
               onChangeText={setEmail}
               keyboardType="email-address"
@@ -204,7 +203,7 @@ export default function LoginScreen() {
               <TextInput
                 className="flex-1 px-4 py-3 text-base text-text"
                 placeholder={t("auth.passwordPlaceholder")}
-                placeholderTextColor={AUTH_PLACEHOLDER_TEXT_COLOR}
+                placeholderTextColor={DARK_COLORS.textDim}
                 value={password}
                 onChangeText={setPassword}
                 secureTextEntry={!isPasswordVisible}

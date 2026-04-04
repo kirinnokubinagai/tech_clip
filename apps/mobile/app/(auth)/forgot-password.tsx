@@ -14,17 +14,10 @@ import {
 import { AuthAlert } from "@/components/auth/AuthAlert";
 import { AuthSubmitButton } from "@/components/auth/AuthSubmitButton";
 import { fetchWithTimeout, getBaseUrl } from "@/lib/api";
-import { AUTH_PLACEHOLDER_TEXT_COLOR } from "@/lib/ui-colors";
+import { DARK_COLORS } from "@/lib/constants";
 import { EMAIL_SIMPLE_REGEX } from "@/lib/validation";
 
-type ForgotPasswordSuccessResponse = {
-  success: true;
-  data: { message: string };
-};
-
-function hasForgotPasswordMessageShape(
-  value: unknown,
-): value is { data: { message: string } } {
+function hasForgotPasswordMessageShape(value: unknown): value is { data: { message: string } } {
   if (typeof value !== "object" || value === null) {
     return false;
   }
@@ -56,6 +49,32 @@ export default function ForgotPasswordScreen() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
+
+  const renderFooter = () => {
+    if (successMessage !== "") {
+      return (
+        <Pressable
+          className="mt-4 items-center"
+          onPress={() => router.replace("/(auth)/login")}
+          accessibilityRole="button"
+          accessibilityLabel={t("auth.login")}
+        >
+          <Text className="text-sm font-semibold text-primary">{t("auth.login")}</Text>
+        </Pressable>
+      );
+    }
+
+    return (
+      <View className="mt-6 flex-row items-center justify-center">
+        <Text className="text-sm text-text-muted">{t("auth.hasAccount")}</Text>
+        <Link href="/(auth)/login" asChild>
+          <Pressable>
+            <Text className="ml-1 text-sm font-semibold text-primary">{t("auth.login")}</Text>
+          </Pressable>
+        </Link>
+      </View>
+    );
+  };
 
   /**
    * パスワードリセットメール送信フォームを送信する
@@ -125,7 +144,7 @@ export default function ForgotPasswordScreen() {
           <TextInput
             className="rounded-lg border border-border bg-card px-4 py-3 text-base text-text"
             placeholder={t("auth.emailPlaceholder")}
-            placeholderTextColor={AUTH_PLACEHOLDER_TEXT_COLOR}
+            placeholderTextColor={DARK_COLORS.textDim}
             value={email}
             onChangeText={setEmail}
             autoCapitalize="none"
@@ -146,25 +165,7 @@ export default function ForgotPasswordScreen() {
           label={t("auth.forgotPasswordSubmit")}
         />
 
-        {successMessage !== "" ? (
-          <Pressable
-            className="mt-4 items-center"
-            onPress={() => router.replace("/(auth)/login")}
-            accessibilityRole="button"
-            accessibilityLabel={t("auth.login")}
-          >
-            <Text className="text-sm font-semibold text-primary">{t("auth.login")}</Text>
-          </Pressable>
-        ) : (
-          <View className="mt-6 flex-row items-center justify-center">
-            <Text className="text-sm text-text-muted">{t("auth.hasAccount")}</Text>
-            <Link href="/(auth)/login" asChild>
-              <Pressable>
-                <Text className="ml-1 text-sm font-semibold text-primary">{t("auth.login")}</Text>
-              </Pressable>
-            </Link>
-          </View>
-        )}
+        {renderFooter()}
       </ScrollView>
     </KeyboardAvoidingView>
   );

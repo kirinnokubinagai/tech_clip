@@ -13,7 +13,7 @@ import {
 
 import { AuthAlert } from "@/components/auth/AuthAlert";
 import { AuthSubmitButton } from "@/components/auth/AuthSubmitButton";
-import { AUTH_PLACEHOLDER_TEXT_COLOR } from "@/lib/ui-colors";
+import { DARK_COLORS } from "@/lib/constants";
 import { EMAIL_SIMPLE_REGEX, PASSWORD_MIN_LENGTH } from "@/lib/validation";
 import { useAuthStore } from "@/stores/auth-store";
 
@@ -92,7 +92,7 @@ export default function RegisterScreen() {
             <TextInput
               className="rounded-lg border border-border bg-surface px-4 py-3 text-base text-text"
               placeholder={t("auth.namePlaceholder")}
-              placeholderTextColor={AUTH_PLACEHOLDER_TEXT_COLOR}
+              placeholderTextColor={DARK_COLORS.textDim}
               value={name}
               onChangeText={setName}
               autoCapitalize="words"
@@ -109,7 +109,7 @@ export default function RegisterScreen() {
             <TextInput
               className="rounded-lg border border-border bg-surface px-4 py-3 text-base text-text"
               placeholder="example@domain.com"
-              placeholderTextColor={AUTH_PLACEHOLDER_TEXT_COLOR}
+              placeholderTextColor={DARK_COLORS.textDim}
               value={email}
               onChangeText={setEmail}
               autoCapitalize="none"
@@ -127,7 +127,7 @@ export default function RegisterScreen() {
             <TextInput
               className="rounded-lg border border-border bg-surface px-4 py-3 text-base text-text"
               placeholder={t("auth.passwordPlaceholder")}
-              placeholderTextColor={AUTH_PLACEHOLDER_TEXT_COLOR}
+              placeholderTextColor={DARK_COLORS.textDim}
               value={password}
               onChangeText={setPassword}
               secureTextEntry

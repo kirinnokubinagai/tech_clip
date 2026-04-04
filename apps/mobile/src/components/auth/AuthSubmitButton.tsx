@@ -1,5 +1,5 @@
 import { ActivityIndicator, Pressable, Text } from "react-native";
-import { AUTH_LOADING_INDICATOR_COLOR } from "@/lib/ui-colors";
+import { DARK_COLORS } from "@/lib/constants";
 
 type AuthSubmitButtonProps = {
   label: string;
@@ -49,7 +49,7 @@ export function AuthSubmitButton({
       accessibilityState={{ disabled }}
     >
       {isLoading ? (
-        <ActivityIndicator color={AUTH_LOADING_INDICATOR_COLOR} />
+        <ActivityIndicator color={DARK_COLORS.white} />
       ) : (
         <Text className={textClassName}>{label}</Text>
       )}
