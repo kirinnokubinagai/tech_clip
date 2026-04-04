@@ -30,25 +30,6 @@ bucket_name = "tech-clip-avatars"
 [triggers]
 crons = ["0 0 1 * *"]
 
-# --- ステージング環境 ---
-[env.staging]
-name = "tech-clip-api-staging"
-[env.staging.vars]
-ENVIRONMENT = "staging"
-APP_URL = "https://techclip.app"
-
-[[env.staging.kv_namespaces]]
-binding = "RATE_LIMIT"
-id = "3a87ba694ddb4816b386db8d564e5155"
-
-[[env.staging.kv_namespaces]]
-binding = "CACHE"
-id = "39563996c207443882fba0340915f0cf"
-
-[[env.staging.r2_buckets]]
-binding = "AVATARS_BUCKET"
-bucket_name = "tech-clip-avatars-staging"
-
 # --- 本番環境 ---
 [env.production]
 name = "tech-clip-api-production"
