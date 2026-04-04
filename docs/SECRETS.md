@@ -202,7 +202,7 @@ console.log(header + '.' + payload + '.' + signature);
 1. プロジェクトを選択する
 2. 左メニューの "Integrations" > "Webhooks" を開く
 3. "Add Webhook" から新しい Webhook を追加する
-4. Webhook URL に `https://api.techclip.app/api/webhooks/revenuecat` を設定する
+4. Webhook URL に `https://api.techclip.app/api/subscription/webhooks/revenuecat` を設定する
 5. "Shared Secret" フィールドに表示されるシークレットを `REVENUECAT_WEBHOOK_SECRET` に設定する
 
 > **注意:** Webhook Secret はペイロードの署名検証に使用します。ステージングと本番で別々の Webhook を作成し、それぞれ異なるシークレットを使用してください。
@@ -324,7 +324,7 @@ wrangler secret list --env production
 
 #### RevenueCat
 - [ ] `REVENUECAT_WEBHOOK_SECRET` を RevenueCat ダッシュボードで発行済み
-- [ ] Webhook URL に `https://api.techclip.app/api/webhooks/revenuecat` を設定済み
+- [ ] Webhook URL に `https://api.techclip.app/api/subscription/webhooks/revenuecat` を設定済み
 
 #### Resend
 - [ ] 本番用 Resend API キーを発行済み
