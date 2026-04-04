@@ -4,28 +4,13 @@ import { useTranslation } from "react-i18next";
 import { Text, useColorScheme, View } from "react-native";
 
 import { useUnreadNotificationCount } from "@/hooks/use-notifications";
-import { DARK_COLORS, THEME_COLORS } from "@/lib/constants";
-
-/** タブバーのアクティブ色 */
-const TAB_ACTIVE_COLOR = DARK_COLORS.primary;
-
-/** タブバーの非アクティブ色 */
-const TAB_INACTIVE_COLOR = DARK_COLORS.textDim;
-
-/** ダークテーマのヘッダー背景色 */
-const DARK_HEADER_BACKGROUND = DARK_COLORS.surface;
-
-/** ダークテーマのボーダー色 */
-const DARK_BORDER_COLOR = DARK_COLORS.border;
-
-/** ダークテーマのテキスト色 */
-const DARK_TEXT_COLOR = DARK_COLORS.text;
+import { DARK_COLORS, LIGHT_COLORS } from "@/lib/constants";
 
 /** タブアイコンサイズ */
 const TAB_ICON_SIZE = 24;
 
 /** 未読バッジの背景色 */
-const BADGE_BG_COLOR = DARK_COLORS.error;
+const BADGE_BG_COLOR = DARK_COLORS.primary;
 
 /** 未読バッジの最大表示数 */
 const BADGE_MAX_COUNT = 99;
@@ -39,16 +24,16 @@ export default function TabLayout() {
   return (
     <Tabs
       screenOptions={{
-        tabBarActiveTintColor: TAB_ACTIVE_COLOR,
-        tabBarInactiveTintColor: TAB_INACTIVE_COLOR,
+        tabBarActiveTintColor: DARK_COLORS.primary,
+        tabBarInactiveTintColor: DARK_COLORS.textDim,
         tabBarStyle: {
-          backgroundColor: isDark ? DARK_HEADER_BACKGROUND : THEME_COLORS.card,
-          borderTopColor: isDark ? DARK_BORDER_COLOR : THEME_COLORS.border,
+          backgroundColor: isDark ? DARK_COLORS.surface : LIGHT_COLORS.card,
+          borderTopColor: isDark ? DARK_COLORS.border : LIGHT_COLORS.border,
         },
         headerStyle: {
-          backgroundColor: isDark ? DARK_HEADER_BACKGROUND : THEME_COLORS.card,
+          backgroundColor: isDark ? DARK_COLORS.surface : LIGHT_COLORS.card,
         },
-        headerTintColor: isDark ? DARK_TEXT_COLOR : THEME_COLORS.text,
+        headerTintColor: isDark ? DARK_COLORS.text : LIGHT_COLORS.text,
         headerShadowVisible: false,
         tabBarLabelStyle: {
           fontSize: 11,

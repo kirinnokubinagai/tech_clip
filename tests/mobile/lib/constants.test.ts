@@ -3,12 +3,12 @@ import {
   DARK_COLORS,
   getApiBaseUrl,
   IMAGE_SIZES,
+  LIGHT_COLORS,
   MAX_FREE_AI_USES,
   PAGINATION_LIMIT,
   STALE_TIME_MS,
   SUPPORTED_SOURCE_COUNT,
   SUPPORTED_SOURCES,
-  THEME_COLORS,
 } from "@/lib/constants";
 import { SOURCE_DEFINITIONS } from "@/lib/sources";
 
@@ -82,16 +82,16 @@ describe("constants", () => {
     });
   });
 
-  describe("THEME_COLORS", () => {
+  describe("LIGHT_COLORS", () => {
     it("必須カラーが定義されていること", () => {
-      expect(THEME_COLORS.background).toBe("#fafaf9");
-      expect(THEME_COLORS.card).toBe("#ffffff");
-      expect(THEME_COLORS.text).toBe("#1c1917");
-      expect(THEME_COLORS.accent).toBe("#14b8a6");
-      expect(THEME_COLORS.border).toBe("#e7e5e4");
-      expect(THEME_COLORS.error).toBe("#ef4444");
-      expect(THEME_COLORS.success).toBe("#22c55e");
-      expect(THEME_COLORS.warning).toBe("#f59e0b");
+      expect(LIGHT_COLORS.background).toBe("#fafaf9");
+      expect(LIGHT_COLORS.card).toBe("#ffffff");
+      expect(LIGHT_COLORS.text).toBe("#1c1917");
+      expect(LIGHT_COLORS.accent).toBe("#14b8a6");
+      expect(LIGHT_COLORS.border).toBe("#e7e5e4");
+      expect(LIGHT_COLORS.error).toBe("#ef4444");
+      expect(LIGHT_COLORS.success).toBe("#22c55e");
+      expect(LIGHT_COLORS.warning).toBe("#f59e0b");
     });
   });
 

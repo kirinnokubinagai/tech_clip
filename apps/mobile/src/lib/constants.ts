@@ -49,7 +49,7 @@ export const IMAGE_SIZES = {
  * ライト/ダーク共通で使う意味ベースのカラー
  *
  * アーキテクチャ:
- * - SEMANTIC_COLORS（共有）→ THEME_COLORS（ライトテーマ）にスプレッド
+ * - SEMANTIC_COLORS（共有）→ LIGHT_COLORS（ライトテーマ）にスプレッド
  * - SEMANTIC_COLORS（共有）→ DARK_COLORS（ダークテーマ）にスプレッド
  * - error / success / warning / accent / favorite はここで一元管理
  */
@@ -70,7 +70,7 @@ const SEMANTIC_COLORS = {
  * ライトテーマカラー定義
  * SEMANTIC_COLORS の共有セマンティック色 + ライト固有のレイアウト色で構成
  */
-export const THEME_COLORS = {
+export const LIGHT_COLORS = {
   /** 背景色 */
   background: "#fafaf9",
   /** カード背景色 */
@@ -81,6 +81,9 @@ export const THEME_COLORS = {
   border: "#e7e5e4",
   ...SEMANTIC_COLORS,
 } as const;
+
+/** 互換性維持のためのライトテーマカラー別名 */
+export const THEME_COLORS = LIGHT_COLORS;
 
 /**
  * ダークテーマカラー定義
