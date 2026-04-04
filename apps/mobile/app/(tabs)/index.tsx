@@ -1,5 +1,5 @@
 import { useRouter } from "expo-router";
-import { Filter, Heart, RefreshCw } from "lucide-react-native";
+import { Heart, RefreshCw } from "lucide-react-native";
 import { useCallback, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { ActivityIndicator, FlatList, Pressable, RefreshControl, Text, View } from "react-native";
@@ -220,13 +220,7 @@ export default function HomeScreen() {
               {t("home.favorites")}
             </Text>
           </Pressable>
-          <Pressable
-            className="flex-row items-center gap-1.5"
-            accessibilityRole="button"
-            accessibilityLabel={t("home.filter")}
-          >
-            <Filter size={FILTER_ICON_SIZE} color={UI_COLORS.textMuted} />
-          </Pressable>
+<<<<<<< HEAD
         </View>
       </View>
 
