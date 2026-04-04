@@ -33,7 +33,7 @@ const HEADER_ICON_SIZE = 20;
 const SECTION_ICON_SIZE = 16;
 
 /** お気に入りアクティブカラー */
-const FAVORITE_ACTIVE_COLOR = UI_COLORS.error;
+const FAVORITE_ACTIVE_COLOR = UI_COLORS.favorite;
 
 /** お気に入り非アクティブカラー */
 const FAVORITE_INACTIVE_COLOR = UI_COLORS.textMuted;

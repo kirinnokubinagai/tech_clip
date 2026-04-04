@@ -28,7 +28,7 @@ const UNREAD_INDICATOR_COLOR = UI_COLORS.primary;
 
 /** 通知種別ごとのアイコン色 */
 const TYPE_ICON_COLORS: Record<NotificationType, string> = {
-  like: UI_COLORS.error,
+  like: UI_COLORS.favorite,
   comment: UI_COLORS.info,
   follow: UI_COLORS.success,
   system: UI_COLORS.warning,

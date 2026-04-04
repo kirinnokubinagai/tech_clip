@@ -18,7 +18,7 @@ const FILTER_ACTIVE_BG = UI_COLORS.primary;
 const FILTER_INACTIVE_BG = UI_COLORS.card;
 
 /** お気に入りフィルターのアクティブ色 */
-const FAVORITE_ACTIVE_COLOR = UI_COLORS.error;
+const FAVORITE_ACTIVE_COLOR = UI_COLORS.favorite;
 
 /** お気に入りフィルターの非アクティブ色 */
 const FAVORITE_INACTIVE_COLOR = UI_COLORS.textMuted;

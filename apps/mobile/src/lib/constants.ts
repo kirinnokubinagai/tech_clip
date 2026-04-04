@@ -45,6 +45,20 @@ export const IMAGE_SIZES = {
   full: { width: 800, height: 600 },
 } as const;
 
+/** ライト/ダーク共通で使う意味ベースのカラー */
+const SEMANTIC_COLORS = {
+  /** アクセントカラー */
+  accent: "#14b8a6",
+  /** エラー色 */
+  error: "#ef4444",
+  /** 成功色 */
+  success: "#22c55e",
+  /** 警告色 */
+  warning: "#f59e0b",
+  /** お気に入りやいいねに使う赤色 */
+  favorite: "#ef4444",
+} as const;
+
 /** テーマカラー定義 */
 export const THEME_COLORS = {
   /** 背景色 */
@@ -53,16 +67,9 @@ export const THEME_COLORS = {
   card: "#ffffff",
   /** テキスト色 */
   text: "#1c1917",
-  /** アクセントカラー（プライマリ） */
-  accent: "#14b8a6",
   /** 境界線色 */
   border: "#e7e5e4",
-  /** エラー色 */
-  error: "#ef4444",
-  /** 成功色 */
-  success: "#22c55e",
-  /** 警告色 */
-  warning: "#f59e0b",
+  ...SEMANTIC_COLORS,
 } as const;
 
 /** モバイルUIの共有カラートークン */
@@ -77,12 +84,8 @@ export const UI_COLORS = {
   border: "#2d2d44",
   /** プライマリアクション色 */
   primary: "#6366f1",
-  /** Android通知LEDなどに使うアクセント色 */
-  accent: "#14b8a6",
   /** プライマリの明色 */
   primaryLight: "#818cf8",
-  /** プライマリの濃色 */
-  primaryDark: "#4f46e5",
   /** 主要テキスト色 */
   text: "#e2e8f0",
   /** 補助テキスト色 */
@@ -91,12 +94,6 @@ export const UI_COLORS = {
   textDim: "#64748b",
   /** 白色 */
   white: "#ffffff",
-  /** エラー色 */
-  error: "#ef4444",
-  /** 成功色 */
-  success: "#22c55e",
-  /** 警告色 */
-  warning: "#f59e0b",
   /** 情報色 */
   info: "#3b82f6",
   /** 危険操作の背景色 */
@@ -105,4 +102,5 @@ export const UI_COLORS = {
   successSurface: "#1a2e1a",
   /** 中立色 */
   neutral: "#44403c",
+  ...SEMANTIC_COLORS,
 } as const;

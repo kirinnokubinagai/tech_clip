@@ -26,7 +26,7 @@ const THUMBNAIL_HEIGHT = 160;
 const FAVORITE_ICON_SIZE = 20;
 
 /** お気に入り済みのアイコンカラー */
-const FAVORITE_ACTIVE_COLOR = UI_COLORS.error;
+const FAVORITE_ACTIVE_COLOR = UI_COLORS.favorite;
 
 /** お気に入り未設定のアイコンカラー */
 const FAVORITE_INACTIVE_COLOR = UI_COLORS.textMuted;
