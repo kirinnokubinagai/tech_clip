@@ -161,6 +161,7 @@ export default function ForgotPasswordScreen() {
             keyboardType="email-address"
             textContentType="emailAddress"
             editable={!isSubmitting}
+            testID="forgot-password-email-input"
             accessibilityLabel={t("auth.email")}
             accessibilityHint={t("auth.forgotPasswordEmailHint")}
           />
@@ -172,6 +173,7 @@ export default function ForgotPasswordScreen() {
           disabled={isSubmitting}
           isLoading={isSubmitting}
           label={t("auth.forgotPasswordSubmit")}
+          testID="forgot-password-submit-button"
         />
 
         {renderFooter()}

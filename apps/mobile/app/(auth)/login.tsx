@@ -27,26 +27,10 @@ const SOCIAL_CALLBACK_URL = `${APP_SCHEME}://`;
 
 type SocialProvider = "google" | "github";
 
-type SocialSignInResponse = {
-  url?: string;
-};
-
 const SOCIAL_PROVIDERS: ReadonlyArray<{ provider: SocialProvider; translationKey: string }> = [
   { provider: "google", translationKey: "auth.continueWithGoogle" },
   { provider: "github", translationKey: "auth.continueWithGithub" },
 ];
-
-function isSocialSignInResponse(value: unknown): value is SocialSignInResponse {
-  if (typeof value !== "object" || value === null) {
-    return false;
-  }
-
-  if (!("url" in value)) {
-    return true;
-  }
-
-  return typeof (value as { url?: unknown }).url === "string";
-}
 
 /**
  * ログイン画面
@@ -142,14 +126,20 @@ export default function LoginScreen() {
       }
 
       const responseBody: unknown = await response.json();
-      const data = isSocialSignInResponse(responseBody) ? responseBody : {};
+      const url =
+        typeof responseBody === "object" &&
+        responseBody !== null &&
+        "url" in responseBody &&
+        typeof responseBody.url === "string"
+          ? responseBody.url
+          : undefined;
 
-      if (!data.url?.startsWith("https://")) {
+      if (!url?.startsWith("https://")) {
         setErrorMessage(t("auth.socialLoginFailed"));
         return;
       }
 
-      await Linking.openURL(data.url);
+      await Linking.openURL(url);
     } catch {
       setErrorMessage(t("auth.socialLoginFailed"));
     } finally {

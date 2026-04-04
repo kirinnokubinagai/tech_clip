@@ -46,7 +46,7 @@ export default function RegisterScreen() {
       setErrorMessage(t("auth.validation.emailInvalid"));
       return;
     }
-    if (!password.trim()) {
+    if (!password) {
       setErrorMessage(t("auth.validation.passwordRequired"));
       return;
     }
