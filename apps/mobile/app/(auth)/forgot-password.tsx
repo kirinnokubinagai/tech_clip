@@ -25,7 +25,10 @@ type ForgotPasswordErrorResponse = {
   error: { message: string };
 };
 
+/** パスワードリセットAPIのパス */
 const FORGOT_PASSWORD_PATH = "/api/auth/forgot-password";
+/** メールアドレスの簡易バリデーション正規表現（@の後にドットを含むドメインが必要） */
+const EMAIL_REGEX = /@.+\..+/;
 
 function isForgotPasswordErrorResponse(
   data: ForgotPasswordSuccessResponse | ForgotPasswordErrorResponse,
@@ -47,7 +50,7 @@ export default function ForgotPasswordScreen() {
    */
   const handleSubmit = async () => {
     const trimmedEmail = email.trim();
-    const hasValidEmailFormat = trimmedEmail.includes("@");
+    const hasValidEmailFormat = EMAIL_REGEX.test(trimmedEmail);
 
     if (!trimmedEmail) {
       setErrorMessage(t("auth.validation.emailRequired"));

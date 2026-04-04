@@ -19,8 +19,12 @@ import { useAuthStore } from "@/stores/auth-store";
 
 /** パスワード最小文字数 */
 const PASSWORD_MIN_LENGTH = 8;
+/** ソーシャルサインインAPIのパス */
 const SOCIAL_SIGN_IN_PATH = "/api/auth/sign-in/social";
+/** ソーシャルログイン後のコールバックURL */
 const SOCIAL_CALLBACK_URL = "techclip://";
+/** メールアドレスの簡易バリデーション正規表現（@の後にドットを含むドメインが必要） */
+const EMAIL_REGEX = /@.+\..+/;
 
 type SocialProvider = "google" | "github";
 
@@ -53,7 +57,7 @@ export default function LoginScreen() {
     if (!trimmedEmail) {
       return t("auth.validation.emailRequired");
     }
-    if (!trimmedEmail.includes("@")) {
+    if (!EMAIL_REGEX.test(trimmedEmail)) {
       return t("auth.validation.emailInvalid");
     }
     if (!password) {
