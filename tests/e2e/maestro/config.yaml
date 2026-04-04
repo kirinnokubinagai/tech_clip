@@ -1,7 +1,7 @@
 appId: com.techclip.app
 ---
 # TechClip Maestro E2E テスト設定
-# 実行方法: maestro test apps/mobile/.maestro/
+# 実行方法: maestro test tests/e2e/maestro/
 
 # デフォルトタイムアウト（ミリ秒）
 # 要素が見つかるまで待機する最大時間
