@@ -25,6 +25,18 @@ const SOCIAL_SIGN_IN_PATH = "/api/auth/sign-in/social";
 /** ソーシャルログイン後のコールバックURL。deep link path が必要になったら constants 側へ移す。 */
 const SOCIAL_CALLBACK_URL = `${APP_SCHEME}://`;
 
+/**
+ * ソーシャルログインAPIレスポンスにリダイレクトURLが含まれるか判定する
+ */
+function hasSocialRedirectUrl(value: unknown): value is { url: string } {
+  return (
+    typeof value === "object" &&
+    value !== null &&
+    "url" in value &&
+    typeof (value as { url?: unknown }).url === "string"
+  );
+}
+
 type SocialProvider = "google" | "github";
 
 const SOCIAL_PROVIDERS: ReadonlyArray<{ provider: SocialProvider; translationKey: string }> = [
@@ -126,20 +138,12 @@ export default function LoginScreen() {
       }
 
       const responseBody: unknown = await response.json();
-      const url =
-        typeof responseBody === "object" &&
-        responseBody !== null &&
-        "url" in responseBody &&
-        typeof responseBody.url === "string"
-          ? responseBody.url
-          : undefined;
-
-      if (!url?.startsWith("https://")) {
+      if (!hasSocialRedirectUrl(responseBody) || !responseBody.url.startsWith("https://")) {
         setErrorMessage(t("auth.socialLoginFailed"));
         return;
       }
 
-      await Linking.openURL(url);
+      await Linking.openURL(responseBody.url);
     } catch {
       setErrorMessage(t("auth.socialLoginFailed"));
     } finally {

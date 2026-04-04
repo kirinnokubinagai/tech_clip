@@ -41,6 +41,40 @@ function hasForgotPasswordMessageShape(value: unknown): value is { data: { messa
 /** パスワードリセットAPIのパス */
 const FORGOT_PASSWORD_PATH = "/api/auth/forgot-password";
 
+/**
+ * パスワードリセット画面のフッター
+ *
+ * @param hasSuccess - 送信成功状態
+ */
+function ForgotPasswordFooter({ hasSuccess }: { hasSuccess: boolean }) {
+  const { t } = useTranslation();
+  const router = useRouter();
+
+  if (hasSuccess) {
+    return (
+      <Pressable
+        className="mt-4 items-center"
+        onPress={() => router.replace("/(auth)/login")}
+        accessibilityRole="button"
+        accessibilityLabel={t("auth.login")}
+      >
+        <Text className="text-sm font-semibold text-primary">{t("auth.login")}</Text>
+      </Pressable>
+    );
+  }
+
+  return (
+    <View className="mt-6 flex-row items-center justify-center">
+      <Text className="text-sm text-text-muted">{t("auth.hasAccount")}</Text>
+      <Link href="/(auth)/login" asChild>
+        <Pressable>
+          <Text className="ml-1 text-sm font-semibold text-primary">{t("auth.login")}</Text>
+        </Pressable>
+      </Link>
+    </View>
+  );
+}
+
 export default function ForgotPasswordScreen() {
   const { t } = useTranslation();
   const router = useRouter();
@@ -49,32 +83,6 @@ export default function ForgotPasswordScreen() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
-
-  const renderFooter = () => {
-    if (successMessage !== "") {
-      return (
-        <Pressable
-          className="mt-4 items-center"
-          onPress={() => router.replace("/(auth)/login")}
-          accessibilityRole="button"
-          accessibilityLabel={t("auth.login")}
-        >
-          <Text className="text-sm font-semibold text-primary">{t("auth.login")}</Text>
-        </Pressable>
-      );
-    }
-
-    return (
-      <View className="mt-6 flex-row items-center justify-center">
-        <Text className="text-sm text-text-muted">{t("auth.hasAccount")}</Text>
-        <Link href="/(auth)/login" asChild>
-          <Pressable>
-            <Text className="ml-1 text-sm font-semibold text-primary">{t("auth.login")}</Text>
-          </Pressable>
-        </Link>
-      </View>
-    );
-  };
 
   /**
    * パスワードリセットメール送信フォームを送信する
@@ -176,7 +184,7 @@ export default function ForgotPasswordScreen() {
           testID="forgot-password-submit-button"
         />
 
-        {renderFooter()}
+        <ForgotPasswordFooter hasSuccess={successMessage !== ""} />
       </ScrollView>
     </KeyboardAvoidingView>
   );
