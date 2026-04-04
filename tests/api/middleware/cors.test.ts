@@ -2,11 +2,15 @@ import { corsMiddleware, createCorsMiddleware } from "@api/middleware/cors";
 import { Hono } from "hono";
 import { describe, expect, it } from "vitest";
 
+type TestBindings = {
+  TRUSTED_ORIGINS?: string;
+};
+
 /**
  * CORSミドルウェアのテスト用Honoアプリを生成する
  */
-function createTestApp(): Hono {
-  const app = new Hono();
+function createTestApp(): Hono<{ Bindings: TestBindings }> {
+  const app = new Hono<{ Bindings: TestBindings }>();
   app.use("*", corsMiddleware);
   app.get("/test", (c) => c.json({ ok: true }));
   return app;
@@ -64,6 +68,26 @@ describe("corsMiddleware", () => {
       // Assert
       expect(res.status).toBe(200);
       expect(res.headers.get("Access-Control-Allow-Origin")).toBe("http://localhost:19006");
+    });
+
+    it("TRUSTED_ORIGINS に設定した追加オリジンを許可すること", async () => {
+      // Arrange
+      const app = createTestApp();
+
+      // Act
+      const res = await app.request(
+        "/test",
+        {
+          headers: { Origin: "https://staging.techclip.app" },
+        },
+        {
+          TRUSTED_ORIGINS: "https://staging.techclip.app, https://dev.techclip.app",
+        },
+      );
+
+      // Assert
+      expect(res.status).toBe(200);
+      expect(res.headers.get("Access-Control-Allow-Origin")).toBe("https://staging.techclip.app");
     });
   });
 
@@ -136,6 +160,27 @@ describe("corsMiddleware", () => {
       // Assert
       expect(res.status).toBe(200);
       expect(res.headers.get("Access-Control-Allow-Origin")).not.toBe("*");
+    });
+  });
+
+  describe("TRUSTED_ORIGINS の整形", () => {
+    it("空白を含む TRUSTED_ORIGINS を正規化して許可すること", async () => {
+      // Arrange
+      const app = createTestApp();
+
+      // Act
+      const res = await app.request(
+        "/test",
+        {
+          headers: { Origin: "https://dev.techclip.app" },
+        },
+        {
+          TRUSTED_ORIGINS: "  https://staging.techclip.app  , https://dev.techclip.app ",
+        },
+      );
+
+      // Assert
+      expect(res.headers.get("Access-Control-Allow-Origin")).toBe("https://dev.techclip.app");
     });
   });
 

@@ -36,7 +36,7 @@ describe("ArticleCard", () => {
       const { getByText } = await render(<ArticleCard article={BASE_ARTICLE} onPress={() => {}} />);
 
       // Assert
-      expect(getByText("zenn")).toBeDefined();
+      expect(getByText("Zenn")).toBeDefined();
     });
 
     it("概要が正しく表示されること", async () => {
