@@ -68,9 +68,6 @@ export default function LoginScreen() {
     return "";
   };
 
-  const isFormValid =
-    EMAIL_SIMPLE_REGEX.test(email.trim()) && password.length >= PASSWORD_MIN_LENGTH;
-
   /**
    * ログインフォームを送信する
    */
