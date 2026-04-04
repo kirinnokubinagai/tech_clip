@@ -15,6 +15,7 @@ import {
 
 import { fetchWithTimeout, getBaseUrl } from "@/lib/api";
 import { AUTH_LOADING_INDICATOR_COLOR, AUTH_PLACEHOLDER_TEXT_COLOR } from "@/lib/ui-colors";
+import { EMAIL_SIMPLE_REGEX } from "@/lib/validation";
 import { useAuthStore } from "@/stores/auth-store";
 
 /** パスワード最小文字数 */
@@ -23,8 +24,6 @@ const PASSWORD_MIN_LENGTH = 8;
 const SOCIAL_SIGN_IN_PATH = "/api/auth/sign-in/social";
 /** ソーシャルログイン後のコールバックURL */
 const SOCIAL_CALLBACK_URL = "techclip://";
-/** メールアドレスの簡易バリデーション正規表現（空白なし・@あり・ドメインにドットあり） */
-const EMAIL_SIMPLE_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 type SocialProvider = "google" | "github";
 
@@ -145,7 +144,7 @@ export default function LoginScreen() {
           <Text className="mt-2 text-base text-text-muted">{t("auth.appTagline")}</Text>
         </View>
 
-        <View className="rounded-2xl bg-card p-6">
+        <View className="rounded-2xl bg-surface p-6">
           <Text className="mb-6 text-center text-xl font-semibold text-text">
             {t("auth.loginTitle")}
           </Text>

@@ -14,27 +14,15 @@ import {
 
 import { fetchWithTimeout, getBaseUrl } from "@/lib/api";
 import { AUTH_LOADING_INDICATOR_COLOR, AUTH_PLACEHOLDER_TEXT_COLOR } from "@/lib/ui-colors";
+import { EMAIL_SIMPLE_REGEX } from "@/lib/validation";
 
 type ForgotPasswordSuccessResponse = {
   success: true;
   data: { message: string };
 };
 
-type ForgotPasswordErrorResponse = {
-  success: false;
-  error: { message: string };
-};
-
 /** パスワードリセットAPIのパス */
 const FORGOT_PASSWORD_PATH = "/api/auth/forgot-password";
-/** メールアドレスの簡易バリデーション正規表現（空白なし・@あり・ドメインにドットあり） */
-const EMAIL_SIMPLE_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-
-function isForgotPasswordErrorResponse(
-  data: ForgotPasswordSuccessResponse | ForgotPasswordErrorResponse,
-): data is ForgotPasswordErrorResponse {
-  return !data.success && "error" in data && typeof data.error?.message === "string";
-}
 
 export default function ForgotPasswordScreen() {
   const { t } = useTranslation();
@@ -71,18 +59,14 @@ export default function ForgotPasswordScreen() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email: trimmedEmail }),
       });
-      const data = (await response.json()) as
-        | ForgotPasswordSuccessResponse
-        | ForgotPasswordErrorResponse;
+      const data = (await response.json()) as Partial<ForgotPasswordSuccessResponse>;
 
-      if (!response.ok || !data.success) {
-        setErrorMessage(
-          isForgotPasswordErrorResponse(data) ? data.error.message : t("common.error"),
-        );
+      if (!response.ok) {
+        setSuccessMessage(t("auth.forgotPasswordSuccess"));
         return;
       }
 
-      setSuccessMessage(data.data.message || t("auth.forgotPasswordSuccess"));
+      setSuccessMessage(data.data?.message || t("auth.forgotPasswordSuccess"));
     } catch {
       setErrorMessage(t("common.error"));
     } finally {

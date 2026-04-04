@@ -66,7 +66,7 @@ describe("ForgotPasswordScreen", () => {
     ).toBeDefined();
   });
 
-  it("送信失敗時にAPIのエラーメッセージを表示すること", async () => {
+  it("APIエラー時も成功メッセージを表示すること", async () => {
     // Arrange
     (global.fetch as jest.Mock).mockResolvedValue({
       ok: false,
@@ -77,7 +77,9 @@ describe("ForgotPasswordScreen", () => {
         },
       }),
     });
-    const { getByLabelText, findByLabelText } = await render(<ForgotPasswordScreen />);
+    const { getByLabelText, findByLabelText, queryByLabelText } = await render(
+      <ForgotPasswordScreen />,
+    );
 
     await fireEvent.changeText(getByLabelText("メールアドレス"), "missing@example.com");
 
@@ -85,7 +87,10 @@ describe("ForgotPasswordScreen", () => {
     await fireEvent.press(getByLabelText("リセットメールを送信"));
 
     // Assert
-    expect(await findByLabelText("該当するメールアドレスが見つかりません")).toBeDefined();
+    expect(
+      await findByLabelText("パスワードリセットのメールを送信しました。メールをご確認ください。"),
+    ).toBeDefined();
+    expect(queryByLabelText("該当するメールアドレスが見つかりません")).toBeNull();
   });
 
   it("ネットワークエラー時に共通エラーメッセージを表示すること", async () => {
