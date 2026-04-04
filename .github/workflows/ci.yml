@@ -32,19 +32,33 @@ jobs:
       - name: Run lint, typecheck, test, audit in parallel
         run: |
           nix develop --command bash -c '
-            pnpm lint &
+            set -uo pipefail
+            LOGDIR=$(mktemp -d)
+
+            pnpm lint       > "${LOGDIR}/lint.log" 2>&1 &
             PID_LINT=$!
-            pnpm typecheck &
+            pnpm typecheck  > "${LOGDIR}/typecheck.log" 2>&1 &
             PID_TC=$!
-            pnpm test &
+            pnpm test       > "${LOGDIR}/test.log" 2>&1 &
             PID_TEST=$!
-            pnpm audit &
+            pnpm audit      > "${LOGDIR}/audit.log" 2>&1 &
             PID_AUDIT=$!
 
             FAILED=0
-            wait $PID_LINT   || { echo "::error::lint failed"; FAILED=1; }
-            wait $PID_TC     || { echo "::error::typecheck failed"; FAILED=1; }
-            wait $PID_TEST   || { echo "::error::test failed"; FAILED=1; }
-            wait $PID_AUDIT  || { echo "::error::audit failed"; FAILED=1; }
+            wait $PID_LINT   || FAILED=1
+            wait $PID_TC     || FAILED=1
+            wait $PID_TEST   || FAILED=1
+            wait $PID_AUDIT  || FAILED=1
+
+            echo "========== lint =========="
+            cat "${LOGDIR}/lint.log"
+            echo "========== typecheck =========="
+            cat "${LOGDIR}/typecheck.log"
+            echo "========== test =========="
+            cat "${LOGDIR}/test.log"
+            echo "========== audit =========="
+            cat "${LOGDIR}/audit.log"
+
+            rm -rf "${LOGDIR}"
             exit $FAILED
           '

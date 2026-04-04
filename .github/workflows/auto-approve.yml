@@ -41,6 +41,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       pull-requests: read
+      actions: write
     steps:
       - name: Check review label
         env:
@@ -49,6 +50,14 @@ jobs:
           LABELS=$(gh api repos/${{ github.repository }}/pulls/${{ github.event.pull_request.number }} --jq '.labels[].name')
           if echo "$LABELS" | grep -q "AI Review: NEEDS WORK"; then
             echo "::error::AIレビューで問題または改善提案があります。修正してください。"
+
+            echo "他の実行中ワークフローをキャンセル中..."
+            gh api repos/${{ github.repository }}/actions/runs \
+              --jq '.workflow_runs[] | select(.head_sha == "${{ github.event.pull_request.head.sha }}" and .status == "in_progress" and .id != ${{ github.run_id }}) | .id' \
+              | while read -r RUN_ID; do
+                  gh run cancel "${RUN_ID}" 2>/dev/null || true
+                done
+
             exit 1
           fi
           echo "AIレビュー: PASS"
