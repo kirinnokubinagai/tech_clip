@@ -18,10 +18,8 @@ jest.mock("@mobile/hooks/use-offline-articles", () => ({
 }));
 
 jest.mock("@mobile/components/ArticleCard", () => ({
-  ArticleCard: ({ article }: { article: { title: string } }) => {
-    const { Text } = require("react-native");
-    return <Text>{article.title}</Text>;
-  },
+  ArticleCard: ({ article }: { article: { title: string } }) =>
+    require("react").createElement(require("react-native").Text, null, article.title),
 }));
 
 /** テスト用記事データ */
