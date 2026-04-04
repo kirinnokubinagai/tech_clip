@@ -3,6 +3,7 @@ import { fireEvent, render, waitFor } from "@testing-library/react-native";
 
 jest.mock("@/lib/api", () => ({
   getBaseUrl: jest.fn(() => "http://localhost:8787"),
+  fetchWithTimeout: jest.fn((url: string, options: RequestInit) => fetch(url, options)),
 }));
 
 beforeEach(() => {
@@ -72,5 +73,19 @@ describe("ForgotPasswordScreen", () => {
 
     // Assert
     expect(await findByLabelText("メールアドレスの形式が正しくありません")).toBeDefined();
+  });
+
+  it("ネットワークエラー時に共通エラーメッセージを表示すること", async () => {
+    // Arrange
+    (global.fetch as jest.Mock).mockRejectedValue(new Error("network error"));
+    const { getByLabelText, findByLabelText } = await render(<ForgotPasswordScreen />);
+
+    await fireEvent.changeText(getByLabelText("メールアドレス"), "test@example.com");
+
+    // Act
+    await fireEvent.press(getByLabelText("リセットメールを送信"));
+
+    // Assert
+    expect(await findByLabelText("エラーが発生しました")).toBeDefined();
   });
 });

@@ -12,7 +12,8 @@ import {
   View,
 } from "react-native";
 
-import { getBaseUrl } from "@/lib/api";
+import { fetchWithTimeout, getBaseUrl } from "@/lib/api";
+import { AUTH_LOADING_INDICATOR_COLOR, AUTH_PLACEHOLDER_TEXT_COLOR } from "@/lib/ui-colors";
 
 type ForgotPasswordSuccessResponse = {
   success: true;
@@ -46,7 +47,7 @@ export default function ForgotPasswordScreen() {
     setIsSubmitting(true);
 
     try {
-      const response = await fetch(`${getBaseUrl()}${FORGOT_PASSWORD_PATH}`, {
+      const response = await fetchWithTimeout(`${getBaseUrl()}${FORGOT_PASSWORD_PATH}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email: email.trim() }),
@@ -111,7 +112,7 @@ export default function ForgotPasswordScreen() {
           <TextInput
             className="rounded-lg border border-border bg-surface px-4 py-3 text-base text-text"
             placeholder={t("auth.emailPlaceholder")}
-            placeholderTextColor="#64748b"
+            placeholderTextColor={AUTH_PLACEHOLDER_TEXT_COLOR}
             value={email}
             onChangeText={setEmail}
             autoCapitalize="none"
@@ -136,7 +137,7 @@ export default function ForgotPasswordScreen() {
           accessibilityState={{ disabled: isSubmitting }}
         >
           {isSubmitting ? (
-            <ActivityIndicator color="#ffffff" />
+            <ActivityIndicator color={AUTH_LOADING_INDICATOR_COLOR} />
           ) : (
             <Text className="text-base font-semibold text-white">
               {t("auth.forgotPasswordSubmit")}

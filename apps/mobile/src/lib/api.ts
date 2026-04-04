@@ -47,7 +47,7 @@ export function getBaseUrl(): string {
  * @param options - fetchオプション
  * @returns fetchレスポンス
  */
-async function fetchWithTimeout(url: string, options: RequestInit): Promise<Response> {
+export async function fetchWithTimeout(url: string, options: RequestInit): Promise<Response> {
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
 

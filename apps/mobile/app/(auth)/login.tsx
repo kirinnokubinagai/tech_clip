@@ -12,7 +12,8 @@ import {
   View,
 } from "react-native";
 
-import { getBaseUrl } from "@/lib/api";
+import { fetchWithTimeout, getBaseUrl } from "@/lib/api";
+import { AUTH_LOADING_INDICATOR_COLOR, AUTH_PLACEHOLDER_TEXT_COLOR } from "@/lib/ui-colors";
 import { useAuthStore } from "@/stores/auth-store";
 
 /** パスワード最小文字数 */
@@ -92,7 +93,7 @@ export default function LoginScreen() {
     setIsSubmitting(true);
 
     try {
-      const response = await fetch(`${getBaseUrl()}${SOCIAL_SIGN_IN_PATH}`, {
+      const response = await fetchWithTimeout(`${getBaseUrl()}${SOCIAL_SIGN_IN_PATH}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -147,7 +148,7 @@ export default function LoginScreen() {
             <TextInput
               className="rounded-lg border border-border bg-card px-4 py-3 text-base text-text"
               placeholder={t("auth.emailPlaceholder")}
-              placeholderTextColor="#64748b"
+              placeholderTextColor={AUTH_PLACEHOLDER_TEXT_COLOR}
               value={email}
               onChangeText={setEmail}
               keyboardType="email-address"
@@ -156,8 +157,8 @@ export default function LoginScreen() {
               autoComplete="email"
               editable={!isSubmitting}
               testID="login-email-input"
-              accessibilityLabel="メールアドレス"
-              accessibilityHint="メールアドレスを入力してください"
+              accessibilityLabel={t("auth.email")}
+              accessibilityHint={t("auth.emailHint")}
             />
           </View>
 
@@ -167,7 +168,7 @@ export default function LoginScreen() {
               <TextInput
                 className="flex-1 px-4 py-3 text-base text-text"
                 placeholder={t("auth.passwordPlaceholder")}
-                placeholderTextColor="#64748b"
+                placeholderTextColor={AUTH_PLACEHOLDER_TEXT_COLOR}
                 value={password}
                 onChangeText={setPassword}
                 secureTextEntry={!isPasswordVisible}
@@ -176,8 +177,8 @@ export default function LoginScreen() {
                 autoComplete="password"
                 editable={!isSubmitting}
                 testID="login-password-input"
-                accessibilityLabel="パスワード"
-                accessibilityHint="8文字以上のパスワードを入力してください"
+                accessibilityLabel={t("auth.password")}
+                accessibilityHint={t("auth.passwordHint", { min: PASSWORD_MIN_LENGTH })}
               />
               <Pressable
                 onPress={() => setIsPasswordVisible((prev) => !prev)}
@@ -212,12 +213,12 @@ export default function LoginScreen() {
             }`}
             testID="login-submit-button"
             accessibilityRole="button"
-            accessibilityLabel="ログイン"
-            accessibilityHint="メールアドレスとパスワードでログインします"
+            accessibilityLabel={t("auth.login")}
+            accessibilityHint={t("auth.loginHint")}
             accessibilityState={{ disabled: isSubmitting || !isFormValid }}
           >
             {isSubmitting ? (
-              <ActivityIndicator color="#e2e8f0" />
+              <ActivityIndicator color={AUTH_LOADING_INDICATOR_COLOR} />
             ) : (
               <Text className="text-base font-semibold text-text">{t("auth.login")}</Text>
             )}

@@ -14,6 +14,7 @@ jest.mock("@mobile/stores/auth-store", () => ({
 
 jest.mock("@/lib/api", () => ({
   getBaseUrl: jest.fn(() => "http://localhost:8787"),
+  fetchWithTimeout: jest.fn((url: string, options: RequestInit) => fetch(url, options)),
 }));
 
 const mockOpenUrl = jest.spyOn(Linking, "openURL").mockResolvedValue();
@@ -81,6 +82,20 @@ describe("LoginScreen", () => {
 
     // Act
     await fireEvent.press(getByLabelText("GitHub でログイン"));
+
+    // Assert
+    expect(
+      await findByLabelText("ソーシャルログインの開始に失敗しました。もう一度お試しください。"),
+    ).toBeDefined();
+  });
+
+  it("ソーシャルログインでネットワークエラーが発生した場合エラーメッセージを表示すること", async () => {
+    // Arrange
+    (global.fetch as jest.Mock).mockRejectedValue(new Error("network error"));
+    const { getByLabelText, findByLabelText } = await render(<LoginScreen />);
+
+    // Act
+    await fireEvent.press(getByLabelText("Google でログイン"));
 
     // Assert
     expect(
