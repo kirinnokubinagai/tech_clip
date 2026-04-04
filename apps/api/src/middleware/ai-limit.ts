@@ -1,5 +1,5 @@
 import { and, eq, gt, sql } from "drizzle-orm";
-import type { MiddlewareHandler } from "hono";
+import type { Context, MiddlewareHandler, Next } from "hono";
 
 import type { Database } from "../db";
 import { users } from "../db/schema";
@@ -122,6 +122,8 @@ async function reserveResetFreeUse(
 /**
  * 失敗したリクエスト分の無料枠予約を戻す
  *
+ * 上限値（FREE_AI_USES_PER_MONTH）を超えないよう MIN でキャップする
+ *
  * @param db - Drizzle ORMデータベースインスタンス
  * @param userId - ユーザーID
  */
@@ -129,7 +131,7 @@ async function rollbackReservedFreeUse(db: Database, userId: string): Promise<vo
   await db
     .update(users)
     .set({
-      freeAiUsesRemaining: sql`${users.freeAiUsesRemaining} + 1`,
+      freeAiUsesRemaining: sql`MIN(${users.freeAiUsesRemaining} + 1, ${FREE_AI_USES_PER_MONTH})`,
       updatedAt: new Date().toISOString(),
     })
     .where(eq(users.id, userId));
@@ -146,6 +148,34 @@ async function safeRollback(db: Database, userId: string): Promise<void> {
     await rollbackReservedFreeUse(db, userId);
   } catch (rollbackError) {
     logger.error("AIクォータのロールバックに失敗しました", { userId, error: rollbackError });
+  }
+}
+
+/**
+ * 予約済みの無料枠を保護しつつ下流ハンドラを実行する
+ *
+ * 下流が 4xx 以上のステータスを返した場合、または例外をスローした場合は
+ * ロールバックを実行して消費回数を元に戻す
+ *
+ * @param c - Hono コンテキスト
+ * @param next - 次のハンドラ
+ * @param db - Drizzle ORMデータベースインスタンス
+ * @param userId - ユーザーID
+ */
+async function executeWithRollback(
+  c: Context,
+  next: Next,
+  db: Database,
+  userId: string,
+): Promise<void> {
+  try {
+    await next();
+    if (c.res.status >= HTTP_CLIENT_ERROR_MIN) {
+      await safeRollback(db, userId);
+    }
+  } catch (error) {
+    await safeRollback(db, userId);
+    throw error;
   }
 }
 
@@ -221,16 +251,7 @@ export function createAiLimitMiddleware(db: Database): MiddlewareHandler {
         );
       }
 
-      try {
-        await next();
-        if (c.res.status >= HTTP_CLIENT_ERROR_MIN) {
-          await safeRollback(db, userId);
-        }
-      } catch (error) {
-        await safeRollback(db, userId);
-        throw error;
-      }
-
+      await executeWithRollback(c, next, db, userId);
       return;
     }
 
@@ -252,16 +273,7 @@ export function createAiLimitMiddleware(db: Database): MiddlewareHandler {
         );
       }
 
-      try {
-        await next();
-        if (c.res.status >= HTTP_CLIENT_ERROR_MIN) {
-          await safeRollback(db, userId);
-        }
-      } catch (error) {
-        await safeRollback(db, userId);
-        throw error;
-      }
-
+      await executeWithRollback(c, next, db, userId);
       return;
     }
 

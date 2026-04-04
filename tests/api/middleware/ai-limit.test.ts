@@ -102,6 +102,25 @@ function createTestApp(userId?: string, downstreamStatus = HTTP_OK) {
   return app;
 }
 
+/** 例外をスローするダウンストリームを持つテスト用Honoアプリを作成する */
+function createThrowingTestApp(userId?: string) {
+  const app = new Hono<{ Variables: { user?: Record<string, unknown> } }>();
+
+  if (userId) {
+    app.use("/ai/*", async (c, next) => {
+      c.set("user", { id: userId });
+      await next();
+    });
+  }
+
+  app.use("/ai/*", createAiLimitMiddleware(mockDb as never));
+  app.post("/ai/summarize", () => {
+    throw new Error("ダウンストリームで予期しない例外が発生しました");
+  });
+
+  return app;
+}
+
 describe("aiLimitMiddleware", () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -496,6 +515,41 @@ describe("aiLimitMiddleware", () => {
 
       // Assert
       expect(res.headers.get("Content-Type")).toContain("application/json");
+    });
+  });
+
+  describe("ダウンストリーム例外スロー時", () => {
+    it("ダウンストリームが例外をスローした場合にロールバックが呼ばれること", async () => {
+      // Arrange
+      const userData = createFreeUserData({ remaining: 3 });
+      mockSelectWhere.mockResolvedValue([userData]);
+      const app = createThrowingTestApp(TEST_USER_ID);
+
+      // Act
+      await app.request("/ai/summarize", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+      });
+
+      // Assert: 予約とロールバックの2回更新される
+      expect(mockUpdate).toHaveBeenCalledTimes(2);
+    });
+
+    it("月次リセット対象でダウンストリームが例外をスローした場合もロールバックが呼ばれること", async () => {
+      // Arrange
+      const pastDate = new Date("2025-01-01T00:00:00Z").toISOString();
+      const userData = createFreeUserData({ remaining: 0, resetAt: pastDate });
+      mockSelectWhere.mockResolvedValue([userData]);
+      const app = createThrowingTestApp(TEST_USER_ID);
+
+      // Act
+      await app.request("/ai/summarize", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+      });
+
+      // Assert: 予約とロールバックの2回更新される
+      expect(mockUpdate).toHaveBeenCalledTimes(2);
     });
   });
 });
