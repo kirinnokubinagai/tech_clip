@@ -1,5 +1,7 @@
 import { ActivityIndicator, Pressable, Text } from "react-native";
 
+import { UI_COLORS } from "@/lib/constants";
+
 /** Buttonコンポーネントで使用可能なバリアント */
 type ButtonVariant = "primary" | "secondary" | "outline" | "ghost" | "danger";
 
@@ -50,11 +52,11 @@ const TEXT_SIZE_STYLES: Record<ButtonSize, string> = {
 
 /** loading時のActivityIndicatorカラー */
 const LOADING_INDICATOR_COLORS: Record<ButtonVariant, string> = {
-  primary: "#ffffff",
-  secondary: "#e2e8f0",
-  outline: "#e2e8f0",
-  ghost: "#94a3b8",
-  danger: "#ffffff",
+  primary: UI_COLORS.white,
+  secondary: UI_COLORS.text,
+  outline: UI_COLORS.text,
+  ghost: UI_COLORS.textMuted,
+  danger: UI_COLORS.white,
 };
 
 /**

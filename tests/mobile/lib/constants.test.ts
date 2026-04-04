@@ -7,6 +7,7 @@ import {
   STALE_TIME_MS,
   SUPPORTED_SOURCES,
   THEME_COLORS,
+  UI_COLORS,
 } from "@/lib/constants";
 
 describe("constants", () => {
@@ -104,6 +105,28 @@ describe("constants", () => {
       expect(THEME_COLORS.error).toBe("#ef4444");
       expect(THEME_COLORS.success).toBe("#22c55e");
       expect(THEME_COLORS.warning).toBe("#f59e0b");
+    });
+  });
+
+  describe("UI_COLORS", () => {
+    it("共有UIトークンが定義されていること", () => {
+      expect(UI_COLORS.background).toBe("#0a0a0f");
+      expect(UI_COLORS.surface).toBe("#13131a");
+      expect(UI_COLORS.card).toBe("#1a1a2e");
+      expect(UI_COLORS.border).toBe("#2d2d44");
+      expect(UI_COLORS.primary).toBe("#6366f1");
+      expect(UI_COLORS.primaryLight).toBe("#818cf8");
+      expect(UI_COLORS.text).toBe("#e2e8f0");
+      expect(UI_COLORS.textMuted).toBe("#94a3b8");
+      expect(UI_COLORS.textDim).toBe("#64748b");
+      expect(UI_COLORS.white).toBe("#ffffff");
+      expect(UI_COLORS.error).toBe("#ef4444");
+      expect(UI_COLORS.success).toBe("#22c55e");
+      expect(UI_COLORS.warning).toBe("#f59e0b");
+      expect(UI_COLORS.info).toBe("#3b82f6");
+      expect(UI_COLORS.dangerSurface).toBe("#2d1a1a");
+      expect(UI_COLORS.successSurface).toBe("#1a2e1a");
+      expect(UI_COLORS.neutral).toBe("#44403c");
     });
   });
 });

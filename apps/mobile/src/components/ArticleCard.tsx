@@ -4,6 +4,7 @@ import { memo } from "react";
 import { Pressable, Text, View } from "react-native";
 
 import { Badge } from "@/components/ui";
+import { UI_COLORS } from "@/lib/constants";
 
 /** 記事ソースの型定義 */
 type ArticleSource =
@@ -50,10 +51,10 @@ const THUMBNAIL_HEIGHT = 160;
 const FAVORITE_ICON_SIZE = 20;
 
 /** お気に入り済みのアイコンカラー */
-const FAVORITE_ACTIVE_COLOR = "#ef4444";
+const FAVORITE_ACTIVE_COLOR = UI_COLORS.error;
 
 /** お気に入り未設定のアイコンカラー */
-const FAVORITE_INACTIVE_COLOR = "#94a3b8";
+const FAVORITE_INACTIVE_COLOR = UI_COLORS.textMuted;
 
 /**
  * 日付文字列をYYYY/MM/DD形式にフォーマットする

@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Toast } from "@/components/ui/Toast";
 import { useToast } from "@/hooks/use-toast";
+import { UI_COLORS } from "@/lib/constants";
 import { useAuthStore } from "@/stores/auth-store";
 
 /** アバター画像のサイズ（px） */
@@ -21,16 +22,16 @@ const BACK_ICON_SIZE = 24;
 const CAMERA_ICON_SIZE = 16;
 
 /** テキストカラー */
-const TEXT_COLOR = "#e2e8f0";
+const TEXT_COLOR = UI_COLORS.text;
 
 /** カメラバッジ背景色 */
-const CAMERA_BADGE_BG = "#6366f1";
+const CAMERA_BADGE_BG = UI_COLORS.primary;
 
 /** アバターフォールバック背景色 */
-const AVATAR_FALLBACK_BG = "#2d2d44";
+const AVATAR_FALLBACK_BG = UI_COLORS.border;
 
 /** アバターフォールバックテキスト色 */
-const AVATAR_FALLBACK_TEXT_COLOR = "#e2e8f0";
+const AVATAR_FALLBACK_TEXT_COLOR = UI_COLORS.text;
 
 /** 名前の最大文字数 */
 const NAME_MAX_LENGTH = 50;
@@ -284,7 +285,7 @@ export default function ProfileEditScreen() {
                 justifyContent: "center",
               }}
             >
-              <Camera size={CAMERA_ICON_SIZE} color="#ffffff" />
+              <Camera size={CAMERA_ICON_SIZE} color={UI_COLORS.white} />
             </View>
           </Pressable>
         </View>
@@ -356,7 +357,7 @@ export default function ProfileEditScreen() {
           <View className="pt-4">
             {isSaving ? (
               <View className="rounded-lg items-center justify-center px-4 py-2.5 bg-primary opacity-50">
-                <ActivityIndicator color="#ffffff" />
+                <ActivityIndicator color={UI_COLORS.white} />
               </View>
             ) : (
               <Button onPress={handleSave} disabled={isSaving}>

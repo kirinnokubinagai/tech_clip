@@ -74,3 +74,25 @@ export const THEME_COLORS = {
   /** 警告色 */
   warning: "#f59e0b",
 } as const;
+
+/** モバイルUIの共有カラートークン */
+export const UI_COLORS = {
+  background: "#0a0a0f",
+  surface: "#13131a",
+  card: "#1a1a2e",
+  border: "#2d2d44",
+  primary: "#6366f1",
+  primaryLight: "#818cf8",
+  primaryDark: "#4f46e5",
+  text: "#e2e8f0",
+  textMuted: "#94a3b8",
+  textDim: "#64748b",
+  white: "#ffffff",
+  error: "#ef4444",
+  success: "#22c55e",
+  warning: "#f59e0b",
+  info: "#3b82f6",
+  dangerSurface: "#2d1a1a",
+  successSurface: "#1a2e1a",
+  neutral: "#44403c",
+} as const;

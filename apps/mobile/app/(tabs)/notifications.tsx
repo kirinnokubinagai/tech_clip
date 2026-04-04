@@ -5,10 +5,11 @@ import { ActivityIndicator, FlatList, Pressable, RefreshControl, Text, View } fr
 import { NotificationItem } from "@/components/NotificationItem";
 import { EmptyState } from "@/components/ui";
 import { useMarkAllAsRead, useMarkAsRead, useNotifications } from "@/hooks/use-notifications";
+import { UI_COLORS } from "@/lib/constants";
 import type { NotificationItem as NotificationItemType } from "@/types/notification";
 
 /** ローディングインジケーターの色 */
-const LOADING_COLOR = "#6366f1";
+const LOADING_COLOR = UI_COLORS.primary;
 
 /** ヘッダーアイコンサイズ */
 const HEADER_ICON_SIZE = 20;
@@ -17,7 +18,7 @@ const HEADER_ICON_SIZE = 20;
 const EMPTY_ICON_SIZE = 48;
 
 /** 空状態アイコン色 */
-const EMPTY_ICON_COLOR = "#64748b";
+const EMPTY_ICON_COLOR = UI_COLORS.textDim;
 
 /**
  * 通知一覧画面

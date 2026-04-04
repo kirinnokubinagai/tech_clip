@@ -2,6 +2,8 @@ import { Image } from "expo-image";
 import { Settings } from "lucide-react-native";
 import { Pressable, Text, View } from "react-native";
 
+import { UI_COLORS } from "@/lib/constants";
+
 /** プロフィールヘッダーに渡すユーザーデータ */
 export type ProfileHeaderUser = {
   name: string;
@@ -23,13 +25,13 @@ const AVATAR_SIZE = 80;
 const SETTINGS_ICON_SIZE = 22;
 
 /** 設定アイコンのカラー */
-const SETTINGS_ICON_COLOR = "#94a3b8";
+const SETTINGS_ICON_COLOR = UI_COLORS.textMuted;
 
 /** アバターのフォールバック背景色 */
-const AVATAR_FALLBACK_BG = "#2d2d44";
+const AVATAR_FALLBACK_BG = UI_COLORS.border;
 
 /** アバターのフォールバックテキスト色 */
-const AVATAR_FALLBACK_TEXT_COLOR = "#e2e8f0";
+const AVATAR_FALLBACK_TEXT_COLOR = UI_COLORS.text;
 
 /**
  * ユーザー名の頭文字を取得する

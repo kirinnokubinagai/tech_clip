@@ -14,6 +14,7 @@ import {
   useTranslationJobStatus,
 } from "@/hooks/use-articles";
 import { useNetworkStatus } from "@/hooks/use-network-status";
+import { UI_COLORS } from "@/lib/constants";
 import { toSummaryLanguageCode, toTranslationLanguageCode } from "@/lib/language-code";
 import { getOfflineArticleById } from "@/lib/localDb";
 import { useSettingsStore } from "@/stores/settings-store";
@@ -32,34 +33,34 @@ const HEADER_ICON_SIZE = 20;
 const SECTION_ICON_SIZE = 16;
 
 /** お気に入りアクティブカラー */
-const FAVORITE_ACTIVE_COLOR = "#ef4444";
+const FAVORITE_ACTIVE_COLOR = UI_COLORS.error;
 
 /** お気に入り非アクティブカラー */
-const FAVORITE_INACTIVE_COLOR = "#94a3b8";
+const FAVORITE_INACTIVE_COLOR = UI_COLORS.textMuted;
 
 /** プライマリカラー */
-const PRIMARY_COLOR = "#6366f1";
+const PRIMARY_COLOR = UI_COLORS.primary;
 
 /** テキストカラー */
-const TEXT_COLOR = "#e2e8f0";
+const TEXT_COLOR = UI_COLORS.text;
 
 /** リンク・アクセントカラー */
-const ACCENT_COLOR = "#818cf8";
+const ACCENT_COLOR = UI_COLORS.primaryLight;
 
 /** カード背景カラー */
-const CARD_BG_COLOR = "#1a1a2e";
+const CARD_BG_COLOR = UI_COLORS.card;
 
 /** コードブロック背景カラー */
-const CODE_BG_COLOR = "#13131a";
+const CODE_BG_COLOR = UI_COLORS.surface;
 
 /** 区切り線カラー */
-const DIVIDER_COLOR = "#2d2d44";
+const DIVIDER_COLOR = UI_COLORS.border;
 
 /** 成功カラー */
-const SUCCESS_COLOR = "#22c55e";
+const SUCCESS_COLOR = UI_COLORS.success;
 
 /** 成功時の背景カラー */
-const SUCCESS_BG_COLOR = "#1a2e1a";
+const SUCCESS_BG_COLOR = UI_COLORS.successSurface;
 
 /** ジョブステータスのポーリング間隔（ミリ秒） */
 const JOB_POLL_INTERVAL_MS = 2500;
