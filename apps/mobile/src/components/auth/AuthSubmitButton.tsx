@@ -1,5 +1,5 @@
-import { AUTH_LOADING_INDICATOR_COLOR } from "@/lib/ui-colors";
 import { ActivityIndicator, Pressable, Text } from "react-native";
+import { AUTH_LOADING_INDICATOR_COLOR } from "@/lib/ui-colors";
 
 type AuthSubmitButtonProps = {
   label: string;
