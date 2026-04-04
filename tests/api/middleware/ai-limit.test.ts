@@ -369,6 +369,23 @@ describe("aiLimitMiddleware", () => {
       });
     });
 
+    it("残回数ありでreserveExistingFreeUseが失敗した場合にdb.updateが1回だけ呼ばれること", async () => {
+      // Arrange
+      const userData = createFreeUserData({ remaining: 3 });
+      mockSelectWhere.mockResolvedValue([userData]);
+      mockUpdateReturning.mockResolvedValue([]);
+      const app = createTestApp(TEST_USER_ID);
+
+      // Act
+      await app.request("/ai/summarize", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+      });
+
+      // Assert: 予約の試みは1回のみ。ロールバックは呼ばれない
+      expect(mockUpdate).toHaveBeenCalledTimes(1);
+    });
+
     it("リセット対象でもreserveResetFreeUseが失敗した場合に402が返ること", async () => {
       // Arrange
       const pastDate = new Date("2025-01-01T00:00:00Z").toISOString();
@@ -392,6 +409,24 @@ describe("aiLimitMiddleware", () => {
           code: "AI_LIMIT_EXCEEDED",
         },
       });
+    });
+
+    it("リセット対象でreserveResetFreeUseが失敗した場合にdb.updateが1回だけ呼ばれること", async () => {
+      // Arrange
+      const pastDate = new Date("2025-01-01T00:00:00Z").toISOString();
+      const userData = createFreeUserData({ remaining: 0, resetAt: pastDate });
+      mockSelectWhere.mockResolvedValue([userData]);
+      mockUpdateReturning.mockResolvedValue([]);
+      const app = createTestApp(TEST_USER_ID);
+
+      // Act
+      await app.request("/ai/summarize", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+      });
+
+      // Assert: 予約の試みは1回のみ。ロールバックは呼ばれない
+      expect(mockUpdate).toHaveBeenCalledTimes(1);
     });
   });
 

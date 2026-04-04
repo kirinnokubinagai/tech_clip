@@ -3,6 +3,10 @@ import type { MiddlewareHandler } from "hono";
 
 import type { Database } from "../db";
 import { users } from "../db/schema";
+import { createLogger } from "../lib/logger";
+
+/** AIクォータロールバック用ロガー */
+const logger = createLogger();
 
 /** HTTP 401 Unauthorized ステータスコード */
 const HTTP_UNAUTHORIZED = 401;
@@ -141,7 +145,7 @@ async function safeRollback(db: Database, userId: string): Promise<void> {
   try {
     await rollbackReservedFreeUse(db, userId);
   } catch (rollbackError) {
-    console.error("AIクォータのロールバックに失敗しました", { userId, error: rollbackError });
+    logger.error("AIクォータのロールバックに失敗しました", { userId, error: rollbackError });
   }
 }
 
