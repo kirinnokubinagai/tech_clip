@@ -23,21 +23,21 @@ import { useSubscription } from "@/hooks/use-subscription";
 
 const mockedUseSubscription = useSubscription as jest.MockedFunction<typeof useSubscription>;
 
-beforeEach(() => {
-  BannerAd.mockImplementation((props: Record<string, unknown>) =>
-    React.createElement(View, { testID: "banner-ad", ...props }),
-  );
-  mockedUseSubscription.mockReturnValue({
-    isSubscribed: false,
-    currentPlan: null,
-    isLoading: false,
-    error: null,
-    purchase: jest.fn(),
-    restore: jest.fn(),
-  });
-});
-
 describe("AdBanner", () => {
+  beforeEach(() => {
+    BannerAd.mockImplementation((props: Record<string, unknown>) =>
+      React.createElement(View, { testID: "banner-ad", ...props }),
+    );
+    mockedUseSubscription.mockReturnValue({
+      isSubscribed: false,
+      currentPlan: null,
+      isLoading: false,
+      error: null,
+      purchase: jest.fn(),
+      restore: jest.fn(),
+    });
+  });
+
   describe("無料ユーザー", () => {
     it("バナー広告が表示されること", async () => {
       // Arrange
