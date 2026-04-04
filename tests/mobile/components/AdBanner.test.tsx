@@ -1,43 +1,39 @@
 import { AdBanner } from "@mobile/components/AdBanner";
 import { render } from "@testing-library/react-native";
 
-jest.mock("react-native-google-mobile-ads", () => ({
-  BannerAd: jest.fn(),
-  BannerAdSize: {
-    ANCHORED_ADAPTIVE_BANNER: "ANCHORED_ADAPTIVE_BANNER",
-  },
-  TestIds: {
-    ADAPTIVE_BANNER: "ca-app-pub-3940256099942544/9214589741",
-  },
-}));
+jest.mock("react-native-google-mobile-ads", () => {
+  const { View } = require("react-native");
+  return {
+    BannerAd: (props: Record<string, unknown>) => <View testID="banner-ad" {...props} />,
+    BannerAdSize: {
+      ANCHORED_ADAPTIVE_BANNER: "ANCHORED_ADAPTIVE_BANNER",
+    },
+    TestIds: {
+      ADAPTIVE_BANNER: "ca-app-pub-3940256099942544/9214589741",
+    },
+  };
+});
 
 jest.mock("@/hooks/use-subscription", () => ({
   useSubscription: jest.fn(),
 }));
 
-const React = require("react");
-const { View } = require("react-native");
-const { BannerAd } = require("react-native-google-mobile-ads");
-
 import { useSubscription } from "@/hooks/use-subscription";
 
 const mockedUseSubscription = useSubscription as jest.MockedFunction<typeof useSubscription>;
 
-beforeEach(() => {
-  BannerAd.mockImplementation((props: Record<string, unknown>) =>
-    React.createElement(View, { testID: "banner-ad", ...props }),
-  );
-  mockedUseSubscription.mockReturnValue({
-    isSubscribed: false,
-    currentPlan: null,
-    isLoading: false,
-    error: null,
-    purchase: jest.fn(),
-    restore: jest.fn(),
-  });
-});
-
 describe("AdBanner", () => {
+  beforeEach(() => {
+    mockedUseSubscription.mockReturnValue({
+      isSubscribed: false,
+      currentPlan: null,
+      isLoading: false,
+      error: null,
+      purchase: jest.fn(),
+      restore: jest.fn(),
+    });
+  });
+
   describe("無料ユーザー", () => {
     it("バナー広告が表示されること", async () => {
       // Arrange
