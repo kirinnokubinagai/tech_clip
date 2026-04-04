@@ -10,6 +10,9 @@ const HTTP_UNAUTHORIZED = 401;
 /** HTTP 402 Payment Required ステータスコード */
 const HTTP_PAYMENT_REQUIRED = 402;
 
+/** HTTP 400 Bad Request 以上はエラーレスポンス */
+const HTTP_CLIENT_ERROR_MIN = 400;
+
 /** 未認証エラーコード */
 const AUTH_ERROR_CODE = "AUTH_REQUIRED";
 
@@ -110,7 +113,7 @@ export function createAiLimitMiddleware(db: Database): MiddlewareHandler {
     if (remaining > 0) {
       await next();
 
-      if (c.res.status < 400) {
+      if (c.res.status < HTTP_CLIENT_ERROR_MIN) {
         await db
           .update(users)
           .set({
@@ -129,7 +132,7 @@ export function createAiLimitMiddleware(db: Database): MiddlewareHandler {
 
       await next();
 
-      if (c.res.status < 400) {
+      if (c.res.status < HTTP_CLIENT_ERROR_MIN) {
         await db
           .update(users)
           .set({
