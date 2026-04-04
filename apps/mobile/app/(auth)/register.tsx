@@ -134,7 +134,7 @@ export default function RegisterScreen() {
           className="mt-6 items-center rounded-lg bg-primary py-3.5"
           onPress={handleRegister}
           disabled={isSubmitting}
-          label="アカウントを作成"
+          label={t("auth.createAccount")}
           accessibilityHint="入力した情報で新規アカウントを作成します"
           textClassName="text-base font-semibold text-white"
         />

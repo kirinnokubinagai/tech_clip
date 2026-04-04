@@ -49,6 +49,7 @@ export default function LoginScreen() {
   const [errorMessage, setErrorMessage] = useState("");
   const [isPasswordVisible, setIsPasswordVisible] = useState(false);
   const isSocialSubmitting = socialSigningInProvider !== null;
+  const isAnySubmitting = isEmailSubmitting || isSocialSubmitting;
 
   /**
    * フォームのバリデーションを実行する
@@ -173,7 +174,7 @@ export default function LoginScreen() {
               autoCapitalize="none"
               autoCorrect={false}
               autoComplete="email"
-              editable={!isEmailSubmitting}
+              editable={!isAnySubmitting}
               testID="login-email-input"
               accessibilityLabel={t("auth.email")}
               accessibilityHint={t("auth.emailHint")}
@@ -193,7 +194,7 @@ export default function LoginScreen() {
                 autoCapitalize="none"
                 autoCorrect={false}
                 autoComplete="password"
-                editable={!isEmailSubmitting}
+                editable={!isAnySubmitting}
                 testID="login-password-input"
                 accessibilityLabel={t("auth.password")}
                 accessibilityHint={t("auth.passwordHint", { min: PASSWORD_MIN_LENGTH })}
@@ -225,7 +226,7 @@ export default function LoginScreen() {
 
           <AuthSubmitButton
             onPress={handleSubmit}
-            disabled={isEmailSubmitting}
+            disabled={isAnySubmitting}
             className="items-center rounded-lg bg-primary py-4"
             testID="login-submit-button"
             accessibilityHint={t("auth.loginHint")}
@@ -242,14 +243,14 @@ export default function LoginScreen() {
           <View className="gap-3">
             <Pressable
               onPress={() => handleSocialSignIn("google")}
-              disabled={isSocialSubmitting}
+              disabled={isAnySubmitting}
               className="items-center rounded-lg border border-border bg-card py-3.5"
               style={({ pressed }) => ({
-                opacity: pressed || isSocialSubmitting ? 0.7 : 1,
+                opacity: pressed || isAnySubmitting ? 0.7 : 1,
               })}
               accessibilityRole="button"
               accessibilityLabel={t("auth.continueWithGoogle")}
-              accessibilityState={{ disabled: isSocialSubmitting }}
+              accessibilityState={{ disabled: isAnySubmitting }}
             >
               <Text className="text-base font-medium text-text">
                 {t("auth.continueWithGoogle")}
@@ -258,14 +259,14 @@ export default function LoginScreen() {
 
             <Pressable
               onPress={() => handleSocialSignIn("github")}
-              disabled={isSocialSubmitting}
+              disabled={isAnySubmitting}
               className="items-center rounded-lg border border-border bg-card py-3.5"
               style={({ pressed }) => ({
-                opacity: pressed || isSocialSubmitting ? 0.7 : 1,
+                opacity: pressed || isAnySubmitting ? 0.7 : 1,
               })}
               accessibilityRole="button"
               accessibilityLabel={t("auth.continueWithGithub")}
-              accessibilityState={{ disabled: isSocialSubmitting }}
+              accessibilityState={{ disabled: isAnySubmitting }}
             >
               <Text className="text-base font-medium text-text">
                 {t("auth.continueWithGithub")}

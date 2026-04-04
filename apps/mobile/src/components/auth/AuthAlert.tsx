@@ -16,8 +16,8 @@ const AUTH_ALERT_STYLES: Record<
     textClassName: "text-sm text-error",
   },
   success: {
-    containerClassName: "mb-4 rounded-lg border border-primary/30 bg-primary/10 px-4 py-3",
-    textClassName: "text-sm text-primary",
+    containerClassName: "mb-4 rounded-lg border border-success/30 bg-success/10 px-4 py-3",
+    textClassName: "text-sm text-success",
   },
 };
 

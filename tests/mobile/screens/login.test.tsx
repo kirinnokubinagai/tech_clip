@@ -140,6 +140,39 @@ describe("LoginScreen", () => {
     ).toBeDefined();
   });
 
+  it("ソーシャルログイン中はメール入力欄と全ログインボタンが無効化されること", async () => {
+    // Arrange
+    let resolveFetch: ((value: unknown) => void) | undefined;
+    (global.fetch as jest.Mock).mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          resolveFetch = resolve;
+        }),
+    );
+    const { getByLabelText, getByTestId } = await render(<LoginScreen />);
+
+    // Act
+    fireEvent.press(getByLabelText("Google でログイン"));
+
+    // Assert
+    await waitFor(() => {
+      expect(getByTestId("login-email-input").props.editable).toBe(false);
+      expect(getByTestId("login-password-input").props.editable).toBe(false);
+      expect(getByTestId("login-submit-button").props.accessibilityState.disabled).toBe(true);
+      expect(getByLabelText("Google でログイン").props.accessibilityState.disabled).toBe(true);
+      expect(getByLabelText("GitHub でログイン").props.accessibilityState.disabled).toBe(true);
+    });
+
+    resolveFetch?.({
+      ok: true,
+      json: async () => ({ url: "https://accounts.google.com/o/oauth2/auth" }),
+    });
+
+    await waitFor(() => {
+      expect(mockOpenUrl).toHaveBeenCalledWith("https://accounts.google.com/o/oauth2/auth");
+    });
+  });
+
   it("メールアドレス未入力時にバリデーションエラーを表示すること", async () => {
     // Arrange
     const { getByTestId, findByLabelText } = await render(<LoginScreen />);
