@@ -1,21 +1,6 @@
-export type ArticleSource =
-  | "zenn"
-  | "qiita"
-  | "note"
-  | "hatena"
-  | "devto"
-  | "medium"
-  | "hackernews"
-  | "hashnode"
-  | "github"
-  | "stackoverflow"
-  | "reddit"
-  | "speakerdeck"
-  | "freecodecamp"
-  | "logrocket"
-  | "css-tricks"
-  | "smashing"
-  | "other";
+import type { ArticleSource } from "../../../../packages/types/src/article";
+
+export type { ArticleSource };
 
 export type ArticlePreview = {
   title: string;

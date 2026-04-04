@@ -1,6 +1,6 @@
-import type { SourceName } from "@mobile/components/ui/SourceBadge";
 import { SOURCE_CONFIG, SourceBadge } from "@mobile/components/ui/SourceBadge";
 import { render } from "@testing-library/react-native";
+import { SOURCE_DEFINITIONS, SUPPORTED_SOURCES } from "@/lib/sources";
 
 describe("SourceBadge", () => {
   describe("レンダリング", () => {
@@ -12,57 +12,38 @@ describe("SourceBadge", () => {
       expect(getByText("Zenn")).toBeDefined();
     });
 
-    it("表示ラベルがSOURCE_CONFIGに基づくこと", async () => {
+    it("表示ラベルがsource定義に基づくこと", async () => {
       // Arrange & Act
-      const { getByText } = await render(<SourceBadge source="hacker_news" />);
+      const { getByText } = await render(<SourceBadge source="hackernews" />);
 
       // Assert
       expect(getByText("Hacker News")).toBeDefined();
     });
   });
 
-  describe("18サイト対応", () => {
-    /** 全18サイトのソース名一覧 */
-    const ALL_SOURCES: SourceName[] = [
-      "zenn",
-      "qiita",
-      "hatena",
-      "note",
-      "dev_to",
-      "medium",
-      "hacker_news",
-      "techcrunch",
-      "the_verge",
-      "wired",
-      "ars_technica",
-      "github_blog",
-      "product_hunt",
-      "reddit",
-      "lobsters",
-      "publickey",
-      "gihyo",
-      "itmedia",
-    ];
-
-    it("SOURCE_CONFIGが18サイト分の設定を持つこと", async () => {
-      // Assert
-      expect(Object.keys(SOURCE_CONFIG)).toHaveLength(18);
+  describe("source定義の整合性", () => {
+    it("SOURCE_CONFIGがsource定義と一致すること", () => {
+      expect(Object.keys(SOURCE_CONFIG)).toEqual(SUPPORTED_SOURCES);
+      expect(Object.keys(SOURCE_CONFIG)).toHaveLength(SUPPORTED_SOURCES.length);
     });
 
-    it.each(ALL_SOURCES)("%s のバッジがレンダリングできること", async (source) => {
+    it.each(
+      SOURCE_DEFINITIONS.map(({ id, label }) => [id, label] as const),
+    )("%s のバッジがレンダリングできること", async (source, label) => {
       // Arrange & Act
       const { getByText } = await render(<SourceBadge source={source} />);
 
       // Assert
-      const config = SOURCE_CONFIG[source];
-      expect(getByText(config.label)).toBeDefined();
+      expect(getByText(label)).toBeDefined();
     });
 
-    it.each(ALL_SOURCES)("%s のSOURCE_CONFIGにlabelとcolorが定義されていること", (source) => {
+    it.each(
+      SOURCE_DEFINITIONS.map(({ id }) => [id] as const),
+    )("%s のSOURCE_CONFIGにlabelとcolorが定義されていること", (source) => {
       // Assert
       const config = SOURCE_CONFIG[source];
       expect(config.label).not.toBe("");
-      expect(config.color).not.toBe("");
+      expect(config.badgeClassName).not.toBe("");
     });
   });
 
