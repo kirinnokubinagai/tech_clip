@@ -121,21 +121,37 @@ pnpm add <pkg>
 - ブランチ名: `issue/<issue番号>/<短い説明>`
 - コマンド: `git worktree add .worktrees/issue-N -b issue/N/short-desc`
 
-### 3. Worktree 内で TDD 実装
+### 3. 新規画面を含む Issue はデザインモックを先行作成する
+
+新規画面（Screen / Page）、モーダル、ボトムシートを追加する Issue は、実装前に必ず Pencil でデザインモックを作成する。
+
+- **デザインファイル配置先**: `docs/design/<screen-name>.pen` + `docs/design/<screen-name>.png`
+- **作成ツール**: Pencil MCP（`pencil-design` スキルを参照）
+- **承認フロー**: PNG を Issue / PR に添付 → ユーザー承認 → 実装着手
+- **対象外**: バグ修正のみ、API 実装のみ、テスト・ドキュメントのみ
+
+```bash
+# デザインファイルのコミット形式
+git commit -m "design: add <screen-name> mockup #<issue番号>"
+```
+
+詳細は `docs/design/README.md` および `.claude/skills/design/pencil-design/SKILL.md` を参照。
+
+### 4. Worktree 内で TDD 実装
 - **RED**: テストを先に書く（失敗することを確認）
 - **GREEN**: テストを通す最小限のコードを書く
 - **REFACTOR**: テストが通る状態を維持しつつリファクタ
 - カバレッジ目標: 80%以上
 
-### 4. コミット & プッシュ
+### 5. コミット & プッシュ
 - Conventional Commits 形式でコミット（詳細は下記参照）
 - コミットメッセージに Issue 番号を含める
 
-### 5. PR を作成し、ユーザーレビューを待つ
+### 6. PR を作成し、ユーザーレビューを待つ
 - PR 本文に `Closes #<issue番号>` を含める
 - **全PRはユーザーレビュー必須**（セルフマージ禁止）
 
-### 6. マージ後、Worktree をクリーンアップ
+### 7. マージ後、Worktree をクリーンアップ
 
 ```bash
 git worktree remove .worktrees/issue-N
