@@ -197,7 +197,7 @@ function respondReservationConflict(
   logger: ReturnType<typeof createLogger>,
   userId: string,
   path: "existing-free-use" | "reset-free-use",
-) {
+): Response {
   logger.warn("AIクォータ予約が競合で失敗しました", {
     userId,
     path,
