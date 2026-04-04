@@ -49,8 +49,7 @@ type AuthRouteOptions = {
 const REFRESH_TOKEN_LENGTH = 48;
 
 /** セッション期限切れエラーメッセージ */
-const REFRESH_TOKEN_EXPIRED_MESSAGE =
-  "セッションの有効期限が切れました。再度ログインしてください";
+const REFRESH_TOKEN_EXPIRED_MESSAGE = "セッションの有効期限が切れました。再度ログインしてください";
 
 /**
  * リフレッシュトークンを SHA-256 でハッシュ化する
