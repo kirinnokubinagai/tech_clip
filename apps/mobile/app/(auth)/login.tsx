@@ -19,6 +19,7 @@ import { APP_SCHEME } from "@/lib/constants";
 import { AUTH_PLACEHOLDER_TEXT_COLOR } from "@/lib/ui-colors";
 import { EMAIL_SIMPLE_REGEX, PASSWORD_MIN_LENGTH } from "@/lib/validation";
 import { useAuthStore } from "@/stores/auth-store";
+
 /** ソーシャルサインインAPIのパス */
 const SOCIAL_SIGN_IN_PATH = "/api/auth/sign-in/social";
 /** ソーシャルログイン後のコールバックURL */

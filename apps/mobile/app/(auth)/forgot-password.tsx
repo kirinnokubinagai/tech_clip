@@ -22,7 +22,9 @@ type ForgotPasswordSuccessResponse = {
   data: { message: string };
 };
 
-function isForgotPasswordSuccessResponse(value: unknown): value is Partial<ForgotPasswordSuccessResponse> {
+function isForgotPasswordSuccessResponse(
+  value: unknown,
+): value is Partial<ForgotPasswordSuccessResponse> {
   if (typeof value !== "object" || value === null) {
     return false;
   }
