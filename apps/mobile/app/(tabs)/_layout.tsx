@@ -10,7 +10,7 @@ import { DARK_COLORS, LIGHT_COLORS } from "@/lib/constants";
 const TAB_ICON_SIZE = 24;
 
 /** 未読バッジの背景色 */
-const BADGE_BG_COLOR = DARK_COLORS.primary;
+const BADGE_BG_COLOR = DARK_COLORS.favorite;
 
 /** 未読バッジの最大表示数 */
 const BADGE_MAX_COUNT = 99;

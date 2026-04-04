@@ -3,7 +3,7 @@ import * as Notifications from "expo-notifications";
 import { Platform } from "react-native";
 
 import { apiFetch } from "@/lib/api";
-import { DARK_COLORS } from "@/lib/constants";
+import { LIGHT_COLORS } from "@/lib/constants";
 
 /** Android通知チャンネルID */
 const NOTIFICATION_CHANNEL_ID = "default";
@@ -24,7 +24,7 @@ export async function registerForPushNotifications(): Promise<string | null> {
       name: NOTIFICATION_CHANNEL_ID,
       importance: Notifications.AndroidImportance.MAX,
       vibrationPattern: [0, 250, 250, 250],
-      lightColor: DARK_COLORS.accent,
+      lightColor: LIGHT_COLORS.accent,
     });
   }
 

@@ -92,6 +92,7 @@ describe("constants", () => {
       expect(LIGHT_COLORS.error).toBe("#ef4444");
       expect(LIGHT_COLORS.success).toBe("#22c55e");
       expect(LIGHT_COLORS.warning).toBe("#f59e0b");
+      expect(LIGHT_COLORS.neutral).toBe("#44403c");
     });
   });
 
@@ -111,6 +112,7 @@ describe("constants", () => {
       expect(DARK_COLORS.error).toBe("#ef4444");
       expect(DARK_COLORS.success).toBe("#22c55e");
       expect(DARK_COLORS.warning).toBe("#f59e0b");
+      expect(DARK_COLORS.favorite).toBe("#ef4444");
       expect(DARK_COLORS.info).toBe("#3b82f6");
       expect(DARK_COLORS.dangerSurface).toBe("#2d1a1a");
       expect(DARK_COLORS.successSurface).toBe("#1a2e1a");

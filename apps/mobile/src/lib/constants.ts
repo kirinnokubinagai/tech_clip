@@ -51,7 +51,7 @@ export const IMAGE_SIZES = {
  * アーキテクチャ:
  * - SEMANTIC_COLORS（共有）→ LIGHT_COLORS（ライトテーマ）にスプレッド
  * - SEMANTIC_COLORS（共有）→ DARK_COLORS（ダークテーマ）にスプレッド
- * - error / success / warning / accent / favorite はここで一元管理
+ * - error / success / warning / accent / favorite / neutral はここで一元管理
  */
 const SEMANTIC_COLORS = {
   /** アクセントカラー */
@@ -64,6 +64,8 @@ const SEMANTIC_COLORS = {
   warning: "#f59e0b",
   /** お気に入りやいいねに使う赤色 */
   favorite: "#ef4444",
+  /** テーマ共通で使う中立色 */
+  neutral: "#44403c",
 } as const;
 
 /**
@@ -116,7 +118,5 @@ export const DARK_COLORS = {
   dangerSurface: "#2d1a1a",
   /** 成功状態の背景色 */
   successSurface: "#1a2e1a",
-  /** 中立色 */
-  neutral: "#44403c",
   ...SEMANTIC_COLORS,
 } as const;
