@@ -72,6 +72,24 @@ describe("RegisterScreen", () => {
       });
     });
 
+    it("メールアドレス形式が不正な場合signUpが呼ばれないこと", async () => {
+      // Arrange
+      const { getByLabelText } = await render(<RegisterScreen />);
+
+      await fireEvent.changeText(getByLabelText("名前"), "テストユーザー");
+      await fireEvent.changeText(getByLabelText("メールアドレス"), "invalid-email");
+      await fireEvent.changeText(getByLabelText("パスワード"), "Password123");
+
+      // Act
+      await fireEvent.press(getByLabelText("アカウントを作成"));
+
+      // Assert
+      await waitFor(() => {
+        expect(mockSignUp).not.toHaveBeenCalled();
+      });
+      expect(getByLabelText("メールアドレスの形式が正しくありません")).toBeDefined();
+    });
+
     it("パスワードが空の場合signUpが呼ばれないこと", async () => {
       // Arrange
       const { getByLabelText } = await render(<RegisterScreen />);

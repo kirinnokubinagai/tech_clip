@@ -32,6 +32,7 @@
     "createAccount": "アカウントを作成",
     "name": "名前",
     "namePlaceholder": "名前を入力",
+    "nameHint": "表示名として使う名前を入力してください",
     "emailPlaceholder": "example@domain.com",
     "emailHint": "メールアドレスを入力してください",
     "passwordPlaceholder": "8文字以上",

@@ -32,6 +32,7 @@
     "createAccount": "Create account",
     "name": "Name",
     "namePlaceholder": "Enter your name",
+    "nameHint": "Enter the name to use as your display name.",
     "emailPlaceholder": "example@domain.com",
     "emailHint": "Enter your email address.",
     "passwordPlaceholder": "8 characters or more",

@@ -14,7 +14,7 @@ import {
 import { AuthAlert } from "@/components/auth/AuthAlert";
 import { AuthSubmitButton } from "@/components/auth/AuthSubmitButton";
 import { AUTH_PLACEHOLDER_TEXT_COLOR } from "@/lib/ui-colors";
-import { PASSWORD_MIN_LENGTH } from "@/lib/validation";
+import { EMAIL_SIMPLE_REGEX, PASSWORD_MIN_LENGTH } from "@/lib/validation";
 import { useAuthStore } from "@/stores/auth-store";
 
 export default function RegisterScreen() {
@@ -32,13 +32,18 @@ export default function RegisterScreen() {
    */
   async function handleRegister() {
     setErrorMessage("");
+    const trimmedEmail = email.trim();
 
     if (!name.trim()) {
       setErrorMessage(t("auth.validation.nameRequired"));
       return;
     }
-    if (!email.trim()) {
+    if (!trimmedEmail) {
       setErrorMessage(t("auth.validation.emailRequired"));
+      return;
+    }
+    if (!EMAIL_SIMPLE_REGEX.test(trimmedEmail)) {
+      setErrorMessage(t("auth.validation.emailInvalid"));
       return;
     }
     if (!password.trim()) {
@@ -91,7 +96,7 @@ export default function RegisterScreen() {
               textContentType="name"
               editable={!isSubmitting}
               accessibilityLabel={t("auth.name")}
-              accessibilityHint={t("auth.namePlaceholder")}
+              accessibilityHint={t("auth.nameHint")}
             />
           </View>
 

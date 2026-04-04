@@ -22,7 +22,7 @@ type ForgotPasswordSuccessResponse = {
   data: { message: string };
 };
 
-function isForgotPasswordSuccessResponse(
+function hasForgotPasswordResponseShape(
   value: unknown,
 ): value is Partial<ForgotPasswordSuccessResponse> {
   if (typeof value !== "object" || value === null) {
@@ -90,7 +90,7 @@ export default function ForgotPasswordScreen() {
       }
 
       const responseBody: unknown = await response.json();
-      const data = isForgotPasswordSuccessResponse(responseBody) ? responseBody : {};
+      const data = hasForgotPasswordResponseShape(responseBody) ? responseBody : {};
       setSuccessMessage(data.data?.message || t("auth.forgotPasswordSuccess"));
     } catch {
       setErrorMessage(t("common.error"));
