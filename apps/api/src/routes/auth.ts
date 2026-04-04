@@ -45,8 +45,15 @@ type AuthRouteOptions = {
   getAuth: () => AuthInstance;
 };
 
+/** リフレッシュトークンの文字数 */
 const REFRESH_TOKEN_LENGTH = 48;
 
+/**
+ * リフレッシュトークンを SHA-256 でハッシュ化する
+ *
+ * @param token - 平文のリフレッシュトークン
+ * @returns 16進文字列のハッシュ値
+ */
 async function hashRefreshToken(token: string): Promise<string> {
   const encoded = new TextEncoder().encode(token);
   const digest = await crypto.subtle.digest("SHA-256", encoded);
@@ -55,10 +62,22 @@ async function hashRefreshToken(token: string): Promise<string> {
   );
 }
 
+/**
+ * ランダムなリフレッシュトークン文字列を生成する
+ *
+ * @returns 平文のリフレッシュトークン
+ */
 function generateRefreshToken(): string {
   return crypto.randomUUID().replaceAll("-", "") + crypto.randomUUID().replaceAll("-", "");
 }
 
+/**
+ * セッションに紐づくリフレッシュトークンを発行して保存する
+ *
+ * @param db - データベース接続
+ * @param session - セッション情報
+ * @returns クライアントへ返す平文のリフレッシュトークン
+ */
 async function createRefreshTokenRecord(
   db: Database,
   session: { id: string; userId: string; expiresAt: string },
