@@ -1,4 +1,4 @@
-import { eq } from "drizzle-orm";
+import { and, eq, gt, sql } from "drizzle-orm";
 import type { MiddlewareHandler } from "hono";
 
 import type { Database } from "../db";
@@ -57,9 +57,8 @@ function isResetExpired(resetAt: string | null): boolean {
  * 要約/翻訳API呼び出し前にユーザーのfreeAiUsesRemainingをチェックし、
  * 無料ユーザーの使用回数を制限する。
  * - プレミアムユーザー: 制限なし（通過）
- * - 無料ユーザー（残回数あり）: アトミックUPDATE（WHERE freeAiUsesRemaining > 0）で
- *   デクリメント。更新0件の場合はTOCTOU競合とみなし402を返却
- * - 無料ユーザー（残回数なし、リセット期限切れ）: リセットして通過
+ * - 無料ユーザー（残回数あり）: 下流ハンドラ成功後にDBレベルでアトミックにデクリメント
+ * - 無料ユーザー（残回数なし、リセット期限切れ）: 下流ハンドラ成功後に月次枠を再設定して通過
  * - 無料ユーザー（残回数なし、リセット期限内）: 402を返却
  *
  * @param db - Drizzle ORMデータベースインスタンス
@@ -115,16 +114,17 @@ export function createAiLimitMiddleware(db: Database): MiddlewareHandler {
         await db
           .update(users)
           .set({
-            freeAiUsesRemaining: remaining - 1,
+            freeAiUsesRemaining: sql`${users.freeAiUsesRemaining} - 1`,
             updatedAt: new Date().toISOString(),
           })
-          .where(eq(users.id, userId));
+          .where(and(eq(users.id, userId), gt(users.freeAiUsesRemaining, 0)));
       }
 
       return;
     }
 
     if (isResetExpired(dbUser.freeAiResetAt)) {
+      const nowIso = new Date().toISOString();
       const nextResetAt = calculateNextResetAt();
 
       await next();
@@ -133,9 +133,17 @@ export function createAiLimitMiddleware(db: Database): MiddlewareHandler {
         await db
           .update(users)
           .set({
-            freeAiUsesRemaining: FREE_AI_USES_PER_MONTH - 1,
-            freeAiResetAt: nextResetAt,
-            updatedAt: new Date().toISOString(),
+            freeAiUsesRemaining: sql`CASE
+              WHEN ${users.freeAiResetAt} IS NULL OR ${users.freeAiResetAt} <= ${nowIso}
+                THEN ${FREE_AI_USES_PER_MONTH - 1}
+              ELSE ${users.freeAiUsesRemaining} - 1
+            END`,
+            freeAiResetAt: sql`CASE
+              WHEN ${users.freeAiResetAt} IS NULL OR ${users.freeAiResetAt} <= ${nowIso}
+                THEN ${nextResetAt}
+              ELSE ${users.freeAiResetAt}
+            END`,
+            updatedAt: nowIso,
           })
           .where(eq(users.id, userId));
       }
