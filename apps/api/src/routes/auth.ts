@@ -3,7 +3,7 @@ import { Hono } from "hono";
 import { z } from "zod";
 
 import type { Database } from "../db";
-import { sessions, users } from "../db/schema";
+import { refreshTokens, sessions, users } from "../db/schema";
 import {
   AUTH_EXPIRED_CODE,
   AUTH_INVALID_CODE,
@@ -44,6 +44,38 @@ type AuthRouteOptions = {
   db: Database;
   getAuth: () => AuthInstance;
 };
+
+const REFRESH_TOKEN_LENGTH = 48;
+
+async function hashRefreshToken(token: string): Promise<string> {
+  const encoded = new TextEncoder().encode(token);
+  const digest = await crypto.subtle.digest("SHA-256", encoded);
+  return Array.from(new Uint8Array(digest), (value) => value.toString(16).padStart(2, "0")).join(
+    "",
+  );
+}
+
+function generateRefreshToken(): string {
+  return crypto.randomUUID().replaceAll("-", "") + crypto.randomUUID().replaceAll("-", "");
+}
+
+async function createRefreshTokenRecord(
+  db: Database,
+  session: { id: string; userId: string; expiresAt: string },
+) {
+  const refreshToken = generateRefreshToken().slice(0, REFRESH_TOKEN_LENGTH);
+  const tokenHash = await hashRefreshToken(refreshToken);
+
+  await db.insert(refreshTokens).values({
+    id: crypto.randomUUID(),
+    sessionId: session.id,
+    userId: session.userId,
+    tokenHash,
+    expiresAt: session.expiresAt,
+  });
+
+  return refreshToken;
+}
 
 /** サインインリクエストのスキーマ */
 const SignInSchema = z.object({
@@ -129,6 +161,11 @@ export function createAuthRoute({ db, getAuth }: AuthRouteOptions) {
       }
 
       const user = result.user;
+      const refreshToken = await createRefreshTokenRecord(db, {
+        id: sessionRow.id,
+        userId: sessionRow.userId,
+        expiresAt: sessionRow.expiresAt,
+      });
 
       return c.json(
         {
@@ -144,7 +181,7 @@ export function createAuthRoute({ db, getAuth }: AuthRouteOptions) {
             },
             session: {
               token: sessionRow.token,
-              refreshToken: sessionRow.id,
+              refreshToken,
               expiresAt: sessionRow.expiresAt,
             },
           },
@@ -245,8 +282,8 @@ export function createAuthRoute({ db, getAuth }: AuthRouteOptions) {
 
   /**
    * トークンリフレッシュ
-   * リフレッシュトークン（セッション ID）が有効であれば現在のアクセストークンを返す
-   * セッションの有効期限を確認し、期限切れの場合は 401 を返す
+   * リフレッシュトークンが有効であれば現在のアクセストークンを返し、
+   * リフレッシュトークンは毎回ローテーションする
    */
   app.post("/refresh", async (c) => {
     const body: unknown = await c.req.json().catch(() => ({}));
@@ -266,10 +303,29 @@ export function createAuthRoute({ db, getAuth }: AuthRouteOptions) {
     }
 
     try {
+      const refreshTokenHash = await hashRefreshToken(parsed.data.refreshToken);
+      const [refreshTokenRow] = await db
+        .select()
+        .from(refreshTokens)
+        .where(eq(refreshTokens.tokenHash, refreshTokenHash));
+
+      if (!refreshTokenRow) {
+        return c.json(
+          {
+            success: false,
+            error: {
+              code: AUTH_EXPIRED_CODE,
+              message: "セッションの有効期限が切れました。再度ログインしてください",
+            },
+          },
+          HTTP_UNAUTHORIZED,
+        );
+      }
+
       const [sessionRow] = await db
         .select()
         .from(sessions)
-        .where(eq(sessions.id, parsed.data.refreshToken));
+        .where(eq(sessions.id, refreshTokenRow.sessionId));
 
       if (!sessionRow) {
         return c.json(
@@ -284,8 +340,9 @@ export function createAuthRoute({ db, getAuth }: AuthRouteOptions) {
         );
       }
 
+      const refreshExpiresAt = new Date(refreshTokenRow.expiresAt);
       const expiresAt = new Date(sessionRow.expiresAt);
-      if (expiresAt <= new Date()) {
+      if (refreshExpiresAt <= new Date() || expiresAt <= new Date()) {
         return c.json(
           {
             success: false,
@@ -313,11 +370,24 @@ export function createAuthRoute({ db, getAuth }: AuthRouteOptions) {
         );
       }
 
+      const nextRefreshToken = generateRefreshToken().slice(0, REFRESH_TOKEN_LENGTH);
+      const nextRefreshTokenHash = await hashRefreshToken(nextRefreshToken);
+
+      await db
+        .update(refreshTokens)
+        .set({
+          tokenHash: nextRefreshTokenHash,
+          expiresAt: sessionRow.expiresAt,
+          updatedAt: new Date().toISOString(),
+        })
+        .where(eq(refreshTokens.id, refreshTokenRow.id));
+
       return c.json(
         {
           success: true,
           data: {
             token: sessionRow.token,
+            refreshToken: nextRefreshToken,
           },
         },
         HTTP_OK,
