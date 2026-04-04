@@ -1,39 +1,5 @@
-import { fireEvent, render } from "@testing-library/react-native";
-import { Pressable, Text, View } from "react-native";
-
-jest.mock("@mobile/components/ui/Toast", () => ({
-  Toast: jest.fn(),
-}));
-
-const { Toast } = require("@mobile/components/ui/Toast");
-
-const React = require("react");
-
-beforeEach(() => {
-  Toast.mockImplementation(
-    ({
-      message,
-      visible,
-      onDismiss,
-    }: {
-      message: string;
-      variant?: "success" | "error" | "info";
-      visible: boolean;
-      onDismiss: () => void;
-    }) => {
-      if (!visible) return null;
-      return React.createElement(
-        View,
-        null,
-        React.createElement(
-          Pressable,
-          { testID: "toast-pressable", onPress: onDismiss, accessibilityRole: "alert" },
-          React.createElement(Text, null, message),
-        ),
-      );
-    },
-  );
-});
+import { Toast } from "@mobile/components/ui/Toast";
+import { act, fireEvent, render } from "@testing-library/react-native";
 
 describe("Toast", () => {
   describe("レンダリング", () => {
@@ -99,7 +65,9 @@ describe("Toast", () => {
       );
 
       // Act
-      await fireEvent.press(getByTestId("toast-pressable"));
+      await act(async () => {
+        fireEvent.press(getByTestId("toast-pressable"));
+      });
 
       // Assert
       expect(onDismiss).toHaveBeenCalledTimes(1);
