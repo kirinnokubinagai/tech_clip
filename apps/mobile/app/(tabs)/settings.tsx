@@ -13,7 +13,7 @@ import {
 import type { ReactNode } from "react";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Alert, Linking, Pressable, ScrollView, Switch, Text, View } from "react-native";
+import { Alert, AppState, Linking, Pressable, ScrollView, Switch, Text, View } from "react-native";
 import { confirm } from "@/components/ConfirmDialog";
 import { DARK_COLORS } from "@/lib/constants";
 import {
@@ -138,6 +138,22 @@ export default function SettingsScreen() {
       .catch(() => {
         setNotificationPermission("undetermined");
       });
+  }, []);
+
+  useEffect(() => {
+    const subscription = AppState.addEventListener("change", (nextAppState) => {
+      if (nextAppState !== "active") return;
+      checkNotificationPermission()
+        .then((status) => {
+          setNotificationPermission(status);
+        })
+        .catch(() => {
+          setNotificationPermission("undetermined");
+        });
+    });
+    return () => {
+      subscription.remove();
+    };
   }, []);
 
   /**

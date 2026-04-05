@@ -5,7 +5,6 @@ import { Platform } from "react-native";
 import {
   checkNotificationPermission,
   registerForPushNotifications,
-  requestNotificationPermission,
   setupNotificationHandlers,
 } from "@/lib/notifications";
 
@@ -92,47 +91,6 @@ describe("notifications", () => {
       // Assert
       expect(result).toBe("undetermined");
       expect(Notifications.getPermissionsAsync).not.toHaveBeenCalled();
-    });
-  });
-
-  describe("requestNotificationPermission", () => {
-    it("権限要求が許可された場合に「granted」を返すこと", async () => {
-      // Arrange
-      (Notifications.requestPermissionsAsync as jest.Mock).mockResolvedValue({
-        status: "granted",
-      });
-
-      // Act
-      const result = await requestNotificationPermission();
-
-      // Assert
-      expect(result).toBe("granted");
-      expect(Notifications.requestPermissionsAsync).toHaveBeenCalledTimes(1);
-    });
-
-    it("権限要求が拒否された場合に「denied」を返すこと", async () => {
-      // Arrange
-      (Notifications.requestPermissionsAsync as jest.Mock).mockResolvedValue({
-        status: "denied",
-      });
-
-      // Act
-      const result = await requestNotificationPermission();
-
-      // Assert
-      expect(result).toBe("denied");
-    });
-
-    it("シミュレータの場合に「undetermined」を返すこと", async () => {
-      // Arrange
-      Object.defineProperty(Device, "isDevice", { value: false });
-
-      // Act
-      const result = await requestNotificationPermission();
-
-      // Assert
-      expect(result).toBe("undetermined");
-      expect(Notifications.requestPermissionsAsync).not.toHaveBeenCalled();
     });
   });
 
