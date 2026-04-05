@@ -117,9 +117,16 @@ pnpm add <pkg>
 - 既存のIssueがない場合: `gh issue create` でIssueを先に作成してから着手
 - **Issue番号がない状態での作業開始は禁止**
 
-### 2. Git Worktree を作成する
+### 2. Git Worktree を作成し、依存パッケージをインストールする
 - ブランチ名: `issue/<issue番号>/<短い説明>`
-- コマンド: `git worktree add .worktrees/issue-N -b issue/N/short-desc`
+- **worktree作成後、必ず `pnpm install --frozen-lockfile` を実行する**
+- シンボリンクによる node_modules 共有は禁止（`settings.json` の `symlinkDirectories` を使わない）
+
+```bash
+git worktree add .worktrees/issue-N -b issue/N/short-desc
+cd .worktrees/issue-N
+pnpm install --frozen-lockfile
+```
 
 ### 3. Worktree 内で TDD 実装
 - **RED**: テストを先に書く（失敗することを確認）
@@ -263,6 +270,8 @@ Closes #<issue番号>
 - `drizzle-kit push` の使用（**`drizzle-kit migrate` のみ許可**）
 - テストを書かずに実装コードを書くこと（TDDサイクル厳守）
 - テストカバレッジ80%未満でのPR作成
+- シンボリンクによる node_modules 共有（`pnpm install --frozen-lockfile` を使う）
+- 正規の手順をサボるためのショートカット・ハック（問題を先送りにして後で壊れる）
 
 ### Git 操作（settings.json の deny で強制）
 

@@ -142,12 +142,7 @@
       "Agent(oh-my-claudecode:*)"
     ]
   },
-  "worktree": {
-    "symlinkDirectories": [
-      "node_modules",
-      ".turbo"
-    ]
-  },
+  "worktree": {},
   "plansDirectory": ".claude/plans",
   "attribution": {
     "commit": "Co-Authored-By: Claude <noreply@anthropic.com>",
