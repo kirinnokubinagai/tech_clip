@@ -29,6 +29,19 @@ check_dangerous() {
   echo "$cmd" | grep -qE "git clean" && return 0
   echo "$cmd" | grep -qE "git branch -D" && return 0
 
+  # git worktree add で相対パスを使用した場合をブロック
+  if echo "$cmd" | grep -qE "git worktree add "; then
+    local wt_path
+    wt_path=$(echo "$cmd" | sed 's/.*git worktree add //' | awk '{print $1}')
+    if [[ "$wt_path" != /* ]]; then
+      echo "⚠️ worktree作成に相対パスが使われています: $wt_path"
+      echo "絶対パスを使用してください:"
+      echo '  REPO_ROOT=$(git rev-parse --show-toplevel)'
+      echo '  git worktree add "${REPO_ROOT}/.worktrees/issue-N" -b issue/N/short-desc'
+      return 0
+    fi
+  fi
+
   # システムコマンド
   echo "$cmd" | grep -qE "^kill " && return 0
   echo "$cmd" | grep -qE "^killall " && return 0
