@@ -13,7 +13,7 @@ const DEFAULT_APP_URL = "http://localhost:8081";
  * 認証ルートのサブアプリを構築してリクエストを処理する
  *
  * @param db - データベースインスタンス
- * @param auth - Better Auth インスタンスファクトリ
+ * @param auth - Better Auth インスタンス
  * @param request - 元のリクエスト
  * @returns fetch レスポンス
  */

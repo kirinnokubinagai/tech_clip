@@ -15,7 +15,9 @@ import { handleArticles, handlePublicArticles } from "./app/articles-subapp";
 import { handleAuthCatchAll, handleAuthRoute, handleEmailVerification } from "./app/auth-subapp";
 import { handleHealth } from "./app/health-subapp";
 import { handleNotificationSettings, handleNotifications } from "./app/notifications-subapp";
-import { handleAnalytics, handleSubscription, handleTags } from "./app/other-subapps";
+import { handleAnalytics } from "./app/analytics-subapp";
+import { handleSubscription } from "./app/subscription-subapp";
+import { handleTags } from "./app/tags-subapp";
 import { handleUsers } from "./app/users-subapp";
 import type { AppEnv } from "./types";
 
@@ -33,10 +35,12 @@ app.use(
   }),
 );
 
+/** 認証ルートのレート制限（10リクエスト/分） */
 app.use("/api/auth/*", (c, next) =>
   createRateLimitMiddleware(RATE_LIMIT_CONFIG.auth, createKvStore(c.env.RATE_LIMIT))(c, next),
 );
 
+/** 一般APIのレート制限（100リクエスト/分） */
 app.use("/api/*", (c, next) =>
   createRateLimitMiddleware(RATE_LIMIT_CONFIG.general, createKvStore(c.env.RATE_LIMIT))(c, next),
 );
