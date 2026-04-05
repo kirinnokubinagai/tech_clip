@@ -18,28 +18,27 @@ export default function AuthCallbackScreen() {
   const { t } = useTranslation();
 
   useEffect(() => {
-    handleCallback();
-  }, [handleCallback]);
+    async function run() {
+      if (params.error) {
+        router.replace("/(auth)/login");
+        return;
+      }
 
-  async function handleCallback() {
-    if (params.error) {
-      router.replace("/(auth)/login");
-      return;
+      if (!params.token) {
+        router.replace("/(auth)/login");
+        return;
+      }
+
+      await setAuthToken(params.token);
+      if (params.refresh_token) {
+        await setRefreshToken(params.refresh_token);
+      }
+
+      await checkSession();
+      router.replace("/(tabs)");
     }
-
-    if (!params.token) {
-      router.replace("/(auth)/login");
-      return;
-    }
-
-    await setAuthToken(params.token);
-    if (params.refresh_token) {
-      await setRefreshToken(params.refresh_token);
-    }
-
-    await checkSession();
-    router.replace("/(tabs)");
-  }
+    run();
+  }, [params.error, params.token, params.refresh_token, checkSession, router]);
 
   return (
     <View className="flex-1 items-center justify-center bg-background">
