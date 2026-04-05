@@ -50,7 +50,7 @@ for wt_path in $WORKTREE_PATHS; do
         GIT_DIR="$wt_path/.git"
     fi
 
-    # 1. リベース/マージ途中チェック（ファイルベース、ロケール非依存）
+    # 3. リベース/マージ途中チェック（ファイルベース、ロケール非依存）
     if [ -n "$GIT_DIR" ]; then
         if [ -d "$GIT_DIR/rebase-merge" ] || [ -d "$GIT_DIR/rebase-apply" ]; then
             PROBLEMS="${PROBLEMS}[REBASE] ${wt_name}: rebase途中 -> git -C ${wt_path} rebase --continue or --abort | "
@@ -64,7 +64,7 @@ for wt_path in $WORKTREE_PATHS; do
         fi
     fi
 
-    # 2. 未コミットの変更チェック
+    # 4. 未コミットの変更チェック
     DIRTY=$(git -C "$wt_path" status --porcelain 2>/dev/null | grep -v '^??' | head -1)
     if [ -n "$DIRTY" ]; then
         DIRTY_COUNT=$(git -C "$wt_path" status --porcelain 2>/dev/null | grep -v '^??' | wc -l | tr -d ' ')
@@ -72,7 +72,7 @@ for wt_path in $WORKTREE_PATHS; do
         PROBLEM_COUNT=$((PROBLEM_COUNT + 1))
     fi
 
-    # 3. mainから遅れているかチェック
+    # 5. mainから遅れているかチェック
     BEHIND=$(git -C "$wt_path" rev-list --count "HEAD..origin/main" 2>/dev/null)
     if [ -n "$BEHIND" ] && [ "$BEHIND" -gt 0 ]; then
         PROBLEMS="${PROBLEMS}[BEHIND] ${wt_name}: ${BEHIND} commits behind main -> git -C ${wt_path} rebase origin/main | "
