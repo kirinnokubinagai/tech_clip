@@ -271,7 +271,7 @@ Closes #<issue番号>
 - `git restore` — 全面禁止（個別ファイル指定含む）
 - `git reset --hard` — 破壊的リセットは禁止
 - `git push --force` / `--force-with-lease` — 強制プッシュは禁止
-- `git checkout -- .` — 全ファイル復元は禁止
+- `git checkout -- .` / `git checkout <file>` — ファイル復元は禁止（ブランチ切替は許可）
 - `gh pr merge` — ローカルからの PR マージは禁止。マージは CI のみが行う
 
 ### PR・レビュー
