@@ -37,8 +37,8 @@ eas whoami
 | ファイル | 設定項目 | 確認内容 |
 |---------|--------|--------|
 | `apps/mobile/app.json` | `expo.version` | 前回ビルドと比較して適切にインクリメントされているか |
-| `apps/mobile/app.json` | `expo.ios.buildNumber` | iOS ビルド番号（App Store Connect の要件を満たすか） |
-| `apps/mobile/app.json` | `expo.android.versionCode` | Android バージョンコード（前回より大きいか） |
+| `apps/mobile/app.json` | `expo.ios.buildNumber` | EAS が `autoIncrement` で自動管理。手動変更不要 |
+| `apps/mobile/app.json` | `expo.android.versionCode` | EAS が `autoIncrement` で自動管理。手動変更不要 |
 
 ### 必須環境変数の設定確認
 
