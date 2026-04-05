@@ -130,6 +130,11 @@ describe("ArticleCard", () => {
       expect(onToggleFavorite).toHaveBeenCalledTimes(1);
     });
 
+    /**
+     * React Native Testing Library の fireEvent はネイティブのイベントバブリングを
+     * シミュレートしないため、e.stopPropagation() の効果はテスト環境では検証できない。
+     * 実機での動作確認が必要。
+     */
     it("お気に入りボタンタップ時にカード詳細遷移（onPress）が発生しないこと", async () => {
       // Arrange
       const onPress = jest.fn();
