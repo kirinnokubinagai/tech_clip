@@ -392,7 +392,7 @@ PRマージは CI（GitHub Actions auto-approve workflow）のみが行う。Cla
 
 1. 実装エージェントが PR を作成（**マージはしない**）
 2. code-reviewer エージェントが PR をレビュー
-3. **GitHub レビューコメントを確認**（必須）: `gh pr view <PR番号> --json reviews,reviewRequests` を実行し、GitHub 側のレビューコメントをすべて取得する
+3. **GitHub レビューコメントを確認**（必須）: `gh pr view <PR番号> --json reviews,reviewRequests` および `gh pr view <PR番号> --comments` を実行し、GitHub 側のレビューコメントをすべて取得する（詳細は「GitHub レビューコメント確認ルール」を参照）
 4. ローカルレビューと GitHub レビューの両方で指摘が1つでもあれば **該当 PR 内で** 全て修正 → 再 push → 再レビュー
 5. 全件 PASS になるまで 4 を繰り返す
 6. CI（auto-approve.yml）が自動で Approve → マージ
@@ -459,7 +459,7 @@ coder (実装)
   ├── コミット・push・PR作成（/finish スキル）
   ├── Agent(code-reviewer) を起動（/review/code-review スキル）
   │     └── レビュー結果を返す
-  ├── gh pr view <PR番号> --json reviews,reviewRequests でGitHub レビューを確認（必須）
+  ├── gh pr view <PR番号> --json reviews,reviewRequests && gh pr view <PR番号> --comments でGitHub レビューを確認（必須）
   ├── 問題・改善提案が1つでもあれば → 全て修正→再push→再レビュー（0件になるまで繰り返す）
   └── 全件 PASS を確認して報告（マージは CI が自動で行う）
 ```
