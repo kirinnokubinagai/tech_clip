@@ -65,11 +65,6 @@ check_dangerous() {
   echo "$cmd" | grep -qE "git clean" && return 0
   echo "$cmd" | grep -qE "git branch -D" && return 0
 
-  # git worktree add のパス検証（関数に委譲）
-  if check_worktree_path "$cmd"; then
-    return 0
-  fi
-
   # システムコマンド
   echo "$cmd" | grep -qE "^kill " && return 0
   echo "$cmd" | grep -qE "^killall " && return 0
@@ -122,6 +117,12 @@ if check_dangerous "$COMMAND"; then
   echo "コマンド: $COMMAND"
   echo ""
   echo "このコマンドは破壊的な操作を行う可能性があります。"
+  exit 2
+fi
+
+if check_worktree_path "$COMMAND"; then
+  echo "⚠️ worktreeパスが正しくありません"
+  echo "コマンド: $COMMAND"
   exit 2
 fi
 

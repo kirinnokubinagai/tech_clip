@@ -124,7 +124,7 @@ pnpm add <pkg>
 - シンボリンクによる node_modules 共有は禁止（`settings.json` の `symlinkDirectories` を使わない）
 
 ```bash
-REPO_ROOT=$(git rev-parse --show-toplevel)
+REPO_ROOT=$(cd "$(git rev-parse --git-common-dir)/.." && pwd)
 git worktree add "${REPO_ROOT}/.worktrees/issue-N" -b issue/N/short-desc
 cd "${REPO_ROOT}/.worktrees/issue-N"
 pnpm install --frozen-lockfile
