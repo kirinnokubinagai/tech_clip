@@ -1,5 +1,4 @@
-import * as Linking from "expo-linking";
-import { useRouter } from "expo-router";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { ActivityIndicator, Pressable, Text, View } from "react-native";
@@ -8,16 +7,6 @@ import { useAuthStore } from "@/stores/auth-store";
 
 /** OAuthコールバック状態 */
 type CallbackState = "loading" | "error";
-
-/** URLにerrorパラメータが存在するか確認する */
-function hasErrorParam(queryParams: Record<string, string | string[]>): boolean {
-  return typeof queryParams.error === "string" && queryParams.error.length > 0;
-}
-
-/** URLからcodeパラメータが存在するか確認する */
-function hasCodeParam(queryParams: Record<string, string | string[]>): boolean {
-  return typeof queryParams.code === "string" && queryParams.code.length > 0;
-}
 
 /**
  * OAuthコード受け取り型コールバック画面
@@ -38,26 +27,19 @@ export default function OAuthCallbackScreen() {
   const { t } = useTranslation();
   const router = useRouter();
   const checkSession = useAuthStore((s) => s.checkSession);
-  const url = Linking.useURL();
+  const params = useLocalSearchParams<{ code?: string; error?: string }>();
 
   const [state, setState] = useState<CallbackState>("loading");
   const [errorMessage, setErrorMessage] = useState("");
 
   useEffect(() => {
-    if (!url) {
-      return;
-    }
-
-    const parsed = Linking.parse(url);
-    const queryParams = (parsed.queryParams ?? {}) as Record<string, string | string[]>;
-
-    if (hasErrorParam(queryParams)) {
+    if (params.error) {
       setErrorMessage(t("auth.oauthCallback.errorSocialLogin"));
       setState("error");
       return;
     }
 
-    if (!hasCodeParam(queryParams)) {
+    if (!params.code) {
       setErrorMessage(t("auth.oauthCallback.errorNoCode"));
       setState("error");
       return;
@@ -77,7 +59,7 @@ export default function OAuthCallbackScreen() {
     return () => {
       cancelled = true;
     };
-  }, [url, checkSession, router, t]);
+  }, [params.code, params.error, checkSession, router, t]);
 
   if (state === "error") {
     return (

@@ -40,8 +40,10 @@ export default function AuthCallbackScreen() {
           return;
         }
 
+        if (cancelled) return;
         await setAuthToken(params.token);
         if (params.refresh_token) {
+          if (cancelled) return;
           await setRefreshToken(params.refresh_token);
         }
 
