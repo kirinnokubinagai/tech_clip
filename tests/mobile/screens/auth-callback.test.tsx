@@ -3,6 +3,7 @@ import { fireEvent, render, waitFor } from "@testing-library/react-native";
 
 const mockReplace = jest.fn();
 const mockCheckSession = jest.fn();
+const mockUseLocalSearchParams = jest.fn(() => ({}));
 
 jest.mock("react-i18next", () => ({
   useTranslation: () => ({
@@ -14,7 +15,9 @@ jest.mock("expo-router", () => ({
   useRouter: () => ({
     replace: mockReplace,
   }),
-  useLocalSearchParams: jest.fn(() => ({})),
+  get useLocalSearchParams() {
+    return mockUseLocalSearchParams;
+  },
 }));
 
 jest.mock("@mobile/stores/auth-store", () => ({
@@ -25,29 +28,16 @@ jest.mock("@mobile/stores/auth-store", () => ({
   ),
 }));
 
-jest.mock("expo-linking", () => ({
-  useURL: jest.fn(() => null),
-  parse: jest.fn((url: string) => {
-    const parsed = new URL(url);
-    const queryParams: Record<string, string> = {};
-    parsed.searchParams.forEach((value, key) => {
-      queryParams[key] = value;
-    });
-    return { queryParams };
-  }),
-}));
-
-const mockUseURL = jest.requireMock("expo-linking").useURL;
-
 beforeEach(() => {
   jest.clearAllMocks();
+  mockUseLocalSearchParams.mockReturnValue({});
 });
 
 describe("OAuthCallbackScreen", () => {
   describe("コールバックURLのパラメータ処理", () => {
-    it("ローディング中はActivityIndicatorが表示されること", async () => {
+    it("codeあり・checkSession保留中はActivityIndicatorが表示されること", async () => {
       // Arrange
-      mockUseURL.mockReturnValue(null);
+      mockUseLocalSearchParams.mockReturnValue({ code: "pending_code" });
       mockCheckSession.mockImplementation(() => new Promise(() => {}));
 
       // Act
@@ -57,21 +47,9 @@ describe("OAuthCallbackScreen", () => {
       expect(getByTestId("oauth-callback-loading")).toBeDefined();
     });
 
-    it("URLがnullの場合はローディング状態のままであること", async () => {
-      // Arrange
-      mockUseURL.mockReturnValue(null);
-
-      // Act
-      const { getByTestId } = await render(<OAuthCallbackScreen />);
-
-      // Assert
-      expect(getByTestId("oauth-callback-loading")).toBeDefined();
-      expect(mockCheckSession).not.toHaveBeenCalled();
-    });
-
     it("URLにcodeもerrorもない場合はエラーメッセージが表示されること", async () => {
       // Arrange
-      mockUseURL.mockReturnValue("techclip://oauth-callback");
+      mockUseLocalSearchParams.mockReturnValue({});
 
       // Act
       const { findByTestId } = await render(<OAuthCallbackScreen />);
@@ -85,7 +63,7 @@ describe("OAuthCallbackScreen", () => {
     it("URLパラメータにcodeが含まれる場合にsession確認を実行すること", async () => {
       // Arrange
       mockCheckSession.mockResolvedValue(undefined);
-      mockUseURL.mockReturnValue("techclip://oauth-callback?code=auth_code_123");
+      mockUseLocalSearchParams.mockReturnValue({ code: "auth_code_123" });
 
       // Act
       await render(<OAuthCallbackScreen />);
@@ -98,7 +76,7 @@ describe("OAuthCallbackScreen", () => {
 
     it("URLパラメータにerrorが含まれる場合はsession確認を実行しないこと", async () => {
       // Arrange
-      mockUseURL.mockReturnValue("techclip://oauth-callback?error=access_denied");
+      mockUseLocalSearchParams.mockReturnValue({ error: "access_denied" });
 
       // Act
       await render(<OAuthCallbackScreen />);
@@ -114,7 +92,7 @@ describe("OAuthCallbackScreen", () => {
     it("checkSession成功後にホーム画面へ遷移すること", async () => {
       // Arrange
       mockCheckSession.mockResolvedValue(undefined);
-      mockUseURL.mockReturnValue("techclip://oauth-callback?code=auth_code_123");
+      mockUseLocalSearchParams.mockReturnValue({ code: "auth_code_123" });
 
       // Act
       await render(<OAuthCallbackScreen />);
@@ -129,7 +107,7 @@ describe("OAuthCallbackScreen", () => {
   describe("認証失敗時", () => {
     it("URLパラメータにerrorが含まれる場合はエラーメッセージが表示されること", async () => {
       // Arrange
-      mockUseURL.mockReturnValue("techclip://oauth-callback?error=access_denied");
+      mockUseLocalSearchParams.mockReturnValue({ error: "access_denied" });
 
       // Act
       const { findByTestId } = await render(<OAuthCallbackScreen />);
@@ -142,7 +120,7 @@ describe("OAuthCallbackScreen", () => {
     it("checkSessionが失敗した場合はエラーメッセージが表示されること", async () => {
       // Arrange
       mockCheckSession.mockRejectedValue(new Error("セッション確認に失敗しました"));
-      mockUseURL.mockReturnValue("techclip://oauth-callback?code=auth_code_123");
+      mockUseLocalSearchParams.mockReturnValue({ code: "auth_code_123" });
 
       // Act
       const { findByTestId } = await render(<OAuthCallbackScreen />);
@@ -154,7 +132,7 @@ describe("OAuthCallbackScreen", () => {
 
     it("エラー時にログイン画面に戻るボタンが表示されること", async () => {
       // Arrange
-      mockUseURL.mockReturnValue("techclip://oauth-callback?error=access_denied");
+      mockUseLocalSearchParams.mockReturnValue({ error: "access_denied" });
 
       // Act
       const { findByTestId } = await render(<OAuthCallbackScreen />);
@@ -166,7 +144,7 @@ describe("OAuthCallbackScreen", () => {
 
     it("ログイン画面に戻るボタンを押すとlogin画面へ遷移すること", async () => {
       // Arrange
-      mockUseURL.mockReturnValue("techclip://oauth-callback?error=access_denied");
+      mockUseLocalSearchParams.mockReturnValue({ error: "access_denied" });
       const { findByTestId } = await render(<OAuthCallbackScreen />);
 
       // Act
