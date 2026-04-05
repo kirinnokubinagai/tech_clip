@@ -26,7 +26,12 @@ check_worktree_path() {
   # -b フラグとそのブランチ名をスキップしてパスを抽出
   # sed の末尾スペース必須パターンは -b branch がコマンド末尾の場合にマッチしないため
   # sed で除去し、awk でパスを先に取り出すことで吸収する
-  wt_path=$(echo "$cmd" | sed 's/.*git worktree add //' | sed 's/ *-b [^ ]*//' | awk '{print $1}')
+  wt_path=$(echo "$cmd" | sed 's/.*git worktree add //' | sed 's/ *-b [^ ]*//' | awk '{print $1}' | tr -d "'\"")
+
+  if [[ "$wt_path" == *'$'* ]]; then
+    echo "⚠️ 未展開の変数が含まれています。絶対パスに展開してから実行してください"
+    return 0
+  fi
   repo_root=$(cd "$(git rev-parse --git-common-dir 2>/dev/null)/.." && pwd)
   expected_prefix="${repo_root}/.worktrees/"
 
