@@ -1,5 +1,5 @@
 import type { ParsedArticle } from "../../types/article";
-import { calculateReadingTime, EXCERPT_MAX_LENGTH, TECHCLIP_USER_AGENT } from "./_shared";
+import { calculateReadingTime, createExcerpt, TECHCLIP_USER_AGENT } from "./_shared";
 
 /** Reddit投稿URL判定パターン（www.reddit.com, old.reddit.com, reddit.com） */
 const REDDIT_HOSTNAME_PATTERN = /^(www\.)?reddit\.com$|^old\.reddit\.com$/;
@@ -107,11 +107,7 @@ function generateExcerpt(selftext: string): string | null {
     .replace(/\n+/g, " ")
     .trim();
 
-  if (plainText.length <= EXCERPT_MAX_LENGTH) {
-    return plainText;
-  }
-
-  return `${plainText.slice(0, EXCERPT_MAX_LENGTH)}...`;
+  return createExcerpt(plainText);
 }
 
 /**
