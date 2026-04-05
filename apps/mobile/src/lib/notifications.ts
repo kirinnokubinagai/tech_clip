@@ -13,6 +13,16 @@ const NOTIFICATION_CHANNEL_ID = "default";
 export type NotificationPermissionStatus = "granted" | "denied" | "undetermined";
 
 /**
+ * 文字列が NotificationPermissionStatus かどうかを検証する型ガード
+ *
+ * @param value - 検証する値
+ * @returns NotificationPermissionStatus の場合 true
+ */
+function isNotificationPermissionStatus(value: string): value is NotificationPermissionStatus {
+  return value === "granted" || value === "denied" || value === "undetermined";
+}
+
+/**
  * 現在の通知権限ステータスを確認する（ダイアログは表示しない）
  * シミュレータでは "undetermined" を返す
  *
@@ -24,7 +34,10 @@ export async function checkNotificationPermission(): Promise<NotificationPermiss
   }
 
   const { status } = await Notifications.getPermissionsAsync();
-  return status as NotificationPermissionStatus;
+  if (!isNotificationPermissionStatus(status)) {
+    return "undetermined";
+  }
+  return status;
 }
 
 /**
@@ -45,7 +58,10 @@ export async function requestNotificationPermission(): Promise<NotificationPermi
   }
 
   const { status } = await Notifications.requestPermissionsAsync();
-  return status as NotificationPermissionStatus;
+  if (!isNotificationPermissionStatus(status)) {
+    return "undetermined";
+  }
+  return status;
 }
 
 /**
