@@ -50,6 +50,7 @@
               echo "<version>${"$"}{version_tag}</version>" >> "\$ZAP_HOME/config.xml"
               tail -n +3 $out/share/zap/xml/config.xml >> "\$ZAP_HOME/config.xml"
             fi
+            export JAVA_TOOL_OPTIONS="\${JAVA_TOOL_OPTIONS:-} -Duser.home=\$HOME"
             exec "$out/share/zap/zap.sh" "\$@"
             WRAPPER
 
