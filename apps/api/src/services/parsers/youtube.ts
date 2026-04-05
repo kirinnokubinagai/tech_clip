@@ -1,6 +1,7 @@
 import { z } from "zod";
 
 import type { ParsedArticleContent } from "../article-parser";
+import { TECHCLIP_USER_AGENT } from "./_shared";
 
 /** YouTube oEmbed APIエンドポイント */
 const OEMBED_ENDPOINT = "https://www.youtube.com/oembed";
@@ -9,14 +10,16 @@ const OEMBED_ENDPOINT = "https://www.youtube.com/oembed";
 const OEmbedResponseSchema = z.object({
   title: z.string(),
   author_name: z.string(),
-  author_url: z.string(),
+  author_url: z.string().optional(),
   thumbnail_url: z.string().optional(),
 });
 
-/** YouTube URLパターン（watch, shorts, youtu.be） */
+/** YouTube URLパターン（watch, shorts, embed, playlist, youtu.be） */
 const YOUTUBE_URL_PATTERNS = [
   /^https?:\/\/(www\.)?youtube\.com\/watch\?.*v=[\w-]+/,
   /^https?:\/\/(www\.)?youtube\.com\/shorts\/[\w-]+/,
+  /^https?:\/\/(www\.)?youtube\.com\/embed\/[\w-]+/,
+  /^https?:\/\/(www\.)?youtube\.com\/playlist\?.*list=[\w-]+/,
   /^https?:\/\/youtu\.be\/[\w-]+/,
 ];
 
@@ -43,7 +46,11 @@ export async function parseYoutube(url: string): Promise<ParsedArticleContent> {
   }
 
   const oembedUrl = `${OEMBED_ENDPOINT}?url=${encodeURIComponent(url)}&format=json`;
-  const response = await fetch(oembedUrl);
+  const response = await fetch(oembedUrl, {
+    headers: {
+      "User-Agent": TECHCLIP_USER_AGENT,
+    },
+  });
 
   if (!response.ok) {
     throw new Error(`YouTube動画の取得に失敗しました（ステータス: ${response.status}）`);

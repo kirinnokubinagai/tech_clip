@@ -18,6 +18,18 @@ describe("isYoutubeUrl", () => {
     expect(result).toBe(true);
   });
 
+  it("youtube.com/embed URLを有効と判定すること", () => {
+    const result = isYoutubeUrl("https://www.youtube.com/embed/dQw4w9WgXcQ");
+    expect(result).toBe(true);
+  });
+
+  it("youtube.com/playlist URLを有効と判定すること", () => {
+    const result = isYoutubeUrl(
+      "https://www.youtube.com/playlist?list=PLrAXtmErZgOeiKm4sgNOknGvNjby9efdf",
+    );
+    expect(result).toBe(true);
+  });
+
   it("他サイトのURLを無効と判定すること", () => {
     const result = isYoutubeUrl("https://example.com/watch?v=123");
     expect(result).toBe(false);
@@ -77,5 +89,51 @@ describe("parseYoutube", () => {
 
     // Assert
     expect(result.thumbnailUrl).toBeNull();
+  });
+
+  it("titleが欠落しているレスポンスでエラーになること", async () => {
+    // Arrange
+    const url = "https://www.youtube.com/watch?v=dQw4w9WgXcQ";
+    const mockResponse = {
+      author_name: "テストチャンネル",
+      author_url: "https://www.youtube.com/@testchannel",
+    };
+
+    // Act
+    vi.spyOn(globalThis, "fetch").mockResolvedValueOnce(
+      new Response(JSON.stringify(mockResponse), { status: 200 }),
+    );
+
+    // Assert
+    await expect(parseYoutube(url)).rejects.toThrow();
+  });
+
+  it("author_nameが欠落しているレスポンスでエラーになること", async () => {
+    // Arrange
+    const url = "https://www.youtube.com/watch?v=dQw4w9WgXcQ";
+    const mockResponse = {
+      title: "テスト動画タイトル",
+    };
+
+    // Act
+    vi.spyOn(globalThis, "fetch").mockResolvedValueOnce(
+      new Response(JSON.stringify(mockResponse), { status: 200 }),
+    );
+
+    // Assert
+    await expect(parseYoutube(url)).rejects.toThrow();
+  });
+
+  it("空オブジェクトのレスポンスでエラーになること", async () => {
+    // Arrange
+    const url = "https://www.youtube.com/watch?v=dQw4w9WgXcQ";
+
+    // Act
+    vi.spyOn(globalThis, "fetch").mockResolvedValueOnce(
+      new Response(JSON.stringify({}), { status: 200 }),
+    );
+
+    // Assert
+    await expect(parseYoutube(url)).rejects.toThrow();
   });
 });
