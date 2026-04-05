@@ -1,21 +1,13 @@
 import TurndownService from "turndown";
 
 import type { ParsedArticle } from "../../types/article";
+import { calculateReadingTime, TECHCLIP_USER_AGENT } from "./_shared";
 
 /** Dev.toのホスト名 */
 const DEVTO_HOSTNAME = "dev.to";
 
 /** Dev.to API ベースURL */
 const DEVTO_API_BASE_URL = "https://dev.to/api/articles";
-
-/** fetch時のUser-Agent */
-const USER_AGENT = "Mozilla/5.0 (compatible; TechClipBot/1.0; +https://techclip.app)";
-
-/** 読了速度（文字/分） */
-const READING_SPEED_CHARS_PER_MIN = 500;
-
-/** 最小読了時間（分） */
-const MIN_READING_TIME_MINUTES = 1;
 
 /** URLパス内のusernameセグメントのインデックス */
 const USERNAME_SEGMENT_INDEX = 0;
@@ -81,18 +73,6 @@ function extractUsernameAndSlug(url: string): [string, string] {
 }
 
 /**
- * 文字数から読了時間を計算する
- *
- * @param text - 本文テキスト
- * @returns 推定読了時間（分、最小1分）
- */
-function calculateReadingTime(text: string): number {
-  const charCount = text.length;
-  const minutes = Math.ceil(charCount / READING_SPEED_CHARS_PER_MIN);
-  return Math.max(minutes, MIN_READING_TIME_MINUTES);
-}
-
-/**
  * Dev.to記事URLからDev.to APIでコンテンツを取得してParsedArticleに変換する
  *
  * @param url - Dev.to記事のURL（例: https://dev.to/username/slug-abc1）
@@ -104,7 +84,7 @@ export async function parseDevto(url: string): Promise<ParsedArticle> {
 
   const apiUrl = `${DEVTO_API_BASE_URL}/${username}/${slug}`;
   const response = await fetch(apiUrl, {
-    headers: { "User-Agent": USER_AGENT },
+    headers: { "User-Agent": TECHCLIP_USER_AGENT },
   });
 
   if (!response.ok) {

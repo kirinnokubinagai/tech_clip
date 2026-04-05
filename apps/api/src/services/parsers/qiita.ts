@@ -1,21 +1,13 @@
 import TurndownService from "turndown";
 
 import type { ParsedArticle } from "../../types/article";
+import { calculateReadingTime, TECHCLIP_USER_AGENT } from "./_shared";
 
 /** Qiita記事URLの正規表現パターン */
 const QIITA_ITEM_URL_PATTERN = /^https:\/\/qiita\.com\/[^/]+\/items\/([a-zA-Z0-9]+)\/?/;
 
 /** Qiita API v2 ベースURL */
 const QIITA_API_BASE_URL = "https://qiita.com/api/v2";
-
-/** fetch時のUser-Agent */
-const USER_AGENT = "Mozilla/5.0 (compatible; TechClipBot/1.0; +https://techclip.app)";
-
-/** 読了速度（文字/分） */
-const READING_SPEED_CHARS_PER_MIN = 500;
-
-/** 最小読了時間（分） */
-const MIN_READING_TIME_MINUTES = 1;
 
 /**
  * Qiita API v2 レスポンスの型定義
@@ -32,18 +24,6 @@ type QiitaApiResponse = {
   created_at: string;
   tags: { name: string }[];
 };
-
-/**
- * 文字数から読了時間を計算する
- *
- * @param text - 本文テキスト
- * @returns 推定読了時間（分、最小1分）
- */
-function calculateReadingTime(text: string): number {
-  const charCount = text.length;
-  const minutes = Math.ceil(charCount / READING_SPEED_CHARS_PER_MIN);
-  return Math.max(minutes, MIN_READING_TIME_MINUTES);
-}
 
 /**
  * QiitaのURLからitem_idを抽出する
@@ -79,7 +59,7 @@ export async function parseQiita(url: string): Promise<ParsedArticle> {
   const itemId = extractItemId(url);
 
   const response = await fetch(`${QIITA_API_BASE_URL}/items/${itemId}`, {
-    headers: { "User-Agent": USER_AGENT },
+    headers: { "User-Agent": TECHCLIP_USER_AGENT },
   });
 
   if (!response.ok) {
