@@ -197,7 +197,9 @@ export default function SettingsScreen() {
       Object.entries(SUMMARY_LANGUAGE_LABELS) as [keyof typeof SUMMARY_LANGUAGE_LABELS, string][]
     ).map(([code, label]) => ({
       text: label,
-      onPress: () => setSummaryLanguage(code),
+      onPress: () => {
+        setSummaryLanguage(code).catch(() => {});
+      },
     }));
     Alert.alert(
       t("settings.summaryLanguageSelect.title"),
