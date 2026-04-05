@@ -13,14 +13,13 @@ import {
 import i18n from "../src/lib/i18n";
 import { logger } from "../src/lib/logger";
 import {
-  registerForPushNotifications,
-  registerTokenWithApi,
+  checkNotificationPermission,
+  registerPushTokenOnly,
   setupNotificationHandlers,
 } from "../src/lib/notifications";
 import { queryClient } from "../src/lib/query-client";
 import { configureRevenueCat } from "../src/lib/revenueCat";
 import { initSentry } from "../src/lib/sentry";
-import { requestTrackingPermission } from "../src/lib/tracking";
 import { useAuthStore } from "../src/stores/auth-store";
 import { useSettingsStore } from "../src/stores/settings-store";
 import { useUIStore } from "../src/stores/ui-store";
@@ -41,7 +40,6 @@ export default function RootLayout() {
     checkSession();
     loadOnboardingState();
     void loadLanguage();
-    void requestTrackingPermission();
     void configureRevenueCat().catch((error: unknown) => {
       logger.warn("RevenueCat設定に失敗しました", { error });
     });
@@ -59,11 +57,9 @@ export default function RootLayout() {
 
   useEffect(() => {
     if (!isAuthenticated) return;
-
-    registerForPushNotifications().then((token) => {
-      if (token) {
-        registerTokenWithApi(token);
-      }
+    void checkNotificationPermission().then((status) => {
+      if (status !== "granted") return;
+      void registerPushTokenOnly();
     });
   }, [isAuthenticated]);
 

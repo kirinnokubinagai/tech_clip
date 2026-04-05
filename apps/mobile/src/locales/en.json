@@ -191,7 +191,10 @@
       "language": "Language",
       "notifications": "Notifications",
       "deleteAccount": "Delete Account",
-      "notLoggedIn": "Not logged in"
+      "notLoggedIn": "Not logged in",
+      "notificationPermissionDenied": "Notifications are disabled. Enable them in the Settings app.",
+      "notificationPermissionRequest": "Enable Notifications",
+      "notificationPermissionHint": "Tap to manage notification permissions"
     },
     "languageSelect": {
       "title": "Language Settings",

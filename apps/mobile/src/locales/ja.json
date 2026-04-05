@@ -193,7 +193,10 @@
       "language": "言語",
       "notifications": "通知",
       "deleteAccount": "アカウントを削除する",
-      "notLoggedIn": "未ログイン"
+      "notLoggedIn": "未ログイン",
+      "notificationPermissionDenied": "通知が無効です。設定アプリで有効にしてください",
+      "notificationPermissionRequest": "通知を有効にする",
+      "notificationPermissionHint": "タップして通知の権限を管理"
     },
     "languageSelect": {
       "title": "言語設定",

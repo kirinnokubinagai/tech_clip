@@ -2,7 +2,12 @@ import * as Device from "expo-device";
 import * as Notifications from "expo-notifications";
 import { Platform } from "react-native";
 
-import { registerForPushNotifications, setupNotificationHandlers } from "@/lib/notifications";
+import {
+  checkNotificationPermission,
+  registerForPushNotifications,
+  requestNotificationPermission,
+  setupNotificationHandlers,
+} from "@/lib/notifications";
 
 jest.mock("expo-notifications", () => ({
   getPermissionsAsync: jest.fn(),
@@ -26,6 +31,14 @@ jest.mock("@/lib/api", () => ({
   apiFetch: jest.fn().mockResolvedValue({ success: true }),
 }));
 
+jest.mock("@/lib/logger", () => ({
+  logger: {
+    info: jest.fn(),
+    warn: jest.fn(),
+    error: jest.fn(),
+  },
+}));
+
 beforeEach(() => {
   jest.clearAllMocks();
   Object.defineProperty(Device, "isDevice", { value: true, writable: true });
@@ -33,6 +46,63 @@ beforeEach(() => {
 });
 
 describe("notifications", () => {
+  describe("checkNotificationPermission", () => {
+    it("権限が付与済みの場合に「granted」を返すこと", async () => {
+      // Arrange
+      (Notifications.getPermissionsAsync as jest.Mock).mockResolvedValue({
+        status: "granted",
+      });
+
+      // Act
+      const result = await checkNotificationPermission();
+
+      // Assert
+      expect(result).toBe("granted");
+      expect(Notifications.getPermissionsAsync).toHaveBeenCalledTimes(1);
+      expect(Notifications.requestPermissionsAsync).not.toHaveBeenCalled();
+    });
+
+    it("権限が未決定の場合に「undetermined」を返すこと", async () => {
+      // Arrange
+      (Notifications.getPermissionsAsync as jest.Mock).mockResolvedValue({
+        status: "undetermined",
+      });
+
+      // Act
+      const result = await checkNotificationPermission();
+
+      // Assert
+      expect(result).toBe("undetermined");
+      expect(Notifications.requestPermissionsAsync).not.toHaveBeenCalled();
+    });
+
+    it("権限が拒否済みの場合に「denied」を返すこと", async () => {
+      // Arrange
+      (Notifications.getPermissionsAsync as jest.Mock).mockResolvedValue({
+        status: "denied",
+      });
+
+      // Act
+      const result = await checkNotificationPermission();
+
+      // Assert
+      expect(result).toBe("denied");
+      expect(Notifications.requestPermissionsAsync).not.toHaveBeenCalled();
+    });
+
+    it("シミュレータの場合に「undetermined」を返すこと", async () => {
+      // Arrange
+      Object.defineProperty(Device, "isDevice", { value: false });
+
+      // Act
+      const result = await checkNotificationPermission();
+
+      // Assert
+      expect(result).toBe("undetermined");
+      expect(Notifications.getPermissionsAsync).not.toHaveBeenCalled();
+    });
+  });
+
   describe("registerForPushNotifications", () => {
     it("実機でプッシュトークンを取得できること", async () => {
       // Arrange
@@ -169,6 +239,67 @@ describe("notifications", () => {
       // Assert
       expect(mockRemoveReceived).toHaveBeenCalledTimes(1);
       expect(mockRemoveResponse).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  describe("requestNotificationPermission", () => {
+    it("権限が既に許可済みの場合にリクエストをスキップすること", async () => {
+      // Arrange
+      (Notifications.getPermissionsAsync as jest.Mock).mockResolvedValue({
+        status: "granted",
+      });
+
+      // Act
+      const status = await requestNotificationPermission();
+
+      // Assert
+      expect(status).toBe("granted");
+      expect(Notifications.requestPermissionsAsync).not.toHaveBeenCalled();
+    });
+
+    it("権限が未決定の場合にリクエストダイアログを表示すること", async () => {
+      // Arrange
+      (Notifications.getPermissionsAsync as jest.Mock).mockResolvedValue({
+        status: "undetermined",
+      });
+      (Notifications.requestPermissionsAsync as jest.Mock).mockResolvedValue({
+        status: "granted",
+      });
+
+      // Act
+      const status = await requestNotificationPermission();
+
+      // Assert
+      expect(status).toBe("granted");
+      expect(Notifications.requestPermissionsAsync).toHaveBeenCalledTimes(1);
+    });
+
+    it("権限が拒否された場合にdeniedを返すこと", async () => {
+      // Arrange
+      (Notifications.getPermissionsAsync as jest.Mock).mockResolvedValue({
+        status: "undetermined",
+      });
+      (Notifications.requestPermissionsAsync as jest.Mock).mockResolvedValue({
+        status: "denied",
+      });
+
+      // Act
+      const status = await requestNotificationPermission();
+
+      // Assert
+      expect(status).toBe("denied");
+    });
+
+    it("シミュレータの場合にundeterminedを返すこと", async () => {
+      // Arrange
+      Object.defineProperty(Device, "isDevice", { value: false });
+
+      // Act
+      const status = await requestNotificationPermission();
+
+      // Assert
+      expect(status).toBe("undetermined");
+      expect(Notifications.getPermissionsAsync).not.toHaveBeenCalled();
     });
   });
 });

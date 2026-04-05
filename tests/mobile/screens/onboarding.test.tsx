@@ -10,6 +10,8 @@ jest.mock("expo-router", () => ({
 const mockSetHasSeenOnboarding = jest.fn().mockResolvedValue(undefined);
 const mockHasSeenOnboarding = { current: false };
 
+const mockRequestTrackingPermission = jest.fn().mockResolvedValue("authorized");
+
 jest.mock("@mobile/stores/ui-store", () => ({
   useUIStore: (
     selector: (state: {
@@ -21,6 +23,10 @@ jest.mock("@mobile/stores/ui-store", () => ({
       hasSeenOnboarding: mockHasSeenOnboarding.current,
       setHasSeenOnboarding: mockSetHasSeenOnboarding,
     }),
+}));
+
+jest.mock("@mobile/lib/tracking", () => ({
+  requestTrackingPermission: mockRequestTrackingPermission,
 }));
 
 const { router: mockRouter } = jest.requireMock("expo-router") as {
@@ -127,6 +133,34 @@ describe("OnboardingScreen", () => {
         expect(mockRouter.replace).toHaveBeenCalledWith("/(auth)/login");
       });
       expect(mockSetHasSeenOnboarding).toHaveBeenCalledWith(true);
+    });
+  });
+
+  describe("トラッキング許可", () => {
+    it("始めるボタンを押すとrequestTrackingPermissionが呼ばれること", async () => {
+      // Arrange
+      const { getByTestId } = await render(<OnboardingScreen />);
+
+      await fireEvent.press(getByTestId("next-button"));
+      await fireEvent.press(getByTestId("next-button"));
+      await fireEvent.press(getByTestId("next-button"));
+
+      // Act
+      await fireEvent.press(getByTestId("finish-button"));
+
+      // Assert
+      expect(mockRequestTrackingPermission).toHaveBeenCalledTimes(1);
+    });
+
+    it("スキップボタンを押してもrequestTrackingPermissionが呼ばれないこと", async () => {
+      // Arrange
+      const { getByTestId } = await render(<OnboardingScreen />);
+
+      // Act
+      await fireEvent.press(getByTestId("skip-button"));
+
+      // Assert
+      expect(mockRequestTrackingPermission).not.toHaveBeenCalled();
     });
   });
 
