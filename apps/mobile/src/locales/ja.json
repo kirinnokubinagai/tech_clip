@@ -192,12 +192,17 @@
       "plan": "プラン",
       "language": "言語",
       "notifications": "通知",
+      "summaryLanguage": "要約言語",
       "deleteAccount": "アカウントを削除する",
       "notLoggedIn": "未ログイン"
     },
     "languageSelect": {
       "title": "言語設定",
       "prompt": "表示言語を選択してください"
+    },
+    "summaryLanguageSelect": {
+      "title": "要約言語設定",
+      "prompt": "AI要約の出力言語を選択してください"
     },
     "notificationHintOn": "タップして通知をオンにします",
     "notificationHintOff": "タップして通知をオフにします",
