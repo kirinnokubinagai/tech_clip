@@ -220,8 +220,8 @@ export default function SettingsScreen() {
       if (status === "granted") {
         await registerForPushNotificationsWithLogging();
       }
-    } catch (error) {
-      Alert.alert(t("common.error"), t("settings.items.notificationUpdateError"));
+    } catch (_error) {
+      Alert.alert(t("common.errorTitle"), t("settings.notificationUpdateError"));
     }
   }
 

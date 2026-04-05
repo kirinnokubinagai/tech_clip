@@ -201,8 +201,6 @@
     },
     "notificationHintOn": "Tap to turn notifications on",
     "notificationHintOff": "Tap to turn notifications off",
-    "notificationPermissionDenied": "Notifications are disabled. Please enable them in Settings",
-    "notificationPermissionRequest": "Enable notifications",
     "logout": {
       "title": "Log Out",
       "message": "Are you sure you want to log out?",

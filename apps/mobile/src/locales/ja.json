@@ -203,8 +203,6 @@
     },
     "notificationHintOn": "タップして通知をオンにします",
     "notificationHintOff": "タップして通知をオフにします",
-    "notificationPermissionDenied": "通知が無効です。設定アプリで有効にしてください",
-    "notificationPermissionRequest": "通知を有効にする",
     "logout": {
       "title": "ログアウト",
       "message": "ログアウトしますか？",
