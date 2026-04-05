@@ -1,7 +1,17 @@
+import { z } from "zod";
+
 import type { ParsedArticleContent } from "../article-parser";
 
 /** YouTube oEmbed APIエンドポイント */
 const OEMBED_ENDPOINT = "https://www.youtube.com/oembed";
+
+/** YouTube oEmbed APIレスポンスのZodスキーマ */
+const OEmbedResponseSchema = z.object({
+  title: z.string(),
+  author_name: z.string(),
+  author_url: z.string(),
+  thumbnail_url: z.string().optional(),
+});
 
 /** YouTube URLパターン（watch, shorts, youtu.be） */
 const YOUTUBE_URL_PATTERNS = [
@@ -39,12 +49,7 @@ export async function parseYoutube(url: string): Promise<ParsedArticleContent> {
     throw new Error(`YouTube動画の取得に失敗しました（ステータス: ${response.status}）`);
   }
 
-  const data = (await response.json()) as {
-    title: string;
-    author_name: string;
-    author_url: string;
-    thumbnail_url: string;
-  };
+  const data = OEmbedResponseSchema.parse(await response.json());
 
   return {
     title: data.title,

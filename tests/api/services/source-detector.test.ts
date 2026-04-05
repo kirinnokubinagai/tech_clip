@@ -276,6 +276,41 @@ describe("detectSource", () => {
     });
   });
 
+  describe("YouTube", () => {
+    it("www.youtube.com のURLを判定できること", () => {
+      // Arrange
+      const url = "https://www.youtube.com/watch?v=dQw4w9WgXcQ";
+
+      // Act
+      const result = detectSource(url);
+
+      // Assert
+      expect(result).toBe("youtube");
+    });
+
+    it("youtube.com（wwwなし）のURLを判定できること", () => {
+      // Arrange
+      const url = "https://youtube.com/watch?v=dQw4w9WgXcQ";
+
+      // Act
+      const result = detectSource(url);
+
+      // Assert
+      expect(result).toBe("youtube");
+    });
+
+    it("youtu.be の短縮URLを判定できること", () => {
+      // Arrange
+      const url = "https://youtu.be/dQw4w9WgXcQ";
+
+      // Act
+      const result = detectSource(url);
+
+      // Assert
+      expect(result).toBe("youtube");
+    });
+  });
+
   describe("その他", () => {
     it("未知のドメインの場合otherを返すこと", () => {
       // Arrange
