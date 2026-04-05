@@ -530,10 +530,7 @@ describe("createRateLimitMiddleware", () => {
 
     it("既存エントリのインクリメント時にKV setが失敗してもリクエストは通ること", async () => {
       // Arrange: getは既存エントリを返すがputは失敗する
-      const existingEntry = JSON.stringify({
-        count: 1,
-        resetAt: Date.now() + 60_000,
-      });
+      const existingEntry = { count: 1, resetAt: Date.now() + 60_000 };
       const mockKv = {
         get: vi.fn().mockResolvedValue(existingEntry),
         put: vi.fn().mockRejectedValue(new Error("KV書き込みエラー")),
