@@ -26,6 +26,12 @@ jest.mock("@mobile/stores/auth-store", () => ({
 }));
 
 jest.mock("@mobile/stores/settings-store", () => ({
+  SUMMARY_LANGUAGE_LABELS: {
+    ja: "日本語",
+    en: "English",
+    zh: "中文",
+    ko: "한국어",
+  },
   useSettingsStore: jest.fn((selector: (state: Record<string, unknown>) => unknown) =>
     selector({
       language: "日本語",
