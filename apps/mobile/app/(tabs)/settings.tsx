@@ -11,7 +11,7 @@ import {
   User,
 } from "lucide-react-native";
 import type { ReactNode } from "react";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Alert, AppState, Linking, Pressable, ScrollView, Switch, Text, View } from "react-native";
 import { confirm } from "@/components/ConfirmDialog";
@@ -130,7 +130,7 @@ export default function SettingsScreen() {
     fetchNotificationSettings();
   }, [loadLanguage, fetchNotificationSettings]);
 
-  useEffect(() => {
+  const refreshPermission = useCallback(() => {
     checkNotificationPermission()
       .then((status) => {
         setNotificationPermission(status);
@@ -141,20 +141,18 @@ export default function SettingsScreen() {
   }, []);
 
   useEffect(() => {
+    refreshPermission();
+  }, [refreshPermission]);
+
+  useEffect(() => {
     const subscription = AppState.addEventListener("change", (nextAppState) => {
       if (nextAppState !== "active") return;
-      checkNotificationPermission()
-        .then((status) => {
-          setNotificationPermission(status);
-        })
-        .catch(() => {
-          setNotificationPermission("undetermined");
-        });
+      refreshPermission();
     });
     return () => {
       subscription.remove();
     };
-  }, []);
+  }, [refreshPermission]);
 
   /**
    * ログアウト確認ダイアログを表示し、確認後にサインアウトを実行する
