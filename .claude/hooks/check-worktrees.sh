@@ -33,6 +33,13 @@ for wt_path in $WORKTREE_PATHS; do
         continue
     fi
 
+    # worktreeパスの正当性チェック: REPO_ROOT/.worktrees/ 直下にあるか
+    if [[ "$wt_path" != "${EXPECTED_PREFIX}"* ]]; then
+        PROBLEMS="${PROBLEMS}[MISPLACED] ${wt_name}: ${EXPECTED_PREFIX} 配下にない不正なパス -> 正しいパスに再作成すること | "
+        PROBLEM_COUNT=$((PROBLEM_COUNT + 1))
+        continue
+    fi
+
     # git dir を解決（worktreeは .git ファイルで実際のgit dirを指す）
     GIT_DIR=""
     if [ -f "$wt_path/.git" ]; then
