@@ -226,7 +226,7 @@ export default function SettingsScreen() {
           testID="settings-language-button"
           icon={<Globe size={ICON_SIZE} color={ICON_COLOR} />}
           label={t("settings.items.language")}
-          value={language}
+          value={language === "en" ? "English" : "日本語"}
           onPress={handleLanguageSelect}
         />
         <SectionDivider />
