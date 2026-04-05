@@ -130,6 +130,31 @@ describe("ArticleCard", () => {
       expect(onToggleFavorite).toHaveBeenCalledTimes(1);
     });
 
+    /**
+     * React Native Testing Library の fireEvent は GestureResponderEvent を渡さないため
+     * e?.stopPropagation() はテスト環境では呼ばれない。
+     * onPress が onToggleFavorite のみ呼ばれ、親の onPress が呼ばれないことを確認する。
+     */
+    it("お気に入りボタンタップ時にカード詳細遷移（onPress）が発生しないこと", async () => {
+      // Arrange
+      const onPress = jest.fn();
+      const onToggleFavorite = jest.fn();
+      const { getByTestId } = await render(
+        <ArticleCard
+          article={BASE_ARTICLE}
+          onPress={onPress}
+          onToggleFavorite={onToggleFavorite}
+        />,
+      );
+
+      // Act
+      await fireEvent.press(getByTestId("favorite-button"));
+
+      // Assert
+      expect(onToggleFavorite).toHaveBeenCalledTimes(1);
+      expect(onPress).not.toHaveBeenCalled();
+    });
+
     it("お気に入り状態がtrueの場合にお気に入りアイコンが塗りつぶされること", async () => {
       // Arrange
       const article = { ...BASE_ARTICLE, isFavorite: true };
