@@ -17,6 +17,7 @@ import { confirm } from "@/components/ConfirmDialog";
 import { DARK_COLORS } from "@/lib/constants";
 import { useSubscription } from "../../src/hooks/use-subscription";
 import { useAuthStore } from "../../src/stores/auth-store";
+import type { SummaryLanguage } from "../../src/stores/settings-store";
 import { SUMMARY_LANGUAGE_LABELS, useSettingsStore } from "../../src/stores/settings-store";
 
 /** 設定セクションの区切り線コンポーネント */
@@ -91,8 +92,8 @@ function SettingsRow({ icon, label, value, onPress, trailing, testID }: Settings
  * @param code - 要約言語コード
  * @returns 表示用言語名
  */
-function summaryLanguageLabel(code: string): string {
-  return SUMMARY_LANGUAGE_LABELS[code as keyof typeof SUMMARY_LANGUAGE_LABELS] ?? code;
+function summaryLanguageLabel(code: SummaryLanguage): string {
+  return SUMMARY_LANGUAGE_LABELS[code] ?? code;
 }
 
 /**
