@@ -121,10 +121,7 @@ describe("useSettingsStore", () => {
 
         // Assert
         expect(useSettingsStore.getState().language).toBe("en");
-        expect(mockSetItemAsync).toHaveBeenCalledWith(
-          "settings_language",
-          JSON.stringify("en"),
-        );
+        expect(mockSetItemAsync).toHaveBeenCalledWith("settings_language", JSON.stringify("en"));
       });
 
       it("localeコード（ja）を設定してSecureStoreに永続化できること", async () => {
@@ -136,10 +133,7 @@ describe("useSettingsStore", () => {
 
         // Assert
         expect(useSettingsStore.getState().language).toBe("ja");
-        expect(mockSetItemAsync).toHaveBeenCalledWith(
-          "settings_language",
-          JSON.stringify("ja"),
-        );
+        expect(mockSetItemAsync).toHaveBeenCalledWith("settings_language", JSON.stringify("ja"));
       });
     });
 
