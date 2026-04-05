@@ -192,6 +192,7 @@ types:
   perf     パフォーマンス改善
   style    フォーマットのみの変更（ロジック変更なし）
   ci       CIの変更
+  design   デザインモックの追加・更新
 
 例:
   feat: add user authentication with Better Auth #86
