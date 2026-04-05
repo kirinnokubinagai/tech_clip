@@ -148,7 +148,7 @@ openssl x509 -in apps/mobile/certs/certificate.pem -noout -dates
 # プロジェクトルートから実行
 
 # development（シミュレーター向け）
-pnpm --filter @tech-clip/mobile build:ios -- --profile development
+eas build --platform ios --profile development
 
 # preview（TestFlight / 内部配布）
 eas build --platform ios --profile preview
