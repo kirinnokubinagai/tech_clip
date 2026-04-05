@@ -264,7 +264,9 @@ describe("processAvatarImage", () => {
   it("GIF89aヘッダーをもつファイルをimage/pngで偽装した場合は拒否されること", async () => {
     // Arrange
     /** GIF89aマジックバイト */
-    const GIF89A_HEADER = new Uint8Array([0x47, 0x49, 0x46, 0x38, 0x39, 0x61, 0x10, 0x00, 0x10, 0x00]);
+    const GIF89A_HEADER = new Uint8Array([
+      0x47, 0x49, 0x46, 0x38, 0x39, 0x61, 0x10, 0x00, 0x10, 0x00,
+    ]);
     const file = new File([GIF89A_HEADER], "avatar.png", { type: "image/png" });
 
     // Act
