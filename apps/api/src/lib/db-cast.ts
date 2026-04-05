@@ -18,6 +18,7 @@ export function toRecord<T extends Record<string, unknown>>(result: unknown): T 
 
 /**
  * レコード配列を汎用レコード配列にキャストする
+ * TODO: Drizzle型改善後に廃止
  *
  * @param results - Drizzle のクエリ結果（配列）
  * @returns 汎用レコード配列
