@@ -68,7 +68,7 @@ export default function RootLayout() {
   }, [isAuthenticated]);
 
   useEffect(() => {
-    const i18nLanguage = language === "English" ? "en" : "ja";
+    const i18nLanguage = language === "en" ? "en" : "ja";
     void i18n.changeLanguage(i18nLanguage);
   }, [language]);
 

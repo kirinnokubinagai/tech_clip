@@ -161,13 +161,13 @@ export default function SettingsScreen() {
       {
         text: "日本語",
         onPress: () => {
-          setLanguage("日本語");
+          setLanguage("ja");
         },
       },
       {
         text: "English",
         onPress: () => {
-          setLanguage("English");
+          setLanguage("en");
         },
       },
       { text: t("common.cancel"), style: "cancel" },
