@@ -31,6 +31,8 @@ jest.mock("@mobile/lib/revenueCat", () => ({
 
 jest.mock("@mobile/lib/notifications", () => ({
   setupNotificationHandlers: jest.fn().mockReturnValue(() => {}),
+  checkNotificationPermission: jest.fn().mockResolvedValue("granted"),
+  registerPushTokenOnly: jest.fn().mockResolvedValue(undefined),
 }));
 
 jest.mock("@mobile/lib/logger", () => ({

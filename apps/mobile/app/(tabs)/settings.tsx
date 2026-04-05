@@ -18,7 +18,7 @@ import { confirm } from "@/components/ConfirmDialog";
 import { DARK_COLORS } from "@/lib/constants";
 import {
   checkNotificationPermission,
-  registerForPushNotificationsWithLogging,
+  registerPushTokenOnly,
   requestNotificationPermission,
 } from "@/lib/notifications";
 import { useSubscription } from "../../src/hooks/use-subscription";
@@ -222,7 +222,7 @@ export default function SettingsScreen() {
 
   /**
    * 通知権限を要求し、許可された場合はプッシュトークンを登録する
-   * registerForPushNotificationsWithLogging が内部で権限確認とトークン登録を一括で行う
+   * 権限取得後は registerPushTokenOnly を呼び出すことで二重の権限要求を避ける
    */
   async function handleRequestNotificationPermission() {
     try {
@@ -233,7 +233,7 @@ export default function SettingsScreen() {
       const status = await requestNotificationPermission();
       setNotificationPermission(status);
       if (status === "granted") {
-        await registerForPushNotificationsWithLogging();
+        await registerPushTokenOnly();
       }
     } catch (_error) {
       Alert.alert(t("common.errorTitle"), t("settings.notificationUpdateError"));
@@ -310,7 +310,7 @@ export default function SettingsScreen() {
             />
           }
         />
-        {notificationPermission !== "granted" && (
+        {notificationPermission !== "granted" && notificationPermission !== "loading" && (
           <Text
             testID="settings-notification-permission-hint"
             className="text-xs text-text-dim mt-1 px-4"

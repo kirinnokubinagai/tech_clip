@@ -12,7 +12,11 @@ import {
 } from "../src/lib/backgroundSync";
 import i18n from "../src/lib/i18n";
 import { logger } from "../src/lib/logger";
-import { setupNotificationHandlers } from "../src/lib/notifications";
+import {
+  checkNotificationPermission,
+  registerPushTokenOnly,
+  setupNotificationHandlers,
+} from "../src/lib/notifications";
 import { queryClient } from "../src/lib/query-client";
 import { configureRevenueCat } from "../src/lib/revenueCat";
 import { initSentry } from "../src/lib/sentry";
@@ -50,6 +54,14 @@ export default function RootLayout() {
     const cleanup = setupNotificationHandlers();
     return cleanup;
   }, []);
+
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    void checkNotificationPermission().then((status) => {
+      if (status !== "granted") return;
+      void registerPushTokenOnly();
+    });
+  }, [isAuthenticated]);
 
   useEffect(() => {
     const i18nLanguage = language === "English" ? "en" : "ja";

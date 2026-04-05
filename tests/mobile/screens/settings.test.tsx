@@ -4,13 +4,12 @@ import { Alert, AppState } from "react-native";
 
 const mockCheckNotificationPermission = jest.fn();
 const mockRequestNotificationPermission = jest.fn();
-const mockRegisterForPushNotificationsWithLogging = jest.fn();
+const mockRegisterPushTokenOnly = jest.fn();
 
 jest.mock("@mobile/lib/notifications", () => ({
   checkNotificationPermission: (...args: unknown[]) => mockCheckNotificationPermission(...args),
   requestNotificationPermission: (...args: unknown[]) => mockRequestNotificationPermission(...args),
-  registerForPushNotificationsWithLogging: (...args: unknown[]) =>
-    mockRegisterForPushNotificationsWithLogging(...args),
+  registerPushTokenOnly: (...args: unknown[]) => mockRegisterPushTokenOnly(...args),
 }));
 
 const mockSignOut = jest.fn();
@@ -66,7 +65,7 @@ beforeEach(() => {
   mockUpdateNotificationEnabled.mockResolvedValue(undefined);
   mockCheckNotificationPermission.mockResolvedValue("granted");
   mockRequestNotificationPermission.mockResolvedValue("granted");
-  mockRegisterForPushNotificationsWithLogging.mockResolvedValue(undefined);
+  mockRegisterPushTokenOnly.mockResolvedValue(undefined);
 });
 
 describe("SettingsScreen", () => {
@@ -328,6 +327,25 @@ describe("通知権限UIの表示状態", () => {
     await waitFor(() => {
       expect(queryByTestId("settings-notification-permission-hint")).toBeNull();
     });
+  });
+
+  it("権限確認ローディング中（loading状態）はヒントテキストが表示されないこと", async () => {
+    // Arrange: 権限チェックを遅延させてloading状態を再現
+    let resolvePermission: (value: string) => void;
+    mockCheckNotificationPermission.mockReturnValue(
+      new Promise((resolve) => {
+        resolvePermission = resolve;
+      }),
+    );
+
+    // Act
+    const { queryByTestId } = await render(<SettingsScreen />);
+
+    // Assert: loading中はヒントが非表示
+    expect(queryByTestId("settings-notification-permission-hint")).toBeNull();
+
+    // Cleanup
+    resolvePermission?.("granted");
   });
 });
 
