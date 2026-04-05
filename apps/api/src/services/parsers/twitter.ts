@@ -1,7 +1,7 @@
 import { z } from "zod";
 
-import type { ParsedArticleContent } from "../article-parser";
-import { calculateReadingTime, EXCERPT_MAX_LENGTH, TECHCLIP_USER_AGENT } from "./_shared";
+import type { ParsedArticle } from "../../types/article";
+import { calculateReadingTime, createExcerpt, TECHCLIP_USER_AGENT } from "./_shared";
 
 /** Twitter/X oEmbed APIエンドポイント */
 const OEMBED_ENDPOINT = "https://publish.twitter.com/oembed";
@@ -13,7 +13,7 @@ const TWITTER_URL_PATTERN = /^https?:\/\/(x\.com|twitter\.com)\/\w+\/status\/\d+
 const FETCH_TIMEOUT_MS = 10000;
 
 /**
- * 既知のHTMLnamed entityマップ
+ * 既知のHTML named entityマップ
  */
 const NAMED_ENTITY_MAP: Record<string, string> = {
   amp: "&",
@@ -88,7 +88,7 @@ export function isTwitterUrl(url: string): boolean {
  * @returns パース済みコンテンツ
  * @throws Error - URL不正またはoEmbed API失敗時
  */
-export async function parseTwitter(url: string): Promise<ParsedArticleContent> {
+export async function parseTwitter(url: string): Promise<ParsedArticle> {
   if (!isTwitterUrl(url)) {
     throw new Error("Twitter/XのURLではありません");
   }
@@ -116,10 +116,11 @@ export async function parseTwitter(url: string): Promise<ParsedArticleContent> {
   return {
     title: `${data.author_name}のポスト`,
     content: text,
-    excerpt: text.length > EXCERPT_MAX_LENGTH ? `${text.slice(0, EXCERPT_MAX_LENGTH)}...` : text,
+    excerpt: createExcerpt(text),
     author: data.author_name,
     thumbnailUrl: null,
     publishedAt: null,
     readingTimeMinutes: calculateReadingTime(text),
+    source: "twitter",
   };
 }
