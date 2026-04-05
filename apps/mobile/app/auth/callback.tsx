@@ -1,10 +1,9 @@
-import { useEffect } from "react";
-import { ActivityIndicator, Text, View } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
-
-import { useAuthStore } from "@/stores/auth-store";
-import { setAuthToken, setRefreshToken } from "@/lib/secure-store";
+import { useEffect } from "react";
 import { useTranslation } from "react-i18next";
+import { ActivityIndicator, Text, View } from "react-native";
+import { setAuthToken, setRefreshToken } from "@/lib/secure-store";
+import { useAuthStore } from "@/stores/auth-store";
 
 /**
  * OAuthコールバック画面
