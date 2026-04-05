@@ -264,10 +264,15 @@ else
     if [ "${DIFF_LINE_COUNT}" -gt 5000 ]; then
       DIFF_CONTENT="$(echo "${DIFF_CONTENT}" | head -5000 | tac | sed '1,/^diff --git /d' | tac)"
       echo "    警告: 差分が大きいため、ファイル境界で切り詰めてレビューします（一部ファイルが省略されています）。"
+      if [ -z "${DIFF_CONTENT}" ]; then
+        echo "    差分切り詰め後に差分が空になりました。AIレビューをスキップします。"
+      fi
     fi
 
     if [ -z "${DIFF_CONTENT}" ]; then
-      echo "    差分が空になりました。AIレビューをスキップします。"
+      if [ "${DIFF_LINE_COUNT}" -le 5000 ]; then
+        echo "    差分が空になりました。AIレビューをスキップします。"
+      fi
     else
       REVIEW_RESULT="$(echo "${DIFF_CONTENT}" | timeout "${CLAUDE_REVIEW_TIMEOUT}" claude --max-turns 1 \
         -p 'あなたはコードレビュアーです。このgit diffをレビューし、CRITICALおよびHIGHの深刻度の問題のみを報告してください。必ず以下のJSON形式のみで応答してください（説明文なし）: {"critical": <number>, "high": <number>, "issues": [{"severity": "CRITICAL"|"HIGH", "file": "<filepath>", "line": <number_or_null>, "message": "<日本語で問題の説明>"}]}' \
@@ -296,7 +301,7 @@ except Exception:
         else
           mkdir -p "${REVIEWS_DIR}"
           find "${REVIEWS_DIR}" -name 'pre-push-*.json' -mtime +30 -delete 2>/dev/null || true
-          REVIEW_LOG="${REVIEWS_DIR}/pre-push-$(date +%Y%m%d-%H%M%S-$$).json"
+          REVIEW_LOG="$(mktemp "${REVIEWS_DIR}/pre-push-XXXXXX.json")"
           CURRENT_BRANCH="$(git branch --show-current 2>/dev/null || echo "unknown")"
           CURRENT_TIMESTAMP="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
           REVIEW_OUTPUT="$(REVIEW_BRANCH="${CURRENT_BRANCH}" REVIEW_TIMESTAMP="${CURRENT_TIMESTAMP}" echo "${CLEAN_RESULT}" | python3 -c "
