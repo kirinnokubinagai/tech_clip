@@ -29,15 +29,23 @@ check_dangerous() {
   echo "$cmd" | grep -qE "git clean" && return 0
   echo "$cmd" | grep -qE "git branch -D" && return 0
 
-  # git worktree add で相対パスを使用した場合をブロック
+  # git worktree add のパス検証
   if echo "$cmd" | grep -qE "git worktree add "; then
-    local wt_path
+    local wt_path repo_root expected_prefix
     wt_path=$(echo "$cmd" | sed 's/.*git worktree add //' | awk '{print $1}')
+    repo_root=$(git rev-parse --show-toplevel 2>/dev/null)
+    expected_prefix="${repo_root}/.worktrees/"
+
     if [[ "$wt_path" != /* ]]; then
       echo "⚠️ worktree作成に相対パスが使われています: $wt_path"
       echo "絶対パスを使用してください:"
-      echo '  REPO_ROOT=$(git rev-parse --show-toplevel)'
-      echo '  git worktree add "${REPO_ROOT}/.worktrees/issue-N" -b issue/N/short-desc'
+      echo "  git worktree add \"\${REPO_ROOT}/.worktrees/issue-N\" -b issue/N/short-desc"
+      return 0
+    fi
+
+    if [[ "$wt_path" != "${expected_prefix}"* ]]; then
+      echo "⚠️ worktreeパスがリポジトリの .worktrees/ 配下ではありません: $wt_path"
+      echo "正しいパス: ${expected_prefix}issue-N"
       return 0
     fi
   fi
