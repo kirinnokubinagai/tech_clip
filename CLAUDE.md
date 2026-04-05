@@ -119,12 +119,14 @@ pnpm add <pkg>
 
 ### 2. Git Worktree を作成し、依存パッケージをインストールする
 - ブランチ名: `issue/<issue番号>/<短い説明>`
+- **worktreeパスは必ず絶対パスで指定する**（相対パスはカレントディレクトリ依存で事故る）
 - **worktree作成後、必ず `pnpm install --frozen-lockfile` を実行する**
 - シンボリンクによる node_modules 共有は禁止（`settings.json` の `symlinkDirectories` を使わない）
 
 ```bash
-git worktree add .worktrees/issue-N -b issue/N/short-desc
-cd .worktrees/issue-N
+REPO_ROOT=$(cd "$(git rev-parse --git-common-dir)/.." && pwd)
+git worktree add "${REPO_ROOT}/.worktrees/issue-N" -b issue/N/short-desc
+cd "${REPO_ROOT}/.worktrees/issue-N"
 pnpm install --frozen-lockfile
 ```
 
