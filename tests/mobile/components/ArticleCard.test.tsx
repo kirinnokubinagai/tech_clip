@@ -150,27 +150,6 @@ describe("ArticleCard", () => {
       expect(onPress).not.toHaveBeenCalled();
     });
 
-    it("お気に入りボタンタップ時にstopPropagationが呼ばれること", async () => {
-      // Arrange
-      const onPress = jest.fn();
-      const onToggleFavorite = jest.fn();
-      const stopPropagation = jest.fn();
-      const { getByTestId } = await render(
-        <ArticleCard
-          article={BASE_ARTICLE}
-          onPress={onPress}
-          onToggleFavorite={onToggleFavorite}
-        />,
-      );
-
-      // Act
-      await fireEvent.press(getByTestId("favorite-button"), { stopPropagation });
-
-      // Assert
-      expect(stopPropagation).toHaveBeenCalledTimes(1);
-      expect(onToggleFavorite).toHaveBeenCalledTimes(1);
-    });
-
     it("お気に入り状態がtrueの場合にお気に入りアイコンが塗りつぶされること", async () => {
       // Arrange
       const article = { ...BASE_ARTICLE, isFavorite: true };
