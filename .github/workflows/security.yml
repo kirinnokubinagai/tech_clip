@@ -58,8 +58,7 @@ jobs:
 
             # ZAPデーモン起動（APIサーバーと並列で起動待機）
             mkdir -p "${ZAP_HOME}/.ZAP"
-            export HOME="${ZAP_HOME}"
-            zap -daemon -port ${ZAP_PORT} -config api.disablekey=true > /tmp/zap-daemon.log 2>&1 &
+            HOME="${ZAP_HOME}" zap -daemon -port ${ZAP_PORT} -config api.disablekey=true > /tmp/zap-daemon.log 2>&1 &
 
             # APIサーバー起動待機
             echo "APIサーバー起動待機中..."
