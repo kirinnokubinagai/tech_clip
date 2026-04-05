@@ -40,6 +40,8 @@ eas whoami
 | `apps/mobile/app.json` | `expo.ios.buildNumber` | EAS が `autoIncrement` で自動管理。手動変更不要 |
 | `apps/mobile/app.json` | `expo.android.versionCode` | EAS が `autoIncrement` で自動管理。手動変更不要 |
 
+> **補足**: `expo.version`（セマンティックバージョン）のみ手動で更新する。ビルド番号は `eas.json` の `autoIncrement: true` + `appVersionSource: "remote"` により EAS が自動インクリメントする。
+
 ### 必須環境変数の設定確認
 
 ```bash
