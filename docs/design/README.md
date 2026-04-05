@@ -45,28 +45,7 @@ docs/design/
 
 ## Pencil MCP の使い方
 
-詳細なワークフローは `.claude/skills/design/pencil-design/SKILL.md` を参照。以下は概要。
-
-### 新規デザイン作成
-
-```
-1. open_document('new') でブランクファイルを作成
-2. get_guidelines(topic='mobile-app') でモバイルガイドラインを取得
-3. get_style_guide_tags でスタイルガイドタグを確認
-4. get_style_guide(tags, name) でスタイルガイドを取得
-5. batch_design() でデザインを作成
-6. docs/design/<screen-name>.pen として保存
-7. PNG エクスポートして docs/design/<screen-name>.png に保存
-```
-
-### 既存デザインの参照
-
-```
-1. open_document('docs/design/<screen>.pen') でファイルを開く
-2. batch_get() でノードを取得・確認
-3. 必要に応じて batch_design() で編集
-4. PNG エクスポートして docs/design/ に保存
-```
+Pencil MCP を使って `.pen` ファイルを作成・編集する。新規作成・既存参照・更新のワークフロー詳細は `.claude/skills/design/pencil-design/SKILL.md` を参照。
 
 ## TechClip デザインシステム
 
