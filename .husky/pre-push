@@ -250,6 +250,8 @@ REVIEWS_DIR="${REPO_ROOT}/.reviews"
 
 if ! command -v claude > /dev/null 2>&1; then
   echo "    警告: claude コマンドが見つかりません。AIレビューをスキップします。"
+elif ! command -v python3 > /dev/null 2>&1; then
+  echo "    警告: python3 コマンドが見つかりません。AIレビューをスキップします。"
 else
   DIFF_CONTENT="$(git diff origin/main...HEAD -- . ':(exclude)*.md' ':(exclude)*.txt' 2>/dev/null || true)"
 
@@ -263,7 +265,6 @@ else
     fi
 
     REVIEW_RESULT="$(echo "${DIFF_CONTENT}" | timeout "${CLAUDE_REVIEW_TIMEOUT}" claude \
-      --output-format json \
       -p 'あなたはコードレビュアーです。このgit diffをレビューし、CRITICALおよびHIGHの深刻度の問題のみを報告してください。必ず以下のJSON形式のみで応答してください（説明文なし）: {"critical": <number>, "high": <number>, "issues": [{"severity": "CRITICAL"|"HIGH", "file": "<filepath>", "line": <number_or_null>, "message": "<日本語で問題の説明>"}]}' \
       2>/dev/null || true)"
 
