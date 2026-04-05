@@ -4,26 +4,46 @@ import { isTwitterUrl, parseTwitter } from "../../../../apps/api/src/services/pa
 
 describe("isTwitterUrl", () => {
   it("x.com の投稿URLを有効と判定すること", () => {
+    // Arrange
     const url = "https://x.com/testuser/status/1234567890";
+
+    // Act
     const result = isTwitterUrl(url);
+
+    // Assert
     expect(result).toBe(true);
   });
 
   it("twitter.com の投稿URLを有効と判定すること", () => {
+    // Arrange
     const url = "https://twitter.com/testuser/status/9876543210";
+
+    // Act
     const result = isTwitterUrl(url);
+
+    // Assert
     expect(result).toBe(true);
   });
 
   it("プロフィールURLを無効と判定すること", () => {
+    // Arrange
     const url = "https://x.com/testuser";
+
+    // Act
     const result = isTwitterUrl(url);
+
+    // Assert
     expect(result).toBe(false);
   });
 
   it("他サイトのURLを無効と判定すること", () => {
+    // Arrange
     const url = "https://example.com/status/123";
+
+    // Act
     const result = isTwitterUrl(url);
+
+    // Assert
     expect(result).toBe(false);
   });
 });
@@ -187,6 +207,7 @@ describe("parseTwitter", () => {
   });
 
   it("oEmbed APIからツイート本文を取得できること", async () => {
+    // Arrange
     const url = "https://x.com/testuser/status/1234567890";
     const mockResponse = {
       html: "<blockquote><p>テスト投稿の本文です</p>&mdash; テストユーザー (@testuser)</blockquote>",
@@ -195,12 +216,13 @@ describe("parseTwitter", () => {
       url,
     };
 
+    // Act
     vi.spyOn(globalThis, "fetch").mockResolvedValueOnce(
       new Response(JSON.stringify(mockResponse), { status: 200 }),
     );
-
     const result = await parseTwitter(url);
 
+    // Assert
     expect(result.title).toBe("テストユーザーのポスト");
     expect(result.author).toBe("テストユーザー");
     expect(result.content).toContain("テスト投稿の本文です");
@@ -251,13 +273,19 @@ describe("parseTwitter", () => {
   });
 
   it("不正なURLでエラーになること", async () => {
+    // Arrange
     const url = "https://example.com/not-twitter";
+
+    // Act & Assert
     await expect(parseTwitter(url)).rejects.toThrow("Twitter/XのURLではありません");
   });
 
   it("oEmbed API失敗時にエラーになること", async () => {
+    // Arrange
     const url = "https://x.com/testuser/status/1234567890";
     vi.spyOn(globalThis, "fetch").mockResolvedValueOnce(new Response("Not Found", { status: 404 }));
+
+    // Act & Assert
     await expect(parseTwitter(url)).rejects.toThrow("ツイートの取得に失敗しました");
   });
 
