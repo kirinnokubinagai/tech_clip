@@ -15,8 +15,12 @@ export type Language = (typeof LOCALE_CODES)[number];
 /** デフォルト言語 */
 const DEFAULT_LANGUAGE: Language = "ja";
 
-/** localeコードから表示名へのマッピング */
-const LANGUAGE_LABEL_MAP: Record<Language, string> = {
+/**
+ * localeコードから表示名へのマッピング
+ * 現時点では ja/en のみ対応のため恒等写像に近いが、
+ * 将来 zh/ko など非対称マッピングが必要になる可能性を考慮して維持する
+ */
+export const LANGUAGE_LABEL_MAP: Record<Language, string> = {
   ja: "日本語",
   en: "English",
 };

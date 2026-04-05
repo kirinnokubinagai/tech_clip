@@ -17,7 +17,7 @@ import { confirm } from "@/components/ConfirmDialog";
 import { DARK_COLORS } from "@/lib/constants";
 import { useSubscription } from "../../src/hooks/use-subscription";
 import { useAuthStore } from "../../src/stores/auth-store";
-import { useSettingsStore } from "../../src/stores/settings-store";
+import { LANGUAGE_LABEL_MAP, useSettingsStore } from "../../src/stores/settings-store";
 
 /** 設定セクションの区切り線コンポーネント */
 function SectionDivider() {
@@ -98,7 +98,7 @@ export default function SettingsScreen() {
   const user = useAuthStore((s) => s.user);
   const { isSubscribed } = useSubscription();
 
-  const languageLabel = useSettingsStore((s) => s.getLanguageLabel());
+  const languageLabel = useSettingsStore((s) => LANGUAGE_LABEL_MAP[s.language]);
   const setLanguage = useSettingsStore((s) => s.setLanguage);
   const loadLanguage = useSettingsStore((s) => s.loadLanguage);
   const notificationSettings = useSettingsStore((s) => s.notificationSettings);
