@@ -268,6 +268,8 @@ else
 
     if [ -z "${DIFF_CONTENT}" ]; then
       echo "    差分切り詰め後に差分が空になりました。AIレビューをスキップします。"
+      echo "    AIレビュー完了（CRITICAL: 0, HIGH: 0）"
+      exit 0
     else
       REVIEW_RESULT="$(echo "${DIFF_CONTENT}" | timeout "${CLAUDE_REVIEW_TIMEOUT}" claude --max-turns 1 \
         -p 'あなたはコードレビュアーです。このgit diffをレビューし、CRITICALおよびHIGHの深刻度の問題のみを報告してください。必ず以下のJSON形式のみで応答してください（説明文なし）: {"critical": <number>, "high": <number>, "issues": [{"severity": "CRITICAL"|"HIGH", "file": "<filepath>", "line": <number_or_null>, "message": "<日本語で問題の説明>"}]}' \
@@ -295,8 +297,8 @@ except Exception:
           echo "    警告: AIレビュー結果のパースに失敗しました。pushを続行します。"
         else
           mkdir -p "${REVIEWS_DIR}"
-          find "${REVIEWS_DIR}" -name 'pre-push-*.json' -mtime +30 -delete 2>/dev/null || true
-          REVIEW_LOG="$(mktemp "${REVIEWS_DIR}/pre-push-XXXXXX.json")"
+          find "${REVIEWS_DIR}" -name 'review.*' -mtime +30 -delete 2>/dev/null || true
+          REVIEW_LOG="$(mktemp "${REVIEWS_DIR}/review.XXXXXX")"
           CURRENT_BRANCH="$(git branch --show-current 2>/dev/null || echo "unknown")"
           CURRENT_TIMESTAMP="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
           export REVIEW_BRANCH="${CURRENT_BRANCH}"
