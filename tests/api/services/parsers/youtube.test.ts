@@ -59,4 +59,22 @@ describe("parseYoutube", () => {
     vi.spyOn(globalThis, "fetch").mockResolvedValueOnce(new Response("Not Found", { status: 404 }));
     await expect(parseYoutube(url)).rejects.toThrow("YouTube動画の取得に失敗しました");
   });
+
+  it("thumbnail_urlが存在しない場合thumbnailUrlがnullになること", async () => {
+    // Arrange
+    const url = "https://www.youtube.com/watch?v=dQw4w9WgXcQ";
+    const mockResponse = {
+      title: "テスト動画タイトル",
+      author_name: "テストチャンネル",
+    };
+
+    // Act
+    vi.spyOn(globalThis, "fetch").mockResolvedValueOnce(
+      new Response(JSON.stringify(mockResponse), { status: 200 }),
+    );
+    const result = await parseYoutube(url);
+
+    // Assert
+    expect(result.thumbnailUrl).toBeNull();
+  });
 });
