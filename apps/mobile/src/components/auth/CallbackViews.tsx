@@ -46,9 +46,7 @@ export function CallbackErrorView({
         accessibilityRole="button"
         accessibilityLabel={t("auth.callback.backToLogin")}
       >
-        <Text className="text-base font-semibold text-white">
-          {t("auth.callback.backToLogin")}
-        </Text>
+        <Text className="text-base font-semibold text-white">{t("auth.callback.backToLogin")}</Text>
       </Pressable>
     </View>
   );
@@ -70,11 +68,7 @@ export function CallbackLoadingView({
 
   return (
     <View className="flex-1 items-center justify-center bg-background">
-      <ActivityIndicator
-        size="large"
-        testID={loadingTestId}
-        accessibilityLabel={t(labelKey)}
-      />
+      <ActivityIndicator size="large" testID={loadingTestId} accessibilityLabel={t(labelKey)} />
       <Text className="mt-4 text-sm text-text-muted">{t(messageKey)}</Text>
     </View>
   );
