@@ -39,6 +39,9 @@ docs/design/
 | `notifications.png` | 通知 |
 | `save-article.png` | 記事保存 |
 | `premium-gate.png` | プレミアムゲート |
+| `summary-language-settings.png` | 要約言語設定 |
+| `twitter-save.png` | X（Twitter）保存 |
+| `youtube-summary.png` | YouTube要約 |
 
 ## Pencil MCP の使い方
 
@@ -50,7 +53,8 @@ docs/design/
 3. get_style_guide_tags でスタイルガイドタグを確認
 4. get_style_guide(tags, name) でスタイルガイドを取得
 5. batch_design() でデザインを作成
-6. PNG エクスポートして docs/design/ に保存
+6. docs/design/<screen-name>.pen として保存
+7. PNG エクスポートして docs/design/<screen-name>.png に保存
 ```
 
 ### 既存デザインの参照
@@ -68,6 +72,7 @@ docs/design/
 
 ## Git 管理方針
 
-- `.pen` ファイルと `.png` ファイルの両方をコミットする
+- Pencil MCP で新規作成したデザインは `.pen` ファイルと `.png` ファイルの両方をコミットする
+- 既存の `.pen` なし PNG（レガシー）はそのまま管理する
 - `.pen` ファイルはバイナリのため差分表示不可（コミットメッセージで内容を明記する）
 - PNG は PR レビュー・Issue コメントで画像プレビューとして活用する
