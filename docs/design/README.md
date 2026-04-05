@@ -59,6 +59,7 @@ docs/design/
 1. open_document('docs/design/<screen>.pen') でファイルを開く
 2. batch_get() でノードを取得・確認
 3. 必要に応じて batch_design() で編集
+4. PNG エクスポートして docs/design/ に保存
 ```
 
 ## TechClip デザインシステム
