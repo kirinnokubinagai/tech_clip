@@ -121,8 +121,6 @@ if check_dangerous "$COMMAND"; then
 fi
 
 if check_worktree_path "$COMMAND"; then
-  echo "⚠️ worktreeパスが正しくありません"
-  echo "コマンド: $COMMAND"
   exit 2
 fi
 
