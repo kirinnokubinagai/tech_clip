@@ -51,6 +51,14 @@
     "continueWithGoogle": "Continue with Google",
     "continueWithGithub": "Continue with GitHub",
     "socialLoginFailed": "Failed to start social sign-in. Please try again.",
+    "oauthCallback": {
+      "processingLabel": "Authenticating",
+      "processing": "Authenticating...",
+      "backToLogin": "Back to Login",
+      "errorSocialLogin": "Social login failed. Please try again.",
+      "errorNoCode": "Authorization code not found. Please try again.",
+      "errorCheckSession": "Failed to verify authentication. Please try again."
+    },
     "loginToRegister": "Sign up",
     "loginToRegisterPrompt": "Don't have an account?",
     "registerToLoginPrompt": "Already have an account?",

@@ -1,6 +1,7 @@
 import * as Linking from "expo-linking";
 import { useRouter } from "expo-router";
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { ActivityIndicator, Pressable, Text, View } from "react-native";
 
 import { useAuthStore } from "@/stores/auth-store";
@@ -19,10 +20,22 @@ function hasCodeParam(queryParams: Record<string, string | string[]>): boolean {
 }
 
 /**
- * OAuthコールバック画面
+ * OAuthコード受け取り型コールバック画面
  * ソーシャルログイン後にdeep linkで起動されるコールバックを処理する
+ *
+ * @remarks
+ * `auth/callback` との違い:
+ * - こちら（(auth)/oauth-callback）はOAuthプロバイダーからcodeを受け取り、
+ *   Better Authがサーバーサイドでセッションを確立するフロー
+ * - `auth/callback` はAPIサーバーが発行したトークンをクエリパラメータで受け取るフロー
+ *
+ * checkSession() はコールバックURL受信後に呼び出す。
+ * Better Auth はコールバック時にサーバーサイドでセッションCookieを設定済みのため、
+ * checkSession() でそのセッションを確認してストアに反映する。
+ * トークンの手動保存は不要。
  */
 export default function OAuthCallbackScreen() {
+  const { t } = useTranslation();
   const router = useRouter();
   const checkSession = useAuthStore((s) => s.checkSession);
   const url = Linking.useURL();
@@ -39,13 +52,13 @@ export default function OAuthCallbackScreen() {
     const queryParams = (parsed.queryParams ?? {}) as Record<string, string | string[]>;
 
     if (hasErrorParam(queryParams)) {
-      setErrorMessage("ソーシャルログインに失敗しました。もう一度お試しください。");
+      setErrorMessage(t("auth.oauthCallback.errorSocialLogin"));
       setState("error");
       return;
     }
 
     if (!hasCodeParam(queryParams)) {
-      setErrorMessage("認証コードが見つかりません。もう一度お試しください。");
+      setErrorMessage(t("auth.oauthCallback.errorNoCode"));
       setState("error");
       return;
     }
@@ -56,10 +69,10 @@ export default function OAuthCallbackScreen() {
         router.replace("/(tabs)");
       })
       .catch(() => {
-        setErrorMessage("認証の確認に失敗しました。もう一度お試しください。");
+        setErrorMessage(t("auth.oauthCallback.errorCheckSession"));
         setState("error");
       });
-  }, [url, checkSession, router]);
+  }, [url, checkSession, router, t]);
 
   if (state === "error") {
     return (
@@ -76,9 +89,11 @@ export default function OAuthCallbackScreen() {
           className="rounded-lg bg-primary px-6 py-3"
           testID="oauth-callback-back-button"
           accessibilityRole="button"
-          accessibilityLabel="ログイン画面に戻る"
+          accessibilityLabel={t("auth.oauthCallback.backToLogin")}
         >
-          <Text className="text-base font-semibold text-white">ログイン画面に戻る</Text>
+          <Text className="text-base font-semibold text-white">
+            {t("auth.oauthCallback.backToLogin")}
+          </Text>
         </Pressable>
       </View>
     );
@@ -89,9 +104,9 @@ export default function OAuthCallbackScreen() {
       <ActivityIndicator
         size="large"
         testID="oauth-callback-loading"
-        accessibilityLabel="認証処理中"
+        accessibilityLabel={t("auth.oauthCallback.processingLabel")}
       />
-      <Text className="mt-4 text-sm text-text-muted">認証処理中...</Text>
+      <Text className="mt-4 text-sm text-text-muted">{t("auth.oauthCallback.processing")}</Text>
     </View>
   );
 }

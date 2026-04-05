@@ -6,10 +6,16 @@ import { setAuthToken, setRefreshToken } from "@/lib/secure-store";
 import { useAuthStore } from "@/stores/auth-store";
 
 /**
- * OAuthコールバック画面
+ * トークン受け取り型OAuthコールバック画面
  *
  * ソーシャルログイン後のディープリンク `techclip://auth/callback?token=...` を処理する。
- * トークンをセキュアストレージに保存し、セッションを確立してホーム画面へ遷移する。
+ * APIサーバーが発行したトークンをクエリパラメータで受け取り、セキュアストレージに保存する。
+ * セッションを確立してホーム画面へ遷移する。
+ *
+ * @remarks
+ * `(auth)/oauth-callback` との違い:
+ * - こちら（auth/callback）はAPIサーバーからトークンを直接受け取るフロー
+ * - `(auth)/oauth-callback` はOAuthプロバイダーからcodeを受け取りBetter Authに委譲するフロー
  */
 export default function AuthCallbackScreen() {
   const params = useLocalSearchParams<{ token?: string; refresh_token?: string; error?: string }>();
@@ -19,23 +25,27 @@ export default function AuthCallbackScreen() {
 
   useEffect(() => {
     async function run() {
-      if (params.error) {
+      try {
+        if (params.error) {
+          router.replace("/(auth)/login");
+          return;
+        }
+
+        if (!params.token) {
+          router.replace("/(auth)/login");
+          return;
+        }
+
+        await setAuthToken(params.token);
+        if (params.refresh_token) {
+          await setRefreshToken(params.refresh_token);
+        }
+
+        await checkSession();
+        router.replace("/(tabs)");
+      } catch {
         router.replace("/(auth)/login");
-        return;
       }
-
-      if (!params.token) {
-        router.replace("/(auth)/login");
-        return;
-      }
-
-      await setAuthToken(params.token);
-      if (params.refresh_token) {
-        await setRefreshToken(params.refresh_token);
-      }
-
-      await checkSession();
-      router.replace("/(tabs)");
     }
     run();
   }, [params.error, params.token, params.refresh_token, checkSession, router]);

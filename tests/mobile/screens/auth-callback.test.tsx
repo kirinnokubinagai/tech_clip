@@ -5,6 +5,12 @@ const mockReplace = jest.fn();
 const mockBack = jest.fn();
 const mockCheckSession = jest.fn();
 
+jest.mock("react-i18next", () => ({
+  useTranslation: () => ({
+    t: (key: string) => key,
+  }),
+}));
+
 jest.mock("expo-router", () => ({
   useRouter: () => ({
     replace: mockReplace,
@@ -51,6 +57,31 @@ describe("OAuthCallbackScreen", () => {
 
       // Assert
       expect(getByTestId("oauth-callback-loading")).toBeDefined();
+    });
+
+    it("URLがnullの場合はローディング状態のままであること", async () => {
+      // Arrange
+      mockUseURL.mockReturnValue(null);
+
+      // Act
+      const { getByTestId } = await render(<OAuthCallbackScreen />);
+
+      // Assert
+      expect(getByTestId("oauth-callback-loading")).toBeDefined();
+      expect(mockCheckSession).not.toHaveBeenCalled();
+    });
+
+    it("URLにcodeもerrorもない場合はエラーメッセージが表示されること", async () => {
+      // Arrange
+      mockUseURL.mockReturnValue("techclip://oauth-callback");
+
+      // Act
+      const { findByTestId } = await render(<OAuthCallbackScreen />);
+
+      // Assert
+      const errorEl = await findByTestId("oauth-callback-error");
+      expect(errorEl).toBeDefined();
+      expect(mockCheckSession).not.toHaveBeenCalled();
     });
 
     it("URLパラメータにcodeが含まれる場合にsession確認を実行すること", async () => {
