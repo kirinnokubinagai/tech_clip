@@ -3,9 +3,11 @@
 # SessionStart hook: 全worktreeの健全性をチェック
 #
 # 検出する問題:
-# 1. 未コミットの変更（modified/staged files）
-# 2. リベース/マージ途中の状態
-# 3. mainから遅れているブランチ
+# 1. ネストworktree（.worktrees/ 内にさらに .worktrees/ がある）
+# 2. 不正なworktreeパス（REPO_ROOT/.worktrees/ 直下にない）
+# 3. リベース/マージ途中の状態
+# 4. 未コミットの変更（modified/staged files）
+# 5. mainから遅れているブランチ
 
 PROBLEMS=""
 PROBLEM_COUNT=0
