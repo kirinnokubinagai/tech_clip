@@ -47,7 +47,7 @@ function resolveDeviceSummaryLanguage(): SummaryLanguage {
   if (!deviceLang) {
     return DEFAULT_SUMMARY_LANGUAGE;
   }
-  const isSupported = SUMMARY_LANGUAGE_OPTIONS.includes(deviceLang as SummaryLanguage);
+  const isSupported = (SUMMARY_LANGUAGE_OPTIONS as readonly string[]).includes(deviceLang);
   if (!isSupported) {
     return DEFAULT_SUMMARY_LANGUAGE;
   }
