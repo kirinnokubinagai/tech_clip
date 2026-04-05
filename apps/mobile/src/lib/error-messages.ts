@@ -50,7 +50,7 @@ const FALLBACK_MESSAGE_EN = "An unexpected error occurred";
  * @returns ユーザーに表示するエラーメッセージ
  */
 export function getErrorMessage(errorCode: string, language: Language): string {
-  if (language === "English") {
+  if (language === "en") {
     return ERROR_MESSAGES_EN[errorCode] ?? FALLBACK_MESSAGE_EN;
   }
   return ERROR_MESSAGES_JA[errorCode] ?? FALLBACK_MESSAGE_JA;

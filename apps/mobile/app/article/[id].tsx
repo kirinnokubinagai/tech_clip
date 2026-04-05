@@ -15,6 +15,7 @@ import {
 } from "@/hooks/use-articles";
 import { useNetworkStatus } from "@/hooks/use-network-status";
 import { DARK_COLORS } from "@/lib/constants";
+import { formatArticleDate } from "@/lib/date-format";
 import { toSummaryLanguageCode, toTranslationLanguageCode } from "@/lib/language-code";
 import { getOfflineArticleById } from "@/lib/localDb";
 import { useSettingsStore } from "@/stores/settings-store";
@@ -148,20 +149,6 @@ const markdownStyles = {
     borderRadius: 8,
   },
 };
-
-/**
- * 日付文字列をYYYY/MM/DD形式にフォーマットする
- *
- * @param isoString - ISO 8601形式の日付文字列
- * @returns フォーマットされた日付文字列
- */
-function formatDate(isoString: string): string {
-  const date = new Date(isoString);
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, "0");
-  const day = String(date.getDate()).padStart(2, "0");
-  return `${year}/${month}/${day}`;
-}
 
 /**
  * 記事詳細画面
@@ -406,7 +393,9 @@ export default function ArticleDetailScreen() {
           <View className="flex-row items-center gap-2">
             <SourceBadge source={article.source} />
             {article.publishedAt && (
-              <Text className="text-xs text-text-muted">{formatDate(article.publishedAt)}</Text>
+              <Text className="text-xs text-text-muted">
+                {formatArticleDate(article.publishedAt, language)}
+              </Text>
             )}
             {article.readingTimeMinutes && (
               <Text className="text-xs text-text-muted">

@@ -24,9 +24,10 @@ jest.mock("@mobile/stores/auth-store", () => ({
 }));
 
 jest.mock("@mobile/stores/settings-store", () => ({
+  LANGUAGE_LABEL_MAP: { ja: "日本語", en: "English" },
   useSettingsStore: jest.fn((selector: (state: Record<string, unknown>) => unknown) =>
     selector({
-      language: "日本語",
+      language: "ja",
       isLanguageLoaded: true,
       notificationSettings: {
         id: "ns_01",
@@ -200,7 +201,7 @@ describe("言語設定の永続化", () => {
     jaButton.onPress();
 
     // Assert
-    expect(mockSetLanguage).toHaveBeenCalledWith("日本語");
+    expect(mockSetLanguage).toHaveBeenCalledWith("ja");
   });
 
   it("言語選択ダイアログでEnglishを選択するとsetLanguageが呼ばれること", async () => {
@@ -214,7 +215,7 @@ describe("言語設定の永続化", () => {
     enButton.onPress();
 
     // Assert
-    expect(mockSetLanguage).toHaveBeenCalledWith("English");
+    expect(mockSetLanguage).toHaveBeenCalledWith("en");
   });
 });
 
