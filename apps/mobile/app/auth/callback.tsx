@@ -24,14 +24,18 @@ export default function AuthCallbackScreen() {
   const { t } = useTranslation();
 
   useEffect(() => {
+    let cancelled = false;
+
     async function run() {
       try {
         if (params.error) {
+          if (cancelled) return;
           router.replace("/(auth)/login");
           return;
         }
 
         if (!params.token) {
+          if (cancelled) return;
           router.replace("/(auth)/login");
           return;
         }
@@ -41,13 +45,20 @@ export default function AuthCallbackScreen() {
           await setRefreshToken(params.refresh_token);
         }
 
+        if (cancelled) return;
         await checkSession();
+        if (cancelled) return;
         router.replace("/(tabs)");
       } catch {
+        if (cancelled) return;
         router.replace("/(auth)/login");
       }
     }
     run();
+
+    return () => {
+      cancelled = true;
+    };
   }, [params.error, params.token, params.refresh_token, checkSession, router]);
 
   return (
