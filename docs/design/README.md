@@ -45,6 +45,8 @@ docs/design/
 
 ## Pencil MCP の使い方
 
+詳細なワークフローは `.claude/skills/design/pencil-design/SKILL.md` を参照。以下は概要。
+
 ### 新規デザイン作成
 
 ```
@@ -76,3 +78,14 @@ docs/design/
 - 既存の `.pen` なし PNG（レガシー）はそのまま管理する
 - `.pen` ファイルはバイナリのため差分表示不可（コミットメッセージで内容を明記する）
 - PNG は PR レビュー・Issue コメントで画像プレビューとして活用する
+
+> **注意**: このPR（#544）で追加した `summary-language-settings.png` / `twitter-save.png` / `youtube-summary.png` は初期ドラフトのため `.pen` ファイルが存在しない。次回 Pencil MCP でリデザインする際に `.pen` ファイルも生成・コミットすること。
+
+## 実装時の注意事項
+
+以下のモックに含まれるラベルは `.claude/rules/frontend-design.md` の「AIらしさを排除するデザイン原則」に抵触するため、実装時は変更すること。
+
+| ファイル | モック上のラベル | 実装時のラベル |
+|---------|----------------|---------------|
+| `twitter-save.png` | ✨ AI要約 | 要約する |
+| `youtube-summary.png` | ✨ AI要約を生成 | 要約を生成 |
