@@ -4,6 +4,7 @@ import type { Auth } from "../auth";
 import type { Database } from "../db";
 import { articles, users } from "../db/schema";
 import { getRunPodEndpointId } from "../lib/config";
+import { toRecordArray } from "../lib/db-cast";
 import { createAiLimitMiddleware } from "../middleware/ai-limit";
 import {
   createKvStore,
@@ -45,7 +46,7 @@ export async function handlePublicArticles(db: Database, request: Request): Prom
         .where(and(...conditions))
         .orderBy(desc(articles.createdAt))
         .limit(params.limit);
-      return results as unknown as Array<Record<string, unknown>>;
+      return toRecordArray(results);
     },
     userExistsFn: async (userId) => {
       const [found] = await db.select({ id: users.id }).from(users).where(eq(users.id, userId));
@@ -97,7 +98,7 @@ export async function handleArticles(
         .where(and(...conditions))
         .orderBy(desc(articles.createdAt))
         .limit(params.limit);
-      return results as unknown as Array<Record<string, unknown>>;
+      return toRecordArray(results);
     },
   });
 
@@ -145,7 +146,7 @@ export async function handleArticles(
         .where(and(...conditions))
         .orderBy(desc(articles.createdAt))
         .limit(params.limit);
-      return results as unknown as Array<Record<string, unknown>>;
+      return toRecordArray(results);
     },
   });
 

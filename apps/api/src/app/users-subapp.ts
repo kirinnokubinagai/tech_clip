@@ -2,6 +2,7 @@ import { and, desc, eq, lt } from "drizzle-orm";
 import type { Auth } from "../auth";
 import type { Database } from "../db";
 import { follows, users } from "../db/schema";
+import { toRecordArray } from "../lib/db-cast";
 import { fetchWithAuth } from "../lib/route-helpers";
 import { createFollowsRoute } from "../routes/follows";
 import { createUsersRoute } from "../routes/users";
@@ -57,7 +58,7 @@ export async function handleUsers(
         .where(and(...conditions))
         .orderBy(desc(follows.createdAt))
         .limit(params.limit);
-      return results as unknown as Array<Record<string, unknown>>;
+      return toRecordArray(results);
     },
     getFollowingFn: async (params) => {
       const conditions = [eq(follows.followerId, params.userId)];
@@ -70,7 +71,7 @@ export async function handleUsers(
         .where(and(...conditions))
         .orderBy(desc(follows.createdAt))
         .limit(params.limit);
-      return results as unknown as Array<Record<string, unknown>>;
+      return toRecordArray(results);
     },
     isFollowingFn: async (followerId, followingId) => {
       const [result] = await db

@@ -2,6 +2,7 @@ import { and, desc, eq, lt } from "drizzle-orm";
 import type { Auth } from "../auth";
 import type { Database } from "../db";
 import { notifications } from "../db/schema";
+import { toRecordArray } from "../lib/db-cast";
 import { fetchWithAuth } from "../lib/route-helpers";
 import { createNotificationSettingsRoute } from "../routes/notification-settings";
 import { createNotificationsRoute } from "../routes/notifications";
@@ -32,7 +33,7 @@ export async function handleNotifications(
         .where(and(...conditions))
         .orderBy(desc(notifications.createdAt))
         .limit(params.limit);
-      return results as unknown as Array<Record<string, unknown>>;
+      return toRecordArray(results);
     },
   });
 
