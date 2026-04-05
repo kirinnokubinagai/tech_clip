@@ -101,6 +101,9 @@ export default function SettingsScreen() {
   const language = useSettingsStore((s) => s.language);
   const setLanguage = useSettingsStore((s) => s.setLanguage);
   const loadLanguage = useSettingsStore((s) => s.loadLanguage);
+  const summaryLanguage = useSettingsStore((s) => s.summaryLanguage);
+  const setSummaryLanguage = useSettingsStore((s) => s.setSummaryLanguage);
+  const loadSummaryLanguage = useSettingsStore((s) => s.loadSummaryLanguage);
   const notificationSettings = useSettingsStore((s) => s.notificationSettings);
   const fetchNotificationSettings = useSettingsStore((s) => s.fetchNotificationSettings);
   const updateNotificationEnabled = useSettingsStore((s) => s.updateNotificationEnabled);
@@ -116,8 +119,9 @@ export default function SettingsScreen() {
 
   useEffect(() => {
     loadLanguage();
+    loadSummaryLanguage();
     fetchNotificationSettings();
-  }, [loadLanguage, fetchNotificationSettings]);
+  }, [loadLanguage, loadSummaryLanguage, fetchNotificationSettings]);
 
   /**
    * ログアウト確認ダイアログを表示し、確認後にサインアウトを実行する
@@ -170,6 +174,35 @@ export default function SettingsScreen() {
           setLanguage("English");
         },
       },
+      { text: t("common.cancel"), style: "cancel" },
+    ]);
+  }
+
+  /**
+   * 要約言語コードを表示名に変換する
+   *
+   * @param code - 要約言語コード
+   * @returns 表示用言語名
+   */
+  function summaryLanguageLabel(code: string): string {
+    const labels: Record<string, string> = {
+      ja: "日本語",
+      en: "English",
+      zh: "中文",
+      ko: "한국어",
+    };
+    return labels[code] ?? code;
+  }
+
+  /**
+   * 要約言語選択のアクションシートを表示する
+   */
+  function handleSummaryLanguageSelect() {
+    Alert.alert(t("settings.summaryLanguageSelect.title"), t("settings.summaryLanguageSelect.prompt"), [
+      { text: "日本語", onPress: () => setSummaryLanguage("ja") },
+      { text: "English", onPress: () => setSummaryLanguage("en") },
+      { text: "中文", onPress: () => setSummaryLanguage("zh") },
+      { text: "한국어", onPress: () => setSummaryLanguage("ko") },
       { text: t("common.cancel"), style: "cancel" },
     ]);
   }
@@ -228,6 +261,14 @@ export default function SettingsScreen() {
           label={t("settings.items.language")}
           value={language}
           onPress={handleLanguageSelect}
+        />
+        <SectionDivider />
+        <SettingsRow
+          testID="settings-summary-language-button"
+          icon={<Globe size={ICON_SIZE} color={ICON_COLOR} />}
+          label={t("settings.items.summaryLanguage")}
+          value={summaryLanguageLabel(summaryLanguage)}
+          onPress={handleSummaryLanguageSelect}
         />
         <SectionDivider />
         <SettingsRow
