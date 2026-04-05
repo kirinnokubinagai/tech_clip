@@ -191,7 +191,9 @@
       "language": "Language",
       "notifications": "Notifications",
       "deleteAccount": "Delete Account",
-      "notLoggedIn": "Not logged in"
+      "notLoggedIn": "Not logged in",
+      "notificationPermissionDenied": "Notifications are disabled. Enable them in the Settings app.",
+      "notificationPermissionRequest": "Enable Notifications"
     },
     "languageSelect": {
       "title": "Language Settings",
@@ -199,6 +201,8 @@
     },
     "notificationHintOn": "Tap to turn notifications on",
     "notificationHintOff": "Tap to turn notifications off",
+    "notificationPermissionDenied": "Notifications are disabled. Please enable them in Settings",
+    "notificationPermissionRequest": "Enable notifications",
     "logout": {
       "title": "Log Out",
       "message": "Are you sure you want to log out?",

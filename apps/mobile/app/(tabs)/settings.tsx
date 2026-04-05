@@ -13,7 +13,7 @@ import {
 import type { ReactNode } from "react";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Alert, Pressable, ScrollView, Switch, Text, View } from "react-native";
+import { Alert, Linking, Pressable, ScrollView, Switch, Text, View } from "react-native";
 import { confirm } from "@/components/ConfirmDialog";
 import { DARK_COLORS } from "@/lib/constants";
 import {
@@ -210,10 +210,18 @@ export default function SettingsScreen() {
    * 通知権限を要求し、許可された場合はプッシュトークンを登録する
    */
   async function handleRequestNotificationPermission() {
-    const status = await requestNotificationPermission();
-    setNotificationPermission(status);
-    if (status === "granted") {
-      await registerForPushNotificationsWithLogging();
+    try {
+      if (notificationPermission === "denied") {
+        await Linking.openSettings();
+        return;
+      }
+      const status = await requestNotificationPermission();
+      setNotificationPermission(status);
+      if (status === "granted") {
+        await registerForPushNotificationsWithLogging();
+      }
+    } catch (error) {
+      Alert.alert(t("common.error"), t("settings.items.notificationUpdateError"));
     }
   }
 
