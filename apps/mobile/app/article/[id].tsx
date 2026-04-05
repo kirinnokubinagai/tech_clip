@@ -393,7 +393,7 @@ export default function ArticleDetailScreen() {
           <View className="flex-row items-center gap-2">
             <SourceBadge source={article.source} />
             {article.publishedAt && (
-              <Text className="text-xs text-text-muted">{formatDate(article.publishedAt)}</Text>
+              <Text className="text-xs text-text-muted">{formatArticleDate(article.publishedAt, language)}</Text>
             )}
             {article.readingTimeMinutes && (
               <Text className="text-xs text-text-muted">
