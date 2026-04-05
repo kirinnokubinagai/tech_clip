@@ -98,7 +98,7 @@ function summaryLanguageLabel(code: string): string {
 /**
  * 設定画面
  *
- * アカウント（ログアウト）、サブスクリプション状態、言語設定、通知ON/OFFを提供する
+ * アカウント（ログアウト）、サブスクリプション状態、言語設定、要約言語設定、通知ON/OFFを提供する
  */
 export default function SettingsScreen() {
   const { t } = useTranslation();
