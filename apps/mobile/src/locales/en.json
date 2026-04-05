@@ -191,11 +191,16 @@
       "language": "Language",
       "notifications": "Notifications",
       "deleteAccount": "Delete Account",
-      "notLoggedIn": "Not logged in"
+      "notLoggedIn": "Not logged in",
+      "summaryLanguage": "Summary Language"
     },
     "languageSelect": {
       "title": "Language Settings",
       "prompt": "Select display language"
+    },
+    "summaryLanguageSelect": {
+      "title": "Summary Language",
+      "prompt": "Select language for AI summaries"
     },
     "notificationHintOn": "Tap to turn notifications on",
     "notificationHintOff": "Tap to turn notifications off",
@@ -205,6 +210,7 @@
       "confirm": "Log Out"
     },
     "notificationUpdateError": "Failed to update notification settings",
+    "summaryLanguageUpdateError": "Failed to update summary language",
     "deleteAccount": {
       "title": "Delete Account",
       "message": "Deleting your account will permanently remove all your data. This action cannot be undone.",

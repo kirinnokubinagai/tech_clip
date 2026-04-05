@@ -1,3 +1,4 @@
+import { getLocales } from "expo-localization";
 import * as SecureStore from "expo-secure-store";
 import { create } from "zustand";
 
@@ -6,11 +7,52 @@ import { apiFetch } from "@/lib/api";
 /** SecureStoreキー: 言語設定 */
 const LANGUAGE_KEY = "settings_language";
 
+/** SecureStoreキー: 要約言語設定 */
+const SUMMARY_LANGUAGE_KEY = "settings_summary_language";
+
 /** 言語選択肢 */
 const LANGUAGE_OPTIONS = ["日本語", "English"] as const;
 
 /** 言語選択肢の型 */
 export type Language = (typeof LANGUAGE_OPTIONS)[number];
+
+/** 要約言語コード選択肢 */
+const SUMMARY_LANGUAGE_OPTIONS = ["ja", "en", "zh", "ko"] as const;
+
+/** 要約言語コードの型 */
+export type SummaryLanguage = (typeof SUMMARY_LANGUAGE_OPTIONS)[number];
+
+/** 要約言語コードと表示名のマップ */
+export const SUMMARY_LANGUAGE_LABELS: Record<SummaryLanguage, string> = {
+  ja: "日本語",
+  en: "English",
+  zh: "中文",
+  ko: "한국어",
+} as const;
+
+/** デフォルト要約言語 */
+const DEFAULT_SUMMARY_LANGUAGE: SummaryLanguage = "ja";
+
+/**
+ * デバイスのロケールから要約言語コードを解決する
+ *
+ * @returns サポートされている要約言語コード
+ */
+function resolveDeviceSummaryLanguage(): SummaryLanguage {
+  const locales = getLocales();
+  if (locales.length === 0) {
+    return DEFAULT_SUMMARY_LANGUAGE;
+  }
+  const deviceLang = locales[0]?.languageCode;
+  if (!deviceLang) {
+    return DEFAULT_SUMMARY_LANGUAGE;
+  }
+  const isSupported = (SUMMARY_LANGUAGE_OPTIONS as readonly string[]).includes(deviceLang);
+  if (!isSupported) {
+    return DEFAULT_SUMMARY_LANGUAGE;
+  }
+  return deviceLang as SummaryLanguage;
+}
 
 /** 通知設定の型 */
 export type NotificationSettings = {
@@ -34,6 +76,10 @@ type SettingsStore = {
   language: Language;
   /** 言語設定の読み込み完了フラグ */
   isLanguageLoaded: boolean;
+  /** 要約言語コード */
+  summaryLanguage: SummaryLanguage;
+  /** 要約言語設定の読み込み完了フラグ */
+  isSummaryLanguageLoaded: boolean;
   /** 通知設定 */
   notificationSettings: NotificationSettings | null;
   /** 通知設定の読み込み完了フラグ */
@@ -42,6 +88,10 @@ type SettingsStore = {
   loadLanguage: () => Promise<void>;
   /** 言語設定を変更してSecureStoreに永続化する */
   setLanguage: (language: Language) => Promise<void>;
+  /** SecureStoreから要約言語設定を読み込む */
+  loadSummaryLanguage: () => Promise<void>;
+  /** 要約言語設定を変更してSecureStoreに永続化する */
+  setSummaryLanguage: (language: SummaryLanguage) => Promise<void>;
   /** APIから通知設定を取得する */
   fetchNotificationSettings: () => Promise<void>;
   /** 全通知のON/OFFをAPIに保存する */
@@ -51,17 +101,29 @@ type SettingsStore = {
 export const useSettingsStore = create<SettingsStore>((set, get) => ({
   language: "日本語",
   isLanguageLoaded: false,
+  summaryLanguage: DEFAULT_SUMMARY_LANGUAGE,
+  isSummaryLanguageLoaded: false,
   notificationSettings: null,
   isNotificationSettingsLoaded: false,
 
   /**
    * SecureStoreから言語設定を読み込む
-   * アプリ起動時に呼び出す
+   * アプリ起動時に呼び出す。パース失敗時や不正値の場合はデフォルト値にフォールバックする
    */
   loadLanguage: async () => {
     const stored = await SecureStore.getItemAsync(LANGUAGE_KEY);
-    const language: Language = stored !== null ? (JSON.parse(stored) as Language) : "日本語";
-    set({ language, isLanguageLoaded: true });
+    if (stored === null) {
+      set({ language: "日本語", isLanguageLoaded: true });
+      return;
+    }
+    try {
+      const parsed = JSON.parse(stored) as unknown;
+      const isValid = (LANGUAGE_OPTIONS as readonly string[]).includes(parsed as string);
+      const language: Language = isValid ? (parsed as Language) : "日本語";
+      set({ language, isLanguageLoaded: true });
+    } catch {
+      set({ language: "日本語", isLanguageLoaded: true });
+    }
   },
 
   /**
@@ -72,6 +134,39 @@ export const useSettingsStore = create<SettingsStore>((set, get) => ({
   setLanguage: async (language: Language) => {
     await SecureStore.setItemAsync(LANGUAGE_KEY, JSON.stringify(language));
     set({ language });
+  },
+
+  /**
+   * SecureStoreから要約言語設定を読み込む
+   * アプリ起動時に呼び出す。保存がない場合はデバイス言語を使用する。
+   * パース失敗時や不正値の場合はデバイス言語にフォールバックする
+   */
+  loadSummaryLanguage: async () => {
+    const stored = await SecureStore.getItemAsync(SUMMARY_LANGUAGE_KEY);
+    if (stored === null) {
+      set({ summaryLanguage: resolveDeviceSummaryLanguage(), isSummaryLanguageLoaded: true });
+      return;
+    }
+    try {
+      const parsed = JSON.parse(stored) as unknown;
+      const isValid = (SUMMARY_LANGUAGE_OPTIONS as readonly string[]).includes(parsed as string);
+      const summaryLanguage: SummaryLanguage = isValid
+        ? (parsed as SummaryLanguage)
+        : resolveDeviceSummaryLanguage();
+      set({ summaryLanguage, isSummaryLanguageLoaded: true });
+    } catch {
+      set({ summaryLanguage: resolveDeviceSummaryLanguage(), isSummaryLanguageLoaded: true });
+    }
+  },
+
+  /**
+   * 要約言語設定を変更してSecureStoreに永続化する
+   *
+   * @param language - 設定する要約言語コード
+   */
+  setSummaryLanguage: async (language: SummaryLanguage) => {
+    await SecureStore.setItemAsync(SUMMARY_LANGUAGE_KEY, JSON.stringify(language));
+    set({ summaryLanguage: language });
   },
 
   /**
