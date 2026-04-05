@@ -268,7 +268,7 @@ Closes #<issue番号>
 
 - `git merge` — main ブランチ上でのマージは禁止（main への push が deny で防止済み）。作業ブランチでの `git merge origin/main`（コンフリクト解消）は許可
 - `git rebase` — 履歴の書き換えは禁止
-- `git restore .` — 全ファイル復元は禁止（個別ファイル指定のみ許可）
+- `git restore` — 全面禁止（個別ファイル指定含む）
 - `git reset --hard` — 破壊的リセットは禁止
 - `git push --force` / `--force-with-lease` — 強制プッシュは禁止
 - `git checkout -- .` — 全ファイル復元は禁止
