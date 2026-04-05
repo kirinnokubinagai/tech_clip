@@ -264,14 +264,17 @@ else
       echo "    警告: 差分が大きいため、ファイル境界で切り詰めてレビューします（一部ファイルが省略されています）。"
     fi
 
-    REVIEW_RESULT="$(echo "${DIFF_CONTENT}" | timeout "${CLAUDE_REVIEW_TIMEOUT}" claude \
-      -p 'あなたはコードレビュアーです。このgit diffをレビューし、CRITICALおよびHIGHの深刻度の問題のみを報告してください。必ず以下のJSON形式のみで応答してください（説明文なし）: {"critical": <number>, "high": <number>, "issues": [{"severity": "CRITICAL"|"HIGH", "file": "<filepath>", "line": <number_or_null>, "message": "<日本語で問題の説明>"}]}' \
-      2>/dev/null || true)"
-
-    if [ -z "${REVIEW_RESULT}" ]; then
-      echo "    警告: AIレビューの実行に失敗しました。pushを続行します。"
+    if [ -z "${DIFF_CONTENT}" ]; then
+      echo "    差分が空になりました。AIレビューをスキップします。"
     else
-      CLEAN_RESULT="$(echo "${REVIEW_RESULT}" | python3 -c "
+      REVIEW_RESULT="$(echo "${DIFF_CONTENT}" | timeout "${CLAUDE_REVIEW_TIMEOUT}" claude \
+        -p 'あなたはコードレビュアーです。このgit diffをレビューし、CRITICALおよびHIGHの深刻度の問題のみを報告してください。必ず以下のJSON形式のみで応答してください（説明文なし）: {"critical": <number>, "high": <number>, "issues": [{"severity": "CRITICAL"|"HIGH", "file": "<filepath>", "line": <number_or_null>, "message": "<日本語で問題の説明>"}]}' \
+        2>/dev/null || true)"
+
+      if [ -z "${REVIEW_RESULT}" ]; then
+        echo "    警告: AIレビューの実行に失敗しました。pushを続行します。"
+      else
+        CLEAN_RESULT="$(echo "${REVIEW_RESULT}" | python3 -c "
 import sys, json
 data = sys.stdin.read()
 start = data.find('{')
@@ -286,14 +289,17 @@ except Exception:
     print('{}')
 " 2>/dev/null || echo "")"
 
-      if [ -z "${CLEAN_RESULT}" ] || [ "${CLEAN_RESULT}" = "{}" ]; then
-        echo "    警告: AIレビュー結果のパースに失敗しました。pushを続行します。"
-      else
-        mkdir -p "${REVIEWS_DIR}"
-        REVIEW_LOG="${REVIEWS_DIR}/pre-push-$(date +%Y%m%d-%H%M%S-$$).json"
-        CURRENT_BRANCH="$(git branch --show-current 2>/dev/null || echo "unknown")"
+        if [ -z "${CLEAN_RESULT}" ] || [ "${CLEAN_RESULT}" = "{}" ]; then
+          echo "    警告: AIレビュー結果のパースに失敗しました。pushを続行します。"
+        else
+          mkdir -p "${REVIEWS_DIR}"
+          REVIEW_LOG="${REVIEWS_DIR}/pre-push-$(date +%Y%m%d-%H%M%S-$$).json"
+          CURRENT_BRANCH="$(git branch --show-current 2>/dev/null || echo "unknown")"
+          CURRENT_TIMESTAMP="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          export REVIEW_BRANCH="${CURRENT_BRANCH}"
+          export REVIEW_TIMESTAMP="${CURRENT_TIMESTAMP}"
 
-        REVIEW_OUTPUT="$(REVIEW_BRANCH="${CURRENT_BRANCH}" REVIEW_TIMESTAMP="$(date -u +%Y-%m-%dT%H:%M:%SZ)" echo "${CLEAN_RESULT}" | python3 -c "
+          REVIEW_OUTPUT="$(echo "${CLEAN_RESULT}" | python3 -c "
 import sys, json, os
 try:
     d = json.load(sys.stdin)
@@ -312,28 +318,27 @@ try:
         issues_text += '  [' + sev + '] ' + loc + ': ' + msg + '\n'
     print(str(critical) + '\n' + str(high) + '\n' + payload + '\n---ISSUES---\n' + issues_text)
 except Exception:
-    print('0\n0\n' + sys.stdin.read())
-" 2>/dev/null || echo "0
-0
-${CLEAN_RESULT}")"
+    print('0\n0\n{}')
+" 2>/dev/null || printf '0\n0\n{}\n')"
 
-        CRITICAL_COUNT="$(echo "${REVIEW_OUTPUT}" | head -1)"
-        HIGH_COUNT="$(echo "${REVIEW_OUTPUT}" | sed -n '2p')"
-        SAVE_PAYLOAD="$(echo "${REVIEW_OUTPUT}" | sed -n '3,/^---ISSUES---$/p' | sed '$d')"
-        ISSUES_TEXT="$(echo "${REVIEW_OUTPUT}" | sed -n '/^---ISSUES---$/,$ p' | tail -n +2)"
-        echo "${SAVE_PAYLOAD}" > "${REVIEW_LOG}"
+          CRITICAL_COUNT="$(echo "${REVIEW_OUTPUT}" | head -1)"
+          HIGH_COUNT="$(echo "${REVIEW_OUTPUT}" | sed -n '2p')"
+          SAVE_PAYLOAD="$(echo "${REVIEW_OUTPUT}" | sed -n '3,/^---ISSUES---$/p' | sed '$d')"
+          ISSUES_TEXT="$(echo "${REVIEW_OUTPUT}" | sed -n '/^---ISSUES---$/,$ p' | tail -n +2)"
+          echo "${SAVE_PAYLOAD}" > "${REVIEW_LOG}"
 
-        if [ "${CRITICAL_COUNT:-0}" -gt 0 ] 2>/dev/null || [ "${HIGH_COUNT:-0}" -gt 0 ] 2>/dev/null; then
-          echo "AIレビュー失敗: CRITICAL ${CRITICAL_COUNT}件、HIGH ${HIGH_COUNT}件の問題が検出されました。"
-          echo "  詳細: ${REVIEW_LOG}"
-          echo ""
-          echo "${ISSUES_TEXT}"
-          echo ""
-          echo "問題を修正してから再度pushしてください。"
-          exit 1
+          if [ "${CRITICAL_COUNT:-0}" -gt 0 ] 2>/dev/null || [ "${HIGH_COUNT:-0}" -gt 0 ] 2>/dev/null; then
+            echo "AIレビュー失敗: CRITICAL ${CRITICAL_COUNT}件、HIGH ${HIGH_COUNT}件の問題が検出されました。"
+            echo "  詳細: ${REVIEW_LOG}"
+            echo ""
+            echo "${ISSUES_TEXT}"
+            echo ""
+            echo "問題を修正してから再度pushしてください。"
+            exit 1
+          fi
+
+          echo "    AIレビュー完了（CRITICAL: ${CRITICAL_COUNT}, HIGH: ${HIGH_COUNT}）"
         fi
-
-        echo "    AIレビュー完了（CRITICAL: ${CRITICAL_COUNT}, HIGH: ${HIGH_COUNT}）"
       fi
     fi
   fi
