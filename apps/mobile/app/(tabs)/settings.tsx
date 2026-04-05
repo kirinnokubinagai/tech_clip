@@ -131,9 +131,13 @@ export default function SettingsScreen() {
   }, [loadLanguage, fetchNotificationSettings]);
 
   useEffect(() => {
-    checkNotificationPermission().then((status) => {
-      setNotificationPermission(status);
-    });
+    checkNotificationPermission()
+      .then((status) => {
+        setNotificationPermission(status);
+      })
+      .catch(() => {
+        setNotificationPermission("undetermined");
+      });
   }, []);
 
   /**

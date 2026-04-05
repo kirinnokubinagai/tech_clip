@@ -57,6 +57,9 @@ export default function OnboardingScreen() {
     router.replace("/(auth)/login");
   };
 
+  /**
+   * スキップ時はATT（App Tracking Transparency）許可要求を省略し、直接ログイン画面へ遷移する
+   */
   const handleSkip = async () => {
     await setHasSeenOnboarding(true);
     router.replace("/(auth)/login");

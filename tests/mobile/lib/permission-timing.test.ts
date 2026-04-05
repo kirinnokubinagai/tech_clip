@@ -2,6 +2,7 @@ import * as Device from "expo-device";
 import * as Notifications from "expo-notifications";
 import { Platform } from "react-native";
 
+import { apiFetch } from "@/lib/api";
 import {
   registerForPushNotificationsWithLogging,
   requestNotificationPermission,
@@ -77,7 +78,7 @@ describe("requestNotificationPermission", () => {
     expect(Notifications.requestPermissionsAsync).toHaveBeenCalledTimes(1);
   });
 
-  it("権限が拒否された場合にdeniemを返すこと", async () => {
+  it("権限が拒否された場合にdeniedを返すこと", async () => {
     // Arrange
     (Notifications.getPermissionsAsync as jest.Mock).mockResolvedValue({
       status: "undetermined",
@@ -109,7 +110,6 @@ describe("requestNotificationPermission", () => {
 describe("registerForPushNotificationsWithLogging", () => {
   it("トークン登録成功時にinfoログを記録すること", async () => {
     // Arrange
-    const { apiFetch } = await import("@/lib/api");
     (Notifications.getPermissionsAsync as jest.Mock).mockResolvedValue({
       status: "granted",
     });
@@ -124,13 +124,12 @@ describe("registerForPushNotificationsWithLogging", () => {
     // Assert
     expect(logger.info).toHaveBeenCalledWith(
       "プッシュトークンのAPI登録に成功しました",
-      expect.objectContaining({ token: "ExponentPushToken[test]" }),
+      expect.objectContaining({ tokenPrefix: expect.stringContaining("ExponentPushToken") }),
     );
   });
 
   it("トークン登録失敗時にerrorログを記録すること", async () => {
     // Arrange
-    const { apiFetch } = await import("@/lib/api");
     (Notifications.getPermissionsAsync as jest.Mock).mockResolvedValue({
       status: "granted",
     });
@@ -151,7 +150,6 @@ describe("registerForPushNotificationsWithLogging", () => {
 
   it("権限が拒否された場合にトークン登録を試みないこと", async () => {
     // Arrange
-    const { apiFetch } = await import("@/lib/api");
     (Notifications.getPermissionsAsync as jest.Mock).mockResolvedValue({
       status: "undetermined",
     });
@@ -169,7 +167,6 @@ describe("registerForPushNotificationsWithLogging", () => {
 
   it("シミュレータの場合にトークン登録を試みないこと", async () => {
     // Arrange
-    const { apiFetch } = await import("@/lib/api");
     Object.defineProperty(Device, "isDevice", { value: false });
 
     // Act

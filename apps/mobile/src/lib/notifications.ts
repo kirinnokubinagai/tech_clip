@@ -29,6 +29,7 @@ export async function checkNotificationPermission(): Promise<NotificationPermiss
 
 /**
  * 通知権限をユーザーに要求する
+ * 既に許可済みの場合はリクエストをスキップする
  * シミュレータでは "undetermined" を返す
  *
  * @returns 要求後の通知権限ステータス
@@ -36,6 +37,11 @@ export async function checkNotificationPermission(): Promise<NotificationPermiss
 export async function requestNotificationPermission(): Promise<NotificationPermissionStatus> {
   if (!Device.isDevice) {
     return "undetermined";
+  }
+
+  const { status: existingStatus } = await Notifications.getPermissionsAsync();
+  if (existingStatus === "granted") {
+    return "granted";
   }
 
   const { status } = await Notifications.requestPermissionsAsync();
@@ -93,21 +99,22 @@ export async function registerTokenWithApi(token: string): Promise<void> {
 }
 
 /**
- * プッシュ通知権限を要求し、トークンを取得してAPIに登録する
+ * プッシュ通知権限を確認し、未決定の場合はリクエストする
+ * トークンを取得してAPIに登録する
  * エラーはすべてログに記録し、例外を外部に伝播させない
  * 通知関連機能の初回使用時またはユーザーが設定から許可した際に呼び出す
  */
 export async function registerForPushNotificationsWithLogging(): Promise<void> {
-  const token = await registerForPushNotifications();
-
-  if (!token) {
-    return;
-  }
-
   try {
+    const token = await registerForPushNotifications();
+
+    if (!token) {
+      return;
+    }
+
     await registerTokenWithApi(token);
     logger.info("プッシュトークンのAPI登録に成功しました", {
-      token: `${token.slice(0, 20)}...`,
+      tokenPrefix: `${token.slice(0, 20)}...`,
     });
   } catch (error: unknown) {
     logger.error("プッシュトークンのAPI登録に失敗しました", { error });
