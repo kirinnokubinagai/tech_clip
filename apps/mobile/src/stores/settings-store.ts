@@ -110,6 +110,15 @@ export const useSettingsStore = create<SettingsStore>((set, get) => ({
       return;
     }
     const language = normalizeStoredLanguage(stored);
+    let parsed: unknown;
+    try {
+      parsed = JSON.parse(stored);
+    } catch {
+      parsed = null;
+    }
+    if (!LOCALE_CODES.includes(parsed as Language)) {
+      await SecureStore.setItemAsync(LANGUAGE_KEY, JSON.stringify(language));
+    }
     set({ language, isLanguageLoaded: true });
   },
 

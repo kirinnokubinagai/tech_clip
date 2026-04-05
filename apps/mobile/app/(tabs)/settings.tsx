@@ -98,7 +98,7 @@ export default function SettingsScreen() {
   const user = useAuthStore((s) => s.user);
   const { isSubscribed } = useSubscription();
 
-  const getLanguageLabel = useSettingsStore((s) => s.getLanguageLabel);
+  const languageLabel = useSettingsStore((s) => s.getLanguageLabel());
   const setLanguage = useSettingsStore((s) => s.setLanguage);
   const loadLanguage = useSettingsStore((s) => s.loadLanguage);
   const notificationSettings = useSettingsStore((s) => s.notificationSettings);
@@ -226,7 +226,7 @@ export default function SettingsScreen() {
           testID="settings-language-button"
           icon={<Globe size={ICON_SIZE} color={ICON_COLOR} />}
           label={t("settings.items.language")}
-          value={getLanguageLabel()}
+          value={languageLabel}
           onPress={handleLanguageSelect}
         />
         <SectionDivider />

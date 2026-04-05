@@ -109,6 +109,41 @@ describe("useSettingsStore", () => {
         expect(state.language).toBe("en");
         expect(state.isLanguageLoaded).toBe(true);
       });
+
+      it("不正なJSON文字列の場合はデフォルト値（ja）にフォールバックすること", async () => {
+        // Arrange
+        mockGetItemAsync.mockResolvedValue("not-json");
+
+        // Act
+        await useSettingsStore.getState().loadLanguage();
+
+        // Assert
+        const state = useSettingsStore.getState();
+        expect(state.language).toBe("ja");
+        expect(state.isLanguageLoaded).toBe(true);
+      });
+
+      it("旧形式検出時にSecureStoreにlocaleコードで書き戻すこと", async () => {
+        // Arrange
+        mockGetItemAsync.mockResolvedValue('"日本語"');
+
+        // Act
+        await useSettingsStore.getState().loadLanguage();
+
+        // Assert
+        expect(mockSetItemAsync).toHaveBeenCalledWith("settings_language", JSON.stringify("ja"));
+      });
+
+      it("有効なlocaleコードの場合はSecureStoreへの書き戻しをしないこと", async () => {
+        // Arrange
+        mockGetItemAsync.mockResolvedValue('"ja"');
+
+        // Act
+        await useSettingsStore.getState().loadLanguage();
+
+        // Assert
+        expect(mockSetItemAsync).not.toHaveBeenCalled();
+      });
     });
 
     describe("setLanguage", () => {
