@@ -1,7 +1,7 @@
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { ActivityIndicator, Pressable, Text, View } from "react-native";
+import { CallbackErrorView, CallbackLoadingView } from "@/components/auth/CallbackViews";
 import { setAuthToken, setRefreshToken } from "@/lib/secure-store";
 import { useAuthStore } from "@/stores/auth-store";
 
@@ -56,14 +56,21 @@ export default function AuthCallbackScreen() {
           if (cancelled) return;
           await setRefreshToken(params.refresh_token);
         }
+      } catch {
+        if (cancelled) return;
+        setErrorMessage(t("auth.authCallback.errorSaveToken"));
+        setState("error");
+        return;
+      }
 
+      try {
         if (cancelled) return;
         await checkSession();
         if (cancelled) return;
         router.replace("/(tabs)");
       } catch {
         if (cancelled) return;
-        setErrorMessage(t("auth.authCallback.errorSaveToken"));
+        setErrorMessage(t("auth.authCallback.errorCheckSession"));
         setState("error");
       }
     }
@@ -76,37 +83,20 @@ export default function AuthCallbackScreen() {
 
   if (state === "error") {
     return (
-      <View className="flex-1 items-center justify-center bg-background px-6">
-        <Text
-          className="mb-6 text-center text-base text-error"
-          testID="auth-callback-error"
-          accessibilityRole="alert"
-        >
-          {errorMessage}
-        </Text>
-        <Pressable
-          onPress={() => router.replace("/(auth)/login")}
-          className="rounded-lg bg-primary px-6 py-3"
-          testID="auth-callback-back-button"
-          accessibilityRole="button"
-          accessibilityLabel={t("auth.authCallback.backToLogin")}
-        >
-          <Text className="text-base font-semibold text-white">
-            {t("auth.authCallback.backToLogin")}
-          </Text>
-        </Pressable>
-      </View>
+      <CallbackErrorView
+        message={errorMessage}
+        errorTestId="auth-callback-error"
+        backButtonTestId="auth-callback-back-button"
+        onBackToLogin={() => router.replace("/(auth)/login")}
+      />
     );
   }
 
   return (
-    <View className="flex-1 items-center justify-center bg-background">
-      <ActivityIndicator
-        size="large"
-        testID="auth-callback-loading"
-        accessibilityLabel={t("auth.signingIn")}
-      />
-      <Text className="mt-4 text-sm text-text-muted">{t("auth.signingIn")}</Text>
-    </View>
+    <CallbackLoadingView
+      loadingTestId="auth-callback-loading"
+      labelKey="auth.signingIn"
+      messageKey="auth.signingIn"
+    />
   );
 }

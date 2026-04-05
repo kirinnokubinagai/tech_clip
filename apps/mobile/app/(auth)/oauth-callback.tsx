@@ -1,8 +1,7 @@
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { ActivityIndicator, Pressable, Text, View } from "react-native";
-
+import { CallbackErrorView, CallbackLoadingView } from "@/components/auth/CallbackViews";
 import { useAuthStore } from "@/stores/auth-store";
 
 /** OAuthコールバック状態 */
@@ -30,6 +29,11 @@ type CallbackState = "loading" | "error";
  *
  * エラー時はエラーメッセージと「ログイン画面に戻る」ボタンを表示する。
  * これはユーザーがリカバリできるよう明示的なUXを提供するため。
+ *
+ * @remarks 到達可能性について
+ * 現時点では `login.tsx` の `SOCIAL_CALLBACK_URL` は `techclip://auth/callback` を指しており、
+ * このルート（`techclip://oauth-callback`）へ遷移するコードパスは存在しない。
+ * 将来 Better Auth のセッションCookieフローへ移行する際に使用する予定のルートである。
  */
 export default function OAuthCallbackScreen() {
   const { t } = useTranslation();
@@ -71,37 +75,20 @@ export default function OAuthCallbackScreen() {
 
   if (state === "error") {
     return (
-      <View className="flex-1 items-center justify-center bg-background px-6">
-        <Text
-          className="mb-6 text-center text-base text-error"
-          testID="oauth-callback-error"
-          accessibilityRole="alert"
-        >
-          {errorMessage}
-        </Text>
-        <Pressable
-          onPress={() => router.replace("/(auth)/login")}
-          className="rounded-lg bg-primary px-6 py-3"
-          testID="oauth-callback-back-button"
-          accessibilityRole="button"
-          accessibilityLabel={t("auth.oauthCallback.backToLogin")}
-        >
-          <Text className="text-base font-semibold text-white">
-            {t("auth.oauthCallback.backToLogin")}
-          </Text>
-        </Pressable>
-      </View>
+      <CallbackErrorView
+        message={errorMessage}
+        errorTestId="oauth-callback-error"
+        backButtonTestId="oauth-callback-back-button"
+        onBackToLogin={() => router.replace("/(auth)/login")}
+      />
     );
   }
 
   return (
-    <View className="flex-1 items-center justify-center bg-background">
-      <ActivityIndicator
-        size="large"
-        testID="oauth-callback-loading"
-        accessibilityLabel={t("auth.oauthCallback.processingLabel")}
-      />
-      <Text className="mt-4 text-sm text-text-muted">{t("auth.oauthCallback.processing")}</Text>
-    </View>
+    <CallbackLoadingView
+      loadingTestId="oauth-callback-loading"
+      labelKey="auth.oauthCallback.processingLabel"
+      messageKey="auth.oauthCallback.processing"
+    />
   );
 }
