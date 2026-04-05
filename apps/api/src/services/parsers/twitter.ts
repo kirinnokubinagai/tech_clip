@@ -116,6 +116,9 @@ export async function parseTwitter(url: string): Promise<ParsedArticleContent> {
   const oembedUrl = `${OEMBED_ENDPOINT}?url=${encodeURIComponent(url)}&omit_script=true`;
   const response = await fetch(oembedUrl, {
     signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
+    headers: {
+      "User-Agent": "Mozilla/5.0 (compatible; TechClipBot/1.0; +https://techclip.app)",
+    },
   });
 
   if (!response.ok) {
