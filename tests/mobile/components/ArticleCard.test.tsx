@@ -131,9 +131,9 @@ describe("ArticleCard", () => {
     });
 
     /**
-     * React Native Testing Library の fireEvent はネイティブのイベントバブリングを
-     * シミュレートしないため、e.stopPropagation() の効果はテスト環境では検証できない。
-     * 実機での動作確認が必要。
+     * React Native Testing Library の fireEvent は GestureResponderEvent を渡さないため
+     * e?.stopPropagation() はテスト環境では呼ばれない。
+     * onPress が onToggleFavorite のみ呼ばれ、親の onPress が呼ばれないことを確認する。
      */
     it("お気に入りボタンタップ時にカード詳細遷移（onPress）が発生しないこと", async () => {
       // Arrange
