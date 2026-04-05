@@ -51,6 +51,7 @@
     "continueWithGoogle": "Continue with Google",
     "continueWithGithub": "Continue with GitHub",
     "socialLoginFailed": "Failed to start social sign-in. Please try again.",
+    "signingIn": "Signing in...",
     "oauthCallback": {
       "processingLabel": "Authenticating",
       "processing": "Authenticating...",

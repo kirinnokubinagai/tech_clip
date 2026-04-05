@@ -4,6 +4,12 @@ import { render, waitFor } from "@testing-library/react-native";
 const mockReplace = jest.fn();
 const mockCheckSession = jest.fn();
 
+jest.mock("react-i18next", () => ({
+  useTranslation: () => ({
+    t: (key: string) => key,
+  }),
+}));
+
 jest.mock("expo-router", () => ({
   useRouter: () => ({
     replace: mockReplace,

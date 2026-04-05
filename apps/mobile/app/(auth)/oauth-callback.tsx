@@ -9,7 +9,7 @@ import { useAuthStore } from "@/stores/auth-store";
 /** OAuthコールバック状態 */
 type CallbackState = "loading" | "error" | "success";
 
-/** URLからクエリパラメータを安全に取得する型ガード */
+/** URLにerrorパラメータが存在するか確認する */
 function hasErrorParam(queryParams: Record<string, string | string[]>): boolean {
   return typeof queryParams.error === "string" && queryParams.error.length > 0;
 }

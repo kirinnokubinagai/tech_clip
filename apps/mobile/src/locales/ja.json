@@ -51,6 +51,7 @@
     "continueWithGoogle": "Google でログイン",
     "continueWithGithub": "GitHub でログイン",
     "socialLoginFailed": "ソーシャルログインの開始に失敗しました。もう一度お試しください。",
+    "signingIn": "ログイン中...",
     "oauthCallback": {
       "processingLabel": "認証処理中",
       "processing": "認証処理中...",
