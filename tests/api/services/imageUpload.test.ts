@@ -258,7 +258,7 @@ describe("processAvatarImage", () => {
     if (result.isValid) {
       throw new Error("MIME偽装が検出されませんでした");
     }
-    expect(result.error).toBeDefined();
+    expect(result.error).toContain("確認できませんでした");
   });
 
   it("GIF89aヘッダーをもつファイルをimage/pngで偽装した場合は拒否されること", async () => {
@@ -277,7 +277,7 @@ describe("processAvatarImage", () => {
     if (result.isValid) {
       throw new Error("MIME偽装が検出されませんでした");
     }
-    expect(result.error).toBeDefined();
+    expect(result.error).toContain("確認できませんでした");
   });
 
   it("Content-TypeがjpegでもPNGヘッダーの実体は正常に受け付けること", async () => {
