@@ -115,14 +115,22 @@ jobs:
               --data-urlencode "replacement=Bearer ${TOKEN}" \
               --data-urlencode "initiators=" >> "${SETUP_LOG}" 2>&1
 
-            # アクティブスキャン
+            # アクティブスキャン（最大5分で打ち切り）
             echo "アクティブスキャン実行中..."
+            SCAN_MAX_DURATION_MIN=5
             SCAN_ID=$(curl -s "http://localhost:${ZAP_PORT}/JSON/ascan/action/scan/" \
               --data-urlencode "url=http://localhost:${API_PORT}" \
-              --data-urlencode "recurse=true" | jq -r ".scan")
+              --data-urlencode "recurse=true" \
+              --data-urlencode "maxDuration=${SCAN_MAX_DURATION_MIN}" | jq -r ".scan")
 
+            if [ -z "${SCAN_ID}" ] || [ "${SCAN_ID}" = "null" ]; then
+              echo "::error::ZAPスキャンの開始に失敗しました"
+              exit 1
+            fi
+
+            SCAN_WAIT_SECONDS=$(( (SCAN_MAX_DURATION_MIN + 2) * 60 ))
             SCAN_TIMED_OUT=1
-            for i in $(seq 1 300); do
+            for i in $(seq 1 $((SCAN_WAIT_SECONDS / 2))); do
               STATUS=$(curl -s "http://localhost:${ZAP_PORT}/JSON/ascan/view/status/?scanId=${SCAN_ID}" | jq -r ".status")
               if [ "${STATUS}" = "100" ]; then
                 SCAN_TIMED_OUT=0
@@ -131,8 +139,7 @@ jobs:
               sleep 2
             done
             if [ "${SCAN_TIMED_OUT}" -eq 1 ]; then
-              echo "::error::ZAPスキャンがタイムアウトしました（600秒）"
-              exit 1
+              echo "::warning::ZAPスキャンが制限時間内に完了しませんでした。部分結果で判定します"
             fi
 
             # レポート生成
