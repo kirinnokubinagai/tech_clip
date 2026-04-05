@@ -23,6 +23,8 @@ export function toRecord<T extends Record<string, unknown>>(result: unknown): T 
  * @param results - Drizzle のクエリ結果（配列）
  * @returns 汎用レコード配列
  */
-export function toRecordArray(results: unknown): Array<Record<string, unknown>> {
+export function toRecordArray(
+  results: unknown /* TODO: Drizzle型改善後に廃止 */,
+): Array<Record<string, unknown>> {
   return results as Array<Record<string, unknown>>;
 }
