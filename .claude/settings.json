@@ -119,6 +119,7 @@
       "Bash(*push*--force-with-lease*)",
       "Bash(*reset --hard*)",
       "Bash(*checkout -- *)",
+      "Bash(*git restore*)",
       "Bash(*git restore .)",
       "Bash(*git restore -- .)",
       "Bash(*git restore --staged .)",

@@ -28,6 +28,15 @@ check_dangerous() {
   echo "$cmd" | grep -qE "git checkout -- " && return 0
   echo "$cmd" | grep -qE "git clean" && return 0
   echo "$cmd" | grep -qE "git branch -D" && return 0
+  echo "$cmd" | grep -qE "git restore" && return 0
+
+  # git checkout でファイル復元を検出（ブランチ切替は許可）
+  # git checkout <ファイルパス> のパターン: 拡張子を含むか、/ を含むパスを検出
+  if echo "$cmd" | grep -qE "^git checkout [^-]" && \
+     ! echo "$cmd" | grep -qE "git checkout (-b|--orphan|--track)" && \
+     echo "$cmd" | grep -qE "git checkout [^ ]*(/|\.[a-zA-Z])"; then
+    return 0
+  fi
 
   # システムコマンド
   echo "$cmd" | grep -qE "^kill " && return 0
