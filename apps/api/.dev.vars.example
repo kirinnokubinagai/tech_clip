@@ -70,3 +70,13 @@ GITHUB_CLIENT_SECRET=your-github-client-secret
 
 RUNPOD_API_KEY=your-runpod-api-key
 RUNPOD_ENDPOINT_ID=your-runpod-endpoint-id
+
+# -----------------------------------------------------------------------------
+# RevenueCat Webhook
+# -----------------------------------------------------------------------------
+# RevenueCat ダッシュボード (https://app.revenuecat.com) > Integrations > Webhooks で
+# Webhook を追加し、Shared Secret を取得して設定する
+# Webhook URL: https://api.techclip.app/api/subscription/webhooks/revenuecat
+# ローカル開発では ngrok 等でトンネルを作成し、そのURLを設定すること
+
+REVENUECAT_WEBHOOK_SECRET=your-revenuecat-webhook-secret

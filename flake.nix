@@ -85,20 +85,39 @@
             eas() { npx --yes eas-cli@latest "$@"; }
             export -f eas
 
+            # シークレットファイルのセットアップコマンド
+            setup-secrets() {
+              local missing=0
+              if [ ! -f "apps/api/.dev.vars" ]; then
+                cp apps/api/.dev.vars.example apps/api/.dev.vars
+                echo "[setup-secrets] apps/api/.dev.vars を作成しました。実際の値を設定してください。"
+                missing=1
+              fi
+              if [ ! -f "apps/mobile/.env" ]; then
+                cp apps/mobile/.env.example apps/mobile/.env
+                echo "[setup-secrets] apps/mobile/.env を作成しました。実際の値を設定してください。"
+                missing=1
+              fi
+              if [ "$missing" -eq 0 ]; then
+                echo "[setup-secrets] シークレットファイルはすでに存在します。"
+              else
+                echo "[setup-secrets] 詳細は docs/SECRETS.md を参照してください。"
+              fi
+            }
+            export -f setup-secrets
+
             # 依存パッケージの自動インストール
             if [ ! -d "node_modules" ]; then
               echo "Installing dependencies..."
               pnpm install --frozen-lockfile 2>/dev/null || pnpm install
             fi
 
-            # .env の自動コピー（存在しない場合のみ）
-            if [ -f "apps/mobile/.env.example" ] && [ ! -f "apps/mobile/.env" ]; then
-              cp apps/mobile/.env.example apps/mobile/.env
-              echo "Created apps/mobile/.env from example"
-            fi
-            if [ -f "apps/api/.dev.vars.example" ] && [ ! -f "apps/api/.dev.vars" ]; then
-              cp apps/api/.dev.vars.example apps/api/.dev.vars
-              echo "Created apps/api/.dev.vars from example"
+            # シークレットファイルが未作成の場合に警告を表示
+            if [ ! -f "apps/api/.dev.vars" ] || [ ! -f "apps/mobile/.env" ]; then
+              echo ""
+              echo "警告: シークレットファイルが未作成です。"
+              echo "  実行してください: setup-secrets"
+              echo "  詳細:             docs/SECRETS.md"
             fi
 
             echo ""
@@ -109,6 +128,7 @@
             echo "  eas:      via npx (run 'eas --version' to check)"
             echo ""
             echo "Quick start:"
+            echo "  setup-secrets     # シークレットファイルを初期化"
             echo "  pnpm dev          # Start dev servers"
             echo "  pnpm test         # Run tests"
             echo "  pnpm lint         # Lint check"
