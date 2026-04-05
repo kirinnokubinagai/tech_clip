@@ -199,6 +199,7 @@ types:
   fix: resolve SQLite connection leak on worker restart #92
   docs: complete CLAUDE.md with full development rules #118
   test: add integration tests for article parser #103
+  design: add article-detail mockup #123
 ```
 
 ### コミットの粒度

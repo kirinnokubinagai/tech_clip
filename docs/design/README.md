@@ -89,3 +89,6 @@ docs/design/
 |---------|----------------|---------------|
 | `twitter-save.png` | ✨ AI要約 | 要約する |
 | `youtube-summary.png` | ✨ AI要約を生成 | 要約を生成 |
+| `youtube-summary.png` | AI要約（セクション見出し） | 要約 |
+| `summary-language-settings.png` | AI要約の出力言語を選択してください | 出力言語を選択してください |
+| `summary-language-settings.png` | 選択した言語でAI要約が生成されます | 選択した言語で要約が生成されます |
