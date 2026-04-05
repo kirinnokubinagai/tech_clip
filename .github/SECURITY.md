@@ -25,13 +25,14 @@
 |-------|--------|
 | Initial acknowledgment | 48 hours |
 | Triage and assessment | 5 business days |
-| Fix release | 14 business days (critical: 48 hours) |
+| Fix release (critical) | 48 hours |
+| Fix release (other) | 14 business days |
 
 ### Severity Levels
 
 | Level | Description | Response |
 |-------|-------------|----------|
-| Critical | Authentication bypass, RCE, data breach | Immediate hotfix |
+| Critical | Authentication bypass, RCE, data breach | Fix within 48 hours |
 | High | SQLi, XSS, privilege escalation | Fix within 7 days |
 | Medium | CSRF, information disclosure | Fix within 14 days |
 | Low | Best practice violations | Next release cycle |
