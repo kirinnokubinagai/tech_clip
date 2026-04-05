@@ -40,6 +40,7 @@ jest.mock("@mobile/stores/settings-store", () => ({
       isNotificationSettingsLoaded: true,
       setLanguage: mockSetLanguage,
       loadLanguage: mockLoadLanguage,
+      getLanguageLabel: () => "日本語",
       fetchNotificationSettings: mockFetchNotificationSettings,
       updateNotificationEnabled: mockUpdateNotificationEnabled,
     }),
