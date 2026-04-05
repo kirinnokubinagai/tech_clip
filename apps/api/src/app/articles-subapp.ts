@@ -161,12 +161,14 @@ export async function handleArticles(
     await next();
   });
 
+  /** 記事保存（POST/PATCH）のレート制限（30リクエスト/分） */
   subApp.use("/api/articles", createRateLimitMiddleware(RATE_LIMIT_CONFIG.articleSave, kvStore));
   subApp.use(
     "/api/articles/:id",
     createRateLimitMiddleware(RATE_LIMIT_CONFIG.articleSave, kvStore),
   );
 
+  /** AI（要約・翻訳）ルートのレート制限（10リクエスト/分）とAI使用回数制限 */
   subApp.use("/api/articles/:id/summary", createRateLimitMiddleware(RATE_LIMIT_CONFIG.ai, kvStore));
   subApp.use("/api/articles/:id/summary", createAiLimitMiddleware(db));
   subApp.use(
