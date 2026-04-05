@@ -565,7 +565,7 @@ describe("createRateLimitMiddleware", () => {
         keyPrefix: "test",
       };
 
-      /** get呼び出し回数を追跡するストアラッパー */
+      /** testStore をラップして get 呼び出し回数を追跡するストア */
       let getCallCount = 0;
       const atomicStore: RateLimitStore = {
         get: async (key: string) => {
