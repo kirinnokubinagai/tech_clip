@@ -2,7 +2,6 @@ import type { Context, MiddlewareHandler } from "hono";
 
 import { createLogger } from "../lib/logger";
 
-/** モジュールレベルのロガー */
 const logger = createLogger("rateLimit");
 
 /** HTTP 429 Too Many Requests ステータスコード */
@@ -161,7 +160,7 @@ function getClientIp(c: Context): string {
  * ウィンドウ境界付近でバーストが発生しうる点に留意すること。
  *
  * ## フェイルオープン
- * ストアの読み書きが失敗した場合はリクエストを通過させる（フェイルオープン）。
+ * エラー発生時はフェイルオープンでリクエストを通過させる。
  *
  * ## 精度に関する注意
  * 単一 isolate 内では順次処理されるが、複数エッジロケーション間では
