@@ -17,10 +17,21 @@ if [ -z "$WORKTREE_PATHS" ]; then
     exit 0
 fi
 
+# リポジトリルートを取得
+REPO_ROOT=$(cd "$(git rev-parse --git-common-dir 2>/dev/null)/.." && pwd)
+EXPECTED_PREFIX="${REPO_ROOT}/.worktrees/"
+
 for wt_path in $WORKTREE_PATHS; do
     [ -d "$wt_path" ] || continue
 
     wt_name=$(basename "$wt_path")
+
+    # ネストworktree検出: .worktrees/ 配下にさらに .worktrees/ があるパス
+    if echo "$wt_path" | grep -qE '\.worktrees/[^/]+/\.worktrees/'; then
+        PROBLEMS="${PROBLEMS}[NESTED] ${wt_name}: worktreeがネストしている -> git worktree remove --force ${wt_path} で除去し ${EXPECTED_PREFIX} 直下に再作成 | "
+        PROBLEM_COUNT=$((PROBLEM_COUNT + 1))
+        continue
+    fi
 
     # git dir を解決（worktreeは .git ファイルで実際のgit dirを指す）
     GIT_DIR=""
