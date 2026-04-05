@@ -66,6 +66,7 @@ describe("parseYoutube", () => {
     const mockResponse = {
       title: "テスト動画タイトル",
       author_name: "テストチャンネル",
+      author_url: "https://www.youtube.com/@testchannel",
     };
 
     // Act
