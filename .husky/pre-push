@@ -260,7 +260,7 @@ else
   else
     DIFF_LINE_COUNT="$(echo "${DIFF_CONTENT}" | wc -l | tr -d ' ')"
     if [ "${DIFF_LINE_COUNT}" -gt 5000 ]; then
-      DIFF_CONTENT="$(echo "${DIFF_CONTENT}" | head -5000 | tac | sed '/^diff --git /q' | tac)"
+      DIFF_CONTENT="$(echo "${DIFF_CONTENT}" | head -5000 | tac | sed '1,/^diff --git /d' | tac)"
       echo "    警告: 差分が大きいため、ファイル境界で切り詰めてレビューします（一部ファイルが省略されています）。"
     fi
 
@@ -293,14 +293,14 @@ except Exception:
         REVIEW_LOG="${REVIEWS_DIR}/pre-push-$(date +%Y%m%d-%H%M%S-$$).json"
         CURRENT_BRANCH="$(git branch --show-current 2>/dev/null || echo "unknown")"
 
-        REVIEW_OUTPUT="$(echo "${CLEAN_RESULT}" | python3 -c "
-import sys, json
+        REVIEW_OUTPUT="$(REVIEW_BRANCH="${CURRENT_BRANCH}" REVIEW_TIMESTAMP="$(date -u +%Y-%m-%dT%H:%M:%SZ)" echo "${CLEAN_RESULT}" | python3 -c "
+import sys, json, os
 try:
     d = json.load(sys.stdin)
     critical = int(d.get('critical', 0))
     high = int(d.get('high', 0))
-    d['timestamp'] = '$(date -u +%Y-%m-%dT%H:%M:%SZ)'
-    d['branch'] = '${CURRENT_BRANCH}'
+    d['timestamp'] = os.environ.get('REVIEW_TIMESTAMP', '')
+    d['branch'] = os.environ.get('REVIEW_BRANCH', 'unknown')
     payload = json.dumps(d, ensure_ascii=False, indent=2)
     issues_text = ''
     for issue in d.get('issues', []):
