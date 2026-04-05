@@ -294,8 +294,7 @@ except Exception:
         if [ -z "${CLEAN_RESULT}" ] || [ "${CLEAN_RESULT}" = "{}" ]; then
           echo "    警告: AIレビュー結果のパースに失敗しました。pushを続行します。"
         else
-          mkdir -p "${REVIEWS_DIR}"
-          find "${REVIEWS_DIR}" -name 'pre-push-*.json' -mtime +30 -delete 2>/dev/null || true
+          { mkdir -p "${REVIEWS_DIR}" && find "${REVIEWS_DIR}" -name 'pre-push-*.json' -mtime +30 -delete; } 2>/dev/null || true
           REVIEW_LOG="${REVIEWS_DIR}/pre-push-$(date +%Y%m%d-%H%M%S).json"
           CURRENT_BRANCH="$(git branch --show-current 2>/dev/null || echo "unknown")"
           CURRENT_TIMESTAMP="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
@@ -327,7 +326,7 @@ except Exception:
           HIGH_COUNT="$(echo "${REVIEW_OUTPUT}" | sed -n '2p')"
           SAVE_PAYLOAD="$(echo "${REVIEW_OUTPUT}" | sed -n '3,/^---ISSUES---$/p' | sed '$d')"
           ISSUES_TEXT="$(echo "${REVIEW_OUTPUT}" | sed -n '/^---ISSUES---$/,$ p' | tail -n +2)"
-          echo "${SAVE_PAYLOAD}" > "${REVIEW_LOG}"
+          { echo "${SAVE_PAYLOAD}" > "${REVIEW_LOG}"; } 2>/dev/null || echo "    警告: レビュー結果の保存に失敗しました。"
 
           if [ "${CRITICAL_COUNT:-0}" -gt 0 ] 2>/dev/null || [ "${HIGH_COUNT:-0}" -gt 0 ] 2>/dev/null; then
             echo "AIレビュー失敗: CRITICAL ${CRITICAL_COUNT}件、HIGH ${HIGH_COUNT}件の問題が検出されました。"
