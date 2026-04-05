@@ -1,6 +1,17 @@
 import SettingsScreen from "@mobile-app/(tabs)/settings";
-import { fireEvent, render } from "@testing-library/react-native";
-import { Alert } from "react-native";
+import { act, fireEvent, render, waitFor } from "@testing-library/react-native";
+import { Alert, AppState } from "react-native";
+
+const mockCheckNotificationPermission = jest.fn();
+const mockRequestNotificationPermission = jest.fn();
+const mockRegisterForPushNotificationsWithLogging = jest.fn();
+
+jest.mock("@mobile/lib/notifications", () => ({
+  checkNotificationPermission: (...args: unknown[]) => mockCheckNotificationPermission(...args),
+  requestNotificationPermission: (...args: unknown[]) => mockRequestNotificationPermission(...args),
+  registerForPushNotificationsWithLogging: (...args: unknown[]) =>
+    mockRegisterForPushNotificationsWithLogging(...args),
+}));
 
 const mockSignOut = jest.fn();
 const mockDeleteAccount = jest.fn();
@@ -53,6 +64,9 @@ beforeEach(() => {
   mockLoadLanguage.mockResolvedValue(undefined);
   mockFetchNotificationSettings.mockResolvedValue(undefined);
   mockUpdateNotificationEnabled.mockResolvedValue(undefined);
+  mockCheckNotificationPermission.mockResolvedValue("granted");
+  mockRequestNotificationPermission.mockResolvedValue("granted");
+  mockRegisterForPushNotificationsWithLogging.mockResolvedValue(undefined);
 });
 
 describe("SettingsScreen", () => {
@@ -247,5 +261,124 @@ describe("通知設定の永続化", () => {
 
     // Assert
     expect(mockUpdateNotificationEnabled).toHaveBeenCalledWith(true);
+  });
+});
+
+describe("通知権限UIの表示状態", () => {
+  it("権限がdeniedの場合にヒントテキストが表示されること", async () => {
+    // Arrange
+    mockCheckNotificationPermission.mockResolvedValue("denied");
+
+    // Act
+    const { getByTestId } = await render(<SettingsScreen />);
+
+    // Assert
+    await waitFor(() => {
+      expect(getByTestId("settings-notification-permission-hint")).toBeDefined();
+    });
+  });
+
+  it("権限がundeterminedの場合にヒントテキストが表示されること", async () => {
+    // Arrange
+    mockCheckNotificationPermission.mockResolvedValue("undetermined");
+
+    // Act
+    const { getByTestId } = await render(<SettingsScreen />);
+
+    // Assert
+    await waitFor(() => {
+      expect(getByTestId("settings-notification-permission-hint")).toBeDefined();
+    });
+  });
+
+  it("権限がdeniedの場合に設定アプリ誘導ボタンが表示されること", async () => {
+    // Arrange
+    mockCheckNotificationPermission.mockResolvedValue("denied");
+
+    // Act
+    const { getByTestId } = await render(<SettingsScreen />);
+
+    // Assert
+    await waitFor(() => {
+      expect(getByTestId("settings-notification-permission-denied-button")).toBeDefined();
+    });
+  });
+
+  it("権限がundeterminedの場合に権限リクエストボタンが表示されること", async () => {
+    // Arrange
+    mockCheckNotificationPermission.mockResolvedValue("undetermined");
+
+    // Act
+    const { getByTestId } = await render(<SettingsScreen />);
+
+    // Assert
+    await waitFor(() => {
+      expect(getByTestId("settings-notification-permission-request-button")).toBeDefined();
+    });
+  });
+
+  it("権限がgrantedの場合にヒントテキストが表示されないこと", async () => {
+    // Arrange
+    mockCheckNotificationPermission.mockResolvedValue("granted");
+
+    // Act
+    const { queryByTestId } = await render(<SettingsScreen />);
+
+    // Assert
+    await waitFor(() => {
+      expect(queryByTestId("settings-notification-permission-hint")).toBeNull();
+    });
+  });
+});
+
+describe("AppStateリスナーによる権限再チェック", () => {
+  it("アプリがactiveになると通知権限が再チェックされること", async () => {
+    // Arrange
+    mockCheckNotificationPermission.mockResolvedValue("granted");
+    const appStateListeners: Array<(state: string) => void> = [];
+    jest
+      .spyOn(AppState, "addEventListener")
+      .mockImplementation((_event: string, handler: (state: string) => void) => {
+        appStateListeners.push(handler);
+        return { remove: jest.fn() };
+      });
+
+    // Act
+    await render(<SettingsScreen />);
+    const initialCallCount = mockCheckNotificationPermission.mock.calls.length;
+
+    await act(async () => {
+      for (const listener of appStateListeners) {
+        listener("active");
+      }
+    });
+
+    // Assert
+    expect(mockCheckNotificationPermission.mock.calls.length).toBeGreaterThan(initialCallCount);
+  });
+
+  it("アプリがbackgroundになっても権限チェックが実行されないこと", async () => {
+    // Arrange
+    mockCheckNotificationPermission.mockResolvedValue("granted");
+    const appStateListeners: Array<(state: string) => void> = [];
+    jest
+      .spyOn(AppState, "addEventListener")
+      .mockImplementation((_event: string, handler: (state: string) => void) => {
+        appStateListeners.push(handler);
+        return { remove: jest.fn() };
+      });
+
+    // Act
+    await render(<SettingsScreen />);
+    const initialCallCount = mockCheckNotificationPermission.mock.calls.length;
+
+    await act(async () => {
+      for (const listener of appStateListeners) {
+        listener("background");
+      }
+    });
+
+    // Assert
+    expect(mockCheckNotificationPermission.mock.calls.length).toBe(initialCallCount);
   });
 });

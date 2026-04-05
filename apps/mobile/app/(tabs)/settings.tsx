@@ -19,6 +19,7 @@ import { DARK_COLORS } from "@/lib/constants";
 import {
   checkNotificationPermission,
   registerForPushNotificationsWithLogging,
+  requestNotificationPermission,
 } from "@/lib/notifications";
 import { useSubscription } from "../../src/hooks/use-subscription";
 import { useAuthStore } from "../../src/stores/auth-store";
@@ -229,9 +230,11 @@ export default function SettingsScreen() {
         await Linking.openSettings();
         return;
       }
-      await registerForPushNotificationsWithLogging();
-      const currentPermission = await checkNotificationPermission();
-      setNotificationPermission(currentPermission);
+      const status = await requestNotificationPermission();
+      setNotificationPermission(status);
+      if (status === "granted") {
+        await registerForPushNotificationsWithLogging();
+      }
     } catch (_error) {
       Alert.alert(t("common.errorTitle"), t("settings.notificationUpdateError"));
     }
@@ -294,13 +297,15 @@ export default function SettingsScreen() {
               trackColor={{ false: DARK_COLORS.border, true: DARK_COLORS.primary }}
               thumbColor={DARK_COLORS.white}
               accessibilityLabel={t("settings.items.notifications")}
-              accessibilityHint={
-                notificationPermission !== "granted"
-                  ? t("settings.items.notificationPermissionDenied")
-                  : isNotificationsEnabled
-                    ? t("settings.notificationHintOff")
-                    : t("settings.notificationHintOn")
-              }
+              accessibilityHint={(() => {
+                if (notificationPermission !== "granted") {
+                  return t("settings.items.notificationPermissionDenied");
+                }
+                if (isNotificationsEnabled) {
+                  return t("settings.notificationHintOff");
+                }
+                return t("settings.notificationHintOn");
+              })()}
               accessibilityRole="switch"
             />
           }
