@@ -1,6 +1,9 @@
 import type { Context, MiddlewareHandler } from "hono";
 
+import { createLogger } from "../lib/logger";
+
 /** モジュールレベルのロガー */
+const logger = createLogger("rateLimit");
 
 /** HTTP 429 Too Many Requests ステータスコード */
 const HTTP_TOO_MANY_REQUESTS = 429;
@@ -177,8 +180,8 @@ export function createRateLimitMiddleware(
     let existing: RateLimitEntry | null;
     try {
       existing = await store.get(key);
-    } catch {
-      // フェイルオープン: ストア読み取り失敗
+    } catch (error) {
+      logger.warn("レート制限ストアの読み取りに失敗", { key, error });
       await next();
       return;
     }
@@ -186,8 +189,8 @@ export function createRateLimitMiddleware(
     if (!existing || existing.resetAt <= now) {
       try {
         await store.set(key, { count: 1, resetAt: now + config.windowMs });
-      } catch {
-        // フェイルオープン: ストア書き込み失敗
+      } catch (error) {
+        logger.warn("レート制限ストアの書き込みに失敗", { key, error });
       }
       await next();
       return;
@@ -212,8 +215,8 @@ export function createRateLimitMiddleware(
 
     try {
       await store.set(key, { count: existing.count + 1, resetAt: existing.resetAt });
-    } catch {
-      // フェイルオープン: カウンター更新失敗
+    } catch (error) {
+      logger.warn("レート制限カウンターの更新に失敗", { key, error });
     }
     await next();
   };
