@@ -1,5 +1,7 @@
 import type { Context, MiddlewareHandler } from "hono";
 
+/** モジュールレベルのロガー */
+
 /** HTTP 429 Too Many Requests ステータスコード */
 const HTTP_TOO_MANY_REQUESTS = 429;
 
@@ -148,6 +150,17 @@ function getClientIp(c: Context): string {
  * IPベースまたはユーザーIDベースでリクエスト数をカウントし、
  * 制限を超えた場合は429を返す。Retry-Afterヘッダーも付与する。
  *
+ * ## ウィンドウ方式
+ * 固定ウィンドウ方式（Fixed Window）を採用する。
+ * ウィンドウの開始時刻は最初のリクエスト到達時に確定し、
+ * `windowMs` 経過後にカウントがリセットされる。
+ * スライディングウィンドウ（Sliding Window）ではないため、
+ * ウィンドウ境界付近でバーストが発生しうる点に留意すること。
+ *
+ * ## フェイルオープン
+ * ストアの読み書きが失敗した場合はリクエストを通過させる（フェイルオープン）。
+ * エラー発生時はフェイルオープンでリクエストを通過させる。
+ *
  * @param config - レート制限設定
  * @param store - レート制限ストア（省略時はデフォルトのインメモリストア）
  * @returns Hono ミドルウェアハンドラー
@@ -165,6 +178,7 @@ export function createRateLimitMiddleware(
     try {
       existing = await store.get(key);
     } catch {
+      // フェイルオープン: ストア読み取り失敗
       await next();
       return;
     }
@@ -173,7 +187,7 @@ export function createRateLimitMiddleware(
       try {
         await store.set(key, { count: 1, resetAt: now + config.windowMs });
       } catch {
-        // フェイルオープン: 書き込み失敗時もリクエストを通す
+        // フェイルオープン: ストア書き込み失敗
       }
       await next();
       return;
@@ -199,7 +213,7 @@ export function createRateLimitMiddleware(
     try {
       await store.set(key, { count: existing.count + 1, resetAt: existing.resetAt });
     } catch {
-      // フェイルオープン: 書き込み失敗時もリクエストを通す
+      // フェイルオープン: カウンター更新失敗
     }
     await next();
   };
