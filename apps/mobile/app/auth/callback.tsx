@@ -38,7 +38,7 @@ export default function AuthCallbackScreen() {
 
     async function run() {
       if (params.error) {
-        setErrorMessage(t("auth.authCallback.errorNoToken"));
+        setErrorMessage(t("auth.authCallback.errorSocialLogin"));
         setState("error");
         return;
       }
@@ -49,21 +49,21 @@ export default function AuthCallbackScreen() {
         return;
       }
 
-      if (cancelled) return;
-      await setAuthToken(params.token);
-      if (params.refresh_token) {
-        if (cancelled) return;
-        await setRefreshToken(params.refresh_token);
-      }
-
       try {
+        if (cancelled) return;
+        await setAuthToken(params.token);
+        if (params.refresh_token) {
+          if (cancelled) return;
+          await setRefreshToken(params.refresh_token);
+        }
+
         if (cancelled) return;
         await checkSession();
         if (cancelled) return;
         router.replace("/(tabs)");
       } catch {
         if (cancelled) return;
-        setErrorMessage(t("auth.authCallback.errorCheckSession"));
+        setErrorMessage(t("auth.authCallback.errorSaveToken"));
         setState("error");
       }
     }
