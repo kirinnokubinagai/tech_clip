@@ -19,7 +19,7 @@ export default function AuthCallbackScreen() {
 
   useEffect(() => {
     handleCallback();
-  }, []);
+  }, [handleCallback]);
 
   async function handleCallback() {
     if (params.error) {
