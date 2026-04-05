@@ -17,7 +17,7 @@ import { confirm } from "@/components/ConfirmDialog";
 import { DARK_COLORS } from "@/lib/constants";
 import { useSubscription } from "../../src/hooks/use-subscription";
 import { useAuthStore } from "../../src/stores/auth-store";
-import { useSettingsStore } from "../../src/stores/settings-store";
+import { SUMMARY_LANGUAGE_LABELS, useSettingsStore } from "../../src/stores/settings-store";
 
 /** 設定セクションの区切り線コンポーネント */
 function SectionDivider() {
@@ -83,6 +83,16 @@ function SettingsRow({ icon, label, value, onPress, trailing, testID }: Settings
   }
 
   return content;
+}
+
+/**
+ * 要約言語コードを表示名に変換する
+ *
+ * @param code - 要約言語コード
+ * @returns 表示用言語名
+ */
+function summaryLanguageLabel(code: string): string {
+  return SUMMARY_LANGUAGE_LABELS[code as keyof typeof SUMMARY_LANGUAGE_LABELS] ?? code;
 }
 
 /**
@@ -179,35 +189,19 @@ export default function SettingsScreen() {
   }
 
   /**
-   * 要約言語コードを表示名に変換する
-   *
-   * @param code - 要約言語コード
-   * @returns 表示用言語名
-   */
-  function summaryLanguageLabel(code: string): string {
-    const labels: Record<string, string> = {
-      ja: "日本語",
-      en: "English",
-      zh: "中文",
-      ko: "한국어",
-    };
-    return labels[code] ?? code;
-  }
-
-  /**
    * 要約言語選択のアクションシートを表示する
    */
   function handleSummaryLanguageSelect() {
+    const languageButtons = (
+      Object.entries(SUMMARY_LANGUAGE_LABELS) as [keyof typeof SUMMARY_LANGUAGE_LABELS, string][]
+    ).map(([code, label]) => ({
+      text: label,
+      onPress: () => setSummaryLanguage(code),
+    }));
     Alert.alert(
       t("settings.summaryLanguageSelect.title"),
       t("settings.summaryLanguageSelect.prompt"),
-      [
-        { text: "日本語", onPress: () => setSummaryLanguage("ja") },
-        { text: "English", onPress: () => setSummaryLanguage("en") },
-        { text: "中文", onPress: () => setSummaryLanguage("zh") },
-        { text: "한국어", onPress: () => setSummaryLanguage("ko") },
-        { text: t("common.cancel"), style: "cancel" },
-      ],
+      [...languageButtons, { text: t("common.cancel"), style: "cancel" as const }],
     );
   }
 

@@ -22,6 +22,14 @@ const SUMMARY_LANGUAGE_OPTIONS = ["ja", "en", "zh", "ko"] as const;
 /** 要約言語コードの型 */
 export type SummaryLanguage = (typeof SUMMARY_LANGUAGE_OPTIONS)[number];
 
+/** 要約言語コードと表示名のマップ */
+export const SUMMARY_LANGUAGE_LABELS: Record<SummaryLanguage, string> = {
+  ja: "日本語",
+  en: "English",
+  zh: "中文",
+  ko: "한국어",
+} as const;
+
 /** デフォルト要約言語 */
 const DEFAULT_SUMMARY_LANGUAGE: SummaryLanguage = "ja";
 
