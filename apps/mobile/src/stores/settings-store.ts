@@ -35,7 +35,12 @@ const LEGACY_LANGUAGE_MIGRATION_MAP: Record<string, Language> = {
  * @returns 正規化されたlocaleコード
  */
 function normalizeStoredLanguage(stored: string): Language {
-  const parsed = JSON.parse(stored) as string;
+  let parsed: string;
+  try {
+    parsed = JSON.parse(stored) as string;
+  } catch {
+    return DEFAULT_LANGUAGE;
+  }
 
   if (LOCALE_CODES.includes(parsed as Language)) {
     return parsed as Language;

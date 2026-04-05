@@ -86,7 +86,7 @@ describe("useSettingsStore", () => {
 
       it("旧形式の日本語表示名（日本語）をjaに移行できること", async () => {
         // Arrange
-        mockGetItemAsync.mockResolvedValue('"ja"');
+        mockGetItemAsync.mockResolvedValue('"日本語"');
 
         // Act
         await useSettingsStore.getState().loadLanguage();
@@ -99,7 +99,7 @@ describe("useSettingsStore", () => {
 
       it("旧形式の英語表示名（English）をenに移行できること", async () => {
         // Arrange
-        mockGetItemAsync.mockResolvedValue('"en"');
+        mockGetItemAsync.mockResolvedValue('"English"');
 
         // Act
         await useSettingsStore.getState().loadLanguage();
