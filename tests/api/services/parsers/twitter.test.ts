@@ -46,6 +46,28 @@ describe("isTwitterUrl", () => {
     // Assert
     expect(result).toBe(false);
   });
+
+  it("www.x.com の投稿URLを有効と判定すること", () => {
+    // Arrange
+    const url = "https://www.x.com/testuser/status/1234567890";
+
+    // Act
+    const result = isTwitterUrl(url);
+
+    // Assert
+    expect(result).toBe(true);
+  });
+
+  it("www.twitter.com の投稿URLを有効と判定すること", () => {
+    // Arrange
+    const url = "https://www.twitter.com/testuser/status/9876543210";
+
+    // Act
+    const result = isTwitterUrl(url);
+
+    // Assert
+    expect(result).toBe(true);
+  });
 });
 
 describe("extractTextFromOEmbed（parseTwitter経由）", () => {

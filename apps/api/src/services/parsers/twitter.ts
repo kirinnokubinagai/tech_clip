@@ -7,7 +7,7 @@ import { calculateReadingTime, createExcerpt, TECHCLIP_USER_AGENT } from "./_sha
 const OEMBED_ENDPOINT = "https://publish.twitter.com/oembed";
 
 /** Twitter/X URLパターン */
-const TWITTER_URL_PATTERN = /^https?:\/\/(x\.com|twitter\.com)\/\w+\/status\/\d+/;
+const TWITTER_URL_PATTERN = /^https?:\/\/(www\.)?(x\.com|twitter\.com)\/\w+\/status\/\d+/;
 
 /** fetchタイムアウト（ミリ秒） */
 const FETCH_TIMEOUT_MS = 10000;

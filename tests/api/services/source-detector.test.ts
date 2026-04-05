@@ -298,6 +298,28 @@ describe("detectSource", () => {
       // Assert
       expect(result).toBe("twitter");
     });
+
+    it("www.x.com の投稿URLを判定できること", () => {
+      // Arrange
+      const url = "https://www.x.com/testuser/status/1234567890";
+
+      // Act
+      const result = detectSource(url);
+
+      // Assert
+      expect(result).toBe("twitter");
+    });
+
+    it("www.twitter.com の投稿URLを判定できること", () => {
+      // Arrange
+      const url = "https://www.twitter.com/testuser/status/9876543210";
+
+      // Act
+      const result = detectSource(url);
+
+      // Assert
+      expect(result).toBe("twitter");
+    });
   });
 
   describe("その他", () => {
