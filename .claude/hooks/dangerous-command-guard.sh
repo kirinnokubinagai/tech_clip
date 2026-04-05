@@ -24,12 +24,17 @@ check_worktree_path() {
 
   local wt_path resolved_path repo_root expected_prefix
   # -b フラグとそのブランチ名をスキップしてパスを抽出
-  wt_path=$(echo "$cmd" | sed 's/.*git worktree add //' | sed 's/-b [^ ]* //' | awk '{print $1}')
+  # sed の末尾スペース必須パターンは -b branch がコマンド末尾の場合にマッチしないため
+  # sed で除去し、awk でパスを先に取り出すことで吸収する
+  wt_path=$(echo "$cmd" | sed 's/.*git worktree add //' | sed 's/ *-b [^ ]*//' | awk '{print $1}')
   repo_root=$(cd "$(git rev-parse --git-common-dir 2>/dev/null)/.." && pwd)
   expected_prefix="${repo_root}/.worktrees/"
 
   # realpath -m でシンボリックリンクや .. を正規化（存在しないパスでも動作）
-  resolved_path=$(realpath -m "$wt_path" 2>/dev/null || echo "$(pwd)/$wt_path")
+  # 絶対パスの場合はそのまま使用し、相対パスの場合のみ $(pwd) を付加する
+  # 注意: ${REPO_ROOT} 等のシェル変数が未展開のリテラルで渡される場合、
+  #       realpath -m が意図しないパスを返すことがある
+  resolved_path=$(realpath -m "$wt_path" 2>/dev/null || { [[ "$wt_path" = /* ]] && echo "$wt_path" || echo "$(pwd)/$wt_path"; })
 
   if [[ "$resolved_path" != "${expected_prefix}"* ]]; then
     echo "⚠️ worktreeの作成先が ${expected_prefix} 配下ではありません"
