@@ -58,6 +58,10 @@ type OEmbedResponse = z.infer<typeof OEmbedResponseSchema>;
 /**
  * oEmbed HTMLからツイート本文を抽出する
  *
+ * NAMED_ENTITY_MAP に定義された既知の named entity のみ変換する。
+ * 未定義の named entity（例: &rarr;, &larr;）はそのまま文字列として残る。
+ * 16進数・10進数の数値文字参照は対応済み。
+ *
  * @param html - oEmbedが返すHTML文字列
  * @returns 抽出されたテキスト
  */
@@ -105,7 +109,7 @@ export async function parseTwitter(url: string): Promise<ParsedArticle> {
     throw new Error(`ツイートの取得に失敗しました（ステータス: ${response.status}）`);
   }
 
-  const raw = await response.json();
+  const raw: unknown = await response.json();
   const parseResult = OEmbedResponseSchema.safeParse(raw);
   if (!parseResult.success) {
     throw new Error("oEmbed APIレスポンスの形式が不正です");
