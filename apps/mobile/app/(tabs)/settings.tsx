@@ -17,6 +17,7 @@ import { Alert, Pressable, ScrollView, Switch, Text, View } from "react-native";
 import { confirm } from "@/components/ConfirmDialog";
 import { DARK_COLORS } from "@/lib/constants";
 import {
+  checkNotificationPermission,
   registerForPushNotificationsWithLogging,
   requestNotificationPermission,
 } from "@/lib/notifications";
@@ -130,8 +131,8 @@ export default function SettingsScreen() {
   }, [loadLanguage, fetchNotificationSettings]);
 
   useEffect(() => {
-    requestNotificationPermission().then((status) => {
-      setNotificationPermission(status === "undetermined" ? "undetermined" : status);
+    checkNotificationPermission().then((status) => {
+      setNotificationPermission(status);
     });
   }, []);
 
@@ -206,7 +207,7 @@ export default function SettingsScreen() {
    */
   async function handleRequestNotificationPermission() {
     const status = await requestNotificationPermission();
-    setNotificationPermission(status === "undetermined" ? "undetermined" : status);
+    setNotificationPermission(status);
     if (status === "granted") {
       await registerForPushNotificationsWithLogging();
     }

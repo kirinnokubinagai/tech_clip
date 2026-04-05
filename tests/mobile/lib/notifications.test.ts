@@ -2,7 +2,12 @@ import * as Device from "expo-device";
 import * as Notifications from "expo-notifications";
 import { Platform } from "react-native";
 
-import { registerForPushNotifications, setupNotificationHandlers } from "@/lib/notifications";
+import {
+  checkNotificationPermission,
+  registerForPushNotifications,
+  requestNotificationPermission,
+  setupNotificationHandlers,
+} from "@/lib/notifications";
 
 jest.mock("expo-notifications", () => ({
   getPermissionsAsync: jest.fn(),
@@ -33,6 +38,104 @@ beforeEach(() => {
 });
 
 describe("notifications", () => {
+  describe("checkNotificationPermission", () => {
+    it("権限が付与済みの場合に「granted」を返すこと", async () => {
+      // Arrange
+      (Notifications.getPermissionsAsync as jest.Mock).mockResolvedValue({
+        status: "granted",
+      });
+
+      // Act
+      const result = await checkNotificationPermission();
+
+      // Assert
+      expect(result).toBe("granted");
+      expect(Notifications.getPermissionsAsync).toHaveBeenCalledTimes(1);
+      expect(Notifications.requestPermissionsAsync).not.toHaveBeenCalled();
+    });
+
+    it("権限が未決定の場合に「undetermined」を返すこと", async () => {
+      // Arrange
+      (Notifications.getPermissionsAsync as jest.Mock).mockResolvedValue({
+        status: "undetermined",
+      });
+
+      // Act
+      const result = await checkNotificationPermission();
+
+      // Assert
+      expect(result).toBe("undetermined");
+      expect(Notifications.requestPermissionsAsync).not.toHaveBeenCalled();
+    });
+
+    it("権限が拒否済みの場合に「denied」を返すこと", async () => {
+      // Arrange
+      (Notifications.getPermissionsAsync as jest.Mock).mockResolvedValue({
+        status: "denied",
+      });
+
+      // Act
+      const result = await checkNotificationPermission();
+
+      // Assert
+      expect(result).toBe("denied");
+      expect(Notifications.requestPermissionsAsync).not.toHaveBeenCalled();
+    });
+
+    it("シミュレータの場合に「undetermined」を返すこと", async () => {
+      // Arrange
+      Object.defineProperty(Device, "isDevice", { value: false });
+
+      // Act
+      const result = await checkNotificationPermission();
+
+      // Assert
+      expect(result).toBe("undetermined");
+      expect(Notifications.getPermissionsAsync).not.toHaveBeenCalled();
+    });
+  });
+
+  describe("requestNotificationPermission", () => {
+    it("権限要求が許可された場合に「granted」を返すこと", async () => {
+      // Arrange
+      (Notifications.requestPermissionsAsync as jest.Mock).mockResolvedValue({
+        status: "granted",
+      });
+
+      // Act
+      const result = await requestNotificationPermission();
+
+      // Assert
+      expect(result).toBe("granted");
+      expect(Notifications.requestPermissionsAsync).toHaveBeenCalledTimes(1);
+    });
+
+    it("権限要求が拒否された場合に「denied」を返すこと", async () => {
+      // Arrange
+      (Notifications.requestPermissionsAsync as jest.Mock).mockResolvedValue({
+        status: "denied",
+      });
+
+      // Act
+      const result = await requestNotificationPermission();
+
+      // Assert
+      expect(result).toBe("denied");
+    });
+
+    it("シミュレータの場合に「undetermined」を返すこと", async () => {
+      // Arrange
+      Object.defineProperty(Device, "isDevice", { value: false });
+
+      // Act
+      const result = await requestNotificationPermission();
+
+      // Assert
+      expect(result).toBe("undetermined");
+      expect(Notifications.requestPermissionsAsync).not.toHaveBeenCalled();
+    });
+  });
+
   describe("registerForPushNotifications", () => {
     it("実機でプッシュトークンを取得できること", async () => {
       // Arrange

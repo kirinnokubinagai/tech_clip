@@ -13,20 +13,29 @@ const NOTIFICATION_CHANNEL_ID = "default";
 export type NotificationPermissionStatus = "granted" | "denied" | "undetermined";
 
 /**
- * 現在の通知権限ステータスを確認する
+ * 現在の通知権限ステータスを確認する（ダイアログは表示しない）
  * シミュレータでは "undetermined" を返す
  *
  * @returns 通知権限ステータス
  */
-export async function requestNotificationPermission(): Promise<NotificationPermissionStatus> {
+export async function checkNotificationPermission(): Promise<NotificationPermissionStatus> {
   if (!Device.isDevice) {
     return "undetermined";
   }
 
-  const { status: existingStatus } = await Notifications.getPermissionsAsync();
+  const { status } = await Notifications.getPermissionsAsync();
+  return status as NotificationPermissionStatus;
+}
 
-  if (existingStatus === "granted") {
-    return "granted";
+/**
+ * 通知権限をユーザーに要求する
+ * シミュレータでは "undetermined" を返す
+ *
+ * @returns 要求後の通知権限ステータス
+ */
+export async function requestNotificationPermission(): Promise<NotificationPermissionStatus> {
+  if (!Device.isDevice) {
+    return "undetermined";
   }
 
   const { status } = await Notifications.requestPermissionsAsync();
@@ -97,7 +106,9 @@ export async function registerForPushNotificationsWithLogging(): Promise<void> {
 
   try {
     await registerTokenWithApi(token);
-    logger.info("プッシュトークンのAPI登録に成功しました", { token });
+    logger.info("プッシュトークンのAPI登録に成功しました", {
+      token: `${token.slice(0, 20)}...`,
+    });
   } catch (error: unknown) {
     logger.error("プッシュトークンのAPI登録に失敗しました", { error });
   }
