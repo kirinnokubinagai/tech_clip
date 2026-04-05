@@ -1,4 +1,12 @@
 import { Hono } from "hono";
+import { handleAnalytics } from "./app/analytics-subapp";
+import { handleArticles, handlePublicArticles } from "./app/articles-subapp";
+import { handleAuthCatchAll, handleAuthRoute, handleEmailVerification } from "./app/auth-subapp";
+import { handleHealth } from "./app/health-subapp";
+import { handleNotificationSettings, handleNotifications } from "./app/notifications-subapp";
+import { handleSubscription } from "./app/subscription-subapp";
+import { handleTags } from "./app/tags-subapp";
+import { handleUsers } from "./app/users-subapp";
 import { createAuth } from "./auth";
 import { createDatabase } from "./db";
 import { corsMiddleware } from "./middleware/cors";
@@ -11,14 +19,6 @@ import {
 import { securityHeadersMiddleware } from "./middleware/security-headers";
 import { createSentryMiddleware } from "./middleware/sentry";
 import { openApiSpec } from "./openapi";
-import { handleArticles, handlePublicArticles } from "./app/articles-subapp";
-import { handleAuthCatchAll, handleAuthRoute, handleEmailVerification } from "./app/auth-subapp";
-import { handleHealth } from "./app/health-subapp";
-import { handleNotificationSettings, handleNotifications } from "./app/notifications-subapp";
-import { handleAnalytics } from "./app/analytics-subapp";
-import { handleSubscription } from "./app/subscription-subapp";
-import { handleTags } from "./app/tags-subapp";
-import { handleUsers } from "./app/users-subapp";
 import type { AppEnv } from "./types";
 
 const app = new Hono<AppEnv>();
