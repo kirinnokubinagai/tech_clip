@@ -1,19 +1,11 @@
 import type { ParsedArticle } from "../../types/article";
+import { calculateReadingTime, TECHCLIP_USER_AGENT } from "./_shared";
 
 /** Hashnode GraphQL APIエンドポイント */
 const HASHNODE_GRAPHQL_URL = "https://gql.hashnode.com";
 
 /** Hashnodeのホストパターンにマッチするサフィックス */
 const HASHNODE_HOST_SUFFIX = "hashnode.dev";
-
-/** fetch時のUser-Agent */
-const USER_AGENT = "Mozilla/5.0 (compatible; TechClipBot/1.0; +https://techclip.app)";
-
-/** 読了速度（文字/分） */
-const READING_SPEED_CHARS_PER_MIN = 500;
-
-/** 最小読了時間（分） */
-const MIN_READING_TIME_MINUTES = 1;
 
 /** パスセグメントの最小数（slug） */
 const MIN_PATH_SEGMENTS = 1;
@@ -106,18 +98,6 @@ function extractHostAndSlug(url: string): [string, string] {
 }
 
 /**
- * 文字数から読了時間を計算する
- *
- * @param text - 本文テキスト
- * @returns 推定読了時間（分、最小1分）
- */
-function calculateReadingTime(text: string): number {
-  const charCount = text.length;
-  const minutes = Math.ceil(charCount / READING_SPEED_CHARS_PER_MIN);
-  return Math.max(minutes, MIN_READING_TIME_MINUTES);
-}
-
-/**
  * Hashnode記事URLからGraphQL APIでコンテンツを取得してParsedArticleに変換する
  *
  * hashnode.devおよび*.hashnode.devの両方に対応する。
@@ -134,7 +114,7 @@ export async function parseHashnode(url: string): Promise<ParsedArticle> {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      "User-Agent": USER_AGENT,
+      "User-Agent": TECHCLIP_USER_AGENT,
     },
     body: JSON.stringify({
       query: HASHNODE_POST_QUERY,

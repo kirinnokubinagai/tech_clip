@@ -1,21 +1,13 @@
 import { z } from "zod";
 
 import type { ParsedArticleContent } from "../article-parser";
+import { calculateReadingTime, EXCERPT_MAX_LENGTH, TECHCLIP_USER_AGENT } from "./_shared";
 
 /** Twitter/X oEmbed APIエンドポイント */
 const OEMBED_ENDPOINT = "https://publish.twitter.com/oembed";
 
 /** Twitter/X URLパターン */
 const TWITTER_URL_PATTERN = /^https?:\/\/(x\.com|twitter\.com)\/\w+\/status\/\d+/;
-
-/** 読了速度（文字/分） */
-const READING_SPEED_CHARS_PER_MIN = 500;
-
-/** 最小読了時間（分） */
-const MIN_READING_TIME_MINUTES = 1;
-
-/** 抜粋の最大文字数 */
-const EXCERPT_MAX_LENGTH = 200;
 
 /** fetchタイムアウト（ミリ秒） */
 const FETCH_TIMEOUT_MS = 10000;
@@ -80,18 +72,6 @@ function extractTextFromOEmbed(html: string): string {
 }
 
 /**
- * 文字数から読了時間を計算する
- *
- * @param text - 本文テキスト
- * @returns 推定読了時間（分、最小1分）
- */
-function calculateReadingTime(text: string): number {
-  const charCount = text.length;
-  const minutes = Math.ceil(charCount / READING_SPEED_CHARS_PER_MIN);
-  return Math.max(minutes, MIN_READING_TIME_MINUTES);
-}
-
-/**
  * Twitter/X URLが有効か検証する
  *
  * @param url - 検証対象のURL
@@ -117,7 +97,7 @@ export async function parseTwitter(url: string): Promise<ParsedArticleContent> {
   const response = await fetch(oembedUrl, {
     signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
     headers: {
-      "User-Agent": "Mozilla/5.0 (compatible; TechClipBot/1.0; +https://techclip.app)",
+      "User-Agent": TECHCLIP_USER_AGENT,
     },
   });
 

@@ -1,18 +1,10 @@
 import { parseHTML } from "linkedom";
 
 import type { ParsedArticle } from "../../types/article";
+import { calculateReadingTime, TECHCLIP_USER_AGENT } from "./_shared";
 
 /** Speakerdeckのホスト名 */
 const SPEAKERDECK_HOSTNAME = "speakerdeck.com";
-
-/** fetch時のUser-Agent */
-const USER_AGENT = "Mozilla/5.0 (compatible; TechClipBot/1.0; +https://techclip.app)";
-
-/** 読了速度（文字/分） */
-const READING_SPEED_CHARS_PER_MIN = 500;
-
-/** 最小読了時間（分） */
-const MIN_READING_TIME_MINUTES = 1;
 
 /**
  * linkedomのドキュメント型
@@ -57,18 +49,6 @@ function getMetaNameContent(doc: LinkedomDocument, name: string): string | null 
 }
 
 /**
- * 文字数から読了時間を計算する
- *
- * @param text - 本文テキスト
- * @returns 推定読了時間（分、最小1分）
- */
-function calculateReadingTime(text: string): number {
-  const charCount = text.length;
-  const minutes = Math.ceil(charCount / READING_SPEED_CHARS_PER_MIN);
-  return Math.max(minutes, MIN_READING_TIME_MINUTES);
-}
-
-/**
  * URLがSpeakerdeckのものか検証する
  *
  * @param url - 検証対象のURL
@@ -96,7 +76,7 @@ export async function parseSpeakerdeck(url: string): Promise<ParsedArticle> {
   validateSpeakerdeckUrl(url);
 
   const response = await fetch(url, {
-    headers: { "User-Agent": USER_AGENT },
+    headers: { "User-Agent": TECHCLIP_USER_AGENT },
   });
 
   if (!response.ok) {
