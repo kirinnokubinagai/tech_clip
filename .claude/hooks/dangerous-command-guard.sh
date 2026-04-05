@@ -29,23 +29,32 @@ check_dangerous() {
   echo "$cmd" | grep -qE "git clean" && return 0
   echo "$cmd" | grep -qE "git branch -D" && return 0
 
-  # git worktree add のパス検証
+  # git worktree add のパス検証（解決後のパスが .worktrees/ 配下か）
   if echo "$cmd" | grep -qE "git worktree add "; then
-    local wt_path repo_root expected_prefix
+    local wt_path resolved_path repo_root expected_prefix
     wt_path=$(echo "$cmd" | sed 's/.*git worktree add //' | awk '{print $1}')
-    repo_root=$(git rev-parse --show-toplevel 2>/dev/null)
+    repo_root=$(cd "$(git rev-parse --git-common-dir 2>/dev/null)/.." && pwd)
     expected_prefix="${repo_root}/.worktrees/"
 
-    if [[ "$wt_path" != /* ]]; then
-      echo "⚠️ worktree作成に相対パスが使われています: $wt_path"
-      echo "絶対パスを使用してください:"
-      echo "  git worktree add \"\${REPO_ROOT}/.worktrees/issue-N\" -b issue/N/short-desc"
+    if [[ "$wt_path" == /* ]]; then
+      resolved_path="$wt_path"
+    else
+      resolved_path="$(pwd)/$wt_path"
+    fi
+
+    if [[ "$resolved_path" != "${expected_prefix}"* ]]; then
+      echo "⚠️ worktreeの作成先が ${expected_prefix} 配下ではありません"
+      echo "  指定パス: $wt_path"
+      echo "  解決先:   $resolved_path"
+      echo "  正しい例: ${expected_prefix}issue-N"
       return 0
     fi
 
-    if [[ "$wt_path" != "${expected_prefix}"* ]]; then
-      echo "⚠️ worktreeパスがリポジトリの .worktrees/ 配下ではありません: $wt_path"
-      echo "正しいパス: ${expected_prefix}issue-N"
+    local subpath="${resolved_path#${expected_prefix}}"
+    if [[ "$subpath" == */* ]]; then
+      echo "⚠️ worktreeが .worktrees/ の直下ではなくネストしています"
+      echo "  解決先: $resolved_path"
+      echo "  正しい例: ${expected_prefix}issue-N"
       return 0
     fi
   fi
