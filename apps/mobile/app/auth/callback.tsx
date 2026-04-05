@@ -19,6 +19,10 @@ type CallbackState = "loading" | "error";
  * `(auth)/oauth-callback` との違い:
  * - こちら（auth/callback）はAPIサーバーからトークンを直接受け取るフロー
  * - `(auth)/oauth-callback` はOAuthプロバイダーからcodeを受け取りBetter Authに委譲するフロー
+ *
+ * エラー時のUXについて:
+ * `(auth)/oauth-callback` と同様にエラーメッセージ + 「ログイン画面に戻る」ボタンを表示する。
+ * トークンベースのコールバックも失敗時にユーザーが明示的に操作できるUXを統一して提供する。
  */
 export default function AuthCallbackScreen() {
   const params = useLocalSearchParams<{ token?: string; refresh_token?: string; error?: string }>();

@@ -10,7 +10,12 @@ type CallbackState = "loading" | "error";
 
 /**
  * OAuthコード受け取り型コールバック画面
- * ソーシャルログイン後にdeep linkで起動されるコールバックを処理する
+ *
+ * ソーシャルログイン（Google・GitHub等）のプロバイダーが認証後に
+ * ディープリンク `techclip://oauth-callback?code=xxx` でアプリに戻る際に
+ * expo-routerによって起動されるルート。
+ * `useLocalSearchParams` でURLクエリパラメータを取得し、
+ * Better Authがサーバーサイドで確立したセッションを checkSession() で確認する。
  *
  * @remarks
  * `auth/callback` との違い:
@@ -22,6 +27,9 @@ type CallbackState = "loading" | "error";
  * Better Auth はコールバック時にサーバーサイドでセッションCookieを設定済みのため、
  * checkSession() でそのセッションを確認してストアに反映する。
  * トークンの手動保存は不要。
+ *
+ * エラー時はエラーメッセージと「ログイン画面に戻る」ボタンを表示する。
+ * これはユーザーがリカバリできるよう明示的なUXを提供するため。
  */
 export default function OAuthCallbackScreen() {
   const { t } = useTranslation();
