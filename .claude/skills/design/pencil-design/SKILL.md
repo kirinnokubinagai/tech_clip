@@ -1,3 +1,12 @@
+---
+name: pencil-design
+description: Pencil MCP でデザインモックを作成・更新する
+triggers:
+  - デザイン
+  - design mock
+  - モック作成
+  - pencil
+---
 # Pencil デザインモックワークフロー
 
 Pencil MCP を使ってデザインモックアップを作成・更新するスキル。
