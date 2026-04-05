@@ -19,7 +19,6 @@ import { DARK_COLORS } from "@/lib/constants";
 import {
   checkNotificationPermission,
   registerForPushNotificationsWithLogging,
-  requestNotificationPermission,
 } from "@/lib/notifications";
 import { useSubscription } from "../../src/hooks/use-subscription";
 import { useAuthStore } from "../../src/stores/auth-store";
@@ -222,6 +221,7 @@ export default function SettingsScreen() {
 
   /**
    * 通知権限を要求し、許可された場合はプッシュトークンを登録する
+   * registerForPushNotificationsWithLogging が内部で権限確認とトークン登録を一括で行う
    */
   async function handleRequestNotificationPermission() {
     try {
@@ -229,11 +229,9 @@ export default function SettingsScreen() {
         await Linking.openSettings();
         return;
       }
-      const status = await requestNotificationPermission();
-      setNotificationPermission(status);
-      if (status === "granted") {
-        await registerForPushNotificationsWithLogging();
-      }
+      await registerForPushNotificationsWithLogging();
+      const currentPermission = await checkNotificationPermission();
+      setNotificationPermission(currentPermission);
     } catch (_error) {
       Alert.alert(t("common.errorTitle"), t("settings.notificationUpdateError"));
     }
@@ -292,18 +290,29 @@ export default function SettingsScreen() {
               testID="settings-notification-switch"
               value={isNotificationsEnabled}
               onValueChange={handleNotificationToggle}
+              disabled={notificationPermission !== "granted"}
               trackColor={{ false: DARK_COLORS.border, true: DARK_COLORS.primary }}
               thumbColor={DARK_COLORS.white}
               accessibilityLabel={t("settings.items.notifications")}
               accessibilityHint={
-                isNotificationsEnabled
-                  ? t("settings.notificationHintOff")
-                  : t("settings.notificationHintOn")
+                notificationPermission !== "granted"
+                  ? t("settings.items.notificationPermissionDenied")
+                  : isNotificationsEnabled
+                    ? t("settings.notificationHintOff")
+                    : t("settings.notificationHintOn")
               }
               accessibilityRole="switch"
             />
           }
         />
+        {notificationPermission !== "granted" && (
+          <Text
+            testID="settings-notification-permission-hint"
+            className="text-xs text-text-dim mt-1 px-4"
+          >
+            {t("settings.items.notificationPermissionHint")}
+          </Text>
+        )}
         {notificationPermission === "denied" && (
           <>
             <SectionDivider />
