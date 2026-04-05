@@ -42,10 +42,13 @@ function normalizeStoredLanguage(stored: string): {
   language: Language;
   needsMigration: boolean;
 } {
-  let parsed: string;
+  let parsed: unknown;
   try {
-    parsed = JSON.parse(stored) as string;
+    parsed = JSON.parse(stored);
   } catch {
+    return { language: DEFAULT_LANGUAGE, needsMigration: true };
+  }
+  if (typeof parsed !== "string") {
     return { language: DEFAULT_LANGUAGE, needsMigration: true };
   }
 
