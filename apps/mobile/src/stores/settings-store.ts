@@ -32,26 +32,25 @@ const LEGACY_LANGUAGE_MIGRATION_MAP: Record<string, Language> = {
  * 旧形式（表示名）が保存されている場合はlocaleコードに変換する
  *
  * @param stored - SecureStoreから取得したJSON文字列値
- * @returns 正規化されたlocaleコード
+ * @returns 正規化されたlocaleコードと移行が必要かどうかのフラグ
  */
-function normalizeStoredLanguage(stored: string): Language {
+function normalizeStoredLanguage(stored: string): {
+  language: Language;
+  needsMigration: boolean;
+} {
   let parsed: string;
   try {
     parsed = JSON.parse(stored) as string;
   } catch {
-    return DEFAULT_LANGUAGE;
+    return { language: DEFAULT_LANGUAGE, needsMigration: true };
   }
 
   if (LOCALE_CODES.includes(parsed as Language)) {
-    return parsed as Language;
+    return { language: parsed as Language, needsMigration: false };
   }
 
   const migrated = LEGACY_LANGUAGE_MIGRATION_MAP[parsed];
-  if (migrated) {
-    return migrated;
-  }
-
-  return DEFAULT_LANGUAGE;
+  return { language: migrated ?? DEFAULT_LANGUAGE, needsMigration: true };
 }
 
 /** 通知設定の型 */
@@ -109,14 +108,8 @@ export const useSettingsStore = create<SettingsStore>((set, get) => ({
       set({ language: DEFAULT_LANGUAGE, isLanguageLoaded: true });
       return;
     }
-    const language = normalizeStoredLanguage(stored);
-    let parsed: unknown;
-    try {
-      parsed = JSON.parse(stored);
-    } catch {
-      parsed = null;
-    }
-    if (!LOCALE_CODES.includes(parsed as Language)) {
+    const { language, needsMigration } = normalizeStoredLanguage(stored);
+    if (needsMigration) {
       await SecureStore.setItemAsync(LANGUAGE_KEY, JSON.stringify(language));
     }
     set({ language, isLanguageLoaded: true });
