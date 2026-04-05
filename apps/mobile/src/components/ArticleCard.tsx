@@ -107,7 +107,7 @@ export const ArticleCard = memo(function ArticleCard({
               testID="favorite-button"
               nativeID="favorite-button"
               onPress={(e) => {
-                e?.stopPropagation();
+                e.stopPropagation();
                 onToggleFavorite();
               }}
               accessibilityRole="button"
