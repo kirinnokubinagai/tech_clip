@@ -14,6 +14,42 @@ if [ -z "$COMMAND" ]; then
   exit 0
 fi
 
+# worktreeパスの検証（.worktrees/ 配下かつ直下のディレクトリか）
+check_worktree_path() {
+  local cmd="$1"
+
+  if ! echo "$cmd" | grep -qE "git worktree add "; then
+    return 1
+  fi
+
+  local wt_path resolved_path repo_root expected_prefix
+  # -b フラグとそのブランチ名をスキップしてパスを抽出
+  wt_path=$(echo "$cmd" | sed 's/.*git worktree add //' | sed 's/-b [^ ]* //' | awk '{print $1}')
+  repo_root=$(cd "$(git rev-parse --git-common-dir 2>/dev/null)/.." && pwd)
+  expected_prefix="${repo_root}/.worktrees/"
+
+  # realpath -m でシンボリックリンクや .. を正規化（存在しないパスでも動作）
+  resolved_path=$(realpath -m "$wt_path" 2>/dev/null || echo "$(pwd)/$wt_path")
+
+  if [[ "$resolved_path" != "${expected_prefix}"* ]]; then
+    echo "⚠️ worktreeの作成先が ${expected_prefix} 配下ではありません"
+    echo "  指定パス: $wt_path"
+    echo "  解決先:   $resolved_path"
+    echo "  正しい例: ${expected_prefix}issue-N"
+    return 0
+  fi
+
+  local subpath="${resolved_path#${expected_prefix}}"
+  if [[ "$subpath" == */* ]]; then
+    echo "⚠️ worktreeが .worktrees/ の直下ではなくネストしています"
+    echo "  解決先: $resolved_path"
+    echo "  正しい例: ${expected_prefix}issue-N"
+    return 0
+  fi
+
+  return 1
+}
+
 # 危険なコマンドパターン
 check_dangerous() {
   local cmd="$1"
@@ -29,34 +65,9 @@ check_dangerous() {
   echo "$cmd" | grep -qE "git clean" && return 0
   echo "$cmd" | grep -qE "git branch -D" && return 0
 
-  # git worktree add のパス検証（解決後のパスが .worktrees/ 配下か）
-  if echo "$cmd" | grep -qE "git worktree add "; then
-    local wt_path resolved_path repo_root expected_prefix
-    wt_path=$(echo "$cmd" | sed 's/.*git worktree add //' | awk '{print $1}')
-    repo_root=$(cd "$(git rev-parse --git-common-dir 2>/dev/null)/.." && pwd)
-    expected_prefix="${repo_root}/.worktrees/"
-
-    if [[ "$wt_path" == /* ]]; then
-      resolved_path="$wt_path"
-    else
-      resolved_path="$(pwd)/$wt_path"
-    fi
-
-    if [[ "$resolved_path" != "${expected_prefix}"* ]]; then
-      echo "⚠️ worktreeの作成先が ${expected_prefix} 配下ではありません"
-      echo "  指定パス: $wt_path"
-      echo "  解決先:   $resolved_path"
-      echo "  正しい例: ${expected_prefix}issue-N"
-      return 0
-    fi
-
-    local subpath="${resolved_path#${expected_prefix}}"
-    if [[ "$subpath" == */* ]]; then
-      echo "⚠️ worktreeが .worktrees/ の直下ではなくネストしています"
-      echo "  解決先: $resolved_path"
-      echo "  正しい例: ${expected_prefix}issue-N"
-      return 0
-    fi
+  # git worktree add のパス検証（関数に委譲）
+  if check_worktree_path "$cmd"; then
+    return 0
   fi
 
   # システムコマンド
