@@ -5,7 +5,6 @@ import { Platform } from "react-native";
 import {
   checkNotificationPermission,
   registerForPushNotifications,
-  registerForPushNotificationsWithLogging,
   requestNotificationPermission,
   setupNotificationHandlers,
 } from "@/lib/notifications";
@@ -39,9 +38,6 @@ jest.mock("@/lib/logger", () => ({
     error: jest.fn(),
   },
 }));
-
-import { apiFetch } from "@/lib/api";
-import { logger } from "@/lib/logger";
 
 beforeEach(() => {
   jest.clearAllMocks();
@@ -304,76 +300,6 @@ describe("notifications", () => {
       // Assert
       expect(status).toBe("undetermined");
       expect(Notifications.getPermissionsAsync).not.toHaveBeenCalled();
-    });
-  });
-
-  describe("registerForPushNotificationsWithLogging", () => {
-    it("トークン登録成功時にinfoログを記録すること", async () => {
-      // Arrange
-      (Notifications.getPermissionsAsync as jest.Mock).mockResolvedValue({
-        status: "granted",
-      });
-      (Notifications.getExpoPushTokenAsync as jest.Mock).mockResolvedValue({
-        data: "ExponentPushToken[test]",
-      });
-      (apiFetch as jest.Mock).mockResolvedValue({ success: true });
-
-      // Act
-      await registerForPushNotificationsWithLogging();
-
-      // Assert
-      expect(logger.info).toHaveBeenCalledWith(
-        "プッシュトークンのAPI登録に成功しました",
-        expect.objectContaining({ tokenPrefix: expect.stringContaining("ExponentPushToken") }),
-      );
-    });
-
-    it("トークン登録失敗時にerrorログを記録すること", async () => {
-      // Arrange
-      (Notifications.getPermissionsAsync as jest.Mock).mockResolvedValue({
-        status: "granted",
-      });
-      (Notifications.getExpoPushTokenAsync as jest.Mock).mockResolvedValue({
-        data: "ExponentPushToken[test]",
-      });
-      (apiFetch as jest.Mock).mockRejectedValue(new Error("ネットワークエラー"));
-
-      // Act
-      await registerForPushNotificationsWithLogging();
-
-      // Assert
-      expect(logger.error).toHaveBeenCalledWith(
-        "プッシュトークンのAPI登録に失敗しました",
-        expect.objectContaining({ error: expect.any(Error) }),
-      );
-    });
-
-    it("権限が拒否された場合にトークン登録を試みないこと", async () => {
-      // Arrange
-      (Notifications.getPermissionsAsync as jest.Mock).mockResolvedValue({
-        status: "undetermined",
-      });
-      (Notifications.requestPermissionsAsync as jest.Mock).mockResolvedValue({
-        status: "denied",
-      });
-
-      // Act
-      await registerForPushNotificationsWithLogging();
-
-      // Assert
-      expect(apiFetch).not.toHaveBeenCalled();
-      expect(logger.info).not.toHaveBeenCalled();
-    });
-
-    it("シミュレータの場合にトークン登録を試みないこと", async () => {
-      // Arrange
-      Object.defineProperty(Device, "isDevice", { value: false });
-
-      // Act
-      await registerForPushNotificationsWithLogging();
-
-      // Assert
-      expect(apiFetch).not.toHaveBeenCalled();
     });
   });
 });

@@ -115,29 +115,6 @@ export async function registerTokenWithApi(token: string): Promise<void> {
 }
 
 /**
- * プッシュ通知権限を確認し、未決定の場合はリクエストする
- * トークンを取得してAPIに登録する
- * エラーはすべてログに記録し、例外を外部に伝播させない
- * 通知関連機能の初回使用時またはユーザーが設定から許可した際に呼び出す
- */
-export async function registerForPushNotificationsWithLogging(): Promise<void> {
-  try {
-    const token = await registerForPushNotifications();
-
-    if (!token) {
-      return;
-    }
-
-    await registerTokenWithApi(token);
-    logger.info("プッシュトークンのAPI登録に成功しました", {
-      tokenPrefix: `${token.slice(0, 20)}...`,
-    });
-  } catch (error: unknown) {
-    logger.error("プッシュトークンのAPI登録に失敗しました", { error });
-  }
-}
-
-/**
  * 既に権限が granted であることを前提にトークン取得とAPI登録のみを行う
  * 権限要求は行わない（呼び出し側が事前に権限を確認・取得済みであること）
  * エラーはすべてログに記録し、例外を外部に伝播させない
