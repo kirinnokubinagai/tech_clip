@@ -3,6 +3,7 @@ import { Hono } from "hono";
 import type { Auth } from "../auth";
 import type { Database } from "../db";
 import { articles, users } from "../db/schema";
+import { getRunPodEndpointId } from "../lib/config";
 import { createAiLimitMiddleware } from "../middleware/ai-limit";
 import {
   createKvStore,
@@ -23,20 +24,6 @@ import {
   translateArticle,
 } from "../services/translator";
 import type { Bindings } from "../types";
-
-/**
- * RunPod エンドポイント ID を環境に応じて返す
- *
- * @param env - Cloudflare Workers バインディング
- * @returns RunPod エンドポイント ID
- */
-export function getRunPodEndpointId(env: Bindings): string {
-  if (env.ENVIRONMENT === "development" && env.RUNPOD_LOCAL_ENDPOINT_ID) {
-    return env.RUNPOD_LOCAL_ENDPOINT_ID;
-  }
-
-  return env.RUNPOD_ENDPOINT_ID;
-}
 
 /**
  * 公開記事一覧サブアプリを構築してリクエストを処理する
@@ -179,10 +166,7 @@ export async function handleArticles(
     createRateLimitMiddleware(RATE_LIMIT_CONFIG.articleSave, kvStore),
   );
 
-  subApp.use(
-    "/api/articles/:id/summary",
-    createRateLimitMiddleware(RATE_LIMIT_CONFIG.ai, kvStore),
-  );
+  subApp.use("/api/articles/:id/summary", createRateLimitMiddleware(RATE_LIMIT_CONFIG.ai, kvStore));
   subApp.use("/api/articles/:id/summary", createAiLimitMiddleware(db));
   subApp.use(
     "/api/articles/:id/translate",
