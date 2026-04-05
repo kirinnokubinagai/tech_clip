@@ -7,7 +7,7 @@ jest.mock("@/lib/api", () => ({
   apiFetch: jest.fn(),
 }));
 
-import { useSettingsStore } from "@mobile/stores/settings-store";
+import { LANGUAGE_LABEL_MAP, useSettingsStore } from "@mobile/stores/settings-store";
 import * as SecureStore from "expo-secure-store";
 import { apiFetch } from "@/lib/api";
 
@@ -172,13 +172,13 @@ describe("useSettingsStore", () => {
       });
     });
 
-    describe("getLanguageLabel", () => {
+    describe("LANGUAGE_LABEL_MAP", () => {
       it("jaの表示名が日本語であること", () => {
         // Arrange
         useSettingsStore.setState({ language: "ja" });
 
         // Act
-        const label = useSettingsStore.getState().getLanguageLabel();
+        const label = LANGUAGE_LABEL_MAP[useSettingsStore.getState().language];
 
         // Assert
         expect(label).toBe("日本語");
@@ -189,7 +189,7 @@ describe("useSettingsStore", () => {
         useSettingsStore.setState({ language: "en" });
 
         // Act
-        const label = useSettingsStore.getState().getLanguageLabel();
+        const label = LANGUAGE_LABEL_MAP[useSettingsStore.getState().language];
 
         // Assert
         expect(label).toBe("English");
