@@ -475,6 +475,207 @@ describe("createRateLimitMiddleware", () => {
       // Assert
       expect(result).toEqual(entry);
     });
+
+    it("KV getが失敗した場合フェイルオープンで200を返すこと", async () => {
+      // Arrange
+      const mockKv = {
+        get: vi.fn().mockRejectedValue(new Error("KV接続エラー")),
+        put: vi.fn().mockResolvedValue(undefined),
+        delete: vi.fn().mockResolvedValue(undefined),
+        list: vi.fn(),
+        getWithMetadata: vi.fn(),
+      } as unknown as KVNamespace;
+      const store = createKvStore(mockKv);
+      const config: RateLimitConfig = {
+        limit: 1,
+        windowMs: 60_000,
+        keyPrefix: "test",
+      };
+      const app = createTestApp(config, store);
+
+      // Act: KV障害時でもリクエストを通す
+      const res = await app.request("/api/test", {
+        headers: { "CF-Connecting-IP": "192.168.1.1" },
+      });
+
+      // Assert: フェイルオープン（通過）
+      expect(res.status).toBe(200);
+    });
+
+    it("KV setが失敗してもリクエストは通ること", async () => {
+      // Arrange
+      const mockKv = {
+        get: vi.fn().mockResolvedValue(null),
+        put: vi.fn().mockRejectedValue(new Error("KV書き込みエラー")),
+        delete: vi.fn().mockResolvedValue(undefined),
+        list: vi.fn(),
+        getWithMetadata: vi.fn(),
+      } as unknown as KVNamespace;
+      const store = createKvStore(mockKv);
+      const config: RateLimitConfig = {
+        limit: 1,
+        windowMs: 60_000,
+        keyPrefix: "test",
+      };
+      const app = createTestApp(config, store);
+
+      // Act
+      const res = await app.request("/api/test", {
+        headers: { "CF-Connecting-IP": "192.168.1.1" },
+      });
+
+      // Assert: 書き込み失敗でもフェイルオープン
+      expect(res.status).toBe(200);
+    });
+
+    it("既存エントリのインクリメント時にKV setが失敗してもリクエストは通ること", async () => {
+      // Arrange: getは既存エントリを返すがputは失敗する
+      const existingEntry = { count: 1, resetAt: Date.now() + 60_000 };
+      const mockKv = {
+        get: vi.fn().mockResolvedValue(existingEntry),
+        put: vi.fn().mockRejectedValue(new Error("KV書き込みエラー")),
+        delete: vi.fn().mockResolvedValue(undefined),
+        list: vi.fn(),
+        getWithMetadata: vi.fn(),
+      } as unknown as KVNamespace;
+      const store = createKvStore(mockKv);
+      const config: RateLimitConfig = {
+        limit: 10,
+        windowMs: 60_000,
+        keyPrefix: "test",
+      };
+      const app = createTestApp(config, store);
+
+      // Act
+      const res = await app.request("/api/test", {
+        headers: { "CF-Connecting-IP": "192.168.1.1" },
+      });
+
+      // Assert: インクリメント書き込み失敗でもフェイルオープン
+      expect(res.status).toBe(200);
+    });
+  });
+
+  describe("順次リクエストのカウント正確性", () => {
+    it("順次リクエストでカウントが正確に積算されること", async () => {
+      // Arrange: limit=3、順次5リクエスト送信
+      const config: RateLimitConfig = {
+        limit: 3,
+        windowMs: 60_000,
+        keyPrefix: "test",
+      };
+
+      /** testStore をラップして get 呼び出し回数を追跡するストア */
+      let getCallCount = 0;
+      const atomicStore: RateLimitStore = {
+        get: async (key: string) => {
+          getCallCount++;
+          return testStore.get(key);
+        },
+        set: async (key: string, value: { count: number; resetAt: number }) => {
+          testStore.set(key, value);
+        },
+        clear: () => testStore.clear(),
+      };
+
+      const app = createTestApp(config, atomicStore);
+
+      // Act: 5リクエストを順番に送信
+      const results = [];
+      for (let i = 0; i < 5; i++) {
+        const res = await app.request("/api/test", {
+          headers: { "CF-Connecting-IP": "192.168.1.1" },
+        });
+        results.push(res.status);
+      }
+
+      // Assert: 最初の3回は200、残り2回は429
+      expect(results.filter((s) => s === 200)).toHaveLength(3);
+      expect(results.filter((s) => s === 429)).toHaveLength(2);
+      expect(getCallCount).toBe(5);
+    });
+
+    it("インメモリストアでウィンドウ内のカウントが正確に記録されること", async () => {
+      // Arrange
+      const config: RateLimitConfig = {
+        limit: 5,
+        windowMs: 60_000,
+        keyPrefix: "test",
+      };
+      const store = createTestStore();
+      const app = createTestApp(config, store);
+
+      // Act: 3回リクエスト
+      for (let i = 0; i < 3; i++) {
+        await app.request("/api/test", {
+          headers: { "CF-Connecting-IP": "192.168.1.1" },
+        });
+      }
+
+      // Assert: ストアのカウントが3になっていること
+      const entry = store.get("test:192.168.1.1");
+      expect(entry).not.toBeNull();
+      expect(entry?.count).toBe(3);
+    });
+  });
+
+  describe("ウィンドウ有効期限", () => {
+    it("ウィンドウ期限切れ後はカウントがリセットされること", async () => {
+      // Arrange
+      const config: RateLimitConfig = {
+        limit: 2,
+        windowMs: 60_000,
+        keyPrefix: "test",
+      };
+      const store = createTestStore();
+      const app = createTestApp(config, store);
+
+      // Act: 制限まで使い切る
+      for (let i = 0; i < 2; i++) {
+        await app.request("/api/test", {
+          headers: { "CF-Connecting-IP": "192.168.1.1" },
+        });
+      }
+      const blockedRes = await app.request("/api/test", {
+        headers: { "CF-Connecting-IP": "192.168.1.1" },
+      });
+      expect(blockedRes.status).toBe(429);
+
+      // Act: ウィンドウを経過させる
+      vi.advanceTimersByTime(60_000 + 1);
+
+      // Assert: リセット後は200が返ること
+      const resetRes = await app.request("/api/test", {
+        headers: { "CF-Connecting-IP": "192.168.1.1" },
+      });
+      expect(resetRes.status).toBe(200);
+    });
+
+    it("ウィンドウ期限内は429が継続すること", async () => {
+      // Arrange
+      const config: RateLimitConfig = {
+        limit: 1,
+        windowMs: 60_000,
+        keyPrefix: "test",
+      };
+      const store = createTestStore();
+      const app = createTestApp(config, store);
+
+      // Act: 1回目（200）
+      const firstRes = await app.request("/api/test", {
+        headers: { "CF-Connecting-IP": "192.168.1.1" },
+      });
+      expect(firstRes.status).toBe(200);
+
+      // ウィンドウ内で時間を少し進める
+      vi.advanceTimersByTime(59_999);
+
+      // Assert: ウィンドウ期限内は429が継続
+      const secondRes = await app.request("/api/test", {
+        headers: { "CF-Connecting-IP": "192.168.1.1" },
+      });
+      expect(secondRes.status).toBe(429);
+    });
   });
 
   describe("定義済みレート制限設定", () => {
