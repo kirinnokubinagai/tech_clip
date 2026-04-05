@@ -3,9 +3,11 @@
 # SessionStart hook: 全worktreeの健全性をチェック
 #
 # 検出する問題:
-# 1. 未コミットの変更（modified/staged files）
-# 2. リベース/マージ途中の状態
-# 3. mainから遅れているブランチ
+# 1. ネストworktree（.worktrees/ 内にさらに .worktrees/ がある）
+# 2. 不正なworktreeパス（REPO_ROOT/.worktrees/ 直下にない）
+# 3. リベース/マージ途中の状態
+# 4. 未コミットの変更（modified/staged files）
+# 5. mainから遅れているブランチ
 
 PROBLEMS=""
 PROBLEM_COUNT=0
@@ -27,7 +29,7 @@ for wt_path in $WORKTREE_PATHS; do
     wt_name=$(basename "$wt_path")
 
     # ネストworktree検出: .worktrees/ 配下にさらに .worktrees/ があるパス
-    if echo "$wt_path" | grep -qE '\.worktrees/[^/]+/\.worktrees/'; then
+    if [[ "$wt_path" =~ \.worktrees/[^/]+/\.worktrees/ ]]; then
         PROBLEMS="${PROBLEMS}[NESTED] ${wt_name}: worktreeがネストしている -> git worktree remove --force ${wt_path} で除去し ${EXPECTED_PREFIX} 直下に再作成 | "
         PROBLEM_COUNT=$((PROBLEM_COUNT + 1))
         continue
