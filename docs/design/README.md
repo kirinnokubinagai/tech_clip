@@ -64,50 +64,7 @@ docs/design/
 
 ## TechClip デザインシステム
 
-### カラーパレット
-
-| 用途 | 色名 | カラーコード |
-|------|------|-------------|
-| Primary（メイン） | Teal 500 | `#14b8a6` |
-| Secondary（アクセント） | Orange 500 | `#f97316` |
-| Background | Neutral 50 | `#fafaf9` |
-| Surface | White | `#ffffff` |
-| Text Primary | Neutral 900 | `#1c1917` |
-| Text Secondary | Neutral 500 | `#78716c` |
-| Border | Neutral 200 | `#e7e5e4` |
-| Success | Green 500 | `#22c55e` |
-| Error | Red 500 | `#ef4444` |
-| Warning | Amber 500 | `#f59e0b` |
-
-### タイポグラフィ
-
-| 用途 | サイズ | Weight |
-|------|--------|--------|
-| 見出し H1 | 30px | 700 |
-| 見出し H2 | 24px | 600 |
-| 見出し H3 | 20px | 600 |
-| 本文 | 16px | 400 |
-| 補足テキスト | 14px | 400 |
-| ラベル | 12px | 500 |
-
-### スペーシング（4px ベース）
-
-```
-4px  → 極小の余白
-8px  → アイテム間
-12px → コンポーネント内パディング
-16px → セクション間
-24px → カード・コンポーネント間
-32px → セクション間（大）
-```
-
-### デザイン原則
-
-- グラデーション・ネオンカラー禁止（AI っぽさを排除）
-- シンプルな単色ベース
-- 控えめなシャドウ（shadow-sm / shadow-md）
-- アイコンは Lucide Icons のみ
-- モバイルファースト（iOS / Android 両対応）
+カラーパレット・タイポグラフィ・スペーシング・デザイン原則の詳細は `.claude/rules/frontend-design.md` を参照。
 
 ## Git 管理方針
 

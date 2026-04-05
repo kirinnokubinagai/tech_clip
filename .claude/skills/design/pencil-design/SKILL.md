@@ -26,7 +26,8 @@ TechClip のモバイル画面を `.pen` ファイルとして設計・管理す
 3. get_style_guide_tags() でスタイルガイドタグを確認
 4. get_style_guide(tags, name) でスタイルガイドを取得
 5. batch_design(...) でデザインを作成
-6. PNG エクスポートして docs/design/ に保存
+6. docs/design/<screen-name>.pen として保存
+7. PNG エクスポートして docs/design/<screen-name>.png に保存
 ```
 
 ### 既存デザインの参照・更新
