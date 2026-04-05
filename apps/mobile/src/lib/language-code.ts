@@ -7,8 +7,8 @@ type SummaryLanguageCode = "ja" | "en" | "zh" | "ko";
 type TranslationLanguageCode = "en" | "ja";
 
 /**
- * 言語コードマッピング（将来の非対称対応用に保持）
- * 現時は同一マップだが、zh/ko等の追加時に非対称になる可能性がある
+ * 言語コードの正規化マッピング
+ * 現在は恒等写像だが、将来的に非対称マッピング（zh→zh-CN 等）が必要になった際の拡張ポイントとして残している
  */
 const SUMMARY_LANGUAGE_CODE_MAP: Record<Language, SummaryLanguageCode> = {
   ja: "ja",
@@ -16,8 +16,8 @@ const SUMMARY_LANGUAGE_CODE_MAP: Record<Language, SummaryLanguageCode> = {
 };
 
 /**
- * 言語コードマッピング（将来の非対称対応用に保持）
- * 現時は同一マップだが、zh/ko等の追加時に非対称になる可能性がある
+ * 言語コードの正規化マッピング
+ * 現在は恒等写像だが、将来的に非対称マッピング（zh→zh-CN 等）が必要になった際の拡張ポイントとして残している
  */
 const TRANSLATION_LANGUAGE_CODE_MAP: Record<Language, TranslationLanguageCode> = {
   ja: "ja",

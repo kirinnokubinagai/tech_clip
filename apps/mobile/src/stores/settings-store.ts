@@ -87,8 +87,6 @@ type SettingsStore = {
   loadLanguage: () => Promise<void>;
   /** 言語設定を変更してSecureStoreに永続化する */
   setLanguage: (language: Language) => Promise<void>;
-  /** localeコードから表示名を取得する */
-  getLanguageLabel: () => string;
   /** APIから通知設定を取得する */
   fetchNotificationSettings: () => Promise<void>;
   /** 全通知のON/OFFをAPIに保存する */
@@ -127,15 +125,6 @@ export const useSettingsStore = create<SettingsStore>((set, get) => ({
   setLanguage: async (language: Language) => {
     await SecureStore.setItemAsync(LANGUAGE_KEY, JSON.stringify(language));
     set({ language });
-  },
-
-  /**
-   * 現在の言語設定の表示名を取得する
-   *
-   * @returns 表示名（例: "日本語", "English"）
-   */
-  getLanguageLabel: (): string => {
-    return LANGUAGE_LABEL_MAP[get().language];
   },
 
   /**
