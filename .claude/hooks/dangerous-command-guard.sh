@@ -31,13 +31,11 @@ check_dangerous() {
   echo "$cmd" | grep -qE "git restore" && return 0
 
   # git checkout でファイル復元を検出（ブランチ切替は許可）
-  # git checkout -b / --orphan / --track はブランチ作成なので除外
-  # それ以外は git rev-parse でブランチ存在を確認し、ブランチでなければブロック
-  if echo "$cmd" | grep -qE "git checkout [^-]" && \
-     ! echo "$cmd" | grep -qE "git checkout (-b|--orphan|--track)"; then
+  # [^-] により -b / --orphan / --track 等のフラグ付きコマンドは自動除外
+  if echo "$cmd" | grep -qE "git checkout [^-]"; then
     local target
     target=$(echo "$cmd" | sed 's/.*git checkout //')
-    if ! git rev-parse --verify "$target" &>/dev/null 2>&1; then
+    if ! git rev-parse --verify "$target" &>/dev/null; then
       return 0
     fi
   fi
