@@ -34,7 +34,7 @@ check_dangerous() {
   # [^-] により -b / --orphan / --track 等のフラグ付きコマンドは自動除外
   if echo "$cmd" | grep -qE "git checkout [^-]"; then
     local target
-    target=$(echo "$cmd" | sed 's/.*git checkout //')
+    target=$(echo "$cmd" | sed 's/.*git checkout //; s/ *[&|;].*//')
     if ! git rev-parse --verify "$target" &>/dev/null; then
       return 0
     fi
