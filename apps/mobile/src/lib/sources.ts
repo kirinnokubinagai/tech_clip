@@ -51,6 +51,11 @@ export const SOURCE_DEFINITIONS = [
     label: "Smashing Magazine",
     badgeClassName: "bg-rose-500/20 text-rose-400",
   },
+  {
+    id: "youtube",
+    label: "YouTube",
+    badgeClassName: "bg-red-600/20 text-red-500",
+  },
   { id: "other", label: "その他", badgeClassName: "bg-stone-500/20 text-stone-300" },
 ] as const satisfies readonly SourceDefinition[];
 

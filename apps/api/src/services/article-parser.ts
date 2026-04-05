@@ -117,6 +117,11 @@ async function dispatchParser(source: ArticleSource, url: string): Promise<Parse
     return parseSpeakerdeck(url);
   }
 
+  if (source === "youtube") {
+    const { parseYoutube } = await import("./parsers/youtube");
+    return parseYoutube(url);
+  }
+
   const { parseGeneric } = await import("./parsers/generic");
   return parseGeneric(url);
 }
