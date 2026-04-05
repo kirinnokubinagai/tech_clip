@@ -568,6 +568,7 @@ describe("createRateLimitMiddleware", () => {
       // Assert: 最初の3回は200、残り2回は429
       expect(results.filter((s) => s === 200)).toHaveLength(3);
       expect(results.filter((s) => s === 429)).toHaveLength(2);
+      expect(getCallCount).toBe(5);
     });
 
     it("インメモリストアでウィンドウ内のカウントが正確に記録されること", async () => {

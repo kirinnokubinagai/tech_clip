@@ -161,10 +161,20 @@ export function createRateLimitMiddleware(
     const key = `${config.keyPrefix}:${identifier}`;
     const now = Date.now();
 
-    const existing = await store.get(key);
+    let existing: RateLimitEntry | null;
+    try {
+      existing = await store.get(key);
+    } catch {
+      await next();
+      return;
+    }
 
     if (!existing || existing.resetAt <= now) {
-      await store.set(key, { count: 1, resetAt: now + config.windowMs });
+      try {
+        await store.set(key, { count: 1, resetAt: now + config.windowMs });
+      } catch {
+        // フェイルオープン: 書き込み失敗時もリクエストを通す
+      }
       await next();
       return;
     }
@@ -186,7 +196,11 @@ export function createRateLimitMiddleware(
       );
     }
 
-    await store.set(key, { count: existing.count + 1, resetAt: existing.resetAt });
+    try {
+      await store.set(key, { count: existing.count + 1, resetAt: existing.resetAt });
+    } catch {
+      // フェイルオープン: 書き込み失敗時もリクエストを通す
+    }
     await next();
   };
 }
