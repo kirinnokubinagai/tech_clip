@@ -198,13 +198,17 @@ export default function SettingsScreen() {
    * 要約言語選択のアクションシートを表示する
    */
   function handleSummaryLanguageSelect() {
-    Alert.alert(t("settings.summaryLanguageSelect.title"), t("settings.summaryLanguageSelect.prompt"), [
-      { text: "日本語", onPress: () => setSummaryLanguage("ja") },
-      { text: "English", onPress: () => setSummaryLanguage("en") },
-      { text: "中文", onPress: () => setSummaryLanguage("zh") },
-      { text: "한국어", onPress: () => setSummaryLanguage("ko") },
-      { text: t("common.cancel"), style: "cancel" },
-    ]);
+    Alert.alert(
+      t("settings.summaryLanguageSelect.title"),
+      t("settings.summaryLanguageSelect.prompt"),
+      [
+        { text: "日本語", onPress: () => setSummaryLanguage("ja") },
+        { text: "English", onPress: () => setSummaryLanguage("en") },
+        { text: "中文", onPress: () => setSummaryLanguage("zh") },
+        { text: "한국어", onPress: () => setSummaryLanguage("ko") },
+        { text: t("common.cancel"), style: "cancel" },
+      ],
+    );
   }
 
   /**
