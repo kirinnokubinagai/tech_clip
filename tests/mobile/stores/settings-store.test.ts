@@ -12,8 +12,8 @@ jest.mock("expo-localization", () => ({
 }));
 
 import { useSettingsStore } from "@mobile/stores/settings-store";
-import * as SecureStore from "expo-secure-store";
 import { getLocales } from "expo-localization";
+import * as SecureStore from "expo-secure-store";
 import { apiFetch } from "@/lib/api";
 
 /** モック型キャスト */
@@ -78,6 +78,30 @@ describe("useSettingsStore", () => {
         const state = useSettingsStore.getState();
         expect(state.language).toBe("日本語");
         expect(state.isLanguageLoaded).toBe(true);
+      });
+
+      it("保存値がJSON不正の場合はデフォルト（日本語）にフォールバックすること", async () => {
+        // Arrange
+        mockGetItemAsync.mockResolvedValue("invalid{{{");
+
+        // Act
+        await useSettingsStore.getState().loadLanguage();
+
+        // Assert
+        const state = useSettingsStore.getState();
+        expect(state.language).toBe("日本語");
+        expect(state.isLanguageLoaded).toBe(true);
+      });
+
+      it("保存値が不正な言語の場合はデフォルト（日本語）にフォールバックすること", async () => {
+        // Arrange
+        mockGetItemAsync.mockResolvedValue('"French"');
+
+        // Act
+        await useSettingsStore.getState().loadLanguage();
+
+        // Assert
+        expect(useSettingsStore.getState().language).toBe("日本語");
       });
     });
 
@@ -251,9 +275,7 @@ describe("useSettingsStore", () => {
       it("デバイス言語が非サポート言語の場合はデフォルト（ja）になること", async () => {
         // Arrange
         mockGetItemAsync.mockResolvedValue(null);
-        mockGetLocales.mockReturnValue([
-          { languageCode: "fr" },
-        ] as ReturnType<typeof getLocales>);
+        mockGetLocales.mockReturnValue([{ languageCode: "fr" }] as ReturnType<typeof getLocales>);
 
         // Act
         await useSettingsStore.getState().loadSummaryLanguage();
@@ -277,9 +299,33 @@ describe("useSettingsStore", () => {
       it("デバイス言語がenの場合はenになること", async () => {
         // Arrange
         mockGetItemAsync.mockResolvedValue(null);
-        mockGetLocales.mockReturnValue([
-          { languageCode: "en" },
-        ] as ReturnType<typeof getLocales>);
+        mockGetLocales.mockReturnValue([{ languageCode: "en" }] as ReturnType<typeof getLocales>);
+
+        // Act
+        await useSettingsStore.getState().loadSummaryLanguage();
+
+        // Assert
+        expect(useSettingsStore.getState().summaryLanguage).toBe("en");
+      });
+
+      it("保存値がJSON不正の場合はデバイス言語にフォールバックすること", async () => {
+        // Arrange
+        mockGetItemAsync.mockResolvedValue("invalid-json{{{");
+        mockGetLocales.mockReturnValue([{ languageCode: "ja" }] as ReturnType<typeof getLocales>);
+
+        // Act
+        await useSettingsStore.getState().loadSummaryLanguage();
+
+        // Assert
+        const state = useSettingsStore.getState();
+        expect(state.summaryLanguage).toBe("ja");
+        expect(state.isSummaryLanguageLoaded).toBe(true);
+      });
+
+      it("保存値が不正な言語コードの場合はデバイス言語にフォールバックすること", async () => {
+        // Arrange
+        mockGetItemAsync.mockResolvedValue('"fr"');
+        mockGetLocales.mockReturnValue([{ languageCode: "en" }] as ReturnType<typeof getLocales>);
 
         // Act
         await useSettingsStore.getState().loadSummaryLanguage();

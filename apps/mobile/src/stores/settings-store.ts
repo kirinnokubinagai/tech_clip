@@ -39,9 +39,7 @@ function resolveDeviceSummaryLanguage(): SummaryLanguage {
   if (!deviceLang) {
     return DEFAULT_SUMMARY_LANGUAGE;
   }
-  const isSupported = SUMMARY_LANGUAGE_OPTIONS.includes(
-    deviceLang as SummaryLanguage,
-  );
+  const isSupported = SUMMARY_LANGUAGE_OPTIONS.includes(deviceLang as SummaryLanguage);
   if (!isSupported) {
     return DEFAULT_SUMMARY_LANGUAGE;
   }
@@ -102,12 +100,22 @@ export const useSettingsStore = create<SettingsStore>((set, get) => ({
 
   /**
    * SecureStoreから言語設定を読み込む
-   * アプリ起動時に呼び出す
+   * アプリ起動時に呼び出す。パース失敗時や不正値の場合はデフォルト値にフォールバックする
    */
   loadLanguage: async () => {
     const stored = await SecureStore.getItemAsync(LANGUAGE_KEY);
-    const language: Language = stored !== null ? (JSON.parse(stored) as Language) : "日本語";
-    set({ language, isLanguageLoaded: true });
+    if (stored === null) {
+      set({ language: "日本語", isLanguageLoaded: true });
+      return;
+    }
+    try {
+      const parsed = JSON.parse(stored) as unknown;
+      const isValid = (LANGUAGE_OPTIONS as readonly string[]).includes(parsed as string);
+      const language: Language = isValid ? (parsed as Language) : "日本語";
+      set({ language, isLanguageLoaded: true });
+    } catch {
+      set({ language: "日本語", isLanguageLoaded: true });
+    }
   },
 
   /**
@@ -122,13 +130,25 @@ export const useSettingsStore = create<SettingsStore>((set, get) => ({
 
   /**
    * SecureStoreから要約言語設定を読み込む
-   * アプリ起動時に呼び出す。保存がない場合はデバイス言語を使用する
+   * アプリ起動時に呼び出す。保存がない場合はデバイス言語を使用する。
+   * パース失敗時や不正値の場合はデバイス言語にフォールバックする
    */
   loadSummaryLanguage: async () => {
     const stored = await SecureStore.getItemAsync(SUMMARY_LANGUAGE_KEY);
-    const summaryLanguage: SummaryLanguage =
-      stored !== null ? (JSON.parse(stored) as SummaryLanguage) : resolveDeviceSummaryLanguage();
-    set({ summaryLanguage, isSummaryLanguageLoaded: true });
+    if (stored === null) {
+      set({ summaryLanguage: resolveDeviceSummaryLanguage(), isSummaryLanguageLoaded: true });
+      return;
+    }
+    try {
+      const parsed = JSON.parse(stored) as unknown;
+      const isValid = (SUMMARY_LANGUAGE_OPTIONS as readonly string[]).includes(parsed as string);
+      const summaryLanguage: SummaryLanguage = isValid
+        ? (parsed as SummaryLanguage)
+        : resolveDeviceSummaryLanguage();
+      set({ summaryLanguage, isSummaryLanguageLoaded: true });
+    } catch {
+      set({ summaryLanguage: resolveDeviceSummaryLanguage(), isSummaryLanguageLoaded: true });
+    }
   },
 
   /**
