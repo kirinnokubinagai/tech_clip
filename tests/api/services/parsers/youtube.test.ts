@@ -1,6 +1,6 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import { parseYoutube, isYoutubeUrl } from "../../../../apps/api/src/services/parsers/youtube";
+import { isYoutubeUrl, parseYoutube } from "../../../../apps/api/src/services/parsers/youtube";
 
 describe("isYoutubeUrl", () => {
   it("youtube.com/watch URLを有効と判定すること", () => {
@@ -56,9 +56,7 @@ describe("parseYoutube", () => {
 
   it("oEmbed API失敗時にエラーになること", async () => {
     const url = "https://www.youtube.com/watch?v=invalid";
-    vi.spyOn(globalThis, "fetch").mockResolvedValueOnce(
-      new Response("Not Found", { status: 404 }),
-    );
+    vi.spyOn(globalThis, "fetch").mockResolvedValueOnce(new Response("Not Found", { status: 404 }));
     await expect(parseYoutube(url)).rejects.toThrow("YouTube動画の取得に失敗しました");
   });
 });
