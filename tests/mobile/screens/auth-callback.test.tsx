@@ -2,7 +2,6 @@ import OAuthCallbackScreen from "@mobile-app/(auth)/oauth-callback";
 import { fireEvent, render, waitFor } from "@testing-library/react-native";
 
 const mockReplace = jest.fn();
-const mockBack = jest.fn();
 const mockCheckSession = jest.fn();
 
 jest.mock("react-i18next", () => ({
@@ -14,7 +13,6 @@ jest.mock("react-i18next", () => ({
 jest.mock("expo-router", () => ({
   useRouter: () => ({
     replace: mockReplace,
-    back: mockBack,
   }),
   useLocalSearchParams: jest.fn(() => ({})),
 }));

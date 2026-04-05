@@ -7,7 +7,7 @@ import { ActivityIndicator, Pressable, Text, View } from "react-native";
 import { useAuthStore } from "@/stores/auth-store";
 
 /** OAuthコールバック状態 */
-type CallbackState = "loading" | "error" | "success";
+type CallbackState = "loading" | "error";
 
 /** URLにerrorパラメータが存在するか確認する */
 function hasErrorParam(queryParams: Record<string, string | string[]>): boolean {
@@ -63,15 +63,20 @@ export default function OAuthCallbackScreen() {
       return;
     }
 
+    let cancelled = false;
     checkSession()
       .then(() => {
-        setState("success");
+        if (cancelled) return;
         router.replace("/(tabs)");
       })
       .catch(() => {
+        if (cancelled) return;
         setErrorMessage(t("auth.oauthCallback.errorCheckSession"));
         setState("error");
       });
+    return () => {
+      cancelled = true;
+    };
   }, [url, checkSession, router, t]);
 
   if (state === "error") {
