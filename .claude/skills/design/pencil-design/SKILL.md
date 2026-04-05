@@ -54,6 +54,8 @@ git commit -m "design: add <screen-name> mockup #<issue番号>"
 - AIっぽいデザイン要素（グラデーション、ネオン、blob）は禁止
 - シンプルで落ち着いたトーンを維持する
 
+既存 PNG ファイルの一覧・Git 管理方針・実装時の注意事項は `docs/design/README.md` を参照。
+
 ## ファイル配置
 
 ```
