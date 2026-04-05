@@ -3,7 +3,7 @@
  *
  * Drizzle の select() / leftJoin() が返す型は複雑なユニオン型になるため、
  * APIレスポンスとして返す際に汎用型へのキャストが必要。
- * TODO: Drizzle型改善後に廃止
+ * TODO: Drizzle型推論改善後にtoRecordArrayごと廃止する
  */
 
 /**
@@ -18,7 +18,7 @@ export function toRecord<T extends Record<string, unknown>>(result: unknown): T 
 
 /**
  * レコード配列を汎用レコード配列にキャストする
- * TODO: Drizzle型改善後に廃止
+ * TODO: Drizzle型推論改善後にtoRecordArrayごと廃止する
  *
  * @param results - Drizzle のクエリ結果（配列）
  * @returns 汎用レコード配列
