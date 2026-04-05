@@ -198,7 +198,9 @@ export default function SettingsScreen() {
     ).map(([code, label]) => ({
       text: label,
       onPress: () => {
-        setSummaryLanguage(code).catch(() => {});
+        setSummaryLanguage(code).catch(() => {
+          Alert.alert(t("common.errorTitle"), t("settings.summaryLanguageUpdateError"));
+        });
       },
     }));
     Alert.alert(
