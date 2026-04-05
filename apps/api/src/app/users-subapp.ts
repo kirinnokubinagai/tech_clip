@@ -2,7 +2,7 @@ import { and, desc, eq, lt } from "drizzle-orm";
 import type { Auth } from "../auth";
 import type { Database } from "../db";
 import { follows, users } from "../db/schema";
-import { toRecordArray } from "../lib/db-cast";
+import { toRecord, toRecordArray } from "../lib/db-cast";
 import { fetchWithAuth } from "../lib/route-helpers";
 import { createFollowsRoute } from "../routes/follows";
 import { createUsersRoute } from "../routes/users";
@@ -40,7 +40,7 @@ export async function handleUsers(
         .select()
         .from(follows)
         .where(and(eq(follows.followerId, followerId), eq(follows.followingId, followingId)));
-      return result as unknown as { followerId: string; followingId: string; createdAt: string };
+      return toRecord<{ followerId: string; followingId: string; createdAt: string }>(result);
     },
     unfollowFn: async (followerId, followingId) => {
       await db
