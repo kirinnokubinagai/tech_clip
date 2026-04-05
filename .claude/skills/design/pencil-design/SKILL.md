@@ -18,33 +18,28 @@ TechClip のモバイル画面を `.pen` ファイルとして設計・管理す
 
 ## ワークフロー
 
-### 1. エディタ状態の確認
+### 新規デザイン作成
 
 ```
-get_editor_state()
+1. open_document("new") でブランクファイルを作成
+2. get_guidelines(topic="mobile-app") でモバイルガイドラインを取得
+3. get_style_guide_tags() でスタイルガイドタグを確認
+4. get_style_guide(tags, name) でスタイルガイドを取得
+5. batch_design(...) でデザインを作成
+6. PNG エクスポートして docs/design/ に保存
 ```
 
-### 2. ガイドラインの取得
+### 既存デザインの参照・更新
 
 ```
-get_guidelines(topic="mobile-app")
+1. open_document("docs/design/<screen>.pen") でファイルを開く
+   ※ エディタが既に開いている場合は get_editor_state() で状態確認
+2. batch_get(patterns, nodeIds) でノードを取得・確認
+3. 必要に応じて batch_design(...) で編集
+4. PNG エクスポートして docs/design/ に保存
 ```
 
-### 3. スタイルガイドの選択
-
-```
-get_style_guide_tags()
-get_style_guide(tags, name)
-```
-
-### 4. モックアップの作成・更新
-
-```
-batch_get(patterns, nodeIds)
-batch_design(...)
-```
-
-### 5. コミット
+### コミット
 
 ```bash
 git add docs/design/
