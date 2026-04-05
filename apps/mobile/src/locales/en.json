@@ -52,6 +52,12 @@
     "continueWithGithub": "Continue with GitHub",
     "socialLoginFailed": "Failed to start social sign-in. Please try again.",
     "signingIn": "Signing in...",
+    "authCallback": {
+      "backToLogin": "Back to Login",
+      "errorNoToken": "Authentication token not found. Please try again.",
+      "errorSaveToken": "Failed to save authentication info. Please try again.",
+      "errorCheckSession": "Failed to verify authentication. Please try again."
+    },
     "oauthCallback": {
       "processingLabel": "Authenticating",
       "processing": "Authenticating...",
