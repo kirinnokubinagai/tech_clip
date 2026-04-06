@@ -45,6 +45,18 @@ jest.mock("expo-router", () => ({
   },
 }));
 
+jest.mock("@/lib/i18n", () => ({
+  __esModule: true,
+  default: {
+    t: jest.fn((key: string) => {
+      const translations: Record<string, string> = {
+        "notifications.androidChannelName": "デフォルト通知",
+      };
+      return translations[key] ?? key;
+    }),
+  },
+}));
+
 beforeEach(() => {
   jest.clearAllMocks();
   Object.defineProperty(Device, "isDevice", { value: true, writable: true });

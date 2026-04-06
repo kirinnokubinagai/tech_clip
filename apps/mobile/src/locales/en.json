@@ -137,7 +137,8 @@
     "empty": "No notifications",
     "emptyDescription": "New notifications will appear here",
     "fetchError": "Failed to fetch notifications",
-    "loadingNotifications": "Loading..."
+    "loadingNotifications": "Loading...",
+    "androidChannelName": "Default notifications"
   },
   "profile": {
     "loginPrompt": "Log in to see your saved articles and favorites",
