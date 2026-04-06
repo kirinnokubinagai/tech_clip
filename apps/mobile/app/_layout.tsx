@@ -41,7 +41,9 @@ export default function RootLayout() {
     checkSession();
     loadOnboardingState();
     void loadLanguage();
-    void requestTrackingPermission();
+    if (hasSeenOnboarding) {
+      void requestTrackingPermission();
+    }
     void configureRevenueCat().catch((error: unknown) => {
       logger.warn("RevenueCat設定に失敗しました", { error });
     });
@@ -50,7 +52,7 @@ export default function RootLayout() {
     });
     const bgSyncCleanup = startBackgroundSync();
     return bgSyncCleanup;
-  }, [checkSession, loadOnboardingState, loadLanguage]);
+  }, [checkSession, loadOnboardingState, loadLanguage, hasSeenOnboarding]);
 
   useEffect(() => {
     const cleanup = setupNotificationHandlers();

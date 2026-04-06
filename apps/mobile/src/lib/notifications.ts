@@ -11,7 +11,7 @@ import { logger } from "@/lib/logger";
 const NOTIFICATION_CHANNEL_ID = "default";
 
 /** 通知タップ時の許可URLパターン */
-const ALLOWED_PUSH_PATTERNS = ["/articles/", "/profile", "/settings", "/onboarding"];
+const ALLOWED_PUSH_PATTERNS = ["/articles", "/profile", "/settings", "/onboarding"];
 
 /**
  * 通知URLがアプリ内の許可されたルートかどうかを検証する
@@ -48,30 +48,6 @@ export async function checkNotificationPermission(): Promise<NotificationPermiss
   }
 
   const { status } = await Notifications.getPermissionsAsync();
-  if (!isNotificationPermissionStatus(status)) {
-    return "undetermined";
-  }
-  return status;
-}
-
-/**
- * 通知権限をユーザーに要求する
- * 既に許可済みの場合はリクエストをスキップする
- * シミュレータでは "undetermined" を返す
- *
- * @returns 要求後の通知権限ステータス
- */
-export async function requestNotificationPermission(): Promise<NotificationPermissionStatus> {
-  if (!Device.isDevice) {
-    return "undetermined";
-  }
-
-  const { status: existingStatus } = await Notifications.getPermissionsAsync();
-  if (existingStatus === "granted") {
-    return "granted";
-  }
-
-  const { status } = await Notifications.requestPermissionsAsync();
   if (!isNotificationPermissionStatus(status)) {
     return "undetermined";
   }
