@@ -1,4 +1,4 @@
-name: Claude Review & Label
+name: Claude Review & CI
 
 on:
   pull_request:
@@ -14,6 +14,8 @@ jobs:
       contents: read
       pull-requests: write
       id-token: write
+    outputs:
+      passed: ${{ steps.check-label.outputs.passed }}
     steps:
       - uses: actions/checkout@v4
       - uses: anthropics/claude-code-action@v1
@@ -35,29 +37,212 @@ jobs:
 
             重要: gh pr review --approve は絶対に実行しないでください。最終承認は人間が行います。
 
-  review-gate:
-    name: Review Gate
-    needs: review-and-label
-    runs-on: ubuntu-latest
-    permissions:
-      pull-requests: read
-      actions: write
-    steps:
-      - name: Check review label
+      - id: check-label
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           LABELS=$(gh api repos/${{ github.repository }}/pulls/${{ github.event.pull_request.number }} --jq '.labels[].name')
-          if echo "$LABELS" | grep -q "AI Review: NEEDS WORK"; then
-            echo "::error::AIレビューで問題または改善提案があります。修正してください。"
-
-            echo "他の実行中ワークフローをキャンセル中..."
-            gh api repos/${{ github.repository }}/actions/runs \
-              --jq '.workflow_runs[] | select(.head_sha == "${{ github.event.pull_request.head.sha }}" and .status == "in_progress" and .id != ${{ github.run_id }}) | .id' \
-              | while read -r RUN_ID; do
-                  gh run cancel "${RUN_ID}" 2>/dev/null || true
-                done
-
-            exit 1
+          if echo "$LABELS" | grep -q "AI Review: PASS"; then
+            echo "passed=true" >> $GITHUB_OUTPUT
+          else
+            echo "passed=false" >> $GITHUB_OUTPUT
           fi
-          echo "AIレビュー: PASS"
+
+  ci:
+    name: Lint / Typecheck / Test / Audit
+    needs: review-and-label
+    if: needs.review-and-label.outputs.passed == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/nix-setup
+      - name: Run lint, typecheck, test, audit in parallel
+        run: |
+          nix develop --command bash -c '
+            set -uo pipefail
+            LOGDIR=$(mktemp -d)
+
+            pnpm lint       > "${LOGDIR}/lint.log" 2>&1 &
+            PID_LINT=$!
+            pnpm typecheck  > "${LOGDIR}/typecheck.log" 2>&1 &
+            PID_TC=$!
+            pnpm test       > "${LOGDIR}/test.log" 2>&1 &
+            PID_TEST=$!
+            pnpm audit      > "${LOGDIR}/audit.log" 2>&1 &
+            PID_AUDIT=$!
+
+            FAILED=0
+            wait $PID_LINT   || FAILED=1
+            wait $PID_TC     || FAILED=1
+            wait $PID_TEST   || FAILED=1
+            wait $PID_AUDIT  || FAILED=1
+
+            echo "========== lint =========="
+            cat "${LOGDIR}/lint.log"
+            echo "========== typecheck =========="
+            cat "${LOGDIR}/typecheck.log"
+            echo "========== test =========="
+            cat "${LOGDIR}/test.log"
+            echo "========== audit =========="
+            cat "${LOGDIR}/audit.log"
+
+            rm -rf "${LOGDIR}"
+            exit $FAILED
+          '
+
+  zap-scan:
+    name: Security (ZAP)
+    needs: ci
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/nix-setup
+      - name: Run ZAP scan
+        env:
+          TURSO_DATABASE_URL: file:local.db
+          TURSO_AUTH_TOKEN: dummy
+          RUNPOD_API_KEY: dummy
+          RUNPOD_ENDPOINT_ID: dummy
+          BETTER_AUTH_SECRET: test-secret-key-for-ci
+          ENVIRONMENT: test
+          ZAP_TEST_EMAIL: ${{ secrets.ZAP_TEST_EMAIL }}
+          ZAP_TEST_PASSWORD: ${{ secrets.ZAP_TEST_PASSWORD }}
+        run: |
+          nix develop --command bash -c '
+            set -euo pipefail
+
+            API_PORT=8787
+            ZAP_PORT=$((10000 + (RANDOM % 1000)))
+            ZAP_HOME=$(mktemp -d)
+            SETUP_LOG=/tmp/zap-setup.log
+            touch "${SETUP_LOG}"
+
+            cleanup() {
+              pkill -f "wrangler dev" 2>/dev/null || true
+              pkill -f -- "-daemon -port ${ZAP_PORT}" 2>/dev/null || true
+              rm -rf "${ZAP_HOME}"
+            }
+            trap cleanup EXIT
+
+            # APIサーバー起動
+            TURSO_DATABASE_URL="${TURSO_DATABASE_URL}" \
+            TURSO_AUTH_TOKEN="${TURSO_AUTH_TOKEN}" \
+            RUNPOD_API_KEY="${RUNPOD_API_KEY}" \
+            RUNPOD_ENDPOINT_ID="${RUNPOD_ENDPOINT_ID}" \
+            BETTER_AUTH_SECRET="${BETTER_AUTH_SECRET}" \
+            ENVIRONMENT="${ENVIRONMENT}" \
+              pnpm --filter @tech-clip/api exec wrangler dev --port ${API_PORT} > /tmp/api.log 2>&1 &
+
+            # ZAPデーモン起動（APIサーバーと並列で起動待機）
+            # config.xml書き込み先を事前作成（Permission denied防止）
+            mkdir -p "${ZAP_HOME}/.ZAP"
+            HOME="${ZAP_HOME}" zap -daemon -port ${ZAP_PORT} -config api.disablekey=true > /tmp/zap-daemon.log 2>&1 &
+
+            # APIサーバー起動待機
+            echo "APIサーバー起動待機中..."
+            for i in $(seq 1 30); do
+              curl -s "http://localhost:${API_PORT}/health" > /dev/null 2>&1 && break
+              sleep 1
+            done
+            if ! curl -s "http://localhost:${API_PORT}/health" > /dev/null 2>&1; then
+              echo "::error::APIサーバーが30秒以内に起動しませんでした"
+              cat /tmp/api.log
+              exit 1
+            fi
+
+            # DBマイグレーション
+            cd apps/api && pnpm exec drizzle-kit migrate >> "${SETUP_LOG}" 2>&1 && cd ../..
+
+            # テストユーザー登録・認証
+            curl -s -X POST "http://localhost:${API_PORT}/api/auth/sign-up/email" \
+              -H "Content-Type: application/json" \
+              -d "{\"email\":\"${ZAP_TEST_EMAIL}\",\"password\":\"${ZAP_TEST_PASSWORD}\",\"name\":\"ZAP Test User\"}" >> "${SETUP_LOG}" 2>&1
+
+            RESPONSE=$(curl -s -X POST "http://localhost:${API_PORT}/api/auth/sign-in" \
+              -H "Content-Type: application/json" \
+              -d "{\"email\":\"${ZAP_TEST_EMAIL}\",\"password\":\"${ZAP_TEST_PASSWORD}\"}")
+            echo "sign-in response: ${RESPONSE}" >> "${SETUP_LOG}"
+            TOKEN=$(echo "${RESPONSE}" | jq -r ".data.session.token // .data.token // .token // empty" 2>/dev/null || echo "")
+            if [ -z "${TOKEN}" ]; then
+              echo "警告: 認証トークンを取得できませんでした。未認証スキャンのみ実施します"
+              TOKEN="dummy-token-for-unauthenticated-scan"
+            fi
+
+            # ZAPデーモン起動待機
+            echo "ZAPデーモン起動待機中..."
+            for i in $(seq 1 60); do
+              curl -s "http://localhost:${ZAP_PORT}/JSON/core/view/version/" > /dev/null 2>&1 && break
+              sleep 1
+            done
+            if ! curl -s "http://localhost:${ZAP_PORT}/JSON/core/view/version/" > /dev/null 2>&1; then
+              echo "::error::ZAPデーモンが60秒以内に起動しませんでした"
+              cat /tmp/zap-daemon.log
+              exit 1
+            fi
+
+            # OpenAPIインポート + 認証ヘッダー設定
+            curl -s "http://localhost:${ZAP_PORT}/JSON/openapi/action/importUrl/" \
+              --data-urlencode "url=http://localhost:${API_PORT}/openapi.json" >> "${SETUP_LOG}" 2>&1
+            curl -s "http://localhost:${ZAP_PORT}/JSON/replacer/action/addRule/" \
+              --data-urlencode "description=Auth Header" \
+              --data-urlencode "enabled=true" \
+              --data-urlencode "matchType=REQ_HEADER" \
+              --data-urlencode "matchRegex=false" \
+              --data-urlencode "matchString=Authorization" \
+              --data-urlencode "replacement=Bearer ${TOKEN}" \
+              --data-urlencode "initiators=" >> "${SETUP_LOG}" 2>&1
+
+            # アクティブスキャン
+            echo "アクティブスキャン実行中..."
+            SCAN_ID=$(curl -s "http://localhost:${ZAP_PORT}/JSON/ascan/action/scan/" \
+              --data-urlencode "url=http://localhost:${API_PORT}" \
+              --data-urlencode "recurse=true" | jq -r ".scan")
+
+            SCAN_TIMED_OUT=1
+            for i in $(seq 1 300); do
+              STATUS=$(curl -s "http://localhost:${ZAP_PORT}/JSON/ascan/view/status/?scanId=${SCAN_ID}" | jq -r ".status")
+              if [ "${STATUS}" = "100" ]; then
+                SCAN_TIMED_OUT=0
+                break
+              fi
+              sleep 2
+            done
+            if [ "${SCAN_TIMED_OUT}" -eq 1 ]; then
+              echo "::error::ZAPスキャンがタイムアウトしました（600秒）"
+              exit 1
+            fi
+
+            # レポート生成
+            mkdir -p .zap
+            curl -s "http://localhost:${ZAP_PORT}/OTHER/core/other/htmlreport/" > .zap/zap-report.html
+
+            # 結果判定（ルール抑制適用）
+            echo "スキャン結果を確認中..."
+            if [ -f ".zap/rules.tsv" ]; then
+              HIGH=$(curl -s "http://localhost:${ZAP_PORT}/JSON/alert/view/alerts/?baseurl=http://localhost:${API_PORT}&riskId=3" \
+                | jq -r --slurpfile rules <(awk -F"\t" "\$2 == \"IGNORE\" || \$2 == \"WARN\" {print \$1}" .zap/rules.tsv | jq -R . | jq -s .) \
+                "[.alerts[] | select(.pluginId as \$id | \$rules[0] | index(\$id) | not)] | length")
+              MEDIUM=$(curl -s "http://localhost:${ZAP_PORT}/JSON/alert/view/alerts/?baseurl=http://localhost:${API_PORT}&riskId=2" \
+                | jq -r --slurpfile rules <(awk -F"\t" "\$2 == \"IGNORE\" || \$2 == \"WARN\" {print \$1}" .zap/rules.tsv | jq -R . | jq -s .) \
+                "[.alerts[] | select(.pluginId as \$id | \$rules[0] | index(\$id) | not)] | length")
+            else
+              HIGH=$(curl -s "http://localhost:${ZAP_PORT}/JSON/alert/view/alertsSummary/?baseurl=http://localhost:${API_PORT}" | jq -r ".alertsSummary.High // 0")
+              MEDIUM=$(curl -s "http://localhost:${ZAP_PORT}/JSON/alert/view/alertsSummary/?baseurl=http://localhost:${API_PORT}" | jq -r ".alertsSummary.Medium // 0")
+            fi
+
+            if [ "${HIGH:-0}" -gt 0 ] || [ "${MEDIUM:-0}" -gt 0 ]; then
+              echo "::error::セキュリティ問題検出（High: ${HIGH}, Medium: ${MEDIUM}）"
+              exit 1
+            fi
+            echo "ZAPスキャン完了: 問題なし"
+          '
+      - name: Upload ZAP Report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: zap-report
+          path: |
+            .zap/zap-report.html
+            /tmp/zap-setup.log
+            /tmp/api.log
+            /tmp/zap-daemon.log
