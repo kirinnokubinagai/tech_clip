@@ -166,6 +166,25 @@ describe("OnboardingScreen", () => {
       // Assert
       expect(mockRequestTrackingPermission).not.toHaveBeenCalled();
     });
+
+    it("requestTrackingPermissionが失敗してもログイン画面に遷移すること", async () => {
+      // Arrange
+      mockRequestTrackingPermission.mockRejectedValueOnce(new Error("許可リクエスト失敗"));
+      const { getByTestId } = await render(<OnboardingScreen />);
+
+      await fireEvent.press(getByTestId("next-button"));
+      await fireEvent.press(getByTestId("next-button"));
+      await fireEvent.press(getByTestId("next-button"));
+
+      // Act
+      await fireEvent.press(getByTestId("finish-button"));
+
+      // Assert
+      await waitFor(() => {
+        expect(mockRouter.replace).toHaveBeenCalledWith("/(auth)/login");
+      });
+      expect(mockSetHasSeenOnboarding).toHaveBeenCalledWith(true);
+    });
   });
 
   describe("hasSeenOnboarding済み", () => {

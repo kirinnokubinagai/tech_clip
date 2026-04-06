@@ -23,6 +23,7 @@ import {
   registerPushTokenOnly,
   requestNotificationPermission,
 } from "@/lib/notifications";
+import { logger } from "@/lib/logger";
 import { useAuthStore } from "@/stores/auth-store";
 import { LANGUAGE_LABEL_MAP, useSettingsStore } from "@/stores/settings-store";
 
@@ -261,7 +262,8 @@ export default function SettingsScreen() {
       if (status === "granted") {
         await registerPushTokenOnly();
       }
-    } catch (_error) {
+    } catch (error) {
+      logger.warn("通知権限リクエストに失敗しました", { error });
       const messageKey =
         notificationPermission === "denied"
           ? "settings.openSettingsError"

@@ -85,7 +85,7 @@ export async function requestNotificationPermission(): Promise<NotificationPermi
  *
  * @param token - Expoプッシュトークン文字列
  */
-export async function registerTokenWithApi(token: string): Promise<void> {
+async function registerTokenWithApi(token: string): Promise<void> {
   await apiFetch("/api/notifications/register", {
     method: "POST",
     body: JSON.stringify({ token, platform: Platform.OS }),
