@@ -439,6 +439,46 @@ gh pr view <PR番号> --comments
 
 ---
 
+## フックブロック時の対処法
+
+フックは `exit 2` で終了する。これは**現在のツール呼び出しのみをブロック**し、セッションは継続する。パニックせず、エラーメッセージの指示に従えばよい。
+
+### Edit / Write がブロックされた場合（main-edit-guard）
+
+mainブランチ上でのファイル編集を試みると発動する。エラーメッセージに表示される通り、worktree を作成して作業する:
+
+```bash
+REPO_ROOT=$(cd "$(env -u GIT_DIR -u GIT_WORK_TREE git rev-parse --git-common-dir)/../.." && pwd)
+git worktree add "${REPO_ROOT}/.worktrees/issue-N" -b issue/N/short-desc
+cd "${REPO_ROOT}/.worktrees/issue-N"
+pnpm install --frozen-lockfile
+```
+
+### Bash コマンドがブロックされた場合（dangerous-command-guard）
+
+**エラーメッセージ内に具体的な代替手段が表示される**のでそれに従う。主なブロック対象と対処:
+
+| ブロック対象 | 対処 |
+|------------|------|
+| `rm` | 削除前に内容確認。本当に必要か検討する |
+| `git reset --hard` / `git restore` / `git clean` | `git diff` / `git status` で状態確認 |
+| `git push --force` / `-f` | 通常の `git push` を使用（force push は禁止） |
+| `git branch -D` | ブランチ削除は慎重に |
+| `git checkout <file>` | ブランチ切替のみ許可。ファイル復元は禁止 |
+| `git worktree add` のパス違反 | `.worktrees/` 直下の絶対パスを指定する |
+| `gh pr merge` | マージは CI が自動で行う。手動マージは禁止 |
+| mainブランチでのソースファイル書き換えコマンド | worktree を作成してから作業する |
+
+### フックの動作原理
+
+- `exit 2`: 現在のツール呼び出しのみブロック。セッションは継続する（**安全**）
+- `exit 0`: ブロックしない。ツール呼び出しを許可する
+- `exit 1` / 非ゼロ（`set -euo pipefail` でgitが失敗した場合等）: セッション強制終了（**危険**）
+
+フックスクリプト自体に問題がある場合は `.claude/hooks/` を確認すること。
+
+---
+
 ## エージェント構成
 
 ### 許可エージェント（settings.json で制御）

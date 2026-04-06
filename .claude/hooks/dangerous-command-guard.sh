@@ -30,9 +30,12 @@ check_worktree_path() {
 
   if [[ "$wt_path" == *'$'* ]]; then
     echo "⚠️ 未展開の変数が含まれています。絶対パスに展開してから実行してください"
+    echo "  例: REPO_ROOT=\$(cd \"\$(env -u GIT_DIR -u GIT_WORK_TREE git rev-parse --git-common-dir)/../..\" && pwd)"
+    echo "       git worktree add \"\${REPO_ROOT}/.worktrees/issue-N\" -b issue/N/short-desc"
     return 0
   fi
-  repo_root=$(cd "$(git rev-parse --git-common-dir 2>/dev/null)/.." && pwd)
+  # GIT_DIR汚染を回避してリポジトリルートを取得
+  repo_root=$(cd "$(env -u GIT_DIR -u GIT_WORK_TREE git rev-parse --git-common-dir 2>/dev/null)/.." && pwd)
   expected_prefix="${repo_root}/.worktrees/"
 
   # realpath -m でシンボリックリンクや .. を正規化（存在しないパスでも動作）
@@ -46,6 +49,10 @@ check_worktree_path() {
     echo "  指定パス: $wt_path"
     echo "  解決先:   $resolved_path"
     echo "  正しい例: ${expected_prefix}issue-N"
+    echo ""
+    echo "正しいコマンド例:"
+    echo "  REPO_ROOT=${repo_root}"
+    echo "  git worktree add \"\${REPO_ROOT}/.worktrees/issue-N\" -b issue/N/short-desc"
     return 0
   fi
 
@@ -81,7 +88,7 @@ check_dangerous() {
   if echo "$cmd" | grep -qE "git checkout [^-]"; then
     local target
     target=$(echo "$cmd" | sed 's/.*git checkout //; s/ *[&|;].*//')
-    if ! git rev-parse --verify "$target" &>/dev/null; then
+    if ! env -u GIT_DIR -u GIT_WORK_TREE git rev-parse --verify "$target" &>/dev/null; then
       return 0
     fi
   fi
@@ -126,7 +133,11 @@ check_merge_without_review() {
     echo "PR #$pr_num にレビューコメントがありません。"
     echo ""
     echo "CLAUDE.mdルール: 全PRはレビュー必須（セルフマージ禁止）"
-    echo "先にレビューしてください: gh pr review $pr_num --comment --body 'LGTM'"
+    echo "マージはCIが自動で行います。ローカルからのマージ操作は禁止です。"
+    echo ""
+    echo "レビュー状況の確認:"
+    echo "  gh pr view $pr_num --json reviews,reviewRequests"
+    echo "  gh pr view $pr_num --comments"
     return 0
   fi
 
@@ -138,6 +149,21 @@ if check_dangerous "$COMMAND"; then
   echo "コマンド: $COMMAND"
   echo ""
   echo "このコマンドは破壊的な操作を行う可能性があります。"
+  echo ""
+  echo "代替手段:"
+  if echo "$COMMAND" | grep -qE "^rm "; then
+    echo "  - ファイルを削除する前に内容を確認してください"
+    echo "  - 削除が本当に必要か検討してください"
+  fi
+  if echo "$COMMAND" | grep -qE "git reset --hard|git checkout -- |git restore|git clean"; then
+    echo "  - 変更を確認: git diff"
+    echo "  - 特定ファイルの状態確認: git status"
+    echo "  - 意図した変更は保持してください"
+  fi
+  if echo "$COMMAND" | grep -qE "git push.*--force|git push.*-f"; then
+    echo "  - force pushは禁止です（CLAUDE.md参照）"
+    echo "  - 通常のpushを使用してください: git push origin <branch>"
+  fi
   exit 2
 fi
 
@@ -154,6 +180,9 @@ if echo "$COMMAND" | grep -qE "gh pr create"; then
   echo "🧪 PR作成前にテスト通過を確認中..."
   if ! pnpm test 2>/dev/null; then
     echo "❌ テストが失敗しています。テストを修正してからPRを作成してください。"
+    echo ""
+    echo "テスト実行: pnpm test"
+    echo "特定テスト: pnpm test -- <test-file>"
     exit 2
   fi
 fi
