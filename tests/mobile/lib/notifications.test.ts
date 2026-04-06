@@ -39,6 +39,12 @@ jest.mock("@/lib/logger", () => ({
   },
 }));
 
+jest.mock("expo-router", () => ({
+  router: {
+    push: jest.fn(),
+  },
+}));
+
 beforeEach(() => {
   jest.clearAllMocks();
   Object.defineProperty(Device, "isDevice", { value: true, writable: true });
@@ -212,6 +218,82 @@ describe("notifications", () => {
       // Assert
       expect(mockRemoveReceived).toHaveBeenCalledTimes(1);
       expect(mockRemoveResponse).toHaveBeenCalledTimes(1);
+    });
+
+    it("許可ルートへの通知タップでrouter.pushが呼ばれること", () => {
+      // Arrange
+      const { router } = jest.requireMock("expo-router");
+      setupNotificationHandlers();
+      const responseCallback = (
+        Notifications.addNotificationResponseReceivedListener as jest.Mock
+      ).mock.calls[0][0];
+
+      // Act
+      responseCallback({
+        notification: {
+          request: {
+            content: {
+              data: { url: "/articles/123" },
+            },
+          },
+        },
+      });
+
+      // Assert
+      expect(router.push).toHaveBeenCalledWith("/articles/123");
+    });
+
+    it("不許可ルートはブロックされlogger.warnが呼ばれること", () => {
+      // Arrange
+      const { router } = jest.requireMock("expo-router");
+      const { logger } = jest.requireMock("@/lib/logger");
+      setupNotificationHandlers();
+      const responseCallback = (
+        Notifications.addNotificationResponseReceivedListener as jest.Mock
+      ).mock.calls[0][0];
+
+      // Act
+      responseCallback({
+        notification: {
+          request: {
+            content: {
+              data: { url: "https://evil.com/malicious" },
+            },
+          },
+        },
+      });
+
+      // Assert
+      expect(router.push).not.toHaveBeenCalled();
+      expect(logger.warn).toHaveBeenCalledWith(
+        "許可されていない通知URLをブロックしました",
+        expect.objectContaining({ url: "https://evil.com/malicious" }),
+      );
+    });
+
+    it("通知データにurlが未設定の場合は何もしないこと", () => {
+      // Arrange
+      const { router } = jest.requireMock("expo-router");
+      const { logger } = jest.requireMock("@/lib/logger");
+      setupNotificationHandlers();
+      const responseCallback = (
+        Notifications.addNotificationResponseReceivedListener as jest.Mock
+      ).mock.calls[0][0];
+
+      // Act
+      responseCallback({
+        notification: {
+          request: {
+            content: {
+              data: {},
+            },
+          },
+        },
+      });
+
+      // Assert
+      expect(router.push).not.toHaveBeenCalled();
+      expect(logger.warn).not.toHaveBeenCalled();
     });
   });
 
