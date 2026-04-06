@@ -61,9 +61,9 @@ git commit -m "design: add <screen-name> mockup #<issue番号>"
 ```
 docs/design/
 ├── README.md
-├── home.pen
+├── home-article-list.pen
 ├── article-detail.pen
-├── home.png
+├── home-article-list.png
 ├── article-detail.png
 └── ...
 ```
