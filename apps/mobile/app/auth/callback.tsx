@@ -86,5 +86,10 @@ export default function AuthCallbackScreen() {
     );
   }
 
-  return <CallbackLoadingView loadingTestId="auth-callback-loading" message={t("auth.callback.signingIn")} />;
+  return (
+    <CallbackLoadingView
+      loadingTestId="auth-callback-loading"
+      message={t("auth.callback.signingIn")}
+    />
+  );
 }
