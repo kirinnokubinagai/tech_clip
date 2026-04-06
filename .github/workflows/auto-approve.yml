@@ -5,6 +5,10 @@ on:
     types: [opened, synchronize, reopened]
   push:
     branches: [main]
+    paths-ignore:
+      - "**.md"
+      - "docs/**"
+      - ".claude/**"
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
