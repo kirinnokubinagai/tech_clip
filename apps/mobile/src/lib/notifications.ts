@@ -20,10 +20,16 @@ const ALLOWED_PUSH_PATTERNS = ["/articles/", "/profile", "/settings", "/onboardi
  * @returns 許可されたルートの場合 true
  */
 function isAllowedRoute(url: string): boolean {
-  if (url.includes("..") || url.includes("\0")) {
+  let decoded: string;
+  try {
+    decoded = decodeURIComponent(url);
+  } catch {
     return false;
   }
-  return ALLOWED_PUSH_PATTERNS.some((pattern) => url === pattern || url.startsWith(`${pattern}/`));
+  if (decoded.includes("..") || decoded.includes("\0")) {
+    return false;
+  }
+  return ALLOWED_PUSH_PATTERNS.some((pattern) => decoded === pattern || decoded.startsWith(`${pattern}/`));
 }
 
 /** 通知権限ステータス */
