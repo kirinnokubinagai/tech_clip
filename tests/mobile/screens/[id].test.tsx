@@ -74,7 +74,7 @@ jest.mock("@mobile/hooks/use-articles", () => ({
 jest.mock("@mobile/stores/settings-store", () => ({
   useSettingsStore: jest.fn((selector: (state: Record<string, unknown>) => unknown) =>
     selector({
-      language: "日本語",
+      language: "ja",
       isLanguageLoaded: true,
     }),
   ),
@@ -89,7 +89,7 @@ beforeEach(() => {
   const { useSettingsStore } = require("@mobile/stores/settings-store");
   (useSettingsStore as jest.Mock).mockImplementation(
     (selector: (state: Record<string, unknown>) => unknown) =>
-      selector({ language: "日本語", isLanguageLoaded: true }),
+      selector({ language: "ja", isLanguageLoaded: true }),
   );
   const { useNetworkStatus } = require("@mobile/hooks/use-network-status");
   (useNetworkStatus as jest.Mock).mockReturnValue({ isOnline: true, isOffline: false });
@@ -181,7 +181,7 @@ describe("ArticleDetailScreen", () => {
       const { useSettingsStore } = require("@mobile/stores/settings-store");
       (useSettingsStore as jest.Mock).mockImplementation(
         (selector: (state: Record<string, unknown>) => unknown) =>
-          selector({ language: "English", isLanguageLoaded: true }),
+          selector({ language: "en", isLanguageLoaded: true }),
       );
       const { getByTestId } = await render(<ArticleDetailScreen />);
 
@@ -220,7 +220,7 @@ describe("ArticleDetailScreen", () => {
       const { useSettingsStore } = require("@mobile/stores/settings-store");
       (useSettingsStore as jest.Mock).mockImplementation(
         (selector: (state: Record<string, unknown>) => unknown) =>
-          selector({ language: "English", isLanguageLoaded: true }),
+          selector({ language: "en", isLanguageLoaded: true }),
       );
       const { getByTestId } = await render(<ArticleDetailScreen />);
 

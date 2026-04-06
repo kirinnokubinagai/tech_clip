@@ -15,7 +15,7 @@ import {
 } from "@/hooks/use-articles";
 import { useNetworkStatus } from "@/hooks/use-network-status";
 import { DARK_COLORS } from "@/lib/constants";
-import { toSummaryLanguageCode, toTranslationLanguageCode } from "@/lib/language-code";
+import { formatArticleDate } from "@/lib/date-format";
 import { getOfflineArticleById } from "@/lib/localDb";
 import { useSettingsStore } from "@/stores/settings-store";
 import type { ArticleDetail } from "@/types/article";
@@ -150,20 +150,6 @@ const markdownStyles = {
 };
 
 /**
- * 日付文字列をYYYY/MM/DD形式にフォーマットする
- *
- * @param isoString - ISO 8601形式の日付文字列
- * @returns フォーマットされた日付文字列
- */
-function formatDate(isoString: string): string {
-  const date = new Date(isoString);
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, "0");
-  const day = String(date.getDate()).padStart(2, "0");
-  return `${year}/${month}/${day}`;
-}
-
-/**
  * 記事詳細画面
  *
  * Markdownレンダリング、要約/翻訳ボタン、お気に入りトグルを提供する。
@@ -240,14 +226,14 @@ export default function ArticleDetailScreen() {
 
   const handleRequestSummary = useCallback(() => {
     if (!article) return;
-    requestSummary.mutate({ articleId: article.id, language: toSummaryLanguageCode(language) });
+    requestSummary.mutate({ articleId: article.id, language });
   }, [article, language, requestSummary]);
 
   const handleRequestTranslation = useCallback(() => {
     if (!article) return;
     requestTranslation.mutate({
       articleId: article.id,
-      targetLanguage: toTranslationLanguageCode(language),
+      targetLanguage: language,
     });
   }, [article, language, requestTranslation]);
 
@@ -406,7 +392,9 @@ export default function ArticleDetailScreen() {
           <View className="flex-row items-center gap-2">
             <SourceBadge source={article.source} />
             {article.publishedAt && (
-              <Text className="text-xs text-text-muted">{formatDate(article.publishedAt)}</Text>
+              <Text className="text-xs text-text-muted">
+                {formatArticleDate(article.publishedAt, language)}
+              </Text>
             )}
             {article.readingTimeMinutes && (
               <Text className="text-xs text-text-muted">
