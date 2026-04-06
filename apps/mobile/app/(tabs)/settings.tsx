@@ -17,13 +17,13 @@ import { Alert, AppState, Linking, Pressable, ScrollView, Switch, Text, View } f
 import { confirm } from "@/components/ConfirmDialog";
 import { useSubscription } from "@/hooks/use-subscription";
 import { DARK_COLORS } from "@/lib/constants";
+import { logger } from "@/lib/logger";
 import {
   checkNotificationPermission,
   type NotificationPermissionStatus,
   registerPushTokenOnly,
   requestNotificationPermission,
 } from "@/lib/notifications";
-import { logger } from "@/lib/logger";
 import { useAuthStore } from "@/stores/auth-store";
 import { LANGUAGE_LABEL_MAP, useSettingsStore } from "@/stores/settings-store";
 
