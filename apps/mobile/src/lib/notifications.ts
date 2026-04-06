@@ -10,6 +10,19 @@ import { logger } from "@/lib/logger";
 /** Android通知チャンネルID */
 const NOTIFICATION_CHANNEL_ID = "default";
 
+/** 通知タップ時の許可URLパターン */
+const ALLOWED_PUSH_PATTERNS = ["/articles/", "/profile", "/settings", "/onboarding"];
+
+/**
+ * 通知URLがアプリ内の許可されたルートかどうかを検証する
+ *
+ * @param url - 検証するURL文字列
+ * @returns 許可されたルートの場合 true
+ */
+function isAllowedRoute(url: string): boolean {
+  return ALLOWED_PUSH_PATTERNS.some((pattern) => url.startsWith(pattern));
+}
+
 /** 通知権限ステータス */
 export type NotificationPermissionStatus = "granted" | "denied" | "undetermined";
 
@@ -135,8 +148,12 @@ export function setupNotificationHandlers(): () => void {
 
   const responseSubscription = Notifications.addNotificationResponseReceivedListener((response) => {
     const url = response.notification.request.content.data?.url;
-    if (typeof url === "string") {
+    if (typeof url === "string" && isAllowedRoute(url)) {
       router.push(url);
+      return;
+    }
+    if (typeof url === "string") {
+      logger.warn("許可されていない通知URLをブロックしました", { url });
     }
   });
 
