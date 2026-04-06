@@ -1,5 +1,5 @@
 import AuthCallbackScreen from "@mobile-app/auth/callback";
-import { fireEvent, render, screen, waitFor } from "@testing-library/react-native";
+import { fireEvent, render, waitFor } from "@testing-library/react-native";
 
 const mockReplace = jest.fn();
 const mockCheckSession = jest.fn();
