@@ -6,11 +6,43 @@ import { apiFetch } from "@/lib/api";
 /** SecureStoreキー: 言語設定 */
 const LANGUAGE_KEY = "settings_language";
 
-/** 言語選択肢 */
-const LANGUAGE_OPTIONS = ["日本語", "English"] as const;
+/** 言語ロケールコード */
+const LOCALE_CODES = ["ja", "en"] as const;
 
-/** 言語選択肢の型 */
-export type Language = (typeof LANGUAGE_OPTIONS)[number];
+/** 言語の型（ロケールコード） */
+export type Language = (typeof LOCALE_CODES)[number];
+
+/** デフォルト言語 */
+const DEFAULT_LANGUAGE: Language = "ja";
+
+/** 言語ラベルマップ */
+export const LANGUAGE_LABEL_MAP: Record<Language, string> = {
+  ja: "日本語",
+  en: "English",
+};
+
+/** 旧表示名からロケールコードへの変換マップ */
+const LEGACY_LANGUAGE_MIGRATION_MAP: Record<string, Language> = {
+  日本語: "ja",
+  English: "en",
+};
+
+/**
+ * 保存済み言語設定をロケールコードに正規化する
+ *
+ * @param stored - SecureStoreから取得した文字列
+ * @returns 正規化された言語とマイグレーション要否
+ */
+function normalizeStoredLanguage(stored: string): { language: Language; needsMigration: boolean } {
+  if ((LOCALE_CODES as readonly string[]).includes(stored)) {
+    return { language: stored as Language, needsMigration: false };
+  }
+  const migrated = LEGACY_LANGUAGE_MIGRATION_MAP[stored];
+  if (migrated !== undefined) {
+    return { language: migrated, needsMigration: true };
+  }
+  return { language: DEFAULT_LANGUAGE, needsMigration: false };
+}
 
 /** 通知設定の型 */
 export type NotificationSettings = {
@@ -49,7 +81,7 @@ type SettingsStore = {
 };
 
 export const useSettingsStore = create<SettingsStore>((set, get) => ({
-  language: "日本語",
+  language: DEFAULT_LANGUAGE,
   isLanguageLoaded: false,
   notificationSettings: null,
   isNotificationSettingsLoaded: false,
@@ -60,7 +92,14 @@ export const useSettingsStore = create<SettingsStore>((set, get) => ({
    */
   loadLanguage: async () => {
     const stored = await SecureStore.getItemAsync(LANGUAGE_KEY);
-    const language: Language = stored !== null ? (JSON.parse(stored) as Language) : "日本語";
+    if (stored === null) {
+      set({ language: DEFAULT_LANGUAGE, isLanguageLoaded: true });
+      return;
+    }
+    const { language, needsMigration } = normalizeStoredLanguage(JSON.parse(stored) as string);
+    if (needsMigration) {
+      await SecureStore.setItemAsync(LANGUAGE_KEY, JSON.stringify(language));
+    }
     set({ language, isLanguageLoaded: true });
   },
 
