@@ -7,6 +7,17 @@ import {
 import { Hono } from "hono";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+const { mockWarn } = vi.hoisted(() => ({ mockWarn: vi.fn() }));
+vi.mock("@api/lib/logger", () => ({
+  createLogger: () => ({
+    info: vi.fn(),
+    warn: mockWarn,
+    error: vi.fn(),
+    debug: vi.fn(),
+    withRequestId: vi.fn(),
+  }),
+}));
+
 /** レスポンスボディの型定義 */
 type RateLimitResponseBody = {
   success: boolean;
@@ -48,6 +59,7 @@ describe("createRateLimitMiddleware", () => {
     testStore = createTestStore();
     vi.useFakeTimers();
     vi.setSystemTime(new Date("2024-01-01T00:00:00.000Z"));
+    mockWarn.mockClear();
   });
 
   afterEach(() => {
@@ -500,6 +512,10 @@ describe("createRateLimitMiddleware", () => {
 
       // Assert: フェイルオープン（通過）
       expect(res.status).toBe(200);
+      expect(mockWarn).toHaveBeenCalledWith(
+        "レート制限ストアの読み取りに失敗",
+        expect.objectContaining({ key: expect.any(String), error: expect.any(Error) }),
+      );
     });
 
     it("KV setが失敗してもリクエストは通ること", async () => {
@@ -526,6 +542,10 @@ describe("createRateLimitMiddleware", () => {
 
       // Assert: 書き込み失敗でもフェイルオープン
       expect(res.status).toBe(200);
+      expect(mockWarn).toHaveBeenCalledWith(
+        "レート制限ストアの書き込みに失敗",
+        expect.objectContaining({ key: expect.any(String), error: expect.any(Error) }),
+      );
     });
 
     it("既存エントリのインクリメント時にKV setが失敗してもリクエストは通ること", async () => {
@@ -553,6 +573,10 @@ describe("createRateLimitMiddleware", () => {
 
       // Assert: インクリメント書き込み失敗でもフェイルオープン
       expect(res.status).toBe(200);
+      expect(mockWarn).toHaveBeenCalledWith(
+        "レート制限カウンターの更新に失敗",
+        expect.objectContaining({ key: expect.any(String), error: expect.any(Error) }),
+      );
     });
   });
 
