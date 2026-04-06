@@ -92,10 +92,10 @@ describe("AuthCallbackScreen", () => {
       mockCheckSession.mockReturnValue(new Promise(() => {}));
 
       // Act
-      render(<AuthCallbackScreen />);
+      const { getByTestId } = await render(<AuthCallbackScreen />);
 
       // Assert
-      expect(screen.getByTestId("auth-callback-loading")).toBeDefined();
+      expect(getByTestId("auth-callback-loading")).toBeDefined();
     });
   });
 
