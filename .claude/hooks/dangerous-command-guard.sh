@@ -32,7 +32,7 @@ check_worktree_path() {
     echo "⚠️ 未展開の変数が含まれています。絶対パスに展開してから実行してください"
     return 0
   fi
-  repo_root=$(cd "$(git rev-parse --git-common-dir 2>/dev/null)/.." && pwd)
+  repo_root=$(cd "$(env -u GIT_DIR -u GIT_WORK_TREE git rev-parse --git-common-dir 2>/dev/null)/.." && pwd)
   expected_prefix="${repo_root}/.worktrees/"
 
   # realpath -m でシンボリックリンクや .. を正規化（存在しないパスでも動作）
@@ -60,6 +60,31 @@ check_worktree_path() {
   return 1
 }
 
+# mainブランチでのソースファイル変更コマンドをブロック
+# GIT_DIR汚染を回避するため env -u GIT_DIR -u GIT_WORK_TREE を使用
+check_main_branch_modification() {
+  local cmd="$1"
+  local branch
+  branch=$(env -u GIT_DIR -u GIT_WORK_TREE git branch --show-current 2>/dev/null || echo "")
+
+  if [ "$branch" != "main" ]; then
+    return 1
+  fi
+
+  # git コマンドは許可（read-only操作: log, status, diff 等）
+  if echo "$cmd" | grep -qE "^git |^env.*git "; then
+    return 1
+  fi
+
+  # ファイル変更を伴うコマンドパターン
+  echo "$cmd" | grep -qE "sed -i" && return 0
+  echo "$cmd" | grep -qE "tee " && return 0
+  # リダイレクト書き込み（2> や &> や >> は除外）
+  echo "$cmd" | grep -qE "[^2&>]>[^>=]" && return 0
+
+  return 1
+}
+
 # 危険なコマンドパターン
 check_dangerous() {
   local cmd="$1"
@@ -81,7 +106,7 @@ check_dangerous() {
   if echo "$cmd" | grep -qE "git checkout [^-]"; then
     local target
     target=$(echo "$cmd" | sed 's/.*git checkout //; s/ *[&|;].*//')
-    if ! git rev-parse --verify "$target" &>/dev/null; then
+    if ! env -u GIT_DIR -u GIT_WORK_TREE git rev-parse --verify "$target" &>/dev/null; then
       return 0
     fi
   fi
@@ -138,6 +163,17 @@ if check_dangerous "$COMMAND"; then
   echo "コマンド: $COMMAND"
   echo ""
   echo "このコマンドは破壊的な操作を行う可能性があります。"
+  exit 2
+fi
+
+if check_main_branch_modification "$COMMAND"; then
+  echo "⚠️ mainブランチ上でのソースファイル変更は禁止されています"
+  echo "コマンド: $COMMAND"
+  echo ""
+  echo "worktreeを作成して作業してください:"
+  echo "  REPO_ROOT=\$(cd \"\$(env -u GIT_DIR -u GIT_WORK_TREE git rev-parse --git-common-dir)/../..\" && pwd)"
+  echo "  git worktree add \"\${REPO_ROOT}/.worktrees/issue-N\" -b issue/N/short-desc"
+  echo "  cd \"\${REPO_ROOT}/.worktrees/issue-N\""
   exit 2
 fi
 
