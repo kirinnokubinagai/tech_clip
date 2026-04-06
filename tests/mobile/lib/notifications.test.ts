@@ -187,7 +187,10 @@ describe("notifications", () => {
       // Assert
       expect(apiFetch).toHaveBeenCalledWith(
         "/api/notifications/register",
-        expect.objectContaining({ method: "POST" }),
+        {
+          method: "POST",
+          body: JSON.stringify({ token: "ExponentPushToken[test-token-123]", platform: "ios" }),
+        },
       );
       expect(logger.info).toHaveBeenCalledWith(
         "プッシュトークンのAPI登録に成功しました（権限確認済み）",
@@ -238,7 +241,7 @@ describe("notifications", () => {
       await expect(registerPushTokenOnly()).resolves.toBeUndefined();
       expect(logger.error).toHaveBeenCalledWith(
         "プッシュトークンのAPI登録に失敗しました",
-        expect.objectContaining({ error: expect.any(Error) }),
+        expect.objectContaining({ error: new Error("ネットワークエラー") }),
       );
     });
   });
