@@ -2,6 +2,7 @@ import * as Device from "expo-device";
 import * as Notifications from "expo-notifications";
 import { Platform } from "react-native";
 
+import { apiFetch } from "@/lib/api";
 import {
   registerPushTokenOnly,
   registerTokenWithApi,
@@ -99,7 +100,6 @@ describe("notifications", () => {
   describe("registerTokenWithApi", () => {
     it("トークンをAPIに登録できること", async () => {
       // Arrange
-      const { apiFetch } = await import("@/lib/api");
       const token = "ExponentPushToken[test-token]";
 
       // Act
