@@ -15,15 +15,34 @@ import { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Alert, AppState, Linking, Pressable, ScrollView, Switch, Text, View } from "react-native";
 import { confirm } from "@/components/ConfirmDialog";
+import { useSubscription } from "@/hooks/use-subscription";
 import { DARK_COLORS } from "@/lib/constants";
 import {
   checkNotificationPermission,
   registerPushTokenOnly,
   requestNotificationPermission,
 } from "@/lib/notifications";
-import { useSubscription } from "../../src/hooks/use-subscription";
-import { useAuthStore } from "../../src/stores/auth-store";
-import { useSettingsStore } from "../../src/stores/settings-store";
+import { useAuthStore } from "@/stores/auth-store";
+import { useSettingsStore } from "@/stores/settings-store";
+
+/**
+ * 通知権限とトグル状態からアクセシビリティヒントを決定する
+ *
+ * @param permission - 通知権限ステータス
+ * @param enabled - 通知が有効かどうか
+ * @param t - i18n翻訳関数
+ * @returns アクセシビリティヒント文字列
+ */
+function getNotificationHint(
+  permission: string,
+  enabled: boolean,
+  t: (key: string) => string,
+): string {
+  if (permission === "denied") return t("settings.items.notificationPermissionDenied");
+  if (permission !== "granted") return t("settings.notificationHintUndetermined");
+  if (enabled) return t("settings.notificationHintOff");
+  return t("settings.notificationHintOn");
+}
 
 /** 設定セクションの区切り線コンポーネント */
 function SectionDivider() {
@@ -125,20 +144,12 @@ export default function SettingsScreen() {
         notificationSettings.system
       : true;
 
-  /** 通知権限状態ごとのアクセシビリティヒント */
-  const notificationPermissionHintMap: Record<string, string> = {
-    denied: t("settings.items.notificationPermissionDenied"),
-    undetermined: t("settings.notificationHintUndetermined"),
-  };
-
   /** 通知スイッチのアクセシビリティヒント */
-  let notificationAccessibilityHint = notificationPermissionHintMap[notificationPermission] ?? t("settings.notificationHintUndetermined");
-  if (notificationPermission === "granted" && isNotificationsEnabled) {
-    notificationAccessibilityHint = t("settings.notificationHintOff");
-  }
-  if (notificationPermission === "granted" && !isNotificationsEnabled) {
-    notificationAccessibilityHint = t("settings.notificationHintOn");
-  }
+  const notificationAccessibilityHint = getNotificationHint(
+    notificationPermission,
+    isNotificationsEnabled,
+    t,
+  );
 
   useEffect(() => {
     loadLanguage();
