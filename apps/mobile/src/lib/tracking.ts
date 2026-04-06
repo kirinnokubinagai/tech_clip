@@ -42,7 +42,7 @@ export async function requestTrackingPermission(): Promise<TrackingStatus> {
 
   try {
     const trackingModule = (await import(
-      "expo-tracking-transparency" as never
+      "expo-tracking-transparency" as string
     )) as unknown as TrackingTransparencyModule;
     const { status } = await trackingModule.requestTrackingPermissionsAsync();
     return status as TrackingStatus;
@@ -63,7 +63,7 @@ export async function getTrackingStatus(): Promise<TrackingStatus> {
 
   try {
     const trackingModule = (await import(
-      "expo-tracking-transparency" as never
+      "expo-tracking-transparency" as string
     )) as unknown as TrackingTransparencyModule;
     const { status } = await trackingModule.getTrackingPermissionsAsync();
     return status as TrackingStatus;
