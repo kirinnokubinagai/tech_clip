@@ -10,7 +10,6 @@ import {
 
 jest.mock("expo-notifications", () => ({
   getPermissionsAsync: jest.fn(),
-  requestPermissionsAsync: jest.fn(),
   getExpoPushTokenAsync: jest.fn(),
   setNotificationHandler: jest.fn(),
   addNotificationReceivedListener: jest.fn(() => ({ remove: jest.fn() })),
@@ -70,6 +69,19 @@ describe("notifications", () => {
 
       // Assert
       expect(result).toBe("undetermined");
+    });
+
+    it("実機で権限が拒否済みの場合 denied を返すこと", async () => {
+      // Arrange
+      (Notifications.getPermissionsAsync as jest.Mock).mockResolvedValue({
+        status: "denied",
+      });
+
+      // Act
+      const result = await checkNotificationPermission();
+
+      // Assert
+      expect(result).toBe("denied");
     });
 
     it("シミュレータの場合に undetermined を返すこと", async () => {
