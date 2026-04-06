@@ -29,7 +29,9 @@ function isAllowedRoute(url: string): boolean {
   if (decoded.includes("..") || decoded.includes("\0")) {
     return false;
   }
-  return ALLOWED_PUSH_PATTERNS.some((pattern) => decoded === pattern || decoded.startsWith(`${pattern}/`));
+  return ALLOWED_PUSH_PATTERNS.some(
+    (pattern) => decoded === pattern || decoded.startsWith(`${pattern}/`),
+  );
 }
 
 /** 通知権限ステータス */
