@@ -132,6 +132,8 @@ pnpm add <pkg>
   2. デザイン専用 PR を作成（`design: add <screen-name> mockup #<issue番号>` コミット）
   3. PR に PNG を添付してユーザーレビューを依頼
   4. ユーザー承認後にマージ → **同一 worktree で実装に進む**（worktree は削除しない）
+     - マージ後: `git fetch origin && git merge origin/main` で最新を取り込む
+     - または実装用ブランチを新規作成: `git checkout -b issue/N/impl-short-desc`
 - **対象外**: バグ修正のみ、API 実装のみ、テスト・ドキュメントのみ
 
 ```bash
