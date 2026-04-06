@@ -171,7 +171,7 @@ if check_main_branch_modification "$COMMAND"; then
   echo "コマンド: $COMMAND"
   echo ""
   echo "worktreeを作成して作業してください:"
-  echo "  REPO_ROOT=\$(cd \"\$(env -u GIT_DIR -u GIT_WORK_TREE git rev-parse --git-common-dir)/../..\" && pwd)"
+  echo "  REPO_ROOT=\$(cd \"\$(env -u GIT_DIR -u GIT_WORK_TREE git rev-parse --git-common-dir)/..\" && pwd)"
   echo "  git worktree add \"\${REPO_ROOT}/.worktrees/issue-N\" -b issue/N/short-desc"
   echo "  cd \"\${REPO_ROOT}/.worktrees/issue-N\""
   exit 2

@@ -11,7 +11,7 @@ import { logger } from "@/lib/logger";
 const NOTIFICATION_CHANNEL_ID = "default";
 
 /** 通知タップ時の許可URLパターン */
-const ALLOWED_PUSH_PATTERNS = ["/articles/", "/profile", "/settings", "/onboarding"];
+const ALLOWED_PUSH_PATTERNS = ["/articles", "/profile", "/settings", "/onboarding"];
 
 /**
  * 通知URLがアプリ内の許可されたルートかどうかを検証する
@@ -20,9 +20,7 @@ const ALLOWED_PUSH_PATTERNS = ["/articles/", "/profile", "/settings", "/onboardi
  * @returns 許可されたルートの場合 true
  */
 function isAllowedRoute(url: string): boolean {
-  return ALLOWED_PUSH_PATTERNS.some(
-    (pattern) => url === pattern || url.startsWith(`${pattern}/`),
-  );
+  return ALLOWED_PUSH_PATTERNS.some((pattern) => url === pattern || url.startsWith(`${pattern}/`));
 }
 
 /** 通知権限ステータス */
