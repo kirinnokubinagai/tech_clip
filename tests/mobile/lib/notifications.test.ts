@@ -1,7 +1,9 @@
 import * as Device from "expo-device";
 import * as Notifications from "expo-notifications";
+import { router } from "expo-router";
 import { Platform } from "react-native";
 
+import { logger } from "@/lib/logger";
 import {
   checkNotificationPermission,
   registerPushTokenOnly,
@@ -29,6 +31,18 @@ jest.mock("expo-device", () => ({
 
 jest.mock("@/lib/api", () => ({
   apiFetch: jest.fn().mockResolvedValue({ success: true }),
+}));
+
+jest.mock("expo-router", () => ({
+  router: { push: jest.fn() },
+}));
+
+jest.mock("@/lib/logger", () => ({
+  logger: {
+    info: jest.fn(),
+    warn: jest.fn(),
+    error: jest.fn(),
+  },
 }));
 
 beforeEach(() => {
@@ -252,6 +266,68 @@ describe("notifications", () => {
       // Assert
       expect(mockRemoveReceived).toHaveBeenCalledTimes(1);
       expect(mockRemoveResponse).toHaveBeenCalledTimes(1);
+    });
+
+    it("フォアグラウンド通知受信時に logger.info を呼び出すこと", () => {
+      // Arrange
+      let receivedCallback: ((notification: unknown) => void) | null = null;
+      (Notifications.addNotificationReceivedListener as jest.Mock).mockImplementation((cb) => {
+        receivedCallback = cb;
+        return { remove: jest.fn() };
+      });
+
+      // Act
+      setupNotificationHandlers();
+      receivedCallback?.({
+        request: { content: { title: "テスト通知" } },
+      });
+
+      // Assert
+      expect(logger.info).toHaveBeenCalledWith(
+        "フォアグラウンド通知を受信しました",
+        expect.objectContaining({ title: "テスト通知" }),
+      );
+    });
+
+    it("許可されたURLの通知タップで router.push を呼び出すこと", () => {
+      // Arrange
+      let tapCallback: ((response: unknown) => void) | null = null;
+      (Notifications.addNotificationResponseReceivedListener as jest.Mock).mockImplementation((cb) => {
+        tapCallback = cb;
+        return { remove: jest.fn() };
+      });
+
+      // Act
+      setupNotificationHandlers();
+      tapCallback?.({
+        notification: { request: { content: { data: { url: "/articles/123" } } } },
+      });
+
+      // Assert
+      expect(router.push).toHaveBeenCalledWith("/articles/123");
+      expect(logger.warn).not.toHaveBeenCalled();
+    });
+
+    it("許可されていないURLの通知タップで logger.warn を呼び出しrouter.pushは呼ばないこと", () => {
+      // Arrange
+      let tapCallback: ((response: unknown) => void) | null = null;
+      (Notifications.addNotificationResponseReceivedListener as jest.Mock).mockImplementation((cb) => {
+        tapCallback = cb;
+        return { remove: jest.fn() };
+      });
+
+      // Act
+      setupNotificationHandlers();
+      tapCallback?.({
+        notification: { request: { content: { data: { url: "/../../admin" } } } },
+      });
+
+      // Assert
+      expect(logger.warn).toHaveBeenCalledWith(
+        "許可されていない通知URLをブロックしました",
+        expect.objectContaining({ url: "/../../admin" }),
+      );
+      expect(router.push).not.toHaveBeenCalled();
     });
   });
 });
