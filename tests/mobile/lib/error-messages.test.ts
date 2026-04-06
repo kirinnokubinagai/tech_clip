@@ -4,7 +4,7 @@ describe("getErrorMessage", () => {
   describe("日本語メッセージ", () => {
     it("AUTH_REQUIREDに対して日本語メッセージを返すこと", () => {
       // Arrange & Act
-      const result = getErrorMessage("AUTH_REQUIRED", "日本語");
+      const result = getErrorMessage("AUTH_REQUIRED", "ja");
 
       // Assert
       expect(result).toBe("ログインが必要です");
@@ -12,7 +12,7 @@ describe("getErrorMessage", () => {
 
     it("AUTH_INVALIDに対して日本語メッセージを返すこと", () => {
       // Arrange & Act
-      const result = getErrorMessage("AUTH_INVALID", "日本語");
+      const result = getErrorMessage("AUTH_INVALID", "ja");
 
       // Assert
       expect(result).toBe("認証情報が正しくありません");
@@ -20,7 +20,7 @@ describe("getErrorMessage", () => {
 
     it("AUTH_EXPIREDに対して日本語メッセージを返すこと", () => {
       // Arrange & Act
-      const result = getErrorMessage("AUTH_EXPIRED", "日本語");
+      const result = getErrorMessage("AUTH_EXPIRED", "ja");
 
       // Assert
       expect(result).toBe("セッションの有効期限が切れました。再度ログインしてください");
@@ -28,7 +28,7 @@ describe("getErrorMessage", () => {
 
     it("FORBIDDENに対して日本語メッセージを返すこと", () => {
       // Arrange & Act
-      const result = getErrorMessage("FORBIDDEN", "日本語");
+      const result = getErrorMessage("FORBIDDEN", "ja");
 
       // Assert
       expect(result).toBe("この操作を実行する権限がありません");
@@ -36,7 +36,7 @@ describe("getErrorMessage", () => {
 
     it("NOT_FOUNDに対して日本語メッセージを返すこと", () => {
       // Arrange & Act
-      const result = getErrorMessage("NOT_FOUND", "日本語");
+      const result = getErrorMessage("NOT_FOUND", "ja");
 
       // Assert
       expect(result).toBe("リソースが見つかりません");
@@ -44,7 +44,7 @@ describe("getErrorMessage", () => {
 
     it("VALIDATION_FAILEDに対して日本語メッセージを返すこと", () => {
       // Arrange & Act
-      const result = getErrorMessage("VALIDATION_FAILED", "日本語");
+      const result = getErrorMessage("VALIDATION_FAILED", "ja");
 
       // Assert
       expect(result).toBe("入力内容を確認してください");
@@ -52,7 +52,7 @@ describe("getErrorMessage", () => {
 
     it("DUPLICATEに対して日本語メッセージを返すこと", () => {
       // Arrange & Act
-      const result = getErrorMessage("DUPLICATE", "日本語");
+      const result = getErrorMessage("DUPLICATE", "ja");
 
       // Assert
       expect(result).toBe("すでに登録されています");
@@ -60,7 +60,7 @@ describe("getErrorMessage", () => {
 
     it("CONFLICTに対して日本語メッセージを返すこと", () => {
       // Arrange & Act
-      const result = getErrorMessage("CONFLICT", "日本語");
+      const result = getErrorMessage("CONFLICT", "ja");
 
       // Assert
       expect(result).toBe("競合が発生しました");
@@ -68,7 +68,7 @@ describe("getErrorMessage", () => {
 
     it("INTERNAL_ERRORに対して日本語メッセージを返すこと", () => {
       // Arrange & Act
-      const result = getErrorMessage("INTERNAL_ERROR", "日本語");
+      const result = getErrorMessage("INTERNAL_ERROR", "ja");
 
       // Assert
       expect(result).toBe("サーバーエラーが発生しました");
@@ -76,7 +76,7 @@ describe("getErrorMessage", () => {
 
     it("未知のエラーコードに対してフォールバック日本語メッセージを返すこと", () => {
       // Arrange & Act
-      const result = getErrorMessage("UNKNOWN_CODE", "日本語");
+      const result = getErrorMessage("UNKNOWN_CODE", "ja");
 
       // Assert
       expect(result).toBe("予期しないエラーが発生しました");
@@ -86,7 +86,7 @@ describe("getErrorMessage", () => {
   describe("英語メッセージ", () => {
     it("AUTH_REQUIREDに対して英語メッセージを返すこと", () => {
       // Arrange & Act
-      const result = getErrorMessage("AUTH_REQUIRED", "English");
+      const result = getErrorMessage("AUTH_REQUIRED", "en");
 
       // Assert
       expect(result).toBe("Login required");
@@ -94,7 +94,7 @@ describe("getErrorMessage", () => {
 
     it("AUTH_INVALIDに対して英語メッセージを返すこと", () => {
       // Arrange & Act
-      const result = getErrorMessage("AUTH_INVALID", "English");
+      const result = getErrorMessage("AUTH_INVALID", "en");
 
       // Assert
       expect(result).toBe("Invalid credentials");
@@ -102,7 +102,7 @@ describe("getErrorMessage", () => {
 
     it("AUTH_EXPIREDに対して英語メッセージを返すこと", () => {
       // Arrange & Act
-      const result = getErrorMessage("AUTH_EXPIRED", "English");
+      const result = getErrorMessage("AUTH_EXPIRED", "en");
 
       // Assert
       expect(result).toBe("Session expired. Please log in again");
@@ -110,7 +110,7 @@ describe("getErrorMessage", () => {
 
     it("FORBIDDENに対して英語メッセージを返すこと", () => {
       // Arrange & Act
-      const result = getErrorMessage("FORBIDDEN", "English");
+      const result = getErrorMessage("FORBIDDEN", "en");
 
       // Assert
       expect(result).toBe("You do not have permission to perform this action");
@@ -118,7 +118,7 @@ describe("getErrorMessage", () => {
 
     it("NOT_FOUNDに対して英語メッセージを返すこと", () => {
       // Arrange & Act
-      const result = getErrorMessage("NOT_FOUND", "English");
+      const result = getErrorMessage("NOT_FOUND", "en");
 
       // Assert
       expect(result).toBe("Resource not found");
@@ -126,7 +126,7 @@ describe("getErrorMessage", () => {
 
     it("VALIDATION_FAILEDに対して英語メッセージを返すこと", () => {
       // Arrange & Act
-      const result = getErrorMessage("VALIDATION_FAILED", "English");
+      const result = getErrorMessage("VALIDATION_FAILED", "en");
 
       // Assert
       expect(result).toBe("Please check your input");
@@ -134,7 +134,7 @@ describe("getErrorMessage", () => {
 
     it("DUPLICATEに対して英語メッセージを返すこと", () => {
       // Arrange & Act
-      const result = getErrorMessage("DUPLICATE", "English");
+      const result = getErrorMessage("DUPLICATE", "en");
 
       // Assert
       expect(result).toBe("Already registered");
@@ -142,7 +142,7 @@ describe("getErrorMessage", () => {
 
     it("CONFLICTに対して英語メッセージを返すこと", () => {
       // Arrange & Act
-      const result = getErrorMessage("CONFLICT", "English");
+      const result = getErrorMessage("CONFLICT", "en");
 
       // Assert
       expect(result).toBe("A conflict occurred");
@@ -150,7 +150,7 @@ describe("getErrorMessage", () => {
 
     it("INTERNAL_ERRORに対して英語メッセージを返すこと", () => {
       // Arrange & Act
-      const result = getErrorMessage("INTERNAL_ERROR", "English");
+      const result = getErrorMessage("INTERNAL_ERROR", "en");
 
       // Assert
       expect(result).toBe("A server error occurred");
@@ -158,7 +158,7 @@ describe("getErrorMessage", () => {
 
     it("未知のエラーコードに対してフォールバック英語メッセージを返すこと", () => {
       // Arrange & Act
-      const result = getErrorMessage("UNKNOWN_CODE", "English");
+      const result = getErrorMessage("UNKNOWN_CODE", "en");
 
       // Assert
       expect(result).toBe("An unexpected error occurred");
