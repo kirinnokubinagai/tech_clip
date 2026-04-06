@@ -1,3 +1,4 @@
+import Constants from "expo-constants";
 import { useRouter } from "expo-router";
 import {
   Bell,
@@ -413,7 +414,7 @@ export default function SettingsScreen() {
       </View>
 
       <View className="px-4 py-6">
-        <Text className="text-center text-xs text-text-dim">TechClip v0.0.1</Text>
+        <Text className="text-center text-xs text-text-dim">{`TechClip v${Constants.expoConfig?.version ?? "0.0.1"}`}</Text>
       </View>
     </ScrollView>
   );

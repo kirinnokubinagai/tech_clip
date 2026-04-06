@@ -1,5 +1,6 @@
 import * as Device from "expo-device";
 import * as Notifications from "expo-notifications";
+import { router } from "expo-router";
 import { Platform } from "react-native";
 
 import { apiFetch } from "@/lib/api";
@@ -31,6 +32,12 @@ jest.mock("expo-device", () => ({
 
 jest.mock("@/lib/api", () => ({
   apiFetch: jest.fn().mockResolvedValue({ success: true }),
+}));
+
+jest.mock("expo-router", () => ({
+  router: {
+    push: jest.fn(),
+  },
 }));
 
 beforeEach(() => {
@@ -281,6 +288,94 @@ describe("notifications", () => {
       // Assert
       expect(mockRemoveReceived).toHaveBeenCalledTimes(1);
       expect(mockRemoveResponse).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  describe("isAllowedRoute", () => {
+    type ResponseCallback = (response: {
+      notification: { request: { content: { data: { url?: unknown } } } };
+    }) => void;
+
+    let responseCallback: ResponseCallback;
+
+    beforeEach(() => {
+      (Notifications.addNotificationResponseReceivedListener as jest.Mock).mockImplementation(
+        (cb: ResponseCallback) => {
+          responseCallback = cb;
+          return { remove: jest.fn() };
+        },
+      );
+      setupNotificationHandlers();
+    });
+
+    const callWithUrl = (url: unknown) => {
+      responseCallback({
+        notification: { request: { content: { data: { url } } } },
+      });
+    };
+
+    it("許可されたルート /articles/:id への遷移を許可すること", () => {
+      // Act
+      callWithUrl("/articles/123");
+
+      // Assert
+      expect(router.push).toHaveBeenCalledWith("/articles/123");
+    });
+
+    it("許可されたルート /articles（IDなし）への遷移を許可すること", () => {
+      // Act
+      callWithUrl("/articles");
+
+      // Assert
+      expect(router.push).toHaveBeenCalledWith("/articles");
+    });
+
+    it("許可されたルート /profile への遷移を許可すること", () => {
+      // Act
+      callWithUrl("/profile");
+
+      // Assert
+      expect(router.push).toHaveBeenCalledWith("/profile");
+    });
+
+    it("パストラバーサル攻撃 (..) をブロックすること", () => {
+      // Act
+      callWithUrl("/articles/../../../etc/passwd");
+
+      // Assert
+      expect(router.push).not.toHaveBeenCalled();
+    });
+
+    it("URLエンコードされたパストラバーサル (%2e%2e) をブロックすること", () => {
+      // Act
+      callWithUrl("/articles/%2e%2e/etc/passwd");
+
+      // Assert
+      expect(router.push).not.toHaveBeenCalled();
+    });
+
+    it("ホワイトリスト外のURL (/admin) をブロックすること", () => {
+      // Act
+      callWithUrl("/admin/users");
+
+      // Assert
+      expect(router.push).not.toHaveBeenCalled();
+    });
+
+    it("null文字 (\\0) を含むURLをブロックすること", () => {
+      // Act
+      callWithUrl("/articles/\0malicious");
+
+      // Assert
+      expect(router.push).not.toHaveBeenCalled();
+    });
+
+    it("URLが文字列でない場合は何もしないこと", () => {
+      // Act
+      callWithUrl(null);
+
+      // Assert
+      expect(router.push).not.toHaveBeenCalled();
     });
   });
 });

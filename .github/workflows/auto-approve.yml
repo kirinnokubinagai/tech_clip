@@ -61,10 +61,8 @@ jobs:
     needs: [review-and-label]
     if: |
       always() && (
-        (github.event_name == 'push') ||
-        (github.event_name == 'pull_request' &&
-          needs.review-and-label.result == 'success' &&
-          needs.review-and-label.outputs.passed == 'true')
+        github.event_name == 'push' ||
+        needs.review-and-label.outputs.passed == 'true'
       )
     runs-on: ubuntu-latest
     steps:
