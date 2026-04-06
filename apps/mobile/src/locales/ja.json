@@ -56,19 +56,9 @@
       "backToLogin": "ログイン画面に戻る"
     },
     "authCallback": {
-      "backToLogin": "ログイン画面に戻る",
       "errorSocialLogin": "ソーシャルログインに失敗しました。もう一度お試しください。",
       "errorNoToken": "認証トークンが見つかりません。もう一度お試しください。",
       "errorSaveToken": "認証情報の保存に失敗しました。もう一度お試しください。",
-      "errorCheckSession": "認証の確認に失敗しました。もう一度お試しください。",
-      "errorGeneral": "認証処理中にエラーが発生しました。もう一度お試しください。"
-    },
-    "oauthCallback": {
-      "processingLabel": "認証処理中",
-      "processing": "認証処理中...",
-      "backToLogin": "ログイン画面に戻る",
-      "errorSocialLogin": "ソーシャルログインに失敗しました。もう一度お試しください。",
-      "errorNoCode": "認証コードが見つかりません。もう一度お試しください。",
       "errorCheckSession": "認証の確認に失敗しました。もう一度お試しください。"
     },
     "loginToRegister": "新規登録",
