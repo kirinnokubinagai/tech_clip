@@ -1,9 +1,7 @@
 # Dependencies
-node_modules/
 node_modules
 
 # Turborepo
-.turbo/
 .turbo
 
 # Build outputs

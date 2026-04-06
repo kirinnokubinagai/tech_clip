@@ -24,7 +24,7 @@ export function toRecord<T extends Record<string, unknown>>(result: Record<strin
  * @returns 汎用レコード配列
  */
 export function toRecordArray(
-  results: unknown /* TODO: Drizzle型改善後に廃止 */,
+  results: unknown[] /* TODO: Drizzle型改善後に廃止 */,
 ): Array<Record<string, unknown>> {
   return results as Array<Record<string, unknown>>;
 }
