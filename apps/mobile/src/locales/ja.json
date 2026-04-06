@@ -53,9 +53,7 @@
     "socialLoginFailed": "ソーシャルログインの開始に失敗しました。もう一度お試しください。",
     "signingIn": "ログイン中...",
     "callback": {
-      "backToLogin": "ログイン画面に戻る"
-    },
-    "authCallback": {
+      "backToLogin": "ログイン画面に戻る",
       "errorSocialLogin": "ソーシャルログインに失敗しました。もう一度お試しください。",
       "errorNoToken": "認証トークンが見つかりません。もう一度お試しください。",
       "errorSaveToken": "認証情報の保存に失敗しました。もう一度お試しください。",

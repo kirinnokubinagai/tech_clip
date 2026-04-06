@@ -10,7 +10,6 @@ type CallbackErrorViewProps = {
 
 type CallbackLoadingViewProps = {
   loadingTestId: string;
-  labelKey: string;
   messageKey: string;
 };
 
@@ -56,19 +55,14 @@ export function CallbackErrorView({
  * コールバック画面共通ローディングビュー
  *
  * @param loadingTestId - ActivityIndicator の testID
- * @param labelKey - アクセシビリティラベルの i18n キー
- * @param messageKey - 表示テキストの i18n キー
+ * @param messageKey - 表示テキストおよびアクセシビリティラベルの i18n キー
  */
-export function CallbackLoadingView({
-  loadingTestId,
-  labelKey,
-  messageKey,
-}: CallbackLoadingViewProps) {
+export function CallbackLoadingView({ loadingTestId, messageKey }: CallbackLoadingViewProps) {
   const { t } = useTranslation();
 
   return (
     <View className="flex-1 items-center justify-center bg-background">
-      <ActivityIndicator size="large" testID={loadingTestId} accessibilityLabel={t(labelKey)} />
+      <ActivityIndicator size="large" testID={loadingTestId} accessibilityLabel={t(messageKey)} />
       <Text className="mt-4 text-sm text-text-muted">{t(messageKey)}</Text>
     </View>
   );

@@ -15,14 +15,8 @@ type CallbackState = "loading" | "error";
  * APIサーバーが発行したトークンをクエリパラメータで受け取り、セキュアストレージに保存する。
  * セッションを確立してホーム画面へ遷移する。
  *
- * @remarks
- * `(auth)/oauth-callback` との違い:
- * - こちら（auth/callback）はAPIサーバーからトークンを直接受け取るフロー
- * - `(auth)/oauth-callback` はOAuthプロバイダーからcodeを受け取りBetter Authに委譲するフロー
- *
- * エラー時のUXについて:
- * `(auth)/oauth-callback` と同様にエラーメッセージ + 「ログイン画面に戻る」ボタンを表示する。
- * トークンベースのコールバックも失敗時にユーザーが明示的に操作できるUXを統一して提供する。
+ * エラー時はエラーメッセージと「ログイン画面に戻る」ボタンを表示し、
+ * ユーザーが明示的に操作できるUXを提供する。
  */
 export default function AuthCallbackScreen() {
   const params = useLocalSearchParams<{ token?: string; refresh_token?: string; error?: string }>();
@@ -38,13 +32,13 @@ export default function AuthCallbackScreen() {
 
     async function run() {
       if (params.error) {
-        setErrorMessage(t("auth.authCallback.errorSocialLogin"));
+        setErrorMessage(t("auth.callback.errorSocialLogin"));
         setState("error");
         return;
       }
 
       if (!params.token) {
-        setErrorMessage(t("auth.authCallback.errorNoToken"));
+        setErrorMessage(t("auth.callback.errorNoToken"));
         setState("error");
         return;
       }
@@ -58,7 +52,7 @@ export default function AuthCallbackScreen() {
         }
       } catch {
         if (cancelled) return;
-        setErrorMessage(t("auth.authCallback.errorSaveToken"));
+        setErrorMessage(t("auth.callback.errorSaveToken"));
         setState("error");
         return;
       }
@@ -70,7 +64,7 @@ export default function AuthCallbackScreen() {
         router.replace("/(tabs)");
       } catch {
         if (cancelled) return;
-        setErrorMessage(t("auth.authCallback.errorCheckSession"));
+        setErrorMessage(t("auth.callback.errorCheckSession"));
         setState("error");
       }
     }
@@ -92,11 +86,5 @@ export default function AuthCallbackScreen() {
     );
   }
 
-  return (
-    <CallbackLoadingView
-      loadingTestId="auth-callback-loading"
-      labelKey="auth.signingIn"
-      messageKey="auth.signingIn"
-    />
-  );
+  return <CallbackLoadingView loadingTestId="auth-callback-loading" messageKey="auth.signingIn" />;
 }
