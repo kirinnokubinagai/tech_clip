@@ -31,10 +31,11 @@ const { router: mockRouter } = jest.requireMock("expo-router") as {
   router: { replace: jest.Mock };
 };
 
-const { requestTrackingPermission: mockRequestTrackingPermission } =
-  jest.requireMock("@/lib/tracking") as {
-    requestTrackingPermission: jest.Mock;
-  };
+const { requestTrackingPermission: mockRequestTrackingPermission } = jest.requireMock(
+  "@/lib/tracking",
+) as {
+  requestTrackingPermission: jest.Mock;
+};
 
 beforeEach(() => {
   jest.clearAllMocks();
