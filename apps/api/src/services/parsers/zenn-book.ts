@@ -1,21 +1,13 @@
 import TurndownService from "turndown";
 
 import type { ParsedArticle } from "../../types/article";
+import { calculateReadingTime, TECHCLIP_USER_AGENT } from "./_shared";
 
 /** Zenn Books URLのパスパターン */
 const ZENN_BOOK_PATH_REGEX = /^\/[^/]+\/books\/([^/]+)\/?$/;
 
 /** Zenn APIのベースURL */
 const ZENN_API_BASE_URL = "https://zenn.dev/api";
-
-/** fetch時のUser-Agent */
-const USER_AGENT = "Mozilla/5.0 (compatible; TechClipBot/1.0; +https://techclip.app)";
-
-/** 読了速度（文字/分） */
-const READING_SPEED_CHARS_PER_MIN = 500;
-
-/** 最小読了時間（分） */
-const MIN_READING_TIME_MINUTES = 1;
 
 /** 記事ソース識別子 */
 const SOURCE_IDENTIFIER = "zenn.dev";
@@ -76,18 +68,6 @@ function extractBookSlug(url: string): string {
 }
 
 /**
- * 文字数から読了時間を計算する
- *
- * @param text - 本文テキスト
- * @returns 推定読了時間（分、最小1分）
- */
-function calculateReadingTime(text: string): number {
-  const charCount = text.length;
-  const minutes = Math.ceil(charCount / READING_SPEED_CHARS_PER_MIN);
-  return Math.max(minutes, MIN_READING_TIME_MINUTES);
-}
-
-/**
  * Zenn BooksのURLからブック情報とチャプターを取得してParsedArticleを返す
  *
  * @param url - Zenn BooksのURL（例: https://zenn.dev/user/books/slug）
@@ -96,7 +76,7 @@ function calculateReadingTime(text: string): number {
  */
 export async function parseZennBook(url: string): Promise<ParsedArticle> {
   const slug = extractBookSlug(url);
-  const headers = { "User-Agent": USER_AGENT };
+  const headers = { "User-Agent": TECHCLIP_USER_AGENT };
 
   const bookResponse = await fetch(`${ZENN_API_BASE_URL}/books/${slug}`, { headers });
   if (!bookResponse.ok) {
