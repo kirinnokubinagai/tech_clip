@@ -224,9 +224,8 @@ describe("notifications", () => {
       // Arrange
       const { router } = jest.requireMock("expo-router");
       setupNotificationHandlers();
-      const responseCallback = (
-        Notifications.addNotificationResponseReceivedListener as jest.Mock
-      ).mock.calls[0][0];
+      const responseCallback = (Notifications.addNotificationResponseReceivedListener as jest.Mock)
+        .mock.calls[0][0];
 
       // Act
       responseCallback({
@@ -248,9 +247,8 @@ describe("notifications", () => {
       const { router } = jest.requireMock("expo-router");
       const { logger } = jest.requireMock("@/lib/logger");
       setupNotificationHandlers();
-      const responseCallback = (
-        Notifications.addNotificationResponseReceivedListener as jest.Mock
-      ).mock.calls[0][0];
+      const responseCallback = (Notifications.addNotificationResponseReceivedListener as jest.Mock)
+        .mock.calls[0][0];
 
       // Act
       responseCallback({
@@ -276,9 +274,8 @@ describe("notifications", () => {
       const { router } = jest.requireMock("expo-router");
       const { logger } = jest.requireMock("@/lib/logger");
       setupNotificationHandlers();
-      const responseCallback = (
-        Notifications.addNotificationResponseReceivedListener as jest.Mock
-      ).mock.calls[0][0];
+      const responseCallback = (Notifications.addNotificationResponseReceivedListener as jest.Mock)
+        .mock.calls[0][0];
 
       // Act
       responseCallback({
