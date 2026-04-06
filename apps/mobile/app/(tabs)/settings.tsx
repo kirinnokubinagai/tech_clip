@@ -276,7 +276,6 @@ export default function SettingsScreen() {
           value={user?.email ?? ""}
         />
         <SectionDivider />
-        <SectionDivider />
         <SettingsRow
           icon={<KeyRound size={ICON_SIZE} color={ICON_COLOR} />}
           label={t("settings.items.changePassword")}

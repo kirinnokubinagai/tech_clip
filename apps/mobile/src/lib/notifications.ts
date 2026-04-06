@@ -126,14 +126,10 @@ export function setupNotificationHandlers(): () => void {
     },
   });
 
-  const receivedSubscription = Notifications.addNotificationReceivedListener((_notification) => {
-    /* フォアグラウンド通知受信時の処理 */
-  });
+  const receivedSubscription = Notifications.addNotificationReceivedListener((_notification) => {});
 
   const responseSubscription = Notifications.addNotificationResponseReceivedListener(
-    (_response) => {
-      /* 通知タップ時の処理 */
-    },
+    (_response) => {},
   );
 
   return () => {
