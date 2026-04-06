@@ -5,6 +5,7 @@ import {
   CreditCard,
   Globe,
   KeyRound,
+  Languages,
   LogOut,
   Trash2,
   User,
@@ -268,7 +269,7 @@ export default function SettingsScreen() {
         <SectionDivider />
         <SettingsRow
           testID="settings-summary-language-button"
-          icon={<Globe size={ICON_SIZE} color={ICON_COLOR} />}
+          icon={<Languages size={ICON_SIZE} color={ICON_COLOR} />}
           label={t("settings.items.summaryLanguage")}
           value={summaryLanguageLabel(summaryLanguage)}
           onPress={handleSummaryLanguageSelect}
