@@ -32,7 +32,7 @@ check_worktree_path() {
     echo "⚠️ 未展開の変数が含まれています。絶対パスに展開してから実行してください"
     return 0
   fi
-  repo_root=$(cd "$(git rev-parse --git-common-dir 2>/dev/null)/.." && pwd)
+  repo_root=$(cd "$(env -u GIT_DIR -u GIT_WORK_TREE git rev-parse --git-common-dir 2>/dev/null)/.." && pwd)
   expected_prefix="${repo_root}/.worktrees/"
 
   # realpath -m でシンボリックリンクや .. を正規化（存在しないパスでも動作）
@@ -81,7 +81,7 @@ check_dangerous() {
   if echo "$cmd" | grep -qE "git checkout [^-]"; then
     local target
     target=$(echo "$cmd" | sed 's/.*git checkout //; s/ *[&|;].*//')
-    if ! git rev-parse --verify "$target" &>/dev/null; then
+    if ! env -u GIT_DIR -u GIT_WORK_TREE git rev-parse --verify "$target" &>/dev/null; then
       return 0
     fi
   fi
