@@ -51,11 +51,16 @@ jobs:
           if echo "$LABELS" | grep -q "AI Review: NEEDS WORK"; then
             echo "::error::AIレビューで問題または改善提案があります。修正してください。"
 
-            echo "他の実行中ワークフローをキャンセル中..."
+            echo "他の実行中・待機中ワークフローをキャンセル中..."
             gh api repos/${{ github.repository }}/actions/runs \
-              --jq '.workflow_runs[] | select(.head_sha == "${{ github.event.pull_request.head.sha }}" and .status == "in_progress" and .id != ${{ github.run_id }}) | .id' \
+              --jq '.workflow_runs[] | select(
+                .head_sha == "${{ github.event.pull_request.head.sha }}" and
+                (.status == "in_progress" or .status == "queued") and
+                (.id | tostring) != "${{ github.run_id }}"
+              ) | .id' \
               | while read -r RUN_ID; do
-                  gh run cancel "${RUN_ID}" 2>/dev/null || true
+                  echo "キャンセル: run ${RUN_ID}"
+                  gh run cancel "${RUN_ID}" || echo "Warning: run ${RUN_ID} のキャンセルに失敗しました"
                 done
 
             exit 1
