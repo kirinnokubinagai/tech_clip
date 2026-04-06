@@ -377,5 +377,13 @@ describe("notifications", () => {
       // Assert
       expect(router.push).not.toHaveBeenCalled();
     });
+
+    it("URLエンコードされた許可ルートへの遷移にデコード済みURLを使用すること", () => {
+      // Act
+      callWithUrl("/articles%2F123");
+
+      // Assert
+      expect(router.push).toHaveBeenCalledWith("/articles/123");
+    });
   });
 });

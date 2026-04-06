@@ -14,24 +14,25 @@ const NOTIFICATION_CHANNEL_ID = "default";
 const ALLOWED_PUSH_PATTERNS = ["/articles", "/profile", "/settings", "/onboarding"];
 
 /**
- * 通知URLがアプリ内の許可されたルートかどうかを検証する
+ * 通知URLがアプリ内の許可されたルートかどうかを検証し、デコード済みURLを返す
  *
  * @param url - 検証するURL文字列
- * @returns 許可されたルートの場合 true
+ * @returns 許可されたルートの場合デコード済みURL、そうでなければ null
  */
-function isAllowedRoute(url: string): boolean {
+function getAllowedRoute(url: string): string | null {
   let decoded: string;
   try {
     decoded = decodeURIComponent(url);
   } catch {
-    return false;
+    return null;
   }
   if (decoded.includes("..") || decoded.includes("\0")) {
-    return false;
+    return null;
   }
-  return ALLOWED_PUSH_PATTERNS.some(
+  const isAllowed = ALLOWED_PUSH_PATTERNS.some(
     (pattern) => decoded === pattern || decoded.startsWith(`${pattern}/`),
   );
+  return isAllowed ? decoded : null;
 }
 
 /** 通知権限ステータス */
@@ -125,7 +126,7 @@ export async function registerPushTokenOnly(): Promise<void> {
 
     await registerTokenWithApi(token);
     logger.info("プッシュトークンのAPI登録に成功しました（権限確認済み）", {
-      tokenPrefix: `${token.slice(0, 20)}...`,
+      tokenPrefix: `${token.slice(0, 8)}...`,
     });
   } catch (error: unknown) {
     logger.error("プッシュトークンのAPI登録に失敗しました", { error });
@@ -159,11 +160,12 @@ export function setupNotificationHandlers(): () => void {
 
   const responseSubscription = Notifications.addNotificationResponseReceivedListener((response) => {
     const url = response.notification.request.content.data?.url;
-    if (typeof url === "string" && isAllowedRoute(url)) {
-      router.push(url);
-      return;
-    }
     if (typeof url === "string") {
+      const decodedUrl = getAllowedRoute(url);
+      if (decodedUrl !== null) {
+        router.push(decodedUrl);
+        return;
+      }
       logger.warn("許可されていない通知URLをブロックしました", { url });
     }
   });

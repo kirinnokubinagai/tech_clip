@@ -19,6 +19,7 @@ import { Alert, AppState, Linking, Pressable, ScrollView, Switch, Text, View } f
 import { confirm } from "@/components/ConfirmDialog";
 import { useSubscription } from "@/hooks/use-subscription";
 import { DARK_COLORS } from "@/lib/constants";
+import { logger } from "@/lib/logger";
 import {
   checkNotificationPermission,
   type NotificationPermissionStatus,
@@ -293,6 +294,7 @@ export default function SettingsScreen() {
         await registerPushTokenOnly();
       }
     } catch (_error) {
+      logger.error("通知権限リクエストに失敗しました", { error: _error });
       const messageKey =
         notificationPermission === "denied"
           ? "settings.openSettingsError"
