@@ -7,9 +7,9 @@ const mockRequestNotificationPermission = jest.fn();
 const mockRegisterPushTokenOnly = jest.fn();
 
 jest.mock("@mobile/lib/notifications", () => ({
-  checkNotificationPermission: mockCheckNotificationPermission,
-  requestNotificationPermission: mockRequestNotificationPermission,
-  registerPushTokenOnly: mockRegisterPushTokenOnly,
+  checkNotificationPermission: (...args: unknown[]) => mockCheckNotificationPermission(...args),
+  requestNotificationPermission: (...args: unknown[]) => mockRequestNotificationPermission(...args),
+  registerPushTokenOnly: (...args: unknown[]) => mockRegisterPushTokenOnly(...args),
 }));
 
 const mockSignOut = jest.fn();
