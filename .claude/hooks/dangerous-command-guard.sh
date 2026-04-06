@@ -14,6 +14,52 @@ if [ -z "$COMMAND" ]; then
   exit 0
 fi
 
+# worktreeパスの検証（.worktrees/ 配下かつ直下のディレクトリか）
+check_worktree_path() {
+  local cmd="$1"
+
+  if ! echo "$cmd" | grep -qE "git worktree add "; then
+    return 1
+  fi
+
+  local wt_path resolved_path repo_root expected_prefix
+  # -b フラグとそのブランチ名をスキップしてパスを抽出
+  # sed の末尾スペース必須パターンは -b branch がコマンド末尾の場合にマッチしないため
+  # sed で除去し、awk でパスを先に取り出すことで吸収する
+  wt_path=$(echo "$cmd" | sed 's/.*git worktree add //' | sed 's/ *-b [^ ]*//' | awk '{print $1}' | tr -d "'\"")
+
+  if [[ "$wt_path" == *'$'* ]]; then
+    echo "⚠️ 未展開の変数が含まれています。絶対パスに展開してから実行してください"
+    return 0
+  fi
+  repo_root=$(cd "$(git rev-parse --git-common-dir 2>/dev/null)/.." && pwd)
+  expected_prefix="${repo_root}/.worktrees/"
+
+  # realpath -m でシンボリックリンクや .. を正規化（存在しないパスでも動作）
+  # 絶対パスの場合はそのまま使用し、相対パスの場合のみ $(pwd) を付加する
+  # 注意: ${REPO_ROOT} 等のシェル変数が未展開のリテラルで渡される場合、
+  #       realpath -m が意図しないパスを返すことがある
+  resolved_path=$(realpath -m "$wt_path" 2>/dev/null || { [[ "$wt_path" = /* ]] && echo "$wt_path" || echo "$(pwd)/$wt_path"; })
+
+  if [[ "$resolved_path" != "${expected_prefix}"* ]]; then
+    echo "⚠️ worktreeの作成先が ${expected_prefix} 配下ではありません"
+    echo "  指定パス: $wt_path"
+    echo "  解決先:   $resolved_path"
+    echo "  正しい例: ${expected_prefix}issue-N"
+    return 0
+  fi
+
+  local subpath="${resolved_path#${expected_prefix}}"
+  if [[ "$subpath" == */* ]]; then
+    echo "⚠️ worktreeが .worktrees/ の直下ではなくネストしています"
+    echo "  解決先: $resolved_path"
+    echo "  正しい例: ${expected_prefix}issue-N"
+    return 0
+  fi
+
+  return 1
+}
+
 # 危険なコマンドパターン
 check_dangerous() {
   local cmd="$1"
@@ -28,6 +74,17 @@ check_dangerous() {
   echo "$cmd" | grep -qE "git checkout -- " && return 0
   echo "$cmd" | grep -qE "git clean" && return 0
   echo "$cmd" | grep -qE "git branch -D" && return 0
+  echo "$cmd" | grep -qE "git restore" && return 0
+
+  # git checkout でファイル復元を検出（ブランチ切替は許可）
+  # [^-] により -b / --orphan / --track 等のフラグ付きコマンドは自動除外
+  if echo "$cmd" | grep -qE "git checkout [^-]"; then
+    local target
+    target=$(echo "$cmd" | sed 's/.*git checkout //; s/ *[&|;].*//')
+    if ! git rev-parse --verify "$target" &>/dev/null; then
+      return 0
+    fi
+  fi
 
   # システムコマンド
   echo "$cmd" | grep -qE "^kill " && return 0
@@ -81,6 +138,10 @@ if check_dangerous "$COMMAND"; then
   echo "コマンド: $COMMAND"
   echo ""
   echo "このコマンドは破壊的な操作を行う可能性があります。"
+  exit 2
+fi
+
+if check_worktree_path "$COMMAND"; then
   exit 2
 fi
 

@@ -3,15 +3,7 @@ import { parseHTML } from "linkedom";
 import TurndownService from "turndown";
 
 import type { ParsedArticle } from "../../types/article";
-
-/** 読了速度（文字/分） */
-const READING_SPEED_CHARS_PER_MIN = 500;
-
-/** 最小読了時間（分） */
-const MIN_READING_TIME_MINUTES = 1;
-
-/** fetch時のUser-Agent */
-const USER_AGENT = "Mozilla/5.0 (compatible; TechClipBot/1.0; +https://techclip.app)";
+import { calculateReadingTime, TECHCLIP_USER_AGENT } from "./_shared";
 
 /** fetchタイムアウト（ミリ秒） */
 const FETCH_TIMEOUT_MS = 10000;
@@ -67,18 +59,6 @@ function getMetaContent(doc: LinkedomDocument, property: string): string | null 
 }
 
 /**
- * 文字数から読了時間を計算する
- *
- * @param text - 本文テキスト
- * @returns 推定読了時間（分、最小1分）
- */
-function calculateReadingTime(text: string): number {
-  const charCount = text.length;
-  const minutes = Math.ceil(charCount / READING_SPEED_CHARS_PER_MIN);
-  return Math.max(minutes, MIN_READING_TIME_MINUTES);
-}
-
-/**
  * 任意のURLからHTML取得 → 本文抽出 → Markdown変換する汎用パーサー
  *
  * @param url - パース対象のURL
@@ -92,7 +72,7 @@ export async function parseGeneric(url: string): Promise<ParsedArticle> {
   let response: Response;
   try {
     response = await fetch(url, {
-      headers: { "User-Agent": USER_AGENT },
+      headers: { "User-Agent": TECHCLIP_USER_AGENT },
       signal: controller.signal,
       redirect: "follow",
     });

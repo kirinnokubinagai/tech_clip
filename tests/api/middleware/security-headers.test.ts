@@ -34,7 +34,7 @@ describe("securityHeadersMiddleware", () => {
       expect(res.headers.get("X-Frame-Options")).toBe("DENY");
     });
 
-    it("X-XSS-Protectionが設定されていないこと（CSPに置き換え済み）", async () => {
+    it("X-XSS-Protectionが0に設定されていること（旧ブラウザのXSSフィルター無効化）", async () => {
       // Arrange
       const { app } = createTestApp();
 
@@ -42,7 +42,18 @@ describe("securityHeadersMiddleware", () => {
       const res = await app.request("/test");
 
       // Assert
-      expect(res.headers.get("X-XSS-Protection")).toBeNull();
+      expect(res.headers.get("X-XSS-Protection")).toBe("0");
+    });
+
+    it("Cache-Controlがno-storeに設定されていること", async () => {
+      // Arrange
+      const { app } = createTestApp();
+
+      // Act
+      const res = await app.request("/test");
+
+      // Assert
+      expect(res.headers.get("Cache-Control")).toBe("no-store");
     });
 
     it("Referrer-Policyがstrict-origin-when-cross-originであること", async () => {

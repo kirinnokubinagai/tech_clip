@@ -51,6 +51,14 @@
     "continueWithGoogle": "Google でログイン",
     "continueWithGithub": "GitHub でログイン",
     "socialLoginFailed": "ソーシャルログインの開始に失敗しました。もう一度お試しください。",
+    "callback": {
+      "signingIn": "ログイン中...",
+      "backToLogin": "ログイン画面に戻る",
+      "errorSocialLogin": "ソーシャルログインに失敗しました。もう一度お試しください。",
+      "errorNoToken": "認証トークンが見つかりません。もう一度お試しください。",
+      "errorSaveToken": "認証情報の保存に失敗しました。もう一度お試しください。",
+      "errorCheckSession": "認証の確認に失敗しました。もう一度お試しください。"
+    },
     "loginToRegister": "新規登録",
     "loginToRegisterPrompt": "アカウントをお持ちでない方は",
     "registerToLoginPrompt": "すでにアカウントをお持ちですか？",
