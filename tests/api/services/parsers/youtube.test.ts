@@ -133,6 +133,24 @@ describe("parseYoutube", () => {
     await expect(parseYoutube(url)).rejects.toThrow();
   });
 
+  it("チャンネルURLはoEmbed APIが404を返しエラーになること", async () => {
+    // Arrange
+    const url = "https://www.youtube.com/channel/UCtest12345";
+    vi.spyOn(globalThis, "fetch").mockResolvedValueOnce(new Response("Not Found", { status: 404 }));
+
+    // Act & Assert
+    await expect(parseYoutube(url)).rejects.toThrow("YouTube動画の取得に失敗しました");
+  });
+
+  it("プレイリストURLはoEmbed APIが404を返しエラーになること", async () => {
+    // Arrange
+    const url = "https://www.youtube.com/playlist?list=PLtest12345";
+    vi.spyOn(globalThis, "fetch").mockResolvedValueOnce(new Response("Not Found", { status: 404 }));
+
+    // Act & Assert
+    await expect(parseYoutube(url)).rejects.toThrow("YouTube動画の取得に失敗しました");
+  });
+
   it("youtu.be短縮URLからメタデータを取得できること", async () => {
     // Arrange
     const url = "https://youtu.be/dQw4w9WgXcQ";
