@@ -413,6 +413,64 @@ describe("useSettingsStore", () => {
         // Assert
         expect(useSettingsStore.getState().summaryLanguage).toBe("en");
       });
+
+      it("保存値が文字列でないJSONの場合デバイス言語にフォールバックしSecureStoreを修復すること", async () => {
+        // Arrange
+        mockGetItemAsync.mockResolvedValue("123");
+        mockGetLocales.mockReturnValue([{ languageCode: "ja" }] as ReturnType<typeof getLocales>);
+
+        // Act
+        await useSettingsStore.getState().loadSummaryLanguage();
+
+        // Assert
+        const { summaryLanguage } = useSettingsStore.getState();
+        expect(summaryLanguage).toBe("ja");
+        expect(mockSetItemAsync).toHaveBeenCalledWith(
+          "settings_summary_language",
+          JSON.stringify("ja"),
+        );
+      });
+
+      it("保存値が不正な言語コードの場合SecureStoreを修復すること", async () => {
+        // Arrange
+        mockGetItemAsync.mockResolvedValue('"fr"');
+        mockGetLocales.mockReturnValue([{ languageCode: "en" }] as ReturnType<typeof getLocales>);
+
+        // Act
+        await useSettingsStore.getState().loadSummaryLanguage();
+
+        // Assert
+        expect(mockSetItemAsync).toHaveBeenCalledWith(
+          "settings_summary_language",
+          JSON.stringify("en"),
+        );
+      });
+
+      it("保存値がJSON不正の場合SecureStoreを修復すること", async () => {
+        // Arrange
+        mockGetItemAsync.mockResolvedValue("invalid-json{{{");
+        mockGetLocales.mockReturnValue([{ languageCode: "ja" }] as ReturnType<typeof getLocales>);
+
+        // Act
+        await useSettingsStore.getState().loadSummaryLanguage();
+
+        // Assert
+        expect(mockSetItemAsync).toHaveBeenCalledWith(
+          "settings_summary_language",
+          JSON.stringify("ja"),
+        );
+      });
+
+      it("有効な言語コードの場合SecureStoreへの書き戻しをしないこと", async () => {
+        // Arrange
+        mockGetItemAsync.mockResolvedValue('"ja"');
+
+        // Act
+        await useSettingsStore.getState().loadSummaryLanguage();
+
+        // Assert
+        expect(mockSetItemAsync).not.toHaveBeenCalled();
+      });
     });
 
     describe("setSummaryLanguage", () => {
