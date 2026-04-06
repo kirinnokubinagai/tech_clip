@@ -10,17 +10,32 @@ import { logger } from "@/lib/logger";
 /** Android通知チャンネルID */
 const NOTIFICATION_CHANNEL_ID = "default";
 
-/** 通知タップ時の許可URLパターン */
-const ALLOWED_PUSH_PATTERNS = ["/articles", "/profile", "/settings", "/onboarding"];
+/** ログ出力時のトークン表示文字数 */
+const TOKEN_LOG_PREFIX_LENGTH = 6;
+
+/** 通知タップ時にナビゲーション可能な許可ルート一覧 */
+const ALLOWED_PUSH_PATTERNS = [
+  "/articles",
+  "/profile",
+  "/settings",
+];
 
 /**
  * 通知URLがアプリ内の許可されたルートかどうかを検証する
+ * パストラバーサル攻撃対策としてURLを正規化してからチェックする
  *
  * @param url - 検証するURL文字列
  * @returns 許可されたルートの場合 true
  */
 function isAllowedRoute(url: string): boolean {
-  return ALLOWED_PUSH_PATTERNS.some((pattern) => url === pattern || url.startsWith(`${pattern}/`));
+  try {
+    const normalized = new URL(url, "app://app").pathname;
+    return ALLOWED_PUSH_PATTERNS.some(
+      (pattern) => normalized === pattern || normalized.startsWith(`${pattern}/`),
+    );
+  } catch {
+    return false;
+  }
 }
 
 /** 通知権限ステータス */
@@ -114,7 +129,7 @@ export async function registerPushTokenOnly(): Promise<void> {
 
     await registerTokenWithApi(token);
     logger.info("プッシュトークンのAPI登録に成功しました（権限確認済み）", {
-      tokenPrefix: `${token.slice(0, 20)}...`,
+      tokenPrefix: `${token.slice(0, TOKEN_LOG_PREFIX_LENGTH)}...`,
     });
   } catch (error: unknown) {
     logger.error("プッシュトークンのAPI登録に失敗しました", { error });
@@ -148,13 +163,12 @@ export function setupNotificationHandlers(): () => void {
 
   const responseSubscription = Notifications.addNotificationResponseReceivedListener((response) => {
     const url = response.notification.request.content.data?.url;
-    if (typeof url === "string" && isAllowedRoute(url)) {
+    if (typeof url !== "string") return;
+    if (isAllowedRoute(url)) {
       router.push(url);
       return;
     }
-    if (typeof url === "string") {
-      logger.warn("許可されていない通知URLをブロックしました", { url });
-    }
+    logger.warn("許可されていない通知URLをブロックしました", { url });
   });
 
   return () => {

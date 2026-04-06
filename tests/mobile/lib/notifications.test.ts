@@ -270,7 +270,7 @@ describe("notifications", () => {
 
     it("フォアグラウンド通知受信時に logger.info を呼び出すこと", () => {
       // Arrange
-      let receivedCallback: ((notification: unknown) => void) | null = null;
+      let receivedCallback: ((notification: Notifications.Notification) => void) | null = null;
       (Notifications.addNotificationReceivedListener as jest.Mock).mockImplementation((cb) => {
         receivedCallback = cb;
         return { remove: jest.fn() };
@@ -280,7 +280,7 @@ describe("notifications", () => {
       setupNotificationHandlers();
       receivedCallback?.({
         request: { content: { title: "テスト通知" } },
-      });
+      } as unknown as Notifications.Notification);
 
       // Assert
       expect(logger.info).toHaveBeenCalledWith(
@@ -291,7 +291,7 @@ describe("notifications", () => {
 
     it("許可されたURLの通知タップで router.push を呼び出すこと", () => {
       // Arrange
-      let tapCallback: ((response: unknown) => void) | null = null;
+      let tapCallback: ((response: Notifications.NotificationResponse) => void) | null = null;
       (Notifications.addNotificationResponseReceivedListener as jest.Mock).mockImplementation((cb) => {
         tapCallback = cb;
         return { remove: jest.fn() };
@@ -301,7 +301,7 @@ describe("notifications", () => {
       setupNotificationHandlers();
       tapCallback?.({
         notification: { request: { content: { data: { url: "/articles/123" } } } },
-      });
+      } as unknown as Notifications.NotificationResponse);
 
       // Assert
       expect(router.push).toHaveBeenCalledWith("/articles/123");
@@ -310,7 +310,7 @@ describe("notifications", () => {
 
     it("許可されていないURLの通知タップで logger.warn を呼び出しrouter.pushは呼ばないこと", () => {
       // Arrange
-      let tapCallback: ((response: unknown) => void) | null = null;
+      let tapCallback: ((response: Notifications.NotificationResponse) => void) | null = null;
       (Notifications.addNotificationResponseReceivedListener as jest.Mock).mockImplementation((cb) => {
         tapCallback = cb;
         return { remove: jest.fn() };
@@ -320,7 +320,7 @@ describe("notifications", () => {
       setupNotificationHandlers();
       tapCallback?.({
         notification: { request: { content: { data: { url: "/../../admin" } } } },
-      });
+      } as unknown as Notifications.NotificationResponse);
 
       // Assert
       expect(logger.warn).toHaveBeenCalledWith(
