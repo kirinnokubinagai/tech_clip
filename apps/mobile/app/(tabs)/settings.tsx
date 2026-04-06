@@ -18,7 +18,6 @@ import { confirm } from "@/components/ConfirmDialog";
 import { DARK_COLORS } from "@/lib/constants";
 import { useSubscription } from "../../src/hooks/use-subscription";
 import { useAuthStore } from "../../src/stores/auth-store";
-import type { SummaryLanguage } from "../../src/stores/settings-store";
 import {
   LANGUAGE_LABEL_MAP,
   SUMMARY_LANGUAGE_LABELS,
@@ -92,16 +91,6 @@ function SettingsRow({ icon, label, value, onPress, trailing, testID }: Settings
 }
 
 /**
- * 要約言語コードを表示名に変換する
- *
- * @param code - 要約言語コード
- * @returns 表示用言語名
- */
-function summaryLanguageLabel(code: SummaryLanguage): string {
-  return SUMMARY_LANGUAGE_LABELS[code] ?? code;
-}
-
-/**
  * 設定画面
  *
  * アカウント（ログアウト）、サブスクリプション状態、言語設定、要約言語設定、通知ON/OFFを提供する
@@ -115,9 +104,9 @@ export default function SettingsScreen() {
   const { isSubscribed } = useSubscription();
 
   const languageLabel = useSettingsStore((s) => LANGUAGE_LABEL_MAP[s.language]);
+  const summaryLanguageLabel = useSettingsStore((s) => SUMMARY_LANGUAGE_LABELS[s.summaryLanguage]);
   const setLanguage = useSettingsStore((s) => s.setLanguage);
   const loadLanguage = useSettingsStore((s) => s.loadLanguage);
-  const summaryLanguage = useSettingsStore((s) => s.summaryLanguage);
   const setSummaryLanguage = useSettingsStore((s) => s.setSummaryLanguage);
   const loadSummaryLanguage = useSettingsStore((s) => s.loadSummaryLanguage);
   const notificationSettings = useSettingsStore((s) => s.notificationSettings);
@@ -274,7 +263,7 @@ export default function SettingsScreen() {
           testID="settings-summary-language-button"
           icon={<Languages size={ICON_SIZE} color={ICON_COLOR} />}
           label={t("settings.items.summaryLanguage")}
-          value={summaryLanguageLabel(summaryLanguage)}
+          value={summaryLanguageLabel}
           onPress={handleSummaryLanguageSelect}
         />
         <SectionDivider />
