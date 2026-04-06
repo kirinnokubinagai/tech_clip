@@ -66,6 +66,7 @@ beforeEach(() => {
   mockLoadSummaryLanguage.mockResolvedValue(undefined);
   mockFetchNotificationSettings.mockResolvedValue(undefined);
   mockUpdateNotificationEnabled.mockResolvedValue(undefined);
+  mockSetSummaryLanguage.mockResolvedValue(undefined);
 });
 
 describe("SettingsScreen", () => {
@@ -334,5 +335,20 @@ describe("要約言語設定", () => {
 
     // Assert
     expect(mockSetSummaryLanguage).toHaveBeenCalledWith("ko");
+  });
+
+  it("setSummaryLanguageが失敗した場合にAlert.alertでエラーが表示されること", async () => {
+    // Arrange
+    mockSetSummaryLanguage.mockRejectedValue(new Error("要約言語の保存に失敗しました"));
+    const { getByTestId } = await render(<SettingsScreen />);
+    await fireEvent.press(getByTestId("settings-summary-language-button"));
+    const buttons = (Alert.alert as jest.Mock).mock.calls[0][2];
+    const jaButton = buttons.find((b: { text: string }) => b.text === "日本語");
+
+    // Act
+    await jaButton.onPress();
+
+    // Assert
+    expect(Alert.alert).toHaveBeenCalledTimes(2);
   });
 });
