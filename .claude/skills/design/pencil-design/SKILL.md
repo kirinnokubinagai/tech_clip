@@ -7,6 +7,7 @@ triggers:
   - モック作成
   - pencil
 ---
+
 # Pencil デザインモックワークフロー
 
 Pencil MCP を使ってデザインモックアップを作成・更新するスキル。
