@@ -200,6 +200,7 @@
       "plan": "プラン",
       "language": "言語",
       "notifications": "通知",
+      "summaryLanguage": "要約言語",
       "deleteAccount": "アカウントを削除する",
       "notLoggedIn": "未ログイン",
       "notificationPermissionDenied": "通知が無効です。設定アプリで有効にしてください",
@@ -210,6 +211,10 @@
       "title": "言語設定",
       "prompt": "表示言語を選択してください"
     },
+    "summaryLanguageSelect": {
+      "title": "要約言語設定",
+      "prompt": "AI要約の出力言語を選択してください"
+    },
     "notificationHintOn": "タップして通知をオンにします",
     "notificationHintOff": "タップして通知をオフにします",
     "notificationHintUndetermined": "通知の設定を変更できます",
@@ -219,6 +224,7 @@
       "confirm": "ログアウト"
     },
     "notificationUpdateError": "通知設定の更新に失敗しました",
+    "summaryLanguageUpdateError": "要約言語の更新に失敗しました",
     "openSettingsError": "設定アプリを開けませんでした。手動で設定を変更してください",
     "deleteAccount": {
       "title": "アカウントを削除する",
