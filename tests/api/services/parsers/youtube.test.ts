@@ -122,6 +122,17 @@ describe("parseYoutube", () => {
     await expect(parseYoutube(url)).rejects.toThrow("YouTube動画のメタデータが不正です");
   });
 
+  it("タイムアウト時にエラーになること", async () => {
+    // Arrange
+    const url = "https://www.youtube.com/watch?v=timeout";
+    vi.spyOn(globalThis, "fetch").mockRejectedValueOnce(
+      new DOMException("The operation was aborted", "TimeoutError"),
+    );
+
+    // Act & Assert
+    await expect(parseYoutube(url)).rejects.toThrow();
+  });
+
   it("youtu.be短縮URLからメタデータを取得できること", async () => {
     // Arrange
     const url = "https://youtu.be/dQw4w9WgXcQ";
