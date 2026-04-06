@@ -19,7 +19,11 @@ import { DARK_COLORS } from "@/lib/constants";
 import { useSubscription } from "../../src/hooks/use-subscription";
 import { useAuthStore } from "../../src/stores/auth-store";
 import type { SummaryLanguage } from "../../src/stores/settings-store";
-import { LANGUAGE_LABEL_MAP, SUMMARY_LANGUAGE_LABELS, useSettingsStore } from "../../src/stores/settings-store";
+import {
+  LANGUAGE_LABEL_MAP,
+  SUMMARY_LANGUAGE_LABELS,
+  useSettingsStore,
+} from "../../src/stores/settings-store";
 
 /** 設定セクションの区切り線コンポーネント */
 function SectionDivider() {
