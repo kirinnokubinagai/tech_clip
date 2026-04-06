@@ -637,7 +637,7 @@ describe("createRateLimitMiddleware", () => {
       }
 
       // Assert: ストアのカウントが3になっていること
-      const entry = store.get("test:192.168.1.1");
+      const entry = await store.get("test:192.168.1.1");
       expect(entry).not.toBeNull();
       expect(entry?.count).toBe(3);
     });
