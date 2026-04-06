@@ -591,7 +591,7 @@ describe("createRateLimitMiddleware", () => {
 
       /** testStore をラップして get 呼び出し回数を追跡するストア */
       let getCallCount = 0;
-      const atomicStore: RateLimitStore = {
+      const trackingStore: RateLimitStore = {
         get: async (key: string) => {
           getCallCount++;
           return testStore.get(key);
@@ -602,7 +602,7 @@ describe("createRateLimitMiddleware", () => {
         clear: () => testStore.clear(),
       };
 
-      const app = createTestApp(config, atomicStore);
+      const app = createTestApp(config, trackingStore);
 
       // Act: 5リクエストを順番に送信
       const results = [];
@@ -644,7 +644,7 @@ describe("createRateLimitMiddleware", () => {
   });
 
   describe("ウィンドウ有効期限", () => {
-    it("ウィンドウ期限切れ後はカウントがリセットされること", async () => {
+    it("制限到達後にウィンドウが期限切れするとカウントがリセットされること", async () => {
       // Arrange
       const config: RateLimitConfig = {
         limit: 2,
