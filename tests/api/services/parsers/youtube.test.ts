@@ -8,6 +8,7 @@ describe("parseYoutube", () => {
   });
 
   it("oEmbed APIからメタデータを取得できること", async () => {
+    // Arrange
     const url = "https://www.youtube.com/watch?v=dQw4w9WgXcQ";
     const mockResponse = {
       title: "テスト動画タイトル",
@@ -16,16 +17,43 @@ describe("parseYoutube", () => {
       thumbnail_url: "https://i.ytimg.com/vi/dQw4w9WgXcQ/hqdefault.jpg",
     };
 
+    // Act
     vi.spyOn(globalThis, "fetch").mockResolvedValueOnce(
       new Response(JSON.stringify(mockResponse), { status: 200 }),
     );
 
     const result = await parseYoutube(url);
 
+    // Assert
     expect(result.title).toBe("テスト動画タイトル");
     expect(result.author).toBe("テストチャンネル");
     expect(result.thumbnailUrl).toBe("https://i.ytimg.com/vi/dQw4w9WgXcQ/hqdefault.jpg");
     expect(result.content).toBeNull();
+    expect(result.excerpt).toContain("テストチャンネル");
+    expect(result.excerpt).toContain("テスト動画タイトル");
+  });
+
+  it("モバイルURL（m.youtube.com）からメタデータを取得できること", async () => {
+    // Arrange
+    const url = "https://m.youtube.com/watch?v=dQw4w9WgXcQ";
+    const mockResponse = {
+      title: "モバイルテスト動画",
+      author_name: "テストチャンネル",
+      author_url: "https://www.youtube.com/@testchannel",
+      thumbnail_url: "https://i.ytimg.com/vi/dQw4w9WgXcQ/hqdefault.jpg",
+    };
+
+    // Act
+    vi.spyOn(globalThis, "fetch").mockResolvedValueOnce(
+      new Response(JSON.stringify(mockResponse), { status: 200 }),
+    );
+
+    const result = await parseYoutube(url);
+
+    // Assert
+    expect(result.title).toBe("モバイルテスト動画");
+    expect(result.author).toBe("テストチャンネル");
+    expect(result.excerpt).toContain("テストチャンネル");
   });
 
   it("oEmbed API失敗時にエラーになること", async () => {

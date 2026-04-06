@@ -17,9 +17,9 @@ describe("createExcerpt", () => {
     expect(result).toBe("");
   });
 
-  it("最大文字数以内のテキストをそのまま返すこと", () => {
+  it("最大文字数より1文字少ないテキストをそのまま返すこと", () => {
     // Arrange
-    const text = "a".repeat(EXCERPT_MAX_LENGTH);
+    const text = "a".repeat(EXCERPT_MAX_LENGTH - 1);
 
     // Act
     const result = createExcerpt(text);

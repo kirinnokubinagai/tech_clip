@@ -57,8 +57,8 @@ const CSS_TRICKS_PATTERN = /^css-tricks\.com/;
 /** Smashing Magazine判定パターン */
 const SMASHING_PATTERN = /^(www\.)?smashingmagazine\.com/;
 
-/** YouTube判定パターン */
-const YOUTUBE_PATTERN = /^((www\.)?youtube\.com|youtu\.be)/;
+/** YouTube判定パターン（www・モバイル・Music サブドメインを含む） */
+const YOUTUBE_PATTERN = /^((www\.|m\.|music\.)?youtube\.com|youtu\.be)/;
 
 /** URLホスト+パスとArticleSourceの対応表 */
 const SOURCE_MAPPINGS: SourceMapping[] = [
