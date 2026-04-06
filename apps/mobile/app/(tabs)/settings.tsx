@@ -281,8 +281,10 @@ export default function SettingsScreen() {
   /**
    * 通知権限を要求し、許可された場合はプッシュトークンを登録する
    * 権限取得後は registerPushTokenOnly を呼び出すことで二重の権限要求を避ける
+   *
+   * @returns Promise<void>
    */
-  async function handleRequestNotificationPermission() {
+  async function handleRequestNotificationPermission(): Promise<void> {
     try {
       if (notificationPermission === "denied") {
         await Linking.openSettings();
@@ -293,8 +295,8 @@ export default function SettingsScreen() {
       if (status === "granted") {
         await registerPushTokenOnly();
       }
-    } catch (_error) {
-      logger.error("通知権限リクエストに失敗しました", { error: _error });
+    } catch (error: unknown) {
+      logger.error("通知権限リクエストに失敗しました", { error });
       const messageKey =
         notificationPermission === "denied"
           ? "settings.openSettingsError"
