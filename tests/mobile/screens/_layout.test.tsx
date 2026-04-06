@@ -30,6 +30,7 @@ jest.mock("@mobile/lib/revenueCat", () => ({
 }));
 
 jest.mock("@mobile/lib/notifications", () => ({
+  checkNotificationPermission: jest.fn().mockResolvedValue("granted"),
   registerPushTokenOnly: jest.fn().mockResolvedValue(undefined),
   setupNotificationHandlers: jest.fn().mockReturnValue(() => {}),
 }));
@@ -86,6 +87,7 @@ jest.mock("@mobile/stores/ui-store", () => ({
 
 import { registerNativeBackgroundFetch } from "@mobile/lib/backgroundSync";
 import { logger } from "@mobile/lib/logger";
+import { checkNotificationPermission, registerPushTokenOnly } from "@mobile/lib/notifications";
 import { configureRevenueCat } from "@mobile/lib/revenueCat";
 import RootLayout from "@mobile-app/_layout";
 
@@ -101,6 +103,14 @@ const mockedRegisterNativeBackgroundFetch = registerNativeBackgroundFetch as jes
   typeof registerNativeBackgroundFetch
 >;
 
+const mockedCheckNotificationPermission = checkNotificationPermission as jest.MockedFunction<
+  typeof checkNotificationPermission
+>;
+
+const mockedRegisterPushTokenOnly = registerPushTokenOnly as jest.MockedFunction<
+  typeof registerPushTokenOnly
+>;
+
 const mockedLogger = logger as jest.Mocked<typeof logger>;
 
 describe("RootLayout", () => {
@@ -108,6 +118,8 @@ describe("RootLayout", () => {
     jest.clearAllMocks();
     mockedConfigureRevenueCat.mockResolvedValue(undefined);
     mockedRegisterNativeBackgroundFetch.mockResolvedValue(undefined);
+    mockedCheckNotificationPermission.mockResolvedValue("granted");
+    mockedRegisterPushTokenOnly.mockResolvedValue(undefined);
   });
 
   describe("RevenueCat初期化", () => {
@@ -193,14 +205,71 @@ describe("RootLayout", () => {
 
   describe("OfflineBanner", () => {
     it("OfflineBannerコンポーネントがレイアウトに含まれること", async () => {
+      // Act & Assert - クラッシュしないこと
+      await expect(render(<RootLayout />)).resolves.not.toThrow();
+    });
+  });
+
+  describe("通知権限チェックとトークン登録", () => {
+    it("認証済みかつ権限granted の場合にregisterPushTokenOnlyが呼ばれること", async () => {
       // Arrange
-      const { OfflineBanner } = require("@mobile/components/OfflineBanner");
+      const { useAuthStore } = jest.requireMock("@mobile/stores/auth-store");
+      (useAuthStore as jest.Mock).mockImplementation(
+        (
+          selector: (s: {
+            isAuthenticated: boolean;
+            isLoading: boolean;
+            checkSession: () => void;
+          }) => unknown,
+        ) => selector({ isAuthenticated: true, isLoading: false, checkSession: jest.fn() }),
+      );
+      mockedCheckNotificationPermission.mockResolvedValue("granted");
 
       // Act
       await render(<RootLayout />);
 
       // Assert
-      expect(OfflineBanner).toBeDefined();
+      await waitFor(() => {
+        expect(mockedCheckNotificationPermission).toHaveBeenCalledTimes(1);
+        expect(mockedRegisterPushTokenOnly).toHaveBeenCalledTimes(1);
+      });
+    });
+
+    it("認証済みかつ権限denied の場合にregisterPushTokenOnlyが呼ばれないこと", async () => {
+      // Arrange
+      const { useAuthStore } = jest.requireMock("@mobile/stores/auth-store");
+      (useAuthStore as jest.Mock).mockImplementation(
+        (
+          selector: (s: {
+            isAuthenticated: boolean;
+            isLoading: boolean;
+            checkSession: () => void;
+          }) => unknown,
+        ) => selector({ isAuthenticated: true, isLoading: false, checkSession: jest.fn() }),
+      );
+      mockedCheckNotificationPermission.mockResolvedValue("denied");
+
+      // Act
+      await render(<RootLayout />);
+
+      // Assert
+      await waitFor(() => {
+        expect(mockedCheckNotificationPermission).toHaveBeenCalledTimes(1);
+        expect(mockedRegisterPushTokenOnly).not.toHaveBeenCalled();
+      });
+    });
+
+    it("未認証の場合にcheckNotificationPermissionが呼ばれないこと", async () => {
+      // Arrange - デフォルトのモック（isAuthenticated: false）を使用
+
+      // Act
+      await render(<RootLayout />);
+
+      // Assert
+      await waitFor(() => {
+        expect(mockedCheckNotificationPermission).not.toHaveBeenCalled();
+        expect(mockedRegisterPushTokenOnly).not.toHaveBeenCalled();
+      });
     });
   });
 });
