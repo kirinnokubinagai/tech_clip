@@ -1,5 +1,6 @@
 import * as Device from "expo-device";
 import * as Notifications from "expo-notifications";
+import { router } from "expo-router";
 import { Platform } from "react-native";
 
 import { apiFetch } from "@/lib/api";
@@ -126,11 +127,18 @@ export function setupNotificationHandlers(): () => void {
     },
   });
 
-  const receivedSubscription = Notifications.addNotificationReceivedListener((_notification) => {});
+  const receivedSubscription = Notifications.addNotificationReceivedListener((notification) => {
+    logger.info("フォアグラウンド通知を受信しました", {
+      title: notification.request.content.title,
+    });
+  });
 
-  const responseSubscription = Notifications.addNotificationResponseReceivedListener(
-    (_response) => {},
-  );
+  const responseSubscription = Notifications.addNotificationResponseReceivedListener((response) => {
+    const url = response.notification.request.content.data?.url;
+    if (typeof url === "string") {
+      router.push(url);
+    }
+  });
 
   return () => {
     receivedSubscription.remove();
