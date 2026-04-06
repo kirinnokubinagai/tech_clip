@@ -195,7 +195,11 @@ export const useSettingsStore = create<SettingsStore>((set, get) => ({
     }
     try {
       const parsed = JSON.parse(stored) as unknown;
-      const isValid = (SUMMARY_LANGUAGE_OPTIONS as readonly string[]).includes(parsed as string);
+      if (typeof parsed !== "string") {
+        set({ summaryLanguage: resolveDeviceSummaryLanguage(), isSummaryLanguageLoaded: true });
+        return;
+      }
+      const isValid = (SUMMARY_LANGUAGE_OPTIONS as readonly string[]).includes(parsed);
       const summaryLanguage: SummaryLanguage = isValid
         ? (parsed as SummaryLanguage)
         : resolveDeviceSummaryLanguage();
