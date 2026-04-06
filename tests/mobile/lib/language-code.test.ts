@@ -1,9 +1,9 @@
 import { toSummaryLanguageCode, toTranslationLanguageCode } from "@mobile/lib/language-code";
 
 describe("toSummaryLanguageCode", () => {
-  it("日本語を ja に変換できること", () => {
+  it("ja の場合 ja を返すこと", () => {
     // Arrange
-    const language = "日本語" as const;
+    const language = "ja" as const;
 
     // Act
     const result = toSummaryLanguageCode(language);
@@ -12,9 +12,9 @@ describe("toSummaryLanguageCode", () => {
     expect(result).toBe("ja");
   });
 
-  it("English を en に変換できること", () => {
+  it("en の場合 en を返すこと", () => {
     // Arrange
-    const language = "English" as const;
+    const language = "en" as const;
 
     // Act
     const result = toSummaryLanguageCode(language);
@@ -25,9 +25,9 @@ describe("toSummaryLanguageCode", () => {
 });
 
 describe("toTranslationLanguageCode", () => {
-  it("日本語を ja に変換できること", () => {
+  it("ja の場合 ja を返すこと", () => {
     // Arrange
-    const language = "日本語" as const;
+    const language = "ja" as const;
 
     // Act
     const result = toTranslationLanguageCode(language);
@@ -36,9 +36,9 @@ describe("toTranslationLanguageCode", () => {
     expect(result).toBe("ja");
   });
 
-  it("English を en に変換できること", () => {
+  it("en の場合 en を返すこと", () => {
     // Arrange
-    const language = "English" as const;
+    const language = "en" as const;
 
     // Act
     const result = toTranslationLanguageCode(language);

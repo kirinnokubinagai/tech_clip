@@ -35,7 +35,7 @@ describe("useSettingsStore", () => {
   beforeEach(() => {
     jest.clearAllMocks();
     useSettingsStore.setState({
-      language: "日本語",
+      language: "ja",
       isLanguageLoaded: false,
       notificationSettings: null,
       isNotificationSettingsLoaded: false,
@@ -47,14 +47,14 @@ describe("useSettingsStore", () => {
     describe("loadLanguage", () => {
       it("保存済みの言語設定を読み込めること", async () => {
         // Arrange
-        mockGetItemAsync.mockResolvedValue('"English"');
+        mockGetItemAsync.mockResolvedValue('"en"');
 
         // Act
         await useSettingsStore.getState().loadLanguage();
 
         // Assert
         const state = useSettingsStore.getState();
-        expect(state.language).toBe("English");
+        expect(state.language).toBe("en");
         expect(state.isLanguageLoaded).toBe(true);
       });
 
@@ -67,7 +67,7 @@ describe("useSettingsStore", () => {
 
         // Assert
         const state = useSettingsStore.getState();
-        expect(state.language).toBe("日本語");
+        expect(state.language).toBe("ja");
         expect(state.isLanguageLoaded).toBe(true);
       });
     });
@@ -75,31 +75,31 @@ describe("useSettingsStore", () => {
     describe("setLanguage", () => {
       it("言語設定を変更してSecureStoreに永続化できること", async () => {
         // Arrange
-        const newLanguage = "English" as const;
+        const newLanguage = "en" as const;
 
         // Act
         await useSettingsStore.getState().setLanguage(newLanguage);
 
         // Assert
-        expect(useSettingsStore.getState().language).toBe("English");
+        expect(useSettingsStore.getState().language).toBe("en");
         expect(mockSetItemAsync).toHaveBeenCalledWith(
           "settings_language",
-          JSON.stringify("English"),
+          JSON.stringify("en"),
         );
       });
 
       it("日本語に変更してSecureStoreに永続化できること", async () => {
         // Arrange
-        useSettingsStore.setState({ language: "English" });
+        useSettingsStore.setState({ language: "en" });
 
         // Act
-        await useSettingsStore.getState().setLanguage("日本語");
+        await useSettingsStore.getState().setLanguage("ja");
 
         // Assert
-        expect(useSettingsStore.getState().language).toBe("日本語");
+        expect(useSettingsStore.getState().language).toBe("ja");
         expect(mockSetItemAsync).toHaveBeenCalledWith(
           "settings_language",
-          JSON.stringify("日本語"),
+          JSON.stringify("ja"),
         );
       });
     });
