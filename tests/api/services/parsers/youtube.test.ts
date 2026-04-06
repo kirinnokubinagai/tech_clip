@@ -126,4 +126,28 @@ describe("parseYoutube", () => {
     // Assert
     await expect(parseYoutube(url)).rejects.toThrow();
   });
+
+  it("youtu.be短縮URLからメタデータを取得できること", async () => {
+    // Arrange
+    const url = "https://youtu.be/dQw4w9WgXcQ";
+    const mockResponse = {
+      title: "短縮URLテスト動画",
+      author_name: "テストチャンネル",
+      author_url: "https://www.youtube.com/@testchannel",
+      thumbnail_url: "https://i.ytimg.com/vi/dQw4w9WgXcQ/hqdefault.jpg",
+    };
+
+    // Act
+    vi.spyOn(globalThis, "fetch").mockResolvedValueOnce(
+      new Response(JSON.stringify(mockResponse), { status: 200 }),
+    );
+    const result = await parseYoutube(url);
+
+    // Assert
+    expect(result.title).toBe("短縮URLテスト動画");
+    expect(result.author).toBe("テストチャンネル");
+    expect(result.thumbnailUrl).toBe("https://i.ytimg.com/vi/dQw4w9WgXcQ/hqdefault.jpg");
+    expect(result.excerpt).toContain("テストチャンネル");
+    expect(result.excerpt).toContain("短縮URLテスト動画");
+  });
 });

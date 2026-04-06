@@ -6,6 +6,9 @@ import { createExcerpt, TECHCLIP_USER_AGENT } from "./_shared";
 /** YouTube oEmbed APIエンドポイント */
 const OEMBED_ENDPOINT = "https://www.youtube.com/oembed";
 
+/** oEmbed APIのタイムアウト（ミリ秒） */
+const FETCH_TIMEOUT_MS = 10_000;
+
 /** YouTube oEmbed APIレスポンスのZodスキーマ */
 const OEmbedResponseSchema = z.object({
   title: z.string(),
@@ -29,6 +32,7 @@ export async function parseYoutube(url: string): Promise<ParsedArticleContent> {
     headers: {
       "User-Agent": TECHCLIP_USER_AGENT,
     },
+    signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
   });
 
   if (!response.ok) {
