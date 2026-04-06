@@ -185,7 +185,7 @@ describe("ArticleCard", () => {
       const { getByText } = await render(<ArticleCard article={BASE_ARTICLE} onPress={() => {}} />);
 
       // Assert
-      expect(getByText("2025/03/15")).toBeDefined();
+      expect(getByText("2025/3/15")).toBeDefined();
     });
   });
 });

@@ -1,49 +1,28 @@
 import { useRouter } from "expo-router";
 import {
   Bell,
-  BellOff,
   ChevronRight,
   CreditCard,
   Globe,
   KeyRound,
+  Languages,
   LogOut,
   Trash2,
   User,
 } from "lucide-react-native";
 import type { ReactNode } from "react";
-import { useCallback, useEffect, useState } from "react";
+import { useEffect } from "react";
 import { useTranslation } from "react-i18next";
-import { Alert, AppState, Linking, Pressable, ScrollView, Switch, Text, View } from "react-native";
+import { Alert, Pressable, ScrollView, Switch, Text, View } from "react-native";
 import { confirm } from "@/components/ConfirmDialog";
-import { useSubscription } from "@/hooks/use-subscription";
 import { DARK_COLORS } from "@/lib/constants";
+import { useSubscription } from "../../src/hooks/use-subscription";
+import { useAuthStore } from "../../src/stores/auth-store";
 import {
-  checkNotificationPermission,
-  type NotificationPermissionStatus,
-  registerPushTokenOnly,
-  requestNotificationPermission,
-} from "@/lib/notifications";
-import { useAuthStore } from "@/stores/auth-store";
-import { LANGUAGE_LABEL_MAP, useSettingsStore } from "@/stores/settings-store";
-
-/**
- * 通知権限とトグル状態からアクセシビリティヒントを決定する
- *
- * @param permission - 通知権限ステータス
- * @param enabled - 通知が有効かどうか
- * @param t - i18n翻訳関数
- * @returns アクセシビリティヒント文字列
- */
-function getNotificationHint(
-  permission: NotificationPermissionStatus | "loading",
-  enabled: boolean,
-  t: (key: string) => string,
-): string {
-  if (permission === "denied") return t("settings.items.notificationPermissionDenied");
-  if (permission !== "granted") return t("settings.notificationHintUndetermined");
-  if (enabled) return t("settings.notificationHintOff");
-  return t("settings.notificationHintOn");
-}
+  LANGUAGE_LABEL_MAP,
+  SUMMARY_LANGUAGE_LABELS,
+  useSettingsStore,
+} from "../../src/stores/settings-store";
 
 /** 設定セクションの区切り線コンポーネント */
 function SectionDivider() {
@@ -114,7 +93,7 @@ function SettingsRow({ icon, label, value, onPress, trailing, testID }: Settings
 /**
  * 設定画面
  *
- * アカウント（ログアウト）、サブスクリプション状態、言語設定、通知ON/OFFを提供する
+ * アカウント（ログアウト）、サブスクリプション状態、言語設定、要約言語設定、通知ON/OFFを提供する
  */
 export default function SettingsScreen() {
   const { t } = useTranslation();
@@ -125,16 +104,14 @@ export default function SettingsScreen() {
   const { isSubscribed } = useSubscription();
 
   const languageLabel = useSettingsStore((s) => LANGUAGE_LABEL_MAP[s.language]);
+  const summaryLanguageLabel = useSettingsStore((s) => SUMMARY_LANGUAGE_LABELS[s.summaryLanguage]);
   const setLanguage = useSettingsStore((s) => s.setLanguage);
   const loadLanguage = useSettingsStore((s) => s.loadLanguage);
+  const setSummaryLanguage = useSettingsStore((s) => s.setSummaryLanguage);
+  const loadSummaryLanguage = useSettingsStore((s) => s.loadSummaryLanguage);
   const notificationSettings = useSettingsStore((s) => s.notificationSettings);
   const fetchNotificationSettings = useSettingsStore((s) => s.fetchNotificationSettings);
   const updateNotificationEnabled = useSettingsStore((s) => s.updateNotificationEnabled);
-
-  /** 通知権限ステータス */
-  const [notificationPermission, setNotificationPermission] = useState<
-    NotificationPermissionStatus | "loading"
-  >("loading");
 
   /** 通知が有効かどうか（全通知がONの場合にtrue） */
   const isNotificationsEnabled =
@@ -145,40 +122,11 @@ export default function SettingsScreen() {
         notificationSettings.system
       : true;
 
-  /** 通知スイッチのアクセシビリティヒント */
-  const notificationAccessibilityHint = getNotificationHint(
-    notificationPermission,
-    isNotificationsEnabled,
-    t,
-  );
-
   useEffect(() => {
     loadLanguage();
+    loadSummaryLanguage();
     fetchNotificationSettings();
-  }, [loadLanguage, fetchNotificationSettings]);
-
-  const refreshPermission = useCallback(async () => {
-    try {
-      const status = await checkNotificationPermission();
-      setNotificationPermission(status);
-    } catch {
-      setNotificationPermission("undetermined");
-    }
-  }, []);
-
-  useEffect(() => {
-    refreshPermission();
-  }, [refreshPermission]);
-
-  useEffect(() => {
-    const subscription = AppState.addEventListener("change", (nextAppState) => {
-      if (nextAppState !== "active") return;
-      refreshPermission();
-    });
-    return () => {
-      subscription.remove();
-    };
-  }, [refreshPermission]);
+  }, [loadLanguage, loadSummaryLanguage, fetchNotificationSettings]);
 
   /**
    * ログアウト確認ダイアログを表示し、確認後にサインアウトを実行する
@@ -236,6 +184,27 @@ export default function SettingsScreen() {
   }
 
   /**
+   * 要約言語選択のアクションシートを表示する
+   */
+  function handleSummaryLanguageSelect() {
+    const languageButtons = (
+      Object.entries(SUMMARY_LANGUAGE_LABELS) as [keyof typeof SUMMARY_LANGUAGE_LABELS, string][]
+    ).map(([code, label]) => ({
+      text: label,
+      onPress: () => {
+        setSummaryLanguage(code).catch(() => {
+          Alert.alert(t("common.errorTitle"), t("settings.summaryLanguageUpdateError"));
+        });
+      },
+    }));
+    Alert.alert(
+      t("settings.summaryLanguageSelect.title"),
+      t("settings.summaryLanguageSelect.prompt"),
+      [...languageButtons, { text: t("common.cancel"), style: "cancel" as const }],
+    );
+  }
+
+  /**
    * 通知トグルの変更を処理する
    *
    * @param enabled - trueで全通知ON、falseで全通知OFF
@@ -244,30 +213,6 @@ export default function SettingsScreen() {
     updateNotificationEnabled(enabled).catch(() => {
       Alert.alert(t("common.errorTitle"), t("settings.notificationUpdateError"));
     });
-  }
-
-  /**
-   * 通知権限を要求し、許可された場合はプッシュトークンを登録する
-   * 権限取得後は registerPushTokenOnly を呼び出すことで二重の権限要求を避ける
-   */
-  async function handleRequestNotificationPermission() {
-    try {
-      if (notificationPermission === "denied") {
-        await Linking.openSettings();
-        return;
-      }
-      const status = await requestNotificationPermission();
-      setNotificationPermission(status);
-      if (status === "granted") {
-        await registerPushTokenOnly();
-      }
-    } catch (_error) {
-      const messageKey =
-        notificationPermission === "denied"
-          ? "settings.openSettingsError"
-          : "settings.notificationUpdateError";
-      Alert.alert(t("common.errorTitle"), t(messageKey));
-    }
   }
 
   return (
@@ -315,6 +260,14 @@ export default function SettingsScreen() {
         />
         <SectionDivider />
         <SettingsRow
+          testID="settings-summary-language-button"
+          icon={<Languages size={ICON_SIZE} color={ICON_COLOR} />}
+          label={t("settings.items.summaryLanguage")}
+          value={summaryLanguageLabel}
+          onPress={handleSummaryLanguageSelect}
+        />
+        <SectionDivider />
+        <SettingsRow
           icon={<Bell size={ICON_SIZE} color={ICON_COLOR} />}
           label={t("settings.items.notifications")}
           trailing={
@@ -322,45 +275,18 @@ export default function SettingsScreen() {
               testID="settings-notification-switch"
               value={isNotificationsEnabled}
               onValueChange={handleNotificationToggle}
-              disabled={notificationPermission !== "granted"}
               trackColor={{ false: DARK_COLORS.border, true: DARK_COLORS.primary }}
               thumbColor={DARK_COLORS.white}
               accessibilityLabel={t("settings.items.notifications")}
-              accessibilityHint={notificationAccessibilityHint}
+              accessibilityHint={
+                isNotificationsEnabled
+                  ? t("settings.notificationHintOff")
+                  : t("settings.notificationHintOn")
+              }
               accessibilityRole="switch"
             />
           }
         />
-        {notificationPermission !== "granted" && notificationPermission !== "loading" && (
-          <Text
-            testID="settings-notification-permission-hint"
-            className="text-xs text-text-dim mt-1 px-4"
-          >
-            {t("settings.items.notificationPermissionHint")}
-          </Text>
-        )}
-        {notificationPermission === "denied" && (
-          <>
-            <SectionDivider />
-            <SettingsRow
-              testID="settings-notification-permission-denied-button"
-              icon={<BellOff size={ICON_SIZE} color={DARK_COLORS.error} />}
-              label={t("settings.items.notificationPermissionDenied")}
-              onPress={handleRequestNotificationPermission}
-            />
-          </>
-        )}
-        {notificationPermission === "undetermined" && (
-          <>
-            <SectionDivider />
-            <SettingsRow
-              testID="settings-notification-permission-request-button"
-              icon={<Bell size={ICON_SIZE} color={ICON_COLOR} />}
-              label={t("settings.items.notificationPermissionRequest")}
-              onPress={handleRequestNotificationPermission}
-            />
-          </>
-        )}
       </View>
 
       <SectionTitle title={t("settings.sections.accountManagement")} />
