@@ -1,5 +1,5 @@
 import AuthCallbackScreen from "@mobile-app/auth/callback";
-import { fireEvent, render, waitFor } from "@testing-library/react-native";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react-native";
 
 const mockReplace = jest.fn();
 const mockCheckSession = jest.fn();
@@ -92,10 +92,10 @@ describe("AuthCallbackScreen", () => {
       mockCheckSession.mockReturnValue(new Promise(() => {}));
 
       // Act
-      const { getByTestId } = render(<AuthCallbackScreen />);
+      render(<AuthCallbackScreen />);
 
       // Assert
-      expect(getByTestId("auth-callback-loading")).toBeDefined();
+      expect(screen.getByTestId("auth-callback-loading")).toBeDefined();
     });
   });
 
