@@ -84,6 +84,21 @@ describe("AuthCallbackScreen", () => {
     });
   });
 
+  describe("ローディング状態", () => {
+    it("checkSessionが完了しない間はActivityIndicatorが表示されること", async () => {
+      // Arrange
+      mockUseLocalSearchParams.mockReturnValue({ token: "access_token_123" });
+      (mockSetAuthToken as jest.Mock).mockResolvedValue(undefined);
+      mockCheckSession.mockReturnValue(new Promise(() => {}));
+
+      // Act
+      const { getByTestId } = render(<AuthCallbackScreen />);
+
+      // Assert
+      expect(getByTestId("auth-callback-loading")).toBeDefined();
+    });
+  });
+
   describe("異常系", () => {
     it("errorパラメータがある場合はエラーメッセージが表示されること", async () => {
       // Arrange
