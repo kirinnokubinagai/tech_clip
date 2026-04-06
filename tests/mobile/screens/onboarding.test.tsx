@@ -10,9 +10,7 @@ jest.mock("expo-router", () => ({
 const mockSetHasSeenOnboarding = jest.fn().mockResolvedValue(undefined);
 const mockHasSeenOnboarding = { current: false };
 
-const mockRequestTrackingPermission = jest.fn().mockResolvedValue("authorized");
-
-jest.mock("@mobile/stores/ui-store", () => ({
+jest.mock("@/stores/ui-store", () => ({
   useUIStore: (
     selector: (state: {
       hasSeenOnboarding: boolean;
@@ -25,13 +23,18 @@ jest.mock("@mobile/stores/ui-store", () => ({
     }),
 }));
 
-jest.mock("@mobile/lib/tracking", () => ({
-  requestTrackingPermission: mockRequestTrackingPermission,
+jest.mock("@/lib/tracking", () => ({
+  requestTrackingPermission: jest.fn().mockResolvedValue("authorized"),
 }));
 
 const { router: mockRouter } = jest.requireMock("expo-router") as {
   router: { replace: jest.Mock };
 };
+
+const { requestTrackingPermission: mockRequestTrackingPermission } =
+  jest.requireMock("@/lib/tracking") as {
+    requestTrackingPermission: jest.Mock;
+  };
 
 beforeEach(() => {
   jest.clearAllMocks();
