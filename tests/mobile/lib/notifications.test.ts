@@ -185,13 +185,10 @@ describe("notifications", () => {
       await registerPushTokenOnly();
 
       // Assert
-      expect(apiFetch).toHaveBeenCalledWith(
-        "/api/notifications/register",
-        {
-          method: "POST",
-          body: JSON.stringify({ token: "ExponentPushToken[test-token-123]", platform: "ios" }),
-        },
-      );
+      expect(apiFetch).toHaveBeenCalledWith("/api/notifications/register", {
+        method: "POST",
+        body: JSON.stringify({ token: "ExponentPushToken[test-token-123]", platform: "ios" }),
+      });
       expect(logger.info).toHaveBeenCalledWith(
         "プッシュトークンのAPI登録に成功しました（権限確認済み）",
         expect.objectContaining({ tokenPrefix: "Expone..." }),
