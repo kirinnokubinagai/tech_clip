@@ -30,7 +30,7 @@ check_worktree_path() {
 
   if [[ "$wt_path" == *'$'* ]]; then
     echo "⚠️ 未展開の変数が含まれています。絶対パスに展開してから実行してください"
-    echo "  例: REPO_ROOT=\$(cd \"\$(env -u GIT_DIR -u GIT_WORK_TREE git rev-parse --git-common-dir)/../..\" && pwd)"
+    echo "  例: REPO_ROOT=\$(cd \"\$(env -u GIT_DIR -u GIT_WORK_TREE git rev-parse --git-common-dir)/..\" && pwd)"
     echo "       git worktree add \"\${REPO_ROOT}/.worktrees/issue-N\" -b issue/N/short-desc"
     return 0
   fi
@@ -71,7 +71,7 @@ check_worktree_path() {
 check_dangerous() {
   local cmd="$1"
 
-  # rm コマンド
+  # rm コマンド（削除内容確認のため危険度に関わらず全 rm をブロック）
   echo "$cmd" | grep -qE "^rm " && return 0
 
   # git 破壊的コマンド

@@ -448,7 +448,7 @@ gh pr view <PR番号> --comments
 mainブランチ上でのファイル編集を試みると発動する。エラーメッセージに表示される通り、worktree を作成して作業する:
 
 ```bash
-REPO_ROOT=$(cd "$(env -u GIT_DIR -u GIT_WORK_TREE git rev-parse --git-common-dir)/../.." && pwd)
+REPO_ROOT=$(cd "$(env -u GIT_DIR -u GIT_WORK_TREE git rev-parse --git-common-dir)/.." && pwd)
 git worktree add "${REPO_ROOT}/.worktrees/issue-N" -b issue/N/short-desc
 cd "${REPO_ROOT}/.worktrees/issue-N"
 pnpm install --frozen-lockfile
