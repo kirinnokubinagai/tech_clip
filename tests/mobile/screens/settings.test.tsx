@@ -6,7 +6,7 @@ const mockCheckNotificationPermission = jest.fn();
 const mockRequestNotificationPermission = jest.fn();
 const mockRegisterPushTokenOnly = jest.fn();
 
-jest.mock("@mobile/lib/notifications", () => ({
+jest.mock("@/lib/notifications", () => ({
   checkNotificationPermission: (...args: unknown[]) => mockCheckNotificationPermission(...args),
   requestNotificationPermission: (...args: unknown[]) => mockRequestNotificationPermission(...args),
   registerPushTokenOnly: (...args: unknown[]) => mockRegisterPushTokenOnly(...args),
@@ -21,11 +21,11 @@ const mockLoadSummaryLanguage = jest.fn().mockResolvedValue(undefined);
 const mockFetchNotificationSettings = jest.fn().mockResolvedValue(undefined);
 const mockUpdateNotificationEnabled = jest.fn().mockResolvedValue(undefined);
 
-jest.mock("@mobile/hooks/use-subscription", () => ({
+jest.mock("@/hooks/use-subscription", () => ({
   useSubscription: () => ({ isSubscribed: false }),
 }));
 
-jest.mock("@mobile/stores/auth-store", () => ({
+jest.mock("@/stores/auth-store", () => ({
   useAuthStore: jest.fn((selector: (state: Record<string, unknown>) => unknown) =>
     selector({
       signOut: mockSignOut,
@@ -35,7 +35,7 @@ jest.mock("@mobile/stores/auth-store", () => ({
   ),
 }));
 
-jest.mock("@mobile/stores/settings-store", () => ({
+jest.mock("@/stores/settings-store", () => ({
   LANGUAGE_LABEL_MAP: { ja: "日本語", en: "English" },
   SUMMARY_LANGUAGE_LABELS: {
     ja: "日本語",

@@ -11,7 +11,7 @@ import { logger } from "@/lib/logger";
 const NOTIFICATION_CHANNEL_ID = "default";
 
 /** 通知タップ時の許可URLパターン */
-const ALLOWED_PUSH_PATTERNS = ["/articles", "/profile", "/settings", "/onboarding"];
+const ALLOWED_PUSH_PATTERNS = ["/articles", "/profile", "/settings"];
 
 /**
  * 通知URLがアプリ内の許可されたルートかどうかを検証する

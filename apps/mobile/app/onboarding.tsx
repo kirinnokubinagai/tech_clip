@@ -55,7 +55,7 @@ export default function OnboardingScreen() {
   const handleFinish = async () => {
     try {
       await requestTrackingPermission();
-    } catch (error) {
+    } catch (error: unknown) {
       logger.warn("トラッキング権限リクエストに失敗しました", { error });
     }
     await setHasSeenOnboarding(true);
