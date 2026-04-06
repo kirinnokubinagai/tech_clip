@@ -331,6 +331,17 @@ describe("detectSource", () => {
       // Assert
       expect(result).toBe("youtube");
     });
+
+    it("youtube.com/shorts/ のURLを判定できること", () => {
+      // Arrange
+      const url = "https://youtube.com/shorts/AbCdEf12345";
+
+      // Act
+      const result = detectSource(url);
+
+      // Assert
+      expect(result).toBe("youtube");
+    });
   });
 
   describe("Twitter/X", () => {

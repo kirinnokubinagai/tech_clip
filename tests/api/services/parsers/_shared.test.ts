@@ -155,27 +155,5 @@ describe("_shared", () => {
       // Assert
       expect(result).toBe(`${"a".repeat(EXCERPT_MAX_LENGTH)}...`);
     });
-
-    it("長いテキストをEXCERPT_MAX_LENGTH文字で切り詰めること", () => {
-      // Arrange
-      const text = "a".repeat(EXCERPT_MAX_LENGTH * 2);
-
-      // Act
-      const result = createExcerpt(text);
-
-      // Assert
-      expect(result).toBe(`${"a".repeat(EXCERPT_MAX_LENGTH)}...`);
-    });
-
-    it("切り詰めたテキストが...で終わること", () => {
-      // Arrange
-      const text = "a".repeat(EXCERPT_MAX_LENGTH + 50);
-
-      // Act
-      const result = createExcerpt(text);
-
-      // Assert
-      expect(result.endsWith("...")).toBe(true);
-    });
   });
 });
