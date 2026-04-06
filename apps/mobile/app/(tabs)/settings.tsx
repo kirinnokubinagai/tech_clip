@@ -157,14 +157,13 @@ export default function SettingsScreen() {
     fetchNotificationSettings();
   }, [loadLanguage, fetchNotificationSettings]);
 
-  const refreshPermission = useCallback(() => {
-    checkNotificationPermission()
-      .then((status) => {
-        setNotificationPermission(status);
-      })
-      .catch(() => {
-        setNotificationPermission("undetermined");
-      });
+  const refreshPermission = useCallback(async () => {
+    try {
+      const status = await checkNotificationPermission();
+      setNotificationPermission(status);
+    } catch {
+      setNotificationPermission("undetermined");
+    }
   }, []);
 
   useEffect(() => {
