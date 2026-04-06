@@ -204,6 +204,7 @@
     },
     "notificationHintOn": "タップして通知をオンにします",
     "notificationHintOff": "タップして通知をオフにします",
+    "notificationHintUndetermined": "通知の設定を変更できます",
     "logout": {
       "title": "ログアウト",
       "message": "ログアウトしますか？",

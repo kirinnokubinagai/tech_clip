@@ -125,13 +125,18 @@ export default function SettingsScreen() {
         notificationSettings.system
       : true;
 
+  /** 通知権限状態ごとのアクセシビリティヒント */
+  const notificationPermissionHintMap: Record<string, string> = {
+    denied: t("settings.items.notificationPermissionDenied"),
+    undetermined: t("settings.notificationHintUndetermined"),
+  };
+
   /** 通知スイッチのアクセシビリティヒント */
-  let notificationAccessibilityHint: string;
-  if (notificationPermission !== "granted") {
-    notificationAccessibilityHint = t("settings.items.notificationPermissionDenied");
-  } else if (isNotificationsEnabled) {
+  let notificationAccessibilityHint = notificationPermissionHintMap[notificationPermission] ?? t("settings.notificationHintUndetermined");
+  if (notificationPermission === "granted" && isNotificationsEnabled) {
     notificationAccessibilityHint = t("settings.notificationHintOff");
-  } else {
+  }
+  if (notificationPermission === "granted" && !isNotificationsEnabled) {
     notificationAccessibilityHint = t("settings.notificationHintOn");
   }
 

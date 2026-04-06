@@ -202,6 +202,7 @@
     },
     "notificationHintOn": "Tap to turn notifications on",
     "notificationHintOff": "Tap to turn notifications off",
+    "notificationHintUndetermined": "You can change notification settings",
     "logout": {
       "title": "Log Out",
       "message": "Are you sure you want to log out?",
