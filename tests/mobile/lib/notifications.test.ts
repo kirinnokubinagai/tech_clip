@@ -2,7 +2,11 @@ import * as Device from "expo-device";
 import * as Notifications from "expo-notifications";
 import { Platform } from "react-native";
 
-import { registerForPushNotifications, setupNotificationHandlers } from "@/lib/notifications";
+import {
+  registerPushTokenOnly,
+  registerTokenWithApi,
+  setupNotificationHandlers,
+} from "@/lib/notifications";
 
 jest.mock("expo-notifications", () => ({
   getPermissionsAsync: jest.fn(),
@@ -33,89 +37,42 @@ beforeEach(() => {
 });
 
 describe("notifications", () => {
-  describe("registerForPushNotifications", () => {
-    it("実機でプッシュトークンを取得できること", async () => {
+  describe("registerPushTokenOnly", () => {
+    it("実機でプッシュトークンを取得してAPIに登録すること", async () => {
       // Arrange
       Object.defineProperty(Device, "isDevice", { value: true });
-      (Notifications.getPermissionsAsync as jest.Mock).mockResolvedValue({
-        status: "granted",
-      });
       (Notifications.getExpoPushTokenAsync as jest.Mock).mockResolvedValue({
         data: "ExponentPushToken[test-token-123]",
       });
 
       // Act
-      const token = await registerForPushNotifications();
+      await registerPushTokenOnly();
 
       // Assert
-      expect(token).toBe("ExponentPushToken[test-token-123]");
       expect(Notifications.getExpoPushTokenAsync).toHaveBeenCalledTimes(1);
     });
 
-    it("権限が未許可の場合にrequestPermissionsAsyncを呼ぶこと", async () => {
-      // Arrange
-      Object.defineProperty(Device, "isDevice", { value: true });
-      (Notifications.getPermissionsAsync as jest.Mock).mockResolvedValue({
-        status: "undetermined",
-      });
-      (Notifications.requestPermissionsAsync as jest.Mock).mockResolvedValue({
-        status: "granted",
-      });
-      (Notifications.getExpoPushTokenAsync as jest.Mock).mockResolvedValue({
-        data: "ExponentPushToken[new-token]",
-      });
-
-      // Act
-      const token = await registerForPushNotifications();
-
-      // Assert
-      expect(Notifications.requestPermissionsAsync).toHaveBeenCalledTimes(1);
-      expect(token).toBe("ExponentPushToken[new-token]");
-    });
-
-    it("権限が拒否された場合にnullを返すこと", async () => {
-      // Arrange
-      Object.defineProperty(Device, "isDevice", { value: true });
-      (Notifications.getPermissionsAsync as jest.Mock).mockResolvedValue({
-        status: "undetermined",
-      });
-      (Notifications.requestPermissionsAsync as jest.Mock).mockResolvedValue({
-        status: "denied",
-      });
-
-      // Act
-      const token = await registerForPushNotifications();
-
-      // Assert
-      expect(token).toBeNull();
-      expect(Notifications.getExpoPushTokenAsync).not.toHaveBeenCalled();
-    });
-
-    it("シミュレータの場合にnullを返すこと", async () => {
+    it("シミュレータでは何もしないこと", async () => {
       // Arrange
       Object.defineProperty(Device, "isDevice", { value: false });
 
       // Act
-      const token = await registerForPushNotifications();
+      await registerPushTokenOnly();
 
       // Assert
-      expect(token).toBeNull();
-      expect(Notifications.getPermissionsAsync).not.toHaveBeenCalled();
+      expect(Notifications.getExpoPushTokenAsync).not.toHaveBeenCalled();
     });
 
     it("Androidの場合に通知チャンネルを設定すること", async () => {
       // Arrange
       Object.defineProperty(Device, "isDevice", { value: true });
       Object.defineProperty(Platform, "OS", { value: "android" });
-      (Notifications.getPermissionsAsync as jest.Mock).mockResolvedValue({
-        status: "granted",
-      });
       (Notifications.getExpoPushTokenAsync as jest.Mock).mockResolvedValue({
         data: "ExponentPushToken[android-token]",
       });
 
       // Act
-      await registerForPushNotifications();
+      await registerPushTokenOnly();
 
       // Assert
       expect(Notifications.setNotificationChannelAsync).toHaveBeenCalledWith(
@@ -123,6 +80,37 @@ describe("notifications", () => {
         expect.objectContaining({
           name: "default",
           importance: Notifications.AndroidImportance.MAX,
+        }),
+      );
+    });
+
+    it("エラーが発生してもexceptionをスローしないこと", async () => {
+      // Arrange
+      Object.defineProperty(Device, "isDevice", { value: true });
+      (Notifications.getExpoPushTokenAsync as jest.Mock).mockRejectedValue(
+        new Error("トークン取得失敗"),
+      );
+
+      // Act & Assert (should not throw)
+      await expect(registerPushTokenOnly()).resolves.toBeUndefined();
+    });
+  });
+
+  describe("registerTokenWithApi", () => {
+    it("トークンをAPIに登録できること", async () => {
+      // Arrange
+      const { apiFetch } = await import("@/lib/api");
+      const token = "ExponentPushToken[test-token]";
+
+      // Act
+      await registerTokenWithApi(token);
+
+      // Assert
+      expect(apiFetch).toHaveBeenCalledWith(
+        "/api/notifications/register",
+        expect.objectContaining({
+          method: "POST",
+          body: expect.stringContaining(token),
         }),
       );
     });
