@@ -95,7 +95,7 @@ describe("parseYoutube", () => {
     );
 
     // Assert
-    await expect(parseYoutube(url)).rejects.toThrow();
+    await expect(parseYoutube(url)).rejects.toThrow("YouTube動画のメタデータが不正です");
   });
 
   it("author_nameが欠落しているレスポンスでエラーになること", async () => {
@@ -111,7 +111,7 @@ describe("parseYoutube", () => {
     );
 
     // Assert
-    await expect(parseYoutube(url)).rejects.toThrow();
+    await expect(parseYoutube(url)).rejects.toThrow("YouTube動画のメタデータが不正です");
   });
 
   it("空オブジェクトのレスポンスでエラーになること", async () => {
@@ -124,7 +124,7 @@ describe("parseYoutube", () => {
     );
 
     // Assert
-    await expect(parseYoutube(url)).rejects.toThrow();
+    await expect(parseYoutube(url)).rejects.toThrow("YouTube動画のメタデータが不正です");
   });
 
   it("youtu.be短縮URLからメタデータを取得できること", async () => {
