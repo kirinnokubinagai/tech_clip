@@ -22,10 +22,20 @@ export type TrackingStatus =
 /**
  * expo-tracking-transparency モジュールの型定義
  */
-type TrackingTransparencyModule = {
+type ExpoTrackingModule = {
   requestTrackingPermissionsAsync: () => Promise<{ status: string }>;
   getTrackingPermissionsAsync: () => Promise<{ status: string }>;
 };
+
+/**
+ * 文字列が TrackingStatus かどうかを検証する型ガード
+ *
+ * @param value - 検証する値
+ * @returns TrackingStatus の場合 true
+ */
+function isTrackingStatus(value: string): value is TrackingStatus {
+  return ["authorized", "denied", "not-determined", "restricted", "unavailable"].includes(value);
+}
 
 /**
  * ATT許可リクエストを実行する
@@ -40,15 +50,12 @@ export async function requestTrackingPermission(): Promise<TrackingStatus> {
     return "unavailable";
   }
 
-  try {
-    const trackingModule = (await import(
-      "expo-tracking-transparency" as never
-    )) as unknown as TrackingTransparencyModule;
-    const { status } = await trackingModule.requestTrackingPermissionsAsync();
-    return status as TrackingStatus;
-  } catch {
+  const mod = await import("expo-tracking-transparency").catch(() => null);
+  if (!mod) {
     return "unavailable";
   }
+  const { status } = await (mod as ExpoTrackingModule).requestTrackingPermissionsAsync();
+  return isTrackingStatus(status) ? status : "unavailable";
 }
 
 /**
@@ -61,13 +68,10 @@ export async function getTrackingStatus(): Promise<TrackingStatus> {
     return "unavailable";
   }
 
-  try {
-    const trackingModule = (await import(
-      "expo-tracking-transparency" as never
-    )) as unknown as TrackingTransparencyModule;
-    const { status } = await trackingModule.getTrackingPermissionsAsync();
-    return status as TrackingStatus;
-  } catch {
+  const mod = await import("expo-tracking-transparency").catch(() => null);
+  if (!mod) {
     return "unavailable";
   }
+  const { status } = await (mod as ExpoTrackingModule).getTrackingPermissionsAsync();
+  return isTrackingStatus(status) ? status : "unavailable";
 }
