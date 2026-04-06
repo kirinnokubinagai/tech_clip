@@ -7,6 +7,10 @@ jest.mock("expo-router", () => ({
   },
 }));
 
+jest.mock("@mobile/lib/tracking", () => ({
+  requestTrackingPermission: jest.fn().mockResolvedValue("authorized"),
+}));
+
 const mockSetHasSeenOnboarding = jest.fn().mockResolvedValue(undefined);
 const mockHasSeenOnboarding = { current: false };
 
@@ -127,6 +131,26 @@ describe("OnboardingScreen", () => {
         expect(mockRouter.replace).toHaveBeenCalledWith("/(auth)/login");
       });
       expect(mockSetHasSeenOnboarding).toHaveBeenCalledWith(true);
+    });
+
+    it("始めるボタンを押すとrequestTrackingPermissionが呼ばれること", async () => {
+      // Arrange
+      const { requestTrackingPermission } = jest.requireMock("@mobile/lib/tracking") as {
+        requestTrackingPermission: jest.Mock;
+      };
+      const { getByTestId } = await render(<OnboardingScreen />);
+
+      await fireEvent.press(getByTestId("next-button"));
+      await fireEvent.press(getByTestId("next-button"));
+      await fireEvent.press(getByTestId("next-button"));
+
+      // Act
+      await fireEvent.press(getByTestId("finish-button"));
+
+      // Assert
+      await waitFor(() => {
+        expect(requestTrackingPermission).toHaveBeenCalledTimes(1);
+      });
     });
   });
 

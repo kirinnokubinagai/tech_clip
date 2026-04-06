@@ -71,16 +71,17 @@ check_main_branch_modification() {
     return 1
   fi
 
-  # git コマンドは許可（read-only操作: log, status, diff 等）
-  if echo "$cmd" | grep -qE "^git |^env.*git "; then
+  # git read-only コマンドのみ許可
+  if echo "$cmd" | grep -qE "^git (log|status|diff|show|branch|rev-parse|worktree|remote|fetch|stash list|tag|describe|blame|ls-files|ls-tree|shortlog|for-each-ref|cat-file|hash-object|ls-remote|check-ignore|check-attr|fsck|verify-pack|count-objects|gc --auto|prune --dry-run|reflog show|notes list)( |$)"; then
+    return 1
+  fi
+  if echo "$cmd" | grep -qE "^env.*git (log|status|diff|show|branch|rev-parse|worktree|remote|fetch|stash list|tag|describe|blame|ls-files|ls-tree|shortlog|for-each-ref|cat-file|hash-object|ls-remote|check-ignore|check-attr|fsck|verify-pack|count-objects|gc --auto|prune --dry-run|reflog show|notes list)( |$)"; then
     return 1
   fi
 
   # ファイル変更を伴うコマンドパターン
   echo "$cmd" | grep -qE "sed -i" && return 0
   echo "$cmd" | grep -qE "tee " && return 0
-  # リダイレクト書き込み（2> や &> や >> は除外）
-  echo "$cmd" | grep -qE "[^2&>]>[^>=]" && return 0
 
   return 1
 }
