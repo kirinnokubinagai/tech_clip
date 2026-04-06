@@ -204,18 +204,16 @@ export const useSettingsStore = create<SettingsStore>((set, get) => ({
     }
     try {
       const parsed = JSON.parse(stored) as unknown;
-      if (typeof parsed !== "string" || !isSupportedSummaryLanguage(parsed)) {
-        const defaultLang = resolveDeviceSummaryLanguage();
-        await SecureStore.setItemAsync(SUMMARY_LANGUAGE_KEY, JSON.stringify(defaultLang));
-        set({ summaryLanguage: defaultLang, isSummaryLanguageLoaded: true });
+      if (typeof parsed === "string" && isSupportedSummaryLanguage(parsed)) {
+        set({ summaryLanguage: parsed, isSummaryLanguageLoaded: true });
         return;
       }
-      set({ summaryLanguage: parsed, isSummaryLanguageLoaded: true });
     } catch {
-      const defaultLang = resolveDeviceSummaryLanguage();
-      await SecureStore.setItemAsync(SUMMARY_LANGUAGE_KEY, JSON.stringify(defaultLang));
-      set({ summaryLanguage: defaultLang, isSummaryLanguageLoaded: true });
+      // fall through
     }
+    const fallback = resolveDeviceSummaryLanguage();
+    await SecureStore.setItemAsync(SUMMARY_LANGUAGE_KEY, JSON.stringify(fallback));
+    set({ summaryLanguage: fallback, isSummaryLanguageLoaded: true });
   },
 
   /**
