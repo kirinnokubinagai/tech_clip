@@ -1,21 +1,13 @@
 import TurndownService from "turndown";
 
 import type { ParsedArticle } from "../../types/article";
+import { calculateReadingTime, TECHCLIP_USER_AGENT } from "./_shared";
 
 /** Stack Exchange APIのベースURL */
 const SE_API_BASE_URL = "https://api.stackexchange.com/2.3/questions";
 
 /** Stack Overflowのホスト名 */
 const SO_HOSTNAME = "stackoverflow.com";
-
-/** fetch時のUser-Agent */
-const USER_AGENT = "Mozilla/5.0 (compatible; TechClipBot/1.0; +https://techclip.app)";
-
-/** 読了速度（文字/分） */
-const READING_SPEED_CHARS_PER_MIN = 500;
-
-/** 最小読了時間（分） */
-const MIN_READING_TIME_MINUTES = 1;
 
 /** ミリ秒変換係数 */
 const UNIX_TO_MS_MULTIPLIER = 1000;
@@ -98,18 +90,6 @@ function unixToIso(unixTime: number): string {
 }
 
 /**
- * 文字数から読了時間を計算する
- *
- * @param text - 本文テキスト
- * @returns 推定読了時間（分、最小1分）
- */
-function calculateReadingTime(text: string): number {
-  const charCount = text.length;
-  const minutes = Math.ceil(charCount / READING_SPEED_CHARS_PER_MIN);
-  return Math.max(minutes, MIN_READING_TIME_MINUTES);
-}
-
-/**
  * HTMLタグを除去してプレーンテキストを取得する
  *
  * @param html - HTMLコンテンツ
@@ -178,7 +158,7 @@ export async function parseStackOverflow(url: string): Promise<ParsedArticle> {
 
   const apiUrl = `${SE_API_BASE_URL}/${questionId}?site=stackoverflow&filter=${SO_API_FILTER}&order=desc&sort=votes`;
   const response = await fetch(apiUrl, {
-    headers: { "User-Agent": USER_AGENT },
+    headers: { "User-Agent": TECHCLIP_USER_AGENT },
   });
 
   if (!response.ok) {

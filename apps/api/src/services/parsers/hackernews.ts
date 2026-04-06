@@ -1,6 +1,7 @@
 import TurndownService from "turndown";
 
 import type { ParsedArticle } from "../../types/article";
+import { calculateReadingTime, MIN_READING_TIME_MINUTES, TECHCLIP_USER_AGENT } from "./_shared";
 import { parseGeneric } from "./generic";
 
 /** Hacker News Firebase APIのベースURL */
@@ -8,15 +9,6 @@ const HN_API_BASE_URL = "https://hacker-news.firebaseio.com/v0/item";
 
 /** Hacker Newsのホスト名 */
 const HN_HOSTNAME = "news.ycombinator.com";
-
-/** fetch時のUser-Agent */
-const USER_AGENT = "Mozilla/5.0 (compatible; TechClipBot/1.0; +https://techclip.app)";
-
-/** 読了速度（文字/分） */
-const READING_SPEED_CHARS_PER_MIN = 500;
-
-/** 最小読了時間（分） */
-const MIN_READING_TIME_MINUTES = 1;
 
 /** ミリ秒変換係数 */
 const UNIX_TO_MS_MULTIPLIER = 1000;
@@ -70,18 +62,6 @@ function unixToIso(unixTime: number): string {
 }
 
 /**
- * 文字数から読了時間を計算する
- *
- * @param text - 本文テキスト
- * @returns 推定読了時間（分、最小1分）
- */
-function calculateReadingTime(text: string): number {
-  const charCount = text.length;
-  const minutes = Math.ceil(charCount / READING_SPEED_CHARS_PER_MIN);
-  return Math.max(minutes, MIN_READING_TIME_MINUTES);
-}
-
-/**
  * HTMLタグを除去してプレーンテキストを取得する
  *
  * @param html - HTMLコンテンツ
@@ -106,7 +86,7 @@ export async function parseHackerNews(url: string): Promise<ParsedArticle> {
 
   const apiUrl = `${HN_API_BASE_URL}/${itemId}.json`;
   const response = await fetch(apiUrl, {
-    headers: { "User-Agent": USER_AGENT },
+    headers: { "User-Agent": TECHCLIP_USER_AGENT },
   });
 
   if (!response.ok) {

@@ -333,6 +333,52 @@ describe("detectSource", () => {
     });
   });
 
+  describe("Twitter/X", () => {
+    it("x.com の投稿URLを判定できること", () => {
+      // Arrange
+      const url = "https://x.com/testuser/status/1234567890";
+
+      // Act
+      const result = detectSource(url);
+
+      // Assert
+      expect(result).toBe("twitter");
+    });
+
+    it("twitter.com の投稿URLを判定できること", () => {
+      // Arrange
+      const url = "https://twitter.com/testuser/status/9876543210";
+
+      // Act
+      const result = detectSource(url);
+
+      // Assert
+      expect(result).toBe("twitter");
+    });
+
+    it("www.x.com の投稿URLを判定できること", () => {
+      // Arrange
+      const url = "https://www.x.com/testuser/status/1234567890";
+
+      // Act
+      const result = detectSource(url);
+
+      // Assert
+      expect(result).toBe("twitter");
+    });
+
+    it("www.twitter.com の投稿URLを判定できること", () => {
+      // Arrange
+      const url = "https://www.twitter.com/testuser/status/9876543210";
+
+      // Act
+      const result = detectSource(url);
+
+      // Assert
+      expect(result).toBe("twitter");
+    });
+  });
+
   describe("その他", () => {
     it("未知のドメインの場合otherを返すこと", () => {
       // Arrange

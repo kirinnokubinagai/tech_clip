@@ -16,6 +16,7 @@ export type ArticleSource =
   | "css-tricks"
   | "smashing"
   | "youtube"
+  | "twitter"
   | "other";
 
 export type Article = {
