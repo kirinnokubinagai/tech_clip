@@ -65,44 +65,6 @@ export async function requestNotificationPermission(): Promise<NotificationPermi
 }
 
 /**
- * プッシュ通知の権限を要求し、Expoプッシュトークンを取得する
- * 実機でのみ動作し、シミュレータではnullを返す
- *
- * @returns Expoプッシュトークン文字列。取得不可の場合はnull
- */
-export async function registerForPushNotifications(): Promise<string | null> {
-  if (!Device.isDevice) {
-    return null;
-  }
-
-  if (Platform.OS === "android") {
-    await Notifications.setNotificationChannelAsync(NOTIFICATION_CHANNEL_ID, {
-      name: NOTIFICATION_CHANNEL_ID,
-      importance: Notifications.AndroidImportance.MAX,
-      vibrationPattern: [0, 250, 250, 250],
-      lightColor: LIGHT_COLORS.accent,
-    });
-  }
-
-  const { status: existingStatus } = await Notifications.getPermissionsAsync();
-
-  let finalStatus = existingStatus;
-
-  if (existingStatus !== "granted") {
-    const { status } = await Notifications.requestPermissionsAsync();
-    finalStatus = status;
-  }
-
-  if (finalStatus !== "granted") {
-    return null;
-  }
-
-  const { data: token } = await Notifications.getExpoPushTokenAsync();
-
-  return token;
-}
-
-/**
  * プッシュトークンをAPIサーバーに登録する
  *
  * @param token - Expoプッシュトークン文字列
@@ -118,8 +80,6 @@ export async function registerTokenWithApi(token: string): Promise<void> {
  * 既に権限が granted であることを前提にトークン取得とAPI登録のみを行う
  * 権限要求は行わない（呼び出し側が事前に権限を確認・取得済みであること）
  * エラーはすべてログに記録し、例外を外部に伝播させない
- *
- * @returns Expoプッシュトークン文字列。取得不可の場合はnull
  */
 export async function registerPushTokenOnly(): Promise<void> {
   try {

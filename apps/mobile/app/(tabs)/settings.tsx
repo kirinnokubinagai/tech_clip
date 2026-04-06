@@ -125,6 +125,14 @@ export default function SettingsScreen() {
         notificationSettings.system
       : true;
 
+  /** 通知スイッチのアクセシビリティヒント */
+  const notificationAccessibilityHint =
+    notificationPermission !== "granted"
+      ? t("settings.items.notificationPermissionDenied")
+      : isNotificationsEnabled
+        ? t("settings.notificationHintOff")
+        : t("settings.notificationHintOn");
+
   useEffect(() => {
     loadLanguage();
     fetchNotificationSettings();
@@ -297,15 +305,7 @@ export default function SettingsScreen() {
               trackColor={{ false: DARK_COLORS.border, true: DARK_COLORS.primary }}
               thumbColor={DARK_COLORS.white}
               accessibilityLabel={t("settings.items.notifications")}
-              accessibilityHint={(() => {
-                if (notificationPermission !== "granted") {
-                  return t("settings.items.notificationPermissionDenied");
-                }
-                if (isNotificationsEnabled) {
-                  return t("settings.notificationHintOff");
-                }
-                return t("settings.notificationHintOn");
-              })()}
+              accessibilityHint={notificationAccessibilityHint}
               accessibilityRole="switch"
             />
           }
