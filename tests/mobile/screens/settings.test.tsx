@@ -351,5 +351,6 @@ describe("要約言語設定", () => {
 
     // Assert
     expect(Alert.alert).toHaveBeenCalledTimes(2);
+    expect(Alert.alert).toHaveBeenNthCalledWith(2, expect.any(String), expect.any(String));
   });
 });
