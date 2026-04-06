@@ -11,7 +11,7 @@ jest.mock("expo-localization", () => ({
   getLocales: jest.fn(() => [{ languageCode: "ja" }]),
 }));
 
-import { useSettingsStore } from "@mobile/stores/settings-store";
+import { LANGUAGE_LABEL_MAP, useSettingsStore } from "@mobile/stores/settings-store";
 import { getLocales } from "expo-localization";
 import * as SecureStore from "expo-secure-store";
 import { apiFetch } from "@/lib/api";
@@ -42,7 +42,7 @@ describe("useSettingsStore", () => {
     jest.clearAllMocks();
     mockGetLocales.mockReturnValue([{ languageCode: "ja" }] as ReturnType<typeof getLocales>);
     useSettingsStore.setState({
-      language: "日本語",
+      language: "ja",
       isLanguageLoaded: false,
       summaryLanguage: "ja",
       isSummaryLanguageLoaded: false,
@@ -54,20 +54,33 @@ describe("useSettingsStore", () => {
 
   describe("言語設定", () => {
     describe("loadLanguage", () => {
-      it("保存済みの言語設定を読み込めること", async () => {
+      it("保存済みのlocaleコード（en）を読み込めること", async () => {
         // Arrange
-        mockGetItemAsync.mockResolvedValue('"English"');
+        mockGetItemAsync.mockResolvedValue('"en"');
 
         // Act
         await useSettingsStore.getState().loadLanguage();
 
         // Assert
         const state = useSettingsStore.getState();
-        expect(state.language).toBe("English");
+        expect(state.language).toBe("en");
         expect(state.isLanguageLoaded).toBe(true);
       });
 
-      it("保存済みの言語設定がない場合はデフォルト値（日本語）になること", async () => {
+      it("保存済みのlocaleコード（ja）を読み込めること", async () => {
+        // Arrange
+        mockGetItemAsync.mockResolvedValue('"ja"');
+
+        // Act
+        await useSettingsStore.getState().loadLanguage();
+
+        // Assert
+        const state = useSettingsStore.getState();
+        expect(state.language).toBe("ja");
+        expect(state.isLanguageLoaded).toBe(true);
+      });
+
+      it("保存済みの言語設定がない場合はデフォルト値（ja）になること", async () => {
         // Arrange
         mockGetItemAsync.mockResolvedValue(null);
 
@@ -76,64 +89,119 @@ describe("useSettingsStore", () => {
 
         // Assert
         const state = useSettingsStore.getState();
-        expect(state.language).toBe("日本語");
+        expect(state.language).toBe("ja");
         expect(state.isLanguageLoaded).toBe(true);
       });
 
-      it("保存値がJSON不正の場合はデフォルト（日本語）にフォールバックすること", async () => {
+      it("旧形式の日本語表示名（日本語）をjaに移行できること", async () => {
         // Arrange
-        mockGetItemAsync.mockResolvedValue("invalid{{{");
+        mockGetItemAsync.mockResolvedValue('"日本語"');
 
         // Act
         await useSettingsStore.getState().loadLanguage();
 
         // Assert
         const state = useSettingsStore.getState();
-        expect(state.language).toBe("日本語");
+        expect(state.language).toBe("ja");
         expect(state.isLanguageLoaded).toBe(true);
       });
 
-      it("保存値が不正な言語の場合はデフォルト（日本語）にフォールバックすること", async () => {
+      it("旧形式の英語表示名（English）をenに移行できること", async () => {
         // Arrange
-        mockGetItemAsync.mockResolvedValue('"French"');
+        mockGetItemAsync.mockResolvedValue('"English"');
 
         // Act
         await useSettingsStore.getState().loadLanguage();
 
         // Assert
-        expect(useSettingsStore.getState().language).toBe("日本語");
+        const state = useSettingsStore.getState();
+        expect(state.language).toBe("en");
+        expect(state.isLanguageLoaded).toBe(true);
+      });
+
+      it("不正なJSON文字列の場合はデフォルト値（ja）にフォールバックすること", async () => {
+        // Arrange
+        mockGetItemAsync.mockResolvedValue("not-json");
+
+        // Act
+        await useSettingsStore.getState().loadLanguage();
+
+        // Assert
+        const state = useSettingsStore.getState();
+        expect(state.language).toBe("ja");
+        expect(state.isLanguageLoaded).toBe(true);
+      });
+
+      it("旧形式検出時にSecureStoreにlocaleコードで書き戻すこと", async () => {
+        // Arrange
+        mockGetItemAsync.mockResolvedValue('"日本語"');
+
+        // Act
+        await useSettingsStore.getState().loadLanguage();
+
+        // Assert
+        expect(mockSetItemAsync).toHaveBeenCalledWith("settings_language", JSON.stringify("ja"));
+      });
+
+      it("有効なlocaleコードの場合はSecureStoreへの書き戻しをしないこと", async () => {
+        // Arrange
+        mockGetItemAsync.mockResolvedValue('"ja"');
+
+        // Act
+        await useSettingsStore.getState().loadLanguage();
+
+        // Assert
+        expect(mockSetItemAsync).not.toHaveBeenCalled();
       });
     });
 
     describe("setLanguage", () => {
-      it("言語設定を変更してSecureStoreに永続化できること", async () => {
+      it("localeコード（en）を設定してSecureStoreに永続化できること", async () => {
         // Arrange
-        const newLanguage = "English" as const;
+        const newLanguage = "en" as const;
 
         // Act
         await useSettingsStore.getState().setLanguage(newLanguage);
 
         // Assert
-        expect(useSettingsStore.getState().language).toBe("English");
-        expect(mockSetItemAsync).toHaveBeenCalledWith(
-          "settings_language",
-          JSON.stringify("English"),
-        );
+        expect(useSettingsStore.getState().language).toBe("en");
+        expect(mockSetItemAsync).toHaveBeenCalledWith("settings_language", JSON.stringify("en"));
       });
 
-      it("日本語に変更してSecureStoreに永続化できること", async () => {
+      it("localeコード（ja）を設定してSecureStoreに永続化できること", async () => {
         // Arrange
-        useSettingsStore.setState({ language: "English" });
+        useSettingsStore.setState({ language: "en" });
 
         // Act
-        await useSettingsStore.getState().setLanguage("日本語");
+        await useSettingsStore.getState().setLanguage("ja");
 
         // Assert
-        expect(useSettingsStore.getState().language).toBe("日本語");
-        expect(mockSetItemAsync).toHaveBeenCalledWith(
-          "settings_language",
-          JSON.stringify("日本語"),
-        );
+        expect(useSettingsStore.getState().language).toBe("ja");
+        expect(mockSetItemAsync).toHaveBeenCalledWith("settings_language", JSON.stringify("ja"));
+      });
+    });
+
+    describe("LANGUAGE_LABEL_MAP", () => {
+      it("jaの表示名が日本語であること", () => {
+        // Arrange
+        useSettingsStore.setState({ language: "ja" });
+
+        // Act
+        const label = LANGUAGE_LABEL_MAP[useSettingsStore.getState().language];
+
+        // Assert
+        expect(label).toBe("日本語");
+      });
+
+      it("enの表示名がEnglishであること", () => {
+        // Arrange
+        useSettingsStore.setState({ language: "en" });
+
+        // Act
+        const label = LANGUAGE_LABEL_MAP[useSettingsStore.getState().language];
+
+        // Assert
+        expect(label).toBe("English");
       });
     });
   });

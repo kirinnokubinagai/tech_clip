@@ -27,21 +27,25 @@
 
 ## セットアップ手順
 
-### 1. API (.dev.vars)
+`nix develop` で開発シェルに入った後、以下のコマンドを実行してください。
+
+```bash
+setup-secrets
+```
+
+このコマンドは `apps/api/.dev.vars` と `apps/mobile/.env` が存在しない場合にのみ
+各 example ファイルからコピーします。既存ファイルは上書きしません。
+
+作成後は各ファイルを開き、実際の値を設定してください。
+
+### 手動でセットアップする場合
 
 ```bash
 cp apps/api/.dev.vars.example apps/api/.dev.vars
-```
-
-`apps/api/.dev.vars` を開き、以下の各シークレットを設定してください。
-
-### 2. モバイル (.env)
-
-```bash
 cp apps/mobile/.env.example apps/mobile/.env
 ```
 
-`apps/mobile/.env` を開き、以下の各シークレットを設定してください。
+`apps/api/.dev.vars` と `apps/mobile/.env` を開き、以下の各シークレットを設定してください。
 
 ---
 
@@ -202,7 +206,7 @@ console.log(header + '.' + payload + '.' + signature);
 1. プロジェクトを選択する
 2. 左メニューの "Integrations" > "Webhooks" を開く
 3. "Add Webhook" から新しい Webhook を追加する
-4. Webhook URL に `https://api.techclip.app/api/webhooks/revenuecat` を設定する
+4. Webhook URL に `https://api.techclip.app/api/subscription/webhooks/revenuecat` を設定する
 5. "Shared Secret" フィールドに表示されるシークレットを `REVENUECAT_WEBHOOK_SECRET` に設定する
 
 > **注意:** Webhook Secret はペイロードの署名検証に使用します。ステージングと本番で別々の Webhook を作成し、それぞれ異なるシークレットを使用してください。
@@ -324,7 +328,7 @@ wrangler secret list --env production
 
 #### RevenueCat
 - [ ] `REVENUECAT_WEBHOOK_SECRET` を RevenueCat ダッシュボードで発行済み
-- [ ] Webhook URL に `https://api.techclip.app/api/webhooks/revenuecat` を設定済み
+- [ ] Webhook URL に `https://api.techclip.app/api/subscription/webhooks/revenuecat` を設定済み
 
 #### Resend
 - [ ] 本番用 Resend API キーを発行済み

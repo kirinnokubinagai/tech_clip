@@ -19,7 +19,7 @@ import { DARK_COLORS } from "@/lib/constants";
 import { useSubscription } from "../../src/hooks/use-subscription";
 import { useAuthStore } from "../../src/stores/auth-store";
 import type { SummaryLanguage } from "../../src/stores/settings-store";
-import { SUMMARY_LANGUAGE_LABELS, useSettingsStore } from "../../src/stores/settings-store";
+import { LANGUAGE_LABEL_MAP, SUMMARY_LANGUAGE_LABELS, useSettingsStore } from "../../src/stores/settings-store";
 
 /** 設定セクションの区切り線コンポーネント */
 function SectionDivider() {
@@ -110,7 +110,7 @@ export default function SettingsScreen() {
   const user = useAuthStore((s) => s.user);
   const { isSubscribed } = useSubscription();
 
-  const language = useSettingsStore((s) => s.language);
+  const languageLabel = useSettingsStore((s) => LANGUAGE_LABEL_MAP[s.language]);
   const setLanguage = useSettingsStore((s) => s.setLanguage);
   const loadLanguage = useSettingsStore((s) => s.loadLanguage);
   const summaryLanguage = useSettingsStore((s) => s.summaryLanguage);
@@ -177,13 +177,13 @@ export default function SettingsScreen() {
       {
         text: "日本語",
         onPress: () => {
-          setLanguage("日本語");
+          setLanguage("ja");
         },
       },
       {
         text: "English",
         onPress: () => {
-          setLanguage("English");
+          setLanguage("en");
         },
       },
       { text: t("common.cancel"), style: "cancel" },
@@ -263,7 +263,7 @@ export default function SettingsScreen() {
           testID="settings-language-button"
           icon={<Globe size={ICON_SIZE} color={ICON_COLOR} />}
           label={t("settings.items.language")}
-          value={language}
+          value={languageLabel}
           onPress={handleLanguageSelect}
         />
         <SectionDivider />

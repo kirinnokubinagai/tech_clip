@@ -54,7 +54,7 @@ type AllowedImageExtension = "jpg" | "png" | "webp";
 const MAX_FILE_SIZE_BYTES = 5 * 1024 * 1024;
 
 /** アバター画像の最大寸法 */
-const MAX_IMAGE_DIMENSION = 4096;
+const MAX_IMAGE_DIMENSION = 2048;
 
 /** アバター保存ディレクトリ */
 const AVATARS_DIR = "avatars";

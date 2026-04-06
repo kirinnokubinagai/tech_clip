@@ -57,6 +57,8 @@ jobs:
               pnpm --filter @tech-clip/api exec wrangler dev --port ${API_PORT} > /tmp/api.log 2>&1 &
 
             # ZAPデーモン起動（APIサーバーと並列で起動待機）
+            # config.xml書き込み先を事前作成（Permission denied防止）
+            mkdir -p "${ZAP_HOME}/.ZAP"
             HOME="${ZAP_HOME}" zap -daemon -port ${ZAP_PORT} -config api.disablekey=true > /tmp/zap-daemon.log 2>&1 &
 
             # APIサーバー起動待機
