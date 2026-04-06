@@ -24,7 +24,7 @@ import {
   requestNotificationPermission,
 } from "@/lib/notifications";
 import { useAuthStore } from "@/stores/auth-store";
-import { LANGUAGE_LABEL_MAP, useSettingsStore } from "@/stores/settings-store";
+import { useSettingsStore } from "@/stores/settings-store";
 
 /**
  * 通知権限とトグル状態からアクセシビリティヒントを決定する
@@ -124,7 +124,7 @@ export default function SettingsScreen() {
   const user = useAuthStore((s) => s.user);
   const { isSubscribed } = useSubscription();
 
-  const languageLabel = useSettingsStore((s) => LANGUAGE_LABEL_MAP[s.language]);
+  const languageLabel = useSettingsStore((s) => s.language);
   const setLanguage = useSettingsStore((s) => s.setLanguage);
   const loadLanguage = useSettingsStore((s) => s.loadLanguage);
   const notificationSettings = useSettingsStore((s) => s.notificationSettings);
@@ -222,13 +222,13 @@ export default function SettingsScreen() {
       {
         text: "日本語",
         onPress: () => {
-          setLanguage("ja");
+          void setLanguage("日本語");
         },
       },
       {
         text: "English",
         onPress: () => {
-          setLanguage("en");
+          void setLanguage("English");
         },
       },
       { text: t("common.cancel"), style: "cancel" },

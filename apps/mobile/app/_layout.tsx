@@ -13,8 +13,8 @@ import {
 import i18n from "../src/lib/i18n";
 import { logger } from "../src/lib/logger";
 import {
-  registerForPushNotifications,
-  registerTokenWithApi,
+  registerPushTokenOnly,
+  requestNotificationPermission,
   setupNotificationHandlers,
 } from "../src/lib/notifications";
 import { queryClient } from "../src/lib/query-client";
@@ -60,9 +60,9 @@ export default function RootLayout() {
   useEffect(() => {
     if (!isAuthenticated) return;
 
-    registerForPushNotifications().then((token) => {
-      if (token) {
-        registerTokenWithApi(token);
+    void requestNotificationPermission().then((status) => {
+      if (status === "granted") {
+        void registerPushTokenOnly();
       }
     });
   }, [isAuthenticated]);
