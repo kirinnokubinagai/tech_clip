@@ -4,7 +4,9 @@ import { useState } from "react";
 import { Pressable, ScrollView, Text, View } from "react-native";
 
 import { LIGHT_COLORS, SUPPORTED_SOURCE_COUNT } from "@/lib/constants";
-import { useUIStore } from "../src/stores/ui-store";
+import { logger } from "@/lib/logger";
+import { requestTrackingPermission } from "@/lib/tracking";
+import { useUIStore } from "@/stores/ui-store";
 
 /** オンボーディングページのデータ */
 const ONBOARDING_PAGES = [
@@ -51,10 +53,18 @@ export default function OnboardingScreen() {
   const currentPage = ONBOARDING_PAGES[currentIndex];
 
   const handleFinish = async () => {
+    try {
+      await requestTrackingPermission();
+    } catch (error) {
+      logger.warn("トラッキング権限リクエストに失敗しました", { error });
+    }
     await setHasSeenOnboarding(true);
     router.replace("/(auth)/login");
   };
 
+  /**
+   * スキップ時はATT（App Tracking Transparency）許可要求を省略し、直接ログイン画面へ遷移する
+   */
   const handleSkip = async () => {
     await setHasSeenOnboarding(true);
     router.replace("/(auth)/login");
