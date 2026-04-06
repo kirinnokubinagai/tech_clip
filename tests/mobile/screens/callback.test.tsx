@@ -21,7 +21,7 @@ jest.mock("expo-router", () => ({
 }));
 
 jest.mock("@mobile/stores/auth-store", () => ({
-  useAuthStore: jest.fn((selector: (state: Record<string, unknown>) => unknown) =>
+  useAuthStore: jest.fn((selector: (state: { checkSession: jest.Mock }) => unknown) =>
     selector({
       checkSession: mockCheckSession,
     }),
@@ -95,7 +95,7 @@ describe("AuthCallbackScreen", () => {
       const { getByTestId } = await render(<AuthCallbackScreen />);
 
       // Assert
-      expect(getByTestId("auth-callback-loading")).toBeDefined();
+      expect(getByTestId("auth-callback-loading").props.testID).toBe("auth-callback-loading");
     });
   });
 
@@ -109,7 +109,7 @@ describe("AuthCallbackScreen", () => {
 
       // Assert
       const errorEl = await findByTestId("auth-callback-error");
-      expect(errorEl).toBeDefined();
+      expect(errorEl.props.testID).toBe("auth-callback-error");
       expect(mockCheckSession).not.toHaveBeenCalled();
     });
 
@@ -122,7 +122,7 @@ describe("AuthCallbackScreen", () => {
 
       // Assert
       const errorEl = await findByTestId("auth-callback-error");
-      expect(errorEl).toBeDefined();
+      expect(errorEl.props.testID).toBe("auth-callback-error");
       expect(mockCheckSession).not.toHaveBeenCalled();
     });
 
@@ -135,7 +135,7 @@ describe("AuthCallbackScreen", () => {
 
       // Assert
       const backBtn = await findByTestId("auth-callback-back-button");
-      expect(backBtn).toBeDefined();
+      expect(backBtn.props.testID).toBe("auth-callback-back-button");
     });
 
     it("ログイン画面に戻るボタンを押すとlogin画面へ遷移すること", async () => {
@@ -163,7 +163,7 @@ describe("AuthCallbackScreen", () => {
 
       // Assert
       const errorEl = await findByTestId("auth-callback-error");
-      expect(errorEl).toBeDefined();
+      expect(errorEl.props.testID).toBe("auth-callback-error");
     });
 
     it("checkSessionで例外が発生した場合はエラーメッセージが表示されること", async () => {
@@ -177,7 +177,7 @@ describe("AuthCallbackScreen", () => {
 
       // Assert
       const errorEl = await findByTestId("auth-callback-error");
-      expect(errorEl).toBeDefined();
+      expect(errorEl.props.testID).toBe("auth-callback-error");
     });
   });
 });

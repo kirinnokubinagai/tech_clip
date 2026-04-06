@@ -37,7 +37,7 @@ export default function AuthCallbackScreen() {
         return;
       }
 
-      if (!params.token) {
+      if (!params.token || params.token.trim().length === 0) {
         setErrorMessage(t("auth.callback.errorNoToken"));
         setState("error");
         return;
