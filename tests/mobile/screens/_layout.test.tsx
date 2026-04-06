@@ -30,8 +30,7 @@ jest.mock("@mobile/lib/revenueCat", () => ({
 }));
 
 jest.mock("@mobile/lib/notifications", () => ({
-  registerForPushNotifications: jest.fn().mockResolvedValue(null),
-  registerTokenWithApi: jest.fn(),
+  registerPushTokenOnly: jest.fn().mockResolvedValue(undefined),
   setupNotificationHandlers: jest.fn().mockReturnValue(() => {}),
 }));
 

@@ -12,11 +12,7 @@ import {
 } from "../src/lib/backgroundSync";
 import i18n from "../src/lib/i18n";
 import { logger } from "../src/lib/logger";
-import {
-  registerForPushNotifications,
-  registerTokenWithApi,
-  setupNotificationHandlers,
-} from "../src/lib/notifications";
+import { registerPushTokenOnly, setupNotificationHandlers } from "../src/lib/notifications";
 import { queryClient } from "../src/lib/query-client";
 import { configureRevenueCat } from "../src/lib/revenueCat";
 import { initSentry } from "../src/lib/sentry";
@@ -60,11 +56,7 @@ export default function RootLayout() {
   useEffect(() => {
     if (!isAuthenticated) return;
 
-    registerForPushNotifications().then((token) => {
-      if (token) {
-        registerTokenWithApi(token);
-      }
-    });
+    void registerPushTokenOnly();
   }, [isAuthenticated]);
 
   useEffect(() => {
