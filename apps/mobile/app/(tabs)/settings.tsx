@@ -126,12 +126,14 @@ export default function SettingsScreen() {
       : true;
 
   /** 通知スイッチのアクセシビリティヒント */
-  const notificationAccessibilityHint =
-    notificationPermission !== "granted"
-      ? t("settings.items.notificationPermissionDenied")
-      : isNotificationsEnabled
-        ? t("settings.notificationHintOff")
-        : t("settings.notificationHintOn");
+  let notificationAccessibilityHint: string;
+  if (notificationPermission !== "granted") {
+    notificationAccessibilityHint = t("settings.items.notificationPermissionDenied");
+  } else if (isNotificationsEnabled) {
+    notificationAccessibilityHint = t("settings.notificationHintOff");
+  } else {
+    notificationAccessibilityHint = t("settings.notificationHintOn");
+  }
 
   useEffect(() => {
     loadLanguage();

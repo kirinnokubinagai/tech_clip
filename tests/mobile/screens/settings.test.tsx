@@ -1,6 +1,6 @@
 import SettingsScreen from "@mobile-app/(tabs)/settings";
 import { act, fireEvent, render, waitFor } from "@testing-library/react-native";
-import { Alert, AppState } from "react-native";
+import { Alert, AppState, Linking } from "react-native";
 
 const mockCheckNotificationPermission = jest.fn();
 const mockRequestNotificationPermission = jest.fn();
@@ -346,6 +346,105 @@ describe("通知権限UIの表示状態", () => {
 
     // Cleanup
     resolvePermission?.("granted");
+  });
+});
+
+describe("通知権限要求のインタラクション", () => {
+  it("undetermined状態で権限要求ボタンを押すとrequestNotificationPermissionが呼ばれること", async () => {
+    // Arrange
+    mockCheckNotificationPermission.mockResolvedValue("undetermined");
+    mockRequestNotificationPermission.mockResolvedValue("granted");
+    const { getByTestId } = await render(<SettingsScreen />);
+
+    // Act
+    await waitFor(() => {
+      expect(getByTestId("settings-notification-permission-request-button")).toBeDefined();
+    });
+    await act(async () => {
+      fireEvent.press(getByTestId("settings-notification-permission-request-button"));
+    });
+
+    // Assert
+    expect(mockRequestNotificationPermission).toHaveBeenCalledTimes(1);
+  });
+
+  it("undetermined状態で権限が許可されるとregisterPushTokenOnlyが呼ばれること", async () => {
+    // Arrange
+    mockCheckNotificationPermission.mockResolvedValue("undetermined");
+    mockRequestNotificationPermission.mockResolvedValue("granted");
+    mockRegisterPushTokenOnly.mockResolvedValue(undefined);
+    const { getByTestId } = await render(<SettingsScreen />);
+
+    // Act
+    await waitFor(() => {
+      expect(getByTestId("settings-notification-permission-request-button")).toBeDefined();
+    });
+    await act(async () => {
+      fireEvent.press(getByTestId("settings-notification-permission-request-button"));
+    });
+
+    // Assert
+    await waitFor(() => {
+      expect(mockRegisterPushTokenOnly).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  it("undetermined状態で権限が拒否されるとregisterPushTokenOnlyが呼ばれないこと", async () => {
+    // Arrange
+    mockCheckNotificationPermission.mockResolvedValue("undetermined");
+    mockRequestNotificationPermission.mockResolvedValue("denied");
+    const { getByTestId } = await render(<SettingsScreen />);
+
+    // Act
+    await waitFor(() => {
+      expect(getByTestId("settings-notification-permission-request-button")).toBeDefined();
+    });
+    await act(async () => {
+      fireEvent.press(getByTestId("settings-notification-permission-request-button"));
+    });
+
+    // Assert
+    await waitFor(() => {
+      expect(mockRegisterPushTokenOnly).not.toHaveBeenCalled();
+    });
+  });
+
+  it("denied状態で設定アプリ誘導ボタンを押すとLinking.openSettingsが呼ばれること", async () => {
+    // Arrange
+    mockCheckNotificationPermission.mockResolvedValue("denied");
+    jest.spyOn(Linking, "openSettings").mockResolvedValue();
+    const { getByTestId } = await render(<SettingsScreen />);
+
+    // Act
+    await waitFor(() => {
+      expect(getByTestId("settings-notification-permission-denied-button")).toBeDefined();
+    });
+    await act(async () => {
+      fireEvent.press(getByTestId("settings-notification-permission-denied-button"));
+    });
+
+    // Assert
+    expect(Linking.openSettings).toHaveBeenCalledTimes(1);
+  });
+
+  it("権限要求中にエラーが発生するとAlert.alertが表示されること", async () => {
+    // Arrange
+    mockCheckNotificationPermission.mockResolvedValue("undetermined");
+    mockRequestNotificationPermission.mockRejectedValue(new Error("権限エラー"));
+    const { getByTestId } = await render(<SettingsScreen />);
+
+    // Act
+    await waitFor(() => {
+      expect(getByTestId("settings-notification-permission-request-button")).toBeDefined();
+    });
+    await act(async () => {
+      fireEvent.press(getByTestId("settings-notification-permission-request-button"));
+    });
+
+    // Assert
+    await waitFor(() => {
+      expect(Alert.alert).toHaveBeenCalled();
+    });
   });
 });
 
