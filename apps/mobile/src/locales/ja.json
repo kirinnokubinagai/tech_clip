@@ -219,6 +219,7 @@
       "confirm": "ログアウト"
     },
     "notificationUpdateError": "通知設定の更新に失敗しました",
+    "openSettingsError": "設定アプリを開けませんでした。手動で設定を変更してください",
     "deleteAccount": {
       "title": "アカウントを削除する",
       "message": "アカウントを削除すると、すべてのデータが完全に削除されます。この操作は取り消せません。",

@@ -19,6 +19,7 @@ import { useSubscription } from "@/hooks/use-subscription";
 import { DARK_COLORS } from "@/lib/constants";
 import {
   checkNotificationPermission,
+  type NotificationPermissionStatus,
   registerPushTokenOnly,
   requestNotificationPermission,
 } from "@/lib/notifications";
@@ -34,7 +35,7 @@ import { LANGUAGE_LABEL_MAP, useSettingsStore } from "@/stores/settings-store";
  * @returns アクセシビリティヒント文字列
  */
 function getNotificationHint(
-  permission: string,
+  permission: NotificationPermissionStatus | "loading",
   enabled: boolean,
   t: (key: string) => string,
 ): string {
@@ -132,7 +133,7 @@ export default function SettingsScreen() {
 
   /** 通知権限ステータス */
   const [notificationPermission, setNotificationPermission] = useState<
-    "granted" | "denied" | "undetermined" | "loading"
+    NotificationPermissionStatus | "loading"
   >("loading");
 
   /** 通知が有効かどうか（全通知がONの場合にtrue） */
@@ -262,7 +263,11 @@ export default function SettingsScreen() {
         await registerPushTokenOnly();
       }
     } catch (_error) {
-      Alert.alert(t("common.errorTitle"), t("settings.notificationUpdateError"));
+      const messageKey =
+        notificationPermission === "denied"
+          ? "settings.openSettingsError"
+          : "settings.notificationUpdateError";
+      Alert.alert(t("common.errorTitle"), t(messageKey));
     }
   }
 

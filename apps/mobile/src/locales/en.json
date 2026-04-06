@@ -217,6 +217,7 @@
       "confirm": "Log Out"
     },
     "notificationUpdateError": "Failed to update notification settings",
+    "openSettingsError": "Could not open Settings app. Please change settings manually.",
     "deleteAccount": {
       "title": "Delete Account",
       "message": "Deleting your account will permanently remove all your data. This action cannot be undone.",
