@@ -16,12 +16,11 @@ describe("parseYoutube", () => {
       author_url: "https://www.youtube.com/@testchannel",
       thumbnail_url: "https://i.ytimg.com/vi/dQw4w9WgXcQ/hqdefault.jpg",
     };
-
-    // Act
     vi.spyOn(globalThis, "fetch").mockResolvedValueOnce(
       new Response(JSON.stringify(mockResponse), { status: 200 }),
     );
 
+    // Act
     const result = await parseYoutube(url);
 
     // Assert
@@ -42,12 +41,11 @@ describe("parseYoutube", () => {
       author_url: "https://www.youtube.com/@testchannel",
       thumbnail_url: "https://i.ytimg.com/vi/dQw4w9WgXcQ/hqdefault.jpg",
     };
-
-    // Act
     vi.spyOn(globalThis, "fetch").mockResolvedValueOnce(
       new Response(JSON.stringify(mockResponse), { status: 200 }),
     );
 
+    // Act
     const result = await parseYoutube(url);
 
     // Assert
@@ -57,8 +55,11 @@ describe("parseYoutube", () => {
   });
 
   it("oEmbed API失敗時にエラーになること", async () => {
+    // Arrange
     const url = "https://www.youtube.com/watch?v=invalid";
     vi.spyOn(globalThis, "fetch").mockResolvedValueOnce(new Response("Not Found", { status: 404 }));
+
+    // Act & Assert
     await expect(parseYoutube(url)).rejects.toThrow("YouTube動画の取得に失敗しました");
   });
 
@@ -70,11 +71,11 @@ describe("parseYoutube", () => {
       author_name: "テストチャンネル",
       author_url: "https://www.youtube.com/@testchannel",
     };
-
-    // Act
     vi.spyOn(globalThis, "fetch").mockResolvedValueOnce(
       new Response(JSON.stringify(mockResponse), { status: 200 }),
     );
+
+    // Act
     const result = await parseYoutube(url);
 
     // Assert
@@ -88,13 +89,11 @@ describe("parseYoutube", () => {
       author_name: "テストチャンネル",
       author_url: "https://www.youtube.com/@testchannel",
     };
-
-    // Act
     vi.spyOn(globalThis, "fetch").mockResolvedValueOnce(
       new Response(JSON.stringify(mockResponse), { status: 200 }),
     );
 
-    // Assert
+    // Act & Assert
     await expect(parseYoutube(url)).rejects.toThrow("YouTube動画のメタデータが不正です");
   });
 
@@ -104,26 +103,22 @@ describe("parseYoutube", () => {
     const mockResponse = {
       title: "テスト動画タイトル",
     };
-
-    // Act
     vi.spyOn(globalThis, "fetch").mockResolvedValueOnce(
       new Response(JSON.stringify(mockResponse), { status: 200 }),
     );
 
-    // Assert
+    // Act & Assert
     await expect(parseYoutube(url)).rejects.toThrow("YouTube動画のメタデータが不正です");
   });
 
   it("空オブジェクトのレスポンスでエラーになること", async () => {
     // Arrange
     const url = "https://www.youtube.com/watch?v=dQw4w9WgXcQ";
-
-    // Act
     vi.spyOn(globalThis, "fetch").mockResolvedValueOnce(
       new Response(JSON.stringify({}), { status: 200 }),
     );
 
-    // Assert
+    // Act & Assert
     await expect(parseYoutube(url)).rejects.toThrow("YouTube動画のメタデータが不正です");
   });
 
@@ -136,11 +131,11 @@ describe("parseYoutube", () => {
       author_url: "https://www.youtube.com/@testchannel",
       thumbnail_url: "https://i.ytimg.com/vi/dQw4w9WgXcQ/hqdefault.jpg",
     };
-
-    // Act
     vi.spyOn(globalThis, "fetch").mockResolvedValueOnce(
       new Response(JSON.stringify(mockResponse), { status: 200 }),
     );
+
+    // Act
     const result = await parseYoutube(url);
 
     // Assert

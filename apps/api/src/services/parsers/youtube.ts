@@ -39,7 +39,8 @@ export async function parseYoutube(url: string): Promise<ParsedArticleContent> {
     throw new Error(`YouTube動画の取得に失敗しました（ステータス: ${response.status}）`);
   }
 
-  const parsed = OEmbedResponseSchema.safeParse(await response.json());
+  const raw: unknown = await response.json();
+  const parsed = OEmbedResponseSchema.safeParse(raw);
   if (!parsed.success) {
     throw new Error("YouTube動画のメタデータが不正です");
   }
