@@ -16,7 +16,6 @@ import {
 import { useNetworkStatus } from "@/hooks/use-network-status";
 import { DARK_COLORS } from "@/lib/constants";
 import { formatArticleDate } from "@/lib/date-format";
-import { toSummaryLanguageCode, toTranslationLanguageCode } from "@/lib/language-code";
 import { getOfflineArticleById } from "@/lib/localDb";
 import { useSettingsStore } from "@/stores/settings-store";
 import type { ArticleDetail } from "@/types/article";
@@ -227,14 +226,14 @@ export default function ArticleDetailScreen() {
 
   const handleRequestSummary = useCallback(() => {
     if (!article) return;
-    requestSummary.mutate({ articleId: article.id, language: toSummaryLanguageCode(language) });
+    requestSummary.mutate({ articleId: article.id, language });
   }, [article, language, requestSummary]);
 
   const handleRequestTranslation = useCallback(() => {
     if (!article) return;
     requestTranslation.mutate({
       articleId: article.id,
-      targetLanguage: toTranslationLanguageCode(language),
+      targetLanguage: language,
     });
   }, [article, language, requestTranslation]);
 
