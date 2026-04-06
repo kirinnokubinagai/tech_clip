@@ -147,7 +147,7 @@ describe("notifications", () => {
       expect(Notifications.setNotificationChannelAsync).toHaveBeenCalledWith(
         "default",
         expect.objectContaining({
-          name: "default",
+          name: "デフォルト通知",
           importance: Notifications.AndroidImportance.MAX,
         }),
       );
