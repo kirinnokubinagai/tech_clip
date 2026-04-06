@@ -238,7 +238,7 @@ describe("notifications", () => {
       await expect(registerPushTokenOnly()).resolves.toBeUndefined();
       expect(logger.error).toHaveBeenCalledWith(
         "プッシュトークンのAPI登録に失敗しました",
-        expect.anything(),
+        expect.objectContaining({ error: expect.any(Error) }),
       );
     });
   });

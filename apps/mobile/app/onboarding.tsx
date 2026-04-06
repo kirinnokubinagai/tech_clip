@@ -97,7 +97,6 @@ export default function OnboardingScreen() {
         </View>
       </ScrollView>
 
-      {/* ページインジケーター */}
       <View
         testID="page-indicator"
         className="flex-row items-center justify-center py-4"
@@ -116,7 +115,6 @@ export default function OnboardingScreen() {
         ))}
       </View>
 
-      {/* ボタンエリア */}
       <View className="flex-row items-center justify-between px-6 pb-12 pt-2">
         <Pressable
           testID="skip-button"
