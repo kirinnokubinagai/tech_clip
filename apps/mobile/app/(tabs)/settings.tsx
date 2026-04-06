@@ -25,7 +25,11 @@ import {
   requestNotificationPermission,
 } from "@/lib/notifications";
 import { useAuthStore } from "@/stores/auth-store";
-import { LANGUAGE_LABEL_MAP, SUMMARY_LANGUAGE_LABELS, useSettingsStore } from "@/stores/settings-store";
+import {
+  LANGUAGE_LABEL_MAP,
+  SUMMARY_LANGUAGE_LABELS,
+  useSettingsStore,
+} from "@/stores/settings-store";
 
 /**
  * 通知権限とトグル状態からアクセシビリティヒントを決定する
