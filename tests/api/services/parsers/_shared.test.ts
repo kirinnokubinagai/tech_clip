@@ -11,21 +11,25 @@ import {
 describe("_shared", () => {
   describe("定数", () => {
     it("TECHCLIP_USER_AGENTがTechClipBotを含むこと", () => {
+      // Arrange（なし）
       // Assert
       expect(TECHCLIP_USER_AGENT).toContain("TechClipBot");
     });
 
     it("READING_SPEED_CHARS_PER_MINが500であること", () => {
+      // Arrange（なし）
       // Assert
       expect(READING_SPEED_CHARS_PER_MIN).toBe(500);
     });
 
     it("MIN_READING_TIME_MINUTESが1であること", () => {
+      // Arrange（なし）
       // Assert
       expect(MIN_READING_TIME_MINUTES).toBe(1);
     });
 
     it("EXCERPT_MAX_LENGTHが200であること", () => {
+      // Arrange（なし）
       // Assert
       expect(EXCERPT_MAX_LENGTH).toBe(200);
     });
