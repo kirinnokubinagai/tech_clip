@@ -7,9 +7,9 @@ const mockRequestNotificationPermission = jest.fn();
 const mockRegisterPushTokenOnly = jest.fn();
 
 jest.mock("@mobile/lib/notifications", () => ({
-  checkNotificationPermission: (...args: unknown[]) => mockCheckNotificationPermission(...args),
-  requestNotificationPermission: (...args: unknown[]) => mockRequestNotificationPermission(...args),
-  registerPushTokenOnly: (...args: unknown[]) => mockRegisterPushTokenOnly(...args),
+  checkNotificationPermission: mockCheckNotificationPermission,
+  requestNotificationPermission: mockRequestNotificationPermission,
+  registerPushTokenOnly: mockRegisterPushTokenOnly,
 }));
 
 const mockSignOut = jest.fn();
@@ -135,7 +135,7 @@ describe("SettingsScreen", () => {
       // Assert
       const buttons = (Alert.alert as jest.Mock).mock.calls[0][2];
       const confirmButton = buttons.find((b: { style: string }) => b.style === "destructive");
-      expect(confirmButton).toBeDefined();
+      expect(confirmButton).not.toBeNull();
     });
   });
 
@@ -145,7 +145,7 @@ describe("SettingsScreen", () => {
       const { getByText } = await render(<SettingsScreen />);
 
       // Assert
-      expect(getByText("アカウントを削除する")).toBeDefined();
+      expect(getByText("アカウントを削除する")).not.toBeNull();
     });
 
     it("アカウント削除ボタンを押すと確認ダイアログが表示されること", async () => {
@@ -203,7 +203,7 @@ describe("SettingsScreen", () => {
       // Assert
       const buttons = (Alert.alert as jest.Mock).mock.calls[0][2];
       const confirmButton = buttons.find((b: { style: string }) => b.style === "destructive");
-      expect(confirmButton).toBeDefined();
+      expect(confirmButton).not.toBeNull();
     });
   });
 });
@@ -288,7 +288,7 @@ describe("通知権限UIの表示状態", () => {
 
     // Assert
     await waitFor(() => {
-      expect(getByTestId("settings-notification-permission-hint")).toBeDefined();
+      expect(getByTestId("settings-notification-permission-hint")).not.toBeNull();
     });
   });
 
@@ -301,7 +301,7 @@ describe("通知権限UIの表示状態", () => {
 
     // Assert
     await waitFor(() => {
-      expect(getByTestId("settings-notification-permission-hint")).toBeDefined();
+      expect(getByTestId("settings-notification-permission-hint")).not.toBeNull();
     });
   });
 
@@ -314,7 +314,7 @@ describe("通知権限UIの表示状態", () => {
 
     // Assert
     await waitFor(() => {
-      expect(getByTestId("settings-notification-permission-denied-button")).toBeDefined();
+      expect(getByTestId("settings-notification-permission-denied-button")).not.toBeNull();
     });
   });
 
@@ -327,7 +327,7 @@ describe("通知権限UIの表示状態", () => {
 
     // Assert
     await waitFor(() => {
-      expect(getByTestId("settings-notification-permission-request-button")).toBeDefined();
+      expect(getByTestId("settings-notification-permission-request-button")).not.toBeNull();
     });
   });
 
@@ -373,7 +373,7 @@ describe("通知権限要求のインタラクション", () => {
 
     // Act
     await waitFor(() => {
-      expect(getByTestId("settings-notification-permission-request-button")).toBeDefined();
+      expect(getByTestId("settings-notification-permission-request-button")).not.toBeNull();
     });
     await act(async () => {
       fireEvent.press(getByTestId("settings-notification-permission-request-button"));
@@ -392,7 +392,7 @@ describe("通知権限要求のインタラクション", () => {
 
     // Act
     await waitFor(() => {
-      expect(getByTestId("settings-notification-permission-request-button")).toBeDefined();
+      expect(getByTestId("settings-notification-permission-request-button")).not.toBeNull();
     });
     await act(async () => {
       fireEvent.press(getByTestId("settings-notification-permission-request-button"));
@@ -412,7 +412,7 @@ describe("通知権限要求のインタラクション", () => {
 
     // Act
     await waitFor(() => {
-      expect(getByTestId("settings-notification-permission-request-button")).toBeDefined();
+      expect(getByTestId("settings-notification-permission-request-button")).not.toBeNull();
     });
     await act(async () => {
       fireEvent.press(getByTestId("settings-notification-permission-request-button"));
@@ -432,7 +432,7 @@ describe("通知権限要求のインタラクション", () => {
 
     // Act
     await waitFor(() => {
-      expect(getByTestId("settings-notification-permission-denied-button")).toBeDefined();
+      expect(getByTestId("settings-notification-permission-denied-button")).not.toBeNull();
     });
     await act(async () => {
       fireEvent.press(getByTestId("settings-notification-permission-denied-button"));
@@ -450,7 +450,7 @@ describe("通知権限要求のインタラクション", () => {
 
     // Act
     await waitFor(() => {
-      expect(getByTestId("settings-notification-permission-request-button")).toBeDefined();
+      expect(getByTestId("settings-notification-permission-request-button")).not.toBeNull();
     });
     await act(async () => {
       fireEvent.press(getByTestId("settings-notification-permission-request-button"));
@@ -529,7 +529,7 @@ describe("要約言語設定", () => {
     const { getByTestId } = await render(<SettingsScreen />);
 
     // Assert
-    expect(getByTestId("settings-summary-language-button")).toBeDefined();
+    expect(getByTestId("settings-summary-language-button")).not.toBeNull();
   });
 
   it("要約言語選択ダイアログで日本語を選択するとsetSummaryLanguageが呼ばれること", async () => {

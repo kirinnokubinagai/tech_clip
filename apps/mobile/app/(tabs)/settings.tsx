@@ -292,7 +292,7 @@ export default function SettingsScreen() {
       if (status === "granted") {
         await registerPushTokenOnly();
       }
-    } catch (error) {
+    } catch (error: unknown) {
       logger.warn("通知権限リクエストに失敗しました", { error });
       const messageKey =
         notificationPermission === "denied"
@@ -386,7 +386,7 @@ export default function SettingsScreen() {
               testID="settings-notification-permission-denied-button"
               icon={<BellOff size={ICON_SIZE} color={DARK_COLORS.error} />}
               label={t("settings.items.notificationPermissionDenied")}
-              onPress={handleRequestNotificationPermission}
+              onPress={() => { void handleRequestNotificationPermission(); }}
             />
           </>
         )}
@@ -397,7 +397,7 @@ export default function SettingsScreen() {
               testID="settings-notification-permission-request-button"
               icon={<Bell size={ICON_SIZE} color={ICON_COLOR} />}
               label={t("settings.items.notificationPermissionRequest")}
-              onPress={handleRequestNotificationPermission}
+              onPress={() => { void handleRequestNotificationPermission(); }}
             />
           </>
         )}

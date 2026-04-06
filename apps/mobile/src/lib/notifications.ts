@@ -103,7 +103,7 @@ export async function registerPushTokenOnly(): Promise<void> {
 
     if (Platform.OS === "android") {
       await Notifications.setNotificationChannelAsync(NOTIFICATION_CHANNEL_ID, {
-        name: NOTIFICATION_CHANNEL_ID,
+        name: "デフォルト通知",
         importance: Notifications.AndroidImportance.MAX,
         vibrationPattern: [0, 250, 250, 250],
         lightColor: LIGHT_COLORS.accent,
@@ -149,7 +149,7 @@ export function setupNotificationHandlers(): () => void {
   const responseSubscription = Notifications.addNotificationResponseReceivedListener((response) => {
     const url = response.notification.request.content.data?.url;
     if (typeof url === "string" && isAllowedRoute(url)) {
-      router.push(url);
+      router.push(url as `/${string}`);
       return;
     }
     if (typeof url === "string") {
