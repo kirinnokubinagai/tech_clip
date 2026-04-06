@@ -127,7 +127,11 @@ pnpm add <pkg>
 
 - **デザインファイル配置先**: `docs/design/<screen-name>.pen` + `docs/design/<screen-name>.png`
 - **作成ツール**: Pencil MCP（`pencil-design` スキルを参照）
-- **承認フロー**: PNG を Issue / PR に添付 → ユーザー承認 → 実装着手
+- **承認フロー**:
+  1. Pencil MCP でモックを作成し `.pen` + `.png` をコミット
+  2. デザイン専用 PR を作成（`design: add <screen-name> mockup #<issue番号>` コミット）
+  3. PR に PNG を添付してユーザーレビューを依頼
+  4. ユーザー承認後にマージ → 実装 Issue に着手
 - **対象外**: バグ修正のみ、API 実装のみ、テスト・ドキュメントのみ
 
 ```bash
