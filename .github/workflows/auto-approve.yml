@@ -3,12 +3,15 @@ name: Claude Review & CI
 on:
   pull_request:
     types: [opened, synchronize, reopened]
+  push:
+    branches: [main]
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
   review-and-label:
+    if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -50,8 +53,12 @@ jobs:
 
   ci:
     name: Lint / Typecheck / Test / Audit
-    needs: review-and-label
-    if: needs.review-and-label.outputs.passed == 'true'
+    needs: [review-and-label]
+    if: |
+      always() && (
+        (github.event_name == 'push') ||
+        (github.event_name == 'pull_request' && needs.review-and-label.outputs.passed == 'true')
+      )
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -92,7 +99,8 @@ jobs:
 
   zap-scan:
     name: Security (ZAP)
-    needs: ci
+    needs: [ci]
+    if: always() && needs.ci.result == 'success' && github.event_name == 'pull_request'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
