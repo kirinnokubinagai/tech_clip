@@ -1,4 +1,5 @@
 import type { ParsedArticle } from "../../types/article";
+import { calculateReadingTime, createExcerpt, TECHCLIP_USER_AGENT } from "./_shared";
 
 /** Reddit投稿URL判定パターン（www.reddit.com, old.reddit.com, reddit.com） */
 const REDDIT_HOSTNAME_PATTERN = /^(www\.)?reddit\.com$|^old\.reddit\.com$/;
@@ -11,18 +12,6 @@ const COMMENTS_SEGMENT_INDEX = 2;
 
 /** Reddit JSON APIのベースホスト */
 const REDDIT_API_HOST = "www.reddit.com";
-
-/** fetch時のUser-Agent */
-const USER_AGENT = "Mozilla/5.0 (compatible; TechClipBot/1.0; +https://techclip.app)";
-
-/** 読了速度（文字/分） */
-const READING_SPEED_CHARS_PER_MIN = 500;
-
-/** 最小読了時間（分） */
-const MIN_READING_TIME_MINUTES = 1;
-
-/** excerptの最大文字数 */
-const EXCERPT_MAX_LENGTH = 200;
 
 /** UNIXタイムスタンプをミリ秒に変換する係数 */
 const SECONDS_TO_MS = 1000;
@@ -103,18 +92,6 @@ function resolveThumbnailUrl(thumbnail: string): string | null {
 }
 
 /**
- * 文字数から読了時間を計算する
- *
- * @param text - 本文テキスト
- * @returns 推定読了時間（分、最小1分）
- */
-function calculateReadingTime(text: string): number {
-  const charCount = text.length;
-  const minutes = Math.ceil(charCount / READING_SPEED_CHARS_PER_MIN);
-  return Math.max(minutes, MIN_READING_TIME_MINUTES);
-}
-
-/**
  * selftextからexcerptを生成する
  *
  * @param selftext - Reddit投稿のMarkdown本文
@@ -130,11 +107,7 @@ function generateExcerpt(selftext: string): string | null {
     .replace(/\n+/g, " ")
     .trim();
 
-  if (plainText.length <= EXCERPT_MAX_LENGTH) {
-    return plainText;
-  }
-
-  return `${plainText.slice(0, EXCERPT_MAX_LENGTH)}...`;
+  return createExcerpt(plainText);
 }
 
 /**
@@ -154,7 +127,7 @@ export async function parseReddit(url: string): Promise<ParsedArticle> {
 
   const apiUrl = buildJsonApiUrl(parsed);
   const response = await fetch(apiUrl, {
-    headers: { "User-Agent": USER_AGENT },
+    headers: { "User-Agent": TECHCLIP_USER_AGENT },
   });
 
   if (!response.ok) {

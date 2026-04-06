@@ -15,6 +15,7 @@ export type ArticleSource =
   | "logrocket"
   | "css-tricks"
   | "smashing"
+  | "twitter"
   | "other";
 
 export type Article = {
