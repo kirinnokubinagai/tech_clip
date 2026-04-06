@@ -1,4 +1,5 @@
 import type { ParsedArticle } from "../../types/article";
+import { calculateReadingTime, TECHCLIP_USER_AGENT } from "./_shared";
 
 /** GitHubのホスト名 */
 const GITHUB_HOSTNAME = "github.com";
@@ -6,17 +7,8 @@ const GITHUB_HOSTNAME = "github.com";
 /** GitHub REST API ベースURL */
 const GITHUB_API_BASE_URL = "https://api.github.com";
 
-/** fetch時のUser-Agent */
-const USER_AGENT = "Mozilla/5.0 (compatible; TechClipBot/1.0; +https://techclip.app)";
-
 /** GitHub API Accept ヘッダー */
 const GITHUB_API_ACCEPT = "application/vnd.github.v3+json";
-
-/** 読了速度（文字/分） */
-const READING_SPEED_CHARS_PER_MIN = 500;
-
-/** 最小読了時間（分） */
-const MIN_READING_TIME_MINUTES = 1;
 
 /** URLパス内のownerセグメントのインデックス */
 const OWNER_SEGMENT_INDEX = 0;
@@ -76,18 +68,6 @@ type ParsedGitHubUrl = {
 };
 
 /**
- * 文字数から読了時間を計算する
- *
- * @param text - 本文テキスト
- * @returns 推定読了時間（分、最小1分）
- */
-function calculateReadingTime(text: string): number {
-  const charCount = text.length;
-  const minutes = Math.ceil(charCount / READING_SPEED_CHARS_PER_MIN);
-  return Math.max(minutes, MIN_READING_TIME_MINUTES);
-}
-
-/**
  * GitHub URLからowner、repo、種別を抽出する
  *
  * @param url - GitHub URL
@@ -135,7 +115,7 @@ function parseGitHubUrl(url: string): ParsedGitHubUrl {
  */
 function createApiHeaders(): Record<string, string> {
   return {
-    "User-Agent": USER_AGENT,
+    "User-Agent": TECHCLIP_USER_AGENT,
     Accept: GITHUB_API_ACCEPT,
   };
 }

@@ -1,21 +1,13 @@
 import TurndownService from "turndown";
 
 import type { ParsedArticle } from "../../types/article";
+import { calculateReadingTime, TECHCLIP_USER_AGENT } from "./_shared";
 
 /** Zenn記事APIのベースURL */
 const ZENN_API_BASE_URL = "https://zenn.dev/api/articles";
 
 /** Zennのホスト名 */
 const ZENN_HOSTNAME = "zenn.dev";
-
-/** fetch時のUser-Agent */
-const USER_AGENT = "Mozilla/5.0 (compatible; TechClipBot/1.0; +https://techclip.app)";
-
-/** 読了速度（文字/分） */
-const READING_SPEED_CHARS_PER_MIN = 500;
-
-/** 最小読了時間（分） */
-const MIN_READING_TIME_MINUTES = 1;
 
 /** URLパス内のarticlesセグメントのインデックス */
 const ARTICLES_SEGMENT_INDEX = 2;
@@ -82,18 +74,6 @@ function extractSlug(url: string): string {
 }
 
 /**
- * 文字数から読了時間を計算する
- *
- * @param text - 本文テキスト
- * @returns 推定読了時間（分、最小1分）
- */
-function calculateReadingTime(text: string): number {
-  const charCount = text.length;
-  const minutes = Math.ceil(charCount / READING_SPEED_CHARS_PER_MIN);
-  return Math.max(minutes, MIN_READING_TIME_MINUTES);
-}
-
-/**
  * HTMLタグを除去してプレーンテキストを取得する
  *
  * @param html - HTMLコンテンツ
@@ -115,7 +95,7 @@ export async function parseZenn(url: string): Promise<ParsedArticle> {
 
   const apiUrl = `${ZENN_API_BASE_URL}/${slug}`;
   const response = await fetch(apiUrl, {
-    headers: { "User-Agent": USER_AGENT },
+    headers: { "User-Agent": TECHCLIP_USER_AGENT },
   });
 
   if (!response.ok) {

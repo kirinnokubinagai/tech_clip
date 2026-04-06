@@ -6,6 +6,8 @@ const mockSignOut = jest.fn();
 const mockDeleteAccount = jest.fn();
 const mockSetLanguage = jest.fn();
 const mockLoadLanguage = jest.fn().mockResolvedValue(undefined);
+const mockSetSummaryLanguage = jest.fn().mockResolvedValue(undefined);
+const mockLoadSummaryLanguage = jest.fn().mockResolvedValue(undefined);
 const mockFetchNotificationSettings = jest.fn().mockResolvedValue(undefined);
 const mockUpdateNotificationEnabled = jest.fn().mockResolvedValue(undefined);
 
@@ -24,10 +26,19 @@ jest.mock("@mobile/stores/auth-store", () => ({
 }));
 
 jest.mock("@mobile/stores/settings-store", () => ({
+  LANGUAGE_LABEL_MAP: { ja: "日本語", en: "English" },
+  SUMMARY_LANGUAGE_LABELS: {
+    ja: "日本語",
+    en: "English",
+    zh: "中文",
+    ko: "한국어",
+  },
   useSettingsStore: jest.fn((selector: (state: Record<string, unknown>) => unknown) =>
     selector({
-      language: "日本語",
+      language: "ja",
       isLanguageLoaded: true,
+      summaryLanguage: "ja",
+      isSummaryLanguageLoaded: true,
       notificationSettings: {
         id: "ns_01",
         newArticle: true,
@@ -40,6 +51,8 @@ jest.mock("@mobile/stores/settings-store", () => ({
       isNotificationSettingsLoaded: true,
       setLanguage: mockSetLanguage,
       loadLanguage: mockLoadLanguage,
+      setSummaryLanguage: mockSetSummaryLanguage,
+      loadSummaryLanguage: mockLoadSummaryLanguage,
       fetchNotificationSettings: mockFetchNotificationSettings,
       updateNotificationEnabled: mockUpdateNotificationEnabled,
     }),
@@ -51,8 +64,10 @@ jest.spyOn(Alert, "alert");
 beforeEach(() => {
   jest.clearAllMocks();
   mockLoadLanguage.mockResolvedValue(undefined);
+  mockLoadSummaryLanguage.mockResolvedValue(undefined);
   mockFetchNotificationSettings.mockResolvedValue(undefined);
   mockUpdateNotificationEnabled.mockResolvedValue(undefined);
+  mockSetSummaryLanguage.mockResolvedValue(undefined);
 });
 
 describe("SettingsScreen", () => {
@@ -200,7 +215,7 @@ describe("言語設定の永続化", () => {
     jaButton.onPress();
 
     // Assert
-    expect(mockSetLanguage).toHaveBeenCalledWith("日本語");
+    expect(mockSetLanguage).toHaveBeenCalledWith("ja");
   });
 
   it("言語選択ダイアログでEnglishを選択するとsetLanguageが呼ばれること", async () => {
@@ -214,7 +229,7 @@ describe("言語設定の永続化", () => {
     enButton.onPress();
 
     // Assert
-    expect(mockSetLanguage).toHaveBeenCalledWith("English");
+    expect(mockSetLanguage).toHaveBeenCalledWith("en");
   });
 });
 
@@ -247,5 +262,95 @@ describe("通知設定の永続化", () => {
 
     // Assert
     expect(mockUpdateNotificationEnabled).toHaveBeenCalledWith(true);
+  });
+});
+
+describe("要約言語設定", () => {
+  it("画面表示時にloadSummaryLanguageが呼ばれること", async () => {
+    // Arrange & Act
+    await render(<SettingsScreen />);
+
+    // Assert
+    expect(mockLoadSummaryLanguage).toHaveBeenCalledTimes(1);
+  });
+
+  it("要約言語選択ボタンが表示されること", async () => {
+    // Arrange
+    const { getByTestId } = await render(<SettingsScreen />);
+
+    // Assert
+    expect(getByTestId("settings-summary-language-button")).toBeDefined();
+  });
+
+  it("要約言語選択ダイアログで日本語を選択するとsetSummaryLanguageが呼ばれること", async () => {
+    // Arrange
+    const { getByTestId } = await render(<SettingsScreen />);
+    await fireEvent.press(getByTestId("settings-summary-language-button"));
+
+    // Act
+    const buttons = (Alert.alert as jest.Mock).mock.calls[0][2];
+    const jaButton = buttons.find((b: { text: string }) => b.text === "日本語");
+    jaButton.onPress();
+
+    // Assert
+    expect(mockSetSummaryLanguage).toHaveBeenCalledWith("ja");
+  });
+
+  it("要約言語選択ダイアログでEnglishを選択するとsetSummaryLanguageが呼ばれること", async () => {
+    // Arrange
+    const { getByTestId } = await render(<SettingsScreen />);
+    await fireEvent.press(getByTestId("settings-summary-language-button"));
+
+    // Act
+    const buttons = (Alert.alert as jest.Mock).mock.calls[0][2];
+    const enButton = buttons.find((b: { text: string }) => b.text === "English");
+    enButton.onPress();
+
+    // Assert
+    expect(mockSetSummaryLanguage).toHaveBeenCalledWith("en");
+  });
+
+  it("要約言語選択ダイアログで中文を選択するとsetSummaryLanguageが呼ばれること", async () => {
+    // Arrange
+    const { getByTestId } = await render(<SettingsScreen />);
+    await fireEvent.press(getByTestId("settings-summary-language-button"));
+
+    // Act
+    const buttons = (Alert.alert as jest.Mock).mock.calls[0][2];
+    const zhButton = buttons.find((b: { text: string }) => b.text === "中文");
+    zhButton.onPress();
+
+    // Assert
+    expect(mockSetSummaryLanguage).toHaveBeenCalledWith("zh");
+  });
+
+  it("要約言語選択ダイアログで한국어を選択するとsetSummaryLanguageが呼ばれること", async () => {
+    // Arrange
+    const { getByTestId } = await render(<SettingsScreen />);
+    await fireEvent.press(getByTestId("settings-summary-language-button"));
+
+    // Act
+    const buttons = (Alert.alert as jest.Mock).mock.calls[0][2];
+    const koButton = buttons.find((b: { text: string }) => b.text === "한국어");
+    koButton.onPress();
+
+    // Assert
+    expect(mockSetSummaryLanguage).toHaveBeenCalledWith("ko");
+  });
+
+  it("setSummaryLanguageが失敗した場合にAlert.alertでエラーが表示されること", async () => {
+    // Arrange
+    mockSetSummaryLanguage.mockRejectedValue(new Error("要約言語の保存に失敗しました"));
+    const { getByTestId } = await render(<SettingsScreen />);
+    await fireEvent.press(getByTestId("settings-summary-language-button"));
+    const buttons = (Alert.alert as jest.Mock).mock.calls[0][2];
+    const jaButton = buttons.find((b: { text: string }) => b.text === "日本語");
+
+    // Act
+    await jaButton.onPress();
+
+    // Assert
+    expect(Alert.alert).toHaveBeenCalledTimes(2);
+    expect(Alert.alert).toHaveBeenNthCalledWith(2, expect.any(String), expect.any(String));
   });
 });
