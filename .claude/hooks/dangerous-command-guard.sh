@@ -178,7 +178,7 @@ fi
 # PR作成前のテスト通過チェック
 if echo "$COMMAND" | grep -qE "gh pr create"; then
   echo "🧪 PR作成前にテスト通過を確認中..."
-  if ! pnpm test 2>/dev/null; then
+  if ! pnpm test; then
     echo "❌ テストが失敗しています。テストを修正してからPRを作成してください。"
     echo ""
     echo "テスト実行: pnpm test"
