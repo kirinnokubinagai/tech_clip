@@ -12,7 +12,7 @@
  * @param result - Drizzle のクエリ結果（単一レコード）
  * @returns 汎用レコード
  */
-export function toRecord<T extends Record<string, unknown>>(result: unknown): T {
+export function toRecord<T extends Record<string, unknown>>(result: Record<string, unknown>): T {
   return result as T;
 }
 
