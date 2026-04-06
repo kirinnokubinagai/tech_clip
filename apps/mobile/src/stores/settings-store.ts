@@ -52,7 +52,7 @@ function normalizeStoredLanguage(stored: string): {
     return { language: DEFAULT_LANGUAGE, needsMigration: true };
   }
 
-  if (LOCALE_CODES.includes(parsed as Language)) {
+  if ((LOCALE_CODES as ReadonlyArray<string>).includes(parsed)) {
     return { language: parsed as Language, needsMigration: false };
   }
 

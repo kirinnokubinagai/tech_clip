@@ -9,6 +9,30 @@ const INTL_LOCALE_MAP: Record<Language, string> = {
 /** デフォルトのlocale */
 const DEFAULT_LOCALE: Language = "ja";
 
+/** Intl.DateTimeFormat インスタンスのキャッシュ */
+const formatterCache = new Map<string, Intl.DateTimeFormat>();
+
+/**
+ * intl locale に対応するフォーマッターを取得する
+ * 同一 locale のインスタンスをキャッシュして再利用する
+ *
+ * @param intlLocale - Intl.DateTimeFormat に渡す locale 文字列
+ * @returns キャッシュ済みの Intl.DateTimeFormat インスタンス
+ */
+function getFormatter(intlLocale: string): Intl.DateTimeFormat {
+  const cached = formatterCache.get(intlLocale);
+  if (cached) {
+    return cached;
+  }
+  const fmt = new Intl.DateTimeFormat(intlLocale, {
+    year: "numeric",
+    month: "numeric",
+    day: "numeric",
+  });
+  formatterCache.set(intlLocale, fmt);
+  return fmt;
+}
+
 /**
  * ISO 8601日付文字列をlocaleに応じた形式にフォーマットする
  *
@@ -25,9 +49,5 @@ export function formatArticleDate(isoString: string, locale: Language = DEFAULT_
 
   const intlLocale = INTL_LOCALE_MAP[locale];
 
-  return new Intl.DateTimeFormat(intlLocale, {
-    year: "numeric",
-    month: "numeric",
-    day: "numeric",
-  }).format(date);
+  return getFormatter(intlLocale).format(date);
 }
