@@ -309,6 +309,17 @@ describe("detectSource", () => {
       // Assert
       expect(result).toBe("youtube");
     });
+
+    it("m.youtube.com（モバイル）のURLを判定できること", () => {
+      // Arrange
+      const url = "https://m.youtube.com/watch?v=dQw4w9WgXcQ";
+
+      // Act
+      const result = detectSource(url);
+
+      // Assert
+      expect(result).toBe("youtube");
+    });
   });
 
   describe("その他", () => {
