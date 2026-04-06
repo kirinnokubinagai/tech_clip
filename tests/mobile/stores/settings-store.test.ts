@@ -296,6 +296,18 @@ describe("useSettingsStore", () => {
         expect(useSettingsStore.getState().summaryLanguage).toBe("ja");
       });
 
+      it("languageCodeがnullの場合デフォルト言語（ja）を返すこと", async () => {
+        // Arrange
+        mockGetItemAsync.mockResolvedValue(null);
+        mockGetLocales.mockReturnValue([{ languageCode: null }] as ReturnType<typeof getLocales>);
+
+        // Act
+        await useSettingsStore.getState().loadSummaryLanguage();
+
+        // Assert
+        expect(useSettingsStore.getState().summaryLanguage).toBe("ja");
+      });
+
       it("デバイス言語がenの場合はenになること", async () => {
         // Arrange
         mockGetItemAsync.mockResolvedValue(null);
