@@ -105,11 +105,10 @@ function resolveDeviceSummaryLanguage(): SummaryLanguage {
   if (!deviceLang) {
     return DEFAULT_SUMMARY_LANGUAGE;
   }
-  const isSupported = (SUMMARY_LANGUAGE_OPTIONS as readonly string[]).includes(deviceLang);
-  if (!isSupported) {
+  if (!isSupportedSummaryLanguage(deviceLang)) {
     return DEFAULT_SUMMARY_LANGUAGE;
   }
-  return deviceLang as SummaryLanguage;
+  return deviceLang;
 }
 
 /** 通知設定の型 */
