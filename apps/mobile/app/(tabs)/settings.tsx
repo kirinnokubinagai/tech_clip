@@ -5,6 +5,7 @@ import {
   CreditCard,
   Globe,
   KeyRound,
+  Languages,
   LogOut,
   Trash2,
   User,
@@ -17,7 +18,11 @@ import { confirm } from "@/components/ConfirmDialog";
 import { DARK_COLORS } from "@/lib/constants";
 import { useSubscription } from "../../src/hooks/use-subscription";
 import { useAuthStore } from "../../src/stores/auth-store";
-import { LANGUAGE_LABEL_MAP, useSettingsStore } from "../../src/stores/settings-store";
+import {
+  LANGUAGE_LABEL_MAP,
+  SUMMARY_LANGUAGE_LABELS,
+  useSettingsStore,
+} from "../../src/stores/settings-store";
 
 /** 設定セクションの区切り線コンポーネント */
 function SectionDivider() {
@@ -88,7 +93,7 @@ function SettingsRow({ icon, label, value, onPress, trailing, testID }: Settings
 /**
  * 設定画面
  *
- * アカウント（ログアウト）、サブスクリプション状態、言語設定、通知ON/OFFを提供する
+ * アカウント（ログアウト）、サブスクリプション状態、言語設定、要約言語設定、通知ON/OFFを提供する
  */
 export default function SettingsScreen() {
   const { t } = useTranslation();
@@ -99,8 +104,11 @@ export default function SettingsScreen() {
   const { isSubscribed } = useSubscription();
 
   const languageLabel = useSettingsStore((s) => LANGUAGE_LABEL_MAP[s.language]);
+  const summaryLanguageLabel = useSettingsStore((s) => SUMMARY_LANGUAGE_LABELS[s.summaryLanguage]);
   const setLanguage = useSettingsStore((s) => s.setLanguage);
   const loadLanguage = useSettingsStore((s) => s.loadLanguage);
+  const setSummaryLanguage = useSettingsStore((s) => s.setSummaryLanguage);
+  const loadSummaryLanguage = useSettingsStore((s) => s.loadSummaryLanguage);
   const notificationSettings = useSettingsStore((s) => s.notificationSettings);
   const fetchNotificationSettings = useSettingsStore((s) => s.fetchNotificationSettings);
   const updateNotificationEnabled = useSettingsStore((s) => s.updateNotificationEnabled);
@@ -116,8 +124,9 @@ export default function SettingsScreen() {
 
   useEffect(() => {
     loadLanguage();
+    loadSummaryLanguage();
     fetchNotificationSettings();
-  }, [loadLanguage, fetchNotificationSettings]);
+  }, [loadLanguage, loadSummaryLanguage, fetchNotificationSettings]);
 
   /**
    * ログアウト確認ダイアログを表示し、確認後にサインアウトを実行する
@@ -175,6 +184,27 @@ export default function SettingsScreen() {
   }
 
   /**
+   * 要約言語選択のアクションシートを表示する
+   */
+  function handleSummaryLanguageSelect() {
+    const languageButtons = (
+      Object.entries(SUMMARY_LANGUAGE_LABELS) as [keyof typeof SUMMARY_LANGUAGE_LABELS, string][]
+    ).map(([code, label]) => ({
+      text: label,
+      onPress: () => {
+        setSummaryLanguage(code).catch(() => {
+          Alert.alert(t("common.errorTitle"), t("settings.summaryLanguageUpdateError"));
+        });
+      },
+    }));
+    Alert.alert(
+      t("settings.summaryLanguageSelect.title"),
+      t("settings.summaryLanguageSelect.prompt"),
+      [...languageButtons, { text: t("common.cancel"), style: "cancel" as const }],
+    );
+  }
+
+  /**
    * 通知トグルの変更を処理する
    *
    * @param enabled - trueで全通知ON、falseで全通知OFF
@@ -194,7 +224,6 @@ export default function SettingsScreen() {
           label={user?.name ?? t("settings.items.notLoggedIn")}
           value={user?.email ?? ""}
         />
-        <SectionDivider />
         <SectionDivider />
         <SettingsRow
           icon={<KeyRound size={ICON_SIZE} color={ICON_COLOR} />}
@@ -228,6 +257,14 @@ export default function SettingsScreen() {
           label={t("settings.items.language")}
           value={languageLabel}
           onPress={handleLanguageSelect}
+        />
+        <SectionDivider />
+        <SettingsRow
+          testID="settings-summary-language-button"
+          icon={<Languages size={ICON_SIZE} color={ICON_COLOR} />}
+          label={t("settings.items.summaryLanguage")}
+          value={summaryLanguageLabel}
+          onPress={handleSummaryLanguageSelect}
         />
         <SectionDivider />
         <SettingsRow
