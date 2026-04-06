@@ -115,7 +115,7 @@ export async function registerPushTokenOnly(): Promise<void> {
 
     await registerTokenWithApi(token);
     logger.info("プッシュトークンのAPI登録に成功しました（権限確認済み）", {
-      tokenPrefix: `${token.slice(0, 20)}...`,
+      tokenPrefix: `${token.slice(0, 8)}...`,
     });
   } catch (error: unknown) {
     logger.error("プッシュトークンのAPI登録に失敗しました", { error });
