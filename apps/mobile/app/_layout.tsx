@@ -60,11 +60,15 @@ export default function RootLayout() {
   useEffect(() => {
     if (!isAuthenticated) return;
 
-    void requestNotificationPermission().then((status) => {
-      if (status === "granted") {
-        void registerPushTokenOnly();
-      }
-    });
+    void requestNotificationPermission()
+      .then((status) => {
+        if (status === "granted") {
+          void registerPushTokenOnly();
+        }
+      })
+      .catch((error: unknown) => {
+        logger.error("通知権限の取得に失敗しました", { error });
+      });
   }, [isAuthenticated]);
 
   useEffect(() => {
