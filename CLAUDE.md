@@ -131,7 +131,7 @@ pnpm add <pkg>
   1. Pencil MCP でモックを作成し `.pen` + `.png` をコミット
   2. デザイン専用 PR を作成（`design: add <screen-name> mockup #<issue番号>` コミット）
   3. PR に PNG を添付してユーザーレビューを依頼
-  4. ユーザー承認後にマージ → 実装 Issue に着手
+  4. ユーザー承認後にマージ → **同一 worktree で実装に進む**（worktree は削除しない）
 - **対象外**: バグ修正のみ、API 実装のみ、テスト・ドキュメントのみ
 
 ```bash
