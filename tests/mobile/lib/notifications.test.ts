@@ -258,5 +258,28 @@ describe("notifications", () => {
       // Assert
       expect(router.push).not.toHaveBeenCalled();
     });
+
+    it("パストラバーサルを含むURLへの通知タップでrouter.pushを呼ばないこと", () => {
+      // Arrange
+      const { router } = jest.requireMock("expo-router") as { router: { push: jest.Mock } };
+      let capturedResponseListener: ((response: unknown) => void) | null = null;
+      (Notifications.addNotificationResponseReceivedListener as jest.Mock).mockImplementation(
+        (cb: (response: unknown) => void) => {
+          capturedResponseListener = cb;
+          return { remove: jest.fn() };
+        },
+      );
+
+      setupNotificationHandlers();
+
+      // Act & Assert
+      const traversalUrls = ["/articles/../../../secret", "/articles/%2e%2e/etc/passwd"];
+      for (const url of traversalUrls) {
+        capturedResponseListener?.({
+          notification: { request: { content: { data: { url } } } },
+        });
+        expect(router.push).not.toHaveBeenCalled();
+      }
+    });
   });
 });

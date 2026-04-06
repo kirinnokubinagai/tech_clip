@@ -17,13 +17,36 @@ const ALLOWED_PUSH_PATTERNS = ["/articles", "/profile", "/settings"];
 const TOKEN_LOG_PREFIX_LENGTH = 6;
 
 /**
+ * URLパスを正規化する（パストラバーサル対策）
+ *
+ * @param url - 正規化するURL文字列
+ * @returns 正規化されたパス文字列
+ */
+function normalizePath(url: string): string {
+  const segments = url.split("/").filter(Boolean);
+  const resolved: string[] = [];
+  for (const segment of segments) {
+    if (segment === "..") {
+      resolved.pop();
+    } else if (segment !== ".") {
+      resolved.push(segment);
+    }
+  }
+  return `/${resolved.join("/")}`;
+}
+
+/**
  * 通知URLがアプリ内の許可されたルートかどうかを検証する
+ * パストラバーサル攻撃を防ぐためURLを正規化してから検証する
  *
  * @param url - 検証するURL文字列
  * @returns 許可されたルートの場合 true
  */
 function isAllowedRoute(url: string): boolean {
-  return ALLOWED_PUSH_PATTERNS.some((pattern) => url === pattern || url.startsWith(`${pattern}/`));
+  const normalized = normalizePath(url);
+  return ALLOWED_PUSH_PATTERNS.some(
+    (pattern) => normalized === pattern || normalized.startsWith(`${pattern}/`),
+  );
 }
 
 /** 通知権限ステータス */
