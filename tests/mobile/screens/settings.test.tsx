@@ -278,7 +278,6 @@ describe("通知設定の永続化", () => {
   });
 });
 
-<<<<<<< HEAD
 describe("通知権限UIの表示状態", () => {
   it("権限がdeniedの場合にヒントテキストが表示されること", async () => {
     // Arrange
@@ -513,7 +512,9 @@ describe("AppStateリスナーによる権限再チェック", () => {
 
     // Assert
     expect(mockCheckNotificationPermission.mock.calls.length).toBe(initialCallCount);
-=======
+  });
+});
+
 describe("要約言語設定", () => {
   it("画面表示時にloadSummaryLanguageが呼ばれること", async () => {
     // Arrange & Act
@@ -601,6 +602,5 @@ describe("要約言語設定", () => {
     // Assert
     expect(Alert.alert).toHaveBeenCalledTimes(2);
     expect(Alert.alert).toHaveBeenNthCalledWith(2, expect.any(String), expect.any(String));
->>>>>>> origin/main
   });
 });
