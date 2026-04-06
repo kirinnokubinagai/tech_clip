@@ -320,6 +320,17 @@ describe("detectSource", () => {
       // Assert
       expect(result).toBe("youtube");
     });
+
+    it("music.youtube.com（YouTube Music）のURLを判定できること", () => {
+      // Arrange
+      const url = "https://music.youtube.com/watch?v=dQw4w9WgXcQ";
+
+      // Act
+      const result = detectSource(url);
+
+      // Assert
+      expect(result).toBe("youtube");
+    });
   });
 
   describe("その他", () => {
