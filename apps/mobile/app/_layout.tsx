@@ -61,9 +61,13 @@ export default function RootLayout() {
     if (!isAuthenticated) return;
 
     void (async () => {
-      const status = await checkNotificationPermission();
-      if (status === "granted") {
-        await registerPushTokenOnly();
+      try {
+        const status = await checkNotificationPermission();
+        if (status === "granted") {
+          await registerPushTokenOnly();
+        }
+      } catch (error) {
+        logger.warn("通知権限チェックまたはトークン登録に失敗しました", { error });
       }
     })();
   }, [isAuthenticated]);

@@ -282,5 +282,23 @@ describe("RootLayout", () => {
         expect(mockedRegisterPushTokenOnly).not.toHaveBeenCalled();
       });
     });
+
+    it("checkNotificationPermissionが例外を投げてもアプリがクラッシュしないこと", async () => {
+      // Arrange
+      const { useAuthStore } = jest.requireMock("@mobile/stores/auth-store");
+      (useAuthStore as jest.Mock).mockImplementation(
+        (
+          selector: (s: {
+            isAuthenticated: boolean;
+            isLoading: boolean;
+            checkSession: () => void;
+          }) => unknown,
+        ) => selector({ isAuthenticated: true, isLoading: false, checkSession: jest.fn() }),
+      );
+      mockedCheckNotificationPermission.mockRejectedValue(new Error("権限チェックエラー"));
+
+      // Act & Assert - クラッシュしないこと
+      await expect(render(<RootLayout />)).resolves.not.toThrow();
+    });
   });
 });
