@@ -1,20 +1,21 @@
 import OnboardingScreen from "@mobile-app/onboarding";
 import { fireEvent, render, waitFor } from "@testing-library/react-native";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
-jest.mock("expo-router", () => ({
+vi.mock("expo-router", () => ({
   router: {
-    replace: jest.fn(),
+    replace: vi.fn(),
   },
 }));
 
-jest.mock("@mobile/lib/tracking", () => ({
-  requestTrackingPermission: jest.fn().mockResolvedValue("authorized"),
+vi.mock("@mobile/lib/tracking", () => ({
+  requestTrackingPermission: vi.fn().mockResolvedValue("authorized"),
 }));
 
-const mockSetHasSeenOnboarding = jest.fn().mockResolvedValue(undefined);
+const mockSetHasSeenOnboarding = vi.fn().mockResolvedValue(undefined);
 const mockHasSeenOnboarding = { current: false };
 
-jest.mock("@mobile/stores/ui-store", () => ({
+vi.mock("@mobile/stores/ui-store", () => ({
   useUIStore: (
     selector: (state: {
       hasSeenOnboarding: boolean;
@@ -27,12 +28,14 @@ jest.mock("@mobile/stores/ui-store", () => ({
     }),
 }));
 
-const { router: mockRouter } = jest.requireMock("expo-router") as {
-  router: { replace: jest.Mock };
+const { router: mockRouter } = vi.mocked(
+  await import("expo-router"),
+) as {
+  router: { replace: ReturnType<typeof vi.fn> };
 };
 
 beforeEach(() => {
-  jest.clearAllMocks();
+  vi.clearAllMocks();
   mockHasSeenOnboarding.current = false;
 });
 
@@ -135,8 +138,10 @@ describe("OnboardingScreen", () => {
 
     it("始めるボタンを押すとrequestTrackingPermissionが呼ばれること", async () => {
       // Arrange
-      const { requestTrackingPermission } = jest.requireMock("@mobile/lib/tracking") as {
-        requestTrackingPermission: jest.Mock;
+      const { requestTrackingPermission } = vi.mocked(
+        await import("@mobile/lib/tracking"),
+      ) as {
+        requestTrackingPermission: ReturnType<typeof vi.fn>;
       };
       const { getByTestId } = await render(<OnboardingScreen />);
 
