@@ -122,13 +122,16 @@ pnpm add <pkg>
 - **worktreeパスは必ず絶対パスで指定する**（相対パスはカレントディレクトリ依存で事故る）
 - **worktreeは必ず `$REPO_ROOT/.worktrees/` 直下に作成する（ネスト禁止）**
 - **worktree内部から別のworktreeを作成しない**（必ず `git rev-parse --git-common-dir` でリポジトリルートを解決する）
+- **worktree作成前に必ず `git fetch origin main:main` でローカル main を最新化する**
 - **worktree作成後、必ず `pnpm install --frozen-lockfile` を実行する**
 - シンボリンクによる node_modules 共有は禁止（`settings.json` の `symlinkDirectories` を使わない）
 
 ```bash
 # REPO_ROOT は git-common-dir から算出する（worktree内部でも正しくリポジトリルートを返す）
 REPO_ROOT=$(cd "$(git rev-parse --git-common-dir)/.." && pwd)
-git worktree add "${REPO_ROOT}/.worktrees/issue-N" -b issue/N/short-desc
+# ローカル main を最新化してから worktree を作成する（必須）
+git -C "${REPO_ROOT}" fetch origin main:main
+git worktree add "${REPO_ROOT}/.worktrees/issue-N" -b issue/N/short-desc main
 cd "${REPO_ROOT}/.worktrees/issue-N"
 pnpm install --frozen-lockfile
 ```
