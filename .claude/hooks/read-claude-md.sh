@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/bin/bash
 # Stop hook: CLAUDE.md の内容を additionalContext として返す
 
 REPO_ROOT=$(cd "$(git rev-parse --git-common-dir 2>/dev/null)/.." && pwd 2>/dev/null) || exit 0

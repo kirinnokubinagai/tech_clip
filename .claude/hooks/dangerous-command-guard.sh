@@ -107,7 +107,8 @@ check_merge_without_review() {
   fi
 
   # PR番号を抽出
-  local pr_num=$(echo "$cmd" | grep -oE "gh pr merge [0-9]+" | grep -oE "[0-9]+")
+  local pr_num
+  pr_num=$(echo "$cmd" | grep -oE "gh pr merge [0-9]+" | grep -oE "[0-9]+")
   if [ -z "$pr_num" ]; then
     return 1
   fi
@@ -118,11 +119,13 @@ check_merge_without_review() {
   fi
 
   # PRにレビューコメントがあるか確認
-  local repo=$(gh repo view --json nameWithOwner -q '.nameWithOwner' 2>/dev/null)
+  local repo
+  repo=$(gh repo view --json nameWithOwner -q '.nameWithOwner' 2>/dev/null)
   if [ -z "$repo" ]; then
     return 1
   fi
-  local review_count=$(gh api "repos/$repo/pulls/$pr_num/reviews" --jq 'length' 2>/dev/null)
+  local review_count
+  review_count=$(gh api "repos/$repo/pulls/$pr_num/reviews" --jq 'length' 2>/dev/null)
   if [ -z "$review_count" ] || [ "$review_count" = "0" ]; then
     echo "⚠️ レビューなしでPRをマージしようとしています"
     echo "PR #$pr_num にレビューコメントがありません。"
@@ -154,7 +157,7 @@ fi
 # PR作成前のテスト通過チェック（警告のみ、ブロックしない）
 if echo "$COMMAND" | grep -qE "gh pr create"; then
   if command -v pnpm &>/dev/null; then
-    if ! pnpm test 2>/dev/null; then
+    if ! timeout 60 pnpm test 2>/dev/null; then
       echo "⚠️ テストが失敗しています。PR作成前にテストを修正することを推奨します。"
     fi
   fi
