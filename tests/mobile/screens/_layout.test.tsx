@@ -120,6 +120,17 @@ describe("RootLayout", () => {
     mockedRegisterNativeBackgroundFetch.mockResolvedValue(undefined);
     mockedCheckNotificationPermission.mockResolvedValue("granted");
     mockedRegisterPushTokenOnly.mockResolvedValue(undefined);
+
+    const { useAuthStore } = jest.requireMock("@mobile/stores/auth-store");
+    (useAuthStore as jest.Mock).mockImplementation(
+      (
+        selector: (s: {
+          isAuthenticated: boolean;
+          isLoading: boolean;
+          checkSession: () => void;
+        }) => unknown,
+      ) => selector({ isAuthenticated: false, isLoading: false, checkSession: jest.fn() }),
+    );
   });
 
   describe("RevenueCat初期化", () => {
