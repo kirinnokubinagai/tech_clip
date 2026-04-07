@@ -18,12 +18,19 @@ const TOKEN_LOG_PREFIX_LENGTH = 6;
 
 /**
  * URLパスを正規化する（パストラバーサル対策）
+ * パーセントエンコードされた traversal シーケンス（%2e%2e 等）も正規化する
  *
  * @param url - 正規化するURL文字列
  * @returns 正規化されたパス文字列
  */
 function normalizePath(url: string): string {
-  const segments = url.split("/").filter(Boolean);
+  let decoded: string;
+  try {
+    decoded = decodeURIComponent(url);
+  } catch {
+    decoded = url;
+  }
+  const segments = decoded.split("/").filter(Boolean);
   const resolved: string[] = [];
   for (const segment of segments) {
     if (segment === "..") {

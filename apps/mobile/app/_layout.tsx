@@ -61,11 +61,12 @@ export default function RootLayout() {
 
   useEffect(() => {
     if (!isAuthenticated) return;
-    void checkNotificationPermission().then((status) => {
+    void (async () => {
+      const status = await checkNotificationPermission();
       if (status === "granted") {
-        void registerPushTokenOnly();
+        await registerPushTokenOnly();
       }
-    });
+    })();
   }, [isAuthenticated]);
 
   useEffect(() => {
