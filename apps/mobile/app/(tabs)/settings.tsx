@@ -272,7 +272,8 @@ export default function SettingsScreen() {
    * @param enabled - trueで全通知ON、falseで全通知OFF
    */
   function handleNotificationToggle(enabled: boolean) {
-    updateNotificationEnabled(enabled).catch(() => {
+    updateNotificationEnabled(enabled).catch((error: unknown) => {
+      logger.error("通知設定の更新に失敗しました", { error });
       Alert.alert(t("common.errorTitle"), t("settings.notificationUpdateError"));
     });
   }

@@ -11,6 +11,9 @@ import { logger } from "@/lib/logger";
 /** Android通知チャンネルID */
 const NOTIFICATION_CHANNEL_ID = "default";
 
+/** ログ出力時のトークン表示文字数（セキュリティのため短く制限） */
+const TOKEN_LOG_PREFIX_LENGTH = 6;
+
 /** 通知タップ時の許可URLパターン */
 const ALLOWED_PUSH_PATTERNS = ["/articles", "/profile", "/settings"];
 
@@ -115,7 +118,7 @@ export async function registerPushTokenOnly(): Promise<void> {
 
     await registerTokenWithApi(token);
     logger.info("プッシュトークンのAPI登録に成功しました（権限確認済み）", {
-      tokenPrefix: `${token.slice(0, 6)}...`,
+      tokenPrefix: `${token.slice(0, TOKEN_LOG_PREFIX_LENGTH)}...`,
     });
   } catch (error: unknown) {
     logger.error("プッシュトークンのAPI登録に失敗しました", { error });
