@@ -42,16 +42,15 @@ jest.mock("@/lib/constants", () => ({
   LIGHT_COLORS: { accent: "#FF0000" },
 }));
 
-import { router } from "expo-router";
-
-import { apiFetch } from "@/lib/api";
-import { logger } from "@/lib/logger";
 import {
   checkNotificationPermission,
   registerPushTokenOnly,
   requestNotificationPermission,
   setupNotificationHandlers,
 } from "@mobile/lib/notifications";
+import { router } from "expo-router";
+import { apiFetch } from "@/lib/api";
+import { logger } from "@/lib/logger";
 
 beforeEach(() => {
   jest.clearAllMocks();
@@ -248,12 +247,12 @@ describe("notifications", () => {
     it("個別記事URLが許可されること", () => {
       // Arrange
       let capturedResponseHandler: ((response: unknown) => void) | undefined;
-      (
-        Notifications.addNotificationResponseReceivedListener as jest.Mock
-      ).mockImplementation((handler) => {
-        capturedResponseHandler = handler;
-        return { remove: jest.fn() };
-      });
+      (Notifications.addNotificationResponseReceivedListener as jest.Mock).mockImplementation(
+        (handler) => {
+          capturedResponseHandler = handler;
+          return { remove: jest.fn() };
+        },
+      );
 
       // Act
       setupNotificationHandlers();
@@ -270,12 +269,12 @@ describe("notifications", () => {
     it("/articles そのもののURLが許可されること", () => {
       // Arrange
       let capturedResponseHandler: ((response: unknown) => void) | undefined;
-      (
-        Notifications.addNotificationResponseReceivedListener as jest.Mock
-      ).mockImplementation((handler) => {
-        capturedResponseHandler = handler;
-        return { remove: jest.fn() };
-      });
+      (Notifications.addNotificationResponseReceivedListener as jest.Mock).mockImplementation(
+        (handler) => {
+          capturedResponseHandler = handler;
+          return { remove: jest.fn() };
+        },
+      );
 
       // Act
       setupNotificationHandlers();
@@ -292,12 +291,12 @@ describe("notifications", () => {
     it("許可されていないURLはブロックされること", () => {
       // Arrange
       let capturedResponseHandler: ((response: unknown) => void) | undefined;
-      (
-        Notifications.addNotificationResponseReceivedListener as jest.Mock
-      ).mockImplementation((handler) => {
-        capturedResponseHandler = handler;
-        return { remove: jest.fn() };
-      });
+      (Notifications.addNotificationResponseReceivedListener as jest.Mock).mockImplementation(
+        (handler) => {
+          capturedResponseHandler = handler;
+          return { remove: jest.fn() };
+        },
+      );
 
       // Act
       setupNotificationHandlers();
@@ -318,12 +317,12 @@ describe("notifications", () => {
     it("URLがない通知はrouter.pushを呼ばないこと", () => {
       // Arrange
       let capturedResponseHandler: ((response: unknown) => void) | undefined;
-      (
-        Notifications.addNotificationResponseReceivedListener as jest.Mock
-      ).mockImplementation((handler) => {
-        capturedResponseHandler = handler;
-        return { remove: jest.fn() };
-      });
+      (Notifications.addNotificationResponseReceivedListener as jest.Mock).mockImplementation(
+        (handler) => {
+          capturedResponseHandler = handler;
+          return { remove: jest.fn() };
+        },
+      );
 
       // Act
       setupNotificationHandlers();
