@@ -130,7 +130,7 @@ describe("parseYoutube", () => {
     );
 
     // Act & Assert
-    await expect(parseYoutube(url)).rejects.toThrow();
+    await expect(parseYoutube(url)).rejects.toThrow("The operation was aborted");
   });
 
   it("チャンネルURLはoEmbed APIが404を返しエラーになること", async () => {
