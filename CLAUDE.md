@@ -130,24 +130,47 @@ cd "${REPO_ROOT}/.worktrees/issue-N"
 pnpm install --frozen-lockfile
 ```
 
-### 3. Worktree 内で TDD 実装
+### 3. 新規画面を含む Issue はデザインモックを先行作成する
+
+新規画面（Screen / Page）、モーダル、ボトムシートを追加する Issue は、実装前に必ず Pencil でデザインモックを作成する。
+
+- **デザインファイル配置先**: `docs/design/<screen-name>.pen` + `docs/design/<screen-name>.png`
+- **作成ツール**: Pencil MCP（`pencil-design` スキルを参照）
+- **承認フロー**:
+  1. Pencil MCP でモックを作成し `.pen` + `.png` をコミット
+  2. デザイン専用 PR を作成（`design: add <screen-name> mockup #<issue番号>` コミット）
+  3. PR に PNG を添付してユーザーレビューを依頼
+  4. ユーザー承認後にマージ → **同一 worktree で実装に進む**（worktree は削除しない）
+     - マージ後: `git fetch origin && git merge origin/main` で最新を取り込む
+     - または実装用ブランチを新規作成: `git checkout -b issue/N/impl-short-desc`
+- **対象外**: バグ修正のみ、API 実装のみ、テスト・ドキュメントのみ
+
+```bash
+# デザインファイルのコミット形式
+git commit -m "design: add <screen-name> mockup #<issue番号>"
+```
+
+詳細は `docs/design/README.md` および `.claude/skills/design/pencil-design/SKILL.md` を参照。
+
+### 4. Worktree 内で TDD 実装
 - **RED**: テストを先に書く（失敗することを確認）
 - **GREEN**: テストを通す最小限のコードを書く
 - **REFACTOR**: テストが通る状態を維持しつつリファクタ
 - カバレッジ目標: 80%以上
 
-### 4. コミット & プッシュ
+### 5. コミット & プッシュ
 - Conventional Commits 形式でコミット（詳細は下記参照）
 - コミットメッセージに Issue 番号を含める
 
-### 5. PR を作成し、ユーザーレビューを待つ
+### 6. PR を作成し、ユーザーレビューを待つ
 - PR 本文に `Closes #<issue番号>` を含める
 - **全PRはユーザーレビュー必須**（セルフマージ禁止）
 
-### 6. マージ後、Worktree をクリーンアップ
+### 7. マージ後、Worktree をクリーンアップ
 
 ```bash
-git worktree remove .worktrees/issue-N
+REPO_ROOT=$(cd "$(env -u GIT_DIR -u GIT_WORK_TREE git rev-parse --git-common-dir)/.." && pwd)
+git worktree remove "${REPO_ROOT}/.worktrees/issue-N"
 git branch -d issue/N/short-desc
 ```
 
@@ -185,12 +208,14 @@ types:
   perf     パフォーマンス改善
   style    フォーマットのみの変更（ロジック変更なし）
   ci       CIの変更
+  design   デザインモックの追加・更新
 
 例:
   feat: add user authentication with Better Auth #86
   fix: resolve SQLite connection leak on worker restart #92
   docs: complete CLAUDE.md with full development rules #118
   test: add integration tests for article parser #103
+  design: add article-detail mockup #123
 ```
 
 ### コミットの粒度
@@ -272,17 +297,15 @@ Closes #<issue番号>
 - `drizzle-kit push` の使用（**`drizzle-kit migrate` のみ許可**）
 - テストを書かずに実装コードを書くこと（TDDサイクル厳守）
 - テストカバレッジ80%未満でのPR作成
-- シンボリンクによる node_modules 共有（`pnpm install --frozen-lockfile` を使う）
-- 正規の手順をサボるためのショートカット・ハック（問題を先送りにして後で壊れる）
 
 ### Git 操作（settings.json の deny で強制）
 
 - `git merge` — main ブランチ上でのマージは禁止（main への push が deny で防止済み）。作業ブランチでの `git merge origin/main`（コンフリクト解消）は許可
 - `git rebase` — 履歴の書き換えは禁止
-- `git restore` — 全面禁止（個別ファイル指定含む）
+- `git restore .` — 全ファイル復元は禁止（個別ファイル指定のみ許可）
 - `git reset --hard` — 破壊的リセットは禁止
 - `git push --force` / `--force-with-lease` — 強制プッシュは禁止
-- `git checkout -- .` / `git checkout <file>` — ファイル復元は禁止（ブランチ切替は許可）
+- `git checkout -- .` — 全ファイル復元は禁止
 - `gh pr merge` — ローカルからの PR マージは禁止。マージは CI のみが行う
 
 ### PR・レビュー
@@ -403,32 +426,16 @@ PRマージは CI（GitHub Actions auto-approve workflow）のみが行う。Cla
 
 1. 実装エージェントが PR を作成（**マージはしない**）
 2. code-reviewer エージェントが PR をレビュー
-3. **GitHub レビューコメントを確認**（必須）: `gh pr view <PR番号> --json reviews,reviewRequests` および `gh pr view <PR番号> --comments` を実行し、GitHub 側のレビューコメントをすべて取得する（詳細は「GitHub レビューコメント確認ルール」を参照）
-4. ローカルレビューと GitHub レビューの両方で指摘が1つでもあれば **該当 PR 内で** 全て修正 → 再 push → 再レビュー
-5. 全件 PASS になるまで 4 を繰り返す
-6. CI（auto-approve.yml）が自動で Approve → マージ
+3. 指摘が1つでもあれば **該当 PR 内で** 全て修正 → 再 push → 再レビュー
+4. 全件 PASS になるまで 3 を繰り返す
+5. CI（auto-approve.yml）が自動で Approve → マージ
 
 ### PRレビュー修正ルール
 
 - レビュー指摘は **該当 PR 内で修正** する（別 Issue に分離しない）
 - 修正コミットは `fix: <内容> #<元のIssue番号>` の形式
 - 修正後は必ず再レビューを実行し、全件 PASS を確認する
-- **改善提案（💡）や軽微な問題（🟡）も含め、すべての指摘を修正すること**
 - 全件 PASS になるまでユーザーにマージを提案しない
-
-### GitHub レビューコメント確認ルール（必須）
-
-**レビュー完了報告前に必ず以下を実行すること:**
-
-```bash
-gh pr view <PR番号> --json reviews,reviewRequests
-gh pr view <PR番号> --comments
-```
-
-- ローカルの code-reviewer エージェントと GitHub CI レビューは**別物**
-- GitHub 側のレビューコメント（auto-approve ワークフロー等が投稿したもの）は `gh pr view` で確認しなければ見えない
-- GitHub レビューに未解決コメントがある場合は修正してから完了報告する
-- 改善提案（💡）・軽微な問題（🟡）・重大な問題（🔴）すべて対応必須
 
 ### Claude に禁止されている操作
 
@@ -470,7 +477,6 @@ coder (実装)
   ├── コミット・push・PR作成（/finish スキル）
   ├── Agent(code-reviewer) を起動（/review/code-review スキル）
   │     └── レビュー結果を返す
-  ├── gh pr view <PR番号> --json reviews,reviewRequests && gh pr view <PR番号> --comments でGitHub レビューを確認（必須）
   ├── 問題・改善提案が1つでもあれば → 全て修正→再push→再レビュー（0件になるまで繰り返す）
   └── 全件 PASS を確認して報告（マージは CI が自動で行う）
 ```
