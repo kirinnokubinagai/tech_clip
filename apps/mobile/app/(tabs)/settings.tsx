@@ -171,7 +171,8 @@ export default function SettingsScreen() {
     try {
       const status = await checkNotificationPermission();
       setNotificationPermission(status);
-    } catch {
+    } catch (error: unknown) {
+      logger.warn("通知権限の確認に失敗しました", { error });
       setNotificationPermission("undetermined");
     }
   }, []);
