@@ -321,7 +321,7 @@ describe("detectSource", () => {
       expect(result).toBe("youtube");
     });
 
-    it("music.youtube.com（YouTube Music）のURLを判定できること", () => {
+    it("music.youtube.com（YouTube Music）はotherと判定されること", () => {
       // Arrange
       const url = "https://music.youtube.com/watch?v=dQw4w9WgXcQ";
 
@@ -329,7 +329,7 @@ describe("detectSource", () => {
       const result = detectSource(url);
 
       // Assert
-      expect(result).toBe("youtube");
+      expect(result).toBe("other");
     });
 
     it("youtube.com/shorts/ のURLを判定できること", () => {
