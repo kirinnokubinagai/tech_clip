@@ -22,7 +22,10 @@ check_worktree_path() {
     return 1
   fi
 
-  local wt_path resolved_path repo_root expected_prefix
+  local wt_path
+  local resolved_path
+  local repo_root
+  local expected_prefix
   # -b フラグとそのブランチ名をスキップしてパスを抽出
   # sed の末尾スペース必須パターンは -b branch がコマンド末尾の場合にマッチしないため
   # sed で除去し、awk でパスを先に取り出すことで吸収する
