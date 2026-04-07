@@ -37,7 +37,7 @@ if [ "$CURRENT_BRANCH" = "main" ]; then
   echo "  現在のブランチ: main" >&2
   echo "" >&2
   echo "  対処方法:" >&2
-  echo '    REPO_ROOT=$(cd "$(env -u GIT_DIR git rev-parse --git-common-dir)/.." && pwd)' >&2
+  echo '    REPO_ROOT=$(cd "$(env -u GIT_DIR -u GIT_WORK_TREE git rev-parse --git-common-dir)/.." && pwd)' >&2
   echo "    git worktree add \"\${REPO_ROOT}/.worktrees/issue-N\" -b issue/N/description" >&2
   exit 2
 fi
