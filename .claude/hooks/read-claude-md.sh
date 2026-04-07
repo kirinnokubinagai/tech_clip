@@ -6,8 +6,9 @@ REPO_ROOT=$(cd "$(git rev-parse --git-common-dir 2>/dev/null)/.." && pwd 2>/dev/
 CLAUDE_MD="${REPO_ROOT}/CLAUDE.md"
 
 if [[ -f "$CLAUDE_MD" ]]; then
-  # systemReminder として AI に読まれる
-  jq -n --arg content "$(<"$CLAUDE_MD")" '{"systemReminder": $content}'
+  # additionalContext として AI に読まれる
+  CONTENT=$(<"$CLAUDE_MD")
+  jq -n --arg content "$CONTENT" '{"hookSpecificOutput":{"hookEventName":"PreToolUse","additionalContext":$content}}'
 fi
 
 exit 0
