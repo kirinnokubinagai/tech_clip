@@ -43,6 +43,39 @@
         ]
       },
       {
+        "matcher": "Read",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"$(git rev-parse --show-toplevel 2>/dev/null || echo .)/.claude/hooks/worktree-isolation-guard.sh\"",
+            "timeout": 5,
+            "statusMessage": "Checking worktree isolation..."
+          }
+        ]
+      },
+      {
+        "matcher": "Glob",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"$(git rev-parse --show-toplevel 2>/dev/null || echo .)/.claude/hooks/worktree-isolation-guard.sh\"",
+            "timeout": 5,
+            "statusMessage": "Checking worktree isolation..."
+          }
+        ]
+      },
+      {
+        "matcher": "Grep",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"$(git rev-parse --show-toplevel 2>/dev/null || echo .)/.claude/hooks/worktree-isolation-guard.sh\"",
+            "timeout": 5,
+            "statusMessage": "Checking worktree isolation..."
+          }
+        ]
+      },
+      {
         "matcher": "Edit",
         "hooks": [
           {
@@ -50,6 +83,12 @@
             "command": "bash \"$(git rev-parse --show-toplevel 2>/dev/null || echo .)/.claude/hooks/main-edit-guard.sh\"",
             "timeout": 5,
             "statusMessage": "Checking branch for edit..."
+          },
+          {
+            "type": "command",
+            "command": "bash \"$(git rev-parse --show-toplevel 2>/dev/null || echo .)/.claude/hooks/worktree-isolation-guard.sh\"",
+            "timeout": 5,
+            "statusMessage": "Checking worktree isolation..."
           }
         ]
       },
@@ -61,6 +100,12 @@
             "command": "bash \"$(git rev-parse --show-toplevel 2>/dev/null || echo .)/.claude/hooks/main-edit-guard.sh\"",
             "timeout": 5,
             "statusMessage": "Checking branch for write..."
+          },
+          {
+            "type": "command",
+            "command": "bash \"$(git rev-parse --show-toplevel 2>/dev/null || echo .)/.claude/hooks/worktree-isolation-guard.sh\"",
+            "timeout": 5,
+            "statusMessage": "Checking worktree isolation..."
           }
         ]
       }
@@ -81,6 +126,12 @@
     "Stop": [
       {
         "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"$(git rev-parse --show-toplevel 2>/dev/null || echo .)/.claude/hooks/read-claude-md.sh\"",
+            "timeout": 10,
+            "statusMessage": "Re-reading CLAUDE.md..."
+          },
           {
             "type": "command",
             "command": "bash \"$(git rev-parse --show-toplevel 2>/dev/null || echo .)/.claude/hooks/uncommitted-warn.sh\"",

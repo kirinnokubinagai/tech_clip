@@ -75,6 +75,7 @@ check_dangerous() {
   echo "$cmd" | grep -qE "git clean" && return 0
   echo "$cmd" | grep -qE "git branch -D" && return 0
   echo "$cmd" | grep -qE "git restore" && return 0
+  echo "$cmd" | grep -qE "git config.*core\.worktree" && return 0
 
   # git checkout でファイル復元を検出（ブランチ切替は許可）
   # [^-] により -b / --orphan / --track 等のフラグ付きコマンドは自動除外
