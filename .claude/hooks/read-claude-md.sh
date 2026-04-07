@@ -8,4 +8,4 @@ if [[ ! -f "${REPO_ROOT}/CLAUDE.md" ]]; then
   exit 0
 fi
 
-echo '{"hookSpecificOutput":{"hookEventName":"Stop","additionalContext":"CLAUDE.md のルールを遵守すること。worktree必須・TDD・レビュー必須・mainは常にクリーン。"}}'
+echo "CLAUDE.md のルールを遵守すること。worktree必須・TDD・レビュー必須・mainは常にクリーン。"
