@@ -13,7 +13,7 @@ if ! command -v python3 &>/dev/null; then
 fi
 
 MAX_SIZE_BYTES=51200
-file_size=$(wc -c < "${CLAUDE_MD}" 2>/dev/null || echo 0)
+file_size=$(wc -c < "${CLAUDE_MD}" 2>/dev/null | tr -d ' ' || echo 0)
 if [ "$file_size" -gt "$MAX_SIZE_BYTES" ]; then
   exit 0
 fi
