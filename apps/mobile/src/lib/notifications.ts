@@ -11,48 +11,17 @@ import { logger } from "@/lib/logger";
 const NOTIFICATION_CHANNEL_ID = "default";
 
 /** 通知タップ時の許可URLパターン */
-const ALLOWED_PUSH_PATTERNS = ["/articles", "/profile", "/settings"];
-
-/** トークンログ出力時のプレフィックス文字数 */
-const TOKEN_LOG_PREFIX_LENGTH = 6;
-
-/**
- * URLパスを正規化する（パストラバーサル対策）
- * パーセントエンコードされた traversal シーケンス（%2e%2e 等）も正規化する
- *
- * @param url - 正規化するURL文字列
- * @returns 正規化されたパス文字列
- */
-function normalizePath(url: string): string {
-  let decoded: string;
-  try {
-    decoded = decodeURIComponent(url);
-  } catch {
-    decoded = url;
-  }
-  const segments = decoded.split("/").filter(Boolean);
-  const resolved: string[] = [];
-  for (const segment of segments) {
-    if (segment === "..") {
-      resolved.pop();
-    } else if (segment !== ".") {
-      resolved.push(segment);
-    }
-  }
-  return `/${resolved.join("/")}`;
-}
+const ALLOWED_PUSH_PATTERNS = ["/articles", "/profile", "/settings", "/onboarding"];
 
 /**
  * 通知URLがアプリ内の許可されたルートかどうかを検証する
- * パストラバーサル攻撃を防ぐためURLを正規化してから検証する
  *
  * @param url - 検証するURL文字列
  * @returns 許可されたルートの場合 true
  */
 function isAllowedRoute(url: string): boolean {
-  const normalized = normalizePath(url);
   return ALLOWED_PUSH_PATTERNS.some(
-    (pattern) => normalized === pattern || normalized.startsWith(`${pattern}/`),
+    (pattern) => url === pattern || url.startsWith(`${pattern}/`),
   );
 }
 
@@ -88,6 +57,30 @@ export async function checkNotificationPermission(): Promise<NotificationPermiss
 }
 
 /**
+ * 通知権限をユーザーに要求する
+ * 既に許可済みの場合はリクエストをスキップする
+ * シミュレータでは "undetermined" を返す
+ *
+ * @returns 要求後の通知権限ステータス
+ */
+export async function requestNotificationPermission(): Promise<NotificationPermissionStatus> {
+  if (!Device.isDevice) {
+    return "undetermined";
+  }
+
+  const { status: existingStatus } = await Notifications.getPermissionsAsync();
+  if (existingStatus === "granted") {
+    return "granted";
+  }
+
+  const { status } = await Notifications.requestPermissionsAsync();
+  if (!isNotificationPermissionStatus(status)) {
+    return "undetermined";
+  }
+  return status;
+}
+
+/**
  * プッシュトークンをAPIサーバーに登録する
  *
  * @param token - Expoプッシュトークン文字列
@@ -103,8 +96,6 @@ export async function registerTokenWithApi(token: string): Promise<void> {
  * 既に権限が granted であることを前提にトークン取得とAPI登録のみを行う
  * 権限要求は行わない（呼び出し側が事前に権限を確認・取得済みであること）
  * エラーはすべてログに記録し、例外を外部に伝播させない
- *
- * @returns Promise<void>
  */
 export async function registerPushTokenOnly(): Promise<void> {
   try {
@@ -125,7 +116,7 @@ export async function registerPushTokenOnly(): Promise<void> {
 
     await registerTokenWithApi(token);
     logger.info("プッシュトークンのAPI登録に成功しました（権限確認済み）", {
-      tokenPrefix: `${token.slice(0, TOKEN_LOG_PREFIX_LENGTH)}...`,
+      tokenPrefix: `${token.slice(0, 6)}...`,
     });
   } catch (error: unknown) {
     logger.error("プッシュトークンのAPI登録に失敗しました", { error });

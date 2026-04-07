@@ -13,8 +13,8 @@ import {
 import i18n from "../src/lib/i18n";
 import { logger } from "../src/lib/logger";
 import {
-  checkNotificationPermission,
-  registerPushTokenOnly,
+  registerForPushNotifications,
+  registerTokenWithApi,
   setupNotificationHandlers,
 } from "../src/lib/notifications";
 import { queryClient } from "../src/lib/query-client";
@@ -41,9 +41,7 @@ export default function RootLayout() {
     checkSession();
     loadOnboardingState();
     void loadLanguage();
-    if (hasSeenOnboarding) {
-      void requestTrackingPermission();
-    }
+    void requestTrackingPermission();
     void configureRevenueCat().catch((error: unknown) => {
       logger.warn("RevenueCat設定に失敗しました", { error });
     });
@@ -52,7 +50,7 @@ export default function RootLayout() {
     });
     const bgSyncCleanup = startBackgroundSync();
     return bgSyncCleanup;
-  }, [checkSession, loadOnboardingState, loadLanguage, hasSeenOnboarding]);
+  }, [checkSession, loadOnboardingState, loadLanguage]);
 
   useEffect(() => {
     const cleanup = setupNotificationHandlers();
@@ -61,16 +59,17 @@ export default function RootLayout() {
 
   useEffect(() => {
     if (!isAuthenticated) return;
-    void (async () => {
-      const status = await checkNotificationPermission();
-      if (status === "granted") {
-        await registerPushTokenOnly();
+
+    registerForPushNotifications().then((token) => {
+      if (token) {
+        registerTokenWithApi(token);
       }
-    })();
+    });
   }, [isAuthenticated]);
 
   useEffect(() => {
-    void i18n.changeLanguage(language);
+    const i18nLanguage = language === "English" ? "en" : "ja";
+    void i18n.changeLanguage(i18nLanguage);
   }, [language]);
 
   if (isLoading || !isOnboardingLoaded) {
