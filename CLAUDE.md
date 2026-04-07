@@ -127,7 +127,7 @@ pnpm add <pkg>
 
 ```bash
 # REPO_ROOT は git-common-dir から算出する（worktree内部でも正しくリポジトリルートを返す）
-REPO_ROOT=$(cd "$(git rev-parse --git-common-dir)/.." && pwd)
+REPO_ROOT=$(cd "$(env -u GIT_DIR -u GIT_WORK_TREE git rev-parse --git-common-dir)/.." && pwd)
 git worktree add "${REPO_ROOT}/.worktrees/issue-N" -b issue/N/short-desc
 cd "${REPO_ROOT}/.worktrees/issue-N"
 pnpm install --frozen-lockfile
@@ -153,7 +153,8 @@ pnpm install --frozen-lockfile
 ### 6. マージ後、Worktree をクリーンアップ
 
 ```bash
-git worktree remove .worktrees/issue-N
+REPO_ROOT=$(cd "$(env -u GIT_DIR -u GIT_WORK_TREE git rev-parse --git-common-dir)/.." && pwd)
+git worktree remove "${REPO_ROOT}/.worktrees/issue-N"
 git branch -d issue/N/short-desc
 ```
 
