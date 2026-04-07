@@ -39,6 +39,34 @@
             "command": "bash \"$(git rev-parse --show-toplevel 2>/dev/null || echo .)/.claude/hooks/dangerous-command-guard.sh\"",
             "timeout": 5,
             "statusMessage": "Checking for dangerous commands..."
+          },
+          {
+            "type": "command",
+            "command": "bash \"$(git rev-parse --show-toplevel 2>/dev/null || echo .)/.claude/hooks/pre-push-review-guard.sh\"",
+            "timeout": 5,
+            "statusMessage": "Checking review status..."
+          }
+        ]
+      },
+      {
+        "matcher": "Read",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"$(git rev-parse --show-toplevel 2>/dev/null || echo .)/.claude/hooks/worktree-isolation-guard.sh\"",
+            "timeout": 5,
+            "statusMessage": "Checking worktree isolation..."
+          }
+        ]
+      },
+      {
+        "matcher": "Glob",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"$(git rev-parse --show-toplevel 2>/dev/null || echo .)/.claude/hooks/worktree-isolation-guard.sh\"",
+            "timeout": 5,
+            "statusMessage": "Checking worktree isolation..."
           }
         ]
       },
@@ -50,6 +78,18 @@
             "command": "bash \"$(git rev-parse --show-toplevel 2>/dev/null || echo .)/.claude/hooks/main-edit-guard.sh\"",
             "timeout": 5,
             "statusMessage": "Checking branch for edit..."
+          },
+          {
+            "type": "command",
+            "command": "bash \"$(git rev-parse --show-toplevel 2>/dev/null || echo .)/.claude/hooks/worktree-isolation-guard.sh\"",
+            "timeout": 5,
+            "statusMessage": "Checking worktree isolation..."
+          },
+          {
+            "type": "command",
+            "command": "bash \"$(git rev-parse --show-toplevel 2>/dev/null || echo .)/.claude/hooks/diagnosis-first-guard.sh\"",
+            "timeout": 5,
+            "statusMessage": "Diagnosis-first check..."
           }
         ]
       },
@@ -61,6 +101,25 @@
             "command": "bash \"$(git rev-parse --show-toplevel 2>/dev/null || echo .)/.claude/hooks/main-edit-guard.sh\"",
             "timeout": 5,
             "statusMessage": "Checking branch for write..."
+          },
+          {
+            "type": "command",
+            "command": "bash \"$(git rev-parse --show-toplevel 2>/dev/null || echo .)/.claude/hooks/worktree-isolation-guard.sh\"",
+            "timeout": 5,
+            "statusMessage": "Checking worktree isolation..."
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"$(git rev-parse --show-toplevel 2>/dev/null || echo .)/.claude/hooks/worktree-deps-guard.sh\"",
+            "timeout": 5,
+            "statusMessage": "Checking worktree deps..."
           }
         ]
       }
@@ -70,8 +129,20 @@
         "hooks": [
           {
             "type": "command",
+            "command": "bash \"$(git rev-parse --show-toplevel 2>/dev/null || echo .)/.claude/hooks/read-claude-md.sh\"",
+            "timeout": 10,
+            "statusMessage": "Re-reading CLAUDE.md..."
+          },
+          {
+            "type": "command",
             "command": "bash \"$(git rev-parse --show-toplevel 2>/dev/null || echo .)/.claude/hooks/uncommitted-warn.sh\"",
             "timeout": 5
+          },
+          {
+            "type": "command",
+            "command": "bash \"$(git rev-parse --show-toplevel 2>/dev/null || echo .)/.claude/hooks/verify-claims-guard.sh\"",
+            "timeout": 5,
+            "statusMessage": "Verifying claims..."
           }
         ]
       }
@@ -119,13 +190,7 @@
       "Bash(*push*--force-with-lease*)",
       "Bash(*reset --hard*)",
       "Bash(*checkout -- *)",
-      "Bash(*git restore .)",
-      "Bash(*git restore -- .)",
-      "Bash(*git restore --staged .)",
-      "Bash(*git restore --staged -- .)",
-      "Bash(*git restore --worktree .)",
-      "Bash(*git restore -W .)",
-      "Bash(*git restore -S .)",
+      "Bash(*git restore*)",
       "Bash(*git rebase*)",
       "Bash(*clean -f*)",
       "Bash(*-X theirs*)",
@@ -142,12 +207,7 @@
       "Agent(oh-my-claudecode:*)"
     ]
   },
-  "worktree": {
-    "symlinkDirectories": [
-      "node_modules",
-      ".turbo"
-    ]
-  },
+  "worktree": {},
   "plansDirectory": ".claude/plans",
   "attribution": {
     "commit": "Co-Authored-By: Claude <noreply@anthropic.com>",

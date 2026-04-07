@@ -3,15 +3,7 @@ import { parseHTML } from "linkedom";
 import TurndownService from "turndown";
 
 import type { ParsedArticle } from "../../types/article";
-
-/** 読了速度（文字/分） */
-const READING_SPEED_CHARS_PER_MIN = 500;
-
-/** 最小読了時間（分） */
-const MIN_READING_TIME_MINUTES = 1;
-
-/** fetch時のUser-Agent */
-const USER_AGENT = "Mozilla/5.0 (compatible; TechClipBot/1.0; +https://techclip.app)";
+import { calculateReadingTime, TECHCLIP_USER_AGENT } from "./_shared";
 
 /**
  * linkedomのドキュメント型
@@ -54,18 +46,6 @@ function getMetaByName(doc: LinkedomDocument, name: string): string | null {
 }
 
 /**
- * 文字数から読了時間を計算する
- *
- * @param text - 本文テキスト
- * @returns 推定読了時間（分、最小1分）
- */
-function calculateReadingTime(text: string): number {
-  const charCount = text.length;
-  const minutes = Math.ceil(charCount / READING_SPEED_CHARS_PER_MIN);
-  return Math.max(minutes, MIN_READING_TIME_MINUTES);
-}
-
-/**
  * Medium記事URLからHTML取得 → Readabilityで本文抽出 → Markdown変換するパーサー
  *
  * medium.comおよびカスタムドメインの両方に対応する。
@@ -77,7 +57,7 @@ function calculateReadingTime(text: string): number {
  */
 export async function parseMedium(url: string): Promise<ParsedArticle> {
   const response = await fetch(url, {
-    headers: { "User-Agent": USER_AGENT },
+    headers: { "User-Agent": TECHCLIP_USER_AGENT },
   });
 
   if (!response.ok) {
