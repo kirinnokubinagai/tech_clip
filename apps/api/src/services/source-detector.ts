@@ -57,8 +57,8 @@ const CSS_TRICKS_PATTERN = /^css-tricks\.com/;
 /** Smashing Magazine判定パターン */
 const SMASHING_PATTERN = /^(www\.)?smashingmagazine\.com/;
 
-/** YouTube動画URL判定パターン（/watch?、/shorts/、youtu.be/のみ） */
-const YOUTUBE_PATTERN = /^((www\.|m\.|music\.)?youtube\.com\/(watch(\?|$)|shorts\/)|youtu\.be\/)/;
+/** YouTube動画URL判定パターン（/watch?、/shorts/、youtu.be/のみ、music.youtube.comは除外） */
+const YOUTUBE_PATTERN = /^((www\.|m\.)?youtube\.com\/(watch(\?|$)|shorts\/)|youtu\.be\/)/;
 
 /** Twitter/X判定パターン */
 const TWITTER_PATTERN = /^(www\.)?(x\.com|twitter\.com)\/\w+\/status\//;

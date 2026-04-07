@@ -13,8 +13,8 @@ const FETCH_TIMEOUT_MS = 10_000;
 const OEmbedResponseSchema = z.object({
   title: z.string(),
   author_name: z.string(),
-  author_url: z.string().optional(),
-  thumbnail_url: z.string().optional(),
+  author_url: z.string().url().optional(),
+  thumbnail_url: z.string().url().optional(),
 });
 
 /**

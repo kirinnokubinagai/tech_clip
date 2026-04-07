@@ -54,7 +54,7 @@ export const SOURCE_DEFINITIONS = [
   {
     id: "youtube",
     label: "YouTube",
-    badgeClassName: "bg-red-600/20 text-red-500",
+    badgeClassName: "bg-red-500/20 text-red-400",
   },
   { id: "twitter", label: "X (Twitter)", badgeClassName: "bg-slate-500/20 text-slate-300" },
   { id: "other", label: "その他", badgeClassName: "bg-stone-500/20 text-stone-300" },
