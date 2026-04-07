@@ -1,11 +1,13 @@
 #!/bin/bash
-# Stop hook: CLAUDE.md のルール遵守をリマインドする
-# CLAUDE.md全文は出力しない（システムが自動で読み込み済みのため）
+# PreToolUse hook: 各ツール実行前に CLAUDE.md を注入
+set -euo pipefail
 
 REPO_ROOT=$(cd "$(git rev-parse --git-common-dir 2>/dev/null)/.." && pwd 2>/dev/null) || exit 0
+CLAUDE_MD="${REPO_ROOT}/CLAUDE.md"
 
-if [[ ! -f "${REPO_ROOT}/CLAUDE.md" ]]; then
-  exit 0
+if [[ -f "$CLAUDE_MD" ]]; then
+  # systemReminder として AI に読まれる
+  jq -n --arg content "$(<"$CLAUDE_MD")" '{"systemReminder": $content}'
 fi
 
-echo "CLAUDE.md のルールを遵守すること。worktree必須・TDD・レビュー必須・mainは常にクリーン。"
+exit 0
