@@ -78,6 +78,12 @@
             "command": "bash \"$(git rev-parse --show-toplevel 2>/dev/null || echo .)/.claude/hooks/worktree-isolation-guard.sh\"",
             "timeout": 5,
             "statusMessage": "Checking worktree isolation..."
+          },
+          {
+            "type": "command",
+            "command": "bash \"$(git rev-parse --show-toplevel 2>/dev/null || echo .)/.claude/hooks/diagnosis-first-guard.sh\"",
+            "timeout": 5,
+            "statusMessage": "Diagnosis-first check..."
           }
         ]
       },
@@ -125,6 +131,12 @@
             "type": "command",
             "command": "bash \"$(git rev-parse --show-toplevel 2>/dev/null || echo .)/.claude/hooks/uncommitted-warn.sh\"",
             "timeout": 5
+          },
+          {
+            "type": "command",
+            "command": "bash \"$(git rev-parse --show-toplevel 2>/dev/null || echo .)/.claude/hooks/verify-claims-guard.sh\"",
+            "timeout": 5,
+            "statusMessage": "Verifying claims..."
           }
         ]
       }
