@@ -151,6 +151,42 @@ describe("parseYoutube", () => {
     await expect(parseYoutube(url)).rejects.toThrow("YouTube動画の取得に失敗しました");
   });
 
+  it("YouTubeではないURLの場合エラーになること", async () => {
+    // Arrange
+    const url = "https://example.com/watch?v=dQw4w9WgXcQ";
+
+    // Act & Assert
+    await expect(parseYoutube(url)).rejects.toThrow("YouTubeのURLではありません");
+  });
+
+  it("vimeoのURLの場合エラーになること", async () => {
+    // Arrange
+    const url = "https://vimeo.com/123456789";
+
+    // Act & Assert
+    await expect(parseYoutube(url)).rejects.toThrow("YouTubeのURLではありません");
+  });
+
+  it("excerpt が「チャンネル名によるYouTube動画「タイトル」」の形式になること", async () => {
+    // Arrange
+    const url = "https://www.youtube.com/watch?v=dQw4w9WgXcQ";
+    const mockResponse = {
+      title: "サンプルタイトル",
+      author_name: "サンプルチャンネル",
+      author_url: "https://www.youtube.com/@sample",
+      thumbnail_url: "https://i.ytimg.com/vi/dQw4w9WgXcQ/hqdefault.jpg",
+    };
+    vi.spyOn(globalThis, "fetch").mockResolvedValueOnce(
+      new Response(JSON.stringify(mockResponse), { status: 200 }),
+    );
+
+    // Act
+    const result = await parseYoutube(url);
+
+    // Assert
+    expect(result.excerpt).toBe("サンプルチャンネルによるYouTube動画「サンプルタイトル」");
+  });
+
   it("youtu.be短縮URLからメタデータを取得できること", async () => {
     // Arrange
     const url = "https://youtu.be/dQw4w9WgXcQ";
