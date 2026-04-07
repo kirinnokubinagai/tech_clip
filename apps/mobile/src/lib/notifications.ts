@@ -10,8 +10,15 @@ import { logger } from "@/lib/logger";
 /** Android通知チャンネルID */
 const NOTIFICATION_CHANNEL_ID = "default";
 
-/** 通知タップ時の許可URLパターン */
-const ALLOWED_PUSH_PATTERNS = ["/articles", "/profile", "/settings", "/onboarding"];
+/**
+ * 通知タップ時の許可URLパターン
+ * - /articles: 記事一覧・個別記事への遷移
+ * - /profile: ユーザープロフィール画面
+ * - /settings: 設定画面
+ * 注意: /onboarding は既存ユーザー向けプッシュ通知での遷移先として使用しない。
+ * 新規インストール後の初回フロー誘導のみ onboarding を使うため、ここには含めない。
+ */
+const ALLOWED_PUSH_PATTERNS = ["/articles", "/profile", "/settings"];
 
 /**
  * 通知URLがアプリ内の許可されたルートかどうかを検証する
@@ -94,8 +101,8 @@ export async function registerTokenWithApi(token: string): Promise<void> {
 }
 
 /**
- * 既に権限が granted であることを前提にトークン取得とAPI登録のみを行う
- * 権限要求は行わない（呼び出し側が事前に権限を確認・取得済みであること）
+ * 通知権限を確認し、granted の場合のみトークン取得とAPI登録を行う
+ * 権限要求は行わない。権限が未付与の場合はスキップしてログを出力する。
  * エラーはすべてログに記録し、例外を外部に伝播させない
  */
 export async function registerPushTokenOnly(): Promise<void> {

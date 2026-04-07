@@ -1,6 +1,15 @@
+import {
+  checkNotificationPermission,
+  registerPushTokenOnly,
+  requestNotificationPermission,
+  setupNotificationHandlers,
+} from "@mobile/lib/notifications";
 import * as Device from "expo-device";
 import * as Notifications from "expo-notifications";
+import { router } from "expo-router";
 import { Platform } from "react-native";
+import { apiFetch } from "@/lib/api";
+import { logger } from "@/lib/logger";
 
 jest.mock("expo-notifications", () => ({
   getPermissionsAsync: jest.fn(),
@@ -41,16 +50,6 @@ jest.mock("@/lib/logger", () => ({
 jest.mock("@/lib/constants", () => ({
   LIGHT_COLORS: { accent: "#FF0000" },
 }));
-
-import {
-  checkNotificationPermission,
-  registerPushTokenOnly,
-  requestNotificationPermission,
-  setupNotificationHandlers,
-} from "@mobile/lib/notifications";
-import { router } from "expo-router";
-import { apiFetch } from "@/lib/api";
-import { logger } from "@/lib/logger";
 
 beforeEach(() => {
   jest.clearAllMocks();
