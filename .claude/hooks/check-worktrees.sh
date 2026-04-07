@@ -3,9 +3,11 @@
 # SessionStart hook: 全worktreeの健全性をチェック
 #
 # 検出する問題:
-# 1. 未コミットの変更（modified/staged files）
-# 2. リベース/マージ途中の状態
-# 3. mainから遅れているブランチ
+# 1. ネストworktree（.worktrees/ 内にさらに .worktrees/ がある）
+# 2. 不正なworktreeパス（REPO_ROOT/.worktrees/ 直下にない）
+# 3. リベース/マージ途中の状態
+# 4. 未コミットの変更（modified/staged files）
+# 5. mainから遅れているブランチ
 
 PROBLEMS=""
 PROBLEM_COUNT=0
@@ -17,10 +19,28 @@ if [ -z "$WORKTREE_PATHS" ]; then
     exit 0
 fi
 
+# リポジトリルートを取得
+REPO_ROOT=$(cd "$(git rev-parse --git-common-dir 2>/dev/null)/.." && pwd)
+EXPECTED_PREFIX="${REPO_ROOT}/.worktrees/"
+
 for wt_path in $WORKTREE_PATHS; do
     [ -d "$wt_path" ] || continue
 
     wt_name=$(basename "$wt_path")
+
+    # ネストworktree検出: .worktrees/ 配下にさらに .worktrees/ があるパス
+    if [[ "$wt_path" =~ \.worktrees/[^/]+/\.worktrees/ ]]; then
+        PROBLEMS="${PROBLEMS}[NESTED] ${wt_name}: worktreeがネストしている -> git worktree remove --force ${wt_path} で除去し ${EXPECTED_PREFIX} 直下に再作成 | "
+        PROBLEM_COUNT=$((PROBLEM_COUNT + 1))
+        continue
+    fi
+
+    # worktreeパスの正当性チェック: REPO_ROOT/.worktrees/ 直下にあるか
+    if [[ "$wt_path" != "${EXPECTED_PREFIX}"* ]]; then
+        PROBLEMS="${PROBLEMS}[MISPLACED] ${wt_name}: ${EXPECTED_PREFIX} 配下にない不正なパス -> 正しいパスに再作成すること | "
+        PROBLEM_COUNT=$((PROBLEM_COUNT + 1))
+        continue
+    fi
 
     # git dir を解決（worktreeは .git ファイルで実際のgit dirを指す）
     GIT_DIR=""
@@ -30,7 +50,7 @@ for wt_path in $WORKTREE_PATHS; do
         GIT_DIR="$wt_path/.git"
     fi
 
-    # 1. リベース/マージ途中チェック（ファイルベース、ロケール非依存）
+    # 3. リベース/マージ途中チェック（ファイルベース、ロケール非依存）
     if [ -n "$GIT_DIR" ]; then
         if [ -d "$GIT_DIR/rebase-merge" ] || [ -d "$GIT_DIR/rebase-apply" ]; then
             PROBLEMS="${PROBLEMS}[REBASE] ${wt_name}: rebase途中 -> git -C ${wt_path} rebase --continue or --abort | "
@@ -44,7 +64,7 @@ for wt_path in $WORKTREE_PATHS; do
         fi
     fi
 
-    # 2. 未コミットの変更チェック
+    # 4. 未コミットの変更チェック
     DIRTY=$(git -C "$wt_path" status --porcelain 2>/dev/null | grep -v '^??' | head -1)
     if [ -n "$DIRTY" ]; then
         DIRTY_COUNT=$(git -C "$wt_path" status --porcelain 2>/dev/null | grep -v '^??' | wc -l | tr -d ' ')
@@ -52,7 +72,7 @@ for wt_path in $WORKTREE_PATHS; do
         PROBLEM_COUNT=$((PROBLEM_COUNT + 1))
     fi
 
-    # 3. mainから遅れているかチェック
+    # 5. mainから遅れているかチェック
     BEHIND=$(git -C "$wt_path" rev-list --count "HEAD..origin/main" 2>/dev/null)
     if [ -n "$BEHIND" ] && [ "$BEHIND" -gt 0 ]; then
         PROBLEMS="${PROBLEMS}[BEHIND] ${wt_name}: ${BEHIND} commits behind main -> git -C ${wt_path} rebase origin/main | "
