@@ -249,7 +249,7 @@ jobs:
 
   review-gate:
     name: Review Gate
-    needs: review-and-label
+    needs: [ci, review-and-label]
     runs-on: ubuntu-latest
     if: github.event_name == 'pull_request'
     permissions:

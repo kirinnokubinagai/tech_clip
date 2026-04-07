@@ -291,7 +291,7 @@ describe("notifications", () => {
     });
   });
 
-  describe("getAllowedRoute", () => {
+  describe("通知URL検証", () => {
     type ResponseCallback = (response: {
       notification: { request: { content: { data: { url?: unknown } } } };
     }) => void;
