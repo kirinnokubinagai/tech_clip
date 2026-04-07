@@ -299,10 +299,12 @@ describe("notifications", () => {
     it("許可されたURLの通知タップで router.push を呼び出すこと", () => {
       // Arrange
       let tapCallback: ((response: Notifications.NotificationResponse) => void) | null = null;
-      (Notifications.addNotificationResponseReceivedListener as jest.Mock).mockImplementation((cb) => {
-        tapCallback = cb;
-        return { remove: jest.fn() };
-      });
+      (Notifications.addNotificationResponseReceivedListener as jest.Mock).mockImplementation(
+        (cb) => {
+          tapCallback = cb;
+          return { remove: jest.fn() };
+        },
+      );
 
       // Act
       setupNotificationHandlers();
@@ -318,10 +320,12 @@ describe("notifications", () => {
     it("許可されていないURLの通知タップで logger.warn を呼び出しrouter.pushは呼ばないこと", () => {
       // Arrange
       let tapCallback: ((response: Notifications.NotificationResponse) => void) | null = null;
-      (Notifications.addNotificationResponseReceivedListener as jest.Mock).mockImplementation((cb) => {
-        tapCallback = cb;
-        return { remove: jest.fn() };
-      });
+      (Notifications.addNotificationResponseReceivedListener as jest.Mock).mockImplementation(
+        (cb) => {
+          tapCallback = cb;
+          return { remove: jest.fn() };
+        },
+      );
 
       // Act
       setupNotificationHandlers();

@@ -14,11 +14,7 @@ const NOTIFICATION_CHANNEL_ID = "default";
 const TOKEN_LOG_PREFIX_LENGTH = 6;
 
 /** 通知タップ時にナビゲーション可能な許可ルート一覧 */
-const ALLOWED_PUSH_PATTERNS = [
-  "/articles",
-  "/profile",
-  "/settings",
-];
+const ALLOWED_PUSH_PATTERNS = ["/articles", "/profile", "/settings"];
 
 /**
  * 通知URLがアプリ内の許可されたルートかどうかを検証する
