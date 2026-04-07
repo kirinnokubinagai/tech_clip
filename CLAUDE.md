@@ -124,7 +124,7 @@ pnpm add <pkg>
 - シンボリンクによる node_modules 共有は禁止（`settings.json` の `symlinkDirectories` を使わない）
 
 ```bash
-REPO_ROOT=$(cd "$(git rev-parse --git-common-dir)/.." && pwd)
+REPO_ROOT=$(cd "$(env -u GIT_DIR -u GIT_WORK_TREE git rev-parse --git-common-dir)/.." && pwd)
 git worktree add "${REPO_ROOT}/.worktrees/issue-N" -b issue/N/short-desc
 cd "${REPO_ROOT}/.worktrees/issue-N"
 pnpm install --frozen-lockfile
@@ -169,7 +169,8 @@ git commit -m "design: add <screen-name> mockup #<issue番号>"
 ### 7. マージ後、Worktree をクリーンアップ
 
 ```bash
-git worktree remove .worktrees/issue-N
+REPO_ROOT=$(cd "$(env -u GIT_DIR -u GIT_WORK_TREE git rev-parse --git-common-dir)/.." && pwd)
+git worktree remove "${REPO_ROOT}/.worktrees/issue-N"
 git branch -d issue/N/short-desc
 ```
 
