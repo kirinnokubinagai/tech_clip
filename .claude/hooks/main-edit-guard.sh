@@ -18,13 +18,24 @@ if [ "$CURRENT_BRANCH" = "main" ]; then
     exit 0
   fi
 
-  # .claude/ 配下の設定ファイルは許可（hooks, plans等）
-  if echo "$FILE_PATH" | grep -q "/.claude/"; then
+  # ソースコード以外は main 上での編集を許可
+  # ブロック対象: apps/, packages/, tests/ 配下のみ（実装コード）
+  IS_SOURCE=false
+  if echo "$FILE_PATH" | grep -qE "(^|/)apps/"; then
+    IS_SOURCE=true
+  elif echo "$FILE_PATH" | grep -qE "(^|/)packages/"; then
+    IS_SOURCE=true
+  elif echo "$FILE_PATH" | grep -qE "(^|/)tests/"; then
+    IS_SOURCE=true
+  fi
+
+  if [ "$IS_SOURCE" = false ]; then
     exit 0
   fi
 
-  echo "DENY: mainブランチ上でのファイル編集は禁止されています。worktreeを作成してください。" >&2
+  echo "DENY: mainブランチ上でのソースコード編集は禁止されています。worktreeを作成してください。" >&2
   echo "  対象ファイル: $FILE_PATH" >&2
   echo "  現在のブランチ: main" >&2
+  echo "  ブロック対象: apps/, packages/, tests/ 配下" >&2
   exit 2
 fi

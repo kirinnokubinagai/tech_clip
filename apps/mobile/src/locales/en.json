@@ -51,6 +51,14 @@
     "continueWithGoogle": "Continue with Google",
     "continueWithGithub": "Continue with GitHub",
     "socialLoginFailed": "Failed to start social sign-in. Please try again.",
+    "callback": {
+      "signingIn": "Signing in...",
+      "backToLogin": "Back to Login",
+      "errorSocialLogin": "Social login failed. Please try again.",
+      "errorNoToken": "Authentication token not found. Please try again.",
+      "errorSaveToken": "Failed to save authentication info. Please try again.",
+      "errorCheckSession": "Failed to verify authentication. Please try again."
+    },
     "loginToRegister": "Sign up",
     "loginToRegisterPrompt": "Don't have an account?",
     "registerToLoginPrompt": "Already have an account?",
@@ -191,11 +199,16 @@
       "language": "Language",
       "notifications": "Notifications",
       "deleteAccount": "Delete Account",
-      "notLoggedIn": "Not logged in"
+      "notLoggedIn": "Not logged in",
+      "summaryLanguage": "Summary Language"
     },
     "languageSelect": {
       "title": "Language Settings",
       "prompt": "Select display language"
+    },
+    "summaryLanguageSelect": {
+      "title": "Summary Language",
+      "prompt": "Select language for AI summaries"
     },
     "notificationHintOn": "Tap to turn notifications on",
     "notificationHintOff": "Tap to turn notifications off",
@@ -205,6 +218,7 @@
       "confirm": "Log Out"
     },
     "notificationUpdateError": "Failed to update notification settings",
+    "summaryLanguageUpdateError": "Failed to update summary language",
     "deleteAccount": {
       "title": "Delete Account",
       "message": "Deleting your account will permanently remove all your data. This action cannot be undone.",

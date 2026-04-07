@@ -13,12 +13,14 @@ if [ "$BRANCH" = "main" ]; then
   REMOTE=$(git rev-parse origin/main 2>/dev/null)
 
   if [ "$LOCAL" != "$REMOTE" ]; then
-    # Check for uncommitted changes
     if git diff --quiet && git diff --cached --quiet; then
-      git pull --rebase --quiet origin main 2>/dev/null
-      echo '{"hookSpecificOutput":{"hookEventName":"SessionStart","additionalContext":"mainブランチを自動pullしました（最新に同期済み）"}}'
+      if git pull --ff-only --quiet origin main 2>/dev/null; then
+        echo '{"hookSpecificOutput":{"hookEventName":"SessionStart","additionalContext":"mainブランチを自動pullしました（最新に同期済み）"}}'
+      else
+        echo '{"hookSpecificOutput":{"hookEventName":"SessionStart","additionalContext":"⚠️ mainブランチのfast-forward pullに失敗しました。ローカルmainがリモートと乖離しています。ユーザーに git switch -C main origin/main --discard-changes の実行を依頼してください。"}}'
+      fi
     else
-      echo '{"hookSpecificOutput":{"hookEventName":"SessionStart","additionalContext":"⚠️ mainブランチがリモートより遅れています。未コミットの変更があるため自動pullできません。手動で git stash && git pull && git stash pop を実行してください。"}}'
+      echo '{"hookSpecificOutput":{"hookEventName":"SessionStart","additionalContext":"⚠️ mainブランチに未コミットの変更があります。mainは常にクリーンであるべきです。ユーザーに報告してください。"}}'
     fi
   fi
 fi

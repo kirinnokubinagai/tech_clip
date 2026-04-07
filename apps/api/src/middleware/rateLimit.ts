@@ -1,5 +1,9 @@
 import type { Context, MiddlewareHandler } from "hono";
 
+import { createLogger } from "../lib/logger";
+
+const logger = createLogger("rateLimit");
+
 /** HTTP 429 Too Many Requests ステータスコード */
 const HTTP_TOO_MANY_REQUESTS = 429;
 
@@ -148,6 +152,20 @@ function getClientIp(c: Context): string {
  * IPベースまたはユーザーIDベースでリクエスト数をカウントし、
  * 制限を超えた場合は429を返す。Retry-Afterヘッダーも付与する。
  *
+ * ## ウィンドウ方式
+ * 固定ウィンドウ方式（Fixed Window）を採用する。
+ * ウィンドウの開始時刻は最初のリクエスト到達時に確定し、
+ * `windowMs` 経過後にカウントがリセットされる。
+ * スライディングウィンドウ（Sliding Window）ではないため、
+ * ウィンドウ境界付近でバーストが発生しうる点に留意すること。
+ *
+ * ## フェイルオープン
+ * エラー発生時はフェイルオープンでリクエストを通過させる。
+ *
+ * ## 精度に関する注意
+ * 単一 isolate 内では順次処理されるが、複数エッジロケーション間では
+ * get→set 間の TOCTOU により近似カウントとなる。
+ *
  * @param config - レート制限設定
  * @param store - レート制限ストア（省略時はデフォルトのインメモリストア）
  * @returns Hono ミドルウェアハンドラー
@@ -161,10 +179,21 @@ export function createRateLimitMiddleware(
     const key = `${config.keyPrefix}:${identifier}`;
     const now = Date.now();
 
-    const existing = await store.get(key);
+    let existing: RateLimitEntry | null;
+    try {
+      existing = await store.get(key);
+    } catch (error) {
+      logger.warn("レート制限ストアの読み取りに失敗", { key, error });
+      await next();
+      return;
+    }
 
     if (!existing || existing.resetAt <= now) {
-      await store.set(key, { count: 1, resetAt: now + config.windowMs });
+      try {
+        await store.set(key, { count: 1, resetAt: now + config.windowMs });
+      } catch (error) {
+        logger.warn("レート制限ストアの書き込みに失敗", { key, error });
+      }
       await next();
       return;
     }
@@ -186,7 +215,11 @@ export function createRateLimitMiddleware(
       );
     }
 
-    await store.set(key, { count: existing.count + 1, resetAt: existing.resetAt });
+    try {
+      await store.set(key, { count: existing.count + 1, resetAt: existing.resetAt });
+    } catch (error) {
+      logger.warn("レート制限カウンターの更新に失敗", { key, error });
+    }
     await next();
   };
 }

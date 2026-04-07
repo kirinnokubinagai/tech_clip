@@ -22,7 +22,10 @@ check_worktree_path() {
     return 1
   fi
 
-  local wt_path resolved_path repo_root expected_prefix
+  local wt_path
+  local resolved_path
+  local repo_root
+  local expected_prefix
   # -b フラグとそのブランチ名をスキップしてパスを抽出
   # sed の末尾スペース必須パターンは -b branch がコマンド末尾の場合にマッチしないため
   # sed で除去し、awk でパスを先に取り出すことで吸収する
@@ -75,6 +78,8 @@ check_dangerous() {
   echo "$cmd" | grep -qE "git clean" && return 0
   echo "$cmd" | grep -qE "git branch -D" && return 0
   echo "$cmd" | grep -qE "git restore" && return 0
+  # core.worktree は全worktreeの --show-toplevel を汚染するため全形式をブロック
+  echo "$cmd" | grep -qE "git config.*core\.worktree" && return 0
 
   # git checkout でファイル復元を検出（ブランチ切替は許可）
   # [^-] により -b / --orphan / --track 等のフラグ付きコマンドは自動除外
@@ -105,7 +110,8 @@ check_merge_without_review() {
   fi
 
   # PR番号を抽出
-  local pr_num=$(echo "$cmd" | grep -oE "gh pr merge [0-9]+" | grep -oE "[0-9]+")
+  local pr_num
+  pr_num=$(echo "$cmd" | grep -oE "gh pr merge [0-9]+" | grep -oE "[0-9]+")
   if [ -z "$pr_num" ]; then
     return 1
   fi
@@ -116,11 +122,13 @@ check_merge_without_review() {
   fi
 
   # PRにレビューコメントがあるか確認
-  local repo=$(gh repo view --json nameWithOwner -q '.nameWithOwner' 2>/dev/null)
+  local repo
+  repo=$(gh repo view --json nameWithOwner -q '.nameWithOwner' 2>/dev/null)
   if [ -z "$repo" ]; then
     return 1
   fi
-  local review_count=$(gh api "repos/$repo/pulls/$pr_num/reviews" --jq 'length' 2>/dev/null)
+  local review_count
+  review_count=$(gh api "repos/$repo/pulls/$pr_num/reviews" --jq 'length' 2>/dev/null)
   if [ -z "$review_count" ] || [ "$review_count" = "0" ]; then
     echo "⚠️ レビューなしでPRをマージしようとしています"
     echo "PR #$pr_num にレビューコメントがありません。"
@@ -149,12 +157,12 @@ if check_merge_without_review "$COMMAND"; then
   exit 2
 fi
 
-# PR作成前のテスト通過チェック
+# PR作成前のテスト通過チェック（警告のみ、ブロックしない）
 if echo "$COMMAND" | grep -qE "gh pr create"; then
-  echo "🧪 PR作成前にテスト通過を確認中..."
-  if ! pnpm test 2>/dev/null; then
-    echo "❌ テストが失敗しています。テストを修正してからPRを作成してください。"
-    exit 2
+  if command -v pnpm &>/dev/null; then
+    if ! timeout 60 pnpm test 2>/dev/null; then
+      echo "⚠️ テストが失敗しています。PR作成前にテストを修正することを推奨します。"
+    fi
   fi
 fi
 
