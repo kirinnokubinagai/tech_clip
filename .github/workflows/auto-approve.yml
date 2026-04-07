@@ -75,7 +75,7 @@ jobs:
           TURSO_AUTH_TOKEN: dummy
           RUNPOD_API_KEY: dummy
           RUNPOD_ENDPOINT_ID: dummy
-          BETTER_AUTH_SECRET: test-secret-key-for-ci
+          BETTER_AUTH_SECRET: ${{ secrets.BETTER_AUTH_CI_SECRET || github.sha }}
           ENVIRONMENT: test
           ZAP_TEST_EMAIL: ${{ secrets.ZAP_TEST_EMAIL }}
           ZAP_TEST_PASSWORD: ${{ secrets.ZAP_TEST_PASSWORD }}
