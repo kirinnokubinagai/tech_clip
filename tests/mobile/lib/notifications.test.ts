@@ -220,13 +220,18 @@ describe("notifications", () => {
       });
       apiFetch.mockRejectedValue(new Error("API Error"));
 
-      // Act & Assert
-      await expect(registerPushTokenOnly()).resolves.toBeUndefined();
+      // Act
+      const result = registerPushTokenOnly();
+
+      // Assert
+      await expect(result).resolves.toBeUndefined();
     });
   });
 
   describe("setupNotificationHandlers", () => {
     it("通知ハンドラーを設定すること", () => {
+      // Arrange（前提条件なし）
+
       // Act
       setupNotificationHandlers();
 
@@ -239,6 +244,8 @@ describe("notifications", () => {
     });
 
     it("リスナーのクリーンアップ関数を返すこと", () => {
+      // Arrange（前提条件なし）
+
       // Act
       const cleanup = setupNotificationHandlers();
 

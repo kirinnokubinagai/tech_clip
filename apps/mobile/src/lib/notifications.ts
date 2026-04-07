@@ -109,6 +109,8 @@ export async function registerTokenWithApi(token: string): Promise<void> {
  * 既に権限が granted であることを前提にトークン取得とAPI登録のみを行う
  * 権限要求は行わない（呼び出し側が事前に権限を確認・取得済みであること）
  * エラーはすべてログに記録し、例外を外部に伝播させない
+ *
+ * @returns void（エラー時も例外を投げず、ログに記録して終了する）
  */
 export async function registerPushTokenOnly(): Promise<void> {
   try {
