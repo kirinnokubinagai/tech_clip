@@ -1,6 +1,6 @@
 import * as Device from "expo-device";
 import * as Notifications from "expo-notifications";
-import { router } from "expo-router";
+import { type Href, router } from "expo-router";
 import { Platform } from "react-native";
 
 import { apiFetch } from "@/lib/api";
@@ -20,6 +20,9 @@ const ALLOWED_PUSH_PATTERNS = ["/articles", "/profile", "/settings", "/onboardin
  * @returns 許可されたルートの場合 true
  */
 function isAllowedRoute(url: string): boolean {
+  if (url.includes("..")) {
+    return false;
+  }
   return ALLOWED_PUSH_PATTERNS.some((pattern) => url === pattern || url.startsWith(`${pattern}/`));
 }
 
@@ -101,6 +104,12 @@ export async function registerPushTokenOnly(): Promise<void> {
       return;
     }
 
+    const permission = await checkNotificationPermission();
+    if (permission !== "granted") {
+      logger.info("通知権限が未付与のためプッシュトークン登録をスキップします", { permission });
+      return;
+    }
+
     if (Platform.OS === "android") {
       await Notifications.setNotificationChannelAsync(NOTIFICATION_CHANNEL_ID, {
         name: NOTIFICATION_CHANNEL_ID,
@@ -149,7 +158,7 @@ export function setupNotificationHandlers(): () => void {
   const responseSubscription = Notifications.addNotificationResponseReceivedListener((response) => {
     const url = response.notification.request.content.data?.url;
     if (typeof url === "string" && isAllowedRoute(url)) {
-      router.push(url);
+      router.push(url as Href);
       return;
     }
     if (typeof url === "string") {
