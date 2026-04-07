@@ -18,14 +18,16 @@ const ALLOWED_PUSH_PATTERNS = ["/articles", "/profile", "/settings"];
 
 /**
  * 通知URLがアプリ内の許可されたルートかどうかを検証する
- * パストラバーサル攻撃対策としてURLを正規化してからチェックする
+ * URLエンコードされたパストラバーサル（%2e%2e 等）対策として
+ * decodeURIComponent で復号後に正規化してからチェックする
  *
  * @param url - 検証するURL文字列
  * @returns 許可されたルートの場合 true
  */
 function isAllowedRoute(url: string): boolean {
   try {
-    const normalized = new URL(url, "app://app").pathname;
+    const decoded = decodeURIComponent(url);
+    const normalized = new URL(decoded, "app://app").pathname;
     return ALLOWED_PUSH_PATTERNS.some(
       (pattern) => normalized === pattern || normalized.startsWith(`${pattern}/`),
     );

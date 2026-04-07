@@ -340,5 +340,31 @@ describe("notifications", () => {
       );
       expect(router.push).not.toHaveBeenCalled();
     });
+
+    it("URLエンコードされたパストラバーサル（%2e%2e）をブロックすること", () => {
+      // Arrange
+      let tapCallback: ((response: Notifications.NotificationResponse) => void) | null = null;
+      (Notifications.addNotificationResponseReceivedListener as jest.Mock).mockImplementation(
+        (cb) => {
+          tapCallback = cb;
+          return { remove: jest.fn() };
+        },
+      );
+
+      // Act
+      setupNotificationHandlers();
+      tapCallback?.({
+        notification: {
+          request: { content: { data: { url: "/%2e%2e/%2e%2e/admin" } } },
+        },
+      } as unknown as Notifications.NotificationResponse);
+
+      // Assert
+      expect(logger.warn).toHaveBeenCalledWith(
+        "許可されていない通知URLをブロックしました",
+        expect.objectContaining({ url: "/%2e%2e/%2e%2e/admin" }),
+      );
+      expect(router.push).not.toHaveBeenCalled();
+    });
   });
 });
