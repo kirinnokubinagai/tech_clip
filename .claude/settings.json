@@ -39,6 +39,12 @@
             "command": "bash \"$(git rev-parse --show-toplevel 2>/dev/null || echo .)/.claude/hooks/dangerous-command-guard.sh\"",
             "timeout": 5,
             "statusMessage": "Checking for dangerous commands..."
+          },
+          {
+            "type": "command",
+            "command": "bash \"$(git rev-parse --show-toplevel 2>/dev/null || echo .)/.claude/hooks/pre-push-review-guard.sh\"",
+            "timeout": 5,
+            "statusMessage": "Checking review status..."
           }
         ]
       },
