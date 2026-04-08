@@ -1,6 +1,6 @@
 #!/bin/bash
 # PostToolUse:Bash hook
-# git push 成功後にレビューマーカーを削除（次回push時に再レビューを強制）
+# git push 後にレビューマーカーを削除（次回push時に再レビューを強制）
 
 if ! command -v jq &> /dev/null; then
   exit 0
