@@ -74,6 +74,17 @@ tools:
 
 問題 0 件・提案 0 件になるまで Approve しない。
 
+## レビュー完了時のマーカー作成（必須）
+
+全件 PASS（問題 0 件・提案 0 件）の場合、以下のコマンドでマーカーファイルを作成する:
+
+```bash
+touch "$(git rev-parse --show-toplevel)/.claude/.review-passed"
+```
+
+このマーカーがないと `git push` が pre-push-review-guard.sh によりブロックされる。
+問題が1件でもある場合はマーカーを作成しない。
+
 ## 出力言語
 
 すべての出力は日本語で行う。
