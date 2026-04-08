@@ -83,7 +83,7 @@
           ];
 
           shellHook = ''
-            # CLAUDE_CONFIG_DIR: ~/.claude/CLAUDE.md の oh-my-claudecode 設定を隔離
+            # CLAUDE_CONFIG_DIR: auth・settings を .claude-user/ に隔離
             CLAUDE_USER_DIR="$PWD/.claude-user"
             export CLAUDE_CONFIG_DIR="$CLAUDE_USER_DIR"
             mkdir -p "$CLAUDE_USER_DIR"
@@ -97,9 +97,30 @@
               done
             fi
 
+            # OMC 分離: claude プロセスの HOME を差し替えて ~/.claude/CLAUDE.md を見えなくする
+            # - HOME 変更は claude プロセスのみに限定され、現在のシェルには影響しない
+            # - ~/.claude/CLAUDE.md  → 読み込まれない（HOME が偽装されているため）
+            # - .claude-user/        → CLAUDE_CONFIG_DIR 経由で auth/settings が読み込まれる
+            # - プロジェクト CLAUDE.md → CWD ベースなので影響なし
+            # bash/zsh/fish すべてで動作するようシェル関数ではなくラッパースクリプトを PATH に置く
+            _CLAUDE_REAL=$(command -v claude 2>/dev/null || echo "")
+            if [ -n "$_CLAUDE_REAL" ]; then
+              _CLAUDE_FAKE_HOME="$PWD/.claude-isolated"
+              # .claude/ は空でよい（settings は CLAUDE_CONFIG_DIR 経由で読み込まれる）
+              mkdir -p "$_CLAUDE_FAKE_HOME/.claude"
+              _CLAUDE_WRAPPER_BIN="$_CLAUDE_FAKE_HOME/bin"
+              mkdir -p "$_CLAUDE_WRAPPER_BIN"
+              cat > "$_CLAUDE_WRAPPER_BIN/claude" <<WRAPPER
+#!/usr/bin/env bash
+exec env HOME="$_CLAUDE_FAKE_HOME" "$_CLAUDE_REAL" "\$@"
+WRAPPER
+              chmod +x "$_CLAUDE_WRAPPER_BIN/claude"
+              export PATH="$_CLAUDE_WRAPPER_BIN:$PATH"
+              unset _CLAUDE_REAL _CLAUDE_FAKE_HOME _CLAUDE_WRAPPER_BIN
+            fi
+
             # eas-cli は nixpkgs にないため npx ラッパーで提供
             eas() { npx --yes eas-cli@latest "$@"; }
-            export -f eas
 
             # シークレットファイルのセットアップコマンド
             setup-secrets() {
@@ -120,7 +141,6 @@
                 echo "[setup-secrets] 詳細は docs/SECRETS.md を参照してください。"
               fi
             }
-            export -f setup-secrets
 
             # 依存パッケージの自動インストール
             if [ ! -d "node_modules" ]; then
