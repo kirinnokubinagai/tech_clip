@@ -58,8 +58,10 @@ git push
 ## worktree の使い方
 
 ```bash
+# REPO_ROOT: mainブランチのリポジトリルート（worktree内部でも正しく解決）
+REPO_ROOT=$(cd "$(git rev-parse --git-common-dir)/.." && pwd)
 # WORKTREE_BASE: mainと兄弟のディレクトリ（REPO_ROOTの親）
-WORKTREE_BASE=$(dirname "$(git rev-parse --show-toplevel)")
+WORKTREE_BASE=$(dirname "$REPO_ROOT")
 
 # 作成（必ず origin/main から）
 git worktree add "${WORKTREE_BASE}/issue-N" -b issue/N/short-desc origin/main
