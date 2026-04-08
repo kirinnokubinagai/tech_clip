@@ -6,7 +6,6 @@ on:
     paths-ignore:
       - '**/*.md'
       - 'docs/**'
-      - '.claude/**'
       - 'LICENSE'
       - '.omc/**'
       - 'tests/e2e/maestro/**'
@@ -15,7 +14,6 @@ on:
     paths-ignore:
       - '**/*.md'
       - 'docs/**'
-      - '.claude/**'
       - 'LICENSE'
       - '.omc/**'
       - 'tests/e2e/maestro/**'
@@ -24,6 +22,7 @@ env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
+  # PRに対してClaudeレビューを実行（.claude/**変更も含む全PRが対象）
   claude-review:
     if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
@@ -91,50 +90,84 @@ jobs:
           fi
           echo "AIレビュー: PASS"
 
-  checks:
-    needs: review-gate
-    if: always() && (needs.review-gate.result == 'success' || needs.review-gate.result == 'skipped')
+  # .claude/**のみの変更かどうかを検出（コードチェックをスキップするため）
+  changes:
+    runs-on: ubuntu-latest
+    outputs:
+      code: ${{ steps.check.outputs.code }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - id: check
+        run: |
+          if [ "${{ github.event_name }}" != "pull_request" ]; then
+            echo "code=true" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+          CHANGED=$(git diff --name-only origin/${{ github.base_ref }}...HEAD 2>/dev/null \
+            | grep -cvE '^\.claude/' || true)
+          echo "code=$([ "${CHANGED:-0}" -gt 0 ] && echo 'true' || echo 'false')" >> $GITHUB_OUTPUT
+
+  lint:
+    needs: [review-gate, changes]
+    if: |
+      always() &&
+      needs.changes.outputs.code == 'true' &&
+      (needs.review-gate.result == 'success' || needs.review-gate.result == 'skipped')
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/nix-setup
-      - name: Run lint, typecheck, test, audit in parallel
-        run: |
-          nix develop --command bash -c '
-            set -euo pipefail
-            LOGDIR=$(mktemp -d)
-            trap "rm -rf ${LOGDIR}" EXIT
+      - name: Run lint
+        run: nix develop --command pnpm lint
 
-            pnpm lint       > "${LOGDIR}/lint.log" 2>&1 &
-            PID_LINT=$!
-            pnpm typecheck  > "${LOGDIR}/typecheck.log" 2>&1 &
-            PID_TC=$!
-            pnpm test       > "${LOGDIR}/test.log" 2>&1 &
-            PID_TEST=$!
-            pnpm audit      > "${LOGDIR}/audit.log" 2>&1 &
-            PID_AUDIT=$!
+  typecheck:
+    needs: [review-gate, changes]
+    if: |
+      always() &&
+      needs.changes.outputs.code == 'true' &&
+      (needs.review-gate.result == 'success' || needs.review-gate.result == 'skipped')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/nix-setup
+      - name: Run typecheck
+        run: nix develop --command pnpm typecheck
 
-            FAILED=0
-            wait $PID_LINT   || FAILED=1
-            wait $PID_TC     || FAILED=1
-            wait $PID_TEST   || FAILED=1
-            wait $PID_AUDIT  || FAILED=1
+  test:
+    needs: [review-gate, changes]
+    if: |
+      always() &&
+      needs.changes.outputs.code == 'true' &&
+      (needs.review-gate.result == 'success' || needs.review-gate.result == 'skipped')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/nix-setup
+      - name: Run test
+        run: nix develop --command pnpm test
 
-            echo "========== lint =========="
-            cat "${LOGDIR}/lint.log"
-            echo "========== typecheck =========="
-            cat "${LOGDIR}/typecheck.log"
-            echo "========== test =========="
-            cat "${LOGDIR}/test.log"
-            echo "========== audit =========="
-            cat "${LOGDIR}/audit.log"
-
-            exit $FAILED
-          '
+  audit:
+    needs: [review-gate, changes]
+    if: |
+      always() &&
+      needs.changes.outputs.code == 'true' &&
+      (needs.review-gate.result == 'success' || needs.review-gate.result == 'skipped')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/nix-setup
+      - name: Run audit
+        run: nix develop --command pnpm audit
 
   zap:
-    needs: review-gate
-    if: github.event_name == 'pull_request' && always() && (needs.review-gate.result == 'success' || needs.review-gate.result == 'skipped')
+    needs: [review-gate, changes]
+    if: |
+      github.event_name == 'pull_request' &&
+      always() &&
+      needs.changes.outputs.code == 'true' &&
+      (needs.review-gate.result == 'success' || needs.review-gate.result == 'skipped')
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -281,11 +314,15 @@ jobs:
 
   approve:
     if: |
+      always() &&
       github.event_name == 'pull_request' &&
       needs.review-gate.result == 'success' &&
-      needs.checks.result == 'success' &&
-      needs.zap.result == 'success'
-    needs: [review-gate, checks, zap]
+      (needs.lint.result == 'success' || needs.lint.result == 'skipped') &&
+      (needs.typecheck.result == 'success' || needs.typecheck.result == 'skipped') &&
+      (needs.test.result == 'success' || needs.test.result == 'skipped') &&
+      (needs.audit.result == 'success' || needs.audit.result == 'skipped') &&
+      (needs.zap.result == 'success' || needs.zap.result == 'skipped')
+    needs: [review-gate, lint, typecheck, test, audit, zap]
     runs-on: ubuntu-latest
     permissions:
       pull-requests: write

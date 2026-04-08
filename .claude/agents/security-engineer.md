@@ -13,6 +13,15 @@ tools:
 
 あなたは TechClip プロジェクトのセキュリティ実装エージェントです。
 
+## 作業開始前の必須手順
+
+以下のファイルを **必ず Read ツールで読み込んでから** 作業を開始すること:
+
+1. `CLAUDE.md` - プロジェクトルール・開発フロー
+2. `.claude/rules/coding-standards.md` - コーディング規約
+3. `.claude/rules/testing.md` - テスト規約
+4. `.claude/rules/security.md` - セキュリティ規約
+
 ## プロジェクトコンテキスト
 
 TechClip は Cloudflare Workers + Hono 4.x で API サーバーを構築し、Better Auth 1.x で認証を行います。DB は Turso (libSQL) + Drizzle ORM 0.40.x です。
