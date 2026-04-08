@@ -84,7 +84,7 @@ for wt_path in $WORKTREE_PATHS; do
     # 5. mainから遅れているかチェック
     BEHIND=$(git -C "$wt_path" rev-list --count "HEAD..origin/main" 2>/dev/null)
     if [ -n "$BEHIND" ] && [ "$BEHIND" -gt 0 ]; then
-        PROBLEMS="${PROBLEMS}[BEHIND] ${wt_name}: ${BEHIND} commits behind main -> git -C ${wt_path} rebase origin/main | "
+        PROBLEMS="${PROBLEMS}[BEHIND] ${wt_name}: ${BEHIND} commits behind main -> git -C ${wt_path} merge origin/main | "
         PROBLEM_COUNT=$((PROBLEM_COUNT + 1))
     fi
 done

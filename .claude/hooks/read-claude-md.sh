@@ -1,6 +1,10 @@
 #!/bin/bash
 # PreToolUse hook: 各ツール実行前に CLAUDE.md を注入
-set -euo pipefail
+
+# jqがない場合はスキップ
+if ! command -v jq &>/dev/null; then
+  exit 0
+fi
 
 REPO_ROOT=$(cd "$(git rev-parse --git-common-dir 2>/dev/null)/.." && pwd 2>/dev/null) || exit 0
 CLAUDE_MD="${REPO_ROOT}/CLAUDE.md"

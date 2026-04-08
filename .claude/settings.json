@@ -129,12 +129,6 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash \"$(git rev-parse --show-toplevel 2>/dev/null || echo .)/.claude/hooks/read-claude-md.sh\"",
-            "timeout": 10,
-            "statusMessage": "Re-reading CLAUDE.md..."
-          },
-          {
-            "type": "command",
             "command": "bash \"$(git rev-parse --show-toplevel 2>/dev/null || echo .)/.claude/hooks/uncommitted-warn.sh\"",
             "timeout": 5
           },
