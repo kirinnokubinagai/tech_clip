@@ -120,6 +120,12 @@
             "command": "bash \"$(git rev-parse --show-toplevel 2>/dev/null || echo .)/.claude/hooks/worktree-deps-guard.sh\"",
             "timeout": 5,
             "statusMessage": "Checking worktree deps..."
+          },
+          {
+            "type": "command",
+            "command": "bash \"$(git rev-parse --show-toplevel 2>/dev/null || echo .)/.claude/hooks/post-push-cleanup.sh\"",
+            "timeout": 5,
+            "statusMessage": "Cleaning up review marker..."
           }
         ]
       }

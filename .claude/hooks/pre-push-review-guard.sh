@@ -34,7 +34,4 @@ if [ ! -f "$MARKER" ]; then
   exit 2
 fi
 
-# push成功後にマーカーを削除（次回も必ずレビューが必要）
-rm -f "$MARKER"
-
 exit 0
