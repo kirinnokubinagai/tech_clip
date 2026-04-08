@@ -11,7 +11,7 @@ import { logger } from "@/lib/logger";
 const NOTIFICATION_CHANNEL_ID = "default";
 
 /** 通知タップ時の許可URLパターン */
-const ALLOWED_PUSH_PATTERNS = ["/articles", "/profile", "/settings", "/onboarding"];
+const ALLOWED_PUSH_PATTERNS = ["/articles", "/profile", "/settings"];
 
 /**
  * 通知URLがアプリ内の許可されたルートかどうかを検証する
@@ -98,6 +98,12 @@ export async function registerTokenWithApi(token: string): Promise<void> {
 export async function registerPushTokenOnly(): Promise<void> {
   try {
     if (!Device.isDevice) {
+      return;
+    }
+
+    const permission = await checkNotificationPermission();
+    if (permission !== "granted") {
+      logger.warn("通知権限が付与されていないためトークン登録をスキップします", { permission });
       return;
     }
 
