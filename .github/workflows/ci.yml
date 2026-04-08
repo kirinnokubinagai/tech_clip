@@ -103,6 +103,7 @@ jobs:
           nix develop --command bash -c '
             set -uo pipefail
             LOGDIR=$(mktemp -d)
+            trap "rm -rf ${LOGDIR}" EXIT
 
             pnpm lint       > "${LOGDIR}/lint.log" 2>&1 &
             PID_LINT=$!
@@ -128,7 +129,6 @@ jobs:
             echo "========== audit =========="
             cat "${LOGDIR}/audit.log"
 
-            rm -rf "${LOGDIR}"
             exit $FAILED
           '
 
@@ -280,10 +280,11 @@ jobs:
 
   approve:
     if: github.event_name == 'pull_request' && success()
-    needs: [checks, zap]
+    needs: [review-gate, checks, zap]
     runs-on: ubuntu-latest
     permissions:
       pull-requests: write
+      contents: write
     steps:
       - name: Auto Approve
         env:
