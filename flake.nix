@@ -82,6 +82,20 @@
           ];
 
           shellHook = ''
+            # CLAUDE_CONFIG_DIR: ~/.claude/CLAUDE.md の oh-my-claudecode 設定を隔離
+            CLAUDE_USER_DIR="$PWD/.claude-user"
+            export CLAUDE_CONFIG_DIR="$CLAUDE_USER_DIR"
+            mkdir -p "$CLAUDE_USER_DIR"
+            if [ -d "$HOME/.claude" ]; then
+              for f in "$HOME/.claude"/*.json; do
+                [ -f "$f" ] || continue
+                fname="$(basename "$f")"
+                if [ "$fname" != "settings.json" ] && [ ! -f "$CLAUDE_USER_DIR/$fname" ]; then
+                  cp "$f" "$CLAUDE_USER_DIR/" 2>/dev/null || true
+                fi
+              done
+            fi
+
             # eas-cli は nixpkgs にないため npx ラッパーで提供
             eas() { npx --yes eas-cli@latest "$@"; }
             export -f eas
