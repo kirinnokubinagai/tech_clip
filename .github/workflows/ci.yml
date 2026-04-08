@@ -81,7 +81,7 @@ jobs:
           if echo "$LABELS" | grep -q "AI Review: NEEDS WORK"; then
             echo "::error::AIレビューで問題または改善提案があります。修正してください。"
 
-            gh api repos/${{ github.repository }}/actions/runs \
+            gh api repos/${{ github.repository }}/actions/runs --paginate \
               --jq ".workflow_runs[] | select(.head_sha == \"${{ github.event.pull_request.head.sha }}\" and .status == \"in_progress\" and .id != ${{ github.run_id }}) | .id" \
               | while read -r RUN_ID; do
                   gh run cancel "${RUN_ID}" 2>/dev/null || true
@@ -101,7 +101,7 @@ jobs:
       - name: Run lint, typecheck, test, audit in parallel
         run: |
           nix develop --command bash -c '
-            set -uo pipefail
+            set -euo pipefail
             LOGDIR=$(mktemp -d)
             trap "rm -rf ${LOGDIR}" EXIT
 
@@ -134,7 +134,7 @@ jobs:
 
   zap:
     needs: review-gate
-    if: always() && (needs.review-gate.result == 'success' || needs.review-gate.result == 'skipped')
+    if: github.event_name == 'pull_request' && always() && (needs.review-gate.result == 'success' || needs.review-gate.result == 'skipped')
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -201,7 +201,6 @@ jobs:
             TOKEN=$(echo "${RESPONSE}" | jq -r ".token // .data.token // .data.session.token // empty" 2>/dev/null || echo "")
             if [ -z "${TOKEN}" ]; then
               echo "警告: 認証トークンを取得できませんでした。未認証スキャンのみ実施します"
-              TOKEN="dummy-token-for-unauthenticated-scan"
             fi
 
             echo "ZAPデーモン起動待機中..."
@@ -217,14 +216,16 @@ jobs:
 
             curl -s "http://localhost:${ZAP_PORT}/JSON/openapi/action/importUrl/" \
               --data-urlencode "url=http://localhost:${API_PORT}/openapi.json" >> "${SETUP_LOG}" 2>&1
-            curl -s "http://localhost:${ZAP_PORT}/JSON/replacer/action/addRule/" \
-              --data-urlencode "description=Auth Header" \
-              --data-urlencode "enabled=true" \
-              --data-urlencode "matchType=REQ_HEADER" \
-              --data-urlencode "matchRegex=false" \
-              --data-urlencode "matchString=Authorization" \
-              --data-urlencode "replacement=Bearer ${TOKEN}" \
-              --data-urlencode "initiators=" >> "${SETUP_LOG}" 2>&1
+            if [ -n "${TOKEN}" ]; then
+              curl -s "http://localhost:${ZAP_PORT}/JSON/replacer/action/addRule/" \
+                --data-urlencode "description=Auth Header" \
+                --data-urlencode "enabled=true" \
+                --data-urlencode "matchType=REQ_HEADER" \
+                --data-urlencode "matchRegex=false" \
+                --data-urlencode "matchString=Authorization" \
+                --data-urlencode "replacement=Bearer ${TOKEN}" \
+                --data-urlencode "initiators=" >> "${SETUP_LOG}" 2>&1
+            fi
 
             echo "アクティブスキャン実行中..."
             SCAN_ID=$(curl -s "http://localhost:${ZAP_PORT}/JSON/ascan/action/scan/" \
@@ -279,7 +280,11 @@ jobs:
             /tmp/zap-daemon.log
 
   approve:
-    if: github.event_name == 'pull_request' && success()
+    if: |
+      github.event_name == 'pull_request' &&
+      needs.review-gate.result == 'success' &&
+      needs.checks.result == 'success' &&
+      needs.zap.result == 'success'
     needs: [review-gate, checks, zap]
     runs-on: ubuntu-latest
     permissions:
@@ -292,4 +297,4 @@ jobs:
         run: |
           gh pr review ${{ github.event.pull_request.number }} --approve \
             --body "CI全チェック通過: lint, typecheck, test, audit, ZAPスキャン ✅"
-          gh pr merge ${{ github.event.pull_request.number }} --auto --squash
+          gh pr merge ${{ github.event.pull_request.number }} --auto --squash --repo ${{ github.repository }}
