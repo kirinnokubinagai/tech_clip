@@ -155,8 +155,8 @@ check_merge_without_review() {
 check_main_branch_write() {
   local cmd="$1"
 
-  # sed -i / tee のみ対象（リダイレクト検出は誤検知リスクが高いため除外）
-  if ! echo "$cmd" | grep -qE "(sed +-i|tee +)"; then
+  # sed -i / sed --in-place / tee のみ対象（リダイレクト検出は誤検知リスクが高いため除外）
+  if ! echo "$cmd" | grep -qE "(sed +.*(-i|--in-place)|tee +)"; then
     return 1
   fi
 
@@ -167,10 +167,10 @@ check_main_branch_write() {
     return 1
   fi
 
-  echo "DENY: mainブランチ上での直接ファイル書き込みは禁止されています" >&2
-  echo "  コマンド: $cmd" >&2
-  echo "  対策: worktreeを作成して作業してください" >&2
-  echo "  例: git worktree add \$(dirname \$(git rev-parse --show-toplevel))/issue-N -b issue/N/desc" >&2
+  echo "DENY: mainブランチ上での直接ファイル書き込みは禁止されています"
+  echo "  コマンド: $cmd"
+  echo "  対策: worktreeを作成して作業してください"
+  echo "  例: git worktree add \$(dirname \$(git rev-parse --show-toplevel))/issue-N -b issue/N/desc"
   return 0
 }
 
