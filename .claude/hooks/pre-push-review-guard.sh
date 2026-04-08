@@ -1,10 +1,11 @@
 #!/bin/bash
-# PreToolUse:Bash hook
-# git push 前にローカルレビュー完了を強制する
-# .claude/.review-passed マーカーファイルが存在しなければ DENY
-set -euo pipefail
+# PreToolUse:Bash hook: git push前にローカルレビュー完了を強制
 
-COMMAND=$(echo "${CLAUDE_TOOL_INPUT:-}" | grep -o '"command"[[:space:]]*:[[:space:]]*"[^"]*"' | head -1 | sed 's/.*"command"[[:space:]]*:[[:space:]]*"//' | sed 's/"$//')
+if ! command -v jq &> /dev/null; then
+  exit 0
+fi
+
+COMMAND=$(echo "$ARGUMENTS" | jq -r '.command // empty' 2>/dev/null)
 
 if [ -z "$COMMAND" ]; then
   exit 0

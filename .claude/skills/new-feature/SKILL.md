@@ -15,7 +15,7 @@ TechClipの必須ワークフローに従い、新機能開発を開始する。
 ## 手順
 
 1. **Issue確認**: `gh issue view <番号>` でissueの詳細を取得
-2. **Worktree作成**: `git worktree add .worktrees/issue-<N> -b issue/<N>/<短い説明>`
+2. **Worktree作成**: `REPO_ROOT=$(cd "$(git rev-parse --git-common-dir)/.." && pwd) && git worktree add "$(dirname "$REPO_ROOT")/issue-<N>" -b issue/<N>/<短い説明>`
 3. **TDD実装**:
    - RED: テストを先に書く（失敗確認）
    - GREEN: テストを通す最小限のコード

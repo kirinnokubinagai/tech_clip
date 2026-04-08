@@ -50,8 +50,7 @@ drizzle/meta/
 # Test coverage
 coverage/
 
-# Worktrees
-.worktrees/
+# Worktrees (兄弟ディレクトリとして作成されるため .gitignore 不要)
 
 # OMC (oh-my-claudecode state)
 .omc/

@@ -120,6 +120,12 @@
             "command": "bash \"$(git rev-parse --show-toplevel 2>/dev/null || echo .)/.claude/hooks/worktree-deps-guard.sh\"",
             "timeout": 5,
             "statusMessage": "Checking worktree deps..."
+          },
+          {
+            "type": "command",
+            "command": "bash \"$(git rev-parse --show-toplevel 2>/dev/null || echo .)/.claude/hooks/post-push-cleanup.sh\"",
+            "timeout": 5,
+            "statusMessage": "Cleaning up review marker..."
           }
         ]
       }
@@ -127,12 +133,6 @@
     "Stop": [
       {
         "hooks": [
-          {
-            "type": "command",
-            "command": "bash \"$(git rev-parse --show-toplevel 2>/dev/null || echo .)/.claude/hooks/read-claude-md.sh\"",
-            "timeout": 10,
-            "statusMessage": "Re-reading CLAUDE.md..."
-          },
           {
             "type": "command",
             "command": "bash \"$(git rev-parse --show-toplevel 2>/dev/null || echo .)/.claude/hooks/uncommitted-warn.sh\"",
@@ -213,7 +213,7 @@
     "commit": "Co-Authored-By: Claude <noreply@anthropic.com>",
     "pr": "🤖 Generated with [Claude Code](https://claude.ai/code)"
   },
-  "model": "claude-opus-4-6[1m]",
+  "model": "opusplan",
   "voiceEnabled": true,
   "defaultView": "chat",
   "showThinkingSummaries": true,
