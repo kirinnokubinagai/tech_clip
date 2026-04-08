@@ -203,8 +203,7 @@
       "Bash(*git push origin main)",
       "Bash(*git push origin main:*)",
       "Bash(*git push*:main*)",
-      "Bash(*git push*refs/heads/main*)",
-      "Agent(oh-my-claudecode:*)"
+      "Bash(*git push*refs/heads/main*)"
     ]
   },
   "worktree": {},
