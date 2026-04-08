@@ -90,11 +90,12 @@ jobs:
           fi
           echo "AIレビュー: PASS"
 
-  # .claude/**のみの変更かどうかを検出（コードチェックをスキップするため）
+  # 変更ファイルを検出（コードチェック・hooksテストのスキップ判断に使用）
   changes:
     runs-on: ubuntu-latest
     outputs:
       code: ${{ steps.check.outputs.code }}
+      hooks: ${{ steps.check.outputs.hooks }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -103,11 +104,28 @@ jobs:
         run: |
           if [ "${{ github.event_name }}" != "pull_request" ]; then
             echo "code=true" >> $GITHUB_OUTPUT
+            echo "hooks=true" >> $GITHUB_OUTPUT
             exit 0
           fi
           CHANGED=$(git diff --name-only origin/${{ github.base_ref }}...HEAD 2>/dev/null \
             | grep -cvE '^\.claude/' || true)
           echo "code=$([ "${CHANGED:-0}" -gt 0 ] && echo 'true' || echo 'false')" >> $GITHUB_OUTPUT
+          HOOKS_CHANGED=$(git diff --name-only origin/${{ github.base_ref }}...HEAD 2>/dev/null \
+            | grep -cE '^\.claude/hooks/' || true)
+          echo "hooks=$([ "${HOOKS_CHANGED:-0}" -gt 0 ] && echo 'true' || echo 'false')" >> $GITHUB_OUTPUT
+
+  hooks-test:
+    needs: [review-gate, changes]
+    if: |
+      always() &&
+      needs.changes.outputs.hooks == 'true' &&
+      (needs.review-gate.result == 'success' || needs.review-gate.result == 'skipped')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/nix-setup
+      - name: Run hooks tests
+        run: nix develop --command bats tests/hooks/
 
   lint:
     needs: [review-gate, changes]
@@ -321,8 +339,9 @@ jobs:
       (needs.typecheck.result == 'success' || needs.typecheck.result == 'skipped') &&
       (needs.test.result == 'success' || needs.test.result == 'skipped') &&
       (needs.audit.result == 'success' || needs.audit.result == 'skipped') &&
-      (needs.zap.result == 'success' || needs.zap.result == 'skipped')
-    needs: [review-gate, lint, typecheck, test, audit, zap]
+      (needs.zap.result == 'success' || needs.zap.result == 'skipped') &&
+      (needs.hooks-test.result == 'success' || needs.hooks-test.result == 'skipped')
+    needs: [review-gate, lint, typecheck, test, audit, zap, hooks-test]
     runs-on: ubuntu-latest
     permissions:
       pull-requests: write
