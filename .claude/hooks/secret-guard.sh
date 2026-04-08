@@ -1,5 +1,5 @@
 #!/bin/bash
-# PreToolUse:Bash hook: git push/commit時に環境変数・シークレットの漏洩を検知
+# PreToolUse:Bash hook: git push/commit時にシークレット漏洩を検知
 
 if ! command -v jq &> /dev/null; then
   exit 0
@@ -11,7 +11,6 @@ if [ -z "$COMMAND" ]; then
   exit 0
 fi
 
-# git push or git commit のみチェック
 if ! echo "$COMMAND" | grep -qE 'git\s+(push|commit)'; then
   exit 0
 fi
@@ -19,11 +18,14 @@ fi
 REPO_ROOT=$(git rev-parse --show-toplevel 2>/dev/null)
 cd "$REPO_ROOT" || exit 0
 
+FILES_CONTENT=""
 if echo "$COMMAND" | grep -q 'git commit'; then
   FILES_CONTENT=$(git diff --cached --diff-filter=ACMR 2>/dev/null)
-elif echo "$COMMAND" | grep -q 'git push'; then
+fi
+if echo "$COMMAND" | grep -q 'git push'; then
   FILES_CONTENT=$(git diff origin/main..HEAD 2>/dev/null)
-else
+fi
+if [ -z "$FILES_CONTENT" ]; then
   exit 0
 fi
 

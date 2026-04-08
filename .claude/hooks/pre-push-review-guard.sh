@@ -1,21 +1,16 @@
 #!/bin/bash
-# PreToolUse:Bash hook
-# git push 前にローカルレビュー完了を強制する
-# .claude/.review-passed マーカーファイルが存在しなければ DENY
+# PreToolUse:Bash hook: git push前にローカルレビュー完了を強制
 
-# jqがない場合はスキップ
 if ! command -v jq &> /dev/null; then
   exit 0
 fi
 
-# $ARGUMENTSからcommandフィールドを抽出
 COMMAND=$(echo "$ARGUMENTS" | jq -r '.command // empty' 2>/dev/null)
 
 if [ -z "$COMMAND" ]; then
   exit 0
 fi
 
-# git push コマンドでなければスキップ
 if ! echo "$COMMAND" | grep -q "git push"; then
   exit 0
 fi
