@@ -79,6 +79,7 @@
             curl
             maestro
             zap
+            bats
           ];
 
           shellHook = ''
