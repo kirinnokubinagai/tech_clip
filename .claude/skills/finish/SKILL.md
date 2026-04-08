@@ -39,5 +39,5 @@ triggers:
 ## マージ後
 
 - CI が自動で Approve → マージ（Claude は何もしない）
-- マージ完了後: `git worktree remove .worktrees/issue-<N>`
+- マージ完了後: `git worktree remove "$(dirname "$(git rev-parse --show-toplevel)")/issue-<N>"`
 - mainブランチで `git pull`

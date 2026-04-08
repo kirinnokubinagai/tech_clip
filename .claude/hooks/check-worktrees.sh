@@ -3,8 +3,8 @@
 # SessionStart hook: 全worktreeの健全性をチェック
 #
 # 検出する問題:
-# 1. ネストworktree（.worktrees/ 内にさらに .worktrees/ がある）
-# 2. 不正なworktreeパス（REPO_ROOT/.worktrees/ 直下にない）
+# 1. ネストworktree（worktree内部にworktreeが作成されている）
+# 2. 不正なworktreeパス（WORKTREE_BASE 直下にない）
 # 3. リベース/マージ途中の状態
 # 4. 未コミットの変更（modified/staged files）
 # 5. mainから遅れているブランチ
@@ -19,25 +19,34 @@ if [ -z "$WORKTREE_PATHS" ]; then
     exit 0
 fi
 
-# リポジトリルートを取得
+# リポジトリルートとworktreeベースディレクトリを取得
 REPO_ROOT=$(cd "$(git rev-parse --git-common-dir 2>/dev/null)/.." && pwd)
-EXPECTED_PREFIX="${REPO_ROOT}/.worktrees/"
+WORKTREE_BASE=$(dirname "$REPO_ROOT")
+EXPECTED_PREFIX="${WORKTREE_BASE}/"
 
 for wt_path in $WORKTREE_PATHS; do
     [ -d "$wt_path" ] || continue
 
     wt_name=$(basename "$wt_path")
 
-    # ネストworktree検出: .worktrees/ 配下にさらに .worktrees/ があるパス
-    if [[ "$wt_path" =~ \.worktrees/[^/]+/\.worktrees/ ]]; then
-        PROBLEMS="${PROBLEMS}[NESTED] ${wt_name}: worktreeがネストしている -> git worktree remove --force ${wt_path} で除去し ${EXPECTED_PREFIX} 直下に再作成 | "
+    # ネストworktree検出: REPO_ROOT配下にworktreeが作成されている
+    if [[ "$wt_path" == "${REPO_ROOT}/"* ]]; then
+        PROBLEMS="${PROBLEMS}[NESTED] ${wt_name}: REPO_ROOT内部にworktreeが作成されている -> git worktree remove --force ${wt_path} で除去し ${WORKTREE_BASE}/ 直下に再作成 | "
         PROBLEM_COUNT=$((PROBLEM_COUNT + 1))
         continue
     fi
 
-    # worktreeパスの正当性チェック: REPO_ROOT/.worktrees/ 直下にあるか
+    # worktreeパスの正当性チェック: WORKTREE_BASE 直下にあるか
     if [[ "$wt_path" != "${EXPECTED_PREFIX}"* ]]; then
-        PROBLEMS="${PROBLEMS}[MISPLACED] ${wt_name}: ${EXPECTED_PREFIX} 配下にない不正なパス -> 正しいパスに再作成すること | "
+        PROBLEMS="${PROBLEMS}[MISPLACED] ${wt_name}: ${WORKTREE_BASE}/ 配下にない不正なパス -> 正しいパスに再作成すること | "
+        PROBLEM_COUNT=$((PROBLEM_COUNT + 1))
+        continue
+    fi
+
+    # WORKTREE_BASE直下であることを確認（サブディレクトリ内はNG）
+    local_path="${wt_path#${EXPECTED_PREFIX}}"
+    if [[ "$local_path" == */* ]]; then
+        PROBLEMS="${PROBLEMS}[NESTED] ${wt_name}: ${WORKTREE_BASE}/ の直下ではなくネストしている -> ${WORKTREE_BASE}/ 直下に再作成 | "
         PROBLEM_COUNT=$((PROBLEM_COUNT + 1))
         continue
     fi

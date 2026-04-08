@@ -1,5 +1,5 @@
 #!/bin/bash
-# mainブランチのエージェントが .worktrees/ 内のファイルにアクセスすることをブロック
+# mainブランチのエージェントが兄弟worktree内のファイルにアクセスすることをブロック
 # mainからworktreeへの一方向のみブロック。worktree間のアクセスは制限しない。
 # PreToolUse (Read, Grep, Glob, Edit, Write) で実行される
 
@@ -10,7 +10,7 @@ if [ -z "$CURRENT_BRANCH" ] || [ "$CURRENT_BRANCH" != "main" ]; then
 fi
 
 REPO_ROOT=$(cd "$(git rev-parse --git-common-dir 2>/dev/null)/.." && pwd 2>/dev/null) || exit 0
-WORKTREES_PREFIX="${REPO_ROOT}/.worktrees/"
+WORKTREE_BASE=$(dirname "$REPO_ROOT")
 
 TOOL_INPUT="${CLAUDE_TOOL_INPUT:-}"
 
@@ -27,8 +27,9 @@ if [ -z "$FILE_PATH" ]; then
   exit 0
 fi
 
-if [[ "$FILE_PATH" == "${WORKTREES_PREFIX}"* ]]; then
-  echo "DENY: mainブランチのエージェントは .worktrees/ 内のファイルにアクセスできません。" >&2
+# WORKTREE_BASE配下かつREPO_ROOT配下でないファイルへのアクセスをブロック
+if [[ "$FILE_PATH" == "${WORKTREE_BASE}/"* ]] && [[ "$FILE_PATH" != "${REPO_ROOT}/"* ]]; then
+  echo "DENY: mainブランチのエージェントは兄弟worktree内のファイルにアクセスできません。" >&2
   echo "  対象: $FILE_PATH" >&2
   echo "  mainエージェントはmainブランチのファイルのみ参照してください。" >&2
   exit 2

@@ -127,20 +127,22 @@ pnpm add <pkg>
 ### 2. Git Worktree を作成し、依存パッケージをインストールする
 - ブランチ名: `issue/<issue番号>/<短い説明>`
 - **worktreeパスは必ず絶対パスで指定する**（相対パスはカレントディレクトリ依存で事故る）
-- **worktreeは必ず `$REPO_ROOT/.worktrees/` 直下に作成する（ネスト禁止）**
+- **worktreeは `$WORKTREE_BASE/` 直下に兄弟ディレクトリとして作成する**
 - **worktree内部から別のworktreeを作成しない**（必ず `git rev-parse --git-common-dir` でリポジトリルートを解決する）
 - **worktree作成後、必ず `pnpm install --frozen-lockfile` を実行する**
 - シンボリンクによる node_modules 共有は禁止（`settings.json` の `symlinkDirectories` を使わない）
 
 ```bash
-# REPO_ROOT は git-common-dir から算出する（worktree内部でも正しくリポジトリルートを返す）
+# REPO_ROOT: mainブランチのリポジトリルート
 REPO_ROOT=$(cd "$(git rev-parse --git-common-dir)/.." && pwd)
-git worktree add "${REPO_ROOT}/.worktrees/issue-N" -b issue/N/short-desc
-cd "${REPO_ROOT}/.worktrees/issue-N"
+# WORKTREE_BASE: worktreeを作成する親ディレクトリ（REPO_ROOTの親）
+WORKTREE_BASE=$(dirname "$REPO_ROOT")
+git worktree add "${WORKTREE_BASE}/issue-N" -b issue/N/short-desc
+cd "${WORKTREE_BASE}/issue-N"
 pnpm install --frozen-lockfile
 ```
 
-> **ネストworktree禁止**: `.worktrees/issue-X/.worktrees/issue-Y` のような構造は禁止。
+> **ネストworktree禁止**: worktree内部にworktreeを作成する構造は禁止。
 > `dangerous-command-guard.sh` と `check-worktrees.sh` で自動検出される。
 
 ### 3. Worktree 内で TDD 実装
@@ -160,7 +162,8 @@ pnpm install --frozen-lockfile
 ### 6. マージ後、Worktree をクリーンアップ
 
 ```bash
-git worktree remove .worktrees/issue-N
+WORKTREE_BASE=$(dirname "$(git rev-parse --show-toplevel)")
+git worktree remove "${WORKTREE_BASE}/issue-N"
 git branch -d issue/N/short-desc
 ```
 
