@@ -151,11 +151,40 @@ check_merge_without_review() {
   return 1
 }
 
+# mainブランチ上でのBashファイル書き込みコマンドをブロック
+check_main_branch_write() {
+  local cmd="$1"
+
+  # sed -i / sed --in-place / tee のみ対象（リダイレクト検出は誤検知リスクが高いため除外）
+  # sed パターン: -i または --in-place がスペース区切りのフラグとして現れるケースを検出する
+  # tee パターン: (^| ) で "tee" コマンド以外の文字列内 "tee" を除外する（BSD grep 互換）
+  if ! echo "$cmd" | grep -qE "(sed( +[^ ]+)* +-i( |$)|sed( +[^ ]+)* +--in-place( |$)|(^| )tee +)"; then
+    return 1
+  fi
+
+  # env -u GIT_DIR -u GIT_WORK_TREE で GIT_DIR 汚染を回避してブランチ取得
+  local branch
+  branch=$(env -u GIT_DIR -u GIT_WORK_TREE git branch --show-current 2>/dev/null || echo "")
+  if [ "$branch" != "main" ]; then
+    return 1
+  fi
+
+  echo "DENY: mainブランチ上での直接ファイル書き込みは禁止されています"
+  echo "  コマンド: $cmd"
+  echo "  対策: worktreeを作成して作業してください"
+  echo "  例: git worktree add \$(dirname \$(git rev-parse --show-toplevel))/issue-N -b issue/N/desc"
+  return 0
+}
+
 if check_dangerous "$COMMAND"; then
   echo "⚠️ 危険なコマンドを検知しました"
   echo "コマンド: $COMMAND"
   echo ""
   echo "このコマンドは破壊的な操作を行う可能性があります。"
+  exit 2
+fi
+
+if check_main_branch_write "$COMMAND"; then
   exit 2
 fi
 
