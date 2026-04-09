@@ -2,7 +2,6 @@ import { resolve } from "node:path";
 import { defineConfig } from "vitest/config";
 
 const suppressedApiTestLogs = [
-  "ダウンストリームで予期しない例外が発生しました",
   "\"message\":\"認証メール送信エラー\"",
   "\"message\":\"サインインに失敗しました\"",
   "\"message\":\"リフレッシュトークンの発行に失敗しました\"",
