@@ -36,7 +36,7 @@ if ! requires_direnv_allow "$COMMAND"; then
   exit 0
 fi
 
-ROOT=$(git rev-parse --show-toplevel 2>/dev/null || echo "")
+ROOT=$(env -u GIT_DIR -u GIT_WORK_TREE git rev-parse --show-toplevel 2>/dev/null || echo "")
 if [ -z "$ROOT" ]; then
   exit 0
 fi

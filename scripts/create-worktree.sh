@@ -25,7 +25,7 @@ if [[ ! "${SHORT_DESC}" =~ ^[a-z0-9-]+$ ]]; then
   exit 1
 fi
 
-REPO_ROOT=$(cd "$(git rev-parse --git-common-dir)/.." && pwd)
+REPO_ROOT=$(cd "$(env -u GIT_DIR -u GIT_WORK_TREE git rev-parse --git-common-dir)/.." && pwd)
 WORKTREE_BASE=$(dirname "${REPO_ROOT}")
 WORKTREE_PATH="${WORKTREE_BASE}/issue-${ISSUE_NUMBER}"
 BRANCH_NAME="issue/${ISSUE_NUMBER}/${SHORT_DESC}"

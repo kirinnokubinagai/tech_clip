@@ -25,7 +25,7 @@ fi
 
 # 絶対パスに変換（リポジトリルート基準）
 if [[ "$WTPATH" != /* ]]; then
-  REPO_ROOT=$(git rev-parse --show-toplevel 2>/dev/null || pwd)
+  REPO_ROOT=$(env -u GIT_DIR -u GIT_WORK_TREE git rev-parse --show-toplevel 2>/dev/null || pwd)
   WTPATH="${REPO_ROOT}/$WTPATH"
 fi
 
