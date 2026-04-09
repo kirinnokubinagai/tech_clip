@@ -75,6 +75,12 @@
         "hooks": [
           {
             "type": "command",
+            "command": "bash \"$(git rev-parse --show-toplevel 2>/dev/null || echo .)/.claude/hooks/orchestrator-direct-edit-guard.sh\"",
+            "timeout": 5,
+            "statusMessage": "Checking orchestrator direct edit..."
+          },
+          {
+            "type": "command",
             "command": "bash \"$(git rev-parse --show-toplevel 2>/dev/null || echo .)/.claude/hooks/main-edit-guard.sh\"",
             "timeout": 5,
             "statusMessage": "Checking branch for edit..."
@@ -96,6 +102,12 @@
       {
         "matcher": "Write",
         "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"$(git rev-parse --show-toplevel 2>/dev/null || echo .)/.claude/hooks/orchestrator-direct-edit-guard.sh\"",
+            "timeout": 5,
+            "statusMessage": "Checking orchestrator direct edit..."
+          },
           {
             "type": "command",
             "command": "bash \"$(git rev-parse --show-toplevel 2>/dev/null || echo .)/.claude/hooks/main-edit-guard.sh\"",
