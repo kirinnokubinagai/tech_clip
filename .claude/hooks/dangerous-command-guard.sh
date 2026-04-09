@@ -156,10 +156,9 @@ check_main_branch_write() {
   local cmd="$1"
 
   # sed -i / sed --in-place / tee のみ対象（リダイレクト検出は誤検知リスクが高いため除外）
-  # sed -i / sed --in-place / tee のみ対象（リダイレクト検出は誤検知リスクが高いため除外）
   # sed パターン: -i または --in-place がスペース区切りのフラグとして現れるケースを検出する
-  # tee パターン: \b（ワード境界）で "tee" コマンド以外の文字列内 "tee" を除外する
-  if ! echo "$cmd" | grep -qE "(sed( +[^ ]+)* +-i( |$)|sed .*--in-place|\btee +)"; then
+  # tee パターン: (^| ) で "tee" コマンド以外の文字列内 "tee" を除外する（BSD grep 互換）
+  if ! echo "$cmd" | grep -qE "(sed( +[^ ]+)* +-i( |$)|sed( +[^ ]+)* +--in-place( |$)|(^| )tee +)"; then
     return 1
   fi
 
