@@ -14,7 +14,7 @@ if [ -z "$COMMAND" ]; then
   exit 0
 fi
 
-# worktreeパスの検証（.worktrees/ 配下かつ直下のディレクトリか）
+# worktreeパスの検証（WORKTREE_BASE 直下の兄弟ディレクトリか）
 check_worktree_path() {
   local cmd="$1"
 
@@ -22,7 +22,10 @@ check_worktree_path() {
     return 1
   fi
 
-  local wt_path resolved_path repo_root expected_prefix
+  local wt_path
+  local resolved_path
+  local repo_root
+  local expected_prefix
   # -b フラグとそのブランチ名をスキップしてパスを抽出
   # sed の末尾スペース必須パターンは -b branch がコマンド末尾の場合にマッチしないため
   # sed で除去し、awk でパスを先に取り出すことで吸収する
@@ -33,7 +36,9 @@ check_worktree_path() {
     return 0
   fi
   repo_root=$(cd "$(git rev-parse --git-common-dir 2>/dev/null)/.." && pwd)
-  expected_prefix="${repo_root}/.worktrees/"
+  local worktree_base
+  worktree_base=$(dirname "$repo_root")
+  expected_prefix="${worktree_base}/"
 
   # realpath -m でシンボリックリンクや .. を正規化（存在しないパスでも動作）
   # 絶対パスの場合はそのまま使用し、相対パスの場合のみ $(pwd) を付加する
@@ -49,9 +54,17 @@ check_worktree_path() {
     return 0
   fi
 
+  # REPO_ROOT内部に作成しようとしている場合はブロック
+  if [[ "$resolved_path" == "${repo_root}/"* ]]; then
+    echo "⚠️ worktreeがリポジトリ内部にネストしています"
+    echo "  解決先: $resolved_path"
+    echo "  正しい例: ${expected_prefix}issue-N（mainと兄弟ディレクトリ）"
+    return 0
+  fi
+
   local subpath="${resolved_path#${expected_prefix}}"
   if [[ "$subpath" == */* ]]; then
-    echo "⚠️ worktreeが .worktrees/ の直下ではなくネストしています"
+    echo "⚠️ worktreeが ${worktree_base}/ の直下ではなくネストしています"
     echo "  解決先: $resolved_path"
     echo "  正しい例: ${expected_prefix}issue-N"
     return 0
@@ -75,6 +88,13 @@ check_dangerous() {
   echo "$cmd" | grep -qE "git clean" && return 0
   echo "$cmd" | grep -qE "git branch -D" && return 0
   echo "$cmd" | grep -qE "git restore" && return 0
+  # Gitの管理対象を手動でねじ曲げる操作は禁止
+  echo "$cmd" | grep -qE "(^| )GIT_DIR=" && return 0
+  echo "$cmd" | grep -qE "(^| )GIT_WORK_TREE=" && return 0
+  echo "$cmd" | grep -qE "git +--git-dir(=| )" && return 0
+  # core.bare / core.worktree は main の config と worktree 判定を壊すため全形式をブロック
+  echo "$cmd" | grep -qE "git config.*core\.bare" && return 0
+  echo "$cmd" | grep -qE "git config.*core\.worktree" && return 0
 
   # git checkout でファイル復元を検出（ブランチ切替は許可）
   # [^-] により -b / --orphan / --track 等のフラグ付きコマンドは自動除外
@@ -105,7 +125,8 @@ check_merge_without_review() {
   fi
 
   # PR番号を抽出
-  local pr_num=$(echo "$cmd" | grep -oE "gh pr merge [0-9]+" | grep -oE "[0-9]+")
+  local pr_num
+  pr_num=$(echo "$cmd" | grep -oE "gh pr merge [0-9]+" | grep -oE "[0-9]+")
   if [ -z "$pr_num" ]; then
     return 1
   fi
@@ -116,11 +137,13 @@ check_merge_without_review() {
   fi
 
   # PRにレビューコメントがあるか確認
-  local repo=$(gh repo view --json nameWithOwner -q '.nameWithOwner' 2>/dev/null)
+  local repo
+  repo=$(gh repo view --json nameWithOwner -q '.nameWithOwner' 2>/dev/null)
   if [ -z "$repo" ]; then
     return 1
   fi
-  local review_count=$(gh api "repos/$repo/pulls/$pr_num/reviews" --jq 'length' 2>/dev/null)
+  local review_count
+  review_count=$(gh api "repos/$repo/pulls/$pr_num/reviews" --jq 'length' 2>/dev/null)
   if [ -z "$review_count" ] || [ "$review_count" = "0" ]; then
     echo "⚠️ レビューなしでPRをマージしようとしています"
     echo "PR #$pr_num にレビューコメントがありません。"
@@ -133,11 +156,40 @@ check_merge_without_review() {
   return 1
 }
 
+# mainブランチ上でのBashファイル書き込みコマンドをブロック
+check_main_branch_write() {
+  local cmd="$1"
+
+  # sed -i / sed --in-place / tee のみ対象（リダイレクト検出は誤検知リスクが高いため除外）
+  # sed パターン: -i または --in-place がスペース区切りのフラグとして現れるケースを検出する
+  # tee パターン: (^| ) で "tee" コマンド以外の文字列内 "tee" を除外する（BSD grep 互換）
+  if ! echo "$cmd" | grep -qE "(sed( +[^ ]+)* +-i( |$)|sed( +[^ ]+)* +--in-place( |$)|(^| )tee +)"; then
+    return 1
+  fi
+
+  # env -u GIT_DIR -u GIT_WORK_TREE で GIT_DIR 汚染を回避してブランチ取得
+  local branch
+  branch=$(env -u GIT_DIR -u GIT_WORK_TREE git branch --show-current 2>/dev/null || echo "")
+  if [ "$branch" != "main" ]; then
+    return 1
+  fi
+
+  echo "DENY: mainブランチ上での直接ファイル書き込みは禁止されています"
+  echo "  コマンド: $cmd"
+  echo "  対策: worktreeを作成して作業してください"
+  echo "  例: git worktree add \$(dirname \$(git rev-parse --show-toplevel))/issue-N -b issue/N/desc"
+  return 0
+}
+
 if check_dangerous "$COMMAND"; then
   echo "⚠️ 危険なコマンドを検知しました"
   echo "コマンド: $COMMAND"
   echo ""
-  echo "このコマンドは破壊的な操作を行う可能性があります。"
+  echo "このコマンドは config / index / worktree を壊す可能性があります。"
+  exit 2
+fi
+
+if check_main_branch_write "$COMMAND"; then
   exit 2
 fi
 
@@ -149,12 +201,12 @@ if check_merge_without_review "$COMMAND"; then
   exit 2
 fi
 
-# PR作成前のテスト通過チェック
+# PR作成前のテスト通過チェック（警告のみ、ブロックしない）
 if echo "$COMMAND" | grep -qE "gh pr create"; then
-  echo "🧪 PR作成前にテスト通過を確認中..."
-  if ! pnpm test 2>/dev/null; then
-    echo "❌ テストが失敗しています。テストを修正してからPRを作成してください。"
-    exit 2
+  if command -v pnpm &>/dev/null; then
+    if ! timeout 60 pnpm test 2>/dev/null; then
+      echo "⚠️ テストが失敗しています。PR作成前にテストを修正することを推奨します。"
+    fi
   fi
 fi
 

@@ -36,7 +36,7 @@ if [[ -e "${WORKTREE_PATH}" ]]; then
 fi
 
 echo "📥 origin/main を更新..."
-git fetch origin main:main
+git fetch origin main
 
 echo "🌳 worktree を作成..."
 git worktree add "${WORKTREE_PATH}" -b "${BRANCH_NAME}" origin/main
@@ -50,10 +50,17 @@ if command -v direnv >/dev/null 2>&1 && [[ -f "${WORKTREE_PATH}/.envrc" ]]; then
 fi
 
 echo "📦 依存関係をセットアップ..."
-(
-  cd "${WORKTREE_PATH}"
-  pnpm install --frozen-lockfile
-)
+if command -v direnv >/dev/null 2>&1 && [[ -f "${WORKTREE_PATH}/.envrc" ]]; then
+  (
+    cd "${WORKTREE_PATH}"
+    direnv exec "${WORKTREE_PATH}" pnpm install --frozen-lockfile
+  )
+else
+  (
+    cd "${WORKTREE_PATH}"
+    pnpm install --frozen-lockfile
+  )
+fi
 
 cat <<EOF
 ✅ worktree 作成完了

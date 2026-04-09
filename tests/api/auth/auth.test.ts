@@ -1,5 +1,5 @@
 import app from "@api/index";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 /** テスト用のシークレットキー（32文字以上） */
 const TEST_SECRET = "test-secret-key-for-better-auth-min-32-chars!!";
@@ -18,14 +18,13 @@ const TEST_BINDINGS = {
   APPLE_CLIENT_SECRET: "apple-client-secret-test",
   GITHUB_CLIENT_ID: "github-client-id-test",
   GITHUB_CLIENT_SECRET: "github-client-secret-test",
+  RATE_LIMIT: {
+    get: vi.fn(async () => null),
+    put: vi.fn(async () => undefined),
+  },
 };
 
 describe("Better Auth", () => {
-  beforeEach(() => {
-    vi.spyOn(console, "error").mockImplementation(() => {});
-    vi.spyOn(console, "warn").mockImplementation(() => {});
-  });
-
   afterEach(() => {
     vi.restoreAllMocks();
   });

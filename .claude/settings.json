@@ -45,6 +45,34 @@
             "command": "bash \"$(git rev-parse --show-toplevel 2>/dev/null || echo .)/.claude/hooks/dangerous-command-guard.sh\"",
             "timeout": 5,
             "statusMessage": "Checking for dangerous commands..."
+          },
+          {
+            "type": "command",
+            "command": "bash \"$(git rev-parse --show-toplevel 2>/dev/null || echo .)/.claude/hooks/pre-push-review-guard.sh\"",
+            "timeout": 5,
+            "statusMessage": "Checking review status..."
+          }
+        ]
+      },
+      {
+        "matcher": "Read",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"$(git rev-parse --show-toplevel 2>/dev/null || echo .)/.claude/hooks/worktree-isolation-guard.sh\"",
+            "timeout": 5,
+            "statusMessage": "Checking worktree isolation..."
+          }
+        ]
+      },
+      {
+        "matcher": "Glob",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"$(git rev-parse --show-toplevel 2>/dev/null || echo .)/.claude/hooks/worktree-isolation-guard.sh\"",
+            "timeout": 5,
+            "statusMessage": "Checking worktree isolation..."
           }
         ]
       },
@@ -53,9 +81,27 @@
         "hooks": [
           {
             "type": "command",
+            "command": "bash \"$(git rev-parse --show-toplevel 2>/dev/null || echo .)/.claude/hooks/orchestrator-direct-edit-guard.sh\"",
+            "timeout": 5,
+            "statusMessage": "Checking orchestrator direct edit..."
+          },
+          {
+            "type": "command",
             "command": "bash \"$(git rev-parse --show-toplevel 2>/dev/null || echo .)/.claude/hooks/main-edit-guard.sh\"",
             "timeout": 5,
             "statusMessage": "Checking branch for edit..."
+          },
+          {
+            "type": "command",
+            "command": "bash \"$(git rev-parse --show-toplevel 2>/dev/null || echo .)/.claude/hooks/worktree-isolation-guard.sh\"",
+            "timeout": 5,
+            "statusMessage": "Checking worktree isolation..."
+          },
+          {
+            "type": "command",
+            "command": "bash \"$(git rev-parse --show-toplevel 2>/dev/null || echo .)/.claude/hooks/diagnosis-first-guard.sh\"",
+            "timeout": 5,
+            "statusMessage": "Diagnosis-first check..."
           }
         ]
       },
@@ -64,9 +110,21 @@
         "hooks": [
           {
             "type": "command",
+            "command": "bash \"$(git rev-parse --show-toplevel 2>/dev/null || echo .)/.claude/hooks/orchestrator-direct-edit-guard.sh\"",
+            "timeout": 5,
+            "statusMessage": "Checking orchestrator direct edit..."
+          },
+          {
+            "type": "command",
             "command": "bash \"$(git rev-parse --show-toplevel 2>/dev/null || echo .)/.claude/hooks/main-edit-guard.sh\"",
             "timeout": 5,
             "statusMessage": "Checking branch for write..."
+          },
+          {
+            "type": "command",
+            "command": "bash \"$(git rev-parse --show-toplevel 2>/dev/null || echo .)/.claude/hooks/worktree-isolation-guard.sh\"",
+            "timeout": 5,
+            "statusMessage": "Checking worktree isolation..."
           }
         ]
       }
@@ -80,6 +138,12 @@
             "command": "bash \"$(git rev-parse --show-toplevel 2>/dev/null || echo .)/.claude/hooks/worktree-deps-guard.sh\"",
             "timeout": 5,
             "statusMessage": "Checking worktree deps..."
+          },
+          {
+            "type": "command",
+            "command": "bash \"$(git rev-parse --show-toplevel 2>/dev/null || echo .)/.claude/hooks/post-push-cleanup.sh\"",
+            "timeout": 5,
+            "statusMessage": "Cleaning up review marker..."
           }
         ]
       }
@@ -129,7 +193,13 @@
       "mcp__context7__*",
       "mcp__claude-in-chrome__*",
       "mcp__serena__*",
-      "mcp__sequential-thinking__*"
+      "mcp__sequential-thinking__*",
+      "TeamCreate",
+      "TaskCreate",
+      "TaskUpdate",
+      "TaskGet",
+      "TaskList",
+      "SendMessage"
     ],
     "deny": [
       "Bash(drizzle-kit push:*)",
@@ -145,14 +215,27 @@
       "Bash(*-X ours*)",
       "Bash(*--strategy-option*theirs*)",
       "Bash(*--strategy-option*ours*)",
-      "Bash(*gh api*protection*)",
+      "Bash(*gh api*protection* --method POST*)",
+      "Bash(*gh api*protection* --method PUT*)",
+      "Bash(*gh api*protection* --method DELETE*)",
+      "Bash(*gh api*protection* --method PATCH*)",
+      "Bash(*gh api*protection* -X POST*)",
+      "Bash(*gh api*protection* -X PUT*)",
+      "Bash(*gh api*protection* -X DELETE*)",
+      "Bash(*gh api*protection* -X PATCH*)",
       "Bash(*gh pr merge*)",
       "Bash(*enforce_admins*)",
       "Bash(*git push origin main)",
       "Bash(*git push origin main:*)",
       "Bash(*git push*:main*)",
       "Bash(*git push*refs/heads/main*)",
-      "Agent(oh-my-claudecode:*)"
+      "Bash(*--git-dir*)",
+      "Bash(GIT_DIR=*)",
+      "Bash(* GIT_DIR=*)",
+      "Bash(GIT_WORK_TREE=*)",
+      "Bash(* GIT_WORK_TREE=*)",
+      "Bash(*git config*core.bare*)",
+      "Bash(*git config*core.worktree*)"
     ]
   },
   "worktree": {},
@@ -161,7 +244,7 @@
     "commit": "Co-Authored-By: Claude <noreply@anthropic.com>",
     "pr": "🤖 Generated with [Claude Code](https://claude.ai/code)"
   },
-  "model": "claude-opus-4-6[1m]",
+  "model": "opusplan",
   "voiceEnabled": true,
   "defaultView": "chat",
   "showThinkingSummaries": true,

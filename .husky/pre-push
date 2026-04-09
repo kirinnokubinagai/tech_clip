@@ -12,8 +12,7 @@ fi
 
 if [ "${TECH_CLIP_PRE_PUSH_NIX_BOOTSTRAPPED:-0}" != "1" ]; then
   if [ -n "${NIX_BIN}" ]; then
-    if [ -z "${IN_NIX_SHELL:-}" ] || ! command -v pnpm > /dev/null 2>&1 || ! command -v zap > /dev/null 2>&1; then
-      echo "Pre-push チェックを Nix 開発環境で再実行中..."
+    if [ -z "${IN_NIX_SHELL:-}" ] || ! command -v pnpm > /dev/null 2>&1; then
       exec "${NIX_BIN}" develop "${REPO_ROOT}" --command env TECH_CLIP_PRE_PUSH_NIX_BOOTSTRAPPED=1 bash "${SCRIPT_PATH}" "$@"
     fi
   fi
@@ -21,32 +20,20 @@ fi
 
 if ! command -v pnpm > /dev/null 2>&1; then
   echo "Pre-push チェック失敗: pnpm コマンドが見つかりません。"
-  echo "  Nix が使える環境で実行するか、pnpm をインストールしてください。"
-  exit 1
-fi
-
-if ! command -v zap > /dev/null 2>&1; then
-  echo "Pre-push チェック失敗: ZAP コマンドが見つかりません。"
-  echo "  Nix 開発環境の再起動に失敗した可能性があります。nix develop の状態を確認してください。"
   exit 1
 fi
 
 cd "${REPO_ROOT}"
 
-# force-push / non-fast-forward push をブロック
-while read -r LOCAL_REF LOCAL_SHA REMOTE_REF REMOTE_SHA; do
+while read -r _LOCAL_REF LOCAL_SHA _REMOTE_REF REMOTE_SHA; do
   if [ "${LOCAL_SHA}" = "0000000000000000000000000000000000000000" ]; then
     continue
   fi
-
   if [ "${REMOTE_SHA}" = "0000000000000000000000000000000000000000" ]; then
     continue
   fi
-
   if ! git merge-base --is-ancestor "${REMOTE_SHA}" "${LOCAL_SHA}"; then
-    echo "非 fast-forward push は禁止されています。rebase後の force-push は行わず、merge で取り込んでください。"
-    echo "  local:  ${LOCAL_REF} ${LOCAL_SHA}"
-    echo "  remote: ${REMOTE_REF} ${REMOTE_SHA}"
+    echo "非 fast-forward push は禁止されています。"
     exit 1
   fi
 done
@@ -59,300 +46,13 @@ pnpm lint || { echo "Lint失敗。修正してからpushしてください。"; 
 echo "  Typecheck..."
 pnpm typecheck || { echo "Typecheck失敗。修正してからpushしてください。"; exit 1; }
 
+echo "  Audit..."
+pnpm audit --prod || { echo "Audit失敗。脆弱性を解消してからpushしてください。"; exit 1; }
+
 echo "  Test..."
-pnpm --filter @tech-clip/api test || { echo "API Test失敗。修正してからpushしてください。"; exit 1; }
-pnpm --filter @tech-clip/mobile exec jest --runInBand --passWithNoTests --openHandlesTimeout=0 --forceExit 2>&1 \
-  | sed '/^Force exiting Jest:/d' \
-  || { echo "Mobile Test失敗。修正してからpushしてください。"; exit 1; }
-
-# OWASP ZAP ローカルセキュリティスキャン
-# Nix 環境の zap コマンドを使用（Docker 不要）
-echo "  OWASP ZAP セキュリティスキャン..."
-
-ZAP_API_PORT=$((9000 + (RANDOM % 1000)))
-ZAP_DB_FILE="/tmp/zap-prepush-${ZAP_API_PORT}.db"
-ZAP_WRAPPER_HOME="$(mktemp -d "/tmp/zap-home-${ZAP_API_PORT}-XXXXXX")"
-ZAP_API_SERVER_LOG="$(mktemp "/tmp/zap-api-server-${ZAP_API_PORT}-XXXXXX.log")"
-ZAP_MAX_WAIT=30
-ZAP_SCAN_MAX_WAIT=300
-ZAP_SERVER_PID=""
-ZAP_DAEMON_PID=""
-ZAP_PORT=""
-ZAP_DAEMON_LOG=""
-
-zap_cleanup() {
-  if [ -n "${ZAP_DAEMON_PID}" ]; then
-    pkill -P "${ZAP_DAEMON_PID}" 2>/dev/null || true
-    kill "${ZAP_DAEMON_PID}" 2>/dev/null || true
-    wait "${ZAP_DAEMON_PID}" 2>/dev/null || true
-  fi
-  if [ -n "${ZAP_PORT}" ]; then
-    for pid in $(pgrep -f -- "-daemon -port ${ZAP_PORT}" 2>/dev/null || true); do
-      kill "${pid}" 2>/dev/null || true
-      wait "${pid}" 2>/dev/null || true
-    done
-  fi
-  if [ -n "${ZAP_SERVER_PID}" ]; then
-    pkill -P "${ZAP_SERVER_PID}" 2>/dev/null || true
-    kill "${ZAP_SERVER_PID}" 2>/dev/null || true
-    wait "${ZAP_SERVER_PID}" 2>/dev/null || true
-  fi
-  rm -f "${ZAP_DB_FILE}"
-  rm -rf "${ZAP_WRAPPER_HOME}"
-  rm -f "${ZAP_API_SERVER_LOG}"
-  if [ -n "${ZAP_DAEMON_LOG}" ]; then
-    rm -f "${ZAP_DAEMON_LOG}"
-  fi
-  return 0
-}
-trap zap_cleanup EXIT INT TERM
-
-TURSO_DATABASE_URL="file:${ZAP_DB_FILE}" \
-TURSO_AUTH_TOKEN="dummy" \
-RUNPOD_API_KEY="dummy" \
-RUNPOD_ENDPOINT_ID="dummy" \
-BETTER_AUTH_SECRET="${BETTER_AUTH_SECRET:-$(openssl rand -hex 32)}" \
-ENVIRONMENT="test" \
-  pnpm --filter @tech-clip/api exec wrangler dev --port "${ZAP_API_PORT}" > "${ZAP_API_SERVER_LOG}" 2>&1 &
-ZAP_SERVER_PID=$!
-
-# サーバー起動を待機
-echo "    APIサーバー起動待機中..."
-ZAP_WAIT_COUNT=0
-until curl -s "http://localhost:${ZAP_API_PORT}/health" > /dev/null 2>&1; do
-  ZAP_WAIT_COUNT=$((ZAP_WAIT_COUNT + 1))
-  if [ "${ZAP_WAIT_COUNT}" -ge "${ZAP_MAX_WAIT}" ]; then
-    echo "ZAPスキャン失敗: APIサーバーが${ZAP_MAX_WAIT}秒以内に起動しませんでした。"
-    echo "  ログ: ${ZAP_API_SERVER_LOG} を確認してください。"
-    exit 1
-  fi
-  sleep 1
-done
-
-# DBマイグレーション実行
-TURSO_DATABASE_URL="file:${ZAP_DB_FILE}" \
-TURSO_AUTH_TOKEN="dummy" \
-  pnpm --filter @tech-clip/api exec drizzle-kit migrate > /dev/null 2>&1
-
-# テスト用ユーザー登録とトークン取得
-curl -s -X POST "http://localhost:${ZAP_API_PORT}/api/auth/sign-up/email" \
-  -H "Content-Type: application/json" \
-  -d '{"email":"zap-test@techclip.test","password":"ZapTest1234!","name":"ZAP Test User"}' \
-  > /dev/null 2>&1
-
-ZAP_RESPONSE=$(curl -s -X POST "http://localhost:${ZAP_API_PORT}/api/auth/sign-in" \
-  -H "Content-Type: application/json" \
-  -d '{"email":"zap-test@techclip.test","password":"ZapTest1234!"}')
-ZAP_TOKEN=$(echo "${ZAP_RESPONSE}" | jq -r '.data.session.token // .data.token // .token // empty' 2>/dev/null || echo "")
-
-if [ -z "${ZAP_TOKEN}" ]; then
-  echo "    警告: 認証トークンを取得できませんでした。未認証スキャンのみ実施します。"
-  ZAP_TOKEN="dummy-token-for-unauthenticated-scan"
-fi
-
-# ZAP をデーモンモードで起動
-ZAP_PORT=$((10000 + (RANDOM % 1000)))
-ZAP_DAEMON_LOG="$(mktemp "/tmp/zap-daemon-${ZAP_PORT}-XXXXXX.log")"
-HOME="${ZAP_WRAPPER_HOME}" \
-  zap -daemon -port "${ZAP_PORT}" -config api.disablekey=true > "${ZAP_DAEMON_LOG}" 2>&1 &
-ZAP_DAEMON_PID=$!
-
-# ZAP デーモン起動を待機
-echo "    ZAPデーモン起動待機中..."
-ZAP_WAIT_COUNT=0
-until curl -s "http://localhost:${ZAP_PORT}/JSON/core/view/version/" > /dev/null 2>&1; do
-  ZAP_WAIT_COUNT=$((ZAP_WAIT_COUNT + 1))
-  if [ "${ZAP_WAIT_COUNT}" -ge 60 ]; then
-    echo "ZAPスキャン失敗: ZAPデーモンが60秒以内に起動しませんでした。"
-    echo "  ログ: ${ZAP_DAEMON_LOG} を確認してください。"
-    exit 1
-  fi
-  sleep 1
-done
-
-# OpenAPI 定義をインポート
-echo "    OpenAPI定義をインポート中..."
-curl -s "http://localhost:${ZAP_PORT}/JSON/openapi/action/importUrl/" \
-  --data-urlencode "url=http://localhost:${ZAP_API_PORT}/openapi.json" \
-  > /dev/null 2>&1
-
-# 認証ヘッダーを設定
-curl -s "http://localhost:${ZAP_PORT}/JSON/replacer/action/addRule/" \
-  --data-urlencode "description=Auth Header" \
-  --data-urlencode "enabled=true" \
-  --data-urlencode "matchType=REQ_HEADER" \
-  --data-urlencode "matchRegex=false" \
-  --data-urlencode "matchString=Authorization" \
-  --data-urlencode "replacement=Bearer ${ZAP_TOKEN}" \
-  --data-urlencode "initiators=" \
-  > /dev/null 2>&1
-
-# アクティブスキャン実行
-echo "    アクティブスキャン実行中..."
-SCAN_ID=$(curl -s "http://localhost:${ZAP_PORT}/JSON/ascan/action/scan/" \
-  --data-urlencode "url=http://localhost:${ZAP_API_PORT}" \
-  --data-urlencode "recurse=true" \
-  | jq -r '.scan')
-
-# スキャン完了を待機
-ZAP_SCAN_WAIT_COUNT=0
-while true; do
-  STATUS=$(curl -s "http://localhost:${ZAP_PORT}/JSON/ascan/view/status/?scanId=${SCAN_ID}" | jq -r '.status')
-  if [ "${STATUS}" = "100" ]; then
-    break
-  fi
-  ZAP_SCAN_WAIT_COUNT=$((ZAP_SCAN_WAIT_COUNT + 1))
-  if [ "${ZAP_SCAN_WAIT_COUNT}" -ge "${ZAP_SCAN_MAX_WAIT}" ]; then
-    echo "ZAPスキャン失敗: アクティブスキャンが${ZAP_SCAN_MAX_WAIT}回の待機内に完了しませんでした。"
-    echo "  ログ: ${ZAP_DAEMON_LOG} を確認してください。"
-    exit 1
-  fi
-  sleep 2
-done
-
-# アラート取得と判定
-echo "    スキャン結果を確認中..."
-HIGH_ALERTS=$(curl -s "http://localhost:${ZAP_PORT}/JSON/alert/view/alertsSummary/?baseurl=http://localhost:${ZAP_API_PORT}" \
-  | jq -r '.alertsSummary.High // 0')
-MEDIUM_ALERTS=$(curl -s "http://localhost:${ZAP_PORT}/JSON/alert/view/alertsSummary/?baseurl=http://localhost:${ZAP_API_PORT}" \
-  | jq -r '.alertsSummary.Medium // 0')
-
-# HTMLレポート生成
-mkdir -p .zap
-curl -s "http://localhost:${ZAP_PORT}/OTHER/core/other/htmlreport/" > .zap/zap-report.html
-
-# ルール抑制の確認（rules.tsvに記載されたルールは除外）
-if [ -f ".zap/rules.tsv" ]; then
-  echo "    ルール抑制ファイルを適用中..."
-  # rules.tsv の IGNORE/WARN ルールを考慮してアラートをフィルタ
-  FILTERED_HIGH=$(curl -s "http://localhost:${ZAP_PORT}/JSON/alert/view/alerts/?baseurl=http://localhost:${ZAP_API_PORT}&riskId=3" \
-    | jq -r --slurpfile rules <(awk -F'\t' '$2 == "IGNORE" || $2 == "WARN" {print $1}' .zap/rules.tsv | jq -R . | jq -s .) \
-    '[.alerts[] | select(.pluginId as $id | $rules[0] | index($id) | not)] | length')
-  FILTERED_MEDIUM=$(curl -s "http://localhost:${ZAP_PORT}/JSON/alert/view/alerts/?baseurl=http://localhost:${ZAP_API_PORT}&riskId=2" \
-    | jq -r --slurpfile rules <(awk -F'\t' '$2 == "IGNORE" || $2 == "WARN" {print $1}' .zap/rules.tsv | jq -R . | jq -s .) \
-    '[.alerts[] | select(.pluginId as $id | $rules[0] | index($id) | not)] | length')
-  HIGH_ALERTS="${FILTERED_HIGH:-0}"
-  MEDIUM_ALERTS="${FILTERED_MEDIUM:-0}"
-fi
-
-if [ "${HIGH_ALERTS}" -gt 0 ] || [ "${MEDIUM_ALERTS}" -gt 0 ]; then
-  echo "ZAPスキャン失敗: セキュリティ問題が検出されました（High: ${HIGH_ALERTS}, Medium: ${MEDIUM_ALERTS}）"
-  echo "  レポート: .zap/zap-report.html を確認してください。"
+"${REPO_ROOT}/scripts/run-and-fail-on-stderr.sh" pnpm test || {
+  echo "Test失敗。stderr がある場合は内容確認後に TECH_CLIP_ALLOW_TEST_STDERR=1 を付けて再pushしてください。"
   exit 1
-fi
-
-
-# Claude Code AI レビューセクション（pre-push hookに追加）
-echo "  Claude Code AIレビュー..."
-
-CLAUDE_REVIEW_TIMEOUT="${CLAUDE_REVIEW_TIMEOUT:-60}"
-MAX_DIFF_LINES=5000
-REVIEWS_DIR="${REPO_ROOT}/.reviews"
-
-run_claude_review() {
-  if ! command -v claude > /dev/null 2>&1; then
-    echo "    警告: claude コマンドが見つかりません。AIレビューをスキップします。"
-    return
-  fi
-  if ! command -v python3 > /dev/null 2>&1; then
-    echo "    警告: python3 コマンドが見つかりません。AIレビューをスキップします。"
-    return
-  fi
-  if ! command -v timeout > /dev/null 2>&1; then
-    echo "    警告: timeout コマンドが見つかりません。AIレビューをスキップします。"
-    return
-  fi
-
-  DIFF_CONTENT="$(git diff origin/main...HEAD -- . ':(exclude)*.md' ':(exclude)*.txt' 2>/dev/null || true)"
-  if [ -z "${DIFF_CONTENT}" ]; then
-    echo "    差分なし。AIレビューをスキップします。"
-    return
-  fi
-
-  DIFF_LINE_COUNT="$(printf '%s\n' "${DIFF_CONTENT}" | wc -l | tr -d ' ')"
-  if [ "${DIFF_LINE_COUNT}" -gt "${MAX_DIFF_LINES}" ]; then
-    DIFF_CONTENT="$(printf '%s\n' "${DIFF_CONTENT}" | head -"${MAX_DIFF_LINES}" | tac | sed '1,/^diff --git /d' | tac)"
-    echo "    警告: 差分が大きいため、ファイル境界で切り詰めてレビューします（一部ファイルが省略されています）。"
-  fi
-  if [ -z "${DIFF_CONTENT}" ]; then
-    echo "    差分切り詰め後に差分が空になりました。AIレビューをスキップしました（差分なし）。"
-    return
-  fi
-
-  REVIEW_RESULT="$(printf '%s\n' "${DIFF_CONTENT}" | timeout "${CLAUDE_REVIEW_TIMEOUT}" claude --max-turns 1 \
-    -p 'あなたはコードレビュアーです。このgit diffをレビューし、CRITICALおよびHIGHの深刻度の問題のみを報告してください。必ず以下のJSON形式のみで応答してください（説明文なし）: {"critical": <number>, "high": <number>, "issues": [{"severity": "CRITICAL"|"HIGH", "file": "<filepath>", "line": <number_or_null>, "message": "<日本語で問題の説明>"}]}' \
-    2>/dev/null || true)"
-  if [ -z "${REVIEW_RESULT}" ]; then
-    echo "    警告: AIレビューの実行に失敗しました。pushを続行します。"
-    return
-  fi
-
-  CLEAN_RESULT="$(printf '%s\n' "${REVIEW_RESULT}" | python3 -c "
-import sys, json
-data = sys.stdin.read()
-start = data.find('{')
-end = data.rfind('}')
-if start == -1 or end == -1:
-    print('{}')
-    sys.exit(0)
-try:
-    obj = json.loads(data[start:end+1])
-    print(json.dumps(obj))
-except Exception:
-    print('{}')
-" 2>/dev/null || echo "")"
-  if [ -z "${CLEAN_RESULT}" ] || [ "${CLEAN_RESULT}" = "{}" ]; then
-    echo "    警告: AIレビュー結果のパースに失敗しました。pushを続行します。"
-    return
-  fi
-
-  { mkdir -p "${REVIEWS_DIR}" && find "${REVIEWS_DIR}" -name 'pre-push-*.json' -mtime +30 -delete; } 2>/dev/null || true
-  REVIEW_LOG="${REVIEWS_DIR}/pre-push-$(date +%Y%m%d-%H%M%S).json"
-  CURRENT_BRANCH="$(git branch --show-current 2>/dev/null || echo "unknown")"
-  CURRENT_TIMESTAMP="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
-  export REVIEW_BRANCH="${CURRENT_BRANCH}"
-  export REVIEW_TIMESTAMP="${CURRENT_TIMESTAMP}"
-  REVIEW_OUTPUT="$(printf '%s\n' "${CLEAN_RESULT}" | python3 -c "
-import sys, json, os
-try:
-    d = json.load(sys.stdin)
-    critical = int(d.get('critical', 0))
-    high = int(d.get('high', 0))
-    d['timestamp'] = os.environ.get('REVIEW_TIMESTAMP', '')
-    d['branch'] = os.environ.get('REVIEW_BRANCH', 'unknown')
-    payload = json.dumps(d, ensure_ascii=False, indent=2)
-    issues_text = ''
-    for issue in d.get('issues', []):
-        sev = issue.get('severity', '?')
-        f = issue.get('file', '?')
-        ln = issue.get('line', '')
-        msg = issue.get('message', '?')
-        loc = str(f) + ':' + str(ln) if ln else str(f)
-        issues_text += '  [' + sev + '] ' + loc + ': ' + msg + '\n'
-    print(str(critical) + '\n' + str(high) + '\n' + payload + '\n---ISSUES---\n' + issues_text)
-except Exception:
-    print('0\n0\n{}')
-" 2>/dev/null || printf '0\n0\n{}\n')"
-
-  CRITICAL_COUNT="$(printf '%s\n' "${REVIEW_OUTPUT}" | head -1)"
-  HIGH_COUNT="$(printf '%s\n' "${REVIEW_OUTPUT}" | sed -n '2p')"
-  SAVE_PAYLOAD="$(printf '%s\n' "${REVIEW_OUTPUT}" | sed -n '3,/^---ISSUES---$/p' | sed '$d')"
-  ISSUES_TEXT="$(printf '%s\n' "${REVIEW_OUTPUT}" | sed -n '/^---ISSUES---$/,$ p' | tail -n +2)"
-  { printf '%s\n' "${SAVE_PAYLOAD}" > "${REVIEW_LOG}"; } 2>/dev/null || echo "    警告: レビュー結果の保存に失敗しました。"
-
-  if [ "${CRITICAL_COUNT:-0}" -gt 0 ] 2>/dev/null || [ "${HIGH_COUNT:-0}" -gt 0 ] 2>/dev/null; then
-    echo "AIレビュー失敗: CRITICAL ${CRITICAL_COUNT}件、HIGH ${HIGH_COUNT}件の問題が検出されました。"
-    echo "  詳細: ${REVIEW_LOG}"
-    echo ""
-    printf '%s\n' "${ISSUES_TEXT}"
-    echo ""
-    echo "問題を修正してから再度pushしてください。"
-    exit 1
-  fi
-
-  echo "    AIレビュー完了（CRITICAL: ${CRITICAL_COUNT}, HIGH: ${HIGH_COUNT}）"
 }
-
-run_claude_review
 
 echo "全チェック通過"

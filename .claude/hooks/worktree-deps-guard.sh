@@ -39,6 +39,7 @@ if [ -f "$WTPATH/.envrc" ]; then
   echo "次のコマンドを実行してください:"
   echo ""
   echo "  cd $WTPATH && direnv allow ."
+  echo "  cd $WTPATH && direnv exec $WTPATH pnpm install --frozen-lockfile"
   echo ""
 fi
 
@@ -47,7 +48,11 @@ if [ ! -d "$WTPATH/node_modules" ]; then
   echo "⚠️ worktree に node_modules がありません"
   echo "次のコマンドを実行してください:"
   echo ""
-  echo "  cd $WTPATH && pnpm install --frozen-lockfile"
+  if [ -f "$WTPATH/.envrc" ]; then
+    echo "  cd $WTPATH && direnv exec $WTPATH pnpm install --frozen-lockfile"
+  else
+    echo "  cd $WTPATH && pnpm install --frozen-lockfile"
+  fi
   echo ""
   echo "シンボリンクによる共有は禁止です（CLAUDE.md参照）"
 fi

@@ -8,10 +8,10 @@ import * as Device from "expo-device";
 import * as Notifications from "expo-notifications";
 import { router } from "expo-router";
 import { Platform } from "react-native";
+
 import { apiFetch } from "@/lib/api";
 import { logger } from "@/lib/logger";
 
-// 外部モジュールのモック定義（import 宣言と同セクションに配置）
 jest.mock("expo-notifications", () => ({
   getPermissionsAsync: jest.fn(),
   requestPermissionsAsync: jest.fn(),
@@ -51,6 +51,7 @@ jest.mock("@/lib/logger", () => ({
 jest.mock("@/lib/constants", () => ({
   LIGHT_COLORS: { accent: "#FF0000" },
 }));
+
 beforeEach(() => {
   jest.clearAllMocks();
   Object.defineProperty(Device, "isDevice", { value: true, writable: true });
@@ -60,75 +61,70 @@ beforeEach(() => {
 describe("notifications", () => {
   describe("checkNotificationPermission", () => {
     it("実機で権限がgrantedの場合 'granted' を返すこと", async () => {
-      // Arrange
       (Notifications.getPermissionsAsync as jest.Mock).mockResolvedValue({
         status: "granted",
       });
 
-      // Act
       const result = await checkNotificationPermission();
 
-      // Assert
       expect(result).toBe("granted");
       expect(Notifications.getPermissionsAsync).toHaveBeenCalledTimes(1);
     });
 
     it("実機で権限がdeniedの場合 'denied' を返すこと", async () => {
-      // Arrange
       (Notifications.getPermissionsAsync as jest.Mock).mockResolvedValue({
         status: "denied",
       });
 
-      // Act
       const result = await checkNotificationPermission();
 
-      // Assert
       expect(result).toBe("denied");
     });
 
     it("シミュレータの場合 'undetermined' を返すこと", async () => {
-      // Arrange
       Object.defineProperty(Device, "isDevice", { value: false });
 
-      // Act
       const result = await checkNotificationPermission();
 
-      // Assert
       expect(result).toBe("undetermined");
       expect(Notifications.getPermissionsAsync).not.toHaveBeenCalled();
     });
 
     it("不明なステータスの場合 'undetermined' を返すこと", async () => {
-      // Arrange
       (Notifications.getPermissionsAsync as jest.Mock).mockResolvedValue({
         status: "unknown-status",
       });
 
-      // Act
       const result = await checkNotificationPermission();
 
-      // Assert
       expect(result).toBe("undetermined");
     });
   });
 
   describe("requestNotificationPermission", () => {
     it("既に権限がgrantedの場合はリクエストをスキップして 'granted' を返すこと", async () => {
-      // Arrange
       (Notifications.getPermissionsAsync as jest.Mock).mockResolvedValue({
         status: "granted",
       });
 
-      // Act
       const result = await requestNotificationPermission();
 
-      // Assert
       expect(result).toBe("granted");
       expect(Notifications.requestPermissionsAsync).not.toHaveBeenCalled();
     });
 
+    it("既に権限がdeniedの場合はリクエストをスキップして 'denied' を返すこと", async () => {
+      (Notifications.getPermissionsAsync as jest.Mock).mockResolvedValue({
+        status: "denied",
+      });
+
+      const result = await requestNotificationPermission();
+
+      expect(result).toBe("denied");
+      expect(Notifications.requestPermissionsAsync).not.toHaveBeenCalled();
+    });
+
     it("権限が未決定の場合はリクエストを行い結果を返すこと", async () => {
-      // Arrange
       (Notifications.getPermissionsAsync as jest.Mock).mockResolvedValue({
         status: "undetermined",
       });
@@ -136,16 +132,13 @@ describe("notifications", () => {
         status: "granted",
       });
 
-      // Act
       const result = await requestNotificationPermission();
 
-      // Assert
       expect(result).toBe("granted");
       expect(Notifications.requestPermissionsAsync).toHaveBeenCalledTimes(1);
     });
 
     it("権限リクエストが拒否された場合 'denied' を返すこと", async () => {
-      // Arrange
       (Notifications.getPermissionsAsync as jest.Mock).mockResolvedValue({
         status: "undetermined",
       });
@@ -153,35 +146,16 @@ describe("notifications", () => {
         status: "denied",
       });
 
-      // Act
       const result = await requestNotificationPermission();
 
-      // Assert
       expect(result).toBe("denied");
-    });
-
-    it("既に権限がdeniedの場合はリクエストをスキップして 'denied' を返すこと", async () => {
-      // Arrange
-      (Notifications.getPermissionsAsync as jest.Mock).mockResolvedValue({
-        status: "denied",
-      });
-
-      // Act
-      const result = await requestNotificationPermission();
-
-      // Assert
-      expect(result).toBe("denied");
-      expect(Notifications.requestPermissionsAsync).not.toHaveBeenCalled();
     });
 
     it("シミュレータの場合 'undetermined' を返すこと", async () => {
-      // Arrange
       Object.defineProperty(Device, "isDevice", { value: false });
 
-      // Act
       const result = await requestNotificationPermission();
 
-      // Assert
       expect(result).toBe("undetermined");
       expect(Notifications.getPermissionsAsync).not.toHaveBeenCalled();
     });
@@ -189,7 +163,6 @@ describe("notifications", () => {
 
   describe("registerPushTokenOnly", () => {
     it("実機でトークンを取得してAPIに登録できること", async () => {
-      // Arrange
       (Notifications.getPermissionsAsync as jest.Mock).mockResolvedValue({
         status: "granted",
       });
@@ -197,10 +170,8 @@ describe("notifications", () => {
         data: "ExponentPushToken[test-token-123]",
       });
 
-      // Act
       await registerPushTokenOnly();
 
-      // Assert
       expect(apiFetch).toHaveBeenCalledWith(
         "/api/notifications/register",
         expect.objectContaining({ method: "POST" }),
@@ -212,15 +183,12 @@ describe("notifications", () => {
     });
 
     it("権限が付与されていない場合はトークン登録をスキップすること", async () => {
-      // Arrange
       (Notifications.getPermissionsAsync as jest.Mock).mockResolvedValue({
         status: "denied",
       });
 
-      // Act
       await registerPushTokenOnly();
 
-      // Assert
       expect(Notifications.getExpoPushTokenAsync).not.toHaveBeenCalled();
       expect(apiFetch).not.toHaveBeenCalled();
       expect(logger.warn).toHaveBeenCalledWith(
@@ -230,7 +198,6 @@ describe("notifications", () => {
     });
 
     it("Androidの場合に通知チャンネルを設定すること", async () => {
-      // Arrange
       Object.defineProperty(Platform, "OS", { value: "android" });
       (Notifications.getPermissionsAsync as jest.Mock).mockResolvedValue({
         status: "granted",
@@ -239,10 +206,8 @@ describe("notifications", () => {
         data: "ExponentPushToken[android-token]",
       });
 
-      // Act
       await registerPushTokenOnly();
 
-      // Assert
       expect(Notifications.setNotificationChannelAsync).toHaveBeenCalledWith(
         "default",
         expect.objectContaining({
@@ -253,19 +218,15 @@ describe("notifications", () => {
     });
 
     it("シミュレータの場合は何もしないこと", async () => {
-      // Arrange
       Object.defineProperty(Device, "isDevice", { value: false });
 
-      // Act
       await registerPushTokenOnly();
 
-      // Assert
       expect(Notifications.getExpoPushTokenAsync).not.toHaveBeenCalled();
       expect(apiFetch).not.toHaveBeenCalled();
     });
 
     it("API登録が失敗してもエラーを伝播させないこと", async () => {
-      // Arrange
       (Notifications.getPermissionsAsync as jest.Mock).mockResolvedValue({
         status: "granted",
       });
@@ -274,7 +235,6 @@ describe("notifications", () => {
       });
       (apiFetch as jest.Mock).mockRejectedValue(new Error("ネットワークエラー"));
 
-      // Act & Assert（例外がスローされないこと）
       await expect(registerPushTokenOnly()).resolves.toBeUndefined();
       expect(logger.error).toHaveBeenCalledWith(
         "プッシュトークンのAPI登録に失敗しました",
@@ -283,107 +243,10 @@ describe("notifications", () => {
     });
   });
 
-  describe("isAllowedRoute（setupNotificationHandlers経由）", () => {
-    it("個別記事URLが許可されること", () => {
-      // Arrange
-      let capturedResponseHandler: ((response: unknown) => void) | undefined;
-      (Notifications.addNotificationResponseReceivedListener as jest.Mock).mockImplementation(
-        (handler) => {
-          capturedResponseHandler = handler;
-          return { remove: jest.fn() };
-        },
-      );
-
-      // Act
-      setupNotificationHandlers();
-      capturedResponseHandler?.({
-        notification: {
-          request: { content: { data: { url: "/articles/123" } } },
-        },
-      });
-
-      // Assert
-      expect(router.push).toHaveBeenCalledWith("/articles/123");
-    });
-
-    it("/articles そのもののURLが許可されること", () => {
-      // Arrange
-      let capturedResponseHandler: ((response: unknown) => void) | undefined;
-      (Notifications.addNotificationResponseReceivedListener as jest.Mock).mockImplementation(
-        (handler) => {
-          capturedResponseHandler = handler;
-          return { remove: jest.fn() };
-        },
-      );
-
-      // Act
-      setupNotificationHandlers();
-      capturedResponseHandler?.({
-        notification: {
-          request: { content: { data: { url: "/articles" } } },
-        },
-      });
-
-      // Assert
-      expect(router.push).toHaveBeenCalledWith("/articles");
-    });
-
-    it("許可されていないURLはブロックされること", () => {
-      // Arrange
-      let capturedResponseHandler: ((response: unknown) => void) | undefined;
-      (Notifications.addNotificationResponseReceivedListener as jest.Mock).mockImplementation(
-        (handler) => {
-          capturedResponseHandler = handler;
-          return { remove: jest.fn() };
-        },
-      );
-
-      // Act
-      setupNotificationHandlers();
-      capturedResponseHandler?.({
-        notification: {
-          request: { content: { data: { url: "/malicious/path" } } },
-        },
-      });
-
-      // Assert
-      expect(router.push).not.toHaveBeenCalled();
-      expect(logger.warn).toHaveBeenCalledWith(
-        "許可されていない通知URLをブロックしました",
-        expect.objectContaining({ url: "/malicious/path" }),
-      );
-    });
-
-    it("URLがない通知はrouter.pushを呼ばないこと", () => {
-      // Arrange
-      let capturedResponseHandler: ((response: unknown) => void) | undefined;
-      (Notifications.addNotificationResponseReceivedListener as jest.Mock).mockImplementation(
-        (handler) => {
-          capturedResponseHandler = handler;
-          return { remove: jest.fn() };
-        },
-      );
-
-      // Act
-      setupNotificationHandlers();
-      capturedResponseHandler?.({
-        notification: {
-          request: { content: { data: {} } },
-        },
-      });
-
-      // Assert
-      expect(router.push).not.toHaveBeenCalled();
-      expect(logger.warn).not.toHaveBeenCalled();
-    });
-  });
-
   describe("setupNotificationHandlers", () => {
     it("通知ハンドラーを設定すること", () => {
-      // Act
       setupNotificationHandlers();
 
-      // Assert
       expect(Notifications.setNotificationHandler).toHaveBeenCalledWith(
         expect.objectContaining({
           handleNotification: expect.any(Function),
@@ -392,17 +255,14 @@ describe("notifications", () => {
     });
 
     it("リスナーのクリーンアップ関数を返すこと", () => {
-      // Act
       const cleanup = setupNotificationHandlers();
 
-      // Assert
       expect(typeof cleanup).toBe("function");
       expect(Notifications.addNotificationReceivedListener).toHaveBeenCalledTimes(1);
       expect(Notifications.addNotificationResponseReceivedListener).toHaveBeenCalledTimes(1);
     });
 
     it("クリーンアップ関数がリスナーを解除すること", () => {
-      // Arrange
       const mockRemoveReceived = jest.fn();
       const mockRemoveResponse = jest.fn();
       (Notifications.addNotificationReceivedListener as jest.Mock).mockReturnValue({
@@ -412,13 +272,153 @@ describe("notifications", () => {
         remove: mockRemoveResponse,
       });
 
-      // Act
       const cleanup = setupNotificationHandlers();
       cleanup();
 
-      // Assert
       expect(mockRemoveReceived).toHaveBeenCalledTimes(1);
       expect(mockRemoveResponse).toHaveBeenCalledTimes(1);
+    });
+
+    it("フォアグラウンド通知受信時に logger.info を呼び出すこと", () => {
+      let receivedCallback: ((notification: Notifications.Notification) => void) | undefined;
+      (Notifications.addNotificationReceivedListener as jest.Mock).mockImplementation((handler) => {
+        receivedCallback = handler;
+        return { remove: jest.fn() };
+      });
+
+      setupNotificationHandlers();
+      receivedCallback?.({
+        request: { content: { title: "テスト通知" } },
+      } as unknown as Notifications.Notification);
+
+      expect(logger.info).toHaveBeenCalledWith(
+        "フォアグラウンド通知を受信しました",
+        expect.objectContaining({ title: "テスト通知" }),
+      );
+    });
+
+    it("個別記事URLが許可されること", () => {
+      let capturedResponseHandler: ((response: unknown) => void) | undefined;
+      (Notifications.addNotificationResponseReceivedListener as jest.Mock).mockImplementation(
+        (handler) => {
+          capturedResponseHandler = handler;
+          return { remove: jest.fn() };
+        },
+      );
+
+      setupNotificationHandlers();
+      capturedResponseHandler?.({
+        notification: {
+          request: { content: { data: { url: "/articles/123" } } },
+        },
+      });
+
+      expect(router.push).toHaveBeenCalledWith("/articles/123");
+    });
+
+    it("/articles そのもののURLが許可されること", () => {
+      let capturedResponseHandler: ((response: unknown) => void) | undefined;
+      (Notifications.addNotificationResponseReceivedListener as jest.Mock).mockImplementation(
+        (handler) => {
+          capturedResponseHandler = handler;
+          return { remove: jest.fn() };
+        },
+      );
+
+      setupNotificationHandlers();
+      capturedResponseHandler?.({
+        notification: {
+          request: { content: { data: { url: "/articles" } } },
+        },
+      });
+
+      expect(router.push).toHaveBeenCalledWith("/articles");
+    });
+
+    it("URLエンコードされた許可ルートは正規化されたパスで router.push を呼び出すこと", () => {
+      let capturedResponseHandler: ((response: unknown) => void) | undefined;
+      (Notifications.addNotificationResponseReceivedListener as jest.Mock).mockImplementation(
+        (handler) => {
+          capturedResponseHandler = handler;
+          return { remove: jest.fn() };
+        },
+      );
+
+      setupNotificationHandlers();
+      capturedResponseHandler?.({
+        notification: {
+          request: { content: { data: { url: "/articles%2F123" } } },
+        },
+      });
+
+      expect(router.push).toHaveBeenCalledWith("/articles/123");
+      expect(logger.warn).not.toHaveBeenCalled();
+    });
+
+    it("許可されていないURLはブロックされること", () => {
+      let capturedResponseHandler: ((response: unknown) => void) | undefined;
+      (Notifications.addNotificationResponseReceivedListener as jest.Mock).mockImplementation(
+        (handler) => {
+          capturedResponseHandler = handler;
+          return { remove: jest.fn() };
+        },
+      );
+
+      setupNotificationHandlers();
+      capturedResponseHandler?.({
+        notification: {
+          request: { content: { data: { url: "/malicious/path" } } },
+        },
+      });
+
+      expect(router.push).not.toHaveBeenCalled();
+      expect(logger.warn).toHaveBeenCalledWith(
+        "許可されていない通知URLをブロックしました",
+        expect.objectContaining({ url: "/malicious/path" }),
+      );
+    });
+
+    it("URLエンコードされたパストラバーサル（%2e%2e）をブロックすること", () => {
+      let capturedResponseHandler: ((response: unknown) => void) | undefined;
+      (Notifications.addNotificationResponseReceivedListener as jest.Mock).mockImplementation(
+        (handler) => {
+          capturedResponseHandler = handler;
+          return { remove: jest.fn() };
+        },
+      );
+
+      setupNotificationHandlers();
+      capturedResponseHandler?.({
+        notification: {
+          request: { content: { data: { url: "/%2e%2e/%2e%2e/admin" } } },
+        },
+      });
+
+      expect(router.push).not.toHaveBeenCalled();
+      expect(logger.warn).toHaveBeenCalledWith(
+        "許可されていない通知URLをブロックしました",
+        expect.objectContaining({ url: "/%2e%2e/%2e%2e/admin" }),
+      );
+    });
+
+    it("URLがない通知はrouter.pushを呼ばないこと", () => {
+      let capturedResponseHandler: ((response: unknown) => void) | undefined;
+      (Notifications.addNotificationResponseReceivedListener as jest.Mock).mockImplementation(
+        (handler) => {
+          capturedResponseHandler = handler;
+          return { remove: jest.fn() };
+        },
+      );
+
+      setupNotificationHandlers();
+      capturedResponseHandler?.({
+        notification: {
+          request: { content: { data: {} } },
+        },
+      });
+
+      expect(router.push).not.toHaveBeenCalled();
+      expect(logger.warn).not.toHaveBeenCalled();
     });
   });
 });

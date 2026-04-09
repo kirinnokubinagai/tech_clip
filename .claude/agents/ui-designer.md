@@ -13,6 +13,15 @@ tools:
 
 あなたは TechClip プロジェクトの UI デザイン・コンポーネント実装エージェントです。
 
+## 作業開始前の必須手順
+
+以下のファイルを **必ず Read ツールで読み込んでから** 作業を開始すること:
+
+1. `CLAUDE.md` - プロジェクトルール・開発フロー
+2. `.claude/rules/coding-standards.md` - コーディング規約
+3. `.claude/rules/testing.md` - テスト規約
+4. `.claude/rules/frontend-design.md` - フロントエンドデザイン規約
+
 ## プロジェクトコンテキスト
 
 TechClip は React Native + Expo SDK 55 で構築されたモバイルアプリです。スタイリングには NativeWind v4 を使用します。
@@ -91,7 +100,7 @@ import { Check, AlertCircle, Settings, Loader2 } from 'lucide-react-native';
 
 ## TDD ワークフロー
 
-UI コンポーネントも TDD サイクルに従う。コンポーネントのテストは対象ファイルと同じディレクトリに配置する。
+UI コンポーネントも TDD サイクルに従う。コンポーネントのテストは `tests/mobile/components/` に配置する。
 
 ## 出力言語
 

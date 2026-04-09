@@ -151,6 +151,22 @@ function createThrowingTestApp(userId?: string) {
     });
   }
 
+  app.onError(() => {
+    return new Response(
+      JSON.stringify({
+        success: false,
+        error: {
+          code: "INTERNAL_ERROR",
+          message: "サーバーエラーが発生しました",
+        },
+      }),
+      {
+        status: HTTP_INTERNAL_SERVER_ERROR,
+        headers: { "Content-Type": "application/json" },
+      },
+    );
+  });
+
   app.use("/ai/*", createAiLimitMiddleware(mockDb as never));
   app.post("/ai/summarize", () => {
     throw new Error("ダウンストリームで予期しない例外が発生しました");
@@ -511,6 +527,7 @@ describe("aiLimitMiddleware", () => {
       });
 
       // Assert: 予約とロールバックの2回更新される
+      expect(mockLogger.error).not.toHaveBeenCalled();
       expect(mockUpdate).toHaveBeenCalledTimes(2);
       const rollbackSetArg = mockUpdateSet.mock.calls[1][0] as {
         freeAiUsesRemaining: { queryChunks: unknown[] };
@@ -586,12 +603,22 @@ describe("aiLimitMiddleware", () => {
       const app = createThrowingTestApp(TEST_USER_ID);
 
       // Act
-      await app.request("/ai/summarize", {
+      const res = await app.request("/ai/summarize", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
       });
+      const body = await res.json();
 
-      // Assert: 予約とロールバックの2回更新される
+      // Assert
+      expect(res.status).toBe(HTTP_INTERNAL_SERVER_ERROR);
+      expect(body).toMatchObject({
+        success: false,
+        error: {
+          code: "INTERNAL_ERROR",
+          message: "サーバーエラーが発生しました",
+        },
+      });
+      expect(mockLogger.error).not.toHaveBeenCalled();
       expect(mockUpdate).toHaveBeenCalledTimes(2);
       const rollbackSetArg = mockUpdateSet.mock.calls[1][0] as {
         freeAiUsesRemaining: { queryChunks: unknown[] };
@@ -607,12 +634,22 @@ describe("aiLimitMiddleware", () => {
       const app = createThrowingTestApp(TEST_USER_ID);
 
       // Act
-      await app.request("/ai/summarize", {
+      const res = await app.request("/ai/summarize", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
       });
+      const body = await res.json();
 
-      // Assert: 予約とロールバックの2回更新される
+      // Assert
+      expect(res.status).toBe(HTTP_INTERNAL_SERVER_ERROR);
+      expect(body).toMatchObject({
+        success: false,
+        error: {
+          code: "INTERNAL_ERROR",
+          message: "サーバーエラーが発生しました",
+        },
+      });
+      expect(mockLogger.error).not.toHaveBeenCalled();
       expect(mockUpdate).toHaveBeenCalledTimes(2);
       const rollbackSetArg = mockUpdateSet.mock.calls[1][0] as {
         freeAiUsesRemaining: { queryChunks: unknown[] };
