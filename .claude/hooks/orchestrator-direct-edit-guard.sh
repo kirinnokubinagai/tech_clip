@@ -11,7 +11,11 @@ if [ -z "$TOOL_INPUT" ]; then
   exit 0
 fi
 
-FILE_PATH=$(echo "$TOOL_INPUT" | grep -o '"file_path"[[:space:]]*:[[:space:]]*"[^"]*"' | head -1 | sed 's/.*"file_path"[[:space:]]*:[[:space:]]*"//' | sed 's/"$//')
+if command -v jq &> /dev/null; then
+  FILE_PATH=$(echo "$TOOL_INPUT" | jq -r '.file_path // empty' 2>/dev/null)
+else
+  FILE_PATH=$(echo "$TOOL_INPUT" | grep -o '"file_path"[[:space:]]*:[[:space:]]*"[^"]*"' | head -1 | sed 's/.*"file_path"[[:space:]]*:[[:space:]]*"//' | sed 's/"$//')
+fi
 
 if [ -z "$FILE_PATH" ]; then
   exit 0
@@ -29,7 +33,8 @@ is_orchestration_file() {
   echo "$path" | grep -qE "(^|/)\.gitignore$" && return 0
   echo "$path" | grep -qE "(^|/)\.env\.example$" && return 0
   echo "$path" | grep -qE "(^|/)turbo\.json$" && return 0
-  echo "$path" | grep -qE "(^|/)package\.json$" && return 0
+  # ルートの package.json のみ許可（apps/api/package.json 等のサブパッケージは除外）
+  echo "$path" | grep -qE "(^\./)?package\.json$" && return 0
   echo "$path" | grep -qE "(^|/)pnpm-workspace\.yaml$" && return 0
 
   return 1

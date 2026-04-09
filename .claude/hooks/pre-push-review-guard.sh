@@ -27,7 +27,7 @@ extract_branch_from_push() {
   local args
   args=$(echo "$cmd" | sed 's/.*git push[[:space:]]*//')
   args=$(echo "$args" | sed 's/ -[^ ]*//g; s/ --[^ ]*//g')
-  echo "$args" | awk '{print $2}'
+  echo "$args" | awk '{print $NF}'
 }
 
 # ブランチ名に対応するworktreeパスを git worktree list から特定する

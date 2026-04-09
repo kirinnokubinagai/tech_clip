@@ -134,7 +134,8 @@ run_script_with_args() {
 }
 
 @test "git push -u originでマーカーがある場合はpushが許可されること" {
-    # Arrange
+    # Arrange: `git push -u origin <branch>` の場合、awk '{print $NF}' でブランチ名を正しく抽出し
+    # worktree list からマーカーパスを解決できることを検証
     local wt_path="$WORKTREE_BASE/issue-764"
     git -C "$REPO_DIR" worktree add "$wt_path" -b issue/764/foo
     mkdir -p "$wt_path/.claude"
@@ -150,7 +151,7 @@ run_script_with_args() {
 }
 
 @test "git push -u originでマーカーがない場合はブロックされること" {
-    # Arrange
+    # Arrange: awk '{print $NF}' でブランチ名 issue/764/foo を取得し、worktreeのマーカー不在を検出できることを検証
     local wt_path="$WORKTREE_BASE/issue-764"
     git -C "$REPO_DIR" worktree add "$wt_path" -b issue/764/foo
     mkdir -p "$wt_path/.claude"
