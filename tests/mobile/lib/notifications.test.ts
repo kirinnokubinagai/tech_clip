@@ -51,7 +51,6 @@ jest.mock("@/lib/logger", () => ({
 jest.mock("@/lib/constants", () => ({
   LIGHT_COLORS: { accent: "#FF0000" },
 }));
-
 beforeEach(() => {
   jest.clearAllMocks();
   Object.defineProperty(Device, "isDevice", { value: true, writable: true });
@@ -212,6 +211,24 @@ describe("notifications", () => {
       );
     });
 
+    it("権限が付与されていない場合はトークン登録をスキップすること", async () => {
+      // Arrange
+      (Notifications.getPermissionsAsync as jest.Mock).mockResolvedValue({
+        status: "denied",
+      });
+
+      // Act
+      await registerPushTokenOnly();
+
+      // Assert
+      expect(Notifications.getExpoPushTokenAsync).not.toHaveBeenCalled();
+      expect(apiFetch).not.toHaveBeenCalled();
+      expect(logger.warn).toHaveBeenCalledWith(
+        "通知権限が付与されていないためトークン登録をスキップします",
+        expect.objectContaining({ permission: "denied" }),
+      );
+    });
+
     it("Androidの場合に通知チャンネルを設定すること", async () => {
       // Arrange
       Object.defineProperty(Platform, "OS", { value: "android" });
@@ -245,24 +262,6 @@ describe("notifications", () => {
       // Assert
       expect(Notifications.getExpoPushTokenAsync).not.toHaveBeenCalled();
       expect(apiFetch).not.toHaveBeenCalled();
-    });
-
-    it("権限がgrantedでない場合はトークン登録をスキップすること", async () => {
-      // Arrange
-      (Notifications.getPermissionsAsync as jest.Mock).mockResolvedValue({
-        status: "denied",
-      });
-
-      // Act
-      await registerPushTokenOnly();
-
-      // Assert
-      expect(Notifications.getExpoPushTokenAsync).not.toHaveBeenCalled();
-      expect(apiFetch).not.toHaveBeenCalled();
-      expect(logger.info).toHaveBeenCalledWith(
-        "通知権限が未付与のためプッシュトークン登録をスキップします",
-        expect.objectContaining({ permission: "denied" }),
-      );
     });
 
     it("API登録が失敗してもエラーを伝播させないこと", async () => {

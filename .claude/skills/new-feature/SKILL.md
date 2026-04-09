@@ -15,7 +15,10 @@ TechClipの必須ワークフローに従い、新機能開発を開始する。
 ## 手順
 
 1. **Issue確認**: `gh issue view <番号>` でissueの詳細を取得
-2. **Worktree作成**: `git worktree add .worktrees/issue-<N> -b issue/<N>/<短い説明>`
+2. **Worktree作成**: `scripts/create-worktree.sh <N> <短い説明>`
+   - 内部で `git fetch origin main:main` を実行
+   - `git worktree add` の直後に `direnv allow` を実行
+   - 続けて `pnpm install --frozen-lockfile` まで実行
 3. **TDD実装**:
    - RED: テストを先に書く（失敗確認）
    - GREEN: テストを通す最小限のコード

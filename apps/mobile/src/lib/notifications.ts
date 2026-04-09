@@ -116,7 +116,7 @@ export async function registerPushTokenOnly(): Promise<void> {
 
     const permission = await checkNotificationPermission();
     if (permission !== "granted") {
-      logger.info("通知権限が未付与のためプッシュトークン登録をスキップします", { permission });
+      logger.warn("通知権限が付与されていないためトークン登録をスキップします", { permission });
       return;
     }
 
