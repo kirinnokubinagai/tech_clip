@@ -20,9 +20,14 @@ fi
 
 # pushコマンドからブランチ名を抽出する
 # 例: "git push origin issue/764/foo" -> "issue/764/foo"
+# 例: "git push -u origin issue/764/foo" -> "issue/764/foo"
+# 例: "git push --set-upstream origin issue/764/foo" -> "issue/764/foo"
 extract_branch_from_push() {
   local cmd="$1"
-  echo "$cmd" | sed 's/.*git push[[:space:]]\{1,\}//' | awk '{print $2}'
+  local args
+  args=$(echo "$cmd" | sed 's/.*git push[[:space:]]*//')
+  args=$(echo "$args" | sed 's/ -[^ ]*//g; s/ --[^ ]*//g')
+  echo "$args" | awk '{print $2}'
 }
 
 # ブランチ名に対応するworktreeパスを git worktree list から特定する

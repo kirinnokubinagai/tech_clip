@@ -133,6 +133,70 @@ run_script_with_args() {
     [ "$status" -eq 0 ]
 }
 
+@test "git push -u originでマーカーがある場合はpushが許可されること" {
+    # Arrange
+    local wt_path="$WORKTREE_BASE/issue-764"
+    git -C "$REPO_DIR" worktree add "$wt_path" -b issue/764/foo
+    mkdir -p "$wt_path/.claude"
+    touch "$wt_path/.claude/.review-passed"
+
+    local args='{"command": "git push -u origin issue/764/foo"}'
+
+    # Act
+    run run_script_with_args "$args" "$wt_path"
+
+    # Assert
+    [ "$status" -eq 0 ]
+}
+
+@test "git push -u originでマーカーがない場合はブロックされること" {
+    # Arrange
+    local wt_path="$WORKTREE_BASE/issue-764"
+    git -C "$REPO_DIR" worktree add "$wt_path" -b issue/764/foo
+    mkdir -p "$wt_path/.claude"
+
+    local args='{"command": "git push -u origin issue/764/foo"}'
+
+    # Act
+    run run_script_with_args "$args" "$wt_path"
+
+    # Assert
+    [ "$status" -eq 2 ]
+    [[ "$output" == *"DENY"* ]] || [[ "${lines[*]}" == *"DENY"* ]]
+}
+
+@test "git push --set-upstream originでマーカーがある場合はpushが許可されること" {
+    # Arrange
+    local wt_path="$WORKTREE_BASE/issue-764"
+    git -C "$REPO_DIR" worktree add "$wt_path" -b issue/764/foo
+    mkdir -p "$wt_path/.claude"
+    touch "$wt_path/.claude/.review-passed"
+
+    local args='{"command": "git push --set-upstream origin issue/764/foo"}'
+
+    # Act
+    run run_script_with_args "$args" "$wt_path"
+
+    # Assert
+    [ "$status" -eq 0 ]
+}
+
+@test "git push --set-upstream originでマーカーがない場合はブロックされること" {
+    # Arrange
+    local wt_path="$WORKTREE_BASE/issue-764"
+    git -C "$REPO_DIR" worktree add "$wt_path" -b issue/764/foo
+    mkdir -p "$wt_path/.claude"
+
+    local args='{"command": "git push --set-upstream origin issue/764/foo"}'
+
+    # Act
+    run run_script_with_args "$args" "$wt_path"
+
+    # Assert
+    [ "$status" -eq 2 ]
+    [[ "$output" == *"DENY"* ]] || [[ "${lines[*]}" == *"DENY"* ]]
+}
+
 @test "mainブランチへのpushはブランチ抽出できない場合にCWDのマーカーを参照すること" {
     # Arrange: マーカーなし
     mkdir -p "$REPO_DIR/.claude"

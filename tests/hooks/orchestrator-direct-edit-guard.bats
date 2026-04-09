@@ -180,6 +180,30 @@ run_script_with_file() {
     [ "$status" -eq 2 ]
 }
 
+# --- どちらにもマッチしないファイルは許可 ---
+
+@test "docs/ROADMAP.mdは許可されること" {
+    # Arrange
+    local file_path="$REPO_DIR/docs/ROADMAP.md"
+
+    # Act
+    run run_script_with_file "$file_path"
+
+    # Assert
+    [ "$status" -eq 0 ]
+}
+
+@test "README.mdは許可されること" {
+    # Arrange
+    local file_path="$REPO_DIR/README.md"
+
+    # Act
+    run run_script_with_file "$file_path"
+
+    # Assert
+    [ "$status" -eq 0 ]
+}
+
 # --- file_pathが空の場合 ---
 
 @test "CLAUDE_TOOL_INPUTが空の場合はスキップされること" {
