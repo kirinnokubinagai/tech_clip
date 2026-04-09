@@ -17,22 +17,28 @@ const TOKEN_LOG_PREFIX_LENGTH = 6;
 const ALLOWED_PUSH_PATTERNS = ["/articles", "/profile", "/settings"];
 
 /**
- * 通知URLがアプリ内の許可されたルートかどうかを検証する
+ * 通知URLがアプリ内の許可されたルートかどうかを検証し、正規化されたパスを返す
  * URLエンコードされたパストラバーサル（%2e%2e 等）対策として
- * decodeURIComponent で復号後に正規化してからチェックする
+ * decodeURIComponent で復号後に正規化してからチェックし、
+ * 正規化済みのパスを router.push に渡すことでエンコード差異を防ぐ
  *
  * @param url - 検証するURL文字列
- * @returns 許可されたルートの場合 true
+ * @returns 許可されたルートの場合は正規化されたパス文字列、許可されない場合は null
  */
-function isAllowedRoute(url: string): boolean {
+function getNormalizedAllowedRoute(url: string): string | null {
   try {
     const decoded = decodeURIComponent(url);
     const normalized = new URL(decoded, "app://app").pathname;
-    return ALLOWED_PUSH_PATTERNS.some(
-      (pattern) => normalized === pattern || normalized.startsWith(`${pattern}/`),
-    );
+    if (
+      ALLOWED_PUSH_PATTERNS.some(
+        (pattern) => normalized === pattern || normalized.startsWith(`${pattern}/`),
+      )
+    ) {
+      return normalized;
+    }
+    return null;
   } catch {
-    return false;
+    return null;
   }
 }
 
@@ -164,8 +170,9 @@ export function setupNotificationHandlers(): () => void {
   const responseSubscription = Notifications.addNotificationResponseReceivedListener((response) => {
     const url = response.notification.request.content.data?.url;
     if (typeof url !== "string") return;
-    if (isAllowedRoute(url)) {
-      router.push(url);
+    const normalizedRoute = getNormalizedAllowedRoute(url);
+    if (normalizedRoute !== null) {
+      router.push(normalizedRoute);
       return;
     }
     logger.warn("許可されていない通知URLをブロックしました", { url });

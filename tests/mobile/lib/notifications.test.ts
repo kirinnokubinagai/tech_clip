@@ -341,6 +341,29 @@ describe("notifications", () => {
       expect(router.push).not.toHaveBeenCalled();
     });
 
+    it("URLエンコードされた許可ルートは正規化されたパスで router.push を呼び出すこと", () => {
+      // Arrange
+      let tapCallback: ((response: Notifications.NotificationResponse) => void) | null = null;
+      (Notifications.addNotificationResponseReceivedListener as jest.Mock).mockImplementation(
+        (cb) => {
+          tapCallback = cb;
+          return { remove: jest.fn() };
+        },
+      );
+
+      // Act
+      setupNotificationHandlers();
+      tapCallback?.({
+        notification: {
+          request: { content: { data: { url: "/articles%2F123" } } },
+        },
+      } as unknown as Notifications.NotificationResponse);
+
+      // Assert
+      expect(router.push).toHaveBeenCalledWith("/articles/123");
+      expect(logger.warn).not.toHaveBeenCalled();
+    });
+
     it("URLエンコードされたパストラバーサル（%2e%2e）をブロックすること", () => {
       // Arrange
       let tapCallback: ((response: Notifications.NotificationResponse) => void) | null = null;
