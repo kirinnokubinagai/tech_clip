@@ -91,9 +91,12 @@ run_script() {
 }
 
 @test "mainより遅れているworktreeは[遅れ]として報告される" {
-    # worktreeを作成
+    # worktreeを作成してコミットを追加（未マージの作業をシミュレート）
     WT_PATH="$WORKTREE_BASE/issue-behind"
     git -C "$REPO_DIR" worktree add "$WT_PATH" -b issue/behind/feature
+    echo "feature work" > "$WT_PATH/feature.txt"
+    git -C "$WT_PATH" add .
+    git -C "$WT_PATH" commit -m "feature commit"
 
     # mainに新しいコミットを追加（worktreeは遅れた状態に）
     echo "new on main" > "$REPO_DIR/main-change.txt"
