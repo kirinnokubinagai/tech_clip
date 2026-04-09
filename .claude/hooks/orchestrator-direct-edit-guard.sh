@@ -34,7 +34,7 @@ is_orchestration_file() {
   echo "$path" | grep -qE "(^|/)\.env\.example$" && return 0
   echo "$path" | grep -qE "(^|/)turbo\.json$" && return 0
   # ルートの package.json のみ許可（apps/api/package.json 等のサブパッケージは除外）
-  echo "$path" | grep -qE "^(./)?package\.json$" && return 0
+  echo "$path" | grep -qE "^(\./)?package\.json$" && return 0
   echo "$path" | grep -qE "(^|/)pnpm-workspace\.yaml$" && return 0
 
   return 1

@@ -231,6 +231,54 @@ run_script_with_file() {
 
 # --- エラーメッセージの確認 ---
 
+# --- package.json の許可・ブロック判定 ---
+
+@test "ルートのpackage.jsonは許可されること" {
+    # Arrange
+    local file_path="$REPO_DIR/package.json"
+
+    # Act
+    run run_script_with_file "$file_path"
+
+    # Assert
+    [ "$status" -eq 0 ]
+}
+
+@test "./package.jsonは許可されること" {
+    # Arrange
+    local file_path="./package.json"
+
+    # Act
+    run run_script_with_file "$file_path"
+
+    # Assert
+    [ "$status" -eq 0 ]
+}
+
+@test "apps/api/package.jsonはブロックされること" {
+    # Arrange
+    local file_path="$REPO_DIR/apps/api/package.json"
+
+    # Act
+    run run_script_with_file "$file_path"
+
+    # Assert
+    [ "$status" -eq 2 ]
+}
+
+@test "packages/shared/package.jsonはブロックされること" {
+    # Arrange
+    local file_path="$REPO_DIR/packages/shared/package.json"
+
+    # Act
+    run run_script_with_file "$file_path"
+
+    # Assert
+    [ "$status" -eq 2 ]
+}
+
+# --- エラーメッセージの確認 ---
+
 @test "ブロック時にcoder agentを使う旨のメッセージが出ること" {
     # Arrange
     local file_path="$REPO_DIR/apps/api/src/index.ts"
