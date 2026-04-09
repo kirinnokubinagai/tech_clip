@@ -120,6 +120,7 @@ WRAPPER
             fi
 
             # eas-cli は nixpkgs にないため npx ラッパーで提供
+            # fish/zsh 互換のため export -f は使用しない（bash 専用構文）
             eas() { npx --yes eas-cli@latest "$@"; }
 
             # シークレットファイルのセットアップコマンド
