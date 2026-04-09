@@ -61,6 +61,8 @@ check_worktree_path() {
 }
 
 # mainブランチでのソースファイル変更コマンドをブロック
+# - git read-only コマンドのみ許可（明示的なリスト）
+# - sed -i, tee によるファイル変更はブロック
 # GIT_DIR汚染を回避するため env -u GIT_DIR -u GIT_WORK_TREE を使用
 check_main_branch_modification() {
   local cmd="$1"
@@ -71,7 +73,6 @@ check_main_branch_modification() {
     return 1
   fi
 
-  # git read-only コマンドのみ許可
   if echo "$cmd" | grep -qE "^git (log|status|diff|show|branch|rev-parse|worktree|remote|fetch|stash list|tag|describe|blame|ls-files|ls-tree|shortlog|for-each-ref|cat-file|hash-object|ls-remote|check-ignore|check-attr|fsck|verify-pack|count-objects|gc --auto|prune --dry-run|reflog show|notes list)( |$)"; then
     return 1
   fi
@@ -79,7 +80,6 @@ check_main_branch_modification() {
     return 1
   fi
 
-  # ファイル変更を伴うコマンドパターン
   echo "$cmd" | grep -qE "sed -i" && return 0
   echo "$cmd" | grep -qE "tee " && return 0
 

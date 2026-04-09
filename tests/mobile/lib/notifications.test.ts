@@ -1,7 +1,6 @@
 import * as Device from "expo-device";
 import * as Notifications from "expo-notifications";
 import { Platform } from "react-native";
-import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import {
   checkNotificationPermission,
@@ -11,55 +10,56 @@ import {
   setupNotificationHandlers,
 } from "../../../apps/mobile/src/lib/notifications";
 
-vi.mock("expo-notifications", () => ({
-  getPermissionsAsync: vi.fn(),
-  requestPermissionsAsync: vi.fn(),
-  getExpoPushTokenAsync: vi.fn(),
-  setNotificationHandler: vi.fn(),
-  addNotificationReceivedListener: vi.fn(() => ({ remove: vi.fn() })),
-  addNotificationResponseReceivedListener: vi.fn(() => ({
-    remove: vi.fn(),
+jest.mock("expo-notifications", () => ({
+  getPermissionsAsync: jest.fn(),
+  requestPermissionsAsync: jest.fn(),
+  getExpoPushTokenAsync: jest.fn(),
+  setNotificationHandler: jest.fn(),
+  addNotificationReceivedListener: jest.fn(() => ({ remove: jest.fn() })),
+  addNotificationResponseReceivedListener: jest.fn(() => ({
+    remove: jest.fn(),
   })),
-  setNotificationChannelAsync: vi.fn(),
+  setNotificationChannelAsync: jest.fn(),
   AndroidImportance: { MAX: 5 },
 }));
 
-vi.mock("expo-device", () => ({
+jest.mock("expo-device", () => ({
+  __esModule: true,
   isDevice: true,
 }));
 
-vi.mock("expo-router", () => ({
+jest.mock("expo-router", () => ({
   router: {
-    push: vi.fn(),
+    push: jest.fn(),
   },
 }));
 
-vi.mock("@/lib/api", () => ({
-  apiFetch: vi.fn().mockResolvedValue({ success: true }),
+jest.mock("@/lib/api", () => ({
+  apiFetch: jest.fn().mockResolvedValue({ success: true }),
 }));
 
-vi.mock("@/lib/constants", () => ({
+jest.mock("@/lib/constants", () => ({
   LIGHT_COLORS: { accent: "#14b8a6" },
 }));
 
-vi.mock("@/lib/logger", () => ({
+jest.mock("@/lib/logger", () => ({
   logger: {
-    info: vi.fn(),
-    warn: vi.fn(),
-    error: vi.fn(),
+    info: jest.fn(),
+    warn: jest.fn(),
+    error: jest.fn(),
   },
 }));
 
 beforeEach(() => {
-  vi.clearAllMocks();
-  vi.spyOn(Device, "isDevice", "get").mockReturnValue(true);
-  Object.defineProperty(Platform, "OS", { value: "ios", writable: true });
+  jest.clearAllMocks();
+  Object.defineProperty(Device, "isDevice", { value: true, writable: true, configurable: true });
+  Object.defineProperty(Platform, "OS", { value: "ios", writable: true, configurable: true });
 });
 
 describe("checkNotificationPermission", () => {
   it("実機で権限がgrantedの場合grantedを返せること", async () => {
     // Arrange
-    vi.mocked(Notifications.getPermissionsAsync).mockResolvedValue({
+    jest.mocked(Notifications.getPermissionsAsync).mockResolvedValue({
       status: "granted",
     } as Awaited<ReturnType<typeof Notifications.getPermissionsAsync>>);
 
@@ -73,7 +73,7 @@ describe("checkNotificationPermission", () => {
 
   it("実機で権限がdeniedの場合deniedを返せること", async () => {
     // Arrange
-    vi.mocked(Notifications.getPermissionsAsync).mockResolvedValue({
+    jest.mocked(Notifications.getPermissionsAsync).mockResolvedValue({
       status: "denied",
     } as Awaited<ReturnType<typeof Notifications.getPermissionsAsync>>);
 
@@ -86,7 +86,7 @@ describe("checkNotificationPermission", () => {
 
   it("シミュレータの場合undeterminedを返せること", async () => {
     // Arrange
-    vi.spyOn(Device, "isDevice", "get").mockReturnValue(false);
+    Object.defineProperty(Device, "isDevice", { value: false, writable: true, configurable: true });
 
     // Act
     const result = await checkNotificationPermission();
@@ -100,10 +100,10 @@ describe("checkNotificationPermission", () => {
 describe("requestNotificationPermission", () => {
   it("権限が未許可の場合requestPermissionsAsyncを呼ぶこと", async () => {
     // Arrange
-    vi.mocked(Notifications.getPermissionsAsync).mockResolvedValue({
+    jest.mocked(Notifications.getPermissionsAsync).mockResolvedValue({
       status: "undetermined",
     } as Awaited<ReturnType<typeof Notifications.getPermissionsAsync>>);
-    vi.mocked(Notifications.requestPermissionsAsync).mockResolvedValue({
+    jest.mocked(Notifications.requestPermissionsAsync).mockResolvedValue({
       status: "granted",
     } as Awaited<ReturnType<typeof Notifications.requestPermissionsAsync>>);
 
@@ -117,7 +117,7 @@ describe("requestNotificationPermission", () => {
 
   it("既にgrantedの場合requestPermissionsAsyncをスキップすること", async () => {
     // Arrange
-    vi.mocked(Notifications.getPermissionsAsync).mockResolvedValue({
+    jest.mocked(Notifications.getPermissionsAsync).mockResolvedValue({
       status: "granted",
     } as Awaited<ReturnType<typeof Notifications.getPermissionsAsync>>);
 
@@ -131,10 +131,10 @@ describe("requestNotificationPermission", () => {
 
   it("権限が拒否された場合deniedを返せること", async () => {
     // Arrange
-    vi.mocked(Notifications.getPermissionsAsync).mockResolvedValue({
+    jest.mocked(Notifications.getPermissionsAsync).mockResolvedValue({
       status: "undetermined",
     } as Awaited<ReturnType<typeof Notifications.getPermissionsAsync>>);
-    vi.mocked(Notifications.requestPermissionsAsync).mockResolvedValue({
+    jest.mocked(Notifications.requestPermissionsAsync).mockResolvedValue({
       status: "denied",
     } as Awaited<ReturnType<typeof Notifications.requestPermissionsAsync>>);
 
@@ -148,7 +148,7 @@ describe("requestNotificationPermission", () => {
 
   it("シミュレータの場合undeterminedを返せること", async () => {
     // Arrange
-    vi.spyOn(Device, "isDevice", "get").mockReturnValue(false);
+    Object.defineProperty(Device, "isDevice", { value: false, writable: true, configurable: true });
 
     // Act
     const result = await requestNotificationPermission();
@@ -162,7 +162,7 @@ describe("requestNotificationPermission", () => {
 describe("registerTokenWithApi", () => {
   it("トークンをAPIに登録できること", async () => {
     // Arrange
-    const { apiFetch } = await import("@/lib/api");
+    const { apiFetch } = jest.requireMock<{ apiFetch: jest.Mock }>("@/lib/api");
     const token = "ExponentPushToken[test-token-123]";
 
     // Act
@@ -179,7 +179,7 @@ describe("registerTokenWithApi", () => {
 describe("registerPushTokenOnly", () => {
   it("実機でプッシュトークンを取得しAPIに登録できること", async () => {
     // Arrange
-    vi.mocked(Notifications.getExpoPushTokenAsync).mockResolvedValue({
+    jest.mocked(Notifications.getExpoPushTokenAsync).mockResolvedValue({
       data: "ExponentPushToken[test-token-123]",
       type: "expo",
     });
@@ -194,7 +194,7 @@ describe("registerPushTokenOnly", () => {
   it("Androidの場合に通知チャンネルを設定すること", async () => {
     // Arrange
     Object.defineProperty(Platform, "OS", { value: "android", writable: true });
-    vi.mocked(Notifications.getExpoPushTokenAsync).mockResolvedValue({
+    jest.mocked(Notifications.getExpoPushTokenAsync).mockResolvedValue({
       data: "ExponentPushToken[android-token]",
       type: "expo",
     });
@@ -214,7 +214,7 @@ describe("registerPushTokenOnly", () => {
 
   it("シミュレータの場合は何もしないこと", async () => {
     // Arrange
-    vi.spyOn(Device, "isDevice", "get").mockReturnValue(false);
+    Object.defineProperty(Device, "isDevice", { value: false, writable: true, configurable: true });
 
     // Act
     await registerPushTokenOnly();
@@ -225,7 +225,7 @@ describe("registerPushTokenOnly", () => {
 
   it("エラーが発生しても例外を伝播させないこと", async () => {
     // Arrange
-    vi.mocked(Notifications.getExpoPushTokenAsync).mockRejectedValue(new Error("Token取得失敗"));
+    jest.mocked(Notifications.getExpoPushTokenAsync).mockRejectedValue(new Error("Token取得失敗"));
 
     // Act & Assert
     await expect(registerPushTokenOnly()).resolves.toBeUndefined();
@@ -257,12 +257,12 @@ describe("setupNotificationHandlers", () => {
 
   it("クリーンアップ関数がリスナーを解除すること", () => {
     // Arrange
-    const mockRemoveReceived = vi.fn();
-    const mockRemoveResponse = vi.fn();
-    vi.mocked(Notifications.addNotificationReceivedListener).mockReturnValue({
+    const mockRemoveReceived = jest.fn();
+    const mockRemoveResponse = jest.fn();
+    jest.mocked(Notifications.addNotificationReceivedListener).mockReturnValue({
       remove: mockRemoveReceived,
     });
-    vi.mocked(Notifications.addNotificationResponseReceivedListener).mockReturnValue({
+    jest.mocked(Notifications.addNotificationResponseReceivedListener).mockReturnValue({
       remove: mockRemoveResponse,
     });
 
@@ -278,7 +278,7 @@ describe("setupNotificationHandlers", () => {
   it("handleNotificationがshouldShowAlertを返すこと", async () => {
     // Arrange
     setupNotificationHandlers();
-    const handler = vi.mocked(Notifications.setNotificationHandler).mock.calls[0][0];
+    const handler = jest.mocked(Notifications.setNotificationHandler).mock.calls[0][0];
 
     // Act
     const behavior = await handler.handleNotification({} as Notifications.Notification);
@@ -291,14 +291,14 @@ describe("setupNotificationHandlers", () => {
 });
 
 describe("isAllowedRoute（setupNotificationHandlers経由）", () => {
-  it("/articles/123 は許可されたルートとして認識されること", async () => {
+  it("/articles/123 は許可されたルートとして認識されること", () => {
     // Arrange
-    const { router } = await import("expo-router");
+    const { router } = jest.requireMock<{ router: { push: jest.Mock } }>("expo-router");
     let responseHandler: ((response: Notifications.NotificationResponse) => void) | undefined;
-    vi.mocked(Notifications.addNotificationResponseReceivedListener).mockImplementation(
+    jest.mocked(Notifications.addNotificationResponseReceivedListener).mockImplementation(
       (handler) => {
         responseHandler = handler;
-        return { remove: vi.fn() };
+        return { remove: jest.fn() };
       },
     );
 
@@ -321,14 +321,14 @@ describe("isAllowedRoute（setupNotificationHandlers経由）", () => {
     expect(router.push).toHaveBeenCalledWith("/articles/123");
   });
 
-  it("/articles はトレイリングスラッシュなしで許可されること", async () => {
+  it("/articles はトレイリングスラッシュなしで許可されること", () => {
     // Arrange
-    const { router } = await import("expo-router");
+    const { router } = jest.requireMock<{ router: { push: jest.Mock } }>("expo-router");
     let responseHandler: ((response: Notifications.NotificationResponse) => void) | undefined;
-    vi.mocked(Notifications.addNotificationResponseReceivedListener).mockImplementation(
+    jest.mocked(Notifications.addNotificationResponseReceivedListener).mockImplementation(
       (handler) => {
         responseHandler = handler;
-        return { remove: vi.fn() };
+        return { remove: jest.fn() };
       },
     );
 
@@ -351,15 +351,15 @@ describe("isAllowedRoute（setupNotificationHandlers経由）", () => {
     expect(router.push).toHaveBeenCalledWith("/articles");
   });
 
-  it("許可されていないURLはブロックされること", async () => {
+  it("許可されていないURLはブロックされること", () => {
     // Arrange
-    const { router } = await import("expo-router");
-    const { logger } = await import("@/lib/logger");
+    const { router } = jest.requireMock<{ router: { push: jest.Mock } }>("expo-router");
+    const { logger } = jest.requireMock<{ logger: { warn: jest.Mock } }>("@/lib/logger");
     let responseHandler: ((response: Notifications.NotificationResponse) => void) | undefined;
-    vi.mocked(Notifications.addNotificationResponseReceivedListener).mockImplementation(
+    jest.mocked(Notifications.addNotificationResponseReceivedListener).mockImplementation(
       (handler) => {
         responseHandler = handler;
-        return { remove: vi.fn() };
+        return { remove: jest.fn() };
       },
     );
 

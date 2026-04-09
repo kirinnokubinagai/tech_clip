@@ -1,21 +1,20 @@
 import OnboardingScreen from "@mobile-app/onboarding";
 import { fireEvent, render, waitFor } from "@testing-library/react-native";
-import { beforeEach, describe, expect, it, vi } from "vitest";
 
-vi.mock("expo-router", () => ({
+jest.mock("expo-router", () => ({
   router: {
-    replace: vi.fn(),
+    replace: jest.fn(),
   },
 }));
 
-vi.mock("@mobile/lib/tracking", () => ({
-  requestTrackingPermission: vi.fn().mockResolvedValue("authorized"),
+jest.mock("@mobile/lib/tracking", () => ({
+  requestTrackingPermission: jest.fn().mockResolvedValue("authorized"),
 }));
 
-const mockSetHasSeenOnboarding = vi.fn().mockResolvedValue(undefined);
+const mockSetHasSeenOnboarding = jest.fn().mockResolvedValue(undefined);
 const mockHasSeenOnboarding = { current: false };
 
-vi.mock("@mobile/stores/ui-store", () => ({
+jest.mock("@mobile/stores/ui-store", () => ({
   useUIStore: (
     selector: (state: {
       hasSeenOnboarding: boolean;
@@ -28,15 +27,13 @@ vi.mock("@mobile/stores/ui-store", () => ({
     }),
 }));
 
-const { router: mockRouter } = vi.mocked(
-  await import("expo-router"),
-) as {
-  router: { replace: ReturnType<typeof vi.fn> };
-};
+/** expo-routerのモックから取得したrouterオブジェクト */
+let mockRouter: { replace: jest.Mock };
 
 beforeEach(() => {
-  vi.clearAllMocks();
+  jest.clearAllMocks();
   mockHasSeenOnboarding.current = false;
+  mockRouter = jest.requireMock<{ router: { replace: jest.Mock } }>("expo-router").router;
 });
 
 describe("OnboardingScreen", () => {
@@ -138,11 +135,9 @@ describe("OnboardingScreen", () => {
 
     it("始めるボタンを押すとrequestTrackingPermissionが呼ばれること", async () => {
       // Arrange
-      const { requestTrackingPermission } = vi.mocked(
-        await import("@mobile/lib/tracking"),
-      ) as {
-        requestTrackingPermission: ReturnType<typeof vi.fn>;
-      };
+      const { requestTrackingPermission } = jest.requireMock<{
+        requestTrackingPermission: jest.Mock;
+      }>("@mobile/lib/tracking");
       const { getByTestId } = await render(<OnboardingScreen />);
 
       await fireEvent.press(getByTestId("next-button"));
