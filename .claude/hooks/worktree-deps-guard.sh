@@ -25,7 +25,7 @@ fi
 
 # 絶対パスに変換（リポジトリルート基準）
 if [[ "$WTPATH" != /* ]]; then
-  REPO_ROOT=$(git rev-parse --show-toplevel 2>/dev/null || pwd)
+  REPO_ROOT=$(env -u GIT_DIR -u GIT_WORK_TREE git rev-parse --show-toplevel 2>/dev/null || pwd)
   WTPATH="${REPO_ROOT}/$WTPATH"
 fi
 
@@ -39,8 +39,10 @@ if [ -f "$WTPATH/.envrc" ]; then
   echo "次のコマンドを実行してください:"
   echo ""
   echo "  cd $WTPATH && direnv allow ."
+  echo "  cd $WTPATH && direnv exec $WTPATH true"
   echo "  cd $WTPATH && direnv exec $WTPATH pnpm install --frozen-lockfile"
   echo ""
+  echo "direnv allow が終わるまでは pnpm / direnv exec を実行しないでください"
 fi
 
 # node_modules が存在しない場合、警告を出す

@@ -25,7 +25,7 @@ if [[ ! "${SHORT_DESC}" =~ ^[a-z0-9-]+$ ]]; then
   exit 1
 fi
 
-REPO_ROOT=$(cd "$(git rev-parse --git-common-dir)/.." && pwd)
+REPO_ROOT=$(cd "$(env -u GIT_DIR -u GIT_WORK_TREE git rev-parse --git-common-dir)/.." && pwd)
 WORKTREE_BASE=$(dirname "${REPO_ROOT}")
 WORKTREE_PATH="${WORKTREE_BASE}/issue-${ISSUE_NUMBER}"
 BRANCH_NAME="issue/${ISSUE_NUMBER}/${SHORT_DESC}"
@@ -47,6 +47,19 @@ if command -v direnv >/dev/null 2>&1 && [[ -f "${WORKTREE_PATH}/.envrc" ]]; then
     cd "${WORKTREE_PATH}"
     direnv allow .
   )
+
+  echo "✅ direnv 状態を確認..."
+  if ! (
+    cd "${WORKTREE_PATH}"
+    direnv exec "${WORKTREE_PATH}" true >/dev/null 2>&1
+  ); then
+    echo "❌ direnv allow の反映を確認できませんでした" >&2
+    echo "  手動で確認してください: cd ${WORKTREE_PATH} && direnv allow ." >&2
+    exit 1
+  fi
+elif [[ -f "${WORKTREE_PATH}/.envrc" ]]; then
+  echo "❌ .envrc があるため direnv が必要です: ${WORKTREE_PATH}" >&2
+  exit 1
 fi
 
 echo "📦 依存関係をセットアップ..."
