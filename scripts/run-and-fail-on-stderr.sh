@@ -24,6 +24,7 @@ fi
 grep -vE \
   '^\(node:[0-9]+\) \[DEP0169\] DeprecationWarning:' \
   "$stderr_file" \
+  | grep -vE '^• turbo [0-9]+\.[0-9]+\.[0-9]+$' \
   | grep -vE '^\(Use .*trace-deprecation.*' \
   >"$filtered_stderr_file" || true
 

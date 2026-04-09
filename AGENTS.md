@@ -1,6 +1,8 @@
 # Codex ハーネス
 
-このリポジトリでは、プロジェクト全体のルールは [`CLAUDE.md`](./CLAUDE.md) を正とします。Codex もこのルールに従って作業してください。
+Codex はまずこの [`AGENTS.md`](./AGENTS.md) を読み、その上で [`CLAUDE.md`](./CLAUDE.md) と `.claude/` 配下のルールに従うこと。
+Codex 向けの運用ルールはこのファイルを正とする。
+特に `.claude/rules/` 配下は必要なものを必ず読み、実装とレビューに反映すること。
 
 ## 必須の起動手順
 
@@ -39,6 +41,10 @@ bash ./.codex/run-stop.sh
 - GitHub Issue がない状態で作業を始めない
 - Issue ごとに専用 worktree を使う
 - `main` で直接編集しない
+- Git 操作は `cd <worktree>` または `git -C <worktree-path> ...` だけを使う
+- `pnpm` / `node` / `biome` / `turbo` は原則 `cd <worktree> && direnv exec <worktree> ...` で実行する
+- `git --git-dir=...`、`GIT_DIR`、`GIT_WORK_TREE` を使わない
+- `git config core.bare` と `git config core.worktree` を変更しない
 - 可能な限り TDD で進める
 - Lint / Format は Biome を使う
 - 破壊的な Git コマンドを使わない

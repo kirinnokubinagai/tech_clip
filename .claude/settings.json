@@ -20,6 +20,12 @@
             "command": "bash \"$(git rev-parse --show-toplevel 2>/dev/null || echo .)/.claude/hooks/implementation-order-guard.sh\"",
             "timeout": 10,
             "statusMessage": "Checking implementation order..."
+          },
+          {
+            "type": "command",
+            "command": "bash \"$(git rev-parse --show-toplevel 2>/dev/null || echo .)/.claude/hooks/read-claude-md.sh\"",
+            "timeout": 10,
+            "statusMessage": "Loading CLAUDE.md..."
           }
         ]
       }
@@ -222,7 +228,14 @@
       "Bash(*git push origin main)",
       "Bash(*git push origin main:*)",
       "Bash(*git push*:main*)",
-      "Bash(*git push*refs/heads/main*)"
+      "Bash(*git push*refs/heads/main*)",
+      "Bash(*--git-dir*)",
+      "Bash(GIT_DIR=*)",
+      "Bash(* GIT_DIR=*)",
+      "Bash(GIT_WORK_TREE=*)",
+      "Bash(* GIT_WORK_TREE=*)",
+      "Bash(*git config*core.bare*)",
+      "Bash(*git config*core.worktree*)"
     ]
   },
   "worktree": {},

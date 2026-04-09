@@ -88,7 +88,12 @@ check_dangerous() {
   echo "$cmd" | grep -qE "git clean" && return 0
   echo "$cmd" | grep -qE "git branch -D" && return 0
   echo "$cmd" | grep -qE "git restore" && return 0
-  # core.worktree は全worktreeの --show-toplevel を汚染するため全形式をブロック
+  # Gitの管理対象を手動でねじ曲げる操作は禁止
+  echo "$cmd" | grep -qE "(^| )GIT_DIR=" && return 0
+  echo "$cmd" | grep -qE "(^| )GIT_WORK_TREE=" && return 0
+  echo "$cmd" | grep -qE "git +--git-dir(=| )" && return 0
+  # core.bare / core.worktree は main の config と worktree 判定を壊すため全形式をブロック
+  echo "$cmd" | grep -qE "git config.*core\.bare" && return 0
   echo "$cmd" | grep -qE "git config.*core\.worktree" && return 0
 
   # git checkout でファイル復元を検出（ブランチ切替は許可）
@@ -180,7 +185,7 @@ if check_dangerous "$COMMAND"; then
   echo "⚠️ 危険なコマンドを検知しました"
   echo "コマンド: $COMMAND"
   echo ""
-  echo "このコマンドは破壊的な操作を行う可能性があります。"
+  echo "このコマンドは config / index / worktree を壊す可能性があります。"
   exit 2
 fi
 

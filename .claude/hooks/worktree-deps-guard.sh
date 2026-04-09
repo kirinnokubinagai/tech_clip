@@ -1,6 +1,6 @@
 #!/bin/bash
 # PostToolUse:Bash hook
-# git worktree add 後に pnpm install --frozen-lockfile の実行を強制する
+# git worktree add 後に direnv allow と pnpm install --frozen-lockfile を促す
 
 if ! command -v jq &> /dev/null; then
   exit 0
@@ -33,12 +33,26 @@ if [ ! -d "$WTPATH" ]; then
   exit 0
 fi
 
+# .envrc が存在する場合、direnv allow を促す
+if [ -f "$WTPATH/.envrc" ]; then
+  echo "⚠️ worktree 作成後は direnv allow が必要です"
+  echo "次のコマンドを実行してください:"
+  echo ""
+  echo "  cd $WTPATH && direnv allow ."
+  echo "  cd $WTPATH && direnv exec $WTPATH pnpm install --frozen-lockfile"
+  echo ""
+fi
+
 # node_modules が存在しない場合、警告を出す
 if [ ! -d "$WTPATH/node_modules" ]; then
   echo "⚠️ worktree に node_modules がありません"
   echo "次のコマンドを実行してください:"
   echo ""
-  echo "  cd $WTPATH && pnpm install --frozen-lockfile"
+  if [ -f "$WTPATH/.envrc" ]; then
+    echo "  cd $WTPATH && direnv exec $WTPATH pnpm install --frozen-lockfile"
+  else
+    echo "  cd $WTPATH && pnpm install --frozen-lockfile"
+  fi
   echo ""
   echo "シンボリンクによる共有は禁止です（CLAUDE.md参照）"
 fi

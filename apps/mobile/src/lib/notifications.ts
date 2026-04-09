@@ -1,6 +1,6 @@
 import * as Device from "expo-device";
 import * as Notifications from "expo-notifications";
-import { router } from "expo-router";
+import { type Href, router } from "expo-router";
 import { Platform } from "react-native";
 
 import { apiFetch } from "@/lib/api";
@@ -13,7 +13,14 @@ const NOTIFICATION_CHANNEL_ID = "default";
 /** ログ出力時のトークン表示文字数 */
 const TOKEN_LOG_PREFIX_LENGTH = 6;
 
-/** 通知タップ時にナビゲーション可能な許可ルート一覧 */
+/**
+ * 通知タップ時の許可URLパターン
+ * - /articles: 記事一覧・個別記事への遷移
+ * - /profile: ユーザープロフィール画面
+ * - /settings: 設定画面
+ * 注意: /onboarding は既存ユーザー向けプッシュ通知での遷移先として使用しない。
+ * 新規インストール後の初回フロー誘導のみ onboarding を使うため、ここには含めない。
+ */
 const ALLOWED_PUSH_PATTERNS = ["/articles", "/profile", "/settings"];
 
 /**
@@ -75,7 +82,7 @@ export async function checkNotificationPermission(): Promise<NotificationPermiss
 
 /**
  * 通知権限をユーザーに要求する
- * 既に許可済みの場合はリクエストをスキップする
+ * 既に許可済み・拒否済みの場合はリクエストをスキップする
  * シミュレータでは "undetermined" を返す
  *
  * @returns 要求後の通知権限ステータス
@@ -88,6 +95,9 @@ export async function requestNotificationPermission(): Promise<NotificationPermi
   const { status: existingStatus } = await Notifications.getPermissionsAsync();
   if (existingStatus === "granted") {
     return "granted";
+  }
+  if (existingStatus === "denied") {
+    return "denied";
   }
 
   const { status } = await Notifications.requestPermissionsAsync();
@@ -110,8 +120,8 @@ export async function registerTokenWithApi(token: string): Promise<void> {
 }
 
 /**
- * 既に権限が granted であることを前提にトークン取得とAPI登録のみを行う
- * 権限要求は行わない（呼び出し側が事前に権限を確認・取得済みであること）
+ * 通知権限を確認し、granted の場合のみトークン取得とAPI登録を行う
+ * 権限要求は行わない。権限が未付与の場合はスキップしてログを出力する。
  * エラーはすべてログに記録し、例外を外部に伝播させない
  *
  * @returns void（エラー時も例外を投げず、ログに記録して終了する）
@@ -119,6 +129,12 @@ export async function registerTokenWithApi(token: string): Promise<void> {
 export async function registerPushTokenOnly(): Promise<void> {
   try {
     if (!Device.isDevice) {
+      return;
+    }
+
+    const permission = await checkNotificationPermission();
+    if (permission !== "granted") {
+      logger.warn("通知権限が付与されていないためトークン登録をスキップします", { permission });
       return;
     }
 
@@ -169,12 +185,16 @@ export function setupNotificationHandlers(): () => void {
 
   const responseSubscription = Notifications.addNotificationResponseReceivedListener((response) => {
     const url = response.notification.request.content.data?.url;
-    if (typeof url !== "string") return;
-    const normalizedRoute = getNormalizedAllowedRoute(url);
-    if (normalizedRoute !== null) {
-      router.push(normalizedRoute);
+    if (typeof url !== "string") {
       return;
     }
+
+    const normalizedRoute = getNormalizedAllowedRoute(url);
+    if (normalizedRoute !== null) {
+      router.push(normalizedRoute as Href);
+      return;
+    }
+
     logger.warn("許可されていない通知URLをブロックしました", { url });
   });
 

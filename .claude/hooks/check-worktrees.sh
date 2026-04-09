@@ -23,12 +23,23 @@ if [ -z "$WORKTREE_PATHS" ]; then
 fi
 
 # リポジトリルートとworktreeベースディレクトリを取得
-REPO_ROOT=$(cd "$(git rev-parse --git-common-dir 2>/dev/null)/.." && pwd)
+REPO_ROOT=$(cd "$(git rev-parse --git-common-dir 2>/dev/null)/.." && pwd -P)
 WORKTREE_BASE=$(dirname "$REPO_ROOT")
 EXPECTED_PREFIX="${WORKTREE_BASE}/"
 
 # origin/main を最新化
 git fetch origin main --quiet 2>/dev/null || true
+
+MAIN_REF=""
+if git rev-parse --verify main >/dev/null 2>&1; then
+    MAIN_REF="main"
+elif git rev-parse --verify origin/main >/dev/null 2>&1; then
+    MAIN_REF="origin/main"
+elif git rev-parse --verify refs/remotes/origin/main >/dev/null 2>&1; then
+    MAIN_REF="refs/remotes/origin/main"
+else
+    MAIN_REF="HEAD"
+fi
 
 # Pass 1: マージ済みworktreeを自動削除
 REMOVED_COUNT=0
@@ -36,15 +47,22 @@ REMOVED_NAMES=""
 while IFS= read -r wt_path; do
     [ -z "$wt_path" ] && continue
     [ -d "$wt_path" ] || continue
+    resolved_wt_path=$(cd "$wt_path" && pwd -P)
 
     # WORKTREE_BASE直下でない（ネストworktree・不正パス）はPass 2に任せる
-    [[ "$wt_path" != "${EXPECTED_PREFIX}"* ]] && continue
-    [[ "$wt_path" == "${REPO_ROOT}" || "$wt_path" == "${REPO_ROOT}/"* ]] && continue
+    [[ "$resolved_wt_path" != "${EXPECTED_PREFIX}"* ]] && continue
+    [[ "$resolved_wt_path" == "${REPO_ROOT}" || "$resolved_wt_path" == "${REPO_ROOT}/"* ]] && continue
 
     wt_head=$(git -C "$wt_path" rev-parse HEAD 2>/dev/null) || continue
 
-    # HEADがorigin/mainの祖先でなければスキップ（未マージ）
-    git -C "$REPO_ROOT" merge-base --is-ancestor "$wt_head" origin/main 2>/dev/null || continue
+    # HEADがmain系参照の祖先でなければスキップ（未マージ）
+    git -C "$REPO_ROOT" merge-base --is-ancestor "$wt_head" "$MAIN_REF" 2>/dev/null || continue
+
+    # branch作成直後の「まだ何も積んでいない worktree」は自動削除しない
+    # main が先に進んだだけの branch まで掃除対象にすると behind 検知前に消えてしまう
+    if ! git -C "$wt_path" reflog --format='%gs' 2>/dev/null | grep -q '^commit:'; then
+        continue
+    fi
 
     # 未コミットの変更がある場合はスキップ
     DIRTY=$(git -C "$wt_path" status --porcelain 2>/dev/null | grep -v '^??' | head -1)
@@ -52,7 +70,7 @@ while IFS= read -r wt_path; do
 
     branch=$(git -C "$wt_path" rev-parse --abbrev-ref HEAD 2>/dev/null)
     wt_name=$(basename "$wt_path")
-    if git worktree remove "$wt_path" 2>/dev/null; then
+    if git worktree remove --force "$wt_path" 2>/dev/null; then
         if [ -n "$branch" ] && [ "$branch" != "HEAD" ]; then
             git branch -D "$branch" 2>/dev/null || true
         fi
@@ -67,25 +85,26 @@ WORKTREE_PATHS=$(git worktree list --porcelain 2>/dev/null | grep '^worktree ' |
 while IFS= read -r wt_path; do
     [ -z "$wt_path" ] && continue
     [ -d "$wt_path" ] || continue
+    resolved_wt_path=$(cd "$wt_path" && pwd -P)
 
     wt_name=$(basename "$wt_path")
 
     # ネストworktree検出: REPO_ROOT配下にworktreeが作成されている
-    if [[ "$wt_path" == "${REPO_ROOT}/"* ]]; then
+    if [[ "$resolved_wt_path" == "${REPO_ROOT}/"* ]]; then
         PROBLEMS="${PROBLEMS}[ネスト] ${wt_name}: REPO_ROOT内部にworktreeが作成されている -> git worktree remove --force ${wt_path} で除去し ${WORKTREE_BASE}/ 直下に再作成 | "
         PROBLEM_COUNT=$((PROBLEM_COUNT + 1))
         continue
     fi
 
     # worktreeパスの正当性チェック: WORKTREE_BASE 直下にあるか
-    if [[ "$wt_path" != "${EXPECTED_PREFIX}"* ]]; then
+    if [[ "$resolved_wt_path" != "${EXPECTED_PREFIX}"* ]]; then
         PROBLEMS="${PROBLEMS}[不正パス] ${wt_name}: ${WORKTREE_BASE}/ 配下にない不正なパス -> 正しいパスに再作成すること | "
         PROBLEM_COUNT=$((PROBLEM_COUNT + 1))
         continue
     fi
 
     # WORKTREE_BASE直下であることを確認（サブディレクトリ内はNG）
-    local_path="${wt_path#${EXPECTED_PREFIX}}"
+    local_path="${resolved_wt_path#${EXPECTED_PREFIX}}"
     if [[ "$local_path" == */* ]]; then
         PROBLEMS="${PROBLEMS}[ネスト] ${wt_name}: ${WORKTREE_BASE}/ の直下ではなくネストしている -> ${WORKTREE_BASE}/ 直下に再作成 | "
         PROBLEM_COUNT=$((PROBLEM_COUNT + 1))
@@ -128,7 +147,7 @@ while IFS= read -r wt_path; do
     fi
 
     # mainから遅れているかチェック
-    BEHIND=$(git -C "$wt_path" rev-list --count "HEAD..origin/main" 2>/dev/null)
+    BEHIND=$(git -C "$wt_path" rev-list --count "HEAD..${MAIN_REF}" 2>/dev/null)
     if [ -n "$BEHIND" ] && [ "$BEHIND" -gt 0 ]; then
         PROBLEMS="${PROBLEMS}[遅れ] ${wt_name}: ${BEHIND} commits behind main -> git -C ${wt_path} merge origin/main | "
         PROBLEM_COUNT=$((PROBLEM_COUNT + 1))

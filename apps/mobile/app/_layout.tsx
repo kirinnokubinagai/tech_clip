@@ -58,17 +58,19 @@ export default function RootLayout() {
   }, []);
 
   useEffect(() => {
-    if (!isAuthenticated) return;
+    if (!isAuthenticated) {
+      return;
+    }
 
-    void requestNotificationPermission()
-      .then((status) => {
-        if (status === "granted") {
-          void registerPushTokenOnly();
-        }
-      })
-      .catch((error: unknown) => {
-        logger.error("通知権限の取得に失敗しました", { error });
-      });
+    void (async () => {
+      const permission = await requestNotificationPermission();
+      if (permission !== "granted") {
+        return;
+      }
+      await registerPushTokenOnly();
+    })().catch((error: unknown) => {
+      logger.warn("通知初期化に失敗しました", { error });
+    });
   }, [isAuthenticated]);
 
   useEffect(() => {

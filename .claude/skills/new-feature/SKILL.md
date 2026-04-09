@@ -15,7 +15,10 @@ TechClipの必須ワークフローに従い、新機能開発を開始する。
 ## 手順
 
 1. **Issue確認**: `gh issue view <番号>` でissueの詳細を取得
-2. **Worktree作成**: `REPO_ROOT=$(cd "$(git rev-parse --git-common-dir)/.." && pwd) && git worktree add "$(dirname "$REPO_ROOT")/issue-<N>" -b issue/<N>/<短い説明>`
+2. **Worktree作成**: `scripts/create-worktree.sh <N> <短い説明>`
+   - 内部で `git fetch origin main` を実行
+   - `git worktree add` の直後に `direnv allow` を実行
+   - 続けて `cd <worktree> && direnv exec <worktree> pnpm install --frozen-lockfile` まで実行
 3. **TDD実装**:
    - RED: テストを先に書く（失敗確認）
    - GREEN: テストを通す最小限のコード
@@ -37,6 +40,9 @@ TechClipの必須ワークフローに従い、新機能開発を開始する。
 - テストを書かずに実装コードを書くことは禁止
 - Biomeでlint/format（ESLint/Prettier禁止）
 - `drizzle-kit push` 禁止（`drizzle-kit migrate` のみ）
+- Git操作は `cd <worktree>` または `git -C <worktree-path> ...` を使う
+- `pnpm` / `node` / `biome` / `turbo` は原則 `cd <worktree> && direnv exec <worktree-path> ...` で実行する
+- `git --git-dir=...`、`GIT_DIR`、`GIT_WORK_TREE` の使用は禁止
 
 ## テスト種別
 
