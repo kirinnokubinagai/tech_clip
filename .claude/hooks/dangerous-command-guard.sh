@@ -14,7 +14,7 @@ if [ -z "$COMMAND" ]; then
   exit 0
 fi
 
-# worktreeパスの検証（.worktrees/ 配下かつ直下のディレクトリか）
+# worktreeパスの検証（WORKTREE_BASE 直下の兄弟ディレクトリか）
 check_worktree_path() {
   local cmd="$1"
 
@@ -36,7 +36,9 @@ check_worktree_path() {
     return 0
   fi
   repo_root=$(cd "$(git rev-parse --git-common-dir 2>/dev/null)/.." && pwd)
-  expected_prefix="${repo_root}/.worktrees/"
+  local worktree_base
+  worktree_base=$(dirname "$repo_root")
+  expected_prefix="${worktree_base}/"
 
   # realpath -m でシンボリックリンクや .. を正規化（存在しないパスでも動作）
   # 絶対パスの場合はそのまま使用し、相対パスの場合のみ $(pwd) を付加する
@@ -52,9 +54,17 @@ check_worktree_path() {
     return 0
   fi
 
+  # REPO_ROOT内部に作成しようとしている場合はブロック
+  if [[ "$resolved_path" == "${repo_root}/"* ]]; then
+    echo "⚠️ worktreeがリポジトリ内部にネストしています"
+    echo "  解決先: $resolved_path"
+    echo "  正しい例: ${expected_prefix}issue-N（mainと兄弟ディレクトリ）"
+    return 0
+  fi
+
   local subpath="${resolved_path#${expected_prefix}}"
   if [[ "$subpath" == */* ]]; then
-    echo "⚠️ worktreeが .worktrees/ の直下ではなくネストしています"
+    echo "⚠️ worktreeが ${worktree_base}/ の直下ではなくネストしています"
     echo "  解決先: $resolved_path"
     echo "  正しい例: ${expected_prefix}issue-N"
     return 0
@@ -141,11 +151,40 @@ check_merge_without_review() {
   return 1
 }
 
+# mainブランチ上でのBashファイル書き込みコマンドをブロック
+check_main_branch_write() {
+  local cmd="$1"
+
+  # sed -i / sed --in-place / tee のみ対象（リダイレクト検出は誤検知リスクが高いため除外）
+  # sed パターン: -i または --in-place がスペース区切りのフラグとして現れるケースを検出する
+  # tee パターン: (^| ) で "tee" コマンド以外の文字列内 "tee" を除外する（BSD grep 互換）
+  if ! echo "$cmd" | grep -qE "(sed( +[^ ]+)* +-i( |$)|sed( +[^ ]+)* +--in-place( |$)|(^| )tee +)"; then
+    return 1
+  fi
+
+  # env -u GIT_DIR -u GIT_WORK_TREE で GIT_DIR 汚染を回避してブランチ取得
+  local branch
+  branch=$(env -u GIT_DIR -u GIT_WORK_TREE git branch --show-current 2>/dev/null || echo "")
+  if [ "$branch" != "main" ]; then
+    return 1
+  fi
+
+  echo "DENY: mainブランチ上での直接ファイル書き込みは禁止されています"
+  echo "  コマンド: $cmd"
+  echo "  対策: worktreeを作成して作業してください"
+  echo "  例: git worktree add \$(dirname \$(git rev-parse --show-toplevel))/issue-N -b issue/N/desc"
+  return 0
+}
+
 if check_dangerous "$COMMAND"; then
   echo "⚠️ 危険なコマンドを検知しました"
   echo "コマンド: $COMMAND"
   echo ""
   echo "このコマンドは破壊的な操作を行う可能性があります。"
+  exit 2
+fi
+
+if check_main_branch_write "$COMMAND"; then
   exit 2
 fi
 

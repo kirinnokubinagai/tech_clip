@@ -1,29 +1,34 @@
 #!/bin/bash
-# PreToolUse hook: git push/commit時に環境変数・シークレットの漏洩を検知
+# PreToolUse:Bash hook: git push/commit時にシークレット漏洩を検知
 
-INPUT=$(cat)
-COMMAND=$(echo "$INPUT" | jq -r '.tool_input.command // empty' 2>/dev/null)
-
-# git push or git commit のみチェック
-if ! echo "$COMMAND" | grep -qE '^\s*git\s+(push|commit)'; then
+if ! command -v jq &> /dev/null; then
   exit 0
 fi
 
-# Staged files をチェック（commitの場合）/ HEAD..origin差分をチェック（pushの場合）
+COMMAND=$(echo "$ARGUMENTS" | jq -r '.command // empty' 2>/dev/null)
+
+if [ -z "$COMMAND" ]; then
+  exit 0
+fi
+
+if ! echo "$COMMAND" | grep -qE 'git\s+(push|commit)'; then
+  exit 0
+fi
+
 REPO_ROOT=$(git rev-parse --show-toplevel 2>/dev/null)
 cd "$REPO_ROOT" || exit 0
 
-# チェック対象のファイル内容を取得
+FILES_CONTENT=""
 if echo "$COMMAND" | grep -q 'git commit'; then
   FILES_CONTENT=$(git diff --cached --diff-filter=ACMR 2>/dev/null)
-elif echo "$COMMAND" | grep -q 'git push'; then
-  BRANCH=$(git branch --show-current 2>/dev/null)
+fi
+if echo "$COMMAND" | grep -q 'git push'; then
   FILES_CONTENT=$(git diff origin/main..HEAD 2>/dev/null)
-else
+fi
+if [ -z "$FILES_CONTENT" ]; then
   exit 0
 fi
 
-# シークレットパターン検知
 PATTERNS=(
   'RUNPOD_API_KEY\s*='
   'OPENAI_API_KEY\s*='
@@ -60,7 +65,10 @@ for PATTERN in "${PATTERNS[@]}"; do
 done
 
 if [ -n "$FOUND" ]; then
-  MSG="シークレット・環境変数が検出されました。pushを中止してください。\n検出パターン:${FOUND}\n\n環境変数は .env ファイル（.gitignoreで除外済み）に格納してください。"
-  echo "{\"decision\":\"block\",\"reason\":\"$(echo -e "$MSG" | tr '\n' ' ')\"}"
-  exit 0
+  echo "DENY: シークレット・環境変数が検出されました。" >&2
+  echo -e "検出パターン:${FOUND}" >&2
+  echo "環境変数は .env ファイル（.gitignoreで除外済み）に格納してください。" >&2
+  exit 2
 fi
+
+exit 0

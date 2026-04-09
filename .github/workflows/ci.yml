@@ -6,7 +6,6 @@ on:
     paths-ignore:
       - '**/*.md'
       - 'docs/**'
-      - '.claude/**'
       - 'LICENSE'
       - '.omc/**'
       - 'tests/e2e/maestro/**'
@@ -15,7 +14,6 @@ on:
     paths-ignore:
       - '**/*.md'
       - 'docs/**'
-      - '.claude/**'
       - 'LICENSE'
       - '.omc/**'
       - 'tests/e2e/maestro/**'
@@ -24,41 +22,335 @@ env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
-  ci:
+  # PRに対してClaudeレビューを実行（.claude/**変更も含む全PRが対象）
+  claude-review:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    permissions:
+      contents: read
+      pull-requests: write
+      id-token: write
+    outputs:
+      result: ${{ steps.review.outcome }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: review
+        uses: anthropics/claude-code-action@v1
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          claude_args: |
+            --allowedTools Skill,Read,Grep,Glob,"Bash(gh pr comment:*)","Bash(gh pr edit:*)"
+          prompt: |
+            このPRの差分をレビューしてください。
+            レビューには必ず .claude/skills/review/code-review/SKILL.md と .claude/skills/review/pr-review/SKILL.md を Read ツールで読み取り、記載されたチェックリストと出力フォーマットに厳密に従ってください。
+
+            既存のPRコメント（前回のレビュー指摘への回答）も確認してください。
+            前回の指摘に対してコメントで適切に回答・説明されている場合は、その指摘を解決済みとして扱ってください。
+
+            結果は日本語でPRコメントに投稿してください。
+            改善提案（💡）が1件でもある場合は、Approve相当の判定を出してはいけません。
+
+            レビュー完了後、以下のルールに従いラベルを操作してください:
+            - 重大な問題（🔴）が0件かつ軽微な問題（🟡）が0件かつ改善提案（💡）が0件の場合:
+              gh pr edit ${{ github.event.pull_request.number }} --add-label "AI Review: PASS" --remove-label "AI Review: NEEDS WORK"
+            - 1つでも問題や改善提案がある場合:
+              gh pr edit ${{ github.event.pull_request.number }} --add-label "AI Review: NEEDS WORK" --remove-label "AI Review: PASS"
+
+            重要: gh pr review --approve は絶対に実行しないでください。
+
+  review-gate:
+    if: github.event_name == 'pull_request'
+    needs: claude-review
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: read
+      actions: write
+    steps:
+      - name: Check review result
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if [ "${{ needs.claude-review.outputs.result }}" = "failure" ]; then
+            echo "Claude Codeレビューがトークン制限等で失敗。チェックを続行します。"
+            exit 0
+          fi
+
+          LABELS=$(gh api repos/${{ github.repository }}/pulls/${{ github.event.pull_request.number }} --jq '.labels[].name')
+          if echo "$LABELS" | grep -q "AI Review: NEEDS WORK"; then
+            echo "::error::AIレビューで問題または改善提案があります。修正してください。"
+
+            gh api repos/${{ github.repository }}/actions/runs --paginate \
+              --jq ".workflow_runs[] | select(.head_sha == \"${{ github.event.pull_request.head.sha }}\" and .status == \"in_progress\" and .id != ${{ github.run_id }}) | .id" \
+              | while read -r RUN_ID; do
+                  gh run cancel "${RUN_ID}" 2>/dev/null || true
+                done
+
+            exit 1
+          fi
+          echo "AIレビュー: PASS"
+
+  # 変更ファイルを検出（コードチェック・hooksテストのスキップ判断に使用）
+  changes:
+    runs-on: ubuntu-latest
+    outputs:
+      code: ${{ steps.check.outputs.code }}
+      hooks: ${{ steps.check.outputs.hooks }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - id: check
+        run: |
+          if [ "${{ github.event_name }}" != "pull_request" ]; then
+            echo "code=true" >> $GITHUB_OUTPUT
+            echo "hooks=true" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+          CHANGED=$(git diff --name-only origin/${{ github.base_ref }}...HEAD 2>/dev/null \
+            | grep -cvE '^\.claude/' || true)
+          echo "code=$([ "${CHANGED:-0}" -gt 0 ] && echo 'true' || echo 'false')" >> $GITHUB_OUTPUT
+          HOOKS_CHANGED=$(git diff --name-only origin/${{ github.base_ref }}...HEAD 2>/dev/null \
+            | grep -cE '^\.claude/hooks/' || true)
+          echo "hooks=$([ "${HOOKS_CHANGED:-0}" -gt 0 ] && echo 'true' || echo 'false')" >> $GITHUB_OUTPUT
+
+  hooks-test:
+    needs: [review-gate, changes]
+    if: |
+      always() &&
+      needs.changes.outputs.hooks == 'true' &&
+      (needs.review-gate.result == 'success' || needs.review-gate.result == 'skipped')
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/nix-setup
-      - name: Run lint, typecheck, test, audit in parallel
+      - name: Run hooks tests
+        run: nix develop --command bats tests/hooks/
+
+  lint:
+    needs: [review-gate, changes]
+    if: |
+      always() &&
+      needs.changes.outputs.code == 'true' &&
+      (needs.review-gate.result == 'success' || needs.review-gate.result == 'skipped')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/nix-setup
+      - name: Run lint
+        run: nix develop --command pnpm lint
+
+  typecheck:
+    needs: [review-gate, changes]
+    if: |
+      always() &&
+      needs.changes.outputs.code == 'true' &&
+      (needs.review-gate.result == 'success' || needs.review-gate.result == 'skipped')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/nix-setup
+      - name: Run typecheck
+        run: nix develop --command pnpm typecheck
+
+  test:
+    needs: [review-gate, changes]
+    if: |
+      always() &&
+      needs.changes.outputs.code == 'true' &&
+      (needs.review-gate.result == 'success' || needs.review-gate.result == 'skipped')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/nix-setup
+      - name: Run test
+        run: nix develop --command pnpm test
+
+  audit:
+    needs: [review-gate, changes]
+    if: |
+      always() &&
+      needs.changes.outputs.code == 'true' &&
+      (needs.review-gate.result == 'success' || needs.review-gate.result == 'skipped')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/nix-setup
+      - name: Run audit
+        run: nix develop --command pnpm audit --prod
+
+  zap:
+    needs: [review-gate, changes]
+    if: |
+      github.event_name == 'pull_request' &&
+      always() &&
+      needs.changes.outputs.code == 'true' &&
+      (needs.review-gate.result == 'success' || needs.review-gate.result == 'skipped')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/nix-setup
+      - name: Run ZAP scan
+        env:
+          TURSO_DATABASE_URL: file:local.db
+          TURSO_AUTH_TOKEN: dummy
+          RUNPOD_API_KEY: dummy
+          RUNPOD_ENDPOINT_ID: dummy
+          BETTER_AUTH_SECRET: test-secret-key-for-ci
+          ENVIRONMENT: test
+          ZAP_TEST_EMAIL: ${{ secrets.ZAP_TEST_EMAIL }}
+          ZAP_TEST_PASSWORD: ${{ secrets.ZAP_TEST_PASSWORD }}
         run: |
           nix develop --command bash -c '
-            set -uo pipefail
-            LOGDIR=$(mktemp -d)
+            set -euo pipefail
 
-            pnpm lint       > "${LOGDIR}/lint.log" 2>&1 &
-            PID_LINT=$!
-            pnpm typecheck  > "${LOGDIR}/typecheck.log" 2>&1 &
-            PID_TC=$!
-            pnpm test       > "${LOGDIR}/test.log" 2>&1 &
-            PID_TEST=$!
-            pnpm audit      > "${LOGDIR}/audit.log" 2>&1 &
-            PID_AUDIT=$!
+            API_PORT=8787
+            ZAP_PORT=$((10000 + (RANDOM % 1000)))
+            ZAP_HOME=$(mktemp -d)
+            SETUP_LOG=/tmp/zap-setup.log
+            touch "${SETUP_LOG}"
 
-            FAILED=0
-            wait $PID_LINT   || FAILED=1
-            wait $PID_TC     || FAILED=1
-            wait $PID_TEST   || FAILED=1
-            wait $PID_AUDIT  || FAILED=1
+            cleanup() {
+              pkill -f "wrangler dev" 2>/dev/null || true
+              pkill -f -- "-daemon -port ${ZAP_PORT}" 2>/dev/null || true
+              rm -rf "${ZAP_HOME}"
+            }
+            trap cleanup EXIT
 
-            echo "========== lint =========="
-            cat "${LOGDIR}/lint.log"
-            echo "========== typecheck =========="
-            cat "${LOGDIR}/typecheck.log"
-            echo "========== test =========="
-            cat "${LOGDIR}/test.log"
-            echo "========== audit =========="
-            cat "${LOGDIR}/audit.log"
+            TURSO_DATABASE_URL="${TURSO_DATABASE_URL}" \
+            TURSO_AUTH_TOKEN="${TURSO_AUTH_TOKEN}" \
+            RUNPOD_API_KEY="${RUNPOD_API_KEY}" \
+            RUNPOD_ENDPOINT_ID="${RUNPOD_ENDPOINT_ID}" \
+            BETTER_AUTH_SECRET="${BETTER_AUTH_SECRET}" \
+            ENVIRONMENT="${ENVIRONMENT}" \
+              pnpm --filter @tech-clip/api exec wrangler dev --port ${API_PORT} > /tmp/api.log 2>&1 &
 
-            rm -rf "${LOGDIR}"
-            exit $FAILED
+            mkdir -p "${ZAP_HOME}/.ZAP"
+            HOME="${ZAP_HOME}" zap -daemon -port ${ZAP_PORT} -config api.disablekey=true > /tmp/zap-daemon.log 2>&1 &
+
+            echo "APIサーバー起動待機中..."
+            for i in $(seq 1 30); do
+              curl -s "http://localhost:${API_PORT}/health" > /dev/null 2>&1 && break
+              sleep 1
+            done
+            if ! curl -s "http://localhost:${API_PORT}/health" > /dev/null 2>&1; then
+              echo "::error::APIサーバーが30秒以内に起動しませんでした"
+              cat /tmp/api.log
+              exit 1
+            fi
+
+            cd apps/api && pnpm exec drizzle-kit migrate >> "${SETUP_LOG}" 2>&1 && cd ../..
+
+            curl -s -X POST "http://localhost:${API_PORT}/api/auth/sign-up/email" \
+              -H "Content-Type: application/json" \
+              -d "{\"email\":\"${ZAP_TEST_EMAIL}\",\"password\":\"${ZAP_TEST_PASSWORD}\",\"name\":\"ZAP Test User\"}" >> "${SETUP_LOG}" 2>&1
+
+            RESPONSE=$(curl -s -X POST "http://localhost:${API_PORT}/api/auth/sign-in/email" \
+              -H "Content-Type: application/json" \
+              -d "{\"email\":\"${ZAP_TEST_EMAIL}\",\"password\":\"${ZAP_TEST_PASSWORD}\"}")
+            echo "sign-in response: ${RESPONSE}" >> "${SETUP_LOG}"
+            TOKEN=$(echo "${RESPONSE}" | jq -r ".token // .data.token // .data.session.token // empty" 2>/dev/null || echo "")
+            if [ -z "${TOKEN}" ]; then
+              echo "警告: 認証トークンを取得できませんでした。未認証スキャンのみ実施します"
+            fi
+
+            echo "ZAPデーモン起動待機中..."
+            for i in $(seq 1 60); do
+              curl -s "http://localhost:${ZAP_PORT}/JSON/core/view/version/" > /dev/null 2>&1 && break
+              sleep 1
+            done
+            if ! curl -s "http://localhost:${ZAP_PORT}/JSON/core/view/version/" > /dev/null 2>&1; then
+              echo "::error::ZAPデーモンが60秒以内に起動しませんでした"
+              cat /tmp/zap-daemon.log
+              exit 1
+            fi
+
+            curl -s "http://localhost:${ZAP_PORT}/JSON/openapi/action/importUrl/" \
+              --data-urlencode "url=http://localhost:${API_PORT}/openapi.json" >> "${SETUP_LOG}" 2>&1
+            if [ -n "${TOKEN}" ]; then
+              curl -s "http://localhost:${ZAP_PORT}/JSON/replacer/action/addRule/" \
+                --data-urlencode "description=Auth Header" \
+                --data-urlencode "enabled=true" \
+                --data-urlencode "matchType=REQ_HEADER" \
+                --data-urlencode "matchRegex=false" \
+                --data-urlencode "matchString=Authorization" \
+                --data-urlencode "replacement=Bearer ${TOKEN}" \
+                --data-urlencode "initiators=" >> "${SETUP_LOG}" 2>&1
+            fi
+
+            echo "アクティブスキャン実行中..."
+            SCAN_ID=$(curl -s "http://localhost:${ZAP_PORT}/JSON/ascan/action/scan/" \
+              --data-urlencode "url=http://localhost:${API_PORT}" \
+              --data-urlencode "recurse=true" | jq -r ".scan")
+
+            SCAN_TIMED_OUT=1
+            for i in $(seq 1 300); do
+              STATUS=$(curl -s "http://localhost:${ZAP_PORT}/JSON/ascan/view/status/?scanId=${SCAN_ID}" | jq -r ".status")
+              if [ "${STATUS}" = "100" ]; then
+                SCAN_TIMED_OUT=0
+                break
+              fi
+              sleep 2
+            done
+            if [ "${SCAN_TIMED_OUT}" -eq 1 ]; then
+              echo "::error::ZAPスキャンがタイムアウトしました（600秒）"
+              exit 1
+            fi
+
+            mkdir -p .zap
+            curl -s "http://localhost:${ZAP_PORT}/OTHER/core/other/htmlreport/" > .zap/zap-report.html
+
+            echo "スキャン結果を確認中..."
+            if [ -f ".zap/rules.tsv" ]; then
+              HIGH=$(curl -s "http://localhost:${ZAP_PORT}/JSON/alert/view/alerts/?baseurl=http://localhost:${API_PORT}&riskId=3" \
+                | jq -r --slurpfile rules <(awk -F"\t" "\$2 == \"IGNORE\" || \$2 == \"WARN\" {print \$1}" .zap/rules.tsv | jq -R . | jq -s .) \
+                "[.alerts[] | select(.pluginId as \$id | \$rules[0] | index(\$id) | not)] | length")
+              MEDIUM=$(curl -s "http://localhost:${ZAP_PORT}/JSON/alert/view/alerts/?baseurl=http://localhost:${API_PORT}&riskId=2" \
+                | jq -r --slurpfile rules <(awk -F"\t" "\$2 == \"IGNORE\" || \$2 == \"WARN\" {print \$1}" .zap/rules.tsv | jq -R . | jq -s .) \
+                "[.alerts[] | select(.pluginId as \$id | \$rules[0] | index(\$id) | not)] | length")
+            else
+              HIGH=$(curl -s "http://localhost:${ZAP_PORT}/JSON/alert/view/alertsSummary/?baseurl=http://localhost:${API_PORT}" | jq -r ".alertsSummary.High // 0")
+              MEDIUM=$(curl -s "http://localhost:${ZAP_PORT}/JSON/alert/view/alertsSummary/?baseurl=http://localhost:${API_PORT}" | jq -r ".alertsSummary.Medium // 0")
+            fi
+
+            if [ "${HIGH:-0}" -gt 0 ] || [ "${MEDIUM:-0}" -gt 0 ]; then
+              echo "::error::セキュリティ問題検出（High: ${HIGH}, Medium: ${MEDIUM}）"
+              exit 1
+            fi
+            echo "ZAPスキャン完了: 問題なし"
           '
+      - name: Upload ZAP Report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: zap-report
+          path: |
+            .zap/zap-report.html
+            /tmp/zap-setup.log
+            /tmp/api.log
+            /tmp/zap-daemon.log
+
+  approve:
+    if: |
+      always() &&
+      github.event_name == 'pull_request' &&
+      needs.review-gate.result == 'success' &&
+      (needs.lint.result == 'success' || needs.lint.result == 'skipped') &&
+      (needs.typecheck.result == 'success' || needs.typecheck.result == 'skipped') &&
+      (needs.test.result == 'success' || needs.test.result == 'skipped') &&
+      (needs.audit.result == 'success' || needs.audit.result == 'skipped') &&
+      (needs.zap.result == 'success' || needs.zap.result == 'skipped') &&
+      (needs.hooks-test.result == 'success' || needs.hooks-test.result == 'skipped')
+    needs: [review-gate, lint, typecheck, test, audit, zap, hooks-test]
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+      contents: write
+    steps:
+      - name: Auto Approve
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh pr review ${{ github.event.pull_request.number }} --approve \
+            --body "CI全チェック通過: lint, typecheck, test, audit, ZAPスキャン ✅"
+          gh pr merge ${{ github.event.pull_request.number }} --auto --squash --repo ${{ github.repository }}

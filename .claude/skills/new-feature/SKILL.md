@@ -15,14 +15,20 @@ TechClipの必須ワークフローに従い、新機能開発を開始する。
 ## 手順
 
 1. **Issue確認**: `gh issue view <番号>` でissueの詳細を取得
-2. **Worktree作成**: `git worktree add .worktrees/issue-<N> -b issue/<N>/<短い説明>`
+2. **Worktree作成**: `REPO_ROOT=$(cd "$(git rev-parse --git-common-dir)/.." && pwd) && git worktree add "$(dirname "$REPO_ROOT")/issue-<N>" -b issue/<N>/<短い説明>`
 3. **TDD実装**:
    - RED: テストを先に書く（失敗確認）
    - GREEN: テストを通す最小限のコード
    - REFACTOR: テスト維持しつつ改善
 4. **カバレッジ確認**: 80%以上を目標
-5. **コミット**: Conventional Commits形式 + Issue番号
-6. **プッシュ & PR作成**: `Closes #<N>` を含める
+5. **Biome lint**: `pnpm biome check` でエラー解消
+6. **ローカルレビューループ**（コミット前に必須）:
+   - `code-reviewer` エージェントを呼び出してレビューを受ける
+   - 指摘が1件でもある場合は**すべて修正**し、`pnpm turbo check` で lint を再確認してから再レビューを依頼する
+   - CRITICAL / HIGH / MEDIUM / LOW 全件0件になるまでループを繰り返す
+   - 全件PASSになったらレビューマーカー（`.claude/.review-passed`）が作成されたことを確認する
+7. **コミット**: Conventional Commits形式 + Issue番号
+8. **プッシュ & PR作成**: `Closes #<N>` を含める
 
 ## ルール
 

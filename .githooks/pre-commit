@@ -8,7 +8,8 @@ if [ "$BRANCH" = "main" ] || [ "$BRANCH" = "master" ]; then
   echo "🚫 mainブランチへの直接コミットは禁止されています"
   echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
   echo "Worktreeを作成してください:"
-  echo "  git worktree add .worktrees/issue-N -b issue/N/short-desc"
+  echo "  WORKTREE_BASE=\$(dirname \"\$(git rev-parse --show-toplevel)\")"
+  echo "  git worktree add \"\${WORKTREE_BASE}/issue-N\" -b issue/N/short-desc"
   echo ""
   exit 1
 fi
