@@ -66,7 +66,7 @@ export async function checkNotificationPermission(): Promise<NotificationPermiss
 
 /**
  * 通知権限をユーザーに要求する
- * 既に許可済みの場合はリクエストをスキップする
+ * 既に許可済み・拒否済みの場合はリクエストをスキップする
  * シミュレータでは "undetermined" を返す
  *
  * @returns 要求後の通知権限ステータス
@@ -79,6 +79,9 @@ export async function requestNotificationPermission(): Promise<NotificationPermi
   const { status: existingStatus } = await Notifications.getPermissionsAsync();
   if (existingStatus === "granted") {
     return "granted";
+  }
+  if (existingStatus === "denied") {
+    return "denied";
   }
 
   const { status } = await Notifications.requestPermissionsAsync();

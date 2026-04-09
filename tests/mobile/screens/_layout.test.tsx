@@ -30,8 +30,8 @@ jest.mock("@mobile/lib/revenueCat", () => ({
 }));
 
 jest.mock("@mobile/lib/notifications", () => ({
-  registerForPushNotifications: jest.fn().mockResolvedValue(null),
-  registerTokenWithApi: jest.fn(),
+  registerPushTokenOnly: jest.fn().mockResolvedValue(undefined),
+  requestNotificationPermission: jest.fn().mockResolvedValue("granted"),
   setupNotificationHandlers: jest.fn().mockReturnValue(() => {}),
 }));
 
@@ -87,7 +87,9 @@ jest.mock("@mobile/stores/ui-store", () => ({
 
 import { registerNativeBackgroundFetch } from "@mobile/lib/backgroundSync";
 import { logger } from "@mobile/lib/logger";
+import { registerPushTokenOnly, requestNotificationPermission } from "@mobile/lib/notifications";
 import { configureRevenueCat } from "@mobile/lib/revenueCat";
+import { useAuthStore } from "@mobile/stores/auth-store";
 import RootLayout from "@mobile-app/_layout";
 
 jest.mock("@mobile/components/OfflineBanner", () => ({
@@ -103,12 +105,31 @@ const mockedRegisterNativeBackgroundFetch = registerNativeBackgroundFetch as jes
 >;
 
 const mockedLogger = logger as jest.Mocked<typeof logger>;
+const mockedRegisterPushTokenOnly = registerPushTokenOnly as jest.MockedFunction<
+  typeof registerPushTokenOnly
+>;
+const mockedRequestNotificationPermission = requestNotificationPermission as jest.MockedFunction<
+  typeof requestNotificationPermission
+>;
+const mockedUseAuthStore = useAuthStore as jest.MockedFunction<typeof useAuthStore>;
+
+const createAuthStoreState = (isAuthenticated: boolean) => ({
+  isAuthenticated,
+  isLoading: false,
+  checkSession: jest.fn(),
+});
 
 describe("RootLayout", () => {
   beforeEach(() => {
     jest.clearAllMocks();
     mockedConfigureRevenueCat.mockResolvedValue(undefined);
     mockedRegisterNativeBackgroundFetch.mockResolvedValue(undefined);
+    mockedRequestNotificationPermission.mockResolvedValue("granted");
+    mockedRegisterPushTokenOnly.mockResolvedValue(undefined);
+    mockedUseAuthStore.mockImplementation(
+      (selector: (s: ReturnType<typeof createAuthStoreState>) => unknown) =>
+        selector(createAuthStoreState(false)),
+    );
   });
 
   describe("RevenueCat初期化", () => {
@@ -202,6 +223,76 @@ describe("RootLayout", () => {
 
       // Assert
       expect(OfflineBanner).toBeDefined();
+    });
+  });
+
+  describe("通知トークン登録", () => {
+    it("認証済みユーザーでは通知権限を要求してからregisterPushTokenOnlyが呼ばれること", async () => {
+      // Arrange
+      mockedUseAuthStore.mockImplementation(
+        (selector: (s: ReturnType<typeof createAuthStoreState>) => unknown) =>
+          selector(createAuthStoreState(true)),
+      );
+
+      // Act
+      await render(<RootLayout />);
+
+      // Assert
+      await waitFor(() => {
+        expect(mockedRequestNotificationPermission).toHaveBeenCalledTimes(1);
+        expect(mockedRegisterPushTokenOnly).toHaveBeenCalledTimes(1);
+      });
+    });
+
+    it("認証済みでも通知権限がgrantedでない場合はregisterPushTokenOnlyを呼ばないこと", async () => {
+      // Arrange
+      mockedUseAuthStore.mockImplementation(
+        (selector: (s: ReturnType<typeof createAuthStoreState>) => unknown) =>
+          selector(createAuthStoreState(true)),
+      );
+      mockedRequestNotificationPermission.mockResolvedValue("denied");
+
+      // Act
+      await render(<RootLayout />);
+
+      // Assert
+      await waitFor(() => {
+        expect(mockedRequestNotificationPermission).toHaveBeenCalledTimes(1);
+        expect(mockedRegisterPushTokenOnly).not.toHaveBeenCalled();
+      });
+    });
+
+    it("通知権限要求が失敗してもクラッシュせずlogger.warnに記録すること", async () => {
+      // Arrange
+      const testError = new Error("permission request failed");
+      mockedUseAuthStore.mockImplementation(
+        (selector: (s: ReturnType<typeof createAuthStoreState>) => unknown) =>
+          selector(createAuthStoreState(true)),
+      );
+      mockedRequestNotificationPermission.mockRejectedValue(testError);
+
+      // Act
+      await render(<RootLayout />);
+
+      // Assert
+      await waitFor(() => {
+        expect(mockedLogger.warn).toHaveBeenCalledWith(
+          "通知初期化に失敗しました",
+          expect.objectContaining({ error: testError }),
+        );
+      });
+      expect(mockedRegisterPushTokenOnly).not.toHaveBeenCalled();
+    });
+
+    it("未認証ユーザーではregisterPushTokenOnlyを呼ばないこと", async () => {
+      // Act
+      await render(<RootLayout />);
+
+      // Assert
+      await waitFor(() => {
+        expect(mockedRequestNotificationPermission).not.toHaveBeenCalled();
+        expect(mockedRegisterPushTokenOnly).not.toHaveBeenCalled();
+      });
     });
   });
 });

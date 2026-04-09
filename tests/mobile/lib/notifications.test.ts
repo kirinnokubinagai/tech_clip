@@ -161,6 +161,20 @@ describe("notifications", () => {
       expect(result).toBe("denied");
     });
 
+    it("既に権限がdeniedの場合はリクエストをスキップして 'denied' を返すこと", async () => {
+      // Arrange
+      (Notifications.getPermissionsAsync as jest.Mock).mockResolvedValue({
+        status: "denied",
+      });
+
+      // Act
+      const result = await requestNotificationPermission();
+
+      // Assert
+      expect(result).toBe("denied");
+      expect(Notifications.requestPermissionsAsync).not.toHaveBeenCalled();
+    });
+
     it("シミュレータの場合 'undetermined' を返すこと", async () => {
       // Arrange
       Object.defineProperty(Device, "isDevice", { value: false });
