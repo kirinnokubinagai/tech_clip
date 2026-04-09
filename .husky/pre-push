@@ -46,4 +46,13 @@ pnpm lint || { echo "Lint失敗。修正してからpushしてください。"; 
 echo "  Typecheck..."
 pnpm typecheck || { echo "Typecheck失敗。修正してからpushしてください。"; exit 1; }
 
+echo "  Audit..."
+pnpm audit --prod || { echo "Audit失敗。脆弱性を解消してからpushしてください。"; exit 1; }
+
+echo "  Test..."
+"${REPO_ROOT}/scripts/run-and-fail-on-stderr.sh" pnpm test || {
+  echo "Test失敗。stderr がある場合は内容確認後に TECH_CLIP_ALLOW_TEST_STDERR=1 を付けて再pushしてください。"
+  exit 1
+}
+
 echo "全チェック通過"
