@@ -31,6 +31,13 @@ run_script_with_args() {
     (cd "$run_dir" && ARGUMENTS="$args_json" bash "$SCRIPT")
 }
 
+run_script_with_args_and_path() {
+    local args_json="$1"
+    local custom_path="$2"
+    local run_dir="${3:-$REPO_DIR}"
+    (cd "$run_dir" && PATH="$custom_path" ARGUMENTS="$args_json" bash "$SCRIPT")
+}
+
 @test "git pushを含まないコマンドはスキップされること" {
     # Arrange
     local args='{"command": "ls -la"}'
@@ -53,23 +60,43 @@ run_script_with_args() {
     [ "$status" -eq 0 ]
 }
 
-@test "jqがない場合はスキップされること" {
+@test "jqが壊れていてもマーカーなしならブロックされること" {
     # Arrange: jqの代わりにダミーを用意してエラーを返させる
     local fake_jq_dir="$TMPDIR/fake_bin"
     mkdir -p "$fake_jq_dir"
-    # jq が存在しないことをシミュレートするため command -v jq が失敗するように
     # jqをダミーで上書き（常に失敗するjq）
     printf '#!/bin/bash\nexit 1\n' > "$fake_jq_dir/jq"
     chmod +x "$fake_jq_dir/jq"
 
+    mkdir -p "$REPO_DIR/.claude"
     local args='{"command": "git push origin issue/764/test"}'
 
-    # Act: ダミーjqをPATHの先頭に配置（command -v jq は成功するが jq 実行は失敗）
-    # スクリプトのjqチェックは command -v jq なので、存在はするが壊れたjqの場合は
-    # jq -r が空文字を返しコマンドが空になりスキップされること
-    run bash -c "PATH='$fake_jq_dir:$PATH' ARGUMENTS='$args' bash '$SCRIPT'"
+    # Act: jq失敗時も grep/sed フォールバックで command を抽出してガード継続
+    run run_script_with_args_and_path "$args" "$fake_jq_dir:$PATH" "$REPO_DIR"
 
-    # Assert: jqが壊れていてもスキップ(exit 0)されること
+    # Assert
+    [ "$status" -eq 2 ]
+    [[ "$output" == *"DENY"* ]] || [[ "${lines[*]}" == *"DENY"* ]]
+}
+
+@test "jqが壊れていてもマーカーがあれば許可されること" {
+    # Arrange
+    local fake_jq_dir="$TMPDIR/fake_bin"
+    mkdir -p "$fake_jq_dir"
+    printf '#!/bin/bash\nexit 1\n' > "$fake_jq_dir/jq"
+    chmod +x "$fake_jq_dir/jq"
+
+    local wt_path="$WORKTREE_BASE/issue-764"
+    git -C "$REPO_DIR" worktree add "$wt_path" -b issue/764/test
+    mkdir -p "$wt_path/.claude"
+    touch "$wt_path/.claude/.review-passed"
+
+    local args='{"command": "git push origin issue/764/test"}'
+
+    # Act
+    run run_script_with_args_and_path "$args" "$fake_jq_dir:$PATH" "$wt_path"
+
+    # Assert
     [ "$status" -eq 0 ]
 }
 

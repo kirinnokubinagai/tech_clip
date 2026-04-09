@@ -4,11 +4,22 @@
 # 修正: git rev-parse --show-toplevel はシェルCWDに依存するため、
 # pushコマンドのブランチ名から git worktree list でworktreeパスを特定する。
 
-if ! command -v jq &> /dev/null; then
-  exit 0
-fi
+extract_command_from_arguments() {
+  local arguments="$1"
+  local command=""
 
-COMMAND=$(echo "$ARGUMENTS" | jq -r '.command // empty' 2>/dev/null)
+  if command -v jq &> /dev/null; then
+    command=$(echo "$arguments" | jq -r '.command // empty' 2>/dev/null)
+  fi
+
+  if [ -z "$command" ]; then
+    command=$(echo "$arguments" | grep -o '"command"[[:space:]]*:[[:space:]]*"[^"]*"' | head -1 | sed 's/.*"command"[[:space:]]*:[[:space:]]*"//' | sed 's/"$//')
+  fi
+
+  echo "$command"
+}
+
+COMMAND=$(extract_command_from_arguments "${ARGUMENTS:-}")
 
 if [ -z "$COMMAND" ]; then
   exit 0
