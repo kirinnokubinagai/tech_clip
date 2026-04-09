@@ -39,8 +39,10 @@ if [ -f "$WTPATH/.envrc" ]; then
   echo "次のコマンドを実行してください:"
   echo ""
   echo "  cd $WTPATH && direnv allow ."
+  echo "  cd $WTPATH && direnv exec $WTPATH true"
   echo "  cd $WTPATH && direnv exec $WTPATH pnpm install --frozen-lockfile"
   echo ""
+  echo "direnv allow が終わるまでは pnpm / direnv exec を実行しないでください"
 fi
 
 # node_modules が存在しない場合、警告を出す

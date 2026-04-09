@@ -40,6 +40,12 @@ done
 
 echo "Pre-push チェック実行中..."
 
+echo "  Executable bits..."
+"${REPO_ROOT}/scripts/check-executable-shell-files.sh" || {
+  echo "Shell script の executable bit が不足しています。修正してからpushしてください。"
+  exit 1
+}
+
 echo "  Lint..."
 pnpm lint || { echo "Lint失敗。修正してからpushしてください。"; exit 1; }
 

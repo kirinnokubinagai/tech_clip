@@ -48,6 +48,12 @@
           },
           {
             "type": "command",
+            "command": "bash \"$(git rev-parse --show-toplevel 2>/dev/null || echo .)/.claude/hooks/direnv-allow-guard.sh\"",
+            "timeout": 5,
+            "statusMessage": "Checking direnv allow state..."
+          },
+          {
+            "type": "command",
             "command": "bash \"$(git rev-parse --show-toplevel 2>/dev/null || echo .)/.claude/hooks/pre-push-review-guard.sh\"",
             "timeout": 5,
             "statusMessage": "Checking review status..."

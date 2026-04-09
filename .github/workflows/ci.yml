@@ -124,6 +124,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/nix-setup
+      - name: Check executable shell scripts
+        run: nix develop --command ./scripts/check-executable-shell-files.sh
       - name: Run hooks tests
         run: nix develop --command bats tests/hooks/
 
@@ -137,6 +139,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/nix-setup
+      - name: Check executable shell scripts
+        run: nix develop --command ./scripts/check-executable-shell-files.sh
       - name: Run lint
         run: nix develop --command pnpm lint
 

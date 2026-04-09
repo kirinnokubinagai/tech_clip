@@ -47,6 +47,19 @@ if command -v direnv >/dev/null 2>&1 && [[ -f "${WORKTREE_PATH}/.envrc" ]]; then
     cd "${WORKTREE_PATH}"
     direnv allow .
   )
+
+  echo "✅ direnv 状態を確認..."
+  if ! (
+    cd "${WORKTREE_PATH}"
+    direnv exec "${WORKTREE_PATH}" true >/dev/null 2>&1
+  ); then
+    echo "❌ direnv allow の反映を確認できませんでした" >&2
+    echo "  手動で確認してください: cd ${WORKTREE_PATH} && direnv allow ." >&2
+    exit 1
+  fi
+elif [[ -f "${WORKTREE_PATH}/.envrc" ]]; then
+  echo "❌ .envrc があるため direnv が必要です: ${WORKTREE_PATH}" >&2
+  exit 1
 fi
 
 echo "📦 依存関係をセットアップ..."
