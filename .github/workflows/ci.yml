@@ -164,7 +164,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/nix-setup
       - name: Run test
-        run: nix develop --command pnpm test
+        run: nix develop --command ./scripts/run-and-fail-on-stderr.sh pnpm test
 
   audit:
     needs: [review-gate, changes]
