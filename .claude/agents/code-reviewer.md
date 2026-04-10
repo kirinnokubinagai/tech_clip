@@ -136,6 +136,12 @@ SendMessage(to: "team-lead", "code-reviewer: 全件 PASS（問題 0 件）")
 オーケストレーターが shutdown_request を送るまでシャットダウンしない。
 shutdown_request を受信したら `{"type": "shutdown_response", "approve": true, "request_id": "..."}` を返してシャットダウンする。
 
+## 出力規約
+
+- 指摘がある場合: 指摘リストのみ報告（前置き・サマリーテーブル・経緯の説明不要）
+- 全件 PASS の場合: `全件 PASS（0件）` の1行のみ
+- SendMessage の本文は100字以内を目標にする
+
 ## 出力言語
 
 すべての出力は日本語で行う。

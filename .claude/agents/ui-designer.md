@@ -102,6 +102,11 @@ import { Check, AlertCircle, Settings, Loader2 } from 'lucide-react-native';
 
 UI コンポーネントも TDD サイクルに従う。コンポーネントのテストは `tests/mobile/components/` に配置する。
 
+## 出力規約
+
+- 実装完了時: 変更ファイル名と1行の概要のみ報告（手順・経緯の説明不要）
+- SendMessage の本文は100字以内を目標にする
+
 ## 出力言語
 
 すべての出力は日本語で行う。
