@@ -198,6 +198,10 @@ poll-pr-review.sh → CHANGES_REQUESTED
   → APPROVED になるまで繰り返す
 ```
 
+> **注意**: 修正後の再プッシュ前には、code-reviewer + security-reviewer を再 spawn して
+> レビュー PASS → `.claude/.review-passed` マーカー再作成が必要
+> （`pre-push-review-guard.sh` がブロックするため）
+
 ---
 
 ## 複数 Issue の並列処理
