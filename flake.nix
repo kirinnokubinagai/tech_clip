@@ -25,7 +25,6 @@
           _self=$(readlink -f "$0" 2>/dev/null || realpath "$0" 2>/dev/null || echo "$0")
           for _dir in \
             "$HOME/.local/bin" \
-            "/opt/homebrew/bin" \
             "$HOME/.npm/bin" \
             "$HOME/.npm-global/bin" \
             "''${NVM_BIN:-}" \
