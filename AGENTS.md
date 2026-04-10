@@ -40,10 +40,7 @@ bash ./.codex/run-stop.sh
 
 ## オーケストレーター（Claude Code）の役割
 
-Claude Code はオーケストレーターとして機能し、**自分では直接コード・ドキュメントを編集しない**。
-すべての実装・レビュー・ファイル編集はエージェントチームに委譲する。
-
-オーケストレーターの仕事は以下のみ:
+Claude Code はオーケストレーターとして機能する。具体的な仕事は以下のみ:
 
 1. Issue を読む
 2. Worktree を作る
@@ -95,11 +92,13 @@ bash scripts/create-worktree.sh <issue-number> <kebab-case-description>
 
 ### Step 2: TeamCreate でチームを作成
 
-```
+```text
 TeamCreate("issue-<N>-team")
 ```
 
-TeamCreate はアナウンスせず静かに実行する。
+TeamCreate はユーザー向けテキストで進捗報告をせずに実行する。
+
+オーケストレーターはチームの **team-lead** として振る舞う。エージェントからの SendMessage はすべて team-lead 宛てに届く。
 
 ---
 
@@ -118,40 +117,49 @@ TeamCreate はアナウンスせず静かに実行する。
 
 #### 機能実装・バグ修正の場合
 
-```
+```text
 ① requirements-analyst
    - Issue の内容を整理し、実装方針を決定する
    - worktree パスと Issue 番号を渡す
 
-② coder（①完了後に起動）
+② coder（①完了後に Task ツールで spawn）
    - TDD で実装する（Red → Green → Refactor）
    - pnpm turbo check で lint をクリアする
-   - code-reviewer をサブエージェントとして呼び出し、全指摘を修正する
-   - 全指摘 0 件になったらコミットする
+   - lint エラー 0 件になったらコミットする
    - worktree パスと Issue 番号を渡す
+   - coder への修正依頼も SendMessage で行う（修正のたびに新しい spawn はしない）
 
-③ code-reviewer + security-reviewer（②完了後に並列起動）
+③ code-reviewer + security-reviewer（②完了後に Task ツールで並列 spawn）
+   - 初回のみ Task ツールで teammate を spawn する（以降は SendMessage で再利用）
    - それぞれ独立した視点でレビューする
-   - 全指摘 0 件になったら code-reviewer がマーカーファイルを作成する:
+   - 指摘がある場合: SendMessage(to: "team-lead", ...) でオーケストレーターに報告
+     → オーケストレーターが SendMessage(to: "coder", ...) で修正依頼
+   - coder 修正完了後: SendMessage(to: "code-reviewer") / SendMessage(to: "security-reviewer") で再レビューを依頼
+   - 絶対に再レビューのために新しい Task ツールで spawn しない
+   - code-reviewer と security-reviewer の両方が PASS した後に code-reviewer がマーカーファイルを作成する:
      touch "$(git rev-parse --show-toplevel)/.claude/.review-passed"
    - マーカーなしでは push がブロックされる
+   - 全件 PASS 確認後、オーケストレーターは code-reviewer と security-reviewer に
+     shutdown_request を送ってから TeamDelete する
 
 ④ git push → gh pr create（マーカー確認後）
 ```
 
 #### インフラ・CI/CD 変更の場合
 
-```
+```text
 ① infra-engineer（実装）
 ② infra-reviewer + security-reviewer（並列レビュー）
+   - 機能実装フローと同じ SendMessage ベースの再レビューループを適用
 ③ PR 作成
 ```
 
 #### フロントエンド・UI 変更の場合
 
-```
+```text
 ① requirements-analyst → ui-designer（実装）
 ② ui-reviewer + code-reviewer（並列レビュー）
+   - 機能実装フローと同じ SendMessage ベースの再レビューループを適用
 ③ PR 作成
 ```
 
@@ -211,7 +219,7 @@ oh-my-claudecode やその他のプラグイン由来のエージェントは使
 複数エージェントを並列・直列で協調させる場合は `TeamCreate` を使用する。
 
 **注意点:**
-- 実装は必ず `coder` エージェント経由で行う（オーケストレーター直接編集禁止）
+- 実装は必ず `coder` エージェント経由で行う
 - レビュー系エージェントは並列実行可能
 - 各エージェントは Issue に紐づく worktree 内で動作させる
 
@@ -231,6 +239,7 @@ oh-my-claudecode やその他のプラグイン由来のエージェントは使
 - 破壊的な Git コマンドを使わない
 - **レビューが通る前に push しない**（pre-push-review-guard.sh がブロックする）
 - **オーケストレーターは直接ファイルを編集しない**（すべてエージェントに委譲する）
+- **レビューの再依頼は SendMessage で行う**（新しい Task ツールで spawn しない）
 
 ---
 
