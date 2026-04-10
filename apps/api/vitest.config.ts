@@ -1,5 +1,6 @@
 import { resolve } from "node:path";
 import { defineConfig } from "vitest/config";
+import { shouldSuppressTestLog } from "./vitest.utils";
 
 export default defineConfig({
   resolve: {
@@ -12,6 +13,9 @@ export default defineConfig({
     environment: "node",
     setupFiles: ["../../tests/api/setup.ts"],
     include: ["../../tests/api/**/*.test.ts"],
+    onConsoleLog(log) {
+      return shouldSuppressTestLog(log);
+    },
     coverage: {
       provider: "v8",
       reporter: ["text", "json-summary"],
