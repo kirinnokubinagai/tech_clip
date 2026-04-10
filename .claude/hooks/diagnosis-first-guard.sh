@@ -11,6 +11,11 @@ if [ -z "$FILE_PATH" ]; then
   exit 0
 fi
 
+# .claude/ 配下の設定ファイルはスキップ
+if echo "$FILE_PATH" | grep -qE "(^|/)\.claude/"; then
+  exit 0
+fi
+
 MSG="[診断ファースト] 編集前チェック:
 1. このファイルの最新内容をReadで確認したか？古い情報で編集していないか？
 2. 問題の根本原因を特定したか？推測で修正していないか？

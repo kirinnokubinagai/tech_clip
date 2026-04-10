@@ -80,6 +80,7 @@
             maestro
             zap
             bats
+            mailpit
           ];
 
           shellHook = ''
@@ -87,6 +88,9 @@
             CLAUDE_USER_DIR="$PWD/.claude-user"
             export CLAUDE_CONFIG_DIR="$CLAUDE_USER_DIR"
             mkdir -p "$CLAUDE_USER_DIR"
+
+            # Claude 隔離 wrapper を PATH の先頭に追加（ホスト非依存で最新版を起動するため）
+            export PATH="$PWD/.claude-isolated/bin:$PATH"
 
             # eas-cli は nixpkgs にないため npx ラッパーで提供
             # fish/zsh 互換のため export -f は使用しない（bash 専用構文）
@@ -112,6 +116,21 @@
               fi
             }
 
+            # mailpit: ローカルメールキャッチャー（SMTP 1025 / Web UI 8025）
+            # 未起動の場合にバックグラウンドで自動起動する
+            if command -v mailpit > /dev/null 2>&1; then
+              if ! curl -s --max-time 0.2 http://localhost:8025/api/v1/info > /dev/null 2>&1; then
+                mailpit > /dev/null 2>&1 &
+                disown
+                # SMTP ポートが開くまで最大 5 秒待機
+                for _mp_i in 1 2 3 4 5 6 7 8 9 10; do
+                  curl -s --max-time 0.2 http://localhost:8025/api/v1/info > /dev/null 2>&1 && break
+                  sleep 0.5
+                done
+                unset _mp_i
+              fi
+            fi
+
             # 依存パッケージの自動インストール
             if [ ! -d "node_modules" ]; then
               echo "Installing dependencies..."
@@ -132,6 +151,7 @@
             echo "  pnpm:     $(pnpm --version)"
             echo "  wrangler: $(wrangler --version 2>/dev/null | head -1)"
             echo "  eas:      via npx (run 'eas --version' to check)"
+            echo "  mailpit:  smtp://localhost:1025  http://localhost:8025"
             echo ""
             echo "Quick start:"
             echo "  setup-secrets     # シークレットファイルを初期化"

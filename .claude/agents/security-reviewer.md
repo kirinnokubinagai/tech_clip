@@ -1,6 +1,6 @@
 ---
 name: security-reviewer
-model: sonnet
+model: opus
 description: "セキュリティレビューエージェント。OWASP Top 10、認証・認可、入力バリデーション、機密情報漏洩をチェックする。チームに常駐し、SendMessage による複数ラウンドレビューに対応する。"
 tools:
   - Read
@@ -19,6 +19,19 @@ tools:
 
 1. `CLAUDE.md` - プロジェクトルール・開発フロー
 2. `.claude/rules/security.md` - セキュリティ規約
+
+## husky チェック（レビュー開始前に必須実行）
+
+レビューを開始する前に、以下のコマンドを worktree パスで実行して全チェックが通ることを確認する:
+
+```bash
+direnv exec <worktree> pnpm lint        # Biome lint/format チェック
+direnv exec <worktree> pnpm typecheck   # TypeScript 型チェック
+direnv exec <worktree> pnpm test        # テスト実行
+```
+
+いずれかが失敗した場合は、セキュリティレビューを開始する前に coder に修正を依頼する。
+全チェック通過を確認してからセキュリティレビューに進む。
 
 ## レビュー観点
 

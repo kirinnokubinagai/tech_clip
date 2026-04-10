@@ -18,6 +18,11 @@ if [ "$CURRENT_BRANCH" = "main" ]; then
     exit 0
   fi
 
+  # .claude/ 配下の設定ファイルはスキップ
+  if echo "$FILE_PATH" | grep -qE "(^|/)\.claude/"; then
+    exit 0
+  fi
+
   # ソースコード以外は main 上での編集を許可
   # ブロック対象: apps/, packages/, tests/ 配下のみ（実装コード）
   IS_SOURCE=false

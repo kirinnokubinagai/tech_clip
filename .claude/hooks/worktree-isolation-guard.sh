@@ -27,6 +27,11 @@ if [ -z "$FILE_PATH" ]; then
   exit 0
 fi
 
+# .claude/ 配下の設定ファイルはスキップ
+if echo "$FILE_PATH" | grep -qE "(^|/)\.claude/"; then
+  exit 0
+fi
+
 # WORKTREE_BASE配下かつREPO_ROOT配下でないファイルへのアクセスをブロック
 if [[ "$FILE_PATH" == "${WORKTREE_BASE}/"* ]] && [[ "$FILE_PATH" != "${REPO_ROOT}/"* ]]; then
   echo "DENY: mainブランチのエージェントは兄弟worktree内のファイルにアクセスできません。" >&2

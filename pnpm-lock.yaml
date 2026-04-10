@@ -68,6 +68,9 @@ importers:
       '@cloudflare/workers-types':
         specifier: ^4.20250321.0
         version: 4.20260317.1
+      '@types/nodemailer':
+        specifier: ^6.4.0
+        version: 6.4.23
       '@types/turndown':
         specifier: ^5.0.6
         version: 5.0.6
@@ -77,6 +80,9 @@ importers:
       drizzle-kit:
         specifier: ^0.31.0
         version: 0.31.10
+      nodemailer:
+        specifier: ^6.9.0
+        version: 6.10.1
       sharp:
         specifier: ^0.34.5
         version: 0.34.5
@@ -2504,6 +2510,9 @@ packages:
   '@types/node@25.5.0':
     resolution: {integrity: sha512-jp2P3tQMSxWugkCUKLRPVUpGaL5MVFwF8RDuSRztfwgN1wmqJeMSbKlnEtQqU8UrhTmzEmZdu2I6v2dpp7XIxw==}
 
+  '@types/nodemailer@6.4.23':
+    resolution: {integrity: sha512-aFV3/NsYFLSx9mbb5gtirBSXJnAlrusoKNuPbxsASWc7vrKLmIrTQRpdcxNcSFL3VW2A2XpeLEavwb2qMi6nlQ==}
+
   '@types/react-reconciler@0.31.0':
     resolution: {integrity: sha512-wa1KtV3SHKnWeLHfZFg/7nrPSe/Ejdn+qbanNX4V6i9I7C3ECKPfBnC1KM3ef58KFWEohLmTvoTH5XuEIKGX2g==}
     peerDependencies:
@@ -4784,6 +4793,10 @@ packages:
 
   node-releases@2.0.36:
     resolution: {integrity: sha512-TdC8FSgHz8Mwtw9g5L4gR/Sh9XhSP/0DEkQxfEFXOpiul5IiHgHan2VhYYb6agDSfp4KuvltmGApc8HMgUrIkA==}
+
+  nodemailer@6.10.1:
+    resolution: {integrity: sha512-Z+iLaBGVaSjbIzQ4pX6XV41HrooLsQ10ZWPUehGmuantvzWoDVBnmsdUcOIDM1t+yPor5pDhVlDESgOMEGxhHA==}
+    engines: {node: '>=6.0.0'}
 
   normalize-path@3.0.0:
     resolution: {integrity: sha512-6eZs5Ls3WtCisHWp9S2GUy8dqkpGi4BVSz3GaqiE6ezub0512ESztXUwUB6C6IKbQkY2Pnb/mD4WYojCRwcwLA==}
@@ -8206,9 +8219,7 @@ snapshots:
       metro-runtime: 0.83.5
     transitivePeerDependencies:
       - '@babel/core'
-      - bufferutil
       - supports-color
-      - utf-8-validate
 
   '@react-native/normalize-colors@0.74.89': {}
 
@@ -8578,6 +8589,10 @@ snapshots:
   '@types/node@25.5.0':
     dependencies:
       undici-types: 7.18.2
+
+  '@types/nodemailer@6.4.23':
+    dependencies:
+      '@types/node': 25.5.0
 
   '@types/react-reconciler@0.31.0(@types/react@19.2.14)':
     dependencies:
@@ -11250,6 +11265,8 @@ snapshots:
   node-int64@0.4.0: {}
 
   node-releases@2.0.36: {}
+
+  nodemailer@6.10.1: {}
 
   normalize-path@3.0.0: {}
 

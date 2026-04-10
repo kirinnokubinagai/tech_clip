@@ -25,6 +25,19 @@ tools:
 6. `.claude/rules/security.md` - セキュリティ規約
 7. `.claude/rules/frontend-design.md` - フロントエンドデザイン規約
 
+## husky チェック（レビュー開始前に必須実行）
+
+レビューを開始する前に、以下のコマンドを worktree パスで実行して全チェックが通ることを確認する:
+
+```bash
+direnv exec <worktree> pnpm lint        # Biome lint/format チェック
+direnv exec <worktree> pnpm typecheck   # TypeScript 型チェック
+direnv exec <worktree> pnpm test        # テスト実行
+```
+
+いずれかが失敗した場合は、コードレビューを開始する前に coder に修正を依頼する。
+全チェック通過を確認してからコードレビューに進む。
+
 ## レビュー方針（厳守）
 
 - **CIレビューより厳しく**行う。CIで落ちる前にローカルで全指摘を潰すことが目的
