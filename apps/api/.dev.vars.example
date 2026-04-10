@@ -80,3 +80,16 @@ RUNPOD_ENDPOINT_ID=your-runpod-endpoint-id
 # ローカル開発では ngrok 等でトンネルを作成し、そのURLを設定すること
 
 REVENUECAT_WEBHOOK_SECRET=your-revenuecat-webhook-secret
+
+# -----------------------------------------------------------------------------
+# Resend (メール送信)
+# -----------------------------------------------------------------------------
+# Resend ダッシュボード (https://resend.com) で API キーを発行する
+# ローカル開発・テスト時は mailpit (localhost:1025) を使用する：
+#   - mailpit 起動: mailpit コマンド（nix develop で自動起動）
+#   - tests/api/setup.ts が Resend API 呼び出しを mailpit SMTP に転送する
+#   - mailpit 未起動時はテスト内で自動的にモックレスポンスにフォールバックする
+# FROM_EMAIL は Resend で検証済みのドメインのアドレスを指定すること
+
+RESEND_API_KEY=your-resend-api-key
+FROM_EMAIL=no-reply@example.com
