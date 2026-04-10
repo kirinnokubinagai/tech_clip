@@ -315,6 +315,30 @@ run_script_with_file() {
     [[ "${output}" == *"DENY"* ]] || [[ "${lines[*]}" == *"DENY"* ]]
 }
 
+@test "大文字パスの.CLAUDE/.review-passedはブロックされること" {
+    # Arrange
+    local file_path="$REPO_DIR/.CLAUDE/.review-passed"
+
+    # Act
+    run run_script_with_file "$file_path"
+
+    # Assert
+    [ "$status" -eq 2 ]
+    [[ "${output}" == *"DENY"* ]] || [[ "${lines[*]}" == *"DENY"* ]]
+}
+
+@test "大文字パスの.OMC/STATE/配下のファイルはブロックされること" {
+    # Arrange
+    local file_path="$REPO_DIR/.OMC/STATE/autopilot-state.json"
+
+    # Act
+    run run_script_with_file "$file_path"
+
+    # Assert
+    [ "$status" -eq 2 ]
+    [[ "${output}" == *"DENY"* ]] || [[ "${lines[*]}" == *"DENY"* ]]
+}
+
 @test "パストラバーサル経由の.review-passedはブロックされること" {
     # Arrange
     local file_path="$REPO_DIR/.claude/hooks/../.review-passed"

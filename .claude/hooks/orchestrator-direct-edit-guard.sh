@@ -25,10 +25,13 @@ if [ -z "$FILE_PATH" ]; then
 fi
 
 # シンボリックリンクや .. を正規化（ファイルが存在しなくても動作）
+# realpath -m が失敗した場合はブロック方向に倒す（未正規化パスを使わない）
 if [[ "$FILE_PATH" = /* ]]; then
-  FILE_PATH=$(realpath -m "$FILE_PATH" 2>/dev/null || echo "$FILE_PATH")
+  FILE_PATH=$(realpath -m "$FILE_PATH" 2>/dev/null)
+  [ -z "$FILE_PATH" ] && exit 2
 else
-  FILE_PATH=$(realpath -m "$(pwd)/$FILE_PATH" 2>/dev/null || echo "$(pwd)/$FILE_PATH")
+  FILE_PATH=$(realpath -m "$(pwd)/$FILE_PATH" 2>/dev/null)
+  [ -z "$FILE_PATH" ] && exit 2
 fi
 
 # orchestratorが直接編集できないファイル（明示的ブロック対象）
@@ -36,9 +39,10 @@ is_blocked_file() {
   local path="$1"
 
   # .review-passed はレビュープロセスのみが作成する（orchestratorの迂回を防止）
-  echo "$path" | grep -qE "(^|/)\.claude/\.review-passed$" && return 0
+  # case-insensitive: macOS の大文字小文字を区別しないFSでの迂回を防止
+  echo "$path" | grep -iqE "(^|/)\.claude/\.review-passed$" && return 0
   # .omc/state/ は実行フロー状態ファイル（直接編集による動作操作を防止）
-  echo "$path" | grep -qE "(^|/)\.omc/state/" && return 0
+  echo "$path" | grep -iqE "(^|/)\.omc/state/" && return 0
 
   return 1
 }
@@ -56,7 +60,10 @@ is_orchestration_file() {
   echo "$path" | grep -qE "(^|/)\.env\.example$" && return 0
   echo "$path" | grep -qE "(^|/)turbo\.json$" && return 0
   # ルートの package.json のみ許可（apps/api/package.json 等のサブパッケージは除外）
-  echo "$path" | grep -qE "^(\./)?package\.json$" && return 0
+  # realpath -m で絶対パスに正規化されるため、git root との比較で判定する
+  local repo_root
+  repo_root=$(git -C "$(pwd)" rev-parse --show-toplevel 2>/dev/null || echo "")
+  [ -n "$repo_root" ] && [ "$path" = "$repo_root/package.json" ] && return 0
   echo "$path" | grep -qE "(^|/)pnpm-workspace\.yaml$" && return 0
 
   return 1
