@@ -72,7 +72,10 @@ while IFS= read -r wt_path; do
     fi
 
     # 未コミットの変更がある場合はスキップ
-    DIRTY=$(git -C "$wt_path" status --porcelain 2>/dev/null | grep -v '^??' | head -1)
+    DIRTY_OUTPUT=$(git -C "$wt_path" status --porcelain 2>/dev/null)
+    DIRTY_EXIT=$?
+    [ "$DIRTY_EXIT" -ne 0 ] && continue
+    DIRTY=$(echo "$DIRTY_OUTPUT" | grep -v '^??' | head -1)
     [ -n "$DIRTY" ] && continue
 
     branch=$(git -C "$wt_path" rev-parse --abbrev-ref HEAD 2>/dev/null)
@@ -98,9 +101,9 @@ if command -v gh >/dev/null 2>&1 && gh auth token >/dev/null 2>&1; then
 
     # リポジトリ特定できない場合はPass 1bをスキップ（不明なリポジトリへの誤操作を防ぐ）
     if [ -n "$REPO_SLUG" ]; then
-    # 削除後に最新のworktreeリストを取得
-    WORKTREE_PATHS_1B=$(git worktree list --porcelain 2>/dev/null | grep '^worktree ' | sed 's/^worktree //' | tail -n +2)
-    while IFS= read -r wt_path; do
+        # 削除後に最新のworktreeリストを取得
+        WORKTREE_PATHS_1B=$(git worktree list --porcelain 2>/dev/null | grep '^worktree ' | sed 's/^worktree //' | tail -n +2)
+        while IFS= read -r wt_path; do
         [ -z "$wt_path" ] && continue
         [ -d "$wt_path" ] || continue
         resolved_wt_path=$(cd "$wt_path" && pwd -P)
