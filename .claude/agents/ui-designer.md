@@ -1,6 +1,6 @@
 ---
 name: ui-designer
-model: sonnet
+model: opus
 description: "UI デザイン・コンポーネント実装エージェント。NativeWind + Lucide Icons でプロジェクト規約に沿った UI を構築する。"
 tools:
   - Read

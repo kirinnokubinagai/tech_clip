@@ -24,6 +24,11 @@ if [ -z "$FILE_PATH" ]; then
   exit 0
 fi
 
+# .claude/ 配下の設定ファイルはスキップ（早期 exit でコストを下げる）
+if echo "$FILE_PATH" | grep -qE "(^|/)\.claude/"; then
+  exit 0
+fi
+
 # 相対パスは安全でないとして拒否
 if [[ "$FILE_PATH" != /* ]]; then
   exit 2
@@ -125,8 +130,14 @@ fi
 if is_source_file "$FILE_PATH"; then
   echo "DENY: orchestratorによるソースファイルの直接編集は禁止されています。" >&2
   echo "  対象ファイル: $FILE_PATH" >&2
-  echo "  coder agent を使って編集してください。" >&2
-  echo "  例: Agent(coder) でタスクを委譲する" >&2
+  echo "" >&2
+  echo "  ⚠️  必須フロー（CLAUDE.md「Issue 対応の完全フロー」に厳密に従うこと）:" >&2
+  echo "  1. gh issue view <N> または gh issue create で Issue を確認/作成する" >&2
+  echo "  2. bash scripts/create-worktree.sh <N> <kebab-case-desc> で Worktree を作成する" >&2
+  echo "  3. TeamCreate(\"issue-<N>-team\") でチームを作成する" >&2
+  echo "  4. requirements-analyst → coder → code-reviewer/security-reviewer の順でエージェントを起動する" >&2
+  echo "" >&2
+  echo "  ❌ Agent(coder) を直接呼び出すことも禁止です。Issue + Worktree + TeamCreate が先です。" >&2
   exit 2
 fi
 

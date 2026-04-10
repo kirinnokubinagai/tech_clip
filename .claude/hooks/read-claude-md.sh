@@ -12,14 +12,15 @@ if [[ ! -f "${AGENTS_MD}" && ! -f "${CLAUDE_MD}" ]]; then
   exit 0
 fi
 
-MESSAGE=""
+MESSAGE=$'⚠️ CRITICAL WORKFLOW REMINDER ⚠️\n必ずこのフローを守ること（違反は全フックでブロックされる）:\n  コード変更依頼 → Issue確認/作成 → Worktree作成 → TeamCreate → エージェント起動\n  直接ファイル編集禁止 / Agent(coder) 直接呼び出し禁止\n\n'
 
+if [[ -f "${CLAUDE_MD}" ]]; then
+  CLAUDE_CONTENT=$(cat "${CLAUDE_MD}")
+  MESSAGE+=$'=== CLAUDE.md 再確認 ===\n'"${CLAUDE_CONTENT}"$'\n\n'
+fi
 if [[ -f "${AGENTS_MD}" ]]; then
   AGENTS_CONTENT=$(cat "${AGENTS_MD}")
   MESSAGE+=$'=== AGENTS.md 再確認 ===\n'"${AGENTS_CONTENT}"$'\n\n'
-elif [[ -f "${CLAUDE_MD}" ]]; then
-  CLAUDE_CONTENT=$(cat "${CLAUDE_MD}")
-  MESSAGE+=$'=== CLAUDE.md 再確認 ===\n'"${CLAUDE_CONTENT}"$'\n\n'
 fi
 
 if [[ -d "${RULES_DIR}" ]]; then

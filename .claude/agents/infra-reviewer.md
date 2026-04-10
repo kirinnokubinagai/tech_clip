@@ -1,6 +1,6 @@
 ---
 name: infra-reviewer
-model: sonnet
+model: opus
 description: "インフラレビューエージェント。CI/CD、セキュリティ、パフォーマンス、可用性をチェックする。"
 tools:
   - Read
@@ -17,6 +17,19 @@ tools:
 
 1. `CLAUDE.md` - プロジェクトルール・開発フロー
 2. `.claude/rules/security.md` - セキュリティ規約
+
+## husky チェック（レビュー開始前に必須実行）
+
+レビューを開始する前に、以下のコマンドを worktree パスで実行して全チェックが通ることを確認する:
+
+```bash
+direnv exec <worktree> pnpm lint        # Biome lint/format チェック
+direnv exec <worktree> pnpm typecheck   # TypeScript 型チェック
+direnv exec <worktree> pnpm test        # テスト実行
+```
+
+いずれかが失敗した場合は、インフラレビューを開始する前に実装者に修正を依頼する。
+全チェック通過を確認してからインフラレビューに進む。
 
 ## レビュー観点
 
