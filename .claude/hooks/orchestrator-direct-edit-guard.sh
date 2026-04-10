@@ -3,6 +3,9 @@
 #
 # orchestration/config ファイル（.claude/**, .omc/**, CLAUDE.md, AGENTS.md,
 # flake.nix, .gitignore 等）は許可する（確認スキップ）。
+# ただし以下は明示的にブロック:
+#   - .claude/.review-passed: レビュープロセスのみが作成可能
+#   - .omc/state/**:          実行フロー状態ファイル（直接編集によるフロー操作を防止）
 # ソースファイル（apps/, packages/, tests/ 配下）は coder agent 経由を強制する。
 
 TOOL_INPUT="${CLAUDE_TOOL_INPUT:-}"
@@ -20,6 +23,18 @@ fi
 if [ -z "$FILE_PATH" ]; then
   exit 0
 fi
+
+# orchestratorが直接編集できないファイル（明示的ブロック対象）
+is_blocked_file() {
+  local path="$1"
+
+  # .review-passed はレビュープロセスのみが作成する（orchestratorの迂回を防止）
+  echo "$path" | grep -qE "(^|/)\.claude/\.review-passed$" && return 0
+  # .omc/state/ は実行フロー状態ファイル（直接編集による動作操作を防止）
+  echo "$path" | grep -qE "(^|/)\.omc/state/" && return 0
+
+  return 1
+}
 
 # orchestration/config ファイルかどうかを判定する
 is_orchestration_file() {
@@ -50,6 +65,13 @@ is_source_file() {
 
   return 1
 }
+
+# 明示ブロック対象を先に評価（orchestration 許可より優先）
+if is_blocked_file "$FILE_PATH"; then
+  echo "DENY: このファイルはorchestratorによる直接編集が禁止されています。" >&2
+  echo "  対象ファイル: $FILE_PATH" >&2
+  exit 2
+fi
 
 if is_orchestration_file "$FILE_PATH"; then
   exit 0

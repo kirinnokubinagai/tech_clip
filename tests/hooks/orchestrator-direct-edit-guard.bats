@@ -290,3 +290,64 @@ run_script_with_file() {
     [ "$status" -eq 2 ]
     [[ "${output}" == *"coder"* ]] || [[ "${lines[*]}" == *"coder"* ]]
 }
+
+# --- 明示的ブロック対象（is_blocked_file）---
+
+@test ".claude/.review-passedはブロックされること" {
+    # Arrange
+    local file_path="$REPO_DIR/.claude/.review-passed"
+
+    # Act
+    run run_script_with_file "$file_path"
+
+    # Assert
+    [ "$status" -eq 2 ]
+    [[ "${output}" == *"DENY"* ]] || [[ "${lines[*]}" == *"DENY"* ]]
+}
+
+@test ".omc/state/配下のファイルはブロックされること" {
+    # Arrange
+    local file_path="$REPO_DIR/.omc/state/autopilot-state.json"
+
+    # Act
+    run run_script_with_file "$file_path"
+
+    # Assert
+    [ "$status" -eq 2 ]
+    [[ "${output}" == *"DENY"* ]] || [[ "${lines[*]}" == *"DENY"* ]]
+}
+
+# --- .claude/ 全体と .omc/ 全体の許可 ---
+
+@test ".claude/配下の任意ファイルは許可されること" {
+    # Arrange
+    local file_path="$REPO_DIR/.claude/some-config.yaml"
+
+    # Act
+    run run_script_with_file "$file_path"
+
+    # Assert
+    [ "$status" -eq 0 ]
+}
+
+@test ".omc/notepad.mdは許可されること" {
+    # Arrange
+    local file_path="$REPO_DIR/.omc/notepad.md"
+
+    # Act
+    run run_script_with_file "$file_path"
+
+    # Assert
+    [ "$status" -eq 0 ]
+}
+
+@test ".omc/project-memory.jsonは許可されること" {
+    # Arrange
+    local file_path="$REPO_DIR/.omc/project-memory.json"
+
+    # Act
+    run run_script_with_file "$file_path"
+
+    # Assert
+    [ "$status" -eq 0 ]
+}
