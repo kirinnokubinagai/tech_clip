@@ -28,7 +28,7 @@ run_script_with_file() {
     local file_path="$1"
     local run_dir="${2:-$REPO_DIR}"
     local tool_input
-    tool_input=$(printf '{"file_path": "%s"}' "$file_path")
+    tool_input=$(jq -n --arg p "$file_path" '{file_path: $p}')
     (cd "$run_dir" && CLAUDE_TOOL_INPUT="$tool_input" bash "$SCRIPT")
 }
 
@@ -229,8 +229,6 @@ run_script_with_file() {
     [ "$status" -eq 0 ]
 }
 
-# --- エラーメッセージの確認 ---
-
 # --- package.json の許可・ブロック判定 ---
 
 @test "ルートのpackage.jsonは許可されること" {
@@ -244,15 +242,16 @@ run_script_with_file() {
     [ "$status" -eq 0 ]
 }
 
-@test "./package.jsonは許可されること" {
+@test "./package.jsonは相対パスのためブロックされること" {
     # Arrange
+    # 相対パスは安全でないとして拒否される（MEDIUM-1修正）
     local file_path="./package.json"
 
     # Act
     run run_script_with_file "$file_path"
 
     # Assert
-    [ "$status" -eq 0 ]
+    [ "$status" -eq 2 ]
 }
 
 @test "apps/api/package.jsonはブロックされること" {
@@ -289,4 +288,205 @@ run_script_with_file() {
     # Assert
     [ "$status" -eq 2 ]
     [[ "${output}" == *"coder"* ]] || [[ "${lines[*]}" == *"coder"* ]]
+}
+
+# --- 明示的ブロック対象（is_blocked_file）---
+
+@test ".claude/.review-passedはブロックされること" {
+    # Arrange
+    local file_path="$REPO_DIR/.claude/.review-passed"
+
+    # Act
+    run run_script_with_file "$file_path"
+
+    # Assert
+    [ "$status" -eq 2 ]
+    [[ "${output}" == *"DENY"* ]] || [[ "${lines[*]}" == *"DENY"* ]]
+}
+
+@test ".omc/state/配下のファイルはブロックされること" {
+    # Arrange
+    local file_path="$REPO_DIR/.omc/state/autopilot-state.json"
+
+    # Act
+    run run_script_with_file "$file_path"
+
+    # Assert
+    [ "$status" -eq 2 ]
+    [[ "${output}" == *"DENY"* ]] || [[ "${lines[*]}" == *"DENY"* ]]
+}
+
+@test "大文字パスの.CLAUDE/.review-passedはブロックされること" {
+    # Arrange
+    local file_path="$REPO_DIR/.CLAUDE/.review-passed"
+
+    # Act
+    run run_script_with_file "$file_path"
+
+    # Assert
+    [ "$status" -eq 2 ]
+    [[ "${output}" == *"DENY"* ]] || [[ "${lines[*]}" == *"DENY"* ]]
+}
+
+@test "大文字パスの.OMC/STATE/配下のファイルはブロックされること" {
+    # Arrange
+    local file_path="$REPO_DIR/.OMC/STATE/autopilot-state.json"
+
+    # Act
+    run run_script_with_file "$file_path"
+
+    # Assert
+    [ "$status" -eq 2 ]
+    [[ "${output}" == *"DENY"* ]] || [[ "${lines[*]}" == *"DENY"* ]]
+}
+
+@test "パストラバーサル経由の.review-passedはブロックされること" {
+    # Arrange
+    local file_path="$REPO_DIR/.claude/hooks/../.review-passed"
+
+    # Act
+    run run_script_with_file "$file_path"
+
+    # Assert
+    [ "$status" -eq 2 ]
+    [[ "${output}" == *"DENY"* ]] || [[ "${lines[*]}" == *"DENY"* ]]
+}
+
+@test "パストラバーサル経由の.omc/state/配下のファイルはブロックされること" {
+    # Arrange
+    local file_path="$REPO_DIR/.omc/logs/../state/autopilot-state.json"
+
+    # Act
+    run run_script_with_file "$file_path"
+
+    # Assert
+    [ "$status" -eq 2 ]
+    [[ "${output}" == *"DENY"* ]] || [[ "${lines[*]}" == *"DENY"* ]]
+}
+
+# --- .claude/ 全体と .omc/ 全体の許可 ---
+
+@test ".claude/配下の任意ファイルは許可されること" {
+    # Arrange
+    local file_path="$REPO_DIR/.claude/some-config.yaml"
+
+    # Act
+    run run_script_with_file "$file_path"
+
+    # Assert
+    [ "$status" -eq 0 ]
+}
+
+@test ".omc/notepad.mdは許可されること" {
+    # Arrange
+    local file_path="$REPO_DIR/.omc/notepad.md"
+
+    # Act
+    run run_script_with_file "$file_path"
+
+    # Assert
+    [ "$status" -eq 0 ]
+}
+
+@test ".omc/project-memory.jsonは許可されること" {
+    # Arrange
+    local file_path="$REPO_DIR/.omc/project-memory.json"
+
+    # Act
+    run run_script_with_file "$file_path"
+
+    # Assert
+    [ "$status" -eq 0 ]
+}
+
+@test "大文字パスの.CLAUDE/hooks/配下のファイルは許可されること" {
+    # Arrange
+    local file_path="$REPO_DIR/.CLAUDE/hooks/new-hook.sh"
+
+    # Act
+    run run_script_with_file "$file_path"
+
+    # Assert
+    [ "$status" -eq 0 ]
+}
+
+# --- サブディレクトリの設定ファイル名偽装はブロックされること ---
+
+@test "apps/api/flake.nixはブロックされること" {
+    # Arrange
+    local file_path="$REPO_DIR/apps/api/flake.nix"
+
+    # Act
+    run run_script_with_file "$file_path"
+
+    # Assert
+    [ "$status" -eq 2 ]
+}
+
+@test "apps/api/CLAUDE.mdはブロックされること" {
+    # Arrange
+    local file_path="$REPO_DIR/apps/api/CLAUDE.md"
+
+    # Act
+    run run_script_with_file "$file_path"
+
+    # Assert
+    [ "$status" -eq 2 ]
+}
+
+@test "apps/api/turbo.jsonはブロックされること" {
+    # Arrange
+    local file_path="$REPO_DIR/apps/api/turbo.json"
+
+    # Act
+    run run_script_with_file "$file_path"
+
+    # Assert
+    [ "$status" -eq 2 ]
+}
+
+@test "apps/api/src/.claude/foo.tsはブロックされること" {
+    # Arrange
+    local file_path="$REPO_DIR/apps/api/src/.claude/foo.ts"
+
+    # Act
+    run run_script_with_file "$file_path"
+
+    # Assert
+    [ "$status" -eq 2 ]
+}
+
+@test ".omc/stateディレクトリ自体はブロックされること" {
+    # Arrange
+    local file_path="$REPO_DIR/.omc/state"
+
+    # Act
+    run run_script_with_file "$file_path"
+
+    # Assert
+    [ "$status" -eq 2 ]
+}
+
+@test "大文字パスの.claude/.REVIEW-PASSEDで正しい理由メッセージが出ること" {
+    # Arrange
+    local file_path="$REPO_DIR/.claude/.REVIEW-PASSED"
+
+    # Act
+    run run_script_with_file "$file_path"
+
+    # Assert
+    [ "$status" -eq 2 ]
+    [[ "${output}" == *"レビュープロセスのみが作成可能"* ]]
+}
+
+@test "大文字パスの.OMC/STATEで正しい理由メッセージが出ること" {
+    # Arrange
+    local file_path="$REPO_DIR/.OMC/STATE/x.json"
+
+    # Act
+    run run_script_with_file "$file_path"
+
+    # Assert
+    [ "$status" -eq 2 ]
+    [[ "${output}" == *"実行フロー状態ファイル"* ]]
 }
