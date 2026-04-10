@@ -197,10 +197,11 @@ bash scripts/create-worktree.sh <N2> <desc2>
 Agent(
   run_in_background=true,
   mode="acceptEdits",
-  prompt="Issue #<N> を実装→レビュー→PR作成まで完結させる。
+  prompt="Issue #<N> の実装のみを担当する。
           worktree: /path/to/issue-<N>
           Issue内容: <issue内容を貼り付け>
-          完了したら PR URL を返すこと。"
+          requirements-analyst で要件整理、coder で実装・コミットまで完了させたら終了する。
+          レビュー・マーカー作成・push・PR作成はオーケストレーターが担当する。"
 )
 ```
 
@@ -214,11 +215,14 @@ worktree-isolation-guard.sh により以下の制限がある（mainブランチ
 |---|---|
 | Edit / Write | mainブランチから兄弟 worktree へのアクセスはブロックされる |
 | Read / Grep / Glob | mainブランチから兄弟 worktree へのアクセスはブロックされる |
-| Bash（`cat`, `touch` 等） | 制限なし（worktree 外も可） |
+| Bash（`cat`, `touch` 等） | worktree-isolation-guard の対象外（ただし他 hook による制約は受ける） |
 
 **例外（Edit/Write でも許可）:**
 - `.claude/**` 配下のファイル（設定ファイル）
 - `flake.nix`、`CLAUDE.md`、`AGENTS.md`、`turbo.json`、`package.json` 等のルート config
+
+ただし `.claude/.review-passed` と `.omc/state/**` は Edit/Write がブロックされる（is_blocked_file による）。
+これらのファイルは `touch`/`cat >` 等の Bash コマンドでのみ作成・変更可能。
 
 **ファイル変更は Bash（`cat > file`/`touch`）等のポータブルなコマンドを使う:**
 - `.review-passed` の作成: `touch <worktree>/.claude/.review-passed`（Edit/Write はブロックされる）

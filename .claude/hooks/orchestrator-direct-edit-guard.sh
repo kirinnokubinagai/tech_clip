@@ -1,12 +1,13 @@
 #!/usr/bin/env bash
-# PreToolUse:Edit/Write hook: orchestratorによるソースファイルの直接編集をブロック
+# PreToolUse:Edit/Write hook: mainブランチ上でのソースファイル直接編集をブロック
 #
 # orchestration/config ファイル（.claude/**, .omc/**, CLAUDE.md, AGENTS.md,
-# flake.nix, .gitignore 等）は許可する（確認スキップ）。
-# ただし以下は明示的にブロック:
+# flake.nix, .gitignore 等）は mainブランチ上でも許可する。
+# ただし以下は明示的にブロック（ブランチ問わず）:
 #   - .claude/.review-passed: レビュープロセスのみが作成可能
 #   - .omc/state/**:          実行フロー状態ファイル（直接編集によるフロー操作を防止）
-# ソースファイル（apps/, packages/, tests/ 配下）は coder agent 経由を強制する。
+# mainブランチ上のソースファイル（apps/, packages/, tests/ 配下）は worktree 経由を強制する。
+# worktree（main以外のブランチ）では素通し（バックグラウンドエージェントの動作を許可するため）。
 
 TOOL_INPUT="${CLAUDE_TOOL_INPUT:-}"
 
@@ -130,9 +131,9 @@ fi
 # mainブランチ上でのソースファイル直接編集をブロック
 # orchestration/config ファイルはmainブランチでも許可済みのためここには到達しない
 if is_source_file "$FILE_PATH"; then
-  _branch=$(git -C "$REPO_ROOT" rev-parse --abbrev-ref HEAD 2>/dev/null)
-  # detached HEAD の場合も含め、mainブランチと判定する
-  if [ "$_branch" = "main" ] || [ -z "$_branch" ]; then
+  # symbolic-ref を使用: detached HEAD 時は空文字となり、mainと同様にブロック
+  CURRENT_BRANCH=$(git -C "$REPO_ROOT" symbolic-ref --short HEAD 2>/dev/null)
+  if [ "$CURRENT_BRANCH" = "main" ] || [ -z "$CURRENT_BRANCH" ]; then
     echo "DENY: orchestratorによるソースファイルの直接編集は禁止されています。" >&2
     echo "  対象ファイル: $FILE_PATH" >&2
     echo "" >&2
