@@ -24,6 +24,16 @@ if [ -z "$FILE_PATH" ]; then
   exit 0
 fi
 
+# main ブランチ上では全ての Edit/Write を禁止する
+# 全変更は worktree → PR フローを経ること
+_branch=$(env -u GIT_DIR -u GIT_WORK_TREE git branch --show-current 2>/dev/null)
+if [ "$_branch" = "main" ]; then
+  echo "DENY: mainブランチ上での直接編集は禁止されています。" >&2
+  echo "  全ての変更は worktree を経由してください。" >&2
+  echo "  例: bash scripts/create-worktree.sh <issue-number> <description>" >&2
+  exit 2
+fi
+
 # .claude/ 配下の設定ファイルはスキップ（早期 exit でコストを下げる）
 if echo "$FILE_PATH" | grep -qE "(^|/)\.claude/"; then
   exit 0
