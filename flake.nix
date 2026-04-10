@@ -81,6 +81,7 @@
             zap
             bats
             mailpit
+            claude-code-bin
           ];
 
           shellHook = ''
@@ -91,6 +92,12 @@
 
             # Claude 隔離 wrapper を PATH の先頭に追加（ホスト非依存で最新版を起動するため）
             export PATH="$PWD/.claude-isolated/bin:$PATH"
+
+            # Claude Code auto-updater は ~/.local/bin にインストールする
+            # /opt/homebrew/bin より優先するために先頭に追加
+            if [ -x "$HOME/.local/bin/claude" ]; then
+              export PATH="$HOME/.local/bin:$PATH"
+            fi
 
             # eas-cli は nixpkgs にないため npx ラッパーで提供
             # fish/zsh 互換のため export -f は使用しない（bash 専用構文）
