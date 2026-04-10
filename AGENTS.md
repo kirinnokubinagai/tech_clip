@@ -131,7 +131,11 @@ TeamCreate はアナウンスせず静かに実行する。
    - worktree パスと Issue 番号を渡す
 
 ③ code-reviewer + security-reviewer（②完了後に並列起動）
+   - 初回のみ Agent() で起動する（以降は SendMessage で再利用）
    - それぞれ独立した視点でレビューする
+   - 指摘がある場合: SendMessage でオーケストレーターに報告 → オーケストレーターが coder に修正依頼
+   - coder 修正完了後: SendMessage(to: "code-reviewer") / SendMessage(to: "security-reviewer") で再レビューを依頼
+   - 絶対に再レビューのために新しい Agent() を起動しない
    - 全指摘 0 件になったら code-reviewer がマーカーファイルを作成する:
      touch "$(git rev-parse --show-toplevel)/.claude/.review-passed"
    - マーカーなしでは push がブロックされる
@@ -231,6 +235,7 @@ oh-my-claudecode やその他のプラグイン由来のエージェントは使
 - 破壊的な Git コマンドを使わない
 - **レビューが通る前に push しない**（pre-push-review-guard.sh がブロックする）
 - **オーケストレーターは直接ファイルを編集しない**（すべてエージェントに委譲する）
+- **レビューの再依頼は SendMessage で行う**（新しい Agent() を起動しない）
 
 ---
 
