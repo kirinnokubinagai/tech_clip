@@ -109,10 +109,12 @@ direnv exec <worktree> pnpm test        # テスト実行
 
 問題 0 件・提案 0 件になるまで PASS を出さない。
 
-## レビュー完了時のマーカー作成（必須）
+## レビュー完了時の処理（必須）
 
 自分側が全件 PASS（問題 0 件・提案 0 件）になったら、SendMessage(to: "team-lead", ...) でオーケストレーターに報告する。
-オーケストレーターから「code-reviewer と security-reviewer の両方が PASS した」旨の最終通知を受けた後に、以下のコマンドでマーカーファイルを作成する:
+オーケストレーターから「code-reviewer と security-reviewer の両方が PASS した」旨の最終通知を受けた後に、以下の順で処理する:
+
+### 1. マーカーファイルを作成する
 
 ```bash
 touch "$(git rev-parse --show-toplevel)/.claude/.review-passed"
@@ -120,6 +122,41 @@ touch "$(git rev-parse --show-toplevel)/.claude/.review-passed"
 
 このマーカーがないと `git push` が pre-push-review-guard.sh によりブロックされる。
 問題が1件でもある場合はマーカーを作成しない。
+
+### 2. git push する
+
+```bash
+cd <worktree> && git push origin HEAD
+```
+
+### 3. PR を作成する
+
+```bash
+cd <worktree>
+ISSUE_NUM=<渡されたIssue番号>
+ISSUE_TITLE=$(gh issue view $ISSUE_NUM --json title -q '.title')
+BRANCH=$(git branch --show-current)
+gh pr create \
+  --title "$ISSUE_TITLE" \
+  --body "## 概要
+
+Closes #$ISSUE_NUM
+
+## テスト
+
+- \`pnpm lint\` 通過
+- \`pnpm typecheck\` 通過
+- \`pnpm test\` 通過
+
+🤖 Generated with [Claude Code](https://claude.ai/code)" \
+  --head "$BRANCH"
+```
+
+### 4. PR URL を team-lead に報告する
+
+```text
+SendMessage(to: "team-lead", "PR作成完了: <PR URL>")
+```
 
 ## チーム連携プロトコル（複数ラウンド対応）
 
@@ -145,7 +182,7 @@ PASS の旨を以下のように報告してから待機する:
 SendMessage(to: "team-lead", "code-reviewer: 全件 PASS（0件）")
 ```
 
-オーケストレーターから最終通知を受けたらマーカーを作成する。
+オーケストレーターから「両方 PASS」の最終通知を受けたら、「レビュー完了時の処理」セクションに従い、マーカー作成 → git push → gh pr create → PR URL 報告 の順で処理する。
 オーケストレーターが shutdown_request を送るまでシャットダウンしない。
 shutdown_request を受信したら `{"type": "shutdown_response", "approve": true, "request_id": "..."}` を返してシャットダウンする。
 

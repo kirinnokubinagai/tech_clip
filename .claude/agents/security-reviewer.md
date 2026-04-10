@@ -116,7 +116,7 @@ PASS の旨を以下のように報告してから待機する:
 SendMessage(to: "team-lead", "security-reviewer: 全件 PASS（0件）")
 ```
 
-マーカーファイルの作成は code-reviewer の責務であり、security-reviewer は作成しない。
+マーカーファイルの作成・git push・PR 作成はいずれも code-reviewer の責務であり、security-reviewer は行わない。
 オーケストレーターが shutdown_request を送るまでシャットダウンしない。
 shutdown_request を受信したら `{"type": "shutdown_response", "approve": true, "request_id": "..."}` を返してシャットダウンする。
 

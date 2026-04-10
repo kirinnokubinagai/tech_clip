@@ -136,13 +136,13 @@ TeamCreate はユーザー向けテキストで進捗報告をせずに実行す
      → オーケストレーターが SendMessage(to: "coder", ...) で修正依頼
    - coder 修正完了後: SendMessage(to: "code-reviewer") / SendMessage(to: "security-reviewer") で再レビューを依頼
    - 絶対に再レビューのために新しい Task ツールで spawn しない
-   - code-reviewer と security-reviewer の両方が PASS した後に code-reviewer がマーカーファイルを作成する:
-     touch "$(git rev-parse --show-toplevel)/.claude/.review-passed"
+   - code-reviewer と security-reviewer の両方が PASS した後に code-reviewer が以下を行う:
+     1. touch "$(git rev-parse --show-toplevel)/.claude/.review-passed"（マーカー作成）
+     2. git push
+     3. gh pr create で PR を作成し、PR URL を SendMessage(to: "team-lead") で報告する
    - マーカーなしでは push がブロックされる
-   - 全件 PASS 確認後、オーケストレーターは code-reviewer と security-reviewer に
+   - PR 作成後、オーケストレーターは code-reviewer と security-reviewer に
      shutdown_request を送ってから TeamDelete する
-
-④ git push → gh pr create（マーカー確認後）
 ```
 
 #### インフラ・CI/CD 変更の場合
@@ -203,15 +203,54 @@ poll-pr-review.sh → CHANGES_REQUESTED
 
 ---
 
-## 複数 Issue の並列処理
+## 複数 Issue の並列処理（バックグラウンドエージェント スワーム）
 
-複数の Issue は別々のチームで並列処理できる。
+複数の Issue を並列処理する場合は、TeamCreate ではなく**バックグラウンドエージェント**を使う。
+TeamCreate は 1 オーケストレーターにつき 1 チームしか管理できないため。
+
+### 手順
+
+```bash
+# 1. 各 Issue に worktree を作成する
+bash scripts/create-worktree.sh <N1> <desc1>
+bash scripts/create-worktree.sh <N2> <desc2>
+```
+
+```text
+# 2. 各 Issue に対してバックグラウンドエージェントを並列 spawn する
+Agent(
+  run_in_background=true,
+  mode="acceptEdits",
+  prompt="Issue #<N> を実装→レビュー→PR作成まで完結させる。
+          worktree: /path/to/issue-<N>
+          Issue内容: <issue内容を貼り付け>
+          完了したら PR URL を返すこと。"
+)
+```
+
+各エージェントが実装→自己レビュー→`.review-passed`作成→push→PR作成まで完結させる。
+
+### バックグラウンドエージェントの制約
+
+worktree-isolation-guard.sh と orchestrator-direct-edit-guard.sh により以下の制限がある:
+
+| ツール | 制約 |
+|---|---|
+| Edit / Write | 自分の worktree 外へのアクセスはブロックされる |
+| Read / Grep / Glob | 自分の worktree 外へのアクセスはブロックされる |
+| Bash（`cat`, `sed`, `awk`, `touch` 等） | 制限なし（worktree 外も可） |
+
+**例外（Edit/Write でも許可）:**
+- `.claude/**` 配下のファイル（設定ファイル）
+- `flake.nix`、`CLAUDE.md`、`AGENTS.md`、`turbo.json`、`package.json` 等のルート config
+
+**ファイル変更は Bash（`sed -i`/`cat`/`touch`）を使う:**
+- `.review-passed` の作成: `touch <worktree>/.claude/.review-passed`（Edit/Write はブロックされる）
 
 | 項目 | 詳細 |
 |---|---|
-| チーム名 | `issue-<N>-team`（Issue ごとに別々） |
 | Worktree | `../issue-<N>`（Issue ごとに別々） |
-| 完了後 | `TeamDelete` でチームを削除する |
+| 完了後 | 各エージェントが PR URL を報告して終了 |
 
 ---
 
@@ -246,14 +285,20 @@ oh-my-claudecode やその他のプラグイン由来のエージェントは使
 | `infra-reviewer` | インフラレビュー |
 | `requirements-reviewer` | 要件定義レビュー |
 
-### TeamCreate を使ったチーム編成
+### エージェント連携パターン
 
-複数エージェントを並列・直列で協調させる場合は `TeamCreate` を使用する。
+#### 1 Issue の場合: TeamCreate チーム編成
+
+1 つの Issue に複数エージェントを並列・直列で協調させる場合は `TeamCreate` を使用する。
 
 **注意点:**
 - 実装は必ず `coder` エージェント経由で行う
 - レビュー系エージェントは並列実行可能
 - 各エージェントは Issue に紐づく worktree 内で動作させる
+
+#### 複数 Issue の場合: バックグラウンドエージェント スワーム
+
+「複数 Issue の並列処理」セクションを参照。TeamCreate は使用しない。
 
 ---
 
