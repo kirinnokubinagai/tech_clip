@@ -107,6 +107,27 @@ def validate_max_tokens(value: Any) -> int:
     return value
 
 
+def validate_temperature(value: Any) -> float:
+    """
+    temperature の値を検証する。
+
+    Args:
+        value: 検証対象の temperature 値
+
+    Returns:
+        検証済み temperature 浮動小数点数値
+
+    Raises:
+        ValueError: 型・範囲が不正な場合
+    """
+    if not isinstance(value, (int, float)):
+        raise ValueError("temperature は数値である必要があります")
+    temperature = float(value)
+    if temperature < 0.0 or temperature > 1.0:
+        raise ValueError("temperature は 0.0 以上 1.0 以下である必要があります")
+    return temperature
+
+
 def handle_messages_request(job_input: dict) -> dict:
     """
     messages キーを使ったリクエストを処理する（要約・翻訳共通）。
@@ -123,7 +144,8 @@ def handle_messages_request(job_input: dict) -> dict:
     messages = validate_messages(job_input["messages"])
     raw_max_tokens = job_input.get("max_tokens", 4096)
     max_tokens = validate_max_tokens(raw_max_tokens)
-    temperature = job_input.get("temperature", 0.3)
+    raw_temperature = job_input.get("temperature", 0.3)
+    temperature = validate_temperature(raw_temperature)
 
     tokenizer = llm.get_tokenizer()
     prompt = tokenizer.apply_chat_template(

@@ -30,6 +30,15 @@ const VIDEO_PAGE_HTML_MAX_BYTES = 5 * 1024 * 1024;
 /** ytInitialPlayerResponse JSON の文字数上限。JSON.parse サイズ制限 */
 const PLAYER_RESPONSE_JSON_MAX_LENGTH = 500 * 1024;
 
+/** ytInitialPlayerResponse 検索範囲（バイト）。バックトラッキング対策のため切り出し範囲を制限する */
+const PLAYER_RESPONSE_SEARCH_RANGE = 500_000;
+
+/** 字幕 XML の最大サイズ（バイト）。過大レスポンス対策 */
+const CAPTION_XML_MAX_BYTES = 1_000_000;
+
+/** 字幕エントリの最大件数。過大 XML 対策 */
+const CAPTION_ENTRIES_MAX = 10_000;
+
 /** 動画 ID 抽出用パターン（11文字の英数字・ハイフン・アンダースコア） */
 const VIDEO_ID_REGEX = /^[A-Za-z0-9_-]{11}$/;
 
@@ -193,7 +202,13 @@ async function fetchVideoPageHtml(videoUrl: string): Promise<string> {
  * @returns 字幕トラックの配列。存在しない場合は空配列
  */
 function extractCaptionTracks(html: string): CaptionTrack[] {
-  const match = html.match(PLAYER_RESPONSE_REGEX);
+  const markerIndex = html.indexOf("ytInitialPlayerResponse");
+  if (markerIndex === -1) {
+    return [];
+  }
+  const searchStart = Math.max(0, markerIndex - 10);
+  const searchArea = html.slice(searchStart, markerIndex + PLAYER_RESPONSE_SEARCH_RANGE);
+  const match = PLAYER_RESPONSE_REGEX.exec(searchArea);
   if (!match?.[1]) {
     return [];
   }
@@ -248,13 +263,52 @@ function selectCaptionTrack(tracks: readonly [CaptionTrack, ...CaptionTrack[]]):
  */
 function parseCaptionXml(xml: string): string {
   const lines: string[] = [];
+  let count = 0;
   for (const match of xml.matchAll(CAPTION_TEXT_REGEX)) {
+    if (count >= CAPTION_ENTRIES_MAX) {
+      break;
+    }
     const text = decodeXmlEntities(match[1]).trim();
     if (text.length > 0) {
       lines.push(text);
     }
+    count++;
   }
   return lines.join("\n");
+}
+
+/**
+ * XML で禁止されている制御文字か判定する
+ *
+ * 対象: U+0000-U+0008, U+000B-U+000C, U+000E-U+001F
+ *
+ * @param code - 文字コードポイント
+ * @returns 制御文字であれば true
+ */
+function isXmlForbiddenControlChar(code: number): boolean {
+  return (
+    (code >= 0x00 && code <= 0x08) ||
+    code === 0x0b ||
+    code === 0x0c ||
+    (code >= 0x0e && code <= 0x1f)
+  );
+}
+
+/**
+ * 文字列から XML 禁止制御文字を除去する
+ *
+ * @param text - 入力テキスト
+ * @returns 制御文字を除去したテキスト
+ */
+function stripXmlForbiddenControlChars(text: string): string {
+  let result = "";
+  for (const char of text) {
+    const code = char.codePointAt(0) ?? 0;
+    if (!isXmlForbiddenControlChar(code)) {
+      result += char;
+    }
+  }
+  return result;
 }
 
 /**
@@ -264,10 +318,12 @@ function parseCaptionXml(xml: string): string {
  * @returns デコード済みテキスト
  */
 function decodeXmlEntities(text: string): string {
-  return text
-    .replace(/&#x([\da-fA-F]+);/g, (_, hex) => String.fromCodePoint(Number.parseInt(hex, 16)))
-    .replace(/&#(\d+);/g, (_, dec) => String.fromCodePoint(Number.parseInt(dec, 10)))
-    .replace(/&([a-zA-Z]+);/g, (match, name) => NAMED_ENTITY_MAP[name] ?? match);
+  return stripXmlForbiddenControlChars(
+    text
+      .replace(/&#x([\da-fA-F]+);/g, (_, hex) => String.fromCodePoint(Number.parseInt(hex, 16)))
+      .replace(/&#(\d+);/g, (_, dec) => String.fromCodePoint(Number.parseInt(dec, 10)))
+      .replace(/&([a-zA-Z]+);/g, (match, name) => NAMED_ENTITY_MAP[name] ?? match),
+  );
 }
 
 /**
@@ -307,7 +363,11 @@ async function fetchCaptionText(baseUrl: string): Promise<string> {
     throw new Error(NO_CAPTIONS_ERROR_CODE);
   }
 
-  const xml = await response.text();
+  const buffer = await response.arrayBuffer();
+  if (buffer.byteLength > CAPTION_XML_MAX_BYTES) {
+    throw new Error("字幕XMLのサイズが上限を超えています");
+  }
+  const xml = new TextDecoder().decode(buffer);
   const text = parseCaptionXml(xml);
   if (text.length === 0) {
     throw new Error(NO_CAPTIONS_ERROR_CODE);
