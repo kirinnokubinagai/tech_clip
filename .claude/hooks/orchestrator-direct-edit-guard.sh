@@ -1,8 +1,8 @@
 #!/bin/bash
 # PreToolUse:Edit/Write hook: orchestratorによるソースファイルの直接編集をブロック
 #
-# orchestration/config ファイル（.claude/hooks/, .claude/skills/, .claude/agents/,
-# CLAUDE.md, flake.nix, .gitignore 等）は許可する。
+# orchestration/config ファイル（.claude/**, .omc/**, CLAUDE.md, AGENTS.md,
+# flake.nix, .gitignore 等）は許可する（確認スキップ）。
 # ソースファイル（apps/, packages/, tests/ 配下）は coder agent 経由を強制する。
 
 TOOL_INPUT="${CLAUDE_TOOL_INPUT:-}"
@@ -25,8 +25,8 @@ fi
 is_orchestration_file() {
   local path="$1"
 
-  echo "$path" | grep -qE "(^|/)\.claude/(hooks|skills|agents|rules|plans)/" && return 0
-  echo "$path" | grep -qE "(^|/)\.claude/settings\.json$" && return 0
+  echo "$path" | grep -qE "(^|/)\.claude/" && return 0
+  echo "$path" | grep -qE "(^|/)\.omc/" && return 0
   echo "$path" | grep -qE "(^|/)CLAUDE\.md$" && return 0
   echo "$path" | grep -qE "(^|/)AGENTS\.md$" && return 0
   echo "$path" | grep -qE "(^|/)flake\.nix$" && return 0
