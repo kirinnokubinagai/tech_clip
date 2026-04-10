@@ -272,7 +272,7 @@ oh-my-claudecode やその他のプラグイン由来のエージェントは使
 - **レビューが通る前に push しない**（pre-push-review-guard.sh がブロックする）
 - **オーケストレーターは直接ファイルを編集しない**（すべてエージェントに委譲する）
 - **レビューの再依頼は SendMessage で行う**（新しい Task ツールで spawn しない）
-- **実装系エージェント（coder / ui-designer / infra-engineer / security-engineer）を spawn するときは必ず `mode="acceptEdits"` を指定する**
+- **すべてのエージェントを spawn するときは必ず `mode="acceptEdits"` を指定する**（実装系・レビュー系を問わず）
 
 ---
 
