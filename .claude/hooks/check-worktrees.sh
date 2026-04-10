@@ -15,6 +15,13 @@
 PROBLEMS=""
 PROBLEM_COUNT=0
 
+# worktreeを安全に削除（通常削除→forceフォールバック）
+remove_worktree_safely() {
+    local wt_path="$1"
+    git worktree remove "$wt_path" 2>/dev/null && return 0
+    git worktree remove --force "$wt_path" 2>/dev/null
+}
+
 # git worktree list で全worktreeを取得（main以外）
 WORKTREE_PATHS=$(git worktree list --porcelain 2>/dev/null | grep '^worktree ' | sed 's/^worktree //' | tail -n +2)
 
@@ -69,17 +76,12 @@ while IFS= read -r wt_path; do
     [ -n "$DIRTY" ] && continue
 
     branch=$(git -C "$wt_path" rev-parse --abbrev-ref HEAD 2>/dev/null)
+    # 防御的バリデーション: 異常なブランチ名は処理対象外にする
     if [[ ! "$branch" =~ ^[a-zA-Z0-9/_.-]+$ ]]; then
         continue
     fi
     wt_name=$(basename "$wt_path")
-    if git worktree remove "$wt_path" 2>/dev/null; then
-        : # 成功
-    elif git worktree remove --force "$wt_path" 2>/dev/null; then
-        : # 強制削除成功
-    else
-        continue  # 削除できない場合はスキップ
-    fi
+    remove_worktree_safely "$wt_path" || continue
     if [ -n "$branch" ] && [ "$branch" != "HEAD" ]; then
         git branch -D "$branch" 2>/dev/null || true
     fi
@@ -89,17 +91,15 @@ done <<< "$WORKTREE_PATHS"
 
 # Pass 1b: クローズ済みPR（マージなし）のworktreeを自動削除
 # gh コマンドが使えない・未認証の場合はスキップ（graceful degradation）
+# gh auth token を使用（gh auth status と異なりネットワークアクセスなしで認証確認可能）
 if command -v gh >/dev/null 2>&1 && gh auth token >/dev/null 2>&1; then
     # リポジトリを動的に取得（gh コマンドのスコープを限定）
     REPO_SLUG=$(gh repo view --json nameWithOwner --jq '.nameWithOwner' 2>/dev/null || echo "")
 
     # リポジトリ特定できない場合はPass 1bをスキップ（不明なリポジトリへの誤操作を防ぐ）
-    if [ -z "$REPO_SLUG" ]; then
-        WORKTREE_PATHS_1B=""
-    else
+    if [ -n "$REPO_SLUG" ]; then
     # 削除後に最新のworktreeリストを取得
     WORKTREE_PATHS_1B=$(git worktree list --porcelain 2>/dev/null | grep '^worktree ' | sed 's/^worktree //' | tail -n +2)
-    fi
     while IFS= read -r wt_path; do
         [ -z "$wt_path" ] && continue
         [ -d "$wt_path" ] || continue
@@ -139,20 +139,15 @@ if command -v gh >/dev/null 2>&1 && gh auth token >/dev/null 2>&1; then
             continue
         fi
 
-        if git worktree remove "$wt_path" 2>/dev/null; then
-            : # 成功
-        elif git worktree remove --force "$wt_path" 2>/dev/null; then
-            : # 強制削除成功
-        else
-            continue  # 削除できない場合はスキップ
-        fi
+        remove_worktree_safely "$wt_path" || continue
         if [ -n "$branch" ] && [ "$branch" != "HEAD" ]; then
             git branch -D "$branch" 2>/dev/null || true
         fi
         REMOVED_COUNT=$((REMOVED_COUNT + 1))
         REMOVED_NAMES="${REMOVED_NAMES:+${REMOVED_NAMES}, }${wt_name}(closed)"
     done <<< "$WORKTREE_PATHS_1B"
-fi
+    fi  # [ -n "$REPO_SLUG" ]
+fi  # gh auth token
 
 # Pass 2: 残りのworktreeの健全性チェック（削除後に再取得）
 WORKTREE_PATHS=$(git worktree list --porcelain 2>/dev/null | grep '^worktree ' | sed 's/^worktree //' | tail -n +2)
