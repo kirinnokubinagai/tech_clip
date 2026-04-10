@@ -99,7 +99,9 @@ bash scripts/create-worktree.sh <issue-number> <kebab-case-description>
 TeamCreate("issue-<N>-team")
 ```
 
-TeamCreate はアナウンスせず静かに実行する。
+TeamCreate はユーザー向けテキストで進捗報告をせずに実行する。
+
+オーケストレーターはチームの **team-lead** として振る舞う。エージェントからの SendMessage はすべて team-lead 宛てに届く。
 
 ---
 
@@ -123,22 +125,25 @@ TeamCreate はアナウンスせず静かに実行する。
    - Issue の内容を整理し、実装方針を決定する
    - worktree パスと Issue 番号を渡す
 
-② coder（①完了後に起動）
+② coder（①完了後に Task ツールで spawn）
    - TDD で実装する（Red → Green → Refactor）
    - pnpm turbo check で lint をクリアする
-   - code-reviewer をサブエージェントとして呼び出し、全指摘を修正する
    - 全指摘 0 件になったらコミットする
    - worktree パスと Issue 番号を渡す
+   - coder への修正依頼も SendMessage で行う（修正のたびに新しい spawn はしない）
 
-③ code-reviewer + security-reviewer（②完了後に並列起動）
-   - 初回のみ Agent() で起動する（以降は SendMessage で再利用）
+③ code-reviewer + security-reviewer（②完了後に Task ツールで並列 spawn）
+   - 初回のみ Task ツールで teammate を spawn する（以降は SendMessage で再利用）
    - それぞれ独立した視点でレビューする
-   - 指摘がある場合: SendMessage でオーケストレーターに報告 → オーケストレーターが coder に修正依頼
+   - 指摘がある場合: SendMessage(to: "team-lead", ...) でオーケストレーターに報告
+     → オーケストレーターが SendMessage(to: "coder", ...) で修正依頼
    - coder 修正完了後: SendMessage(to: "code-reviewer") / SendMessage(to: "security-reviewer") で再レビューを依頼
-   - 絶対に再レビューのために新しい Agent() を起動しない
-   - 全指摘 0 件になったら code-reviewer がマーカーファイルを作成する:
+   - 絶対に再レビューのために新しい Task ツールで spawn しない
+   - code-reviewer と security-reviewer の両方が PASS した後に code-reviewer がマーカーファイルを作成する:
      touch "$(git rev-parse --show-toplevel)/.claude/.review-passed"
    - マーカーなしでは push がブロックされる
+   - 全件 PASS 確認後、オーケストレーターは code-reviewer と security-reviewer に
+     shutdown_request を送ってから TeamDelete する
 
 ④ git push → gh pr create（マーカー確認後）
 ```
@@ -148,6 +153,7 @@ TeamCreate はアナウンスせず静かに実行する。
 ```
 ① infra-engineer（実装）
 ② infra-reviewer + security-reviewer（並列レビュー）
+   - 機能実装フローと同じ SendMessage ベースの再レビューループを適用
 ③ PR 作成
 ```
 
@@ -156,6 +162,7 @@ TeamCreate はアナウンスせず静かに実行する。
 ```
 ① requirements-analyst → ui-designer（実装）
 ② ui-reviewer + code-reviewer（並列レビュー）
+   - 機能実装フローと同じ SendMessage ベースの再レビューループを適用
 ③ PR 作成
 ```
 
@@ -235,7 +242,7 @@ oh-my-claudecode やその他のプラグイン由来のエージェントは使
 - 破壊的な Git コマンドを使わない
 - **レビューが通る前に push しない**（pre-push-review-guard.sh がブロックする）
 - **オーケストレーターは直接ファイルを編集しない**（すべてエージェントに委譲する）
-- **レビューの再依頼は SendMessage で行う**（新しい Agent() を起動しない）
+- **レビューの再依頼は SendMessage で行う**（新しい Task ツールで spawn しない）
 
 ---
 
