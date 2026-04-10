@@ -160,7 +160,7 @@ bash scripts/poll-pr-review.sh <pr-number>
 | 出力 | アクション |
 |------|-----------|
 | `APPROVED` | 完了。ユーザーに報告 |
-| `CHANGES_REQUESTED` | レビュー内容を読み、coder に修正依頼 → 修正完了後に再プッシュ → Step 4 に戻る |
+| `CHANGES_REQUESTED` | レビュー内容を読み、coder に修正依頼 → code-reviewer/security-reviewer で再レビュー → マーカー再作成 → 再プッシュ → Step 4 に戻る |
 | `TIMEOUT` | タイムアウト。ユーザーに手動確認を依頼 |
 
 **修正ループの流れ:**
@@ -204,23 +204,23 @@ Agent(
 )
 ```
 
-各エージェントが実装→自己レビュー→`.review-passed`作成→push→PR作成まで完結させる。
+各バックグラウンドエージェントは**実装のみ**を担当する。完了後、オーケストレーターが各 Issue に対してレビュー・マーカー作成・push・PR 作成を順に処理する。
 
 ### バックグラウンドエージェントの制約
 
-worktree-isolation-guard.sh と orchestrator-direct-edit-guard.sh により以下の制限がある:
+worktree-isolation-guard.sh により以下の制限がある（mainブランチのオーケストレーターから兄弟 worktree への Edit/Write/Read/Grep/Glob がブロックされる。worktree 内で動作するバックグラウンドエージェントは影響を受けない）:
 
 | ツール | 制約 |
 |---|---|
-| Edit / Write | 自分の worktree 外へのアクセスはブロックされる |
-| Read / Grep / Glob | 自分の worktree 外へのアクセスはブロックされる |
-| Bash（`cat`, `sed`, `awk`, `touch` 等） | 制限なし（worktree 外も可） |
+| Edit / Write | mainブランチから兄弟 worktree へのアクセスはブロックされる |
+| Read / Grep / Glob | mainブランチから兄弟 worktree へのアクセスはブロックされる |
+| Bash（`cat`, `touch` 等） | 制限なし（worktree 外も可） |
 
 **例外（Edit/Write でも許可）:**
 - `.claude/**` 配下のファイル（設定ファイル）
 - `flake.nix`、`CLAUDE.md`、`AGENTS.md`、`turbo.json`、`package.json` 等のルート config
 
-**ファイル変更は Bash（`sed -i`/`cat`/`touch`）を使う:**
+**ファイル変更は Bash（`cat > file`/`touch`）等のポータブルなコマンドを使う:**
 - `.review-passed` の作成: `touch <worktree>/.claude/.review-passed`（Edit/Write はブロックされる）
 
 | 項目 | 詳細 |

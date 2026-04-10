@@ -24,16 +24,6 @@ if [ -z "$FILE_PATH" ]; then
   exit 0
 fi
 
-# main ブランチ上では全ての Edit/Write を禁止する
-# 全変更は worktree → PR フローを経ること
-_branch=$(env -u GIT_DIR -u GIT_WORK_TREE git branch --show-current 2>/dev/null)
-if [ "$_branch" = "main" ]; then
-  echo "DENY: mainブランチ上での直接編集は禁止されています。" >&2
-  echo "  全ての変更は worktree を経由してください。" >&2
-  echo "  例: bash scripts/create-worktree.sh <issue-number> <description>" >&2
-  exit 2
-fi
-
 # .claude/ 配下の設定ファイルはスキップ（早期 exit でコストを下げる）
 if echo "$FILE_PATH" | grep -qE "(^|/)\.claude/"; then
   exit 0
@@ -137,18 +127,24 @@ if is_orchestration_file "$FILE_PATH"; then
   exit 0
 fi
 
+# mainブランチ上でのソースファイル直接編集をブロック
+# orchestration/config ファイルはmainブランチでも許可済みのためここには到達しない
 if is_source_file "$FILE_PATH"; then
-  echo "DENY: orchestratorによるソースファイルの直接編集は禁止されています。" >&2
-  echo "  対象ファイル: $FILE_PATH" >&2
-  echo "" >&2
-  echo "  ⚠️  必須フロー（CLAUDE.md「Issue 対応の完全フロー」に厳密に従うこと）:" >&2
-  echo "  1. gh issue view <N> または gh issue create で Issue を確認/作成する" >&2
-  echo "  2. bash scripts/create-worktree.sh <N> <kebab-case-desc> で Worktree を作成する" >&2
-  echo "  3. TeamCreate(\"issue-<N>-team\") でチームを作成する" >&2
-  echo "  4. requirements-analyst → coder → code-reviewer/security-reviewer の順でエージェントを起動する" >&2
-  echo "" >&2
-  echo "  ❌ Agent(coder) を直接呼び出すことも禁止です。Issue + Worktree + TeamCreate が先です。" >&2
-  exit 2
+  _branch=$(git -C "$REPO_ROOT" rev-parse --abbrev-ref HEAD 2>/dev/null)
+  # detached HEAD の場合も含め、mainブランチと判定する
+  if [ "$_branch" = "main" ] || [ -z "$_branch" ]; then
+    echo "DENY: orchestratorによるソースファイルの直接編集は禁止されています。" >&2
+    echo "  対象ファイル: $FILE_PATH" >&2
+    echo "" >&2
+    echo "  ⚠️  必須フロー（CLAUDE.md「Issue 対応の完全フロー」に厳密に従うこと）:" >&2
+    echo "  1. gh issue view <N> または gh issue create で Issue を確認/作成する" >&2
+    echo "  2. bash scripts/create-worktree.sh <N> <kebab-case-desc> で Worktree を作成する" >&2
+    echo "  3. Agent(requirements-analyst, mode=\"acceptEdits\") で要件を整理する" >&2
+    echo "  4. Agent(coder, mode=\"acceptEdits\") で実装する" >&2
+    echo "" >&2
+    echo "  ❌ main ブランチで直接 Agent(coder) を呼び出すことも禁止です。Issue + Worktree が先です。" >&2
+    exit 2
+  fi
 fi
 
 exit 0
