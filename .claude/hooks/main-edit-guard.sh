@@ -3,12 +3,12 @@
 # PreToolUse (Edit, Write) で実行される
 set -euo pipefail
 
-ROOT=$(git rev-parse --show-toplevel 2>/dev/null || echo "")
+ROOT=$(env -u GIT_DIR -u GIT_WORK_TREE git rev-parse --show-toplevel 2>/dev/null || echo "")
 if [ -z "$ROOT" ]; then
   exit 0
 fi
 
-CURRENT_BRANCH=$(git -C "$ROOT" branch --show-current 2>/dev/null || echo "")
+CURRENT_BRANCH=$(env -u GIT_DIR -u GIT_WORK_TREE git -C "$ROOT" branch --show-current 2>/dev/null || echo "")
 
 if [ "$CURRENT_BRANCH" = "main" ]; then
   TOOL_INPUT="${CLAUDE_TOOL_INPUT:-}"
