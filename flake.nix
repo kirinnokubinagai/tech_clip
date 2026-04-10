@@ -11,6 +11,39 @@
       let
         pkgs = nixpkgs.legacyPackages.${system};
 
+        # claude: shellHook の command -v に頼らず、呼び出し時に検出するラッパー
+        # HOME を .claude-isolated に差し替えて ~/.claude/CLAUDE.md を隠す（OMC 分離）
+        # CLAUDE_CONFIG_DIR は shellHook で設定済みのものを引き継ぐ（二重設定しない）
+        claude-wrapper = pkgs.writeShellScriptBin "claude" ''
+          _root=$(git rev-parse --show-toplevel 2>/dev/null)
+          if [ -z "$_root" ]; then
+            echo "claude-wrapper: git リポジトリ外では実行できません" >&2
+            exit 1
+          fi
+          mkdir -p "$_root/.claude-isolated/.claude"
+          # 自分自身を呼び出す再帰ループを防ぐため、ラッパー自身のパスを取得
+          _self=$(readlink -f "$0" 2>/dev/null || realpath "$0" 2>/dev/null || echo "$0")
+          for _dir in \
+            "/opt/homebrew/bin" \
+            "$HOME/.npm/bin" \
+            "$HOME/.npm-global/bin" \
+            "''${NVM_BIN:-}" \
+            "''${VOLTA_HOME:-$HOME/.volta}/bin" \
+            "''${PNPM_HOME:-}" \
+            "$HOME/.local/bin" \
+            "/usr/local/bin" \
+            "/usr/bin"; do
+            [ -n "$_dir" ] || continue
+            [ -x "$_dir/claude" ] || continue
+            _candidate=$(readlink -f "$_dir/claude" 2>/dev/null || echo "$_dir/claude")
+            [ "$_candidate" = "$_self" ] && continue
+            exec env HOME="$_root/.claude-isolated" \
+              "$_dir/claude" "$@"
+          done
+          echo "claude: not found. Install: pnpm add -g @anthropic-ai/claude-code" >&2
+          exit 127
+        '';
+
         # OWASP ZAP: クロスプラットフォーム版で macOS/Linux 両対応
         zap = pkgs.stdenv.mkDerivation {
           pname = "zap";
@@ -80,6 +113,7 @@
             maestro
             zap
             bats
+            claude-wrapper
           ];
 
           shellHook = ''
@@ -95,28 +129,6 @@
                   cp "$f" "$CLAUDE_USER_DIR/" 2>/dev/null || true
                 fi
               done
-            fi
-
-            # OMC 分離: claude プロセスの HOME を差し替えて ~/.claude/CLAUDE.md を見えなくする
-            # - HOME 変更は claude プロセスのみに限定され、現在のシェルには影響しない
-            # - ~/.claude/CLAUDE.md  → 読み込まれない（HOME が偽装されているため）
-            # - .claude-user/        → CLAUDE_CONFIG_DIR 経由で auth/settings が読み込まれる
-            # - プロジェクト CLAUDE.md → CWD ベースなので影響なし
-            # bash/zsh/fish すべてで動作するようシェル関数ではなくラッパースクリプトを PATH に置く
-            _CLAUDE_REAL=$(command -v claude 2>/dev/null || echo "")
-            if [ -n "$_CLAUDE_REAL" ]; then
-              _CLAUDE_FAKE_HOME="$PWD/.claude-isolated"
-              # .claude/ は空でよい（settings は CLAUDE_CONFIG_DIR 経由で読み込まれる）
-              mkdir -p "$_CLAUDE_FAKE_HOME/.claude"
-              _CLAUDE_WRAPPER_BIN="$_CLAUDE_FAKE_HOME/bin"
-              mkdir -p "$_CLAUDE_WRAPPER_BIN"
-              cat > "$_CLAUDE_WRAPPER_BIN/claude" <<WRAPPER
-#!/usr/bin/env bash
-exec env HOME="$_CLAUDE_FAKE_HOME" "$_CLAUDE_REAL" "\$@"
-WRAPPER
-              chmod +x "$_CLAUDE_WRAPPER_BIN/claude"
-              export PATH="$_CLAUDE_WRAPPER_BIN:$PATH"
-              unset _CLAUDE_REAL _CLAUDE_FAKE_HOME _CLAUDE_WRAPPER_BIN
             fi
 
             # eas-cli は nixpkgs にないため npx ラッパーで提供
