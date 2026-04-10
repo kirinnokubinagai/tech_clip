@@ -65,9 +65,15 @@ while IFS= read -r wt_path; do
     # HEADがmain系参照の祖先でなければスキップ（未マージ）
     git -C "$REPO_ROOT" merge-base --is-ancestor "$wt_head" "$MAIN_REF" 2>/dev/null || continue
 
+    branch=$(git -C "$wt_path" rev-parse --abbrev-ref HEAD 2>/dev/null)
+    # 防御的バリデーション: 異常なブランチ名は処理対象外にする
+    if [[ ! "$branch" =~ ^[a-zA-Z0-9/_.-]+$ ]]; then
+        continue
+    fi
+
     # branch作成直後の「まだ何も積んでいない worktree」は自動削除しない
     # main が先に進んだだけの branch まで掃除対象にすると behind 検知前に消えてしまう
-    if ! git -C "$wt_path" reflog --format='%gs' 2>/dev/null | grep -q '^commit:'; then
+    if ! git -C "$REPO_ROOT" reflog "refs/heads/$branch" --format='%gs' 2>/dev/null | grep -q '^commit:'; then
         continue
     fi
 
@@ -77,12 +83,6 @@ while IFS= read -r wt_path; do
     [ "$DIRTY_EXIT" -ne 0 ] && continue
     DIRTY=$(echo "$DIRTY_OUTPUT" | grep -v '^??' | head -1)
     [ -n "$DIRTY" ] && continue
-
-    branch=$(git -C "$wt_path" rev-parse --abbrev-ref HEAD 2>/dev/null)
-    # 防御的バリデーション: 異常なブランチ名は処理対象外にする
-    if [[ ! "$branch" =~ ^[a-zA-Z0-9/_.-]+$ ]]; then
-        continue
-    fi
     wt_name=$(basename "$wt_path")
     remove_worktree_safely "$wt_path" || continue
     if [ -n "$branch" ] && [ "$branch" != "HEAD" ]; then
