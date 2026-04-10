@@ -81,6 +81,9 @@ check_dangerous() {
   echo "$cmd" | grep -qE "^rm " && return 0
 
   # git 破壊的コマンド
+  echo "$cmd" | grep -qE "git revert " && return 0
+  echo "$cmd" | grep -qE "git reset --soft" && return 0
+  echo "$cmd" | grep -qE "git reset --mixed" && return 0
   echo "$cmd" | grep -qE "git reset --hard" && return 0
   echo "$cmd" | grep -qE "git push.*--force" && return 0
   echo "$cmd" | grep -qE "git push.*-f[ $]" && return 0
