@@ -24,13 +24,13 @@
           # 自分自身を呼び出す再帰ループを防ぐため、ラッパー自身のパスを取得
           _self=$(readlink -f "$0" 2>/dev/null || realpath "$0" 2>/dev/null || echo "$0")
           for _dir in \
+            "$HOME/.local/bin" \
             "/opt/homebrew/bin" \
             "$HOME/.npm/bin" \
             "$HOME/.npm-global/bin" \
             "''${NVM_BIN:-}" \
             "''${VOLTA_HOME:-$HOME/.volta}/bin" \
             "''${PNPM_HOME:-}" \
-            "$HOME/.local/bin" \
             "/usr/local/bin" \
             "/usr/bin"; do
             [ -n "$_dir" ] || continue
