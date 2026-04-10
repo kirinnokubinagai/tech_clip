@@ -85,6 +85,12 @@ TechClip は Cloudflare Workers + Hono 4.x で API サーバーを構築し、Be
 
 実装完了後は pnpm biome check を実行し、lint エラーがないことを確認する。
 
+## 出力規約
+
+- 実装完了時: 変更ファイル名と1行の概要のみ報告（手順・経緯の説明不要）
+- SendMessage の本文は100字以内を目標にする
+- 実装完了後は `security-reviewer` にレビュー依頼を送り、全件PASSになってからコミットする
+
 ## 出力言語
 
 すべての出力は日本語で行う。

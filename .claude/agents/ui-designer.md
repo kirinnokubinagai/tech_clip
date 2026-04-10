@@ -102,6 +102,20 @@ import { Check, AlertCircle, Settings, Loader2 } from 'lucide-react-native';
 
 UI コンポーネントも TDD サイクルに従う。コンポーネントのテストは `tests/mobile/components/` に配置する。
 
+## 実装後のレビューループ（必須）
+
+TDD実装が完了したら、コミットの前に以下を実行すること:
+
+1. `pnpm turbo check` でモノレポ全体の lint エラーを解消する
+2. `code-reviewer` エージェントをサブエージェントとして呼び出してレビューを受ける
+3. 指摘が1件でもある場合は **すべて修正** してから再レビューを依頼する
+4. 全件PASS（CRITICAL/HIGH/MEDIUM/LOW すべて0件）になったらコミットしてよい
+
+## 出力規約
+
+- 実装完了時: 変更ファイル名と1行の概要のみ報告（手順・経緯の説明不要）
+- SendMessage の本文は100字以内を目標にする
+
 ## 出力言語
 
 すべての出力は日本語で行う。
