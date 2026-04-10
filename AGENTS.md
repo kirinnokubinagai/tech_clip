@@ -41,6 +41,52 @@ bash ./.codex/run-stop.sh
 エージェントを使う場合は `.claude/agents/` 配下で定義されたもののみを使用する。
 oh-my-claudecode やその他のプラグイン由来のエージェントは使用しない。
 
+### 利用可能なエージェント一覧
+
+| エージェント | 役割 |
+|---|---|
+| `coder` | コーディング・機能実装（TDD） |
+| `ui-designer` | UI コンポーネント実装 |
+| `requirements-analyst` | 要件定義・仕様策定 |
+| `security-engineer` | セキュリティ実装 |
+| `infra-engineer` | インフラ・CI/CD 設定 |
+| `code-reviewer` | コードレビュー |
+| `ui-reviewer` | UI/UX レビュー |
+| `security-reviewer` | セキュリティレビュー |
+| `infra-reviewer` | インフラレビュー |
+| `requirements-reviewer` | 要件定義レビュー |
+
+### TeamCreate を使ったチーム編成
+
+複数エージェントを並列・直列で協調させる場合は `TeamCreate` を使用する。
+
+**典型的なフロー（機能実装）**
+
+```
+requirements-analyst（要件整理）
+  ↓
+coder（実装）
+  ↓（並列）
+code-reviewer + security-reviewer + ui-reviewer
+  ↓
+PR 作成
+```
+
+**典型的なフロー（インフラ変更）**
+
+```
+infra-engineer（実装）
+  ↓
+infra-reviewer + security-reviewer（並列レビュー）
+  ↓
+PR 作成
+```
+
+**注意点**
+- 実装は必ず `coder` エージェント経由で行う（オーケストレーター直接編集禁止）
+- レビュー系エージェントは並列実行可能
+- 各エージェントは Issue に紐づく worktree 内で動作させる
+
 ## 絶対ルール
 
 - GitHub Issue がない状態で作業を始めない
