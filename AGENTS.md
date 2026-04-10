@@ -36,6 +36,11 @@ bash ./.codex/run-stop.sh
 - 詳細な実装ルール: [`.claude/rules/`](./.claude/rules)
 - 既存 hook 実装: [`.claude/hooks/`](./.claude/hooks)
 
+## エージェント使用ルール
+
+エージェントを使う場合は `.claude/agents/` 配下で定義されたもののみを使用する。
+oh-my-claudecode やその他のプラグイン由来のエージェントは使用しない。
+
 ## 絶対ルール
 
 - GitHub Issue がない状態で作業を始めない
