@@ -69,24 +69,37 @@ while IFS= read -r wt_path; do
     [ -n "$DIRTY" ] && continue
 
     branch=$(git -C "$wt_path" rev-parse --abbrev-ref HEAD 2>/dev/null)
-    wt_name=$(basename "$wt_path")
-    if git worktree remove --force "$wt_path" 2>/dev/null; then
-        if [ -n "$branch" ] && [ "$branch" != "HEAD" ]; then
-            git branch -D "$branch" 2>/dev/null || true
-        fi
-        REMOVED_COUNT=$((REMOVED_COUNT + 1))
-        REMOVED_NAMES="${REMOVED_NAMES:+${REMOVED_NAMES}, }${wt_name}"
+    if [[ ! "$branch" =~ ^[a-zA-Z0-9/_.-]+$ ]]; then
+        continue
     fi
+    wt_name=$(basename "$wt_path")
+    if git worktree remove "$wt_path" 2>/dev/null; then
+        : # 成功
+    elif git worktree remove --force "$wt_path" 2>/dev/null; then
+        : # 強制削除成功
+    else
+        continue  # 削除できない場合はスキップ
+    fi
+    if [ -n "$branch" ] && [ "$branch" != "HEAD" ]; then
+        git branch -D "$branch" 2>/dev/null || true
+    fi
+    REMOVED_COUNT=$((REMOVED_COUNT + 1))
+    REMOVED_NAMES="${REMOVED_NAMES:+${REMOVED_NAMES}, }${wt_name}"
 done <<< "$WORKTREE_PATHS"
 
 # Pass 1b: クローズ済みPR（マージなし）のworktreeを自動削除
 # gh コマンドが使えない・未認証の場合はスキップ（graceful degradation）
-if command -v gh >/dev/null 2>&1 && gh auth status >/dev/null 2>&1; then
+if command -v gh >/dev/null 2>&1 && gh auth token >/dev/null 2>&1; then
     # リポジトリを動的に取得（gh コマンドのスコープを限定）
     REPO_SLUG=$(gh repo view --json nameWithOwner --jq '.nameWithOwner' 2>/dev/null || echo "")
 
+    # リポジトリ特定できない場合はPass 1bをスキップ（不明なリポジトリへの誤操作を防ぐ）
+    if [ -z "$REPO_SLUG" ]; then
+        WORKTREE_PATHS_1B=""
+    else
     # 削除後に最新のworktreeリストを取得
     WORKTREE_PATHS_1B=$(git worktree list --porcelain 2>/dev/null | grep '^worktree ' | sed 's/^worktree //' | tail -n +2)
+    fi
     while IFS= read -r wt_path; do
         [ -z "$wt_path" ] && continue
         [ -d "$wt_path" ] || continue
@@ -107,11 +120,7 @@ if command -v gh >/dev/null 2>&1 && gh auth status >/dev/null 2>&1; then
         fi
 
         # PRがクローズされているか確認（stateがCLOSED、mergedAtがnull）
-        if [ -n "$REPO_SLUG" ]; then
-            pr_state=$(gh pr list --repo "$REPO_SLUG" --head "$branch" --state closed --json state,mergedAt --jq '.[0] | select(.mergedAt == null) | .state' 2>/dev/null)
-        else
-            pr_state=$(gh pr list --head "$branch" --state closed --json state,mergedAt --jq '.[0] | select(.mergedAt == null) | .state' 2>/dev/null)
-        fi
+        pr_state=$(gh pr list --repo "$REPO_SLUG" --head "$branch" --state closed --json state,mergedAt --jq '.[0] | select(.mergedAt == null) | .state' 2>/dev/null)
         if [ "$pr_state" != "CLOSED" ]; then
             continue
         fi
@@ -130,13 +139,18 @@ if command -v gh >/dev/null 2>&1 && gh auth status >/dev/null 2>&1; then
             continue
         fi
 
-        if git worktree remove --force "$wt_path" 2>/dev/null; then
-            if [ -n "$branch" ] && [ "$branch" != "HEAD" ]; then
-                git branch -D "$branch" 2>/dev/null || true
-            fi
-            REMOVED_COUNT=$((REMOVED_COUNT + 1))
-            REMOVED_NAMES="${REMOVED_NAMES:+${REMOVED_NAMES}, }${wt_name}(closed)"
+        if git worktree remove "$wt_path" 2>/dev/null; then
+            : # 成功
+        elif git worktree remove --force "$wt_path" 2>/dev/null; then
+            : # 強制削除成功
+        else
+            continue  # 削除できない場合はスキップ
         fi
+        if [ -n "$branch" ] && [ "$branch" != "HEAD" ]; then
+            git branch -D "$branch" 2>/dev/null || true
+        fi
+        REMOVED_COUNT=$((REMOVED_COUNT + 1))
+        REMOVED_NAMES="${REMOVED_NAMES:+${REMOVED_NAMES}, }${wt_name}(closed)"
     done <<< "$WORKTREE_PATHS_1B"
 fi
 
@@ -176,8 +190,12 @@ while IFS= read -r wt_path; do
     GIT_DIR=""
     if [ -f "$wt_path/.git" ]; then
         GIT_DIR=$(sed 's/^gitdir: //' "$wt_path/.git")
+        # パストラバーサル防止: gitdir に .. が含まれる場合は無効化
+        case "$GIT_DIR" in
+            *".."*) GIT_DIR="" ;;
+        esac
         # 相対パスを絶対パスに解決
-        if [[ "$GIT_DIR" != /* ]]; then
+        if [ -n "$GIT_DIR" ] && [[ "$GIT_DIR" != /* ]]; then
             GIT_DIR="$wt_path/$GIT_DIR"
         fi
     elif [ -d "$wt_path/.git" ]; then
