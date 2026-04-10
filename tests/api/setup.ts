@@ -75,21 +75,15 @@ async function handleResendIntercept(init: RequestInit | undefined): Promise<Res
 
     const info = await transport.sendMail({ from, to, subject, html });
 
-    return new Response(
-      JSON.stringify({ id: info.messageId ?? "mailpit_test" }),
-      {
-        status: 200,
-        headers: { "Content-Type": "application/json" },
-      },
-    );
+    return new Response(JSON.stringify({ id: info.messageId ?? "mailpit_test" }), {
+      status: 200,
+      headers: { "Content-Type": "application/json" },
+    });
   } catch {
-    return new Response(
-      JSON.stringify({ id: FALLBACK_MESSAGE_ID }),
-      {
-        status: 200,
-        headers: { "Content-Type": "application/json" },
-      },
-    );
+    return new Response(JSON.stringify({ id: FALLBACK_MESSAGE_ID }), {
+      status: 200,
+      headers: { "Content-Type": "application/json" },
+    });
   }
 }
 
