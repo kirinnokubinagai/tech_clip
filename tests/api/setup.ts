@@ -38,6 +38,17 @@ function isResendEmailsUrl(url: string): boolean {
 }
 
 /**
+ * Resend ペイロードの to フィールドを string[] に正規化する
+ */
+function normalizeRecipients(to: unknown): string[] {
+  if (Array.isArray(to)) {
+    return to.filter((v): v is string => typeof v === "string");
+  }
+  if (typeof to === "string") return [to];
+  return ["test@example.com"];
+}
+
+/**
  * Resend API リクエストを mailpit SMTP に転送する。
  * mailpit 未起動の場合はモック成功レスポンスを返す。
  */
@@ -58,11 +69,7 @@ async function handleResendIntercept(init: RequestInit | undefined): Promise<Res
     const body = bodyStr !== null ? (JSON.parse(bodyStr) as Record<string, unknown>) : {};
 
     const from = typeof body.from === "string" ? body.from : "test@example.com";
-    const to = Array.isArray(body.to)
-      ? (body.to as string[])
-      : typeof body.to === "string"
-        ? [body.to]
-        : ["test@example.com"];
+    const to = normalizeRecipients(body.to);
     const subject = typeof body.subject === "string" ? body.subject : "(no subject)";
     const html = typeof body.html === "string" ? body.html : "";
 
