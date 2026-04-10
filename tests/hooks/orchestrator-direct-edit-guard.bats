@@ -397,3 +397,14 @@ run_script_with_file() {
     # Assert
     [ "$status" -eq 0 ]
 }
+
+@test "大文字パスの.CLAUDE/hooks/配下のファイルは許可されること" {
+    # Arrange
+    local file_path="$REPO_DIR/.CLAUDE/hooks/new-hook.sh"
+
+    # Act
+    run run_script_with_file "$file_path"
+
+    # Assert
+    [ "$status" -eq 0 ]
+}

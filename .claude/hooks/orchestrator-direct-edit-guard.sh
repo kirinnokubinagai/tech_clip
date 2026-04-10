@@ -51,20 +51,20 @@ is_blocked_file() {
 is_orchestration_file() {
   local path="$1"
 
-  echo "$path" | grep -qE "(^|/)\.claude/" && return 0
-  echo "$path" | grep -qE "(^|/)\.omc/" && return 0
-  echo "$path" | grep -qE "(^|/)CLAUDE\.md$" && return 0
-  echo "$path" | grep -qE "(^|/)AGENTS\.md$" && return 0
-  echo "$path" | grep -qE "(^|/)flake\.nix$" && return 0
-  echo "$path" | grep -qE "(^|/)\.gitignore$" && return 0
-  echo "$path" | grep -qE "(^|/)\.env\.example$" && return 0
-  echo "$path" | grep -qE "(^|/)turbo\.json$" && return 0
+  echo "$path" | grep -iqE "(^|/)\.claude/" && return 0
+  echo "$path" | grep -iqE "(^|/)\.omc/" && return 0
+  echo "$path" | grep -iqE "(^|/)CLAUDE\.md$" && return 0
+  echo "$path" | grep -iqE "(^|/)AGENTS\.md$" && return 0
+  echo "$path" | grep -iqE "(^|/)flake\.nix$" && return 0
+  echo "$path" | grep -iqE "(^|/)\.gitignore$" && return 0
+  echo "$path" | grep -iqE "(^|/)\.env\.example$" && return 0
+  echo "$path" | grep -iqE "(^|/)turbo\.json$" && return 0
   # ルートの package.json のみ許可（apps/api/package.json 等のサブパッケージは除外）
   # realpath -m で絶対パスに正規化されるため、git root との比較で判定する
   local repo_root
   repo_root=$(git -C "$(pwd)" rev-parse --show-toplevel 2>/dev/null || echo "")
   [ -n "$repo_root" ] && [ "$path" = "$repo_root/package.json" ] && return 0
-  echo "$path" | grep -qE "(^|/)pnpm-workspace\.yaml$" && return 0
+  echo "$path" | grep -iqE "(^|/)pnpm-workspace\.yaml$" && return 0
 
   return 1
 }
