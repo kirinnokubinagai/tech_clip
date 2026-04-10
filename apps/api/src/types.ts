@@ -32,6 +32,8 @@ export type Bindings = {
   SENTRY_DSN?: string;
   /** RevenueCat Webhook シークレット */
   REVENUECAT_WEBHOOK_SECRET?: string;
+  /** Gemmaモデル名（省略時は DEFAULT_GEMMA_MODEL_TAG を使用） */
+  GEMMA_MODEL_NAME?: string;
 };
 
 /** リクエストスコープで共有する変数 */

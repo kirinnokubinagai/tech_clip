@@ -1,39 +1,42 @@
 """
 RunPodサーバーレスハンドラー
 
-Qwen3.5-9BモデルをvLLMで起動し、RunPodサーバーレスAPIのリクエストを処理する。
+Google Gemma 3 12B IT モデルを vLLM で起動し、RunPod サーバーレス API のリクエストを処理する。
 
 リクエスト形式:
-    {"input": {"prompt": "...", "max_tokens": 1024}}
-    または
     {"input": {"messages": [{"role": "user", "content": "..."}], "max_tokens": 4096}}
 
-レスポンス形式（promptの場合）:
-    {"output": {"text": "..."}}
-
-レスポンス形式（messagesの場合）:
+レスポンス形式:
     {"output": {"choices": [{"message": {"role": "assistant", "content": "..."}}]}}
+
+モデル名は以下の優先順で解決する:
+    GEMMA_MODEL_NAME 環境変数 -> MODEL_PATH 環境変数 -> MODEL_NAME 環境変数 -> デフォルト
 """
 
 import os
 import runpod
 from vllm import LLM, SamplingParams
 
-# モデル参照。Dockerfile では Hugging Face のモデル名をそのまま入れる。
-MODEL_REF = os.environ.get("MODEL_PATH") or os.environ.get(
-    "MODEL_NAME", "QuantTrio/Qwen3.5-9B-AWQ"
+# モデル参照の解決優先順位:
+#   1. GEMMA_MODEL_NAME (Gemma 系切り替え用の専用変数)
+#   2. MODEL_PATH (汎用パス指定)
+#   3. MODEL_NAME (Dockerfile からの注入)
+#   4. デフォルト (google/gemma-3-12b-it)
+MODEL_REF = (
+    os.environ.get("GEMMA_MODEL_NAME")
+    or os.environ.get("MODEL_PATH")
+    or os.environ.get("MODEL_NAME", "google/gemma-3-12b-it")
 )
 MAX_MODEL_LEN = int(os.environ.get("MAX_MODEL_LEN", "4096"))
-MAX_NUM_SEQS = int(os.environ.get("MAX_NUM_SEQS", "4"))
+MAX_NUM_SEQS = int(os.environ.get("MAX_NUM_SEQS", "2"))
 GPU_MEMORY_UTILIZATION = float(os.environ.get("GPU_MEMORY_UTILIZATION", "0.85"))
 TENSOR_PARALLEL_SIZE = int(os.environ.get("TENSOR_PARALLEL_SIZE", "1"))
-QUANTIZATION = os.environ.get("VLLM_QUANTIZATION", "awq")
 
-# 16GB GPU を前提に、KV cache と同時実行数を抑えた設定にする。
+# Gemma は量子化なしのネイティブ fp16/bf16 を想定する。
+# 16GB GPU で動かす場合は MAX_MODEL_LEN と MAX_NUM_SEQS を小さく保つ。
 llm = LLM(
     model=MODEL_REF,
-    quantization=QUANTIZATION,
-    dtype="half",
+    dtype="bfloat16",
     max_model_len=MAX_MODEL_LEN,
     max_num_seqs=MAX_NUM_SEQS,
     gpu_memory_utilization=GPU_MEMORY_UTILIZATION,
@@ -42,34 +45,9 @@ llm = LLM(
 )
 
 
-def handle_prompt_request(job_input: dict) -> dict:
-    """
-    promptキーを使ったリクエストを処理する（要約用）。
-
-    Args:
-        job_input: {"prompt": "...", "max_tokens": 1024, "temperature": 0.3}
-
-    Returns:
-        {"text": "生成されたテキスト"}
-    """
-    prompt = job_input["prompt"]
-    max_tokens = job_input.get("max_tokens", 1024)
-    temperature = job_input.get("temperature", 0.7)
-
-    sampling_params = SamplingParams(
-        max_tokens=max_tokens,
-        temperature=temperature,
-    )
-
-    outputs = llm.generate([prompt], sampling_params)
-    generated_text = outputs[0].outputs[0].text
-
-    return {"text": generated_text}
-
-
 def handle_messages_request(job_input: dict) -> dict:
     """
-    messagesキーを使ったリクエストを処理する（翻訳用）。
+    messages キーを使ったリクエストを処理する（要約・翻訳共通）。
 
     Args:
         job_input: {"messages": [{"role": "user", "content": "..."}], "max_tokens": 4096}
@@ -110,25 +88,22 @@ def handle_messages_request(job_input: dict) -> dict:
 
 def handler(job: dict) -> dict:
     """
-    RunPodサーバーレスハンドラーのエントリーポイント。
+    RunPod サーバーレスハンドラーのエントリーポイント。
 
-    promptキーとmessagesキーの両形式に対応する。
+    Gemma 3 では messages 形式のみをサポートする。
 
     Args:
-        job: RunPodジョブオブジェクト（{"input": {...}}）
+        job: RunPod ジョブオブジェクト（{"input": {...}}）
 
     Returns:
-        生成結果（{"output": {...}}形式）
+        生成結果（{"output": {...}} 形式）
     """
     job_input = job.get("input", {})
 
-    if "messages" in job_input:
-        output = handle_messages_request(job_input)
-    elif "prompt" in job_input:
-        output = handle_prompt_request(job_input)
-    else:
-        return {"error": "inputにpromptまたはmessagesキーが必要です"}
+    if "messages" not in job_input:
+        return {"error": "input に messages キーが必要です"}
 
+    output = handle_messages_request(job_input)
     return {"output": output}
 
 

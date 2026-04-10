@@ -78,6 +78,10 @@ vi.mock("@api/services/parsers/speakerdeck", () => ({
   parseSpeakerdeck: vi.fn(),
 }));
 
+vi.mock("@api/services/parsers/youtube", () => ({
+  parseYouTube: vi.fn(),
+}));
+
 /** モック化されたdetectSource */
 const mockDetectSource = sourceDetectorModule.detectSource as Mock;
 
@@ -339,6 +343,24 @@ describe("parseArticle", () => {
       expect(parseSpeakerdeck).toHaveBeenCalledWith(url);
       expect(result.source).toBe("speakerdeck");
     });
+
+    it("YouTube URLがparseYouTubeにディスパッチされること", async () => {
+      // Arrange
+      const url = "https://www.youtube.com/watch?v=dQw4w9WgXcQ";
+      mockDetectSource.mockReturnValue("youtube");
+      const { parseYouTube } = await import("@api/services/parsers/youtube");
+      (parseYouTube as Mock).mockResolvedValue({
+        ...MOCK_PARSE_RESULT,
+        source: "youtube",
+      });
+
+      // Act
+      const result = await parseArticle(url);
+
+      // Assert
+      expect(parseYouTube).toHaveBeenCalledWith(url);
+      expect(result.source).toBe("youtube");
+    });
   });
 
   describe("汎用パーサーへのフォールバック", () => {
@@ -441,6 +463,19 @@ describe("parseArticle", () => {
 
       // Act & Assert
       await expect(parseArticle(url)).rejects.toThrow("記事の取得に失敗しました");
+    });
+
+    it("YouTubeパーサーがNO_CAPTIONSエラーを投げた場合フォールバックせずそのまま伝播すること", async () => {
+      // Arrange
+      const url = "https://www.youtube.com/watch?v=dQw4w9WgXcQ";
+      mockDetectSource.mockReturnValue("youtube");
+      const { parseYouTube } = await import("@api/services/parsers/youtube");
+      (parseYouTube as Mock).mockRejectedValue(new Error("NO_CAPTIONS"));
+      const { parseGeneric } = await import("@api/services/parsers/generic");
+
+      // Act & Assert
+      await expect(parseArticle(url)).rejects.toThrow("NO_CAPTIONS");
+      expect(parseGeneric).not.toHaveBeenCalled();
     });
   });
 });

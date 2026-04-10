@@ -322,6 +322,52 @@ describe("detectSource", () => {
     });
   });
 
+  describe("YouTube", () => {
+    it("youtube.com の通常動画URLを判定できること", () => {
+      // Arrange
+      const url = "https://www.youtube.com/watch?v=dQw4w9WgXcQ";
+
+      // Act
+      const result = detectSource(url);
+
+      // Assert
+      expect(result).toBe("youtube");
+    });
+
+    it("youtu.be の短縮URLを判定できること", () => {
+      // Arrange
+      const url = "https://youtu.be/dQw4w9WgXcQ";
+
+      // Act
+      const result = detectSource(url);
+
+      // Assert
+      expect(result).toBe("youtube");
+    });
+
+    it("youtube.com の Shorts URLを判定できること", () => {
+      // Arrange
+      const url = "https://www.youtube.com/shorts/dQw4w9WgXcQ";
+
+      // Act
+      const result = detectSource(url);
+
+      // Assert
+      expect(result).toBe("youtube");
+    });
+
+    it("m.youtube.com のモバイルURLを判定できること", () => {
+      // Arrange
+      const url = "https://m.youtube.com/watch?v=dQw4w9WgXcQ";
+
+      // Act
+      const result = detectSource(url);
+
+      // Assert
+      expect(result).toBe("youtube");
+    });
+  });
+
   describe("その他", () => {
     it("未知のドメインの場合otherを返すこと", () => {
       // Arrange

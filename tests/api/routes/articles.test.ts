@@ -920,6 +920,42 @@ describe("POST /api/articles", () => {
       expect(body.success).toBe(false);
       expect(body.error?.code).toBe("INTERNAL_ERROR");
     });
+
+    it("YouTube字幕なしエラー(NO_CAPTIONS)の場合422を返すこと", async () => {
+      // Arrange
+      const app = createPostTestApp();
+      mockSelectWhere.mockResolvedValue([]);
+      mockParseArticle.mockRejectedValue(new Error("NO_CAPTIONS"));
+
+      // Act
+      const res = await postArticle(app, {
+        url: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
+      });
+
+      // Assert
+      expect(res.status).toBe(HTTP_UNPROCESSABLE_ENTITY);
+      const body = (await res.json()) as ArticleResponseBody;
+      expect(body.success).toBe(false);
+      expect(body.error?.code).toBe("NO_CAPTIONS");
+    });
+
+    it("YouTube字幕なしエラーのメッセージが日本語であること", async () => {
+      // Arrange
+      const app = createPostTestApp();
+      mockSelectWhere.mockResolvedValue([]);
+      mockParseArticle.mockRejectedValue(new Error("NO_CAPTIONS"));
+
+      // Act
+      const res = await postArticle(app, {
+        url: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
+      });
+
+      // Assert
+      const body = (await res.json()) as ArticleResponseBody;
+      expect(body.error?.message).toBe(
+        "この動画には字幕がないため、要約できません。別の動画をお試しください",
+      );
+    });
   });
 
   describe("レスポンス形式", () => {
