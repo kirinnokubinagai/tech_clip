@@ -34,12 +34,15 @@ triggers:
    style:    フォーマットのみ #<issue番号>
    ci:       CI変更 #<issue番号>
    ```
-10. **プッシュ**: `git push -u origin <ブランチ名>`
-11. **PR作成**: `gh pr create` で以下を含める
+10. **Conflictチェック・解消**: `conflict-resolver` スキルを呼び出してorigin/mainとのconflictを確認・解消する
+    - conflictなし → そのまま続行
+    - conflictあり → conflict-resolverが解消してマージコミットを作成 → テストPASS確認後に続行
+11. **プッシュ**: `git push -u origin <ブランチ名>`
+12. **PR作成**: `gh pr create` で以下を含める
     - Summary（変更内容）
     - Test plan（テスト項目）
     - `Closes #<issue番号>`
-12. **ユーザーに報告**: PRのURLを提示してレビューを依頼
+13. **ユーザーに報告**: PRのURLを提示してレビューを依頼
 
 ## マージ後
 
