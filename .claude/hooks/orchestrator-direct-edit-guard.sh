@@ -24,6 +24,13 @@ if [ -z "$FILE_PATH" ]; then
   exit 0
 fi
 
+# シンボリックリンクや .. を正規化（ファイルが存在しなくても動作）
+if [[ "$FILE_PATH" = /* ]]; then
+  FILE_PATH=$(realpath -m "$FILE_PATH" 2>/dev/null || echo "$FILE_PATH")
+else
+  FILE_PATH=$(realpath -m "$(pwd)/$FILE_PATH" 2>/dev/null || echo "$(pwd)/$FILE_PATH")
+fi
+
 # orchestratorが直接編集できないファイル（明示的ブロック対象）
 is_blocked_file() {
   local path="$1"

@@ -229,8 +229,6 @@ run_script_with_file() {
     [ "$status" -eq 0 ]
 }
 
-# --- エラーメッセージの確認 ---
-
 # --- package.json の許可・ブロック判定 ---
 
 @test "ルートのpackage.jsonは許可されること" {
@@ -308,6 +306,30 @@ run_script_with_file() {
 @test ".omc/state/配下のファイルはブロックされること" {
     # Arrange
     local file_path="$REPO_DIR/.omc/state/autopilot-state.json"
+
+    # Act
+    run run_script_with_file "$file_path"
+
+    # Assert
+    [ "$status" -eq 2 ]
+    [[ "${output}" == *"DENY"* ]] || [[ "${lines[*]}" == *"DENY"* ]]
+}
+
+@test "パストラバーサル経由の.review-passedはブロックされること" {
+    # Arrange
+    local file_path="$REPO_DIR/.claude/hooks/../.review-passed"
+
+    # Act
+    run run_script_with_file "$file_path"
+
+    # Assert
+    [ "$status" -eq 2 ]
+    [[ "${output}" == *"DENY"* ]] || [[ "${lines[*]}" == *"DENY"* ]]
+}
+
+@test "パストラバーサル経由の.omc/state/配下のファイルはブロックされること" {
+    # Arrange
+    local file_path="$REPO_DIR/.omc/logs/../state/autopilot-state.json"
 
     # Act
     run run_script_with_file "$file_path"
