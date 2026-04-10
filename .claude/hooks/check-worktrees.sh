@@ -80,8 +80,11 @@ while IFS= read -r wt_path; do
 done <<< "$WORKTREE_PATHS"
 
 # Pass 1b: クローズ済みPR（マージなし）のworktreeを自動削除
-# gh コマンドが使えない場合はスキップ（graceful degradation）
-if command -v gh >/dev/null 2>&1; then
+# gh コマンドが使えない・未認証の場合はスキップ（graceful degradation）
+if command -v gh >/dev/null 2>&1 && gh auth status >/dev/null 2>&1; then
+    # リポジトリを動的に取得（gh コマンドのスコープを限定）
+    REPO_SLUG=$(gh repo view --json nameWithOwner --jq '.nameWithOwner' 2>/dev/null || echo "")
+
     # 削除後に最新のworktreeリストを取得
     WORKTREE_PATHS_1B=$(git worktree list --porcelain 2>/dev/null | grep '^worktree ' | sed 's/^worktree //' | tail -n +2)
     while IFS= read -r wt_path; do
@@ -98,15 +101,29 @@ if command -v gh >/dev/null 2>&1; then
             continue
         fi
 
+        # ブランチ名のバリデーション（英数字、ハイフン、スラッシュ、アンダースコア、ドットのみ許可）
+        if [[ ! "$branch" =~ ^[a-zA-Z0-9/_.-]+$ ]]; then
+            continue
+        fi
+
         # PRがクローズされているか確認（stateがCLOSED、mergedAtがnull）
-        pr_state=$(gh pr list --head "$branch" --state closed --json state,mergedAt --jq '.[0] | select(.mergedAt == null) | .state' 2>/dev/null)
+        if [ -n "$REPO_SLUG" ]; then
+            pr_state=$(gh pr list --repo "$REPO_SLUG" --head "$branch" --state closed --json state,mergedAt --jq '.[0] | select(.mergedAt == null) | .state' 2>/dev/null)
+        else
+            pr_state=$(gh pr list --head "$branch" --state closed --json state,mergedAt --jq '.[0] | select(.mergedAt == null) | .state' 2>/dev/null)
+        fi
         if [ "$pr_state" != "CLOSED" ]; then
             continue
         fi
 
         wt_name=$(basename "$wt_path")
         # 未コミットの変更がある場合はスキップして警告
-        DIRTY=$(git -C "$wt_path" status --porcelain 2>/dev/null | grep -v '^??' | head -1)
+        DIRTY_OUTPUT=$(git -C "$wt_path" status --porcelain 2>/dev/null)
+        DIRTY_EXIT=$?
+        if [ "$DIRTY_EXIT" -ne 0 ]; then
+            continue  # git status 失敗時はスキップ（安全側に倒す）
+        fi
+        DIRTY=$(echo "$DIRTY_OUTPUT" | grep -v '^??' | head -1)
         if [ -n "$DIRTY" ]; then
             PROBLEMS="${PROBLEMS}[クローズ済みPR] ${wt_name}: PRはクローズ済みだが未コミットの変更がある -> 変更を確認してから手動で削除: git worktree remove ${wt_path} | "
             PROBLEM_COUNT=$((PROBLEM_COUNT + 1))
@@ -201,7 +218,7 @@ done <<< "$WORKTREE_PATHS"
 # 結果を出力（削除情報 + 健全性チェック）
 SUMMARY=""
 if [ "$REMOVED_COUNT" -gt 0 ]; then
-    SUMMARY="マージ済みworktree ${REMOVED_COUNT}件を自動削除: ${REMOVED_NAMES} | "
+    SUMMARY="worktree ${REMOVED_COUNT}件を自動削除（マージ済みまたはクローズ済み）: ${REMOVED_NAMES} | "
 fi
 if [ "$PROBLEM_COUNT" -gt 0 ]; then
     SUMMARY="${SUMMARY}Worktree health: ${PROBLEM_COUNT} issues found. ${PROBLEMS}Fix before starting new issues."
