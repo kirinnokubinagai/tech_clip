@@ -104,51 +104,51 @@ if command -v gh >/dev/null 2>&1 && gh auth token >/dev/null 2>&1; then
         # 削除後に最新のworktreeリストを取得
         WORKTREE_PATHS_1B=$(git worktree list --porcelain 2>/dev/null | grep '^worktree ' | sed 's/^worktree //' | tail -n +2)
         while IFS= read -r wt_path; do
-        [ -z "$wt_path" ] && continue
-        [ -d "$wt_path" ] || continue
-        resolved_wt_path=$(cd "$wt_path" && pwd -P)
+            [ -z "$wt_path" ] && continue
+            [ -d "$wt_path" ] || continue
+            resolved_wt_path=$(cd "$wt_path" && pwd -P)
 
-        # WORKTREE_BASE直下でない（ネストworktree・不正パス）はスキップ
-        [[ "$resolved_wt_path" != "${EXPECTED_PREFIX}"* ]] && continue
-        [[ "$resolved_wt_path" == "${REPO_ROOT}" || "$resolved_wt_path" == "${REPO_ROOT}/"* ]] && continue
+            # WORKTREE_BASE直下でない（ネストworktree・不正パス）はスキップ
+            [[ "$resolved_wt_path" != "${EXPECTED_PREFIX}"* ]] && continue
+            [[ "$resolved_wt_path" == "${REPO_ROOT}" || "$resolved_wt_path" == "${REPO_ROOT}/"* ]] && continue
 
-        branch=$(git -C "$wt_path" rev-parse --abbrev-ref HEAD 2>/dev/null)
-        if [ -z "$branch" ] || [ "$branch" = "HEAD" ]; then
-            continue
-        fi
+            branch=$(git -C "$wt_path" rev-parse --abbrev-ref HEAD 2>/dev/null)
+            if [ -z "$branch" ] || [ "$branch" = "HEAD" ]; then
+                continue
+            fi
 
-        # ブランチ名のバリデーション（英数字、ハイフン、スラッシュ、アンダースコア、ドットのみ許可）
-        if [[ ! "$branch" =~ ^[a-zA-Z0-9/_.-]+$ ]]; then
-            continue
-        fi
+            # ブランチ名のバリデーション（英数字、ハイフン、スラッシュ、アンダースコア、ドットのみ許可）
+            if [[ ! "$branch" =~ ^[a-zA-Z0-9/_.-]+$ ]]; then
+                continue
+            fi
 
-        # PRがクローズされているか確認（stateがCLOSED、mergedAtがnull）
-        pr_state=$(gh pr list --repo "$REPO_SLUG" --head "$branch" --state closed --json state,mergedAt --jq '.[0] | select(.mergedAt == null) | .state' 2>/dev/null)
-        if [ "$pr_state" != "CLOSED" ]; then
-            continue
-        fi
+            # PRがクローズされているか確認（stateがCLOSED、mergedAtがnull）
+            pr_state=$(gh pr list --repo "$REPO_SLUG" --head "$branch" --state closed --json state,mergedAt --jq '.[0] | select(.mergedAt == null) | .state' 2>/dev/null)
+            if [ "$pr_state" != "CLOSED" ]; then
+                continue
+            fi
 
-        wt_name=$(basename "$wt_path")
-        # 未コミットの変更がある場合はスキップして警告
-        DIRTY_OUTPUT=$(git -C "$wt_path" status --porcelain 2>/dev/null)
-        DIRTY_EXIT=$?
-        if [ "$DIRTY_EXIT" -ne 0 ]; then
-            continue  # git status 失敗時はスキップ（安全側に倒す）
-        fi
-        DIRTY=$(echo "$DIRTY_OUTPUT" | grep -v '^??' | head -1)
-        if [ -n "$DIRTY" ]; then
-            PROBLEMS="${PROBLEMS}[クローズ済みPR] ${wt_name}: PRはクローズ済みだが未コミットの変更がある -> 変更を確認してから手動で削除: git worktree remove ${wt_path} | "
-            PROBLEM_COUNT=$((PROBLEM_COUNT + 1))
-            continue
-        fi
+            wt_name=$(basename "$wt_path")
+            # 未コミットの変更がある場合はスキップして警告
+            DIRTY_OUTPUT=$(git -C "$wt_path" status --porcelain 2>/dev/null)
+            DIRTY_EXIT=$?
+            if [ "$DIRTY_EXIT" -ne 0 ]; then
+                continue  # git status 失敗時はスキップ（安全側に倒す）
+            fi
+            DIRTY=$(echo "$DIRTY_OUTPUT" | grep -v '^??' | head -1)
+            if [ -n "$DIRTY" ]; then
+                PROBLEMS="${PROBLEMS}[クローズ済みPR] ${wt_name}: PRはクローズ済みだが未コミットの変更がある -> 変更を確認してから手動で削除: git worktree remove ${wt_path} | "
+                PROBLEM_COUNT=$((PROBLEM_COUNT + 1))
+                continue
+            fi
 
-        remove_worktree_safely "$wt_path" || continue
-        if [ -n "$branch" ] && [ "$branch" != "HEAD" ]; then
-            git branch -D "$branch" 2>/dev/null || true
-        fi
-        REMOVED_COUNT=$((REMOVED_COUNT + 1))
-        REMOVED_NAMES="${REMOVED_NAMES:+${REMOVED_NAMES}, }${wt_name}(closed)"
-    done <<< "$WORKTREE_PATHS_1B"
+            remove_worktree_safely "$wt_path" || continue
+            if [ -n "$branch" ] && [ "$branch" != "HEAD" ]; then
+                git branch -D "$branch" 2>/dev/null || true
+            fi
+            REMOVED_COUNT=$((REMOVED_COUNT + 1))
+            REMOVED_NAMES="${REMOVED_NAMES:+${REMOVED_NAMES}, }${wt_name}(closed)"
+        done <<< "$WORKTREE_PATHS_1B"
     fi  # [ -n "$REPO_SLUG" ]
 fi  # gh auth token
 
