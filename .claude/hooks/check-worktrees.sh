@@ -15,6 +15,13 @@
 PROBLEMS=""
 PROBLEM_COUNT=0
 
+# worktreeを安全に削除（通常削除→forceフォールバック）
+remove_worktree_safely() {
+    local wt_path="$1"
+    git worktree remove "$wt_path" 2>/dev/null && return 0
+    git worktree remove --force "$wt_path" 2>/dev/null
+}
+
 # git worktree list で全worktreeを取得（main以外）
 WORKTREE_PATHS=$(git worktree list --porcelain 2>/dev/null | grep '^worktree ' | sed 's/^worktree //' | tail -n +2)
 
@@ -65,19 +72,85 @@ while IFS= read -r wt_path; do
     fi
 
     # 未コミットの変更がある場合はスキップ
-    DIRTY=$(git -C "$wt_path" status --porcelain 2>/dev/null | grep -v '^??' | head -1)
+    DIRTY_OUTPUT=$(git -C "$wt_path" status --porcelain 2>/dev/null)
+    DIRTY_EXIT=$?
+    [ "$DIRTY_EXIT" -ne 0 ] && continue
+    DIRTY=$(echo "$DIRTY_OUTPUT" | grep -v '^??' | head -1)
     [ -n "$DIRTY" ] && continue
 
     branch=$(git -C "$wt_path" rev-parse --abbrev-ref HEAD 2>/dev/null)
-    wt_name=$(basename "$wt_path")
-    if git worktree remove --force "$wt_path" 2>/dev/null; then
-        if [ -n "$branch" ] && [ "$branch" != "HEAD" ]; then
-            git branch -D "$branch" 2>/dev/null || true
-        fi
-        REMOVED_COUNT=$((REMOVED_COUNT + 1))
-        REMOVED_NAMES="${REMOVED_NAMES:+${REMOVED_NAMES}, }${wt_name}"
+    # 防御的バリデーション: 異常なブランチ名は処理対象外にする
+    if [[ ! "$branch" =~ ^[a-zA-Z0-9/_.-]+$ ]]; then
+        continue
     fi
+    wt_name=$(basename "$wt_path")
+    remove_worktree_safely "$wt_path" || continue
+    if [ -n "$branch" ] && [ "$branch" != "HEAD" ]; then
+        git branch -D "$branch" 2>/dev/null || true
+    fi
+    REMOVED_COUNT=$((REMOVED_COUNT + 1))
+    REMOVED_NAMES="${REMOVED_NAMES:+${REMOVED_NAMES}, }${wt_name}"
 done <<< "$WORKTREE_PATHS"
+
+# Pass 1b: クローズ済みPR（マージなし）のworktreeを自動削除
+# gh コマンドが使えない・未認証の場合はスキップ（graceful degradation）
+# gh auth token を使用（gh auth status と異なりネットワークアクセスなしで認証確認可能）
+if command -v gh >/dev/null 2>&1 && gh auth token >/dev/null 2>&1; then
+    # リポジトリを動的に取得（gh コマンドのスコープを限定）
+    REPO_SLUG=$(gh repo view --json nameWithOwner --jq '.nameWithOwner' 2>/dev/null || echo "")
+
+    # リポジトリ特定できない場合はPass 1bをスキップ（不明なリポジトリへの誤操作を防ぐ）
+    if [ -n "$REPO_SLUG" ]; then
+        # 削除後に最新のworktreeリストを取得
+        WORKTREE_PATHS_1B=$(git worktree list --porcelain 2>/dev/null | grep '^worktree ' | sed 's/^worktree //' | tail -n +2)
+        while IFS= read -r wt_path; do
+            [ -z "$wt_path" ] && continue
+            [ -d "$wt_path" ] || continue
+            resolved_wt_path=$(cd "$wt_path" && pwd -P)
+
+            # WORKTREE_BASE直下でない（ネストworktree・不正パス）はスキップ
+            [[ "$resolved_wt_path" != "${EXPECTED_PREFIX}"* ]] && continue
+            [[ "$resolved_wt_path" == "${REPO_ROOT}" || "$resolved_wt_path" == "${REPO_ROOT}/"* ]] && continue
+
+            branch=$(git -C "$wt_path" rev-parse --abbrev-ref HEAD 2>/dev/null)
+            if [ -z "$branch" ] || [ "$branch" = "HEAD" ]; then
+                continue
+            fi
+
+            # ブランチ名のバリデーション（英数字、ハイフン、スラッシュ、アンダースコア、ドットのみ許可）
+            if [[ ! "$branch" =~ ^[a-zA-Z0-9/_.-]+$ ]]; then
+                continue
+            fi
+
+            # PRがクローズされているか確認（stateがCLOSED、mergedAtがnull）
+            pr_state=$(gh pr list --repo "$REPO_SLUG" --head "$branch" --state closed --json state,mergedAt --jq '.[0] | select(.mergedAt == null) | .state' 2>/dev/null)
+            if [ "$pr_state" != "CLOSED" ]; then
+                continue
+            fi
+
+            wt_name=$(basename "$wt_path")
+            # 未コミットの変更がある場合はスキップして警告
+            DIRTY_OUTPUT=$(git -C "$wt_path" status --porcelain 2>/dev/null)
+            DIRTY_EXIT=$?
+            if [ "$DIRTY_EXIT" -ne 0 ]; then
+                continue  # git status 失敗時はスキップ（安全側に倒す）
+            fi
+            DIRTY=$(echo "$DIRTY_OUTPUT" | grep -v '^??' | head -1)
+            if [ -n "$DIRTY" ]; then
+                PROBLEMS="${PROBLEMS}[クローズ済みPR] ${wt_name}: PRはクローズ済みだが未コミットの変更がある -> 変更を確認してから手動で削除: git worktree remove ${wt_path} | "
+                PROBLEM_COUNT=$((PROBLEM_COUNT + 1))
+                continue
+            fi
+
+            remove_worktree_safely "$wt_path" || continue
+            if [ -n "$branch" ] && [ "$branch" != "HEAD" ]; then
+                git branch -D "$branch" 2>/dev/null || true
+            fi
+            REMOVED_COUNT=$((REMOVED_COUNT + 1))
+            REMOVED_NAMES="${REMOVED_NAMES:+${REMOVED_NAMES}, }${wt_name}(closed)"
+        done <<< "$WORKTREE_PATHS_1B"
+    fi  # [ -n "$REPO_SLUG" ]
+fi  # gh auth token
 
 # Pass 2: 残りのworktreeの健全性チェック（削除後に再取得）
 WORKTREE_PATHS=$(git worktree list --porcelain 2>/dev/null | grep '^worktree ' | sed 's/^worktree //' | tail -n +2)
@@ -115,8 +188,12 @@ while IFS= read -r wt_path; do
     GIT_DIR=""
     if [ -f "$wt_path/.git" ]; then
         GIT_DIR=$(sed 's/^gitdir: //' "$wt_path/.git")
+        # パストラバーサル防止: gitdir に .. が含まれる場合は無効化
+        case "$GIT_DIR" in
+            *".."*) GIT_DIR="" ;;
+        esac
         # 相対パスを絶対パスに解決
-        if [[ "$GIT_DIR" != /* ]]; then
+        if [ -n "$GIT_DIR" ] && [[ "$GIT_DIR" != /* ]]; then
             GIT_DIR="$wt_path/$GIT_DIR"
         fi
     elif [ -d "$wt_path/.git" ]; then
@@ -157,7 +234,7 @@ done <<< "$WORKTREE_PATHS"
 # 結果を出力（削除情報 + 健全性チェック）
 SUMMARY=""
 if [ "$REMOVED_COUNT" -gt 0 ]; then
-    SUMMARY="マージ済みworktree ${REMOVED_COUNT}件を自動削除: ${REMOVED_NAMES} | "
+    SUMMARY="worktree ${REMOVED_COUNT}件を自動削除（マージ済みまたはクローズ済み）: ${REMOVED_NAMES} | "
 fi
 if [ "$PROBLEM_COUNT" -gt 0 ]; then
     SUMMARY="${SUMMARY}Worktree health: ${PROBLEM_COUNT} issues found. ${PROBLEMS}Fix before starting new issues."
