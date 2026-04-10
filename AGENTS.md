@@ -40,10 +40,7 @@ bash ./.codex/run-stop.sh
 
 ## オーケストレーター（Claude Code）の役割
 
-Claude Code はオーケストレーターとして機能し、**自分では直接コード・ドキュメントを編集しない**。
-すべての実装・レビュー・ファイル編集はエージェントチームに委譲する。
-
-オーケストレーターの仕事は以下のみ:
+Claude Code はオーケストレーターとして機能する。具体的な仕事は以下のみ:
 
 1. Issue を読む
 2. Worktree を作る
@@ -95,7 +92,7 @@ bash scripts/create-worktree.sh <issue-number> <kebab-case-description>
 
 ### Step 2: TeamCreate でチームを作成
 
-```
+```text
 TeamCreate("issue-<N>-team")
 ```
 
@@ -120,7 +117,7 @@ TeamCreate はユーザー向けテキストで進捗報告をせずに実行す
 
 #### 機能実装・バグ修正の場合
 
-```
+```text
 ① requirements-analyst
    - Issue の内容を整理し、実装方針を決定する
    - worktree パスと Issue 番号を渡す
@@ -128,7 +125,7 @@ TeamCreate はユーザー向けテキストで進捗報告をせずに実行す
 ② coder（①完了後に Task ツールで spawn）
    - TDD で実装する（Red → Green → Refactor）
    - pnpm turbo check で lint をクリアする
-   - 全指摘 0 件になったらコミットする
+   - lint エラー 0 件になったらコミットする
    - worktree パスと Issue 番号を渡す
    - coder への修正依頼も SendMessage で行う（修正のたびに新しい spawn はしない）
 
@@ -150,7 +147,7 @@ TeamCreate はユーザー向けテキストで進捗報告をせずに実行す
 
 #### インフラ・CI/CD 変更の場合
 
-```
+```text
 ① infra-engineer（実装）
 ② infra-reviewer + security-reviewer（並列レビュー）
    - 機能実装フローと同じ SendMessage ベースの再レビューループを適用
@@ -159,7 +156,7 @@ TeamCreate はユーザー向けテキストで進捗報告をせずに実行す
 
 #### フロントエンド・UI 変更の場合
 
-```
+```text
 ① requirements-analyst → ui-designer（実装）
 ② ui-reviewer + code-reviewer（並列レビュー）
    - 機能実装フローと同じ SendMessage ベースの再レビューループを適用
@@ -222,7 +219,7 @@ oh-my-claudecode やその他のプラグイン由来のエージェントは使
 複数エージェントを並列・直列で協調させる場合は `TeamCreate` を使用する。
 
 **注意点:**
-- 実装は必ず `coder` エージェント経由で行う（オーケストレーター直接編集禁止）
+- 実装は必ず `coder` エージェント経由で行う
 - レビュー系エージェントは並列実行可能
 - 各エージェントは Issue に紐づく worktree 内で動作させる
 
