@@ -31,9 +31,11 @@
   },
   "devDependencies": {
     "@cloudflare/workers-types": "^4.20250321.0",
+    "@types/nodemailer": "^6.4.0",
     "@types/turndown": "^5.0.6",
     "@vitest/coverage-v8": "^4.1.1",
     "drizzle-kit": "^0.31.0",
+    "nodemailer": "^6.9.0",
     "sharp": "^0.34.5",
     "typescript": "^5.8.2",
     "vite": "8.0.7",
