@@ -466,3 +466,27 @@ run_script_with_file() {
     # Assert
     [ "$status" -eq 2 ]
 }
+
+@test "大文字パスの.claude/.REVIEW-PASSEDで正しい理由メッセージが出ること" {
+    # Arrange
+    local file_path="$REPO_DIR/.claude/.REVIEW-PASSED"
+
+    # Act
+    run run_script_with_file "$file_path"
+
+    # Assert
+    [ "$status" -eq 2 ]
+    [[ "${output}" == *"レビュープロセスのみが作成可能"* ]]
+}
+
+@test "大文字パスの.OMC/STATEで正しい理由メッセージが出ること" {
+    # Arrange
+    local file_path="$REPO_DIR/.OMC/STATE/x.json"
+
+    # Act
+    run run_script_with_file "$file_path"
+
+    # Assert
+    [ "$status" -eq 2 ]
+    [[ "${output}" == *"実行フロー状態ファイル"* ]]
+}

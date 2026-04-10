@@ -108,11 +108,13 @@ is_source_file() {
 if is_blocked_file "$FILE_PATH"; then
   echo "DENY: このファイルはorchestratorによる直接編集が禁止されています。" >&2
   echo "  対象ファイル: $FILE_PATH" >&2
+  shopt -s nocasematch
   if [[ "$FILE_PATH" == *"/.review-passed" ]]; then
     echo "  理由: レビュープロセスのみが作成可能なファイルです。" >&2
   else
     echo "  理由: 実行フロー状態ファイルです（直接編集による動作操作を防止）。" >&2
   fi
+  shopt -u nocasematch
   exit 2
 fi
 
