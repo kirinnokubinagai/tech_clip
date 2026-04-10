@@ -6,12 +6,6 @@
  */
 
 /**
- * HuggingFace準拠のGemmaモデル参照名
- * RunPod側の vLLM ハンドラーに渡すモデル識別子。
- */
-export const DEFAULT_GEMMA_MODEL = "gemma-3-12b-it";
-
-/**
  * データベース保存用の短縮タグ
  * summaries/translations.model カラムに保存する値。
  */

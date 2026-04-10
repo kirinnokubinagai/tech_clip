@@ -122,11 +122,6 @@ async function dispatchParser(source: ArticleSource, url: string): Promise<Parse
     return parseTwitter(url);
   }
 
-  if (source === "youtube") {
-    const { parseYouTube } = await import("./parsers/youtube");
-    return parseYouTube(url);
-  }
-
   const { parseGeneric } = await import("./parsers/generic");
   return parseGeneric(url);
 }

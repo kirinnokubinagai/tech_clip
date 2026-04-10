@@ -14,8 +14,15 @@ Google Gemma 3 12B IT モデルを vLLM で起動し、RunPod サーバーレス
 """
 
 import os
+from typing import Any
 import runpod
 from vllm import LLM, SamplingParams
+
+# メッセージ本文の最大文字数
+MESSAGE_CONTENT_MAX_LENGTH = 50000
+
+# max_tokens の最大値
+MAX_TOKENS_LIMIT = 8192
 
 # モデル参照の解決優先順位:
 #   1. GEMMA_MODEL_NAME (Gemma 系切り替え用の専用変数)
@@ -41,8 +48,63 @@ llm = LLM(
     max_num_seqs=MAX_NUM_SEQS,
     gpu_memory_utilization=GPU_MEMORY_UTILIZATION,
     tensor_parallel_size=TENSOR_PARALLEL_SIZE,
-    trust_remote_code=True,
 )
+
+
+def validate_messages(messages: Any) -> list[dict]:
+    """
+    messages の型・内容を検証する。
+
+    Args:
+        messages: 検証対象の messages 値
+
+    Returns:
+        検証済み messages リスト
+
+    Raises:
+        ValueError: 形式が不正な場合
+    """
+    if not isinstance(messages, list):
+        raise ValueError("messages はリスト形式である必要があります")
+    if len(messages) == 0:
+        raise ValueError("messages は 1 件以上必要です")
+
+    valid_roles = {"user", "assistant", "system"}
+    for i, msg in enumerate(messages):
+        if not isinstance(msg, dict):
+            raise ValueError(f"messages[{i}] はオブジェクト形式である必要があります")
+        if not isinstance(msg.get("role"), str) or msg["role"] not in valid_roles:
+            raise ValueError(
+                f"messages[{i}].role は {valid_roles} のいずれかである必要があります"
+            )
+        if not isinstance(msg.get("content"), str):
+            raise ValueError(f"messages[{i}].content は文字列である必要があります")
+        if len(msg["content"]) > MESSAGE_CONTENT_MAX_LENGTH:
+            raise ValueError(
+                f"messages[{i}].content は {MESSAGE_CONTENT_MAX_LENGTH} 文字以内である必要があります"
+            )
+
+    return messages
+
+
+def validate_max_tokens(value: Any) -> int:
+    """
+    max_tokens の値を検証する。
+
+    Args:
+        value: 検証対象の max_tokens 値
+
+    Returns:
+        検証済み max_tokens 整数値
+
+    Raises:
+        ValueError: 型・範囲が不正な場合
+    """
+    if not isinstance(value, int):
+        raise ValueError("max_tokens は整数である必要があります")
+    if value <= 0 or value > MAX_TOKENS_LIMIT:
+        raise ValueError(f"max_tokens は 1 以上 {MAX_TOKENS_LIMIT} 以下である必要があります")
+    return value
 
 
 def handle_messages_request(job_input: dict) -> dict:
@@ -54,9 +116,13 @@ def handle_messages_request(job_input: dict) -> dict:
 
     Returns:
         {"choices": [{"message": {"role": "assistant", "content": "..."}}]}
+
+    Raises:
+        ValueError: 入力バリデーション失敗時
     """
-    messages = job_input["messages"]
-    max_tokens = job_input.get("max_tokens", 4096)
+    messages = validate_messages(job_input["messages"])
+    raw_max_tokens = job_input.get("max_tokens", 4096)
+    max_tokens = validate_max_tokens(raw_max_tokens)
     temperature = job_input.get("temperature", 0.3)
 
     tokenizer = llm.get_tokenizer()
@@ -103,7 +169,11 @@ def handler(job: dict) -> dict:
     if "messages" not in job_input:
         return {"error": "input に messages キーが必要です"}
 
-    output = handle_messages_request(job_input)
+    try:
+        output = handle_messages_request(job_input)
+    except ValueError as e:
+        return {"error": str(e)}
+
     return {"output": output}
 
 

@@ -1,12 +1,7 @@
 import { z } from "zod";
 
 import type { ParsedArticle } from "../../types/article";
-import {
-  calculateReadingTime,
-  createExcerpt,
-  EXCERPT_MAX_LENGTH,
-  TECHCLIP_USER_AGENT,
-} from "./_shared";
+import { calculateReadingTime, createExcerpt, TECHCLIP_USER_AGENT } from "./_shared";
 
 /** YouTube oEmbed API エンドポイント */
 const OEMBED_ENDPOINT = "https://www.youtube.com/oembed";
@@ -25,6 +20,15 @@ const YOUTUBE_HOSTNAMES = ["www.youtube.com", "youtube.com", "m.youtube.com"];
 
 /** YouTube 短縮ホスト名 */
 const YOUTU_BE_HOSTNAME = "youtu.be";
+
+/** 字幕 API として許可するホスト名 */
+const CAPTION_ALLOWED_HOSTNAMES = ["www.youtube.com", "youtube.com"];
+
+/** 動画ページ HTML のサイズ上限（バイト）。ReDoS 対策のため制限する */
+const VIDEO_PAGE_HTML_MAX_BYTES = 5 * 1024 * 1024;
+
+/** ytInitialPlayerResponse JSON の文字数上限。JSON.parse サイズ制限 */
+const PLAYER_RESPONSE_JSON_MAX_LENGTH = 500 * 1024;
 
 /** 動画 ID 抽出用パターン（11文字の英数字・ハイフン・アンダースコア） */
 const VIDEO_ID_REGEX = /^[A-Za-z0-9_-]{11}$/;
@@ -174,7 +178,12 @@ async function fetchVideoPageHtml(videoUrl: string): Promise<string> {
     throw new Error(`YouTube動画ページの取得に失敗しました（ステータス: ${response.status}）`);
   }
 
-  return response.text();
+  const buffer = await response.arrayBuffer();
+  if (buffer.byteLength > VIDEO_PAGE_HTML_MAX_BYTES) {
+    throw new Error("YouTube動画ページのレスポンスサイズが上限を超えています");
+  }
+
+  return new TextDecoder().decode(buffer);
 }
 
 /**
@@ -186,6 +195,10 @@ async function fetchVideoPageHtml(videoUrl: string): Promise<string> {
 function extractCaptionTracks(html: string): CaptionTrack[] {
   const match = html.match(PLAYER_RESPONSE_REGEX);
   if (!match?.[1]) {
+    return [];
+  }
+
+  if (match[1].length > PLAYER_RESPONSE_JSON_MAX_LENGTH) {
     return [];
   }
 
@@ -208,10 +221,10 @@ function extractCaptionTracks(html: string): CaptionTrack[] {
  *
  * 日本語 → 英語 → 自動生成以外 → 先頭 の順で優先する。
  *
- * @param tracks - 字幕トラック配列
+ * @param tracks - 字幕トラック配列（少なくとも 1 件以上であること）
  * @returns 選択された字幕トラック
  */
-function selectCaptionTrack(tracks: CaptionTrack[]): CaptionTrack {
+function selectCaptionTrack(tracks: readonly [CaptionTrack, ...CaptionTrack[]]): CaptionTrack {
   const japanese = tracks.find((track) => track.languageCode === "ja");
   if (japanese) {
     return japanese;
@@ -258,6 +271,24 @@ function decodeXmlEntities(text: string): string {
 }
 
 /**
+ * 字幕 API の URL が許可されたホスト名か検証する
+ *
+ * @param baseUrl - 字幕 API の baseUrl
+ * @throws Error - 許可されていないホスト名の場合（SSRF 対策）
+ */
+function validateCaptionBaseUrl(baseUrl: string): void {
+  let hostname: string;
+  try {
+    hostname = new URL(baseUrl).hostname;
+  } catch {
+    throw new Error("字幕URLの形式が不正です");
+  }
+  if (!CAPTION_ALLOWED_HOSTNAMES.includes(hostname)) {
+    throw new Error("字幕URLのホスト名が許可されていません");
+  }
+}
+
+/**
  * 字幕 URL から字幕本文を取得する
  *
  * @param baseUrl - 字幕 API の baseUrl
@@ -265,6 +296,8 @@ function decodeXmlEntities(text: string): string {
  * @throws Error - 取得失敗、または字幕が空の場合
  */
 async function fetchCaptionText(baseUrl: string): Promise<string> {
+  validateCaptionBaseUrl(baseUrl);
+
   const response = await fetch(baseUrl, {
     signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
     headers: { "User-Agent": TECHCLIP_USER_AGENT },
@@ -295,7 +328,8 @@ async function fetchCaptions(videoUrl: string): Promise<string> {
   if (tracks.length === 0) {
     throw new Error(NO_CAPTIONS_ERROR_CODE);
   }
-  const track = selectCaptionTrack(tracks);
+  const nonEmptyTracks = tracks as [CaptionTrack, ...CaptionTrack[]];
+  const track = selectCaptionTrack(nonEmptyTracks);
   return fetchCaptionText(track.baseUrl);
 }
 
@@ -316,8 +350,7 @@ export async function parseYouTube(url: string): Promise<ParsedArticle> {
   const oembed = await fetchOEmbed(watchUrl);
   const captionText = await fetchCaptions(watchUrl);
 
-  const excerpt =
-    captionText.length > EXCERPT_MAX_LENGTH ? createExcerpt(captionText) : captionText;
+  const excerpt = createExcerpt(captionText);
 
   return {
     title: oembed.title,

@@ -1,21 +1,7 @@
-import {
-  DEFAULT_GEMMA_MODEL,
-  DEFAULT_GEMMA_MODEL_TAG,
-  resolveGemmaModelTag,
-} from "@api/lib/ai-model";
+import { DEFAULT_GEMMA_MODEL_TAG, resolveGemmaModelTag } from "@api/lib/ai-model";
 import { describe, expect, it } from "vitest";
 
 describe("ai-model", () => {
-  describe("DEFAULT_GEMMA_MODEL", () => {
-    it("HuggingFace準拠のGemma3 12Bモデル名を定義していること", () => {
-      // Arrange & Act
-      const model = DEFAULT_GEMMA_MODEL;
-
-      // Assert
-      expect(model).toBe("gemma-3-12b-it");
-    });
-  });
-
   describe("DEFAULT_GEMMA_MODEL_TAG", () => {
     it("データベース保存用の短縮タグを定義していること", () => {
       // Arrange & Act
