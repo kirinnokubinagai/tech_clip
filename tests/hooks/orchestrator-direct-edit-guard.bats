@@ -28,7 +28,7 @@ run_script_with_file() {
     local file_path="$1"
     local run_dir="${2:-$REPO_DIR}"
     local tool_input
-    tool_input=$(printf '{"file_path": "%s"}' "$file_path")
+    tool_input=$(jq -n --arg p "$file_path" '{file_path: $p}')
     (cd "$run_dir" && CLAUDE_TOOL_INPUT="$tool_input" bash "$SCRIPT")
 }
 
@@ -242,15 +242,16 @@ run_script_with_file() {
     [ "$status" -eq 0 ]
 }
 
-@test "./package.jsonは許可されること" {
+@test "./package.jsonは相対パスのためブロックされること" {
     # Arrange
+    # 相対パスは安全でないとして拒否される（MEDIUM-1修正）
     local file_path="./package.json"
 
     # Act
     run run_script_with_file "$file_path"
 
     # Assert
-    [ "$status" -eq 0 ]
+    [ "$status" -eq 2 ]
 }
 
 @test "apps/api/package.jsonはブロックされること" {
@@ -407,4 +408,61 @@ run_script_with_file() {
 
     # Assert
     [ "$status" -eq 0 ]
+}
+
+# --- サブディレクトリの設定ファイル名偽装はブロックされること ---
+
+@test "apps/api/flake.nixはブロックされること" {
+    # Arrange
+    local file_path="$REPO_DIR/apps/api/flake.nix"
+
+    # Act
+    run run_script_with_file "$file_path"
+
+    # Assert
+    [ "$status" -eq 2 ]
+}
+
+@test "apps/api/CLAUDE.mdはブロックされること" {
+    # Arrange
+    local file_path="$REPO_DIR/apps/api/CLAUDE.md"
+
+    # Act
+    run run_script_with_file "$file_path"
+
+    # Assert
+    [ "$status" -eq 2 ]
+}
+
+@test "apps/api/turbo.jsonはブロックされること" {
+    # Arrange
+    local file_path="$REPO_DIR/apps/api/turbo.json"
+
+    # Act
+    run run_script_with_file "$file_path"
+
+    # Assert
+    [ "$status" -eq 2 ]
+}
+
+@test "apps/api/src/.claude/foo.tsはブロックされること" {
+    # Arrange
+    local file_path="$REPO_DIR/apps/api/src/.claude/foo.ts"
+
+    # Act
+    run run_script_with_file "$file_path"
+
+    # Assert
+    [ "$status" -eq 2 ]
+}
+
+@test ".omc/stateディレクトリ自体はブロックされること" {
+    # Arrange
+    local file_path="$REPO_DIR/.omc/state"
+
+    # Act
+    run run_script_with_file "$file_path"
+
+    # Assert
+    [ "$status" -eq 2 ]
 }
