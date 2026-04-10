@@ -22,8 +22,8 @@ env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
-  # PRに対してClaudeレビューを実行（.claude/**変更も含む全PRが対象）
-  claude-review:
+  # PRに対してClaudeレビューを実行し、ラベルチェック結果をoutputとして出力
+  review-and-label:
     if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
     continue-on-error: true
@@ -32,7 +32,7 @@ jobs:
       pull-requests: write
       id-token: write
     outputs:
-      result: ${{ steps.review.outcome }}
+      passed: ${{ steps.label-check.outputs.passed }}
     steps:
       - uses: actions/checkout@v4
       - id: review
@@ -58,37 +58,24 @@ jobs:
               gh pr edit ${{ github.event.pull_request.number }} --add-label "AI Review: NEEDS WORK" --remove-label "AI Review: PASS"
 
             重要: gh pr review --approve は絶対に実行しないでください。
-
-  review-gate:
-    if: github.event_name == 'pull_request'
-    needs: claude-review
-    runs-on: ubuntu-latest
-    permissions:
-      pull-requests: read
-      actions: write
-    steps:
-      - name: Check review result
+      - id: label-check
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          if [ "${{ needs.claude-review.outputs.result }}" = "failure" ]; then
-            echo "Claude Codeレビューがトークン制限等で失敗。チェックを続行します。"
+          if [ "${{ steps.review.outcome }}" = "failure" ]; then
+            echo "Claude Codeレビューがトークン制限等で失敗。PASSとして続行します。"
+            echo "passed=true" >> "$GITHUB_OUTPUT"
             exit 0
           fi
 
           LABELS=$(gh api repos/${{ github.repository }}/pulls/${{ github.event.pull_request.number }} --jq '.labels[].name')
           if echo "$LABELS" | grep -q "AI Review: NEEDS WORK"; then
-            echo "::error::AIレビューで問題または改善提案があります。修正してください。"
-
-            gh api repos/${{ github.repository }}/actions/runs --paginate \
-              --jq ".workflow_runs[] | select(.head_sha == \"${{ github.event.pull_request.head.sha }}\" and .status == \"in_progress\" and .id != ${{ github.run_id }}) | .id" \
-              | while read -r RUN_ID; do
-                  gh run cancel "${RUN_ID}" 2>/dev/null || true
-                done
-
-            exit 1
+            echo "AIレビューで問題または改善提案があります。CI/ZAPをスキップします。"
+            echo "passed=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "AIレビュー: PASS"
+            echo "passed=true" >> "$GITHUB_OUTPUT"
           fi
-          echo "AIレビュー: PASS"
 
   # 変更ファイルを検出（コードチェック・hooksテストのスキップ判断に使用）
   changes:
@@ -115,11 +102,11 @@ jobs:
           echo "hooks=$([ "${HOOKS_CHANGED:-0}" -gt 0 ] && echo 'true' || echo 'false')" >> $GITHUB_OUTPUT
 
   hooks-test:
-    needs: [review-gate, changes]
+    needs: [review-and-label, changes]
     if: |
       always() &&
       needs.changes.outputs.hooks == 'true' &&
-      (needs.review-gate.result == 'success' || needs.review-gate.result == 'skipped')
+      (needs.review-and-label.result == 'skipped' || needs.review-and-label.outputs.passed == 'true')
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -130,11 +117,11 @@ jobs:
         run: nix develop --command bats tests/hooks/
 
   lint:
-    needs: [review-gate, changes]
+    needs: [review-and-label, changes]
     if: |
       always() &&
       needs.changes.outputs.code == 'true' &&
-      (needs.review-gate.result == 'success' || needs.review-gate.result == 'skipped')
+      (needs.review-and-label.result == 'skipped' || needs.review-and-label.outputs.passed == 'true')
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -145,11 +132,11 @@ jobs:
         run: nix develop --command pnpm lint
 
   typecheck:
-    needs: [review-gate, changes]
+    needs: [review-and-label, changes]
     if: |
       always() &&
       needs.changes.outputs.code == 'true' &&
-      (needs.review-gate.result == 'success' || needs.review-gate.result == 'skipped')
+      (needs.review-and-label.result == 'skipped' || needs.review-and-label.outputs.passed == 'true')
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -158,11 +145,11 @@ jobs:
         run: nix develop --command pnpm typecheck
 
   test:
-    needs: [review-gate, changes]
+    needs: [review-and-label, changes]
     if: |
       always() &&
       needs.changes.outputs.code == 'true' &&
-      (needs.review-gate.result == 'success' || needs.review-gate.result == 'skipped')
+      (needs.review-and-label.result == 'skipped' || needs.review-and-label.outputs.passed == 'true')
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -171,11 +158,11 @@ jobs:
         run: nix develop --command ./scripts/run-and-fail-on-stderr.sh pnpm test
 
   audit:
-    needs: [review-gate, changes]
+    needs: [review-and-label, changes]
     if: |
       always() &&
       needs.changes.outputs.code == 'true' &&
-      (needs.review-gate.result == 'success' || needs.review-gate.result == 'skipped')
+      (needs.review-and-label.result == 'skipped' || needs.review-and-label.outputs.passed == 'true')
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -184,12 +171,15 @@ jobs:
         run: nix develop --command pnpm audit --prod
 
   zap:
-    needs: [review-gate, changes]
+    needs: [lint, typecheck, test, audit, changes]
     if: |
       github.event_name == 'pull_request' &&
       always() &&
       needs.changes.outputs.code == 'true' &&
-      (needs.review-gate.result == 'success' || needs.review-gate.result == 'skipped')
+      (needs.lint.result == 'success' || needs.lint.result == 'skipped') &&
+      (needs.typecheck.result == 'success' || needs.typecheck.result == 'skipped') &&
+      (needs.test.result == 'success' || needs.test.result == 'skipped') &&
+      (needs.audit.result == 'success' || needs.audit.result == 'skipped')
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -338,14 +328,14 @@ jobs:
     if: |
       always() &&
       github.event_name == 'pull_request' &&
-      needs.review-gate.result == 'success' &&
+      needs.review-and-label.outputs.passed == 'true' &&
       (needs.lint.result == 'success' || needs.lint.result == 'skipped') &&
       (needs.typecheck.result == 'success' || needs.typecheck.result == 'skipped') &&
       (needs.test.result == 'success' || needs.test.result == 'skipped') &&
       (needs.audit.result == 'success' || needs.audit.result == 'skipped') &&
       (needs.zap.result == 'success' || needs.zap.result == 'skipped') &&
       (needs.hooks-test.result == 'success' || needs.hooks-test.result == 'skipped')
-    needs: [review-gate, lint, typecheck, test, audit, zap, hooks-test]
+    needs: [review-and-label, lint, typecheck, test, audit, zap, hooks-test]
     runs-on: ubuntu-latest
     permissions:
       pull-requests: write
