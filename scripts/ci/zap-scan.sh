@@ -12,6 +12,9 @@
 
 set -euo pipefail
 
+# 必ずリポジトリルートで実行される前提
+cd "$(git rev-parse --show-toplevel)"
+
 API_PORT=8787
 ZAP_HOME=$(mktemp -d)
 SETUP_LOG=/tmp/zap-setup.log
@@ -19,6 +22,7 @@ touch "${SETUP_LOG}"
 
 cleanup() {
   pkill -f "wrangler dev" 2>/dev/null || true
+  # shellcheck disable=SC2153
   pkill -f -- "-daemon -port ${ZAP_PORT}" 2>/dev/null || true
   rm -rf "${ZAP_HOME}"
 }
@@ -28,18 +32,18 @@ TURSO_DATABASE_URL="${TURSO_DATABASE_URL}" \
 TURSO_AUTH_TOKEN="${TURSO_AUTH_TOKEN}" \
 BETTER_AUTH_SECRET="${BETTER_AUTH_SECRET}" \
 ENVIRONMENT="${ENVIRONMENT}" \
-  pnpm --filter @tech-clip/api exec wrangler dev --port ${API_PORT} > /tmp/api.log 2>&1 &
+  pnpm --filter @tech-clip/api exec wrangler dev --port "${API_PORT}" > /tmp/api.log 2>&1 &
 
 ZAP_API_KEY=$(openssl rand -hex 16)
 
 mkdir -p "${ZAP_HOME}/.ZAP"
-HOME="${ZAP_HOME}" zap -daemon -port ${ZAP_PORT} \
+HOME="${ZAP_HOME}" zap -daemon -port "${ZAP_PORT}" \
   -config api.key="${ZAP_API_KEY}" \
   -config log.level=INFO \
   > /tmp/zap-daemon.log 2>&1 &
 
 echo "APIサーバー起動待機中..."
-for i in $(seq 1 30); do
+for _i in $(seq 1 30); do
   curl -s "http://localhost:${API_PORT}/health" > /dev/null 2>&1 && break
   sleep 1
 done
@@ -49,7 +53,7 @@ if ! curl -s "http://localhost:${API_PORT}/health" > /dev/null 2>&1; then
   exit 1
 fi
 
-cd apps/api && pnpm exec drizzle-kit migrate >> "${SETUP_LOG}" 2>&1 && cd ../..
+(cd apps/api && pnpm exec drizzle-kit migrate >> "${SETUP_LOG}" 2>&1)
 
 SIGNUP_BODY=$(jq -cn \
   --arg email "${ZAP_TEST_EMAIL}" \
@@ -82,7 +86,7 @@ else
 fi
 
 echo "ZAPデーモン起動待機中..."
-for i in $(seq 1 60); do
+for _i in $(seq 1 60); do
   curl -s "http://localhost:${ZAP_PORT}/JSON/core/view/version/?apikey=${ZAP_API_KEY}" > /dev/null 2>&1 && break
   sleep 1
 done
@@ -116,7 +120,7 @@ SCAN_ID=$(curl -s "http://localhost:${ZAP_PORT}/JSON/ascan/action/scan/" \
 [ -n "${SCAN_ID}" ] || { echo "::error::スキャンIDの取得に失敗しました"; exit 1; }
 
 SCAN_TIMED_OUT=1
-for i in $(seq 1 180); do
+for _i in $(seq 1 180); do
   STATUS=$(curl -s "http://localhost:${ZAP_PORT}/JSON/ascan/view/status/?scanId=${SCAN_ID}&apikey=${ZAP_API_KEY}" | jq -r '.status')
   if [ "${STATUS}" = "100" ]; then
     SCAN_TIMED_OUT=0
