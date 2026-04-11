@@ -77,7 +77,7 @@ jobs:
           allow_issue_writing: false
       - name: Upload ZAP Report (staging)
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: zap-report-staging
           path: report_html.html
