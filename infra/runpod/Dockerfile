@@ -12,7 +12,8 @@ RUN pip install --no-cache-dir --target /install \
 FROM runpod/pytorch:2.8.0-py3.11-cuda12.8.1-cudnn-runtime-ubuntu22.04
 
 # builder ステージでインストールしたパッケージをコピー（devel 固有ファイルを除外）
-COPY --from=builder /install /usr/local/lib/python3.11/site-packages
+COPY --from=builder /install /opt/app-packages
+ENV PYTHONPATH=/opt/app-packages
 
 # 非 root ユーザーを作成
 RUN useradd -m -u 1000 appuser \
@@ -20,8 +21,7 @@ RUN useradd -m -u 1000 appuser \
     && chown -R appuser /app /runpod-volume
 
 WORKDIR /app
-COPY handler.py .
-RUN chown appuser /app/handler.py
+COPY --chown=appuser:appuser handler.py .
 
 USER appuser
 
