@@ -8,8 +8,6 @@ const TEST_SECRET = "test-secret-key-for-better-auth-min-32-chars!!";
 const TEST_BINDINGS = {
   TURSO_DATABASE_URL: "file:local.db",
   TURSO_AUTH_TOKEN: "test-token",
-  RUNPOD_API_KEY: "test-key",
-  RUNPOD_ENDPOINT_ID: "test-endpoint",
   ENVIRONMENT: "test",
   BETTER_AUTH_SECRET: TEST_SECRET,
   GOOGLE_CLIENT_ID: "google-client-id-test",

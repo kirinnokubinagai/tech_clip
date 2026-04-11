@@ -4,7 +4,6 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 /** HTTP ステータスコード定数 */
 const HTTP_OK = 200;
-const HTTP_CREATED = 201;
 const HTTP_UNAUTHORIZED = 401;
 const HTTP_FORBIDDEN = 403;
 const HTTP_NOT_FOUND = 404;
@@ -33,16 +32,15 @@ const MOCK_SUMMARY = {
   id: "summary_001",
   articleId: MOCK_ARTICLE.id,
   language: "ja",
-  content: "これはテスト要約です。",
+  summary: "これはテスト要約です。",
+  model: "gemma-4-26b-a4b",
   createdAt: new Date("2024-01-01"),
-  updatedAt: new Date("2024-01-01"),
 };
 
-/** テスト用RunPod設定 */
-const MOCK_RUNPOD_CONFIG = {
-  apiKey: "test_runpod_api_key",
-  endpointId: "test_endpoint_id",
-};
+/** テスト用 Ai モックバインディング */
+const MOCK_AI = {
+  run: vi.fn().mockResolvedValue({ response: "テスト要約コンテンツ" }),
+} as unknown as Ai;
 
 /** エラーレスポンスの型定義 */
 type ErrorResponse = {
@@ -77,6 +75,8 @@ function createMockDb() {
     insert: vi.fn().mockReturnThis(),
     values: vi.fn().mockReturnThis(),
     returning: vi.fn().mockResolvedValue([]),
+    update: vi.fn().mockReturnThis(),
+    set: vi.fn().mockReturnThis(),
   };
 }
 
@@ -96,12 +96,8 @@ function createTestApp(
   const route = createSummaryRoute({
     db: mockDb as unknown as Parameters<typeof createSummaryRoute>[0]["db"],
     summarizeFn: mockSummarizeFn,
-    createSummaryJobFn: vi.fn().mockResolvedValue({
-      providerJobId: "run_abc123",
-      model: "qwen3.5-9b",
-    }),
-    getSummaryJobStatusFn: vi.fn(),
-    runpodConfig: MOCK_RUNPOD_CONFIG,
+    ai: MOCK_AI,
+    modelTag: "gemma-4-26b-a4b",
   });
 
   const app = new Hono<{ Variables: { user?: Record<string, unknown> } }>();
@@ -124,15 +120,18 @@ describe("要約API 統合テスト", () => {
   beforeEach(() => {
     mockDb = createMockDb();
     mockSummarizeFn = vi.fn().mockResolvedValue({
-      content: "テスト要約コンテンツ",
-      language: "ja",
+      summary: "テスト要約コンテンツ",
+      model: "gemma-4-26b-a4b",
     });
   });
 
   describe("POST /articles/:id/summary", () => {
     it("記事の要約を生成できること", async () => {
       // Arrange
-      mockDb.where.mockResolvedValueOnce([MOCK_ARTICLE]).mockResolvedValueOnce([]);
+      mockDb.where
+        .mockResolvedValueOnce([MOCK_ARTICLE])
+        .mockResolvedValueOnce([])
+        .mockResolvedValue([]);
       mockDb.returning.mockResolvedValue([MOCK_SUMMARY]);
       const app = createTestApp(mockDb, mockSummarizeFn);
       const req = new Request(`http://localhost/articles/${MOCK_ARTICLE.id}/summary`, {
@@ -146,7 +145,7 @@ describe("要約API 統合テスト", () => {
       const body = (await res.json()) as SummaryResponse;
 
       // Assert
-      expect(res.status).toBe(HTTP_CREATED);
+      expect(res.status).toBe(HTTP_OK);
       expect(body.success).toBe(true);
     });
 

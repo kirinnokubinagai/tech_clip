@@ -106,7 +106,7 @@ describe("GenerateSummarySchema", () => {
   describe("異常系", () => {
     it("サポートされていない言語コードでエラーになること", () => {
       // Arrange
-      const input = { language: "zh" };
+      const input = { language: "fr" };
 
       // Act
       const result = GenerateSummarySchema.safeParse(input);

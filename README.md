@@ -57,7 +57,7 @@ Zenn、Qiita、dev.to、YouTube などの技術コンテンツを保存するだ
 | API サーバー | Cloudflare Workers + Hono | Hono 4.x |
 | データベース | Turso (libSQL) + Drizzle ORM | Drizzle 0.40.x |
 | 認証 | Better Auth (Email / Google / Apple / GitHub) | 1.x |
-| AI 推論 | RunPod + Qwen 3.5 9B | - |
+| AI 推論 | Cloudflare Workers AI (Gemma) | - |
 | 課金 | RevenueCat | - |
 | 広告 | Google AdMob | - |
 | Lint / Format | Biome | 1.x |
@@ -85,8 +85,8 @@ Zenn、Qiita、dev.to、YouTube などの技術コンテンツを保存するだ
                   +---+----------+----+
                       |          |
               +-------v--+  +---v---------+
-              |  Turso   |  |   RunPod    |
-              |  (SQLite)|  |  (Qwen 3.5) |
+              |  Turso   |  |  Workers AI |
+              |  (SQLite)|  |   (Gemma)   |
               +----------+  +-------------+
 ```
 
@@ -114,7 +114,6 @@ tech_clip/
 ├── packages/
 │   └── types/               # モバイル・API 共有型定義
 ├── infra/
-│   └── runpod/              # RunPod AI 推論サーバー (Docker)
 ├── scripts/                 # 運用スクリプト
 ├── docs/                    # 設計ドキュメント・法的文書
 ├── .github/workflows/       # CI/CD ワークフロー
@@ -233,8 +232,6 @@ eas build --platform android          # Android ビルド (EAS)
 | `GOOGLE_CLIENT_ID` / `SECRET` | Google OAuth | [Google Cloud Console](https://console.cloud.google.com) |
 | `APPLE_CLIENT_ID` / `SECRET` | Apple Sign In | [Apple Developer](https://developer.apple.com) |
 | `GITHUB_CLIENT_ID` / `SECRET` | GitHub OAuth | [GitHub Developer Settings](https://github.com/settings/developers) |
-| `RUNPOD_API_KEY` | RunPod API キー | [RunPod](https://www.runpod.io) |
-| `RUNPOD_ENDPOINT_ID` | RunPod エンドポイント ID | [RunPod](https://www.runpod.io) |
 
 ### モバイルアプリ (`apps/mobile/.env`)
 

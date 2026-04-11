@@ -97,8 +97,6 @@ grep -r "sk_live\|sk_test\|password.*=\|secret.*=" src/ --include="*.ts"
   - `BETTER_AUTH_SECRET`
   - `TURSO_DATABASE_URL`
   - `TURSO_AUTH_TOKEN`
-  - `RUNPOD_API_KEY`
-  - `RUNPOD_ENDPOINT_ID`
   - `ALLOWED_ORIGINS`
 
 ### 2-2. 認証・認可
@@ -334,7 +332,7 @@ curl -X POST https://api.techclip.app/api/auth/sign-in \
 - [ ] ヘルスチェックエンドポイントが200を返すこと
 - [ ] 認証フローが正常に動作すること
 - [ ] 記事一覧APIが正常なレスポンスを返すこと
-- [ ] AI要約機能が正常に動作すること（RunPod APIの疎通確認）
+- [ ] AI要約機能が正常に動作すること（Workers AI の疎通確認）
 - [ ] エラーレスポンスが定義されたフォーマットで返ること
 
 ### 7-2. モバイルアプリの動作確認

@@ -3,7 +3,7 @@ import { articles } from "./articles";
 
 /**
  * ai_jobsテーブル
- * RunPod の非同期ジョブ状態を追跡する
+ * Workers AI の非同期ジョブ状態を追跡する
  */
 export const aiJobs = sqliteTable(
   "ai_jobs",

@@ -1,22 +1,16 @@
 import { DEFAULT_GEMMA_MODEL_TAG } from "@api/lib/ai-model";
 import {
   buildPrompt,
-  createTranslationJob,
   extractCodeBlocks,
-  getTranslationJobStatus,
   parseTranslationResponse,
   restoreCodeBlocks,
-  type TranslateOptions,
   translateArticle,
 } from "@api/services/translator";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const mockFetch = vi.fn();
-vi.stubGlobal("fetch", mockFetch);
-
-const RUNPOD_CONFIG = {
-  apiKey: "test-runpod-api-key",
-  endpointId: "test-endpoint-id",
+/** Workers AI モックオブジェクト */
+const mockAi = {
+  run: vi.fn(),
 };
 
 describe("translator", () => {
@@ -24,128 +18,235 @@ describe("translator", () => {
     vi.clearAllMocks();
   });
 
-  it("extractCodeBlocks がコードブロックを抽出できること", () => {
-    const result = extractCodeBlocks("text\n```ts\nconst x = 1;\n```\ntext");
-    expect(result.blocks).toHaveLength(1);
-    expect(result.text).toContain("{{CODE_BLOCK_0}}");
-  });
+  describe("extractCodeBlocks", () => {
+    it("コードブロックを抽出できること", () => {
+      // Arrange
+      const text = "text\n```ts\nconst x = 1;\n```\ntext";
 
-  it("restoreCodeBlocks がコードブロックを復元できること", () => {
-    const result = restoreCodeBlocks("{{CODE_BLOCK_0}}", ["```ts\nconst x = 1;\n```"]);
-    expect(result).toContain("const x = 1");
-  });
+      // Act
+      const result = extractCodeBlocks(text);
 
-  it("buildPrompt が英語プロンプトを構築できること", () => {
-    expect(buildPrompt("テスト", "en")).toContain("English");
-  });
-
-  it("parseTranslationResponse が RunPod 形式を読めること", () => {
-    const response = {
-      output: {
-        choices: [{ message: { content: "Translated text" } }],
-      },
-    };
-    expect(parseTranslationResponse(response)).toBe("Translated text");
-  });
-
-  it("createTranslationJob が RunPod job id を返すこと", async () => {
-    const options: TranslateOptions = {
-      title: "テスト",
-      content: "テスト本文",
-      targetLanguage: "en",
-      runpodApiKey: RUNPOD_CONFIG.apiKey,
-      runpodEndpointId: RUNPOD_CONFIG.endpointId,
-    };
-
-    mockFetch.mockResolvedValueOnce({
-      ok: true,
-      json: async () => ({ id: "run_abc123" }),
+      // Assert
+      expect(result.blocks).toHaveLength(1);
+      expect(result.text).toContain("{{CODE_BLOCK_0}}");
     });
 
-    const result = await createTranslationJob(options);
-    expect(result.providerJobId).toBe("run_abc123");
+    it("コードブロックがない場合は空の配列を返すこと", () => {
+      // Arrange
+      const text = "テキストのみ";
+
+      // Act
+      const result = extractCodeBlocks(text);
+
+      // Assert
+      expect(result.blocks).toHaveLength(0);
+      expect(result.text).toBe(text);
+    });
   });
 
-  it("getTranslationJobStatus が completed を返すこと", async () => {
-    mockFetch.mockResolvedValueOnce({
-      ok: true,
-      json: async () => ({
-        status: "COMPLETED",
-        output: {
-          choices: [
-            {
-              message: {
-                content:
-                  '{"translatedTitle":"How to use React Hooks","translatedContent":"Text\\n\\n{{CODE_BLOCK_0}}"}',
-              },
-            },
-          ],
-        },
-      }),
-    });
+  describe("restoreCodeBlocks", () => {
+    it("コードブロックを復元できること", () => {
+      // Arrange
+      const text = "{{CODE_BLOCK_0}}";
+      const blocks = ["```ts\nconst x = 1;\n```"];
 
-    const result = await getTranslationJobStatus({
-      providerJobId: "run_abc123",
-      content: "テキスト\n\n```typescript\nconst x = 1;\n```",
-      runpodApiKey: RUNPOD_CONFIG.apiKey,
-      runpodEndpointId: RUNPOD_CONFIG.endpointId,
-    });
+      // Act
+      const result = restoreCodeBlocks(text, blocks);
 
-    expect(result.status).toBe("completed");
-    if (result.status === "completed") {
-      expect(result.translatedContent).toContain("```typescript");
-    }
+      // Assert
+      expect(result).toContain("const x = 1");
+    });
   });
 
-  it("translateArticle が RunPod runsync を使って翻訳できること", async () => {
-    const options: TranslateOptions = {
-      title: "React Hooksの使い方",
-      content: "# React Hooks\n\nテスト本文です。",
-      targetLanguage: "en",
-      runpodApiKey: RUNPOD_CONFIG.apiKey,
-      runpodEndpointId: RUNPOD_CONFIG.endpointId,
-    };
-
-    mockFetch
-      .mockResolvedValueOnce({
-        ok: true,
-        json: async () => ({
-          output: {
-            choices: [{ message: { content: "How to use React Hooks" } }],
-          },
-        }),
-      })
-      .mockResolvedValueOnce({
-        ok: true,
-        json: async () => ({
-          output: {
-            choices: [{ message: { content: "# React Hooks\n\nTest body." } }],
-          },
-        }),
+  describe("buildPrompt", () => {
+    it("英語翻訳プロンプトを構築できること", () => {
+      // Arrange / Act
+      const result = buildPrompt({
+        content: "テスト",
+        title: "タイトル",
+        targetLanguage: "en",
       });
 
-    const result = await translateArticle(options);
-
-    expect(result.translatedTitle).toBe("How to use React Hooks");
-    expect(result.model).toBe(DEFAULT_GEMMA_MODEL_TAG);
-  });
-
-  it("modelTagが指定されている場合createTranslationJobが指定タグを返すこと", async () => {
-    const options: TranslateOptions = {
-      title: "テスト",
-      content: "テスト本文",
-      targetLanguage: "en",
-      runpodApiKey: RUNPOD_CONFIG.apiKey,
-      runpodEndpointId: RUNPOD_CONFIG.endpointId,
-      modelTag: "gemma4-9b",
-    };
-
-    mockFetch.mockResolvedValueOnce({
-      ok: true,
-      json: async () => ({ id: "run_abc123" }),
+      // Assert
+      expect(result).toBeInstanceOf(Array);
+      const userMessage = result.find((m) => m.role === "user");
+      expect(userMessage?.content).toContain("English");
     });
 
-    const result = await createTranslationJob(options);
-    expect(result.model).toBe("gemma4-9b");
+    it("日本語翻訳プロンプトを構築できること", () => {
+      // Arrange / Act
+      const result = buildPrompt({
+        content: "Test content",
+        title: "Title",
+        targetLanguage: "ja",
+      });
+
+      // Assert
+      const userMessage = result.find((m) => m.role === "user");
+      expect(userMessage?.content).toContain("Japanese");
+    });
+  });
+
+  describe("parseTranslationResponse", () => {
+    it("JSON文字列から翻訳結果を解析できること", () => {
+      // Arrange
+      const response = '{"translatedTitle":"Test Title","translatedContent":"Test content"}';
+
+      // Act
+      const result = parseTranslationResponse(response);
+
+      // Assert
+      expect(result.translatedTitle).toBe("Test Title");
+      expect(result.translatedContent).toBe("Test content");
+    });
+
+    it("JSONが壊れている場合エラーをスローすること", () => {
+      // Arrange
+      const response = "not json";
+
+      // Act / Assert
+      expect(() => parseTranslationResponse(response)).toThrow(
+        "翻訳レスポンスの解析に失敗しました",
+      );
+    });
+
+    it("必須フィールドがない場合エラーをスローすること", () => {
+      // Arrange
+      const response = '{"translatedTitle":"Title"}';
+
+      // Act / Assert
+      expect(() => parseTranslationResponse(response)).toThrow(
+        "翻訳レスポンスの解析に失敗しました",
+      );
+    });
+
+    it("コードブロックで囲まれたJSONを解析できること", () => {
+      // Arrange
+      const response = '```json\n{"translatedTitle":"Test","translatedContent":"Content"}\n```';
+
+      // Act
+      const result = parseTranslationResponse(response);
+
+      // Assert
+      expect(result.translatedTitle).toBe("Test");
+    });
+  });
+
+  describe("translateArticle", () => {
+    it("Workers AI で翻訳できること", async () => {
+      // Arrange
+      mockAi.run.mockResolvedValue({
+        response:
+          '{"translatedTitle":"How to use React Hooks","translatedContent":"# React Hooks\\n\\nTest body."}',
+      });
+
+      // Act
+      const result = await translateArticle({
+        ai: mockAi as unknown as Ai,
+        content: "# React Hooks\n\nテスト本文です。",
+        title: "React Hooksの使い方",
+        targetLanguage: "en",
+      });
+
+      // Assert
+      expect(result.translatedTitle).toBe("How to use React Hooks");
+      expect(result.translatedContent).toContain("React Hooks");
+      expect(result.model).toBe(DEFAULT_GEMMA_MODEL_TAG);
+      expect(mockAi.run).toHaveBeenCalledOnce();
+    });
+
+    it("modelTagが指定されている場合は指定タグを返すこと", async () => {
+      // Arrange
+      mockAi.run.mockResolvedValue({
+        response: '{"translatedTitle":"Title","translatedContent":"Content"}',
+      });
+
+      // Act
+      const result = await translateArticle({
+        ai: mockAi as unknown as Ai,
+        content: "テスト",
+        title: "テスト",
+        targetLanguage: "en",
+        modelTag: "custom-tag",
+      });
+
+      // Assert
+      expect(result.model).toBe("custom-tag");
+    });
+
+    it("コードブロックを保持して翻訳できること", async () => {
+      // Arrange
+      const codeBlock = "```typescript\nconst x = 1;\n```";
+      mockAi.run.mockResolvedValue({
+        response: '{"translatedTitle":"Title","translatedContent":"Content\\n\\n{{CODE_BLOCK_0}}"}',
+      });
+
+      // Act
+      const result = await translateArticle({
+        ai: mockAi as unknown as Ai,
+        content: `テスト\n\n${codeBlock}`,
+        title: "タイトル",
+        targetLanguage: "en",
+      });
+
+      // Assert
+      expect(result.translatedContent).toContain("const x = 1");
+    });
+
+    it("Workers AI が失敗した場合エラーチェーンを持つエラーをスローすること", async () => {
+      // Arrange
+      const cause = new Error("Workers AI 接続エラー");
+      mockAi.run.mockRejectedValue(cause);
+
+      // Act / Assert
+      const error = await translateArticle({
+        ai: mockAi as unknown as Ai,
+        content: "テスト",
+        title: "タイトル",
+        targetLanguage: "en",
+      }).catch((e: unknown) => e);
+
+      expect(error).toBeInstanceOf(Error);
+      expect((error as Error).message).toBe("翻訳の生成に失敗しました");
+      expect((error as Error).cause).toBe(cause);
+    });
+
+    it("Workers AI が不正なレスポンスを返した場合エラーをスローすること", async () => {
+      // Arrange
+      mockAi.run.mockResolvedValue({ unexpected: "format" });
+
+      // Act / Assert
+      await expect(
+        translateArticle({
+          ai: mockAi as unknown as Ai,
+          content: "テスト",
+          title: "タイトル",
+          targetLanguage: "en",
+        }),
+      ).rejects.toThrow("翻訳の生成に失敗しました");
+    });
+
+    it("HTMLコンテンツをサニタイズして送信すること", async () => {
+      // Arrange
+      mockAi.run.mockResolvedValue({
+        response: '{"translatedTitle":"Title","translatedContent":"Content"}',
+      });
+      const htmlContent = "<h1>テスト</h1><script>alert('XSS')</script><p>本文</p>";
+
+      // Act
+      await translateArticle({
+        ai: mockAi as unknown as Ai,
+        content: htmlContent,
+        title: "タイトル",
+        targetLanguage: "en",
+      });
+
+      // Assert
+      const callArgs = mockAi.run.mock.calls[0];
+      const messages = callArgs[1].messages as Array<{ role: string; content: string }>;
+      const userMessage = messages.find((m) => m.role === "user");
+      expect(userMessage?.content).not.toContain("<script>");
+      expect(userMessage?.content).not.toContain("<h1>");
+    });
   });
 });

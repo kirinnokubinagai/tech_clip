@@ -6,7 +6,7 @@ TechClipは、複数の技術系ニュースソースから記事を収集し、
 
 ### 主要機能
 - 技術系ニュースソースからの記事収集
-- Qwen3.5 9B (RunPod) によるAI要約・翻訳
+- Cloudflare Workers AI (Gemma) によるAI要約・翻訳
 - オフライン読書対応
 - ブックマーク・既読管理
 - カスタムフィード設定
@@ -23,7 +23,7 @@ TechClipは、複数の技術系ニュースソースから記事を収集し、
 | API | Cloudflare Workers + Hono |
 | データベース | Turso + Drizzle ORM |
 | 認証 | Better Auth |
-| AI | RunPod + Qwen3.5 9B |
+| AI | Cloudflare Workers AI (Gemma) |
 | スタイリング | Nativewind v4 |
 | Lint/Format | Biome |
 | 開発環境 | Nix |
@@ -118,8 +118,8 @@ TechClipは、複数の技術系ニュースソースから記事を収集し、
 | #58 | POST /api/articles エンドポイント (記事保存) | ✅ | #29, #38 |
 | #59 | GET /api/articles エンドポイント (記事一覧・ページネーション) | ✅ | #29, #38 |
 | #62 | GET/PATCH/DELETE /api/articles/:id エンドポイント | ✅ | #58 |
-| #63 | Qwen3.5 9B (RunPod) 要約サービス + POST /api/articles/:id/summary | ✅ | #30, #62 |
-| #64 | Qwen3.5 9B (RunPod) 翻訳サービス + POST /api/articles/:id/translate | ✅ | #30, #62 |
+| #63 | Workers AI (Gemma) 要約サービス + POST /api/articles/:id/summary | ✅ | #30, #62 |
+| #64 | Workers AI (Gemma) 翻訳サービス + POST /api/articles/:id/translate | ✅ | #30, #62 |
 | #65 | タグ CRUD API | ✅ | #31, #62 |
 | #66 | 全文検索 API (GET /api/articles/search) | ✅ | #59 |
 | #67 | プロフィール API (GET/PATCH /api/users) | ✅ | #26, #38 |
