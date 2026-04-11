@@ -1,18 +1,18 @@
 # Stage 1: builder（devel イメージでパッケージをインストール）
 FROM runpod/pytorch:2.8.0-py3.11-cuda12.8.1-cudnn-devel-ubuntu22.04 AS builder
 
-RUN pip install --no-cache-dir \
+RUN pip install --no-cache-dir --target /install \
     transformers==4.51.3 \
     accelerate==1.6.0 \
     auto-round==0.5.3 \
     runpod==1.7.4 \
-    git+https://github.com/back2matching/turboquant.git@main
+    git+https://github.com/back2matching/turboquant.git@acef33bf44abbd4623e11a48aae5f9a60aaf9ac0
 
 # Stage 2: runtime（軽量イメージ）
 FROM runpod/pytorch:2.8.0-py3.11-cuda12.8.1-cudnn-runtime-ubuntu22.04
 
-# site-packages とビルド成果物をコピー
-COPY --from=builder /usr/local/lib/python3.11/dist-packages /usr/local/lib/python3.11/dist-packages
+# builder ステージでインストールしたパッケージをコピー（devel 固有ファイルを除外）
+COPY --from=builder /install /usr/local/lib/python3.11/site-packages
 
 # 非 root ユーザーを作成
 RUN useradd -m -u 1000 appuser \

@@ -31,7 +31,7 @@ Gemma 4 26B-A4B はハイブリッド注意機構を持つ（25層 SWA + 5層 Gl
 インストールは PyPI 版ではなく GitHub リポジトリを直接指定すること:
 
 ```bash
-pip install git+https://github.com/back2matching/turboquant.git@main
+pip install git+https://github.com/back2matching/turboquant.git@acef33bf44abbd4623e11a48aae5f9a60aaf9ac0
 ```
 
 これにより 16GB VRAM でモデル重みの他に十分なキャッシュ余裕を確保できる。
@@ -238,7 +238,7 @@ TRANSFORMERS_OFFLINE=1
 | Python | `3.11` | ベースイメージに同梱 |
 | torch | `2.8.0` | ベースイメージに同梱 |
 | transformers | `4.51.3` | Gemma 4 対応 |
-| turboquant | `@main`（back2matching/turboquant） | SWA バイパス対応・PyPI 版は使用しない |
+| turboquant | `@acef33bf44abbd4623e11a48aae5f9a60aaf9ac0`（back2matching/turboquant） | SWA バイパス対応・PyPI 版は使用しない |
 | auto-round | `0.5.3` | Intel AutoRound int4 サポート |
 | accelerate | `1.6.0` | デバイスマップサポート |
 | RunPod SDK | `1.7.4` | サーバーレスランタイム |

@@ -286,14 +286,16 @@ def _generate(job_input: dict) -> dict:
 
     do_sample = temperature > TEMPERATURE_GREEDY_THRESHOLD
 
+    generate_kwargs: dict = {
+        "max_new_tokens": max_new_tokens,
+        "do_sample": do_sample,
+    }
+    if do_sample:
+        generate_kwargs["temperature"] = temperature
+        generate_kwargs["top_p"] = top_p
+
     with torch.inference_mode():
-        output_ids = model.generate(
-            **inputs,
-            max_new_tokens=max_new_tokens,
-            temperature=temperature,
-            top_p=top_p,
-            do_sample=do_sample,
-        )
+        output_ids = model.generate(**inputs, **generate_kwargs)
 
     # 入力トークンを除いた生成部分のみデコード
     generated_ids = output_ids[:, input_len:]
