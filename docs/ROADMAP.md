@@ -6,7 +6,7 @@ TechClipは、複数の技術系ニュースソースから記事を収集し、
 
 ### 主要機能
 - 技術系ニュースソースからの記事収集
-- Qwen3.5 9B (RunPod) によるAI要約・翻訳
+- Cloudflare Workers AI (Gemma) によるAI要約・翻訳
 - オフライン読書対応
 - ブックマーク・既読管理
 - カスタムフィード設定
@@ -23,7 +23,7 @@ TechClipは、複数の技術系ニュースソースから記事を収集し、
 | API | Cloudflare Workers + Hono |
 | データベース | Turso + Drizzle ORM |
 | 認証 | Better Auth |
-| AI | RunPod + Qwen3.5 9B |
+| AI | Cloudflare Workers AI (Gemma) |
 | スタイリング | Nativewind v4 |
 | Lint/Format | Biome |
 | 開発環境 | Nix |
@@ -118,8 +118,8 @@ TechClipは、複数の技術系ニュースソースから記事を収集し、
 | #58 | POST /api/articles エンドポイント (記事保存) | ✅ | #29, #38 |
 | #59 | GET /api/articles エンドポイント (記事一覧・ページネーション) | ✅ | #29, #38 |
 | #62 | GET/PATCH/DELETE /api/articles/:id エンドポイント | ✅ | #58 |
-| #63 | Qwen3.5 9B (RunPod) 要約サービス + POST /api/articles/:id/summary | ✅ | #30, #62 |
-| #64 | Qwen3.5 9B (RunPod) 翻訳サービス + POST /api/articles/:id/translate | ✅ | #30, #62 |
+| #63 | Workers AI (Gemma) 要約サービス + POST /api/articles/:id/summary | ✅ | #30, #62 |
+| #64 | Workers AI (Gemma) 翻訳サービス + POST /api/articles/:id/translate | ✅ | #30, #62 |
 | #65 | タグ CRUD API | ✅ | #31, #62 |
 | #66 | 全文検索 API (GET /api/articles/search) | ✅ | #59 |
 | #67 | プロフィール API (GET/PATCH /api/users) | ✅ | #26, #38 |
@@ -252,6 +252,39 @@ TechClipは、複数の技術系ニュースソースから記事を収集し、
 
 ---
 
+### Phase 10: 監査バックログの解消
+**目標**: システム監査で見つかった仕様不整合・未実装導線・保守負債を計画的に解消する**
+
+| Issue | タイトル | 状態 | 依存 |
+|-------|---------|------|------|
+| #820 | epic(product): 対応ソース定義・UI・READMEの整合性を回復する | 🔲 | - |
+| #824 | fix(mobile/source): YouTube ソースを UI 定義と SourceBadge に追加する | 🔲 | #820 |
+| #825 | refactor(mobile/home): ソースフィルターを source-of-truth から生成する | 🔲 | #820 |
+| #826 | docs(product): README の対応ソース表記を実装状態に同期する | 🔲 | #820 |
+| #827 | refactor(mobile/onboarding): 対応ソース訴求文を i18n 化して仕様に同期する | 🔲 | #820 |
+| #821 | epic(profile): プロフィール・フォロー導線をプレースホルダーから本実装へ置き換える | 🔲 | - |
+| #828 | feat(mobile/profile): 自分のプロフィール画面を auth state / users API に接続する | 🔲 | #821 |
+| #844 | feat(mobile/profile): 他ユーザープロフィール画面を公開プロフィール API に接続する | 🔲 | #821 |
+| #845 | feat(mobile/follows): フォロワー・フォロー中一覧画面を follow API に接続する | 🔲 | #821 |
+| #846 | feat(mobile/follows): FollowButton に楽観更新と失敗時ロールバックを実装する | 🔲 | #821 |
+| #847 | test(mobile/profile): プロフィール系画面テストをプレースホルダー前提から更新する | 🔲 | #821 |
+| #726 | feat: full multilingual support (i18n) for global market | 🔲 | - |
+| #848 | refactor(mobile/i18n): onboarding・ホーム・記事詳細のハードコード文言を翻訳キーへ移行する | 🔲 | #726 |
+| #849 | refactor(mobile/i18n): profile・followers・settings 周辺のハードコード文言を翻訳キーへ移行する | 🔲 | #726 |
+| #850 | refactor(mobile/a11y): accessibilityLabel / accessibilityHint を翻訳キー経由に統一する | 🔲 | #726 |
+| #851 | test(mobile/i18n): 英語ロケールで主要画面が成立することを自動テストで保証する | 🔲 | #726 |
+| #822 | epic(auth): モバイル認証トークン運用と API クライアントの堅牢性を強化する | 🔲 | - |
+| #852 | design(auth/mobile): トークン保存・失効・再認証方針を明文化する | 🔲 | #822 |
+| #853 | fix(mobile/api): apiFetch の HTTP エラー処理と非JSON応答の耐性を強化する | 🔲 | #822 |
+| #854 | test(mobile/api): セッション期限切れ・refresh失敗・非JSON応答の異常系を追加する | 🔲 | #822 |
+| #823 | epic(maintainability): テーマ一貫性とリポジトリ衛生を改善する | 🔲 | - |
+| #855 | design(mobile/theme): ライト/ダークテーマのブランドカラー方針を再設計する | 🔲 | #823 |
+| #856 | refactor(mobile/ui): 主要画面の配色を共通トークン基準に整理する | 🔲 | #823 |
+| #857 | chore(repo): 開発生成物の置き場と ignore 方針を見直す | 🔲 | #823 |
+| #858 | docs(repo): README / ROADMAP の実装同期ルールを整理する | 🔲 | #823 |
+
+---
+
 ## 実装順序ルール
 
 ### 依存関係の原則
@@ -271,7 +304,7 @@ Issue に着手する前に必ず確認：
 
 ## 次のアクション
 
-**全 Phase（Phase 0〜9）の全 Issue が完了しました。**
+**Phase 0〜9 は完了済みです。**
 
 次のステップはリリース準備です:
 
@@ -279,3 +312,11 @@ Issue に着手する前に必ず確認：
 2. **Google Play Store 提出** - EAS Build で AAB を生成し、Play Console へ提出
 3. **本番環境の最終確認** - Cloudflare Workers 本番デプロイ、Turso 本番 DB の動作確認
 4. **モニタリング確認** - Sentry エラー監視・アナリティクスが正常に動作していることを確認
+
+リリース準備と並行して、監査バックログの推奨着手順は以下です:
+
+1. **#820 対応ソース整合** - README / UI / source 定義の不整合を先に止める
+2. **#821 プロフィール本実装** - 見えている未実装導線を実データ接続に置き換える
+3. **#726 多言語化の残作業** - i18n / a11y のハードコード解消を進める
+4. **#822 認証/API堅牢化** - 異常系とトークン運用を整理する
+5. **#823 テーマ / リポジトリ保守性改善** - デザイン一貫性と運用衛生を整える

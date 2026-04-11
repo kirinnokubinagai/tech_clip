@@ -15,9 +15,6 @@
 | `APPLE_CLIENT_SECRET` | API (Cloudflare Workers) | `apps/api/.dev.vars` |
 | `GITHUB_CLIENT_ID` | API (Cloudflare Workers) | `apps/api/.dev.vars` |
 | `GITHUB_CLIENT_SECRET` | API (Cloudflare Workers) | `apps/api/.dev.vars` |
-| `RUNPOD_API_KEY` | API (Cloudflare Workers) | `apps/api/.dev.vars` |
-| `RUNPOD_ENDPOINT_ID` | API (Cloudflare Workers) | `apps/api/.dev.vars` |
-| `RUNPOD_LOCAL_ENDPOINT_ID` | API (Cloudflare Workers, local development) | `apps/api/.dev.vars` |
 | `REVENUECAT_WEBHOOK_SECRET` | API (Cloudflare Workers) | `apps/api/.dev.vars` |
 | `RESEND_API_KEY` | API (Cloudflare Workers) | `apps/api/.dev.vars` |
 | `EXPO_PUBLIC_REVENUECAT_IOS_API_KEY` | モバイル (Expo) | `apps/mobile/.env` |
@@ -176,29 +173,6 @@ console.log(header + '.' + payload + '.' + signature);
 
 ---
 
-### RUNPOD_API_KEY / RUNPOD_ENDPOINT_ID / RUNPOD_LOCAL_ENDPOINT_ID
-
-**ダッシュボード:** https://www.runpod.io/console
-
-#### RUNPOD_API_KEY
-
-1. ダッシュボードにログインし、右上のアカウントメニューを開く
-2. "Settings" > "API Keys" を開く
-3. "API Key" を作成し、発行されたキーを `RUNPOD_API_KEY` に設定する
-
-#### RUNPOD_ENDPOINT_ID
-
-1. "Serverless" > "My Endpoints" を開く
-2. Qwen3.5 9B モデルをデプロイしたエンドポイントを選択する
-3. エンドポイントの ID を `RUNPOD_ENDPOINT_ID` に設定する
-
-#### RUNPOD_LOCAL_ENDPOINT_ID
-
-1. ローカル開発用に作成したエンドポイントを選択する
-2. エンドポイントの ID を `RUNPOD_LOCAL_ENDPOINT_ID` に設定する
-
----
-
 ### REVENUECAT_WEBHOOK_SECRET
 
 **ダッシュボード:** https://app.revenuecat.com
@@ -263,8 +237,6 @@ wrangler secret put APPLE_CLIENT_ID --env staging
 wrangler secret put APPLE_CLIENT_SECRET --env staging
 wrangler secret put GITHUB_CLIENT_ID --env staging
 wrangler secret put GITHUB_CLIENT_SECRET --env staging
-wrangler secret put RUNPOD_API_KEY --env staging
-wrangler secret put RUNPOD_ENDPOINT_ID --env staging
 wrangler secret put REVENUECAT_WEBHOOK_SECRET --env staging
 wrangler secret put RESEND_API_KEY --env staging
 ```
@@ -281,8 +253,6 @@ wrangler secret put APPLE_CLIENT_ID --env production
 wrangler secret put APPLE_CLIENT_SECRET --env production
 wrangler secret put GITHUB_CLIENT_ID --env production
 wrangler secret put GITHUB_CLIENT_SECRET --env production
-wrangler secret put RUNPOD_API_KEY --env production
-wrangler secret put RUNPOD_ENDPOINT_ID --env production
 wrangler secret put REVENUECAT_WEBHOOK_SECRET --env production
 wrangler secret put RESEND_API_KEY --env production
 ```
@@ -320,11 +290,6 @@ wrangler secret list --env production
 - [ ] Apple: 本番ドメイン (`api.techclip.app`) を Apple Developer に登録済み
 - [ ] Apple: `APPLE_CLIENT_SECRET` (JWT) の有効期限を確認済み（最大6ヶ月）
 - [ ] GitHub: 本番用コールバック URL を GitHub OAuth App に登録済み
-
-#### RunPod
-- [ ] 本番用 RunPod エンドポイントが起動・稼働中であることを確認済み
-- [ ] `RUNPOD_ENDPOINT_ID` が本番エンドポイントの ID であることを確認済み
-- [ ] エンドポイントのスケーリング設定が本番トラフィックに対応していることを確認済み
 
 #### RevenueCat
 - [ ] `REVENUECAT_WEBHOOK_SECRET` を RevenueCat ダッシュボードで発行済み

@@ -8,7 +8,7 @@ describe("ai-model", () => {
       const tag = DEFAULT_GEMMA_MODEL_TAG;
 
       // Assert
-      expect(tag).toBe("gemma3-12b");
+      expect(tag).toBe("gemma-4-26b-a4b");
     });
   });
 

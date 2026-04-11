@@ -1,5 +1,4 @@
 import {
-  HTTP_CREATED,
   HTTP_FORBIDDEN,
   HTTP_NOT_FOUND,
   HTTP_OK,
@@ -32,11 +31,11 @@ const MOCK_ARTICLE = {
 const MOCK_TRANSLATION = {
   id: "translation_001",
   articleId: MOCK_ARTICLE.id,
-  language: "en",
-  title: "Test Article",
-  content: "# Test Article\n\nThis is the test article body.",
+  targetLanguage: "en",
+  translatedTitle: "Test Article",
+  translatedContent: "# Test Article\n\nThis is the test article body.",
+  model: "gemma-4-26b-a4b",
   createdAt: new Date("2024-01-01"),
-  updatedAt: new Date("2024-01-01"),
 };
 
 /** エラーレスポンスの型定義 */
@@ -65,15 +64,30 @@ type TranslationResponse = {
  * @returns モックDBオブジェクト
  */
 function createMockDb() {
+  const mockWhere = vi.fn().mockResolvedValue([]);
+  const mockFrom = vi.fn().mockReturnValue({ where: mockWhere });
+  const mockSelect = vi.fn().mockReturnValue({ from: mockFrom });
+
+  const mockReturning = vi.fn().mockResolvedValue([]);
+  const mockValues = vi.fn().mockReturnValue({ returning: mockReturning });
+  const mockInsert = vi.fn().mockReturnValue({ values: mockValues });
+
+  const mockUpdateWhere = vi.fn().mockResolvedValue(undefined);
+  const mockSet = vi.fn().mockReturnValue({ where: mockUpdateWhere });
+  const mockUpdate = vi.fn().mockReturnValue({ set: mockSet });
+
   return {
-    select: vi.fn().mockReturnThis(),
-    from: vi.fn().mockReturnThis(),
-    where: vi.fn().mockResolvedValue([]),
-    insert: vi.fn().mockReturnThis(),
-    values: vi.fn().mockReturnThis(),
-    returning: vi.fn().mockResolvedValue([]),
+    select: mockSelect,
+    insert: mockInsert,
+    update: mockUpdate,
+    _mocks: { mockWhere, mockReturning, mockSet, mockUpdateWhere },
   };
 }
+
+/** Workers AI モックオブジェクト */
+const mockAi = {
+  run: vi.fn(),
+};
 
 /**
  * テスト用アプリを生成する
@@ -90,16 +104,8 @@ function createTestApp(
 ) {
   const route = createAiRoute({
     db: mockDb as unknown as Parameters<typeof createAiRoute>[0]["db"],
-    translateArticleFn: mockTranslateFn,
-    createTranslationJobFn: vi.fn().mockResolvedValue({
-      providerJobId: "run_abc123",
-      model: "qwen3.5-9b",
-    }),
-    getTranslationJobStatusFn: vi.fn(),
-    runpodConfig: {
-      apiKey: "test-api-key",
-      endpointId: "test-endpoint-id",
-    },
+    ai: mockAi as unknown as Ai,
+    translateFn: mockTranslateFn,
   });
 
   const app = new Hono<{ Variables: { user?: Record<string, unknown> } }>();
@@ -122,17 +128,17 @@ describe("AI翻訳API 統合テスト", () => {
   beforeEach(() => {
     mockDb = createMockDb();
     mockTranslateFn = vi.fn().mockResolvedValue({
-      title: "Test Article",
-      content: "# Test Article\n\nThis is the test article body.",
-      language: "en",
+      translatedTitle: "Test Article",
+      translatedContent: "# Test Article\n\nThis is the test article body.",
+      model: "gemma-4-26b-a4b",
     });
   });
 
   describe("POST /articles/:id/translate", () => {
     it("記事を翻訳できること", async () => {
       // Arrange
-      mockDb.where.mockResolvedValueOnce([MOCK_ARTICLE]).mockResolvedValueOnce([]);
-      mockDb.returning.mockResolvedValue([MOCK_TRANSLATION]);
+      mockDb._mocks.mockWhere.mockResolvedValueOnce([MOCK_ARTICLE]).mockResolvedValueOnce([]);
+      mockDb._mocks.mockReturning.mockResolvedValue([MOCK_TRANSLATION]);
       const app = createTestApp(mockDb, mockTranslateFn);
       const req = new Request(`http://localhost/${MOCK_ARTICLE.id}/translate`, {
         method: "POST",
@@ -145,8 +151,9 @@ describe("AI翻訳API 統合テスト", () => {
       const body = (await res.json()) as TranslationResponse;
 
       // Assert
-      expect(res.status).toBe(HTTP_CREATED);
+      expect(res.status).toBe(HTTP_OK);
       expect(body.success).toBe(true);
+      expect(body.data?.status).toBe("completed");
     });
 
     it("未認証の場合に401エラーを返すこと", async () => {
@@ -169,7 +176,7 @@ describe("AI翻訳API 統合テスト", () => {
 
     it("存在しない記事の場合に404エラーを返すこと", async () => {
       // Arrange
-      mockDb.where.mockResolvedValue([]);
+      mockDb._mocks.mockWhere.mockResolvedValue([]);
       const app = createTestApp(mockDb, mockTranslateFn);
       const req = new Request("http://localhost/nonexistent_article/translate", {
         method: "POST",
@@ -189,7 +196,7 @@ describe("AI翻訳API 統合テスト", () => {
     it("他ユーザーの記事の場合に403エラーを返すこと", async () => {
       // Arrange
       const otherUserArticle = { ...MOCK_ARTICLE, userId: "other_user_id" };
-      mockDb.where.mockResolvedValue([otherUserArticle]);
+      mockDb._mocks.mockWhere.mockResolvedValue([otherUserArticle]);
       const app = createTestApp(mockDb, mockTranslateFn);
       const req = new Request(`http://localhost/${otherUserArticle.id}/translate`, {
         method: "POST",
@@ -226,7 +233,9 @@ describe("AI翻訳API 統合テスト", () => {
 
     it("翻訳済みの場合に既存の翻訳を返すこと", async () => {
       // Arrange
-      mockDb.where.mockResolvedValueOnce([MOCK_ARTICLE]).mockResolvedValueOnce([MOCK_TRANSLATION]);
+      mockDb._mocks.mockWhere
+        .mockResolvedValueOnce([MOCK_ARTICLE])
+        .mockResolvedValueOnce([MOCK_TRANSLATION]);
       const app = createTestApp(mockDb, mockTranslateFn);
       const req = new Request(`http://localhost/${MOCK_ARTICLE.id}/translate`, {
         method: "POST",
@@ -248,7 +257,9 @@ describe("AI翻訳API 統合テスト", () => {
   describe("GET /articles/:id/translate", () => {
     it("翻訳を取得できること", async () => {
       // Arrange
-      mockDb.where.mockResolvedValueOnce([MOCK_ARTICLE]).mockResolvedValueOnce([MOCK_TRANSLATION]);
+      mockDb._mocks.mockWhere
+        .mockResolvedValueOnce([MOCK_ARTICLE])
+        .mockResolvedValueOnce([MOCK_TRANSLATION]);
       const app = createTestApp(mockDb, mockTranslateFn);
       const req = new Request(`http://localhost/${MOCK_ARTICLE.id}/translate?targetLanguage=en`);
 
@@ -277,7 +288,7 @@ describe("AI翻訳API 統合テスト", () => {
 
     it("存在しない翻訳の場合に404エラーを返すこと", async () => {
       // Arrange
-      mockDb.where.mockResolvedValueOnce([MOCK_ARTICLE]).mockResolvedValueOnce([]);
+      mockDb._mocks.mockWhere.mockResolvedValueOnce([MOCK_ARTICLE]).mockResolvedValueOnce([]);
       const app = createTestApp(mockDb, mockTranslateFn);
       const req = new Request(`http://localhost/${MOCK_ARTICLE.id}/translate?targetLanguage=en`);
 

@@ -85,6 +85,8 @@
             bats
             mailpit
             claude-code-bin
+            shellcheck
+            actionlint
           ];
 
           shellHook = ''

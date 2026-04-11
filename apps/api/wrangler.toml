@@ -18,12 +18,12 @@ id = "d8dd77ff2e0a4ee69e0d780657b02473"
 binding = "AVATARS_BUCKET"
 bucket_name = "tech-clip-avatars"
 
+[ai]
+binding = "AI"
+
 # [secrets]
 # TURSO_DATABASE_URL
 # TURSO_AUTH_TOKEN
-# RUNPOD_API_KEY
-# RUNPOD_ENDPOINT_ID
-# RUNPOD_LOCAL_ENDPOINT_ID
 # TRUSTED_ORIGINS     # カンマ区切りの追加 trustedOrigins（例: "https://staging.example.com,https://dev.example.com"）
 # SENTRY_DSN          # Sentry エラー監視用 DSN（例: https://<key>@oXXXXXX.ingest.sentry.io/<project_id>）
 
@@ -48,6 +48,9 @@ id = "e544672a356748d390c0da96f4341cf9"
 [[env.production.r2_buckets]]
 binding = "AVATARS_BUCKET"
 bucket_name = "tech-clip-avatars-production"
+
+[env.production.ai]
+binding = "AI"
 
 [[env.production.routes]]
 pattern = "api.techclip.app"

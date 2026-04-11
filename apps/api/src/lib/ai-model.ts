@@ -9,7 +9,12 @@
  * データベース保存用の短縮タグ
  * summaries/translations.model カラムに保存する値。
  */
-export const DEFAULT_GEMMA_MODEL_TAG = "gemma3-12b";
+export const DEFAULT_GEMMA_MODEL_TAG = "gemma-4-26b-a4b";
+
+/**
+ * Cloudflare Workers AI で使用する Gemma モデルの完全識別子
+ */
+export const WORKERS_AI_GEMMA_MODEL_ID = "@cf/google/gemma-4-26b-a4b-it";
 
 /**
  * 環境変数からGemmaモデルタグを解決する

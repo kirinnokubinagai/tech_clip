@@ -63,18 +63,15 @@ GITHUB_CLIENT_ID=your-github-client-id
 GITHUB_CLIENT_SECRET=your-github-client-secret
 
 # -----------------------------------------------------------------------------
-# RunPod (AI 要約・翻訳)
+# Cloudflare Workers AI (AI 要約・翻訳)
 # -----------------------------------------------------------------------------
-# RunPod (https://www.runpod.io) でアカウントを作成し、API キーを発行する
-# ENDPOINT_ID はデプロイ済みエンドポイントの ID
-# モデルは Gemma 3 12B IT をデフォルトとし、infra/runpod の Dockerfile を参照する
-
-RUNPOD_API_KEY=your-runpod-api-key
-RUNPOD_ENDPOINT_ID=your-runpod-endpoint-id
+# Workers AI は wrangler.toml の [ai] バインディングで自動的に設定される。
+# 追加の環境変数設定は不要。
+# モデルは @cf/google/gemma-4-26b-a4b-it を使用する。
 
 # データベースの summaries/translations.model カラムに保存するタグ
-# 未設定の場合は gemma3-12b が使用される
-# GEMMA_MODEL_NAME=gemma3-12b
+# 未設定の場合は gemma-4-26b-a4b が使用される
+# GEMMA_MODEL_NAME=gemma-4-26b-a4b
 
 # -----------------------------------------------------------------------------
 # RevenueCat Webhook

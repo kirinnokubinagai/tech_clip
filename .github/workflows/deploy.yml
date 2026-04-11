@@ -15,7 +15,7 @@ jobs:
     runs-on: ubuntu-latest
     environment: staging
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - uses: ./.github/actions/nix-setup
       - name: Deploy API to staging
         working-directory: apps/api
@@ -47,7 +47,7 @@ jobs:
     env:
       STAGING_API_URL: https://tech-clip-api-staging.workers.dev
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Register test user and obtain auth token (staging)
         id: auth
         run: |
@@ -65,7 +65,7 @@ jobs:
           fi
           echo "token=$TOKEN" >> "$GITHUB_OUTPUT"
       - name: OWASP ZAP API Scan (staging)
-        uses: zaproxy/action-api-scan@v0.9.0
+        uses: zaproxy/action-api-scan@v0.10.0
         env:
           ZAP_AUTH_HEADER: Authorization
           ZAP_AUTH_HEADER_VALUE: Bearer ${{ steps.auth.outputs.token }}
@@ -77,7 +77,7 @@ jobs:
           allow_issue_writing: false
       - name: Upload ZAP Report (staging)
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: zap-report-staging
           path: report_html.html
@@ -88,7 +88,7 @@ jobs:
     runs-on: ubuntu-latest
     environment: production
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - uses: ./.github/actions/nix-setup
       - name: Deploy API to production
         working-directory: apps/api
