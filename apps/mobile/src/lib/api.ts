@@ -26,6 +26,9 @@ const HTTP_STATUS_SUCCESS_MAX = 300;
 /** JSONのContent-Type判定用の文字列 */
 const JSON_CONTENT_TYPE_HINT = "json";
 
+/** getBaseUrl のフォールバックURL */
+const DEFAULT_API_BASE_URL = "http://localhost:8787";
+
 /** Abortエラーの識別名 */
 const ABORT_ERROR_NAME = "AbortError";
 
@@ -116,6 +119,29 @@ type RefreshTokenResponse = {
 };
 
 /**
+ * リフレッシュトークンAPIのレスポンスを型ガードで検証する
+ *
+ * @param value - 検証対象
+ * @returns RefreshTokenResponse 型なら true
+ */
+function isRefreshTokenResponse(value: unknown): value is RefreshTokenResponse {
+  if (typeof value !== "object" || value === null) {
+    return false;
+  }
+  if (!("success" in value) || (value as { success: unknown }).success !== true) {
+    return false;
+  }
+  const data = (value as { data?: unknown }).data;
+  if (typeof data !== "object" || data === null) {
+    return false;
+  }
+  return (
+    typeof (data as { token?: unknown }).token === "string" &&
+    typeof (data as { refreshToken?: unknown }).refreshToken === "string"
+  );
+}
+
+/**
  * APIのベースURLを取得する
  *
  * @returns Workers APIのベースURL
@@ -123,9 +149,12 @@ type RefreshTokenResponse = {
 export function getBaseUrl(): string {
   const extra = Constants.expoConfig?.extra;
   if (extra && typeof extra === "object" && "apiUrl" in extra) {
-    return extra.apiUrl as string;
+    const apiUrl = (extra as { apiUrl?: unknown }).apiUrl;
+    if (typeof apiUrl === "string") {
+      return apiUrl;
+    }
   }
-  return "http://localhost:8787";
+  return DEFAULT_API_BASE_URL;
 }
 
 /**
@@ -145,7 +174,7 @@ function isSuccessStatus(status: number): boolean {
  * @returns JSONを示している、またはヘッダーが無ければ true
  */
 function isJsonContentType(response: Response): boolean {
-  const contentType = response.headers?.get?.("content-type");
+  const contentType = response.headers.get("content-type");
   if (!contentType) {
     return true;
   }
@@ -203,8 +232,6 @@ function buildHeaders(
 /** JSONパース失敗を示す内部センチネル */
 const PARSE_FAILED = Symbol("parse-failed");
 
-type ParseResult = unknown | typeof PARSE_FAILED;
-
 /**
  * レスポンス本文をJSONとしてパースする
  * パースに失敗した場合は PARSE_FAILED を返す
@@ -212,7 +239,7 @@ type ParseResult = unknown | typeof PARSE_FAILED;
  * @param response - fetchレスポンス
  * @returns パース結果。失敗時は PARSE_FAILED
  */
-async function tryParseJson(response: Response): Promise<ParseResult> {
+async function tryParseJson(response: Response): Promise<unknown> {
   try {
     return await response.json();
   } catch {
@@ -226,14 +253,14 @@ async function tryParseJson(response: Response): Promise<ParseResult> {
  *
  * @param response - fetchレスポンス
  * @returns パース済み本文
- * @throws ApiParseError - JSONパース失敗時
+ * @throws ApiParseError - Content-TypeがJSON以外、またはJSONパース失敗時
  */
 async function parseSuccessBody<T>(response: Response): Promise<T> {
-  const parsed = await tryParseJson(response);
-  if (parsed === PARSE_FAILED) {
+  if (!isJsonContentType(response)) {
     throw new ApiParseError(response.status, PARSE_ERROR_MESSAGE);
   }
-  if (!isJsonContentType(response)) {
+  const parsed = await tryParseJson(response);
+  if (parsed === PARSE_FAILED) {
     throw new ApiParseError(response.status, PARSE_ERROR_MESSAGE);
   }
   return parsed as T;
@@ -293,10 +320,11 @@ async function interpretResponse<T>(response: Response): Promise<T> {
  * リフレッシュトークンで新しいアクセストークンを取得する
  * 非JSON応答・ネットワーク失敗を含むあらゆる失敗は SessionExpiredError にラップする
  *
+ * @param baseUrl - APIのベースURL
  * @returns 新しいアクセストークン
  * @throws SessionExpiredError - リフレッシュに失敗した場合
  */
-async function refreshAccessToken(): Promise<string> {
+async function refreshAccessToken(baseUrl: string): Promise<string> {
   const refreshToken = await getRefreshToken();
 
   if (!refreshToken) {
@@ -305,7 +333,7 @@ async function refreshAccessToken(): Promise<string> {
   }
 
   try {
-    const response = await fetchWithTimeout(`${getBaseUrl()}${REFRESH_TOKEN_PATH}`, {
+    const response = await fetchWithTimeout(`${baseUrl}${REFRESH_TOKEN_PATH}`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ refreshToken }),
@@ -317,21 +345,14 @@ async function refreshAccessToken(): Promise<string> {
     }
 
     const parsed = await tryParseJson(response);
-    if (parsed === PARSE_FAILED || parsed === null || typeof parsed !== "object") {
+    if (!isRefreshTokenResponse(parsed)) {
       await clearAuthTokens();
       throw new SessionExpiredError();
     }
 
-    const maybe = parsed as { success?: unknown };
-    if (maybe.success !== true) {
-      await clearAuthTokens();
-      throw new SessionExpiredError();
-    }
-
-    const data = parsed as RefreshTokenResponse;
-    await setAuthToken(data.data.token);
-    await setRefreshToken(data.data.refreshToken);
-    return data.data.token;
+    await setAuthToken(parsed.data.token);
+    await setRefreshToken(parsed.data.refreshToken);
+    return parsed.data.token;
   } catch (error) {
     if (error instanceof SessionExpiredError) {
       throw error;
@@ -354,11 +375,12 @@ async function refreshAccessToken(): Promise<string> {
  * @throws ApiNetworkError - ネットワーク不通・タイムアウト時
  */
 export async function apiFetch<T>(path: string, options: RequestInit = {}): Promise<T> {
+  const baseUrl = getBaseUrl();
   const token = await getAuthToken();
   const existingHeaders = (options.headers as Record<string, string>) ?? {};
   const headers = buildHeaders(token, existingHeaders);
 
-  const response = await fetchWithTimeout(`${getBaseUrl()}${path}`, {
+  const response = await fetchWithTimeout(`${baseUrl}${path}`, {
     ...options,
     headers,
   });
@@ -367,10 +389,10 @@ export async function apiFetch<T>(path: string, options: RequestInit = {}): Prom
     return interpretResponse<T>(response);
   }
 
-  const newToken = await refreshAccessToken();
+  const newToken = await refreshAccessToken(baseUrl);
 
   const retryHeaders = buildHeaders(newToken, existingHeaders);
-  const retryResponse = await fetchWithTimeout(`${getBaseUrl()}${path}`, {
+  const retryResponse = await fetchWithTimeout(`${baseUrl}${path}`, {
     ...options,
     headers: retryHeaders,
   });

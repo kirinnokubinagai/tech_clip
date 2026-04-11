@@ -18,6 +18,7 @@ jest.mock("@mobile/lib/secure-store", () => ({
 }));
 
 import {
+  ApiError,
   ApiHttpError,
   ApiNetworkError,
   ApiParseError,
@@ -256,15 +257,10 @@ describe("apiFetch", () => {
       );
 
       // Act & Assert
-      await expect(apiFetch("/articles")).rejects.toThrow(ApiHttpError);
-      try {
-        await apiFetch("/articles");
-      } catch (error) {
-        expect(error).toBeInstanceOf(ApiHttpError);
-        if (error instanceof ApiHttpError) {
-          expect(error.status).toBe(500);
-        }
-      }
+      await expect(apiFetch("/articles")).rejects.toMatchObject({
+        status: 500,
+      });
+      await expect(apiFetch("/articles")).rejects.toBeInstanceOf(ApiHttpError);
     });
 
     it("502で本文が空の場合はApiHttpErrorをスローすること", async () => {
@@ -402,6 +398,7 @@ describe("apiFetch", () => {
 
       // Assert
       expect(error).toBeInstanceOf(Error);
+      expect(error).toBeInstanceOf(ApiError);
       expect(error).toBeInstanceOf(SessionExpiredError);
       expect(error.message).toBe("セッションの有効期限が切れました。再度ログインしてください");
     });
@@ -414,6 +411,7 @@ describe("apiFetch", () => {
 
       // Assert
       expect(error).toBeInstanceOf(Error);
+      expect(error).toBeInstanceOf(ApiError);
       expect(error).toBeInstanceOf(ApiHttpError);
       expect(error.status).toBe(500);
       expect(error.message).toBe("サーバーエラーが発生しました");
@@ -431,6 +429,7 @@ describe("apiFetch", () => {
 
       // Assert
       expect(error).toBeInstanceOf(Error);
+      expect(error).toBeInstanceOf(ApiError);
       expect(error).toBeInstanceOf(ApiNetworkError);
       expect(error.message).toBe("ネットワークに接続できません");
       expect(error.name).toBe("ApiNetworkError");
@@ -445,10 +444,65 @@ describe("apiFetch", () => {
 
       // Assert
       expect(error).toBeInstanceOf(Error);
+      expect(error).toBeInstanceOf(ApiError);
       expect(error).toBeInstanceOf(ApiParseError);
       expect(error.status).toBe(200);
       expect(error.message).toBe("レスポンスの解析に失敗しました");
       expect(error.name).toBe("ApiParseError");
+    });
+  });
+
+  describe("リフレッシュ応答の境界ケース", () => {
+    it("リフレッシュ応答が { success: true } のみ（data なし）のときSessionExpiredErrorになること", async () => {
+      // Arrange
+      mockFetch
+        .mockResolvedValueOnce(
+          createFetchResponse({ success: false, error: { code: "AUTH_EXPIRED" } }, { status: 401 }),
+        )
+        .mockResolvedValueOnce(createFetchResponse({ success: true }));
+
+      // Act & Assert
+      await expect(apiFetch("/articles")).rejects.toBeInstanceOf(SessionExpiredError);
+      expect(mockClearAuthTokens).toHaveBeenCalled();
+    });
+
+    it("リフレッシュ応答が { success: true, data: null } のときSessionExpiredErrorになること", async () => {
+      // Arrange
+      mockFetch
+        .mockResolvedValueOnce(
+          createFetchResponse({ success: false, error: { code: "AUTH_EXPIRED" } }, { status: 401 }),
+        )
+        .mockResolvedValueOnce(createFetchResponse({ success: true, data: null }));
+
+      // Act & Assert
+      await expect(apiFetch("/articles")).rejects.toBeInstanceOf(SessionExpiredError);
+      expect(mockClearAuthTokens).toHaveBeenCalled();
+    });
+
+    it("非2xxで { success: false, error: null } のときApiHttpErrorがスローされること", async () => {
+      // Arrange
+      mockFetch.mockResolvedValue(
+        createFetchResponse({ success: false, error: null }, { status: 500 }),
+      );
+
+      // Act & Assert
+      await expect(apiFetch("/articles")).rejects.toBeInstanceOf(ApiHttpError);
+    });
+
+    it("2xxでContent-Typeがtext/plainかつ有効なJSONのときApiParseErrorが投げられること", async () => {
+      // Arrange
+      mockFetch.mockResolvedValue(
+        createFetchResponse(
+          { success: true, data: {} },
+          {
+            status: 200,
+            contentType: "text/plain",
+          },
+        ),
+      );
+
+      // Act & Assert
+      await expect(apiFetch("/articles")).rejects.toBeInstanceOf(ApiParseError);
     });
   });
 
