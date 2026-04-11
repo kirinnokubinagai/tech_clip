@@ -4,7 +4,6 @@ import type { Auth } from "../auth";
 import type { Database } from "../db";
 import { articles, users } from "../db/schema";
 import { resolveGemmaModelTag } from "../lib/ai-model";
-import { getRunPodEndpointId } from "../lib/config";
 import { toRecordArray } from "../lib/db-cast";
 import { createAiLimitMiddleware } from "../middleware/ai-limit";
 import {
@@ -20,11 +19,7 @@ import { createSearchRoute, escapeLikeWildcards } from "../routes/search";
 import { createSummaryRoute } from "../routes/summary";
 import { parseArticle } from "../services/article-parser";
 import { summarizeArticle } from "../services/summary";
-import {
-  createTranslationJob,
-  getTranslationJobStatus,
-  translateArticle,
-} from "../services/translator";
+import { translateArticle } from "../services/translator";
 import type { Bindings } from "../types";
 
 /**
@@ -115,14 +110,10 @@ export async function handleArticles(
 
   const aiRoute = createAiRoute({
     db,
-    translateArticleFn: translateArticle,
-    createTranslationJobFn: createTranslationJob,
-    getTranslationJobStatusFn: getTranslationJobStatus,
-    runpodConfig: {
-      apiKey: env.RUNPOD_API_KEY,
-      endpointId: getRunPodEndpointId(env),
-      modelTag: gemmaModelTag,
-    },
+    ai: env.AI,
+    modelTag: gemmaModelTag,
+    cache: env.CACHE,
+    translateFn: translateArticle,
   });
 
   const favoriteRoute = createFavoriteRoute({ db });
