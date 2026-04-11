@@ -18,7 +18,7 @@ fi
 if command -v jq &> /dev/null; then
   FILE_PATH=$(echo "$TOOL_INPUT" | jq -r '.file_path // empty' 2>/dev/null)
 else
-  echo "DENY: jq コマンドが必要です。Nix flake または brew で jq をインストールしてください。" >&2
+  echo "DENY: jq コマンドが必要です。flake.nix に jq が含まれているか確認してください。" >&2
   exit 2  # jq がない環境ではブロック方向に倒す
 fi
 
