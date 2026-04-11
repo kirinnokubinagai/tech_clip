@@ -203,6 +203,8 @@ bash scripts/create-worktree.sh <N1> <desc1>
 bash scripts/create-worktree.sh <N2> <desc2>
 ```
 
+※ 以下は疑似コード。実際は Claude Code の Agent ツールで `run_in_background=true` と `prompt` を指定する
+
 ```text
 # 2. 各 Issue に対してバックグラウンドエージェントを並列 spawn する
 Agent(

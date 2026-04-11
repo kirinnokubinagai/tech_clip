@@ -26,10 +26,9 @@ teardown() {
 # CLAUDE_TOOL_INPUTを設定してスクリプトを実行するヘルパー
 run_script_with_file() {
     local file_path="$1"
-    local run_dir="${2:-$REPO_DIR}"
     local tool_input
     tool_input=$(jq -n --arg p "$file_path" '{file_path: $p}')
-    (cd "$run_dir" && CLAUDE_TOOL_INPUT="$tool_input" bash "$SCRIPT")
+    (cd "$REPO_DIR" && CLAUDE_TOOL_INPUT="$tool_input" bash "$SCRIPT")
 }
 
 # --- orchestration/config ファイルは許可 ---
@@ -489,4 +488,85 @@ run_script_with_file() {
     # Assert
     [ "$status" -eq 2 ]
     [[ "${output}" == *"実行フロー状態ファイル"* ]]
+}
+
+# --- ブランチ判定ロジック ---
+
+@test "worktreeの非mainブランチではapps/配下のソースファイル編集が許可されること" {
+    # Arrange
+    git -C "$REPO_DIR" checkout -b feature/test-branch
+    local file_path="$REPO_DIR/apps/api/src/index.ts"
+
+    # Act
+    run run_script_with_file "$file_path"
+
+    # Assert
+    [ "$status" -eq 0 ]
+}
+
+@test "worktreeの非mainブランチでもpackages/配下の編集が許可されること" {
+    # Arrange
+    git -C "$REPO_DIR" checkout -b feature/packages-branch
+    local file_path="$REPO_DIR/packages/shared/src/index.ts"
+
+    # Act
+    run run_script_with_file "$file_path"
+
+    # Assert
+    [ "$status" -eq 0 ]
+}
+
+@test "detached HEAD状態ではapps/配下のソースファイル編集がブロックされること" {
+    # Arrange
+    local commit_hash
+    commit_hash=$(git -C "$REPO_DIR" rev-parse HEAD)
+    git -C "$REPO_DIR" checkout --detach "$commit_hash"
+    local file_path="$REPO_DIR/apps/api/src/index.ts"
+
+    # Act
+    run run_script_with_file "$file_path"
+
+    # Assert
+    [ "$status" -eq 2 ]
+    [[ "${output}" == *"DENY"* ]] || [[ "${lines[*]}" == *"DENY"* ]]
+}
+
+@test "detached HEAD状態でもorchestrationファイルは許可されること" {
+    # Arrange
+    local commit_hash
+    commit_hash=$(git -C "$REPO_DIR" rev-parse HEAD)
+    git -C "$REPO_DIR" checkout --detach "$commit_hash"
+    local file_path="$REPO_DIR/.claude/hooks/some-hook.sh"
+
+    # Act
+    run run_script_with_file "$file_path"
+
+    # Assert
+    [ "$status" -eq 0 ]
+}
+
+@test "worktreeの非mainブランチでも.claude/.review-passedのEdit/Writeはブロックされること" {
+    # Arrange
+    git -C "$REPO_DIR" checkout -b feature/review-branch
+    local file_path="$REPO_DIR/.claude/.review-passed"
+
+    # Act
+    run run_script_with_file "$file_path"
+
+    # Assert
+    [ "$status" -eq 2 ]
+    [[ "${output}" == *"DENY"* ]] || [[ "${lines[*]}" == *"DENY"* ]]
+}
+
+@test "worktreeの非mainブランチでも.omc/state/配下のEdit/Writeはブロックされること" {
+    # Arrange
+    git -C "$REPO_DIR" checkout -b feature/state-branch
+    local file_path="$REPO_DIR/.omc/state/autopilot-state.json"
+
+    # Act
+    run run_script_with_file "$file_path"
+
+    # Assert
+    [ "$status" -eq 2 ]
+    [[ "${output}" == *"DENY"* ]] || [[ "${lines[*]}" == *"DENY"* ]]
 }

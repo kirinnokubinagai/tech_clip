@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# PreToolUse:Edit/Write hook: mainブランチ上でのソースファイル直接編集をブロック
+# PreToolUse:Edit/Write hook: mainブランチおよび detached HEAD 上でのソースファイル直接編集をブロック
 #
 # orchestration/config ファイル（.claude/**, .omc/**, CLAUDE.md, AGENTS.md,
 # flake.nix, .gitignore 等）は mainブランチ上でも許可する。
@@ -18,7 +18,7 @@ fi
 if command -v jq &> /dev/null; then
   FILE_PATH=$(echo "$TOOL_INPUT" | jq -r '.file_path // empty' 2>/dev/null)
 else
-  echo "DENY: jq コマンドが必要です。flake.nix に jq が含まれているか確認してください。" >&2
+  echo "DENY: jq コマンドが必要です。nix develop で環境に入ってから実行してください。" >&2
   exit 2  # jq がない環境ではブロック方向に倒す
 fi
 
@@ -28,6 +28,7 @@ fi
 
 # 相対パスは安全でないとして拒否
 if [[ "$FILE_PATH" != /* ]]; then
+  echo "DENY: 相対パスは安全でないため拒否します: $FILE_PATH" >&2
   exit 2
 fi
 
@@ -46,8 +47,10 @@ _find_repo_root() {
   local dir
   dir=$(dirname "$path")
   while [ "$dir" != "/" ]; do
-    if git -C "$dir" rev-parse --show-toplevel &>/dev/null; then
-      git -C "$dir" rev-parse --show-toplevel 2>/dev/null
+    local top
+    top=$(git -C "$dir" rev-parse --show-toplevel 2>/dev/null)
+    if [ -n "$top" ]; then
+      echo "$top"
       return 0
     fi
     dir=$(dirname "$dir")
@@ -57,6 +60,7 @@ _find_repo_root() {
 
 REPO_ROOT=$(_find_repo_root "$FILE_PATH")
 if [ -z "$REPO_ROOT" ]; then
+  echo "DENY: git リポジトリルートが特定できませんでした: $FILE_PATH" >&2
   exit 2
 fi
 
@@ -101,11 +105,9 @@ is_orchestration_file() {
 # apps/, packages/, tests/ 配下のファイルは coder agent 経由を強制
 is_source_file() {
   local path="$1"
-
-  echo "$path" | grep -qE "(^|/)apps/" && return 0
-  echo "$path" | grep -qE "(^|/)packages/" && return 0
-  echo "$path" | grep -qE "(^|/)tests/" && return 0
-
+  [[ "$path" == "$REPO_ROOT/apps/"* ]] && return 0
+  [[ "$path" == "$REPO_ROOT/packages/"* ]] && return 0
+  [[ "$path" == "$REPO_ROOT/tests/"* ]] && return 0
   return 1
 }
 
@@ -130,7 +132,7 @@ fi
 # mainブランチ上でのソースファイル直接編集をブロック
 # orchestration/config ファイルはmainブランチでも許可済みのためここには到達しない
 if is_source_file "$FILE_PATH"; then
-  # symbolic-ref を使用: detached HEAD 時は空文字となり、mainと同様にブロック
+  # symbolic-ref 失敗時（detached HEAD / .git 破損等）は空文字となり、安全側に倒してブロックする
   CURRENT_BRANCH=$(git -C "$REPO_ROOT" symbolic-ref --short HEAD 2>/dev/null)
   if [ "$CURRENT_BRANCH" = "main" ] || [ -z "$CURRENT_BRANCH" ]; then
     echo "DENY: orchestratorによるソースファイルの直接編集は禁止されています。" >&2
