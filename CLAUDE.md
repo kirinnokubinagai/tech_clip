@@ -105,38 +105,51 @@ bash scripts/create-worktree.sh <issue-number> <kebab-case-description>
    - pnpm turbo check で lint をクリアする
    - lint エラー 0 件になったらコミットする
    - worktree パスと Issue 番号を渡す
-   - 完了を待ってから③へ
+   - 完了を待ってからレビューループへ
 
-③ Agent(code-reviewer, mode="acceptEdits") + Agent(security-reviewer, mode="acceptEdits")（②完了後、並列 spawn）
-   - それぞれ独立した視点でレビューし、結果を直接返す
+--- レビューループ（両方 PASS になるまで繰り返す） ---
+
+③ [並列 spawn] Agent(code-reviewer, mode="acceptEdits")
+               Agent(security-reviewer, mode="acceptEdits")
    - 両エージェントの結果を待つ
 
-④ レビュー結果の評価（オーケストレーターが実施）
-   ★ 両方が「全件 PASS（0件）」を返すまで③→④のループを繰り返す。1件でも指摘が残れば push しない ★
-   - **どちらかに指摘がある場合（CRITICAL / HIGH / MEDIUM / LOW 問わず）:**
-     → Agent(coder, mode="acceptEdits") で修正依頼（全指摘内容を渡す）
-     → 修正完了後に③へ戻る（新しい Agent を spawn する）
-     → 両方 PASS になるまでこのループを続ける
-   - **両方「全件 PASS（0件）」の場合のみ以下を実行する:**
-     1. Bash: touch <worktree>/.claude/.review-passed  # マーカー作成
-     2. Bash: cd <worktree> && git push origin HEAD
-     3. Bash: gh pr create でPR作成 → PR URLをユーザーに報告
+④ オーケストレーターがレビュー結果を評価する:
+
+   if code_reviewer == "全件 PASS（0件）" and security_reviewer == "全件 PASS（0件）":
+       # ループ脱出 → push へ
+       Bash: touch <worktree>/.claude/.review-passed
+       Bash: cd <worktree> && git push origin HEAD
+       Bash: gh pr create → PR URL をユーザーに報告
+   else:
+       # 全指摘（CRITICAL / HIGH / MEDIUM / LOW すべて）を coder に渡す
+       Agent(coder, mode="acceptEdits") で修正依頼
+       # 修正完了後 → ③に戻る（新しい Agent を spawn する）
+
+--- ループここまで ---
 ```
 
 #### インフラ・CI/CD 変更の場合
 
 ```text
 ① Agent(infra-engineer, mode="acceptEdits")（実装）
-② Agent(infra-reviewer, mode="acceptEdits") + Agent(security-reviewer, mode="acceptEdits")（並列レビュー）
-③ 指摘があれば①へ差し戻し → 両方「全件 PASS（0件）」になるまでループ → マーカー作成 → push → PR 作成
+
+--- レビューループ ---
+② [並列 spawn] Agent(infra-reviewer, mode="acceptEdits")
+               Agent(security-reviewer, mode="acceptEdits")
+   両方 PASS → ループ脱出 → マーカー作成 → push → PR 作成
+   指摘あり  → Agent(infra-engineer) で修正 → ②へ戻る
 ```
 
 #### フロントエンド・UI 変更の場合
 
 ```text
 ① Agent(requirements-analyst, mode="acceptEdits") → Agent(ui-designer, mode="acceptEdits")（実装）
-② Agent(ui-reviewer, mode="acceptEdits") + Agent(code-reviewer, mode="acceptEdits")（並列レビュー）
-③ 指摘があれば①へ差し戻し → 両方「全件 PASS（0件）」になるまでループ → マーカー作成 → push → PR 作成
+
+--- レビューループ ---
+② [並列 spawn] Agent(ui-reviewer, mode="acceptEdits")
+               Agent(code-reviewer, mode="acceptEdits")
+   両方 PASS → ループ脱出 → マーカー作成 → push → PR 作成
+   指摘あり  → Agent(ui-designer, mode="acceptEdits") で修正 → ②へ戻る
 ```
 
 ---
