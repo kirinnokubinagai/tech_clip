@@ -112,13 +112,15 @@ bash scripts/create-worktree.sh <issue-number> <kebab-case-description>
    - 両エージェントの結果を待つ
 
 ④ レビュー結果の評価（オーケストレーターが実施）
-   - 両方 PASS の場合:
+   ★ 両方が「全件 PASS（0件）」を返すまで③→④のループを繰り返す。1件でも指摘が残れば push しない ★
+   - **どちらかに指摘がある場合（CRITICAL / HIGH / MEDIUM / LOW 問わず）:**
+     → Agent(coder, mode="acceptEdits") で修正依頼（全指摘内容を渡す）
+     → 修正完了後に③へ戻る（新しい Agent を spawn する）
+     → 両方 PASS になるまでこのループを続ける
+   - **両方「全件 PASS（0件）」の場合のみ以下を実行する:**
      1. Bash: touch <worktree>/.claude/.review-passed  # マーカー作成
      2. Bash: cd <worktree> && git push origin HEAD
      3. Bash: gh pr create でPR作成 → PR URLをユーザーに報告
-   - どちらかに指摘がある場合:
-     → Agent(coder, mode="acceptEdits") で修正依頼（指摘内容を渡す）
-     → 修正完了後に③へ戻る（新しい Agent を spawn する）
 ```
 
 #### インフラ・CI/CD 変更の場合
@@ -126,7 +128,7 @@ bash scripts/create-worktree.sh <issue-number> <kebab-case-description>
 ```text
 ① Agent(infra-engineer, mode="acceptEdits")（実装）
 ② Agent(infra-reviewer, mode="acceptEdits") + Agent(security-reviewer, mode="acceptEdits")（並列レビュー）
-③ 両方 PASS → マーカー作成 → push → PR 作成
+③ 指摘があれば①へ差し戻し → 両方「全件 PASS（0件）」になるまでループ → マーカー作成 → push → PR 作成
 ```
 
 #### フロントエンド・UI 変更の場合
@@ -134,7 +136,7 @@ bash scripts/create-worktree.sh <issue-number> <kebab-case-description>
 ```text
 ① Agent(requirements-analyst, mode="acceptEdits") → Agent(ui-designer, mode="acceptEdits")（実装）
 ② Agent(ui-reviewer, mode="acceptEdits") + Agent(code-reviewer, mode="acceptEdits")（並列レビュー）
-③ 両方 PASS → マーカー作成 → push → PR 作成
+③ 指摘があれば①へ差し戻し → 両方「全件 PASS（0件）」になるまでループ → マーカー作成 → push → PR 作成
 ```
 
 ---
@@ -282,6 +284,7 @@ oh-my-claudecode やその他のプラグイン由来のエージェントは使
 - Lint / Format は Biome を使う
 - 破壊的な Git コマンドを使わない
 - **レビューが通る前に push しない**（pre-push-review-guard.sh がブロックする）
+- **code-reviewer と security-reviewer の両方が「全件 PASS（0件）」を返すまで push しない**（CRITICAL / HIGH / MEDIUM / LOW 問わず指摘が 1 件でも残れば修正ループを続ける）
 - **オーケストレーターは main ブランチ上でソースファイルを直接編集しない。worktree 上でもエージェントへの委譲を優先する**
 - **TeamCreate / TaskCreate / SendMessage は使用しない**（Agent ツールで直接 spawn する）
 - **再レビューは新しい Agent を spawn する**（同じエージェントを再利用しない）
