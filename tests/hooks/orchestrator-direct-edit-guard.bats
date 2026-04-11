@@ -476,7 +476,7 @@ run_script_with_file() {
 
     # Assert
     [ "$status" -eq 2 ]
-    [[ "${output}" == *"レビュープロセスのみが作成可能"* ]]
+    [[ "${output}" == *"Edit/Write 経由では作成できません"* ]]
 }
 
 @test "大文字パスの.OMC/STATEで正しい理由メッセージが出ること" {

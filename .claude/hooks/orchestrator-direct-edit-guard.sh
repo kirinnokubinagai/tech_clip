@@ -34,7 +34,10 @@ fi
 # シンボリックリンクや .. を正規化（ファイルが存在しなくても動作）
 # realpath -m が失敗した場合はブロック方向に倒す（未正規化パスを使わない）
 FILE_PATH=$(realpath -m "$FILE_PATH" 2>/dev/null)
-[ -z "$FILE_PATH" ] && exit 2
+if [ -z "$FILE_PATH" ]; then
+  echo "DENY: パスの正規化に失敗しました（GNU coreutils の realpath が必要です）" >&2
+  exit 2
+fi
 
 # repo_root を正規化済み絶対パスから上方向に探索して取得する
 # パス自体が存在しない場合でも親ディレクトリを遡って git root を見つける
@@ -64,7 +67,7 @@ is_blocked_file() {
   # macOS case-insensitive FS 対策
   shopt -s nocasematch
   local matched=1
-  # .review-passed はレビュープロセスのみが作成する（orchestratorの迂回を防止）
+  # .review-passed は Edit/Write 経由での作成を防止し、マーカー作成は Bash touch に限定する（レビュー完了後の orchestrator による明示的な touch を強制）
   [[ "$path" == "$REPO_ROOT/.claude/.review-passed" ]] && matched=0
   # .omc/state/ は実行フロー状態ファイル（直接編集による動作操作を防止）
   [[ "$path" == "$REPO_ROOT/.omc/state" ]] && matched=0
@@ -112,7 +115,7 @@ if is_blocked_file "$FILE_PATH"; then
   echo "  対象ファイル: $FILE_PATH" >&2
   shopt -s nocasematch
   if [[ "$FILE_PATH" == *"/.review-passed" ]]; then
-    echo "  理由: レビュープロセスのみが作成可能なファイルです。" >&2
+    echo "  理由: Edit/Write 経由では作成できません。レビュー PASS 後に \`touch\` で作成してください。" >&2
   else
     echo "  理由: 実行フロー状態ファイルです（直接編集による動作操作を防止）。" >&2
   fi
