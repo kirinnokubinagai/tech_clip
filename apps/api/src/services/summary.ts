@@ -1,4 +1,5 @@
 import { DEFAULT_GEMMA_MODEL_TAG, WORKERS_AI_GEMMA_MODEL_ID } from "../lib/ai-model";
+import { createLogger } from "../lib/logger";
 
 /** 要約生成結果 */
 export type SummaryResult = {
@@ -33,6 +34,41 @@ const SUMMARY_MAX_TOKENS = 1024;
 /** 要約生成時の temperature */
 const SUMMARY_TEMPERATURE = 0.3;
 
+/** HTML エンティティのデコードマップ */
+const HTML_ENTITIES: Record<string, string> = {
+  "&amp;": "&",
+  "&lt;": "<",
+  "&gt;": ">",
+  "&quot;": '"',
+  "&#039;": "'",
+  "&apos;": "'",
+  "&nbsp;": " ",
+};
+
+/**
+ * 記事コンテンツの HTML をサニタイズしてプレーンテキストに変換する
+ *
+ * プロンプトインジェクション対策として script/style ブロックを除去し、
+ * HTML タグを取り除いてプレーンテキスト化する。
+ *
+ * @param content - 元のコンテンツ文字列
+ * @returns サニタイズ済みのプレーンテキスト（MAX_CONTENT_LENGTH 以内）
+ */
+export function sanitizeArticleContent(content: string): string {
+  const withoutScript = content.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, " ");
+  const withoutStyle = withoutScript.replace(
+    /<style\b[^<]*(?:(?!<\/style>)<[^<]*)*<\/style>/gi,
+    " ",
+  );
+  const withoutTags = withoutStyle.replace(/<[^>]+>/g, " ");
+  const decoded = withoutTags.replace(
+    /&amp;|&lt;|&gt;|&quot;|&#039;|&apos;|&nbsp;/g,
+    (match) => HTML_ENTITIES[match] ?? match,
+  );
+  const collapsed = decoded.replace(/\s+/g, " ").trim();
+  return collapsed.length > MAX_CONTENT_LENGTH ? collapsed.slice(0, MAX_CONTENT_LENGTH) : collapsed;
+}
+
 /**
  * Workers AI レスポンスの型ガード
  *
@@ -57,8 +93,7 @@ function isWorkersAiTextResponse(value: unknown): value is { response: string } 
 export async function summarizeArticle(params: SummarizeArticleParams): Promise<SummaryResult> {
   const { ai, content, language, modelTag } = params;
   const resolvedModelTag = modelTag ?? DEFAULT_GEMMA_MODEL_TAG;
-  const truncated =
-    content.length > MAX_CONTENT_LENGTH ? content.slice(0, MAX_CONTENT_LENGTH) : content;
+  const sanitized = sanitizeArticleContent(content);
   const languageName = LANGUAGE_NAMES[language] ?? "Japanese";
 
   const systemPrompt = `Summarize the following article in ${languageName}. Provide:
@@ -75,12 +110,10 @@ Key Points:
 - [key point 3]`;
 
   try {
-    const result = await (
-      ai as unknown as { run: (model: string, inputs: unknown) => Promise<unknown> }
-    ).run(WORKERS_AI_GEMMA_MODEL_ID, {
+    const result = await ai.run(WORKERS_AI_GEMMA_MODEL_ID, {
       messages: [
         { role: "system", content: systemPrompt },
-        { role: "user", content: truncated },
+        { role: "user", content: sanitized },
       ],
       max_tokens: SUMMARY_MAX_TOKENS,
       temperature: SUMMARY_TEMPERATURE,
@@ -95,9 +128,12 @@ Key Points:
       model: resolvedModelTag,
     };
   } catch (error) {
-    if (error instanceof Error && error.message === "要約の生成に失敗しました") {
-      throw error;
-    }
-    throw new Error("要約の生成に失敗しました");
+    const logger = createLogger("summary-service");
+    logger.error("Workers AI 要約生成エラー", {
+      language: params.language,
+      modelTag: params.modelTag,
+      error: error instanceof Error ? { name: error.name, message: error.message } : error,
+    });
+    throw new Error("要約の生成に失敗しました", { cause: error });
   }
 }
