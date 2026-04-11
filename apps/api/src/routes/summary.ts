@@ -4,6 +4,7 @@ import { z } from "zod";
 
 import type { Database } from "../db";
 import { aiJobs, articles, summaries } from "../db/schema";
+import { DEFAULT_GEMMA_MODEL_TAG } from "../lib/ai-model";
 import {
   AUTH_ERROR_CODE,
   AUTH_ERROR_MESSAGE,
@@ -21,6 +22,7 @@ import {
   HTTP_UNAUTHORIZED,
   HTTP_UNPROCESSABLE_ENTITY,
 } from "../lib/http-status";
+import { createLogger } from "../lib/logger";
 import type { SummaryResult } from "../services/summary";
 
 const ARTICLE_NOT_FOUND_MESSAGE = "記事が見つかりません";
@@ -30,6 +32,13 @@ const SUMMARY_GENERATION_ERROR_MESSAGE = "要約の生成に失敗しました";
 const NO_CONTENT_ERROR_MESSAGE = "記事のコンテンツがありません";
 const SUPPORTED_LANGUAGES = ["ja", "en", "zh", "ko"] as const;
 const DEFAULT_LANGUAGE = "ja";
+
+/** KV キャッシュに保存する要約データの形式 */
+type CachedSummary = {
+  summary: string;
+  model: string;
+  createdAt: string;
+};
 
 /** KV キャッシュ TTL（90日 = 秒単位） */
 const KV_CACHE_TTL_SECONDS = 60 * 60 * 24 * 90;
@@ -65,6 +74,33 @@ type SummaryRouteOptions = {
  */
 function buildKvKey(articleId: string, language: string): string {
   return `summary:v1:${articleId}:${language}`;
+}
+
+/**
+ * KV キャッシュから要約データを取得する
+ *
+ * @param cache - KV namespace（省略可）
+ * @param articleId - 記事ID
+ * @param language - 言語コード
+ * @returns キャッシュされた要約データ、またはnull
+ */
+async function getCachedSummary(
+  cache: KVNamespace | undefined,
+  articleId: string,
+  language: string,
+): Promise<CachedSummary | null> {
+  if (!cache) {
+    return null;
+  }
+  const raw = await cache.get(buildKvKey(articleId, language));
+  if (!raw) {
+    return null;
+  }
+  try {
+    return JSON.parse(raw) as CachedSummary;
+  } catch {
+    return null;
+  }
 }
 
 /**
@@ -163,6 +199,28 @@ export function createSummaryRoute(options: SummaryRouteOptions) {
 
     const article = ownership.article;
 
+    const cached = await getCachedSummary(cache, articleId, language);
+    if (cached) {
+      return c.json(
+        {
+          success: true,
+          data: {
+            status: "completed",
+            progress: 100,
+            jobId: null,
+            summary: {
+              articleId,
+              language,
+              summary: cached.summary,
+              model: cached.model,
+              createdAt: cached.createdAt,
+            },
+          },
+        },
+        HTTP_OK,
+      );
+    }
+
     const existingSummaries = await db
       .select()
       .from(summaries)
@@ -191,7 +249,7 @@ export function createSummaryRoute(options: SummaryRouteOptions) {
       );
     }
 
-    const now = new Date();
+    const startedAt = new Date();
     const jobId = crypto.randomUUID();
     await db.insert(aiJobs).values({
       id: jobId,
@@ -201,10 +259,10 @@ export function createSummaryRoute(options: SummaryRouteOptions) {
       language,
       status: "running",
       providerJobId: null,
-      model: modelTag ?? "unknown",
+      model: modelTag ?? DEFAULT_GEMMA_MODEL_TAG,
       errorMessage: null,
-      createdAt: now,
-      updatedAt: now,
+      createdAt: startedAt,
+      updatedAt: startedAt,
       completedAt: null,
     });
 
@@ -216,6 +274,8 @@ export function createSummaryRoute(options: SummaryRouteOptions) {
         modelTag,
       });
 
+      const completedAt = new Date();
+
       const [summaryRecord] = await db
         .insert(summaries)
         .values({
@@ -224,7 +284,7 @@ export function createSummaryRoute(options: SummaryRouteOptions) {
           language,
           summary: result.summary,
           model: result.model,
-          createdAt: now,
+          createdAt: completedAt,
         })
         .returning();
 
@@ -233,15 +293,21 @@ export function createSummaryRoute(options: SummaryRouteOptions) {
         .set({
           status: "completed",
           errorMessage: null,
-          updatedAt: now,
-          completedAt: now,
+          updatedAt: completedAt,
+          completedAt,
         })
         .where(eq(aiJobs.id, jobId));
 
       if (cache) {
-        await cache.put(buildKvKey(articleId, language), "1", {
-          expirationTtl: KV_CACHE_TTL_SECONDS,
-        });
+        await cache.put(
+          buildKvKey(articleId, language),
+          JSON.stringify({
+            summary: result.summary,
+            model: result.model,
+            createdAt: completedAt.toISOString(),
+          }),
+          { expirationTtl: KV_CACHE_TTL_SECONDS },
+        );
       }
 
       return c.json(
@@ -256,15 +322,33 @@ export function createSummaryRoute(options: SummaryRouteOptions) {
         },
         HTTP_OK,
       );
-    } catch {
-      await db
-        .update(aiJobs)
-        .set({
-          status: "failed",
-          errorMessage: SUMMARY_GENERATION_ERROR_MESSAGE,
-          updatedAt: now,
-        })
-        .where(eq(aiJobs.id, jobId));
+    } catch (error) {
+      const logger = createLogger("summary-route");
+      logger.error("要約生成に失敗しました", {
+        articleId,
+        language,
+        jobId,
+        error: error instanceof Error ? { name: error.name, message: error.message } : error,
+      });
+
+      const failedAt = new Date();
+      try {
+        await db
+          .update(aiJobs)
+          .set({
+            status: "failed",
+            errorMessage: SUMMARY_GENERATION_ERROR_MESSAGE,
+            updatedAt: failedAt,
+          })
+          .where(eq(aiJobs.id, jobId));
+      } catch (dbError) {
+        const dbLogger = createLogger("summary-route");
+        dbLogger.error("aiJobs 失敗ステータス更新に失敗", {
+          jobId,
+          error:
+            dbError instanceof Error ? { name: dbError.name, message: dbError.message } : dbError,
+        });
+      }
 
       return c.json(
         {
@@ -377,7 +461,18 @@ export function createSummaryRoute(options: SummaryRouteOptions) {
     }
 
     const articleId = c.req.param("id");
-    const language = c.req.query("language") ?? DEFAULT_LANGUAGE;
+    const rawLanguage = c.req.query("language") ?? DEFAULT_LANGUAGE;
+    const languageParseResult = CreateSummarySchema.safeParse({ language: rawLanguage });
+    if (!languageParseResult.success) {
+      return c.json(
+        {
+          success: false,
+          error: { code: VALIDATION_ERROR_CODE, message: "language が不正です" },
+        },
+        HTTP_UNPROCESSABLE_ENTITY,
+      );
+    }
+    const language = languageParseResult.data.language;
     const ownership = await ensureOwnedArticle(db, articleId, user.id as string);
 
     if ("error" in ownership) {
