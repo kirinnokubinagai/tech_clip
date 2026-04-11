@@ -5,6 +5,7 @@ import { z } from "zod";
 
 import type { Database } from "../db";
 import { aiJobs, articles, translations } from "../db/schema";
+import { DEFAULT_GEMMA_MODEL_TAG } from "../lib/ai-model";
 import {
   AUTH_ERROR_CODE,
   AUTH_ERROR_MESSAGE,
@@ -215,7 +216,7 @@ export function createAiRoute(options: AiRouteOptions) {
       language: targetLanguage,
       status: "running",
       providerJobId: null,
-      model: modelTag ?? "gemma-4-26b-a4b",
+      model: modelTag ?? DEFAULT_GEMMA_MODEL_TAG,
       errorMessage: null,
       createdAt: startedAt,
       updatedAt: startedAt,
@@ -227,7 +228,6 @@ export function createAiRoute(options: AiRouteOptions) {
         ai,
         content: article.content,
         title: article.title,
-        sourceLanguage: "ja",
         targetLanguage,
         modelTag,
       });
@@ -404,7 +404,7 @@ export function createAiRoute(options: AiRouteOptions) {
           status: "failed",
           progress: 0,
           jobId: job.id,
-          error: job.errorMessage ?? TRANSLATION_ERROR_MESSAGE,
+          error: TRANSLATION_ERROR_MESSAGE,
         },
       });
     }
@@ -428,20 +428,23 @@ export function createAiRoute(options: AiRouteOptions) {
       );
     }
 
-    const targetLanguage = c.req.query("targetLanguage");
-    if (!targetLanguage) {
+    const rawTargetLanguage = c.req.query("targetLanguage");
+    const targetLanguageParseResult = TranslateRequestSchema.safeParse({
+      targetLanguage: rawTargetLanguage,
+    });
+    if (!targetLanguageParseResult.success) {
       return c.json(
         {
           success: false,
           error: {
             code: VALIDATION_ERROR_CODE,
-            message: VALIDATION_ERROR_MESSAGE,
-            details: [{ field: "targetLanguage", message: "targetLanguageは必須です" }],
+            message: "targetLanguage が不正です",
           },
         },
         HTTP_UNPROCESSABLE_ENTITY,
       );
     }
+    const targetLanguage = targetLanguageParseResult.data.targetLanguage;
     const articleId = c.req.param("id");
     const ownership = await ensureOwnedArticle(db, articleId, user.id);
 
