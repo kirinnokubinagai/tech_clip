@@ -87,7 +87,11 @@
     "favoritesFilterClearLabel": "Clear favorites filter",
     "loadingArticles": "Loading...",
     "fetchError": "Failed to fetch articles",
-    "noArticles": "No articles"
+    "noArticles": "No articles",
+    "offlineCachedArticles": "Offline: showing cached articles",
+    "offlineNoCache": "Offline: no cached articles",
+    "retryLabel": "Retry",
+    "retryHint": "Retry fetching articles"
   },
   "article": {
     "save": "Save article",
@@ -121,7 +125,9 @@
     "thumbnailAlt": "Article thumbnail",
     "urlRequired": "Please enter a URL",
     "urlInvalid": "Please enter a valid URL",
-    "noMatch": "No articles matching \"{{query}}\""
+    "noMatch": "No articles matching \"{{query}}\"",
+    "generating": "Generating...",
+    "minutesToRead": "{{minutes}} min read"
   },
   "search": {
     "placeholder": "Search articles...",
@@ -268,7 +274,7 @@
     "pages": {
       "save": {
         "title": "Save Tech Articles with One Tap",
-        "description": "Supports 18 sites including Zenn, Qiita, and dev.to. Save articles you're interested in right away."
+        "description": "Supports {{count}} sources including Zenn, Qiita, and dev.to. Save articles you're interested in right away."
       },
       "ai": {
         "title": "AI Summarizes & Translates",

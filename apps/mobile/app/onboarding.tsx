@@ -1,6 +1,7 @@
 import { router } from "expo-router";
 import { ArrowRight, BookMarked, Sparkles, Tag } from "lucide-react-native";
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Pressable, ScrollView, Text, View } from "react-native";
 
 import { LIGHT_COLORS, SUPPORTED_SOURCE_COUNT } from "@/lib/constants";
@@ -8,32 +9,12 @@ import { logger } from "@/lib/logger";
 import { requestTrackingPermission } from "@/lib/tracking";
 import { useUIStore } from "@/stores/ui-store";
 
-/** オンボーディングページのデータ */
+/** オンボーディングページのメタ情報（テキストは翻訳キーから解決する） */
 const ONBOARDING_PAGES = [
-  {
-    id: "save",
-    title: "技術記事をワンタップで保存",
-    description: `Zenn、Qiita、dev.toなど${SUPPORTED_SOURCE_COUNT}ソースに対応。気になった記事をすぐ保存できます。`,
-    Icon: BookMarked,
-  },
-  {
-    id: "ai",
-    title: "AIが要約・翻訳",
-    description: "英語記事も日本語で読める。要点だけ把握したいときはAI要約で時短。",
-    Icon: Sparkles,
-  },
-  {
-    id: "organize",
-    title: "お気に入り・タグで整理",
-    description: "タグ付けで記事を分類。お気に入り登録でいつでも素早くアクセス。",
-    Icon: Tag,
-  },
-  {
-    id: "start",
-    title: "さあ、始めましょう",
-    description: "アカウントを作成して、技術知識を効率よく管理しましょう。",
-    Icon: ArrowRight,
-  },
+  { id: "save", Icon: BookMarked },
+  { id: "ai", Icon: Sparkles },
+  { id: "organize", Icon: Tag },
+  { id: "start", Icon: ArrowRight },
 ] as const;
 
 /** ページ数 */
@@ -44,6 +25,7 @@ const PAGE_COUNT = ONBOARDING_PAGES.length;
  * 初回起動時のみ表示される4ページのウォークスルー
  */
 export default function OnboardingScreen() {
+  const { t } = useTranslation();
   const hasSeenOnboarding = useUIStore((s) => s.hasSeenOnboarding);
   const setHasSeenOnboarding = useUIStore((s) => s.setHasSeenOnboarding);
 
@@ -51,6 +33,10 @@ export default function OnboardingScreen() {
 
   const isLastPage = currentIndex === PAGE_COUNT - 1;
   const currentPage = ONBOARDING_PAGES[currentIndex];
+  const currentPageTitle = t(`onboarding.pages.${currentPage.id}.title`);
+  const currentPageDescription = t(`onboarding.pages.${currentPage.id}.description`, {
+    count: SUPPORTED_SOURCE_COUNT,
+  });
 
   const handleFinish = async () => {
     try {
@@ -86,10 +72,10 @@ export default function OnboardingScreen() {
             testID="onboarding-title"
             className="mb-4 text-center text-2xl font-bold text-stone-900"
           >
-            {currentPage.title}
+            {currentPageTitle}
           </Text>
           <Text className="text-center text-base leading-relaxed text-stone-500">
-            {currentPage.description}
+            {currentPageDescription}
           </Text>
         </View>
       </ScrollView>
@@ -123,7 +109,7 @@ export default function OnboardingScreen() {
           accessibilityLabel="スキップ"
           accessibilityHint="オンボーディングをスキップしてログイン画面に進みます"
         >
-          <Text className="text-base text-stone-500">スキップ</Text>
+          <Text className="text-base text-stone-500">{t("onboarding.skip")}</Text>
         </Pressable>
 
         {isLastPage ? (
@@ -135,7 +121,7 @@ export default function OnboardingScreen() {
             accessibilityLabel="始める"
             accessibilityHint="アカウント作成画面に進みます"
           >
-            <Text className="text-base font-semibold text-white">始める</Text>
+            <Text className="text-base font-semibold text-white">{t("onboarding.start")}</Text>
           </Pressable>
         ) : (
           <Pressable
@@ -146,7 +132,7 @@ export default function OnboardingScreen() {
             accessibilityLabel="次へ"
             accessibilityHint={`次のページ（${currentIndex + 2}ページ目）に進みます`}
           >
-            <Text className="text-base font-semibold text-white">次へ</Text>
+            <Text className="text-base font-semibold text-white">{t("onboarding.next")}</Text>
           </Pressable>
         )}
       </View>

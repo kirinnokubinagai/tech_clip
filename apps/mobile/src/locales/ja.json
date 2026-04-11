@@ -89,7 +89,9 @@
     "fetchError": "記事の取得に失敗しました",
     "noArticles": "記事がありません",
     "offlineCachedArticles": "オフライン：キャッシュ済み記事を表示中",
-    "offlineNoCache": "オフライン：キャッシュがありません"
+    "offlineNoCache": "オフライン：キャッシュがありません",
+    "retryLabel": "再試行",
+    "retryHint": "記事の取得を再試行します"
   },
   "article": {
     "save": "記事を保存",
@@ -123,7 +125,9 @@
     "thumbnailAlt": "記事のサムネイル",
     "urlRequired": "URLを入力してください",
     "urlInvalid": "有効なURLを入力してください",
-    "noMatch": "「{{query}}」に一致する記事がありません"
+    "noMatch": "「{{query}}」に一致する記事がありません",
+    "generating": "生成中...",
+    "minutesToRead": "{{minutes}}分で読めます"
   },
   "search": {
     "placeholder": "記事を検索...",
@@ -270,7 +274,7 @@
     "pages": {
       "save": {
         "title": "技術記事をワンタップで保存",
-        "description": "Zenn、Qiita、dev.toなど18サイトに対応。気になった記事をすぐ保存できます。"
+        "description": "Zenn、Qiita、dev.toなど{{count}}ソースに対応。気になった記事をすぐ保存できます。"
       },
       "ai": {
         "title": "AIが要約・翻訳",

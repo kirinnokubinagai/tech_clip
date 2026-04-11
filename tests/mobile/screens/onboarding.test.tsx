@@ -1,6 +1,10 @@
 import OnboardingScreen from "@mobile-app/onboarding";
 import { fireEvent, render, waitFor } from "@testing-library/react-native";
 
+const { __setMockLocale } = require("react-i18next") as {
+  __setMockLocale: (locale: "ja" | "en") => void;
+};
+
 jest.mock("expo-router", () => ({
   router: {
     replace: jest.fn(),
@@ -30,6 +34,7 @@ const { router: mockRouter } = jest.requireMock("expo-router") as {
 beforeEach(() => {
   jest.clearAllMocks();
   mockHasSeenOnboarding.current = false;
+  __setMockLocale("ja");
 });
 
 describe("OnboardingScreen", () => {
@@ -141,6 +146,49 @@ describe("OnboardingScreen", () => {
       // Assert
       expect(queryByTestId("onboarding-title")).toBeNull();
       expect(queryByTestId("skip-button")).toBeNull();
+    });
+  });
+
+  describe("多言語対応", () => {
+    it("日本語ロケールで日本語タイトルとボタン文言が表示されること", async () => {
+      // Arrange
+      __setMockLocale("ja");
+
+      // Act
+      const { getByText, getByTestId } = await render(<OnboardingScreen />);
+
+      // Assert
+      expect(getByText("技術記事をワンタップで保存")).toBeTruthy();
+      expect(getByTestId("skip-button")).toBeTruthy();
+      expect(getByText("スキップ")).toBeTruthy();
+      expect(getByText("次へ")).toBeTruthy();
+    });
+
+    it("英語ロケールで英語タイトルとボタン文言が表示されること", async () => {
+      // Arrange
+      __setMockLocale("en");
+
+      // Act
+      const { getByText } = await render(<OnboardingScreen />);
+
+      // Assert
+      expect(getByText("Save Tech Articles with One Tap")).toBeTruthy();
+      expect(getByText("Skip")).toBeTruthy();
+      expect(getByText("Next")).toBeTruthy();
+    });
+
+    it("英語ロケールの最終ページでGet Startedボタンが表示されること", async () => {
+      // Arrange
+      __setMockLocale("en");
+      const { getByTestId, getByText } = await render(<OnboardingScreen />);
+
+      // Act - 3回次へを押して最終ページへ
+      await fireEvent.press(getByTestId("next-button"));
+      await fireEvent.press(getByTestId("next-button"));
+      await fireEvent.press(getByTestId("next-button"));
+
+      // Assert
+      expect(getByText("Get Started")).toBeTruthy();
     });
   });
 });

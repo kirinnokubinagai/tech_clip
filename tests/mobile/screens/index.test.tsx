@@ -4,6 +4,10 @@ import { useOfflineArticles } from "@mobile/hooks/use-offline-articles";
 import HomeScreen from "@mobile-app/(tabs)/index";
 import { render, waitFor } from "@testing-library/react-native";
 
+const { __setMockLocale } = require("react-i18next") as {
+  __setMockLocale: (locale: "ja" | "en") => void;
+};
+
 jest.mock("@mobile/hooks/use-articles", () => ({
   useArticles: jest.fn(),
   useToggleFavorite: jest.fn(),
@@ -57,6 +61,7 @@ const DEFAULT_USE_TOGGLE_FAVORITE_MOCK = {
 describe("HomeScreen", () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    __setMockLocale("ja");
     (useArticles as jest.Mock).mockReturnValue(DEFAULT_USE_ARTICLES_MOCK);
     (useToggleFavorite as jest.Mock).mockReturnValue(DEFAULT_USE_TOGGLE_FAVORITE_MOCK);
     (useNetworkStatus as jest.Mock).mockReturnValue({
@@ -150,6 +155,65 @@ describe("HomeScreen", () => {
 
     await waitFor(() => {
       expect(queryByLabelText("フィルター")).toBeNull();
+    });
+  });
+
+  describe("多言語対応", () => {
+    it("英語ロケールでローディング文言が英語で表示されること", async () => {
+      // Arrange
+      __setMockLocale("en");
+      (useArticles as jest.Mock).mockReturnValue({
+        ...DEFAULT_USE_ARTICLES_MOCK,
+        isLoading: true,
+      });
+
+      // Act
+      const { getByText } = await render(<HomeScreen />);
+
+      // Assert
+      await waitFor(() => {
+        expect(getByText("Loading...")).toBeTruthy();
+      });
+    });
+
+    it("英語ロケールでエラー時に英語の再試行UIが表示されること", async () => {
+      // Arrange
+      __setMockLocale("en");
+      (useArticles as jest.Mock).mockReturnValue({
+        ...DEFAULT_USE_ARTICLES_MOCK,
+        isError: true,
+        data: undefined,
+      });
+
+      // Act
+      const { getByText } = await render(<HomeScreen />);
+
+      // Assert
+      await waitFor(() => {
+        expect(getByText("Failed to fetch articles")).toBeTruthy();
+        expect(getByText("Retry")).toBeTruthy();
+      });
+    });
+
+    it("英語ロケールでオフライン時に英語の空メッセージが表示されること", async () => {
+      // Arrange
+      __setMockLocale("en");
+      (useNetworkStatus as jest.Mock).mockReturnValue({
+        isOnline: false,
+        isOffline: true,
+      });
+      (useOfflineArticles as jest.Mock).mockReturnValue({
+        articles: [],
+        isLoading: false,
+      });
+
+      // Act
+      const { getByText } = await render(<HomeScreen />);
+
+      // Assert
+      await waitFor(() => {
+        expect(getByText("Offline: no cached articles")).toBeTruthy();
+      });
     });
   });
 });
