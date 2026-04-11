@@ -80,7 +80,9 @@ function SettingsRow({ icon, label, value, onPress, trailing, testID }: Settings
         testID={testID}
         onPress={onPress}
         accessibilityRole="button"
-        accessibilityLabel={value ? `${label}、現在の設定: ${value}` : label}
+        accessibilityLabel={
+          value ? t("common.accessibility.currentValue", { label, value }) : label
+        }
         accessibilityHint={t("common.accessibility.tapToChange")}
       >
         {content}

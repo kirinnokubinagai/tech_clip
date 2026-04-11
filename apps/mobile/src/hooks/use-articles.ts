@@ -232,10 +232,10 @@ export function useToggleFavorite() {
 }
 
 /** 要約でサポートされる言語 */
-type SummaryLanguage = "ja" | "en" | "zh" | "ko";
+type SummaryLanguage = "ja" | "en" | "zh" | "zh-CN" | "zh-TW" | "ko";
 
 /** 翻訳でサポートされる言語 */
-type TranslationLanguage = "en" | "ja" | "zh" | "ko";
+type TranslationLanguage = "en" | "ja" | "zh" | "zh-CN" | "zh-TW" | "ko";
 
 /** 要約リクエストのパラメータ */
 type RequestSummaryParams = {

@@ -596,6 +596,36 @@ describe("useSettingsStore", () => {
         );
       });
 
+      it("要約言語をzh-CNに変更してSecureStoreに永続化できること", async () => {
+        // Arrange
+        const newLanguage = "zh-CN" as const;
+
+        // Act
+        await useSettingsStore.getState().setSummaryLanguage(newLanguage);
+
+        // Assert
+        expect(useSettingsStore.getState().summaryLanguage).toBe("zh-CN");
+        expect(mockSetItemAsync).toHaveBeenCalledWith(
+          "settings_summary_language",
+          JSON.stringify("zh-CN"),
+        );
+      });
+
+      it("要約言語をzh-TWに変更してSecureStoreに永続化できること", async () => {
+        // Arrange
+        const newLanguage = "zh-TW" as const;
+
+        // Act
+        await useSettingsStore.getState().setSummaryLanguage(newLanguage);
+
+        // Assert
+        expect(useSettingsStore.getState().summaryLanguage).toBe("zh-TW");
+        expect(mockSetItemAsync).toHaveBeenCalledWith(
+          "settings_summary_language",
+          JSON.stringify("zh-TW"),
+        );
+      });
+
       it("要約言語をkoに変更してSecureStoreに永続化できること", async () => {
         // Arrange
         const newLanguage = "ko" as const;

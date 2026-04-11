@@ -16,8 +16,10 @@
     "search": "搜索",
     "skip": "跳过",
     "start": "开始",
+    "generating": "生成中...",
     "accessibility": {
-      "tapToChange": "点击更改"
+      "tapToChange": "点击更改",
+      "currentValue": "{{label}}，当前设置: {{value}}"
     }
   },
   "auth": {
@@ -126,7 +128,9 @@
     "thumbnailAlt": "文章缩略图",
     "urlRequired": "请输入URL",
     "urlInvalid": "请输入有效的URL",
-    "noMatch": "没有匹配「{{query}}」的文章"
+    "noMatch": "没有匹配「{{query}}」的文章",
+    "summaryLabel": "摘要",
+    "translationLabel": "翻译"
   },
   "search": {
     "placeholder": "搜索文章...",

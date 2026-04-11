@@ -4,6 +4,11 @@ import i18n from "i18next";
 import { create } from "zustand";
 
 import { apiFetch } from "@/lib/api";
+import {
+  resolveChineseVariant,
+  SUPPORTED_SUMMARY_LANGUAGES,
+  SUPPORTED_UI_LANGUAGES,
+} from "@/lib/language-code";
 
 /** SecureStoreキー: 言語設定 */
 const LANGUAGE_KEY = "settings_language";
@@ -11,11 +16,11 @@ const LANGUAGE_KEY = "settings_language";
 /** SecureStoreキー: 要約言語設定 */
 const SUMMARY_LANGUAGE_KEY = "settings_summary_language";
 
-/** サポートするlocaleコード */
-const LOCALE_CODES = ["ja", "en", "zh-CN", "zh-TW", "ko"] as const;
+/** SecureStore保存値の最大文字数（locale コードは最大10文字以内） */
+const MAX_LANGUAGE_CODE_LENGTH = 10;
 
 /** localeコードの型 */
-export type Language = (typeof LOCALE_CODES)[number];
+export type Language = (typeof SUPPORTED_UI_LANGUAGES)[number];
 
 /** デフォルト言語 */
 const DEFAULT_LANGUAGE: Language = "ja";
@@ -58,13 +63,11 @@ function normalizeStoredLanguage(stored: string): {
     return { language: DEFAULT_LANGUAGE, needsMigration: true };
   }
 
-  /** SecureStore保存値の最大文字数（locale コードは最大10文字以内） */
-  const MAX_LANGUAGE_CODE_LENGTH = 10;
   if (parsed.length > MAX_LANGUAGE_CODE_LENGTH) {
     return { language: DEFAULT_LANGUAGE, needsMigration: true };
   }
 
-  if ((LOCALE_CODES as ReadonlyArray<string>).includes(parsed)) {
+  if ((SUPPORTED_UI_LANGUAGES as ReadonlyArray<string>).includes(parsed)) {
     return { language: parsed as Language, needsMigration: false };
   }
 
@@ -72,11 +75,8 @@ function normalizeStoredLanguage(stored: string): {
   return { language: migrated ?? DEFAULT_LANGUAGE, needsMigration: true };
 }
 
-/** 要約言語コード選択肢 */
-const SUMMARY_LANGUAGE_OPTIONS = ["ja", "en", "zh", "zh-CN", "zh-TW", "ko"] as const;
-
 /** 要約言語コードの型 */
-export type SummaryLanguage = (typeof SUMMARY_LANGUAGE_OPTIONS)[number];
+export type SummaryLanguage = (typeof SUPPORTED_SUMMARY_LANGUAGES)[number];
 
 /** 要約言語コードと表示名のマップ */
 export const SUMMARY_LANGUAGE_LABELS: Record<SummaryLanguage, string> = {
@@ -86,7 +86,7 @@ export const SUMMARY_LANGUAGE_LABELS: Record<SummaryLanguage, string> = {
   "zh-CN": "简体中文",
   "zh-TW": "繁體中文",
   ko: "한국어",
-} as const;
+};
 
 /** デフォルト要約言語 */
 const DEFAULT_SUMMARY_LANGUAGE: SummaryLanguage = "ja";
@@ -98,11 +98,13 @@ const DEFAULT_SUMMARY_LANGUAGE: SummaryLanguage = "ja";
  * @returns サポートされている要約言語コードであればtrue
  */
 function isSupportedSummaryLanguage(value: string): value is SummaryLanguage {
-  return (SUMMARY_LANGUAGE_OPTIONS as readonly string[]).includes(value);
+  return (SUPPORTED_SUMMARY_LANGUAGES as readonly string[]).includes(value);
 }
 
 /**
  * デバイスのロケールから要約言語コードを解決する
+ *
+ * languageTag を優先し zh-Hans-* → zh-CN、zh-Hant-* → zh-TW のマッピングを行う
  *
  * @returns サポートされている要約言語コード
  */
@@ -111,14 +113,23 @@ function resolveDeviceSummaryLanguage(): SummaryLanguage {
   if (locales.length === 0) {
     return DEFAULT_SUMMARY_LANGUAGE;
   }
-  const deviceLang = locales[0]?.languageCode;
-  if (!deviceLang) {
+  const locale = locales[0];
+  if (!locale) {
     return DEFAULT_SUMMARY_LANGUAGE;
   }
-  if (!isSupportedSummaryLanguage(deviceLang)) {
+
+  const tag = locale.languageTag ?? "";
+  const code = locale.languageCode ?? "";
+
+  const chineseVariant = resolveChineseVariant(tag, code);
+  if (chineseVariant !== null) {
+    return chineseVariant;
+  }
+
+  if (!code || !isSupportedSummaryLanguage(code)) {
     return DEFAULT_SUMMARY_LANGUAGE;
   }
-  return deviceLang;
+  return code;
 }
 
 /** 通知設定の型 */

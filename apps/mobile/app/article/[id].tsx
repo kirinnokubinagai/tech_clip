@@ -1,6 +1,7 @@
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { ArrowLeft, ExternalLink, Globe, Heart, Languages, Sparkles } from "lucide-react-native";
 import { useCallback, useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { ActivityIndicator, Linking, Pressable, ScrollView, Text, View } from "react-native";
 import Markdown from "react-native-markdown-display";
 
@@ -157,6 +158,7 @@ const markdownStyles = {
  * オフライン時はローカルDBからキャッシュ済み記事を取得する。
  */
 export default function ArticleDetailScreen() {
+  const { t } = useTranslation();
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
 
@@ -335,7 +337,7 @@ export default function ArticleDetailScreen() {
     return (
       <View className="flex-1 bg-background items-center justify-center">
         <ActivityIndicator size="large" color={PRIMARY_COLOR} />
-        <Text className="text-text-muted mt-3">読み込み中...</Text>
+        <Text className="text-text-muted mt-3">{t("common.loading")}</Text>
       </View>
     );
   }
@@ -343,12 +345,12 @@ export default function ArticleDetailScreen() {
   if (isError || !article) {
     return (
       <View className="flex-1 bg-background items-center justify-center px-4">
-        <Text className="text-text-muted text-base text-center">記事の取得に失敗しました</Text>
+        <Text className="text-text-muted text-base text-center">{t("article.fetchError")}</Text>
         <Pressable onPress={() => refetch()} className="mt-4 bg-primary rounded-lg px-6 py-3">
-          <Text className="text-white font-semibold">再試行</Text>
+          <Text className="text-white font-semibold">{t("common.retry")}</Text>
         </Pressable>
         <Pressable onPress={handleBack} className="mt-3">
-          <Text className="text-primary">戻る</Text>
+          <Text className="text-primary">{t("common.back")}</Text>
         </Pressable>
       </View>
     );
@@ -360,7 +362,7 @@ export default function ArticleDetailScreen() {
         <Pressable
           onPress={handleBack}
           accessibilityRole="button"
-          accessibilityLabel="戻る"
+          accessibilityLabel={t("common.back")}
           hitSlop={8}
         >
           <ArrowLeft size={BACK_ICON_SIZE} color={TEXT_COLOR} />
@@ -369,7 +371,7 @@ export default function ArticleDetailScreen() {
           <Pressable
             onPress={handleOpenExternal}
             accessibilityRole="button"
-            accessibilityLabel="ブラウザで開く"
+            accessibilityLabel={t("article.openInBrowser")}
             hitSlop={8}
           >
             <ExternalLink size={HEADER_ICON_SIZE} color={FAVORITE_INACTIVE_COLOR} />
@@ -377,7 +379,9 @@ export default function ArticleDetailScreen() {
           <Pressable
             onPress={handleToggleFavorite}
             accessibilityRole="button"
-            accessibilityLabel={article.isFavorite ? "お気に入り解除" : "お気に入り追加"}
+            accessibilityLabel={
+              article.isFavorite ? t("article.removeFromFavorites") : t("article.addToFavorites")
+            }
             hitSlop={8}
           >
             <Heart
@@ -400,7 +404,7 @@ export default function ArticleDetailScreen() {
             )}
             {article.readingTimeMinutes && (
               <Text className="text-xs text-text-muted">
-                {article.readingTimeMinutes}分で読めます
+                {t("article.readingTime", { minutes: article.readingTimeMinutes })}
               </Text>
             )}
           </View>
@@ -420,7 +424,7 @@ export default function ArticleDetailScreen() {
               opacity: requestSummary.isPending || summaryJob ? 0.6 : 1,
             }}
             accessibilityRole="button"
-            accessibilityLabel="要約を生成"
+            accessibilityLabel={t("article.summarize")}
             testID="summary-button"
           >
             {requestSummary.isPending || summaryJob ? (
@@ -435,7 +439,7 @@ export default function ArticleDetailScreen() {
               className="text-sm font-medium"
               style={{ color: article.summary ? SUCCESS_COLOR : ACCENT_COLOR }}
             >
-              {article.summary ? "要約済み" : "要約"}
+              {article.summary ? t("article.summarized") : t("article.summarize")}
             </Text>
           </Pressable>
 
@@ -448,7 +452,7 @@ export default function ArticleDetailScreen() {
               opacity: requestTranslation.isPending || translationJob ? 0.6 : 1,
             }}
             accessibilityRole="button"
-            accessibilityLabel="翻訳する"
+            accessibilityLabel={t("article.translate")}
             testID="translation-button"
           >
             {requestTranslation.isPending || translationJob ? (
@@ -463,14 +467,14 @@ export default function ArticleDetailScreen() {
               className="text-sm font-medium"
               style={{ color: article.translation ? SUCCESS_COLOR : ACCENT_COLOR }}
             >
-              {article.translation ? "翻訳済み" : "翻訳"}
+              {article.translation ? t("article.translated") : t("article.translate")}
             </Text>
           </Pressable>
         </View>
 
         {summaryJob && (
           <View className="mx-4 mt-2 rounded-xl bg-card border border-border p-4">
-            <Text className="text-sm font-medium text-text mb-2">生成中...</Text>
+            <Text className="text-sm font-medium text-text mb-2">{t("common.generating")}</Text>
             <View
               className="h-2 rounded-full overflow-hidden"
               style={{ backgroundColor: CARD_BG_COLOR }}
@@ -488,7 +492,7 @@ export default function ArticleDetailScreen() {
 
         {translationJob && (
           <View className="mx-4 mt-2 rounded-xl bg-card border border-border p-4">
-            <Text className="text-sm font-medium text-text mb-2">生成中...</Text>
+            <Text className="text-sm font-medium text-text mb-2">{t("common.generating")}</Text>
             <View
               className="h-2 rounded-full overflow-hidden"
               style={{ backgroundColor: CARD_BG_COLOR }}
@@ -508,7 +512,9 @@ export default function ArticleDetailScreen() {
           <View className="mx-4 mt-2 p-4 rounded-xl bg-card border border-border">
             <View className="flex-row items-center gap-2 mb-2">
               <Sparkles size={SECTION_ICON_SIZE} color={SUCCESS_COLOR} />
-              <Text className="text-sm font-semibold text-success">要約</Text>
+              <Text className="text-sm font-semibold text-success">
+                {t("article.summaryLabel")}
+              </Text>
             </View>
             <Text className="text-sm text-text leading-relaxed">{article.summary}</Text>
           </View>
@@ -518,7 +524,9 @@ export default function ArticleDetailScreen() {
           <View className="mx-4 mt-3 p-4 rounded-xl bg-card border border-border">
             <View className="flex-row items-center gap-2 mb-2">
               <Globe size={SECTION_ICON_SIZE} color={ACCENT_COLOR} />
-              <Text className="text-sm font-semibold text-primary-light">翻訳</Text>
+              <Text className="text-sm font-semibold text-primary-light">
+                {t("article.translationLabel")}
+              </Text>
             </View>
             <Text className="text-sm text-text leading-relaxed">{article.translation}</Text>
           </View>
@@ -529,10 +537,10 @@ export default function ArticleDetailScreen() {
             <Markdown style={markdownStyles}>{article.content}</Markdown>
           ) : (
             <View className="items-center py-8">
-              <Text className="text-text-muted text-center">記事本文が利用できません</Text>
+              <Text className="text-text-muted text-center">{t("article.noContent")}</Text>
               <Pressable onPress={handleOpenExternal} className="mt-3 flex-row items-center gap-2">
                 <ExternalLink size={SECTION_ICON_SIZE} color={PRIMARY_COLOR} />
-                <Text className="text-primary">元の記事を見る</Text>
+                <Text className="text-primary">{t("article.viewOriginal")}</Text>
               </Pressable>
             </View>
           )}

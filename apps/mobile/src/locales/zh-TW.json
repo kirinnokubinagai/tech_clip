@@ -16,8 +16,10 @@
     "search": "搜尋",
     "skip": "跳過",
     "start": "開始",
+    "generating": "生成中...",
     "accessibility": {
-      "tapToChange": "點擊更改"
+      "tapToChange": "點擊更改",
+      "currentValue": "{{label}}，目前設定: {{value}}"
     }
   },
   "auth": {
@@ -126,7 +128,9 @@
     "thumbnailAlt": "文章縮圖",
     "urlRequired": "請輸入URL",
     "urlInvalid": "請輸入有效的URL",
-    "noMatch": "沒有符合「{{query}}」的文章"
+    "noMatch": "沒有符合「{{query}}」的文章",
+    "summaryLabel": "摘要",
+    "translationLabel": "翻譯"
   },
   "search": {
     "placeholder": "搜尋文章...",

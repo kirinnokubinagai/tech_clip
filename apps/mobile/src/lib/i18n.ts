@@ -7,12 +7,10 @@ import ja from "../locales/ja.json";
 import ko from "../locales/ko.json";
 import zhCN from "../locales/zh-CN.json";
 import zhTW from "../locales/zh-TW.json";
-
-/** サポートする言語一覧 */
-const SUPPORTED_LANGUAGES = ["ja", "en", "zh-CN", "zh-TW", "ko"] as const;
+import { resolveChineseVariant, SUPPORTED_UI_LANGUAGES } from "./language-code";
 
 /** サポートする言語コードの型 */
-type Language = (typeof SUPPORTED_LANGUAGES)[number];
+type Language = (typeof SUPPORTED_UI_LANGUAGES)[number];
 
 /** デフォルト言語 */
 const DEFAULT_LANGUAGE: Language = "ja";
@@ -38,14 +36,12 @@ function resolveDeviceLanguage(): Language {
   const tag = locale.languageTag ?? "";
   const code = locale.languageCode ?? "";
 
-  if (tag.startsWith("zh-Hans") || tag === "zh-CN" || code === "zh-Hans") {
-    return "zh-CN" as const;
-  }
-  if (tag.startsWith("zh-Hant") || tag === "zh-TW" || tag === "zh-HK" || code === "zh-Hant") {
-    return "zh-TW" as const;
+  const chineseVariant = resolveChineseVariant(tag, code);
+  if (chineseVariant !== null) {
+    return chineseVariant;
   }
 
-  const isSupported = SUPPORTED_LANGUAGES.includes(code as Language);
+  const isSupported = SUPPORTED_UI_LANGUAGES.includes(code as Language);
   if (!isSupported) {
     return DEFAULT_LANGUAGE;
   }

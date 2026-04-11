@@ -92,6 +92,8 @@ describe("GenerateTranslationSchema", () => {
       expect(message).toContain("en");
       expect(message).toContain("ja");
       expect(message).toContain("zh");
+      expect(message).toContain("zh-CN");
+      expect(message).toContain("zh-TW");
       expect(message).toContain("ko");
     });
 

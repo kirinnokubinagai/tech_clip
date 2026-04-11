@@ -43,6 +43,8 @@ jest.mock("@mobile/stores/settings-store", () => ({
     ja: "日本語",
     en: "English",
     zh: "中文",
+    "zh-CN": "简体中文",
+    "zh-TW": "繁體中文",
     ko: "한국어",
   },
   useSettingsStore: jest.fn((selector: (state: Record<string, unknown>) => unknown) =>
@@ -332,6 +334,34 @@ describe("要約言語設定", () => {
 
     // Assert
     expect(mockSetSummaryLanguage).toHaveBeenCalledWith("ko");
+  });
+
+  it("要約言語選択ダイアログで简体中文を選択するとsetSummaryLanguageが呼ばれること", async () => {
+    // Arrange
+    const { getByTestId } = await render(<SettingsScreen />);
+    await fireEvent.press(getByTestId("settings-summary-language-button"));
+
+    // Act
+    const buttons = (Alert.alert as jest.Mock).mock.calls[0][2];
+    const zhCNButton = buttons.find((b: { text: string }) => b.text === "简体中文");
+    zhCNButton.onPress();
+
+    // Assert
+    expect(mockSetSummaryLanguage).toHaveBeenCalledWith("zh-CN");
+  });
+
+  it("要約言語選択ダイアログで繁體中文を選択するとsetSummaryLanguageが呼ばれること", async () => {
+    // Arrange
+    const { getByTestId } = await render(<SettingsScreen />);
+    await fireEvent.press(getByTestId("settings-summary-language-button"));
+
+    // Act
+    const buttons = (Alert.alert as jest.Mock).mock.calls[0][2];
+    const zhTWButton = buttons.find((b: { text: string }) => b.text === "繁體中文");
+    zhTWButton.onPress();
+
+    // Assert
+    expect(mockSetSummaryLanguage).toHaveBeenCalledWith("zh-TW");
   });
 
   it("setSummaryLanguageが失敗した場合にAlert.alertでエラーが表示されること", async () => {
