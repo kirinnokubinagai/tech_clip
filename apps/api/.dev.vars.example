@@ -67,9 +67,14 @@ GITHUB_CLIENT_SECRET=your-github-client-secret
 # -----------------------------------------------------------------------------
 # RunPod (https://www.runpod.io) でアカウントを作成し、API キーを発行する
 # ENDPOINT_ID はデプロイ済みエンドポイントの ID
+# モデルは Gemma 3 12B IT をデフォルトとし、infra/runpod の Dockerfile を参照する
 
 RUNPOD_API_KEY=your-runpod-api-key
 RUNPOD_ENDPOINT_ID=your-runpod-endpoint-id
+
+# データベースの summaries/translations.model カラムに保存するタグ
+# 未設定の場合は gemma3-12b が使用される
+# GEMMA_MODEL_NAME=gemma3-12b
 
 # -----------------------------------------------------------------------------
 # RevenueCat Webhook

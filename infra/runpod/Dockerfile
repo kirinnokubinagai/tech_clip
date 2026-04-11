@@ -11,12 +11,13 @@ RUN pip install --no-cache-dir \
 # ハンドラーをコピー
 COPY handler.py .
 
-# 16GB GPU を狙うため、量子化済み AWQ モデルをデフォルトにする。
-ARG MODEL_NAME=QuantTrio/Qwen3.5-9B-AWQ
+# デフォルトは Google の Gemma 3 12B IT。
+# GEMMA_MODEL_NAME 環境変数で HuggingFace モデル名を差し替え可能。
+ARG MODEL_NAME=google/gemma-3-12b-it
 ENV MODEL_NAME=${MODEL_NAME}
 ENV MODEL_PATH=${MODEL_NAME}
-ENV VLLM_QUANTIZATION=awq
-ENV MAX_MODEL_LEN=2048
+# Gemma は量子化なしのネイティブ fp16/bf16 を想定する。
+ENV MAX_MODEL_LEN=4096
 ENV MAX_NUM_SEQS=2
 ENV GPU_MEMORY_UTILIZATION=0.85
 ENV TENSOR_PARALLEL_SIZE=1

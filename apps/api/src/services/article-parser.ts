@@ -131,9 +131,11 @@ async function dispatchParser(source: ArticleSource, url: string): Promise<Parse
  *
  * sourceDetectorでソースを判定し、対応するパーサーを呼び出す。
  * 個別パーサーがエラーになった場合は汎用パーサーにフォールバックする。
+ * ただし YouTube はフォールバックが無意味なため、エラーをそのまま伝播させる。
  *
  * @param url - パース対象のURL文字列
  * @returns パース済み記事データ
+ * @throws Error - YouTube の字幕取得に失敗した場合（NO_CAPTIONS など）
  */
 export async function parseArticle(url: string): Promise<ParsedArticle> {
   const source = detectSource(url);
@@ -141,6 +143,12 @@ export async function parseArticle(url: string): Promise<ParsedArticle> {
   if (source === "other") {
     const { parseGeneric } = await import("./parsers/generic");
     const result = await parseGeneric(url);
+    return { ...result, source };
+  }
+
+  if (source === "youtube") {
+    const { parseYouTube } = await import("./parsers/youtube");
+    const result = await parseYouTube(url);
     return { ...result, source };
   }
 

@@ -52,11 +52,14 @@ type GetTranslationJobStatusFn = (params: {
   content: string;
   runpodApiKey: string;
   runpodEndpointId: string;
+  modelTag?: string;
 }) => Promise<TranslationJobStatus>;
 
 type RunpodConfig = {
   apiKey: string;
   endpointId: string;
+  /** データベース保存用のモデルタグ（省略時は DEFAULT_GEMMA_MODEL_TAG を使用） */
+  modelTag?: string;
 };
 
 /** 認証済みユーザーの型 */
@@ -227,6 +230,7 @@ export function createAiRoute(options: AiRouteOptions) {
         targetLanguage,
         runpodApiKey: runpodConfig.apiKey,
         runpodEndpointId: runpodConfig.endpointId,
+        modelTag: runpodConfig.modelTag,
       });
 
       const now = new Date();
@@ -355,6 +359,7 @@ export function createAiRoute(options: AiRouteOptions) {
         content: article.content ?? "",
         runpodApiKey: runpodConfig.apiKey,
         runpodEndpointId: runpodConfig.endpointId,
+        modelTag: runpodConfig.modelTag,
       });
       const now = new Date();
 

@@ -1,7 +1,11 @@
+import { DEFAULT_GEMMA_MODEL_TAG } from "../lib/ai-model";
+
 /** RunPod接続設定 */
 export type RunPodConfig = {
   apiKey: string;
   endpointId: string;
+  /** データベース保存用のモデルタグ（省略時は DEFAULT_GEMMA_MODEL_TAG を使用） */
+  modelTag?: string;
 };
 
 /** 要約生成結果 */
@@ -31,9 +35,6 @@ type SummarizeArticleParams = {
 /** コンテンツの最大文字数（約8000トークン相当） */
 const MAX_CONTENT_LENGTH = 24000;
 
-/** RunPodモデル名 */
-const MODEL_NAME = "qwen3.5-9b";
-
 /** RunPod API ベースURL */
 const RUNPOD_API_BASE = "https://api.runpod.ai/v2";
 
@@ -43,6 +44,12 @@ const POLLING_INTERVAL_MS = 2000;
 /** RunPod APIのポーリング最大回数 */
 const MAX_POLLING_ATTEMPTS = 60;
 
+/** 要約生成時の最大トークン数 */
+const SUMMARY_MAX_TOKENS = 1024;
+
+/** 要約生成時の temperature */
+const SUMMARY_TEMPERATURE = 0.3;
+
 /** 言語名マッピング */
 const LANGUAGE_NAMES: Record<string, string> = {
   ja: "Japanese",
@@ -50,6 +57,16 @@ const LANGUAGE_NAMES: Record<string, string> = {
   zh: "Chinese",
   ko: "Korean",
 };
+
+/**
+ * 使用するモデルタグを解決する
+ *
+ * @param config - RunPod接続設定
+ * @returns modelTagが未指定の場合はデフォルトタグ
+ */
+function resolveModelTag(config: RunPodConfig): string {
+  return config.modelTag ?? DEFAULT_GEMMA_MODEL_TAG;
+}
 
 function buildPrompt(content: string, language: string): string {
   const truncated =
@@ -65,6 +82,43 @@ Article:
 ${truncated}
 
 Summary:`;
+}
+
+/** RunPod要約レスポンスの期待する構造（Gemma chat template 互換） */
+type RunPodSummaryOutput = {
+  output: {
+    choices: Array<{
+      message: {
+        content: string;
+      };
+    }>;
+  };
+};
+
+/**
+ * RunPod要約レスポンスの型ガード
+ *
+ * @param value - 検証対象の値
+ * @returns RunPodSummaryOutput型かどうか
+ */
+function isRunPodSummaryOutput(value: unknown): value is RunPodSummaryOutput {
+  if (typeof value !== "object" || value === null) {
+    return false;
+  }
+  const v = value as Record<string, unknown>;
+  if (typeof v.output !== "object" || v.output === null) {
+    return false;
+  }
+  const output = v.output as Record<string, unknown>;
+  if (!Array.isArray(output.choices) || output.choices.length === 0) {
+    return false;
+  }
+  const first = output.choices[0] as Record<string, unknown> | undefined;
+  if (typeof first?.message !== "object" || first.message === null) {
+    return false;
+  }
+  const message = first.message as Record<string, unknown>;
+  return typeof message.content === "string";
 }
 
 function mapRunPodStatus(status: string): "queued" | "running" | "completed" | "failed" {
@@ -84,6 +138,7 @@ export async function createSummaryJob(params: SummarizeArticleParams): Promise<
   const { content, language, config, fetchFn = fetch } = params;
   const prompt = buildPrompt(content, language);
   const runUrl = `${RUNPOD_API_BASE}/${config.endpointId}/run`;
+  const modelTag = resolveModelTag(config);
 
   const response = await fetchFn(runUrl, {
     method: "POST",
@@ -93,9 +148,9 @@ export async function createSummaryJob(params: SummarizeArticleParams): Promise<
     },
     body: JSON.stringify({
       input: {
-        prompt,
-        max_tokens: 1024,
-        temperature: 0.3,
+        messages: [{ role: "user", content: prompt }],
+        max_tokens: SUMMARY_MAX_TOKENS,
+        temperature: SUMMARY_TEMPERATURE,
       },
     }),
   });
@@ -112,7 +167,7 @@ export async function createSummaryJob(params: SummarizeArticleParams): Promise<
 
   return {
     providerJobId: data.id,
-    model: MODEL_NAME,
+    model: modelTag,
   };
 }
 
@@ -123,6 +178,7 @@ export async function getSummaryJobStatus(params: {
 }): Promise<SummaryJobStatus> {
   const { providerJobId, config, fetchFn = fetch } = params;
   const statusUrl = `${RUNPOD_API_BASE}/${config.endpointId}/status/${providerJobId}`;
+  const modelTag = resolveModelTag(config);
 
   const response = await fetchFn(statusUrl, {
     headers: {
@@ -137,22 +193,22 @@ export async function getSummaryJobStatus(params: {
   const data = (await response.json()) as {
     status: string;
     error?: string;
-    output?: { text?: string };
+    output?: unknown;
   };
   const status = mapRunPodStatus(data.status);
 
-  if (status === "completed" && data.output?.text) {
+  if (status === "completed" && isRunPodSummaryOutput(data)) {
     return {
       status: "completed",
-      model: MODEL_NAME,
-      summary: data.output.text,
+      model: modelTag,
+      summary: data.output.choices[0].message.content,
     };
   }
 
   if (status === "failed") {
     return {
       status: "failed",
-      model: MODEL_NAME,
+      model: modelTag,
       error: data.error ?? "RunPod job failed",
     };
   }
@@ -160,14 +216,14 @@ export async function getSummaryJobStatus(params: {
   if (status === "completed") {
     return {
       status: "failed",
-      model: MODEL_NAME,
+      model: modelTag,
       error: "RunPod job completed without summary output",
     };
   }
 
   return {
     status,
-    model: MODEL_NAME,
+    model: modelTag,
   };
 }
 

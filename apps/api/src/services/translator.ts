@@ -1,8 +1,7 @@
+import { DEFAULT_GEMMA_MODEL_TAG } from "../lib/ai-model";
+
 /** RunPod API ベースURL */
 const RUNPOD_API_BASE = "https://api.runpod.ai/v2";
-
-/** 使用するモデル名 */
-const MODEL_NAME = "qwen3.5-9b";
 
 /** 翻訳時の最大トークン数 */
 const MAX_TRANSLATION_TOKENS = 4096;
@@ -29,6 +28,8 @@ export type TranslateOptions = {
   targetLanguage: string;
   runpodApiKey: string;
   runpodEndpointId: string;
+  /** データベース保存用のモデルタグ（省略時は DEFAULT_GEMMA_MODEL_TAG を使用） */
+  modelTag?: string;
 };
 
 /** 翻訳結果 */
@@ -177,6 +178,16 @@ function parseArticleTranslationPayload(text: string): {
   };
 }
 
+/**
+ * 使用するモデルタグを解決する
+ *
+ * @param modelTag - 任意のモデルタグ
+ * @returns 未指定の場合は DEFAULT_GEMMA_MODEL_TAG
+ */
+function resolveModelTag(modelTag: string | undefined): string {
+  return modelTag ?? DEFAULT_GEMMA_MODEL_TAG;
+}
+
 async function callRunPodTranslation(
   text: string,
   targetLanguage: string,
@@ -216,7 +227,7 @@ async function callRunPodTranslation(
 export async function createTranslationJob(
   options: TranslateOptions,
 ): Promise<TranslationJobResult> {
-  const { title, content, targetLanguage, runpodApiKey, runpodEndpointId } = options;
+  const { title, content, targetLanguage, runpodApiKey, runpodEndpointId, modelTag } = options;
   const { text: textWithoutCode } = extractCodeBlocks(content);
   const prompt = buildArticleTranslationPrompt(title, textWithoutCode, targetLanguage);
   const url = `${RUNPOD_API_BASE}/${runpodEndpointId}/run`;
@@ -247,7 +258,7 @@ export async function createTranslationJob(
 
   return {
     providerJobId: data.id,
-    model: MODEL_NAME,
+    model: resolveModelTag(modelTag),
   };
 }
 
@@ -256,9 +267,11 @@ export async function getTranslationJobStatus(params: {
   content: string;
   runpodApiKey: string;
   runpodEndpointId: string;
+  modelTag?: string;
 }): Promise<TranslationJobStatus> {
-  const { providerJobId, content, runpodApiKey, runpodEndpointId } = params;
+  const { providerJobId, content, runpodApiKey, runpodEndpointId, modelTag } = params;
   const url = `${RUNPOD_API_BASE}/${runpodEndpointId}/status/${providerJobId}`;
+  const resolvedTag = resolveModelTag(modelTag);
 
   const response = await fetch(url, {
     headers: {
@@ -289,7 +302,7 @@ export async function getTranslationJobStatus(params: {
 
     return {
       status: "completed",
-      model: MODEL_NAME,
+      model: resolvedTag,
       translatedTitle: parsed.translatedTitle,
       translatedContent: restoreCodeBlocks(parsed.translatedContent, blocks),
     };
@@ -298,19 +311,19 @@ export async function getTranslationJobStatus(params: {
   if (data.status === "FAILED" || data.status === "CANCELLED" || data.status === "TIMED_OUT") {
     return {
       status: "failed",
-      model: MODEL_NAME,
+      model: resolvedTag,
       error: data.error ?? "RunPodジョブの実行に失敗しました",
     };
   }
 
   return {
     status: data.status === "IN_QUEUE" ? "queued" : "running",
-    model: MODEL_NAME,
+    model: resolvedTag,
   };
 }
 
 export async function translateArticle(options: TranslateOptions): Promise<TranslationResult> {
-  const { title, content, targetLanguage, runpodApiKey, runpodEndpointId } = options;
+  const { title, content, targetLanguage, runpodApiKey, runpodEndpointId, modelTag } = options;
 
   try {
     const { text: textWithoutCode, blocks } = extractCodeBlocks(content);
@@ -325,7 +338,7 @@ export async function translateArticle(options: TranslateOptions): Promise<Trans
     return {
       translatedTitle,
       translatedContent,
-      model: MODEL_NAME,
+      model: resolveModelTag(modelTag),
     };
   } catch (error) {
     if (error instanceof Error && error.message.includes("RunPod API")) {

@@ -3,6 +3,7 @@ import { Hono } from "hono";
 import type { Auth } from "../auth";
 import type { Database } from "../db";
 import { articles, users } from "../db/schema";
+import { resolveGemmaModelTag } from "../lib/ai-model";
 import { getRunPodEndpointId } from "../lib/config";
 import { toRecordArray } from "../lib/db-cast";
 import { createAiLimitMiddleware } from "../middleware/ai-limit";
@@ -102,6 +103,8 @@ export async function handleArticles(
     },
   });
 
+  const gemmaModelTag = resolveGemmaModelTag(env.GEMMA_MODEL_NAME);
+
   const summaryRoute = createSummaryRoute({
     db,
     summarizeFn: summarizeArticle,
@@ -110,6 +113,7 @@ export async function handleArticles(
     runpodConfig: {
       apiKey: env.RUNPOD_API_KEY,
       endpointId: getRunPodEndpointId(env),
+      modelTag: gemmaModelTag,
     },
   });
 
@@ -121,6 +125,7 @@ export async function handleArticles(
     runpodConfig: {
       apiKey: env.RUNPOD_API_KEY,
       endpointId: getRunPodEndpointId(env),
+      modelTag: gemmaModelTag,
     },
   });
 

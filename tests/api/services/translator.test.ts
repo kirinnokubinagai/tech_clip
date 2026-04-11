@@ -1,3 +1,4 @@
+import { DEFAULT_GEMMA_MODEL_TAG } from "@api/lib/ai-model";
 import {
   buildPrompt,
   createTranslationJob,
@@ -126,6 +127,25 @@ describe("translator", () => {
     const result = await translateArticle(options);
 
     expect(result.translatedTitle).toBe("How to use React Hooks");
-    expect(result.model).toBe("qwen3.5-9b");
+    expect(result.model).toBe(DEFAULT_GEMMA_MODEL_TAG);
+  });
+
+  it("modelTagが指定されている場合createTranslationJobが指定タグを返すこと", async () => {
+    const options: TranslateOptions = {
+      title: "テスト",
+      content: "テスト本文",
+      targetLanguage: "en",
+      runpodApiKey: RUNPOD_CONFIG.apiKey,
+      runpodEndpointId: RUNPOD_CONFIG.endpointId,
+      modelTag: "gemma4-9b",
+    };
+
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({ id: "run_abc123" }),
+    });
+
+    const result = await createTranslationJob(options);
+    expect(result.model).toBe("gemma4-9b");
   });
 });

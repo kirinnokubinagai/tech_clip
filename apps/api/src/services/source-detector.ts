@@ -60,6 +60,9 @@ const SMASHING_PATTERN = /^(www\.)?smashingmagazine\.com/;
 /** Twitter/X判定パターン */
 const TWITTER_PATTERN = /^(www\.)?(x\.com|twitter\.com)\/\w+\/status\//;
 
+/** YouTube判定パターン (youtube.com の watch / shorts と youtu.be の短縮 URL に対応) */
+const YOUTUBE_PATTERN = /^((www\.|m\.)?youtube\.com\/(watch|shorts)|youtu\.be\/)/;
+
 /** URLホスト+パスとArticleSourceの対応表 */
 const SOURCE_MAPPINGS: SourceMapping[] = [
   { pattern: ZENN_BOOKS_PATTERN, source: "zenn" },
@@ -80,6 +83,7 @@ const SOURCE_MAPPINGS: SourceMapping[] = [
   { pattern: CSS_TRICKS_PATTERN, source: "css-tricks" },
   { pattern: SMASHING_PATTERN, source: "smashing" },
   { pattern: TWITTER_PATTERN, source: "twitter" },
+  { pattern: YOUTUBE_PATTERN, source: "youtube" },
 ];
 
 /**

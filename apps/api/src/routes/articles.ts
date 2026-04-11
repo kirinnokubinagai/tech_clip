@@ -42,6 +42,13 @@ const NOT_FOUND_ERROR_MESSAGE = "記事が見つかりません";
 /** URL最大文字数 */
 const URL_MAX_LENGTH = 2048;
 
+/** 字幕取得失敗を示すエラーコード（YouTubeパーサーが投げる） */
+const NO_CAPTIONS_ERROR_CODE = "NO_CAPTIONS";
+
+/** 字幕取得失敗時に返すユーザー向けメッセージ */
+const NO_CAPTIONS_ERROR_MESSAGE =
+  "この動画には字幕がないため、要約できません。別の動画をお試しください";
+
 /** 記事保存リクエストのZodスキーマ */
 const CreateArticleSchema = z.object({
   url: z
@@ -101,6 +108,16 @@ type ArticlesRouteOptions = {
   parseArticleFn: ParseArticleFn;
   queryFn: ArticlesQueryFn;
 };
+
+/**
+ * 例外が YouTube の NO_CAPTIONS エラーかどうかを判定する
+ *
+ * @param error - catch で捕捉した値
+ * @returns NO_CAPTIONS エラーの場合 true
+ */
+function isNoCaptionsError(error: unknown): boolean {
+  return error instanceof Error && error.message === NO_CAPTIONS_ERROR_CODE;
+}
 
 /**
  * ブール値クエリパラメータをパースする
@@ -315,7 +332,19 @@ export function createArticlesRoute(options: ArticlesRouteOptions) {
         },
         HTTP_OK,
       );
-    } catch {
+    } catch (error) {
+      if (isNoCaptionsError(error)) {
+        return c.json(
+          {
+            success: false,
+            error: {
+              code: NO_CAPTIONS_ERROR_CODE,
+              message: NO_CAPTIONS_ERROR_MESSAGE,
+            },
+          },
+          HTTP_UNPROCESSABLE_ENTITY,
+        );
+      }
       return c.json(
         {
           success: false,
@@ -423,7 +452,19 @@ export function createArticlesRoute(options: ArticlesRouteOptions) {
         },
         HTTP_CREATED,
       );
-    } catch {
+    } catch (error) {
+      if (isNoCaptionsError(error)) {
+        return c.json(
+          {
+            success: false,
+            error: {
+              code: NO_CAPTIONS_ERROR_CODE,
+              message: NO_CAPTIONS_ERROR_MESSAGE,
+            },
+          },
+          HTTP_UNPROCESSABLE_ENTITY,
+        );
+      }
       return c.json(
         {
           success: false,
