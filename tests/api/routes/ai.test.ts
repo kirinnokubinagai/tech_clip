@@ -371,6 +371,151 @@ describe("POST /api/articles/:id/translate", () => {
   });
 });
 
+describe("POST /api/articles/:id/translate（KV キャッシュ）", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockTranslateFn.mockResolvedValue({
+      translatedTitle: "How to use React Hooks",
+      translatedContent: "# React Hooks\n\nTest content.",
+      model: "gemma-4-26b-a4b",
+    });
+    mockInsertValues.mockReturnValue({
+      returning: mockInsertReturning,
+    });
+    mockInsertReturning.mockResolvedValue([MOCK_TRANSLATION]);
+    mockUpdateSet.mockReturnValue({
+      where: vi.fn().mockResolvedValue(undefined),
+    });
+  });
+
+  it("KV キャッシュヒット時に translateFn を呼び出さないこと", async () => {
+    // Arrange
+    const mockCache = {
+      get: vi.fn().mockResolvedValue(JSON.stringify(MOCK_TRANSLATION)),
+      put: vi.fn().mockResolvedValue(undefined),
+    } as unknown as KVNamespace;
+
+    type Variables = {
+      user: typeof MOCK_USER;
+      session: Record<string, unknown>;
+    };
+    const app = new Hono<{ Variables: Variables }>();
+    app.use("/api/articles/*", (c, next) => {
+      c.set("user", MOCK_USER);
+      c.set("session", { id: "session_01" });
+      return next();
+    });
+    const aiRoute = createAiRoute({
+      db: mockDb as never,
+      ai: mockAi as unknown as Ai,
+      translateFn: mockTranslateFn,
+      cache: mockCache,
+    });
+    app.route("/api/articles", aiRoute);
+
+    mockSelectWhere.mockResolvedValue([MOCK_ARTICLE]);
+
+    const req = new Request("http://localhost/api/articles/article_001/translate", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ targetLanguage: "en" }),
+    });
+
+    // Act
+    const res = await app.request(req);
+
+    // Assert
+    expect(res.status).toBe(HTTP_OK);
+    const body = (await res.json()) as SuccessResponseBody;
+    expect(body.success).toBe(true);
+    expect(body.data.status).toBe("completed");
+    expect(mockTranslateFn).not.toHaveBeenCalled();
+  });
+
+  it("KV キャッシュ書き込み失敗時もレスポンス 200 を返すこと", async () => {
+    // Arrange
+    const mockCache = {
+      get: vi.fn().mockResolvedValue(null),
+      put: vi.fn().mockRejectedValue(new Error("KV 書き込みエラー")),
+    } as unknown as KVNamespace;
+
+    type Variables = {
+      user: typeof MOCK_USER;
+      session: Record<string, unknown>;
+    };
+    const app = new Hono<{ Variables: Variables }>();
+    app.use("/api/articles/*", (c, next) => {
+      c.set("user", MOCK_USER);
+      c.set("session", { id: "session_01" });
+      return next();
+    });
+    const aiRoute = createAiRoute({
+      db: mockDb as never,
+      ai: mockAi as unknown as Ai,
+      translateFn: mockTranslateFn,
+      cache: mockCache,
+    });
+    app.route("/api/articles", aiRoute);
+
+    mockSelectWhere.mockResolvedValueOnce([MOCK_ARTICLE]).mockResolvedValueOnce([]);
+
+    const req = new Request("http://localhost/api/articles/article_001/translate", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ targetLanguage: "en" }),
+    });
+
+    // Act
+    const res = await app.request(req);
+
+    // Assert
+    expect(res.status).toBe(HTTP_OK);
+    const body = (await res.json()) as SuccessResponseBody;
+    expect(body.success).toBe(true);
+    expect(mockTranslateFn).toHaveBeenCalledOnce();
+  });
+
+  it("KV キャッシュキーが translate:v1:<articleId>:<lang> 形式であること", async () => {
+    // Arrange
+    const mockCache = {
+      get: vi.fn().mockResolvedValue(null),
+      put: vi.fn().mockResolvedValue(undefined),
+    } as unknown as KVNamespace;
+
+    type Variables = {
+      user: typeof MOCK_USER;
+      session: Record<string, unknown>;
+    };
+    const app = new Hono<{ Variables: Variables }>();
+    app.use("/api/articles/*", (c, next) => {
+      c.set("user", MOCK_USER);
+      c.set("session", { id: "session_01" });
+      return next();
+    });
+    const aiRoute = createAiRoute({
+      db: mockDb as never,
+      ai: mockAi as unknown as Ai,
+      translateFn: mockTranslateFn,
+      cache: mockCache,
+    });
+    app.route("/api/articles", aiRoute);
+
+    mockSelectWhere.mockResolvedValueOnce([MOCK_ARTICLE]).mockResolvedValueOnce([]);
+
+    const req = new Request("http://localhost/api/articles/article_001/translate", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ targetLanguage: "en" }),
+    });
+
+    // Act
+    await app.request(req);
+
+    // Assert
+    expect(mockCache.get).toHaveBeenCalledWith("translate:v1:article_001:en");
+  });
+});
+
 describe("GET /api/articles/:id/translate", () => {
   beforeEach(() => {
     vi.clearAllMocks();
