@@ -1,5 +1,5 @@
-import { LANGUAGE_DISPLAY_NAMES } from "../lib/language-display-names";
 import { DEFAULT_GEMMA_MODEL_TAG, WORKERS_AI_GEMMA_MODEL_ID } from "../lib/ai-model";
+import { LANGUAGE_DISPLAY_NAMES } from "../lib/language-display-names";
 import { createLogger } from "../lib/logger";
 import { isWorkersAiTextResponse } from "../lib/workers-ai";
 import type { SUPPORTED_LANGUAGES } from "../validators/ai";

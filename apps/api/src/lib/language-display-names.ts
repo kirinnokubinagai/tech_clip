@@ -1,4 +1,4 @@
-import { SUPPORTED_LANGUAGES } from "../validators/ai";
+import type { SUPPORTED_LANGUAGES } from "../validators/ai";
 
 /**
  * 言語コードの表示名マッピング（SSOT）
