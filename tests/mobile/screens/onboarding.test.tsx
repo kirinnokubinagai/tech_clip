@@ -189,4 +189,51 @@ describe("OnboardingScreen", () => {
       expect(getByText("Get Started")).not.toBeNull();
     });
   });
+
+  describe("a11y 翻訳キー", () => {
+    it("日本語ロケールでスキップボタンの accessibilityLabel が正しく翻訳されること", async () => {
+      // Arrange
+      setMockLocale("ja");
+
+      // Act
+      const { getByLabelText } = await render(<OnboardingScreen />);
+
+      // Assert
+      expect(getByLabelText("スキップ")).not.toBeNull();
+    });
+
+    it("日本語ロケールで次へボタンの accessibilityLabel が補間込みで正しく翻訳されること", async () => {
+      // Arrange
+      setMockLocale("ja");
+
+      // Act
+      const { getByTestId, getByLabelText } = await render(<OnboardingScreen />);
+
+      // Assert: 最初のページ（currentIndex=0）なので page=2 になる
+      expect(getByLabelText("次へ")).not.toBeNull();
+      expect(getByTestId("next-button")).not.toBeNull();
+    });
+
+    it("英語ロケールでスキップボタンの accessibilityLabel が正しく翻訳されること", async () => {
+      // Arrange
+      setMockLocale("en");
+
+      // Act
+      const { getByLabelText } = await render(<OnboardingScreen />);
+
+      // Assert
+      expect(getByLabelText("Skip")).not.toBeNull();
+    });
+
+    it("英語ロケールで次へボタンの accessibilityLabel が正しく翻訳されること", async () => {
+      // Arrange
+      setMockLocale("en");
+
+      // Act
+      const { getByLabelText } = await render(<OnboardingScreen />);
+
+      // Assert
+      expect(getByLabelText("Next")).not.toBeNull();
+    });
+  });
 });

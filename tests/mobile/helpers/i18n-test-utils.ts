@@ -3,7 +3,9 @@
  * 複数テストファイルで共通して使用するロケール切り替えヘルパーを提供する
  */
 
-const i18nMock = require("react-i18next") as {
+import * as reactI18nextMock from "react-i18next";
+
+const i18nMock = reactI18nextMock as unknown as {
   __setMockLocale: (locale: "ja" | "en") => void;
 };
 

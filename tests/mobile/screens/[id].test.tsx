@@ -112,12 +112,6 @@ beforeEach(() => {
   (useNetworkStatus as jest.Mock).mockReturnValue({ isOnline: true, isOffline: false });
 });
 
-afterEach(() => {
-  mockArticleDetailState.data = MOCK_ARTICLE;
-  mockArticleDetailState.isLoading = false;
-  mockArticleDetailState.isError = false;
-});
-
 describe("ArticleDetailScreen", () => {
   describe("オフラインフォールバック", () => {
     it("オフライン時にgetOfflineArticleByIdが呼ばれること", async () => {
@@ -305,6 +299,62 @@ describe("ArticleDetailScreen", () => {
         expect(getByText("Failed to fetch article")).not.toBeNull();
         expect(getByText("Retry")).not.toBeNull();
         expect(getByText("Back")).not.toBeNull();
+      });
+    });
+  });
+
+  describe("a11y 翻訳キー", () => {
+    it("戻るボタンの accessibilityLabel が日本語で表示されること", async () => {
+      // Arrange
+      setMockLocale("ja");
+
+      // Act
+      const { getByLabelText } = await render(<ArticleDetailScreen />);
+
+      // Assert
+      await waitFor(() => {
+        expect(getByLabelText("戻る")).not.toBeNull();
+      });
+    });
+
+    it("戻るボタンの accessibilityLabel が英語で表示されること", async () => {
+      // Arrange
+      setMockLocale("en");
+
+      // Act
+      const { getByLabelText } = await render(<ArticleDetailScreen />);
+
+      // Assert
+      await waitFor(() => {
+        expect(getByLabelText("Back")).not.toBeNull();
+      });
+    });
+
+    it("お気に入り未登録時に addToFavorites の accessibilityLabel が表示されること", async () => {
+      // Arrange
+      setMockLocale("ja");
+      mockArticleDetailState.data = { ...MOCK_ARTICLE, isFavorite: false };
+
+      // Act
+      const { getByLabelText } = await render(<ArticleDetailScreen />);
+
+      // Assert
+      await waitFor(() => {
+        expect(getByLabelText("お気に入り追加")).not.toBeNull();
+      });
+    });
+
+    it("お気に入り登録済み時に removeFromFavorites の accessibilityLabel が表示されること", async () => {
+      // Arrange
+      setMockLocale("ja");
+      mockArticleDetailState.data = { ...MOCK_ARTICLE, isFavorite: true };
+
+      // Act
+      const { getByLabelText } = await render(<ArticleDetailScreen />);
+
+      // Assert
+      await waitFor(() => {
+        expect(getByLabelText("お気に入り解除")).not.toBeNull();
       });
     });
   });

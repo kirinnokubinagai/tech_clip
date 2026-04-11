@@ -214,4 +214,40 @@ describe("HomeScreen", () => {
       });
     });
   });
+
+  describe("a11y 翻訳キー", () => {
+    it("日本語ロケールでソースフィルタの accessibilityHint が {{label}} 補間込みで表示されること", async () => {
+      // Arrange
+      setMockLocale("ja");
+      (useArticles as jest.Mock).mockReturnValue({
+        ...DEFAULT_USE_ARTICLES_MOCK,
+        data: { pages: [{ items: MOCK_ARTICLES, nextCursor: null, hasNext: false }] },
+      });
+
+      // Act
+      const { getAllByHintText } = await render(<HomeScreen />);
+
+      // Assert: "すべて" ソースフィルタの hint が補間されること
+      await waitFor(() => {
+        expect(getAllByHintText("すべての記事のみ表示します")).not.toHaveLength(0);
+      });
+    });
+
+    it("英語ロケールでソースフィルタの accessibilityHint が {{label}} 補間込みで英語表示されること", async () => {
+      // Arrange
+      setMockLocale("en");
+      (useArticles as jest.Mock).mockReturnValue({
+        ...DEFAULT_USE_ARTICLES_MOCK,
+        data: { pages: [{ items: MOCK_ARTICLES, nextCursor: null, hasNext: false }] },
+      });
+
+      // Act
+      const { getAllByHintText } = await render(<HomeScreen />);
+
+      // Assert: "All" source filter hint が補間されること
+      await waitFor(() => {
+        expect(getAllByHintText("Show only All articles")).not.toHaveLength(0);
+      });
+    });
+  });
 });
