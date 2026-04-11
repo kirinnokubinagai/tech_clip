@@ -1,8 +1,8 @@
 # RunPod サーバーレスデプロイ手順
 
-TechClip の AI 要約・翻訳機能で使用する `Intel/gemma-4-26B-A4B-it-int4-mixed-AutoRound` モデルを RunPod Serverless にデプロイする手順。
+TechClip の AI 要約・翻訳機能で使用する `raydelossantos/gemma-4-26B-A4B-it-GPTQ-Int4` モデルを RunPod Serverless にデプロイする手順。
 
-HuggingFace Transformers で直接ロードし、TurboQuant（back2matching/turboquant）で KV キャッシュを圧縮することで、RTX 4080 / A4000（16GB VRAM）での動作を実現する。
+vLLM でモデルをロードし、0xSero/turboquant で KV キャッシュを圧縮することで、RTX 4080 / A4000（16GB VRAM）での動作を実現する。
 
 ## 前提条件
 
@@ -10,31 +10,65 @@ HuggingFace Transformers で直接ロードし、TurboQuant（back2matching/turb
 - Docker Hub アカウント（またはその他のコンテナレジストリ）
 - RunPod アカウント（https://runpod.io）
 - RunPod API キー
+- HuggingFace アカウントと API トークン（モデルダウンロード用）
 
 ## モデル情報
 
 | 項目 | 値 |
 |------|-----|
-| モデル ID | `Intel/gemma-4-26B-A4B-it-int4-mixed-AutoRound` |
-| 量子化方式 | Intel AutoRound int4-mixed |
-| 推定 VRAM（モデル重み） | ~14 GB |
-| 推奨残余 VRAM（KV キャッシュ等） | ~2 GB |
+| モデル ID | `raydelossantos/gemma-4-26B-A4B-it-GPTQ-Int4` |
+| 量子化方式 | GPTQ Int4 |
+| 推定 VRAM（モデル重み） | ~13-15 GB |
+| 推奨残余 VRAM（KV キャッシュ等） | ~1-3 GB |
 | 推奨 GPU | RTX 4080 / A4000（16GB VRAM） |
 
 ## TurboQuant について
 
-Gemma 4 26B-A4B はハイブリッド注意機構を持つ（25層 SWA + 5層 Global Attention）。
+0xSero/turboquant（ICLR 2026、arXiv:2504.19874）は vLLM の attention backend に monkey-patch を挿入し、KV キャッシュを圧縮する。
 
-- `fused-turboquant`（PyPI 公式）は SWA 未対応のため **使用しない**
-- `turboquant`（back2matching/turboquant）は SWA をバイパスし、5つのグローバル注意層のみ KV キャッシュを **3.8x 圧縮**する
+- key: 3-bit（ほぼ無損失、cos_sim=1.000）
+- value: 2-bit（cos_sim=0.94）
+- full-attention 層のみ圧縮（linear-attention/Mamba 層は対象外）
+- 4.4x の KV キャッシュ圧縮（head_dim=256 の dense モデル）
 
-インストールは PyPI 版ではなく GitHub リポジトリを直接指定すること:
+インストールは GitHub リポジトリを直接指定する:
 
 ```bash
-pip install git+https://github.com/back2matching/turboquant.git@acef33bf44abbd4623e11a48aae5f9a60aaf9ac0
+pip install git+https://github.com/0xSero/turboquant.git@7ac9b8d165a3f7d5e6df33b0450bc1f88ec0d4d5
 ```
 
-これにより 16GB VRAM でモデル重みの他に十分なキャッシュ余裕を確保できる。
+vLLM 統合は `turboquant.vllm_attn_backend.install_turboquant_hooks` を使用する:
+
+```python
+from turboquant.vllm_attn_backend import install_turboquant_hooks, MODE_ACTIVE
+
+install_turboquant_hooks(
+    worker.model_runner,
+    key_bits=3,
+    value_bits=2,
+    buffer_size=128,
+    mode=MODE_ACTIVE,
+)
+```
+
+## モデルの事前ダウンロード
+
+`TRANSFORMERS_OFFLINE=1` のため、コンテナ起動前にモデルを事前ダウンロードしておく必要がある。
+
+```bash
+# HuggingFace Token が必要な場合は環境変数で設定
+export HF_TOKEN=your_hf_token_here
+
+HF_HOME=/runpod-volume/hf-cache python3 -c "
+from huggingface_hub import snapshot_download
+snapshot_download(
+    repo_id='raydelossantos/gemma-4-26B-A4B-it-GPTQ-Int4',
+    token='${HF_TOKEN}',
+)
+"
+```
+
+または RunPod コンソールの **Cached Models** 機能を使って `/runpod-volume/hf-cache` にダウンロードする。
 
 ## デプロイ手順
 
@@ -82,7 +116,7 @@ bash scripts/provision-runpod.sh \
 
 | 項目 | 値 |
 |------|-----|
-| Template Name | `techclip-gemma4-26b-int4` |
+| Template Name | `techclip-gemma4-26b-gptq-int4` |
 | Container Image | `your-dockerhub-username/techclip-gemma4:latest` |
 | Container Disk | `20 GB` |
 | GPU | RTX 4080 / A4000（16GB VRAM） |
@@ -187,26 +221,18 @@ Docker image はモデルを build 時に含めない。RunPod の `cached model
 モデル ID は `MODEL_ID` 環境変数で上書き可能:
 
 ```env
-MODEL_ID=Intel/gemma-4-26B-A4B-it-int4-mixed-AutoRound
+MODEL_ID=raydelossantos/gemma-4-26B-A4B-it-GPTQ-Int4
 ```
 
 ### デフォルト環境変数
 
 ```env
-MODEL_ID=Intel/gemma-4-26B-A4B-it-int4-mixed-AutoRound
+MODEL_ID=raydelossantos/gemma-4-26B-A4B-it-GPTQ-Int4
 HF_HOME=/runpod-volume/hf-cache
 TRANSFORMERS_OFFLINE=1
 ```
 
-> **重要**: `TRANSFORMERS_OFFLINE=1` のため、コンテナ起動前にモデルを `/runpod-volume/hf-cache` へ事前ダウンロードしておくこと。RunPod コンソールの **Cached Models** 機能を使うか、以下のコマンドで手動ダウンロードすること:
->
-> ```bash
-> HF_HOME=/runpod-volume/hf-cache python3 -c "
-> from transformers import AutoModelForCausalLM, AutoProcessor
-> AutoModelForCausalLM.from_pretrained('Intel/gemma-4-26B-A4B-it-int4-mixed-AutoRound')
-> AutoProcessor.from_pretrained('Intel/gemma-4-26B-A4B-it-int4-mixed-AutoRound')
-> "
-> ```
+> **重要**: `TRANSFORMERS_OFFLINE=1` のため、コンテナ起動前にモデルを `/runpod-volume/hf-cache` へ事前ダウンロードしておくこと。
 
 ## トラブルシューティング
 
@@ -214,10 +240,10 @@ TRANSFORMERS_OFFLINE=1
 
 16GB VRAM GPU（RTX 4080 / A4000）を使用していること、および他のプロセスが VRAM を占有していないことを確認する。改善しない場合は 24GB 以上の GPU に変更する。
 
-### TurboQuant パッチが失敗する場合
+### TurboQuant フックのインストールが失敗する場合
 
-ハンドラーは TurboQuant のパッチ適用失敗を警告として記録し、圧縮なしで推論を続行する。
-ログに `TurboQuant パッチの適用に失敗しました` と出ている場合は turboquant パッケージのインストール状況を確認する。
+ハンドラーは TurboQuant フックのインストール失敗を警告として記録し、圧縮なしで推論を続行する。
+ログに `TurboQuant フックのインストールに失敗しました` と出ている場合は turboquant パッケージのインストール状況と vLLM バージョンの互換性を確認する。
 
 ### コールドスタートが遅い場合
 
@@ -229,18 +255,14 @@ TRANSFORMERS_OFFLINE=1
 
 ## バージョン管理
 
-以下の組み合わせで動作確認済み:
+以下の組み合わせで構成:
 
 | コンポーネント | バージョン | 備考 |
 |----------------|------------|------|
-| ベースイメージ（builder） | `runpod/pytorch:2.8.0-py3.11-cuda12.8.1-cudnn-devel-ubuntu22.04` | Python + PyTorch + CUDA 同梱 |
-| ベースイメージ（runtime） | `runpod/pytorch:2.8.0-py3.11-cuda12.8.1-cudnn-runtime-ubuntu22.04` | 軽量 runtime |
-| Python | `3.11` | ベースイメージに同梱 |
-| torch | `2.8.0` | ベースイメージに同梱 |
-| transformers | `4.51.3` | Gemma 4 対応 |
-| turboquant | `@acef33bf44abbd4623e11a48aae5f9a60aaf9ac0`（back2matching/turboquant） | SWA バイパス対応・PyPI 版は使用しない・`pip audit` の対象外のため定期的に upstream のコミット履歴を手動確認すること |
-| auto-round | `0.5.3` | Intel AutoRound int4 サポート |
-| accelerate | `1.6.0` | デバイスマップサポート |
+| ベースイメージ | `vllm/vllm-openai:v0.9.0` | vLLM 公式イメージ（PyTorch + CUDA 同梱） |
+| Python | `3.12` | ベースイメージに同梱 |
+| vLLM | `0.9.0` | GPTQ サポート、TurboQuant vLLM 統合対応 |
+| turboquant | `@7ac9b8d165a3f7d5e6df33b0450bc1f88ec0d4d5`（0xSero/turboquant） | vLLM integration API 対応・`pip audit` の対象外のため定期的に upstream のコミット履歴を手動確認すること |
 | RunPod SDK | `1.7.4` | サーバーレスランタイム |
 
 バージョンを変更する場合は `requirements.txt` と `Dockerfile` を更新し、動作確認後にこのテーブルを更新すること。

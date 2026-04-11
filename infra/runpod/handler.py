@@ -1,12 +1,11 @@
 """
 RunPod サーバーレスハンドラー
 
-Intel/gemma-4-26B-A4B-it-int4-mixed-AutoRound モデルを
-HuggingFace Transformers でロードし、RunPod サーバーレス API のリクエストを処理する。
+raydelossantos/gemma-4-26B-A4B-it-GPTQ-Int4 モデルを
+vLLM でロードし、RunPod サーバーレス API のリクエストを処理する。
 
-TurboQuant（back2matching/turboquant）を使って KV キャッシュを圧縮する。
-Gemma 4 のハイブリッド注意機構（25層 SWA + 5層 Global Attention）に対応しており、
-グローバル注意層のみ 3.8x の KV キャッシュ圧縮を適用する。
+0xSero/turboquant を vLLM integration API で統合し、
+KV キャッシュを圧縮することで VRAM 効率を向上させる。
 
 リクエスト形式:
     {
@@ -27,8 +26,8 @@ import os
 from typing import Any
 
 import runpod
-import torch
-from transformers import AutoModelForCausalLM, AutoProcessor
+from vllm import LLM, SamplingParams
+from transformers import AutoTokenizer
 
 logging.basicConfig(
     level=logging.INFO,
@@ -37,11 +36,11 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 # デフォルトモデル ID（環境変数で上書き可能）
-DEFAULT_MODEL_ID = "Intel/gemma-4-26B-A4B-it-int4-mixed-AutoRound"
+DEFAULT_MODEL_ID = "raydelossantos/gemma-4-26B-A4B-it-GPTQ-Int4"
 
 # 許可するモデル ID の一覧
 ALLOWED_MODEL_IDS: frozenset[str] = frozenset({
-    "Intel/gemma-4-26B-A4B-it-int4-mixed-AutoRound",
+    "raydelossantos/gemma-4-26B-A4B-it-GPTQ-Int4",
 })
 
 # メッセージ本文の最大文字数
@@ -59,7 +58,7 @@ TEMPERATURE_MIN = 0.0
 TEMPERATURE_MAX = 2.0
 DEFAULT_TEMPERATURE = 0.7
 
-# temperature がこの値以下の場合は決定論的生成（do_sample=False）
+# temperature がこの値以下の場合は決定論的生成（greedy）
 TEMPERATURE_GREEDY_THRESHOLD = 0.0
 
 # top_p の有効範囲
@@ -67,8 +66,13 @@ TOP_P_MIN = 0.0
 TOP_P_MAX = 1.0
 DEFAULT_TOP_P = 0.9
 
-# TurboQuant KV キャッシュ圧縮ビット数
-TURBOQUANT_BITS = 4
+# GPU メモリ使用率（0.0 ~ 1.0）
+GPU_MEMORY_UTILIZATION = 0.90
+
+# TurboQuant KV キャッシュ圧縮設定
+TURBOQUANT_KEY_BITS = 3
+TURBOQUANT_VALUE_BITS = 2
+TURBOQUANT_BUFFER_SIZE = 128
 
 model_id_env: str = os.environ.get("MODEL_ID", DEFAULT_MODEL_ID)
 if model_id_env not in ALLOWED_MODEL_IDS:
@@ -76,65 +80,98 @@ if model_id_env not in ALLOWED_MODEL_IDS:
 MODEL_ID: str = model_id_env
 
 # グローバルモデル（コールドスタート時のみロード）
-_model: AutoModelForCausalLM | None = None
-_processor: AutoProcessor | None = None
+_llm: LLM | None = None
+_tokenizer: AutoTokenizer | None = None
 
 
-def _load_model() -> tuple[AutoModelForCausalLM, AutoProcessor]:
+def _install_turboquant_hooks(llm_instance: LLM) -> int:
     """
-    モデルとプロセッサをロードする。
+    vLLM エンジンに TurboQuant フックをインストールする。
 
-    TurboQuant によるKVキャッシュ圧縮を試みる。
-    patch_model が失敗した場合は警告を出して続行する。
+    Args:
+        llm_instance: フックをインストールする LLM インスタンス
 
     Returns:
-        (model, processor) のタプル
+        インストールされたフック数
     """
-    logger.info("モデルをロード中: %s", MODEL_ID)
-
-    model = AutoModelForCausalLM.from_pretrained(
-        MODEL_ID,
-        device_map="auto",
-        torch_dtype="auto",
-    )
-    processor = AutoProcessor.from_pretrained(MODEL_ID)
-
-    logger.info("モデルのロード完了。TurboQuant パッチを適用中...")
-
     try:
-        import turboquant  # type: ignore[import-untyped]
+        from turboquant.vllm_attn_backend import (
+            install_turboquant_hooks,
+            MODE_ACTIVE,
+        )
 
-        if hasattr(turboquant, "patch_model"):
-            turboquant.patch_model(model, bits=TURBOQUANT_BITS)
-            logger.info("turboquant.patch_model の適用完了（bits=%d）", TURBOQUANT_BITS)
-        elif hasattr(turboquant, "hf") and hasattr(turboquant.hf, "patch_model"):
-            turboquant.hf.patch_model(model, bits=TURBOQUANT_BITS)
-            logger.info("turboquant.hf.patch_model の適用完了（bits=%d）", TURBOQUANT_BITS)
-        else:
-            logger.warning(
-                "turboquant に patch_model が見つかりません。KV キャッシュ圧縮をスキップします"
+        engine = llm_instance.llm_engine
+        core = getattr(engine, "engine_core", engine)
+        inner = getattr(core, "engine_core", core)
+        executor = inner.model_executor
+
+        def _install(worker):
+            return len(
+                install_turboquant_hooks(
+                    worker.model_runner,
+                    key_bits=TURBOQUANT_KEY_BITS,
+                    value_bits=TURBOQUANT_VALUE_BITS,
+                    buffer_size=TURBOQUANT_BUFFER_SIZE,
+                    mode=MODE_ACTIVE,
+                )
             )
+
+        hooks = executor.collective_rpc(_install)
+        hook_count = hooks[0] if hooks else 0
+        logger.info(
+            "TurboQuant フックのインストール完了（%d 層、key_bits=%d、value_bits=%d）",
+            hook_count,
+            TURBOQUANT_KEY_BITS,
+            TURBOQUANT_VALUE_BITS,
+        )
+        return hook_count
     except Exception as e:
         logger.warning(
-            "TurboQuant パッチの適用に失敗しました（%s: %s）。圧縮なしで続行します",
+            "TurboQuant フックのインストールに失敗しました（%s: %s）。圧縮なしで続行します",
             type(e).__name__,
             e,
         )
+        return 0
 
-    return model, processor
+
+def _load_model() -> tuple[LLM, AutoTokenizer]:
+    """
+    vLLM で GPTQ モデルをロードし、TurboQuant フックをインストールする。
+
+    Returns:
+        (llm, tokenizer) のタプル
+    """
+    logger.info("モデルをロード中: %s", MODEL_ID)
+
+    llm = LLM(
+        model=MODEL_ID,
+        quantization="gptq",
+        dtype="float16",
+        gpu_memory_utilization=GPU_MEMORY_UTILIZATION,
+        max_model_len=4096,
+        trust_remote_code=True,
+        max_num_seqs=1,
+    )
+
+    tokenizer = AutoTokenizer.from_pretrained(MODEL_ID)
+
+    logger.info("モデルのロード完了。TurboQuant フックをインストール中...")
+    _install_turboquant_hooks(llm)
+
+    return llm, tokenizer
 
 
-def _get_model() -> tuple[AutoModelForCausalLM, AutoProcessor]:
+def _get_model() -> tuple[LLM, AutoTokenizer]:
     """
     グローバルモデルを返す。未初期化の場合はロードする。
 
     Returns:
-        (model, processor) のタプル
+        (llm, tokenizer) のタプル
     """
-    global _model, _processor
-    if _model is None or _processor is None:
-        _model, _processor = _load_model()
-    return _model, _processor
+    global _llm, _tokenizer
+    if _llm is None or _tokenizer is None:
+        _llm, _tokenizer = _load_model()
+    return _llm, _tokenizer
 
 
 def _validate_messages(messages: Any) -> list[dict]:
@@ -272,34 +309,29 @@ def _generate(job_input: dict) -> dict:
     )
     top_p = _validate_top_p(job_input.get("top_p", DEFAULT_TOP_P))
 
-    model, processor = _get_model()
+    llm, tokenizer = _get_model()
 
-    inputs = processor.apply_chat_template(
+    prompt = tokenizer.apply_chat_template(
         messages,
         add_generation_prompt=True,
-        tokenize=True,
-        return_tensors="pt",
-        return_dict=True,
+        tokenize=False,
     )
-    inputs = inputs.to(model.device)
-    input_len = inputs["input_ids"].shape[-1]
 
-    do_sample = temperature > TEMPERATURE_GREEDY_THRESHOLD
+    use_greedy = temperature <= TEMPERATURE_GREEDY_THRESHOLD
+    if use_greedy:
+        sampling_params = SamplingParams(
+            max_tokens=max_new_tokens,
+            temperature=0.0,
+        )
+    else:
+        sampling_params = SamplingParams(
+            max_tokens=max_new_tokens,
+            temperature=temperature,
+            top_p=top_p,
+        )
 
-    generate_kwargs: dict = {
-        "max_new_tokens": max_new_tokens,
-        "do_sample": do_sample,
-    }
-    if do_sample:
-        generate_kwargs["temperature"] = temperature
-        generate_kwargs["top_p"] = top_p
-
-    with torch.inference_mode():
-        output_ids = model.generate(**inputs, **generate_kwargs)
-
-    # 入力トークンを除いた生成部分のみデコード
-    generated_ids = output_ids[:, input_len:]
-    generated_text: str = processor.decode(generated_ids[0], skip_special_tokens=True)
+    outputs = llm.generate([prompt], sampling_params)
+    generated_text: str = outputs[0].outputs[0].text
 
     return {
         "choices": [
@@ -332,8 +364,8 @@ def handler(job: dict) -> dict:
         output = _generate(job_input)
     except ValueError as e:
         return {"error": str(e)}
-    except Exception as e:
-        logger.error("推論エラー: %s: %s", type(e).__name__, e, exc_info=True)
+    except Exception:
+        logger.error("推論エラー", exc_info=True)
         return {"error": "推論エラーが発生しました"}
 
     return {"output": output}

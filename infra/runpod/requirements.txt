@@ -1,5 +1,3 @@
-transformers==4.51.3
-accelerate==1.6.0
-auto-round==0.5.3
+vllm==0.9.0
 runpod==1.7.4
-git+https://github.com/back2matching/turboquant.git@acef33bf44abbd4623e11a48aae5f9a60aaf9ac0
+git+https://github.com/0xSero/turboquant.git@7ac9b8d165a3f7d5e6df33b0450bc1f88ec0d4d5

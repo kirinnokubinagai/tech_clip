@@ -1,17 +1,15 @@
-# Stage 1: builder（devel イメージでパッケージをインストール）
-FROM runpod/pytorch:2.8.0-py3.11-cuda12.8.1-cudnn-devel-ubuntu22.04 AS builder
+# Stage 1: builder（vLLM 公式イメージでパッケージをインストール）
+FROM vllm/vllm-openai:v0.9.0 AS builder
 
+# 0xSero/turboquant を固定コミットでインストール
 RUN pip install --no-cache-dir --target /opt/app-packages \
-    transformers==4.51.3 \
-    accelerate==1.6.0 \
-    auto-round==0.5.3 \
     runpod==1.7.4 \
-    git+https://github.com/back2matching/turboquant.git@acef33bf44abbd4623e11a48aae5f9a60aaf9ac0
+    git+https://github.com/0xSero/turboquant.git@7ac9b8d165a3f7d5e6df33b0450bc1f88ec0d4d5
 
-# Stage 2: runtime（軽量イメージ）
-FROM runpod/pytorch:2.8.0-py3.11-cuda12.8.1-cudnn-runtime-ubuntu22.04
+# Stage 2: runtime（vLLM 公式 runtime イメージ）
+FROM vllm/vllm-openai:v0.9.0
 
-# builder ステージでインストールしたパッケージをコピー（devel 固有ファイルを除外）
+# builder ステージでインストールした追加パッケージをコピー
 COPY --from=builder /opt/app-packages /opt/app-packages
 ENV PYTHONPATH=/opt/app-packages
 
@@ -25,8 +23,8 @@ COPY --chown=appuser:appuser handler.py .
 
 USER appuser
 
-# モデル ID は環境変数で上書き可能
-ENV MODEL_ID=Intel/gemma-4-26B-A4B-it-int4-mixed-AutoRound
+# モデル ID は環境変数で上書き可能（GPTQ Int4）
+ENV MODEL_ID=raydelossantos/gemma-4-26B-A4B-it-GPTQ-Int4
 
 # モデルキャッシュをボリュームマウントへ（コールドスタート対策）
 ENV HF_HOME=/runpod-volume/hf-cache
