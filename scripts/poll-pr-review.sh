@@ -48,9 +48,38 @@ while (( elapsed < TIMEOUT_SECONDS )); do
     ' 2>/dev/null || true)
     echo "CHANGES_REQUESTED"
     echo ""
-    echo "--- Review Content ---"
+    echo "--- Review Content (formal review) ---"
     echo "${review_content}"
     exit 1
+  fi
+
+  # コメント形式のレビュー（Claude bot 等が PR comment で投稿する場合）も検出する
+  # "Request Changes" または "🔄" を含むコメントを CHANGES_REQUESTED として扱う
+  changes_comment_count=$(gh pr view "${PR_NUMBER}" --json comments --jq '
+    [.comments[] | select(.body | test("Request Changes|🔄|CHANGES_REQUESTED"; "i"))] | length
+  ' 2>/dev/null || echo "0")
+
+  if [[ "${changes_comment_count}" -gt 0 ]]; then
+    comment_content=$(gh pr view "${PR_NUMBER}" --json comments --jq '
+      [.comments[] | select(.body | test("Request Changes|🔄|CHANGES_REQUESTED"; "i"))]
+      | map("[@" + (.author.login // "unknown") + "]:\n" + .body)
+      | join("\n\n---\n\n")
+    ' 2>/dev/null || true)
+    echo "CHANGES_REQUESTED"
+    echo ""
+    echo "--- Review Content (from comments) ---"
+    echo "${comment_content}"
+    exit 1
+  fi
+
+  # LGTM / Approve 系コメントも検出する
+  approve_comment_count=$(gh pr view "${PR_NUMBER}" --json comments --jq '
+    [.comments[] | select(.body | test("✅.*PASS|全件 PASS|全件PASS|LGTM|Approved|指摘.*0.*件|0.*件.*指摘"; "i"))] | length
+  ' 2>/dev/null || echo "0")
+
+  if [[ "${approve_comment_count}" -gt 0 ]] && [[ "${changes_comment_count}" -eq 0 ]]; then
+    echo "APPROVED"
+    exit 0
   fi
 
   minutes_elapsed=$(( elapsed / 60 ))
