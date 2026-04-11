@@ -15,4 +15,6 @@ runs:
       continue-on-error: true
     - name: Install deps (nix develop)
       shell: bash
+      env:
+        NIXPKGS_ALLOW_UNFREE: "1"
       run: nix develop --command pnpm install --frozen-lockfile
