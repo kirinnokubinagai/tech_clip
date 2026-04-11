@@ -39,8 +39,16 @@ logger = logging.getLogger(__name__)
 # デフォルトモデル ID（環境変数で上書き可能）
 DEFAULT_MODEL_ID = "Intel/gemma-4-26B-A4B-it-int4-mixed-AutoRound"
 
+# 許可するモデル ID の一覧
+ALLOWED_MODEL_IDS: frozenset[str] = frozenset({
+    "Intel/gemma-4-26B-A4B-it-int4-mixed-AutoRound",
+})
+
 # メッセージ本文の最大文字数
 MESSAGE_CONTENT_MAX_LENGTH = 50000
+
+# 1 リクエストあたりの最大メッセージ数
+MAX_MESSAGES_COUNT = 100
 
 # max_new_tokens の上限・デフォルト値
 MAX_NEW_TOKENS_LIMIT = 2048
@@ -51,6 +59,9 @@ TEMPERATURE_MIN = 0.0
 TEMPERATURE_MAX = 2.0
 DEFAULT_TEMPERATURE = 0.7
 
+# temperature がこの値以下の場合は決定論的生成（do_sample=False）
+TEMPERATURE_GREEDY_THRESHOLD = 0.0
+
 # top_p の有効範囲
 TOP_P_MIN = 0.0
 TOP_P_MAX = 1.0
@@ -59,7 +70,10 @@ DEFAULT_TOP_P = 0.9
 # TurboQuant KV キャッシュ圧縮ビット数
 TURBOQUANT_BITS = 4
 
-MODEL_ID: str = os.environ.get("MODEL_ID", DEFAULT_MODEL_ID)
+model_id_env: str = os.environ.get("MODEL_ID", DEFAULT_MODEL_ID)
+if model_id_env not in ALLOWED_MODEL_IDS:
+    raise ValueError(f"許可されていないモデルID: {model_id_env}")
+MODEL_ID: str = model_id_env
 
 # グローバルモデル（コールドスタート時のみロード）
 _model: AutoModelForCausalLM | None = None
@@ -140,6 +154,8 @@ def _validate_messages(messages: Any) -> list[dict]:
         raise ValueError("messages はリスト形式である必要があります")
     if len(messages) == 0:
         raise ValueError("messages は 1 件以上必要です")
+    if len(messages) > MAX_MESSAGES_COUNT:
+        raise ValueError(f"メッセージ数が上限（{MAX_MESSAGES_COUNT}件）を超えています")
 
     valid_roles = {"user", "assistant", "system"}
     for i, msg in enumerate(messages):
@@ -247,7 +263,7 @@ def _generate(job_input: dict) -> dict:
     Raises:
         ValueError: 入力バリデーション失敗時
     """
-    messages = _validate_messages(job_input["messages"])
+    messages = _validate_messages(job_input.get("messages", []))
     max_new_tokens = _validate_max_new_tokens(
         job_input.get("max_new_tokens", DEFAULT_MAX_NEW_TOKENS)
     )
@@ -268,13 +284,15 @@ def _generate(job_input: dict) -> dict:
     inputs = inputs.to(model.device)
     input_len = inputs["input_ids"].shape[-1]
 
+    do_sample = temperature > TEMPERATURE_GREEDY_THRESHOLD
+
     with torch.inference_mode():
         output_ids = model.generate(
             **inputs,
             max_new_tokens=max_new_tokens,
             temperature=temperature,
             top_p=top_p,
-            do_sample=True,
+            do_sample=do_sample,
         )
 
     # 入力トークンを除いた生成部分のみデコード
@@ -314,7 +332,7 @@ def handler(job: dict) -> dict:
         return {"error": str(e)}
     except Exception as e:
         logger.error("推論エラー: %s: %s", type(e).__name__, e)
-        return {"error": f"推論エラーが発生しました: {type(e).__name__}"}
+        return {"error": "推論エラーが発生しました"}
 
     return {"output": output}
 

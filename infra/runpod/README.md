@@ -28,6 +28,12 @@ Gemma 4 26B-A4B はハイブリッド注意機構を持つ（25層 SWA + 5層 Gl
 - `fused-turboquant`（PyPI 公式）は SWA 未対応のため **使用しない**
 - `turboquant`（back2matching/turboquant）は SWA をバイパスし、5つのグローバル注意層のみ KV キャッシュを **3.8x 圧縮**する
 
+インストールは PyPI 版ではなく GitHub リポジトリを直接指定すること:
+
+```bash
+pip install git+https://github.com/back2matching/turboquant.git@main
+```
+
 これにより 16GB VRAM でモデル重みの他に十分なキャッシュ余裕を確保できる。
 
 ## デプロイ手順
@@ -116,6 +122,8 @@ RUNPOD_ENDPOINT_ID=your_endpoint_id_here
 RUNPOD_LOCAL_ENDPOINT_ID=your_local_endpoint_id_here
 ```
 
+> **注意**: `apps/api/.dev.vars` は `.gitignore` に含まれていることを必ず確認すること。API キーなどの機密情報をリポジトリにコミットしないよう注意すること。
+
 **本番環境（Wrangler シークレット）:**
 
 ```bash
@@ -187,8 +195,18 @@ MODEL_ID=Intel/gemma-4-26B-A4B-it-int4-mixed-AutoRound
 ```env
 MODEL_ID=Intel/gemma-4-26B-A4B-it-int4-mixed-AutoRound
 HF_HOME=/runpod-volume/hf-cache
-TRANSFORMERS_OFFLINE=0
+TRANSFORMERS_OFFLINE=1
 ```
+
+> **重要**: `TRANSFORMERS_OFFLINE=1` のため、コンテナ起動前にモデルを `/runpod-volume/hf-cache` へ事前ダウンロードしておくこと。RunPod コンソールの **Cached Models** 機能を使うか、以下のコマンドで手動ダウンロードすること:
+>
+> ```bash
+> HF_HOME=/runpod-volume/hf-cache python3 -c "
+> from transformers import AutoModelForCausalLM, AutoProcessor
+> AutoModelForCausalLM.from_pretrained('Intel/gemma-4-26B-A4B-it-int4-mixed-AutoRound')
+> AutoProcessor.from_pretrained('Intel/gemma-4-26B-A4B-it-int4-mixed-AutoRound')
+> "
+> ```
 
 ## トラブルシューティング
 
@@ -215,11 +233,14 @@ TRANSFORMERS_OFFLINE=0
 
 | コンポーネント | バージョン | 備考 |
 |----------------|------------|------|
-| ベースイメージ | `nvidia/cuda:12.8.0-cudnn9-devel-ubuntu22.04` | CUDA 12.8.0 |
-| Python | `3.12` | |
-| transformers | `>=4.51.0` | Gemma 4 対応 |
-| turboquant | 最新（back2matching/turboquant） | SWA バイパス対応 |
-| auto-round | 最新 | Intel AutoRound int4 サポート |
-| RunPod SDK | `>=1.7.4` | サーバーレスランタイム |
+| ベースイメージ（builder） | `runpod/pytorch:2.8.0-py3.11-cuda12.8.1-cudnn-devel-ubuntu22.04` | Python + PyTorch + CUDA 同梱 |
+| ベースイメージ（runtime） | `runpod/pytorch:2.8.0-py3.11-cuda12.8.1-cudnn-runtime-ubuntu22.04` | 軽量 runtime |
+| Python | `3.11` | ベースイメージに同梱 |
+| torch | `2.8.0` | ベースイメージに同梱 |
+| transformers | `4.51.3` | Gemma 4 対応 |
+| turboquant | `@main`（back2matching/turboquant） | SWA バイパス対応・PyPI 版は使用しない |
+| auto-round | `0.5.3` | Intel AutoRound int4 サポート |
+| accelerate | `1.6.0` | デバイスマップサポート |
+| RunPod SDK | `1.7.4` | サーバーレスランタイム |
 
-バージョンを変更する場合は `Dockerfile` の `pip install` 行を更新し、動作確認後にこのテーブルを更新すること。
+バージョンを変更する場合は `requirements.txt` と `Dockerfile` を更新し、動作確認後にこのテーブルを更新すること。

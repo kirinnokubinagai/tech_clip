@@ -1,35 +1,37 @@
-FROM nvidia/cuda:12.8.0-cudnn9-devel-ubuntu22.04
+# Stage 1: builder（devel イメージでパッケージをインストール）
+FROM runpod/pytorch:2.8.0-py3.11-cuda12.8.1-cudnn-devel-ubuntu22.04 AS builder
 
-ENV DEBIAN_FRONTEND=noninteractive
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    python3.12 python3.12-pip git && \
-    rm -rf /var/lib/apt/lists/*
+RUN pip install --no-cache-dir \
+    transformers==4.51.3 \
+    accelerate==1.6.0 \
+    auto-round==0.5.3 \
+    runpod==1.7.4 \
+    git+https://github.com/back2matching/turboquant.git@main
 
-# CUDA 対応 PyTorch（Transformers の基盤）
-RUN python3.12 -m pip install --no-cache-dir \
-    torch --index-url https://download.pytorch.org/whl/cu128
+# Stage 2: runtime（軽量イメージ）
+FROM runpod/pytorch:2.8.0-py3.11-cuda12.8.1-cudnn-runtime-ubuntu22.04
 
-# TurboQuant（SWA バイパス付き、Gemma 4 対応）
-# back2matching/turboquant は Gemma 4 のハイブリッド注意機構（SWA）をバイパスし、
-# グローバル注意層のみ KV キャッシュを圧縮する。
-# fused-turboquant（PyPI 公式）は SWA 未対応のため使用しない。
-RUN python3.12 -m pip install --no-cache-dir turboquant
+# site-packages とビルド成果物をコピー
+COPY --from=builder /usr/local/lib/python3.11/dist-packages /usr/local/lib/python3.11/dist-packages
 
-# HuggingFace Transformers + RunPod SDK
-RUN python3.12 -m pip install --no-cache-dir \
-    "transformers>=4.51.0" \
-    accelerate \
-    auto-round \
-    "runpod>=1.7.4"
+# 非 root ユーザーを作成
+RUN useradd -m -u 1000 appuser \
+    && mkdir -p /app /runpod-volume \
+    && chown -R appuser /app /runpod-volume
 
 WORKDIR /app
 COPY handler.py .
+RUN chown appuser /app/handler.py
+
+USER appuser
 
 # モデル ID は環境変数で上書き可能
 ENV MODEL_ID=Intel/gemma-4-26B-A4B-it-int4-mixed-AutoRound
 
 # モデルキャッシュをボリュームマウントへ（コールドスタート対策）
 ENV HF_HOME=/runpod-volume/hf-cache
-ENV TRANSFORMERS_OFFLINE=0
 
-CMD ["python3.12", "-u", "handler.py"]
+# オフラインモード: モデルは /runpod-volume/hf-cache に事前ダウンロードしておくこと
+ENV TRANSFORMERS_OFFLINE=1
+
+CMD ["python3.11", "-u", "handler.py"]

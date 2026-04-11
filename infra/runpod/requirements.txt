@@ -1,0 +1,6 @@
+transformers==4.51.3
+accelerate==1.6.0
+auto-round==0.5.3
+runpod==1.7.4
+# turboquant は GitHub コミット指定でインストールする（PyPI 版は Gemma 4 SWA 未対応）
+# pip install git+https://github.com/back2matching/turboquant.git@main
