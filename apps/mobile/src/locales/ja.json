@@ -91,7 +91,8 @@
     "offlineCachedArticles": "オフライン：キャッシュ済み記事を表示中",
     "offlineNoCache": "オフライン：キャッシュがありません",
     "retryLabel": "再試行",
-    "retryHint": "記事の取得を再試行します"
+    "retryHint": "記事の取得を再試行します",
+    "sourceFilterHint": "{{label}}の記事のみ表示します"
   },
   "article": {
     "save": "記事を保存",
@@ -99,6 +100,7 @@
     "readLater": "あとで読む",
     "noArticles": "記事がありません",
     "readingTime": "{{minutes}}分で読めます",
+    "backA11yLabel": "戻る",
     "summary": "要約",
     "summarized": "要約済み",
     "summarize": "要約",
@@ -126,8 +128,7 @@
     "urlRequired": "URLを入力してください",
     "urlInvalid": "有効なURLを入力してください",
     "noMatch": "「{{query}}」に一致する記事がありません",
-    "generating": "生成中...",
-    "minutesToRead": "{{minutes}}分で読めます"
+    "generating": "生成中..."
   },
   "search": {
     "placeholder": "記事を検索...",
@@ -291,7 +292,14 @@
     },
     "skip": "スキップ",
     "next": "次へ",
-    "start": "始める"
+    "start": "始める",
+    "skipA11yLabel": "スキップ",
+    "skipA11yHint": "オンボーディングをスキップしてログイン画面に進みます",
+    "startA11yLabel": "始める",
+    "startA11yHint": "アカウント作成画面に進みます",
+    "nextA11yLabel": "次へ",
+    "nextA11yHint": "次のページ（{{page}}ページ目）に進みます",
+    "pageIndicatorLabel": "{{current}}ページ目（全{{total}}ページ）"
   },
   "shareIntent": {
     "loading": "読み込み中",

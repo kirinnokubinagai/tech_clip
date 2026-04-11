@@ -360,7 +360,7 @@ export default function ArticleDetailScreen() {
         <Pressable
           onPress={handleBack}
           accessibilityRole="button"
-          accessibilityLabel="戻る"
+          accessibilityLabel={t("article.backA11yLabel")}
           hitSlop={8}
         >
           <ArrowLeft size={BACK_ICON_SIZE} color={TEXT_COLOR} />
@@ -369,7 +369,7 @@ export default function ArticleDetailScreen() {
           <Pressable
             onPress={handleOpenExternal}
             accessibilityRole="button"
-            accessibilityLabel="ブラウザで開く"
+            accessibilityLabel={t("article.openInBrowser")}
             hitSlop={8}
           >
             <ExternalLink size={HEADER_ICON_SIZE} color={FAVORITE_INACTIVE_COLOR} />
@@ -377,7 +377,9 @@ export default function ArticleDetailScreen() {
           <Pressable
             onPress={handleToggleFavorite}
             accessibilityRole="button"
-            accessibilityLabel={article.isFavorite ? "お気に入り解除" : "お気に入り追加"}
+            accessibilityLabel={
+              article.isFavorite ? t("article.removeFromFavorites") : t("article.addToFavorites")
+            }
             hitSlop={8}
           >
             <Heart
@@ -400,7 +402,7 @@ export default function ArticleDetailScreen() {
             )}
             {article.readingTimeMinutes && (
               <Text className="text-xs text-text-muted">
-                {t("article.minutesToRead", { minutes: article.readingTimeMinutes })}
+                {t("article.readingTime", { minutes: article.readingTimeMinutes })}
               </Text>
             )}
           </View>
@@ -420,7 +422,7 @@ export default function ArticleDetailScreen() {
               opacity: requestSummary.isPending || summaryJob ? 0.6 : 1,
             }}
             accessibilityRole="button"
-            accessibilityLabel="要約を生成"
+            accessibilityLabel={t("article.summarize")}
             testID="summary-button"
           >
             {requestSummary.isPending || summaryJob ? (
@@ -448,7 +450,7 @@ export default function ArticleDetailScreen() {
               opacity: requestTranslation.isPending || translationJob ? 0.6 : 1,
             }}
             accessibilityRole="button"
-            accessibilityLabel="翻訳する"
+            accessibilityLabel={t("article.translate")}
             testID="translation-button"
           >
             {requestTranslation.isPending || translationJob ? (

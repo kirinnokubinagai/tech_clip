@@ -84,7 +84,10 @@ export default function OnboardingScreen() {
       <View
         testID="page-indicator"
         className="flex-row items-center justify-center py-4"
-        accessibilityLabel={`${currentIndex + 1}ページ目（全${PAGE_COUNT}ページ）`}
+        accessibilityLabel={t("onboarding.pageIndicatorLabel", {
+          current: currentIndex + 1,
+          total: PAGE_COUNT,
+        })}
         accessible={true}
       >
         {ONBOARDING_PAGES.map((page, index) => (
@@ -106,8 +109,8 @@ export default function OnboardingScreen() {
           onPress={handleSkip}
           className="px-4 py-3"
           accessibilityRole="button"
-          accessibilityLabel="スキップ"
-          accessibilityHint="オンボーディングをスキップしてログイン画面に進みます"
+          accessibilityLabel={t("onboarding.skipA11yLabel")}
+          accessibilityHint={t("onboarding.skipA11yHint")}
         >
           <Text className="text-base text-stone-500">{t("onboarding.skip")}</Text>
         </Pressable>
@@ -118,8 +121,8 @@ export default function OnboardingScreen() {
             onPress={handleFinish}
             className="rounded-xl bg-stone-800 px-8 py-3"
             accessibilityRole="button"
-            accessibilityLabel="始める"
-            accessibilityHint="アカウント作成画面に進みます"
+            accessibilityLabel={t("onboarding.startA11yLabel")}
+            accessibilityHint={t("onboarding.startA11yHint")}
           >
             <Text className="text-base font-semibold text-white">{t("onboarding.start")}</Text>
           </Pressable>
@@ -129,8 +132,8 @@ export default function OnboardingScreen() {
             onPress={handleNext}
             className="rounded-xl bg-stone-800 px-8 py-3"
             accessibilityRole="button"
-            accessibilityLabel="次へ"
-            accessibilityHint={`次のページ（${currentIndex + 2}ページ目）に進みます`}
+            accessibilityLabel={t("onboarding.nextA11yLabel")}
+            accessibilityHint={t("onboarding.nextA11yHint", { page: currentIndex + 2 })}
           >
             <Text className="text-base font-semibold text-white">{t("onboarding.next")}</Text>
           </Pressable>

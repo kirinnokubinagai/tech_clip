@@ -4,9 +4,7 @@ import { useOfflineArticles } from "@mobile/hooks/use-offline-articles";
 import HomeScreen from "@mobile-app/(tabs)/index";
 import { render, waitFor } from "@testing-library/react-native";
 
-const { __setMockLocale } = require("react-i18next") as {
-  __setMockLocale: (locale: "ja" | "en") => void;
-};
+import { setMockLocale } from "../helpers/i18n-test-utils";
 
 jest.mock("@mobile/hooks/use-articles", () => ({
   useArticles: jest.fn(),
@@ -61,7 +59,7 @@ const DEFAULT_USE_TOGGLE_FAVORITE_MOCK = {
 describe("HomeScreen", () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    __setMockLocale("ja");
+    setMockLocale("ja");
     (useArticles as jest.Mock).mockReturnValue(DEFAULT_USE_ARTICLES_MOCK);
     (useToggleFavorite as jest.Mock).mockReturnValue(DEFAULT_USE_TOGGLE_FAVORITE_MOCK);
     (useNetworkStatus as jest.Mock).mockReturnValue({
@@ -83,7 +81,7 @@ describe("HomeScreen", () => {
     const { getByText } = await render(<HomeScreen />);
 
     await waitFor(() => {
-      expect(getByText("テスト記事1")).toBeTruthy();
+      expect(getByText("テスト記事1")).not.toBeNull();
     });
   });
 
@@ -101,7 +99,7 @@ describe("HomeScreen", () => {
 
     await waitFor(() => {
       expect(useOfflineArticles).toHaveBeenCalledTimes(1);
-      expect(getByText("テスト記事1")).toBeTruthy();
+      expect(getByText("テスト記事1")).not.toBeNull();
     });
   });
 
@@ -118,7 +116,7 @@ describe("HomeScreen", () => {
     const { getByText } = await render(<HomeScreen />);
 
     await waitFor(() => {
-      expect(getByText("オフライン：キャッシュがありません")).toBeTruthy();
+      expect(getByText("オフライン：キャッシュがありません")).not.toBeNull();
     });
   });
 
@@ -131,7 +129,7 @@ describe("HomeScreen", () => {
     const { getByText } = await render(<HomeScreen />);
 
     await waitFor(() => {
-      expect(getByText("読み込み中...")).toBeTruthy();
+      expect(getByText("読み込み中...")).not.toBeNull();
     });
   });
 
@@ -145,8 +143,8 @@ describe("HomeScreen", () => {
     const { getByText } = await render(<HomeScreen />);
 
     await waitFor(() => {
-      expect(getByText("記事の取得に失敗しました")).toBeTruthy();
-      expect(getByText("再試行")).toBeTruthy();
+      expect(getByText("記事の取得に失敗しました")).not.toBeNull();
+      expect(getByText("再試行")).not.toBeNull();
     });
   });
 
@@ -161,7 +159,7 @@ describe("HomeScreen", () => {
   describe("多言語対応", () => {
     it("英語ロケールでローディング文言が英語で表示されること", async () => {
       // Arrange
-      __setMockLocale("en");
+      setMockLocale("en");
       (useArticles as jest.Mock).mockReturnValue({
         ...DEFAULT_USE_ARTICLES_MOCK,
         isLoading: true,
@@ -172,13 +170,13 @@ describe("HomeScreen", () => {
 
       // Assert
       await waitFor(() => {
-        expect(getByText("Loading...")).toBeTruthy();
+        expect(getByText("Loading...")).not.toBeNull();
       });
     });
 
     it("英語ロケールでエラー時に英語の再試行UIが表示されること", async () => {
       // Arrange
-      __setMockLocale("en");
+      setMockLocale("en");
       (useArticles as jest.Mock).mockReturnValue({
         ...DEFAULT_USE_ARTICLES_MOCK,
         isError: true,
@@ -190,14 +188,14 @@ describe("HomeScreen", () => {
 
       // Assert
       await waitFor(() => {
-        expect(getByText("Failed to fetch articles")).toBeTruthy();
-        expect(getByText("Retry")).toBeTruthy();
+        expect(getByText("Failed to fetch articles")).not.toBeNull();
+        expect(getByText("Retry")).not.toBeNull();
       });
     });
 
     it("英語ロケールでオフライン時に英語の空メッセージが表示されること", async () => {
       // Arrange
-      __setMockLocale("en");
+      setMockLocale("en");
       (useNetworkStatus as jest.Mock).mockReturnValue({
         isOnline: false,
         isOffline: true,
@@ -212,7 +210,7 @@ describe("HomeScreen", () => {
 
       // Assert
       await waitFor(() => {
-        expect(getByText("Offline: no cached articles")).toBeTruthy();
+        expect(getByText("Offline: no cached articles")).not.toBeNull();
       });
     });
   });

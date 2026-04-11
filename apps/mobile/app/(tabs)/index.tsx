@@ -182,7 +182,7 @@ export default function HomeScreen() {
               }}
               accessibilityRole="button"
               accessibilityLabel={item.label}
-              accessibilityHint={`${item.label}の記事のみ表示します`}
+              accessibilityHint={t("home.sourceFilterHint", { label: item.label })}
               accessibilityState={{ selected: selectedSource === item.value }}
             >
               <Text

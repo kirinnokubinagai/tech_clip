@@ -91,7 +91,8 @@
     "offlineCachedArticles": "Offline: showing cached articles",
     "offlineNoCache": "Offline: no cached articles",
     "retryLabel": "Retry",
-    "retryHint": "Retry fetching articles"
+    "retryHint": "Retry fetching articles",
+    "sourceFilterHint": "Show only {{label}} articles"
   },
   "article": {
     "save": "Save article",
@@ -99,6 +100,7 @@
     "readLater": "Read later",
     "noArticles": "No articles",
     "readingTime": "{{minutes}} min read",
+    "backA11yLabel": "Back",
     "summary": "Summary",
     "summarized": "Summarized",
     "summarize": "Summarize",
@@ -126,8 +128,7 @@
     "urlRequired": "Please enter a URL",
     "urlInvalid": "Please enter a valid URL",
     "noMatch": "No articles matching \"{{query}}\"",
-    "generating": "Generating...",
-    "minutesToRead": "{{minutes}} min read"
+    "generating": "Generating..."
   },
   "search": {
     "placeholder": "Search articles...",
@@ -291,7 +292,14 @@
     },
     "skip": "Skip",
     "next": "Next",
-    "start": "Get Started"
+    "start": "Get Started",
+    "skipA11yLabel": "Skip",
+    "skipA11yHint": "Skip onboarding and go to login screen",
+    "startA11yLabel": "Get started",
+    "startA11yHint": "Go to account creation screen",
+    "nextA11yLabel": "Next",
+    "nextA11yHint": "Go to page {{page}}",
+    "pageIndicatorLabel": "Page {{current}} of {{total}}"
   },
   "shareIntent": {
     "loading": "Loading",

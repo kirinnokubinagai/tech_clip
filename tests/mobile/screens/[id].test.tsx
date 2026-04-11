@@ -1,9 +1,7 @@
 import ArticleDetailScreen from "@mobile-app/article/[id]";
 import { fireEvent, render, waitFor } from "@testing-library/react-native";
 
-const { __setMockLocale } = require("react-i18next") as {
-  __setMockLocale: (locale: "ja" | "en") => void;
-};
+import { setMockLocale } from "../helpers/i18n-test-utils";
 
 /** 要約リクエストのmutate関数 */
 const mockRequestSummaryMutate = jest.fn();
@@ -101,7 +99,7 @@ jest.mock("react-native/Libraries/Linking/Linking", () => ({
 
 beforeEach(() => {
   jest.clearAllMocks();
-  __setMockLocale("ja");
+  setMockLocale("ja");
   mockArticleDetailState.data = MOCK_ARTICLE;
   mockArticleDetailState.isLoading = false;
   mockArticleDetailState.isError = false;
@@ -112,6 +110,12 @@ beforeEach(() => {
   );
   const { useNetworkStatus } = require("@mobile/hooks/use-network-status");
   (useNetworkStatus as jest.Mock).mockReturnValue({ isOnline: true, isOffline: false });
+});
+
+afterEach(() => {
+  mockArticleDetailState.data = MOCK_ARTICLE;
+  mockArticleDetailState.isLoading = false;
+  mockArticleDetailState.isError = false;
 });
 
 describe("ArticleDetailScreen", () => {
@@ -144,7 +148,7 @@ describe("ArticleDetailScreen", () => {
 
       // Assert
       await waitFor(() => {
-        expect(getByText("テスト記事")).toBeTruthy();
+        expect(getByText("テスト記事")).not.toBeNull();
       });
     });
 
@@ -160,7 +164,7 @@ describe("ArticleDetailScreen", () => {
 
       // Assert
       await waitFor(() => {
-        expect(getByText("記事の取得に失敗しました")).toBeTruthy();
+        expect(getByText("記事の取得に失敗しました")).not.toBeNull();
       });
     });
 
@@ -259,37 +263,37 @@ describe("ArticleDetailScreen", () => {
   describe("多言語対応", () => {
     it("日本語ロケールで読了時間と要約/翻訳ラベルが日本語で表示されること", async () => {
       // Arrange
-      __setMockLocale("ja");
+      setMockLocale("ja");
 
       // Act
       const { getByText } = await render(<ArticleDetailScreen />);
 
       // Assert
       await waitFor(() => {
-        expect(getByText("5分で読めます")).toBeTruthy();
-        expect(getByText("要約")).toBeTruthy();
-        expect(getByText("翻訳")).toBeTruthy();
+        expect(getByText("5分で読めます")).not.toBeNull();
+        expect(getByText("要約")).not.toBeNull();
+        expect(getByText("翻訳")).not.toBeNull();
       });
     });
 
     it("英語ロケールで読了時間と要約/翻訳ラベルが英語で表示されること", async () => {
       // Arrange
-      __setMockLocale("en");
+      setMockLocale("en");
 
       // Act
       const { getByText } = await render(<ArticleDetailScreen />);
 
       // Assert
       await waitFor(() => {
-        expect(getByText("5 min read")).toBeTruthy();
-        expect(getByText("Summarize")).toBeTruthy();
-        expect(getByText("Translate")).toBeTruthy();
+        expect(getByText("5 min read")).not.toBeNull();
+        expect(getByText("Summarize")).not.toBeNull();
+        expect(getByText("Translate")).not.toBeNull();
       });
     });
 
     it("英語ロケールでエラー表示時に英語の fetchError とリトライ文言が表示されること", async () => {
       // Arrange
-      __setMockLocale("en");
+      setMockLocale("en");
       mockArticleDetailState.data = undefined;
       mockArticleDetailState.isError = true;
 
@@ -298,9 +302,9 @@ describe("ArticleDetailScreen", () => {
 
       // Assert
       await waitFor(() => {
-        expect(getByText("Failed to fetch article")).toBeTruthy();
-        expect(getByText("Retry")).toBeTruthy();
-        expect(getByText("Back")).toBeTruthy();
+        expect(getByText("Failed to fetch article")).not.toBeNull();
+        expect(getByText("Retry")).not.toBeNull();
+        expect(getByText("Back")).not.toBeNull();
       });
     });
   });
