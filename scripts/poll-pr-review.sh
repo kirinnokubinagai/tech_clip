@@ -73,8 +73,9 @@ while (( elapsed < TIMEOUT_SECONDS )); do
   fi
 
   # LGTM / Approve 系コメントも検出する
+  # "Approve 相当"（Approved の前に d がないケース）やマージ可能判定も含む
   approve_comment_count=$(gh pr view "${PR_NUMBER}" --json comments --jq '
-    [.comments[] | select(.body | test("✅.*PASS|全件 PASS|全件PASS|LGTM|Approved|指摘.*0.*件|0.*件.*指摘"; "i"))] | length
+    [.comments[] | select(.body | test("✅.*PASS|全件 PASS|全件PASS|LGTM|Approved?|マージ可能|指摘.*0.*件|0.*件.*指摘"; "i"))] | length
   ' 2>/dev/null || echo "0")
 
   if [[ "${approve_comment_count}" -gt 0 ]] && [[ "${changes_comment_count}" -eq 0 ]]; then
