@@ -11,3 +11,4 @@ tests/
 __tests__/
 *.test.py
 *.spec.py
+*.md

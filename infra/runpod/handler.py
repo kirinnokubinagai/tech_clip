@@ -333,7 +333,7 @@ def handler(job: dict) -> dict:
     except ValueError as e:
         return {"error": str(e)}
     except Exception as e:
-        logger.error("推論エラー: %s: %s", type(e).__name__, e)
+        logger.error("推論エラー: %s: %s", type(e).__name__, e, exc_info=True)
         return {"error": "推論エラーが発生しました"}
 
     return {"output": output}

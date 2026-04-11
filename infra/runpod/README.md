@@ -238,7 +238,7 @@ TRANSFORMERS_OFFLINE=1
 | Python | `3.11` | ベースイメージに同梱 |
 | torch | `2.8.0` | ベースイメージに同梱 |
 | transformers | `4.51.3` | Gemma 4 対応 |
-| turboquant | `@acef33bf44abbd4623e11a48aae5f9a60aaf9ac0`（back2matching/turboquant） | SWA バイパス対応・PyPI 版は使用しない |
+| turboquant | `@acef33bf44abbd4623e11a48aae5f9a60aaf9ac0`（back2matching/turboquant） | SWA バイパス対応・PyPI 版は使用しない・`pip audit` の対象外のため定期的に upstream のコミット履歴を手動確認すること |
 | auto-round | `0.5.3` | Intel AutoRound int4 サポート |
 | accelerate | `1.6.0` | デバイスマップサポート |
 | RunPod SDK | `1.7.4` | サーバーレスランタイム |
