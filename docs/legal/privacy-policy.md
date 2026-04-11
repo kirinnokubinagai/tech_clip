@@ -67,9 +67,10 @@ TechClip（以下「本サービス」）は、ユーザーのプライバシー
 - **目的**：記事の要約・翻訳の生成。
 - **プライバシーポリシー**：[https://www.anthropic.com/privacy](https://www.anthropic.com/privacy)
 
-### 4.2 RunPod / Qwen3.5 9B（自社ホスティング）
+### 4.2 Cloudflare Workers AI（Gemma）
 - **提供する情報**：AI要約・翻訳処理のために記事本文を送信します。
-- **目的**：オンデバイス相当のプライベートAI処理。
+- **目的**：記事の要約・翻訳の生成。
+- **プライバシーポリシー**：[https://www.cloudflare.com/privacypolicy/](https://www.cloudflare.com/privacypolicy/)
 
 ### 4.3 RevenueCat
 - **提供する情報**：サブスクリプションの購入・管理のために必要な情報を送信します。
