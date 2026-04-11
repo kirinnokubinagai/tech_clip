@@ -11,6 +11,10 @@ jest.mock("expo-localization", () => ({
   getLocales: jest.fn(() => [{ languageCode: "ja" }]),
 }));
 
+jest.mock("i18next", () => ({
+  changeLanguage: jest.fn().mockResolvedValue(undefined),
+}));
+
 import { LANGUAGE_LABEL_MAP, useSettingsStore } from "@mobile/stores/settings-store";
 import { getLocales } from "expo-localization";
 import * as SecureStore from "expo-secure-store";
@@ -245,10 +249,7 @@ describe("useSettingsStore", () => {
 
         // Assert
         expect(useSettingsStore.getState().language).toBe("zh-CN");
-        expect(mockSetItemAsync).toHaveBeenCalledWith(
-          "settings_language",
-          JSON.stringify("zh-CN"),
-        );
+        expect(mockSetItemAsync).toHaveBeenCalledWith("settings_language", JSON.stringify("zh-CN"));
       });
 
       it("zh-TWを設定してSecureStoreに永続化できること", async () => {
@@ -257,10 +258,7 @@ describe("useSettingsStore", () => {
 
         // Assert
         expect(useSettingsStore.getState().language).toBe("zh-TW");
-        expect(mockSetItemAsync).toHaveBeenCalledWith(
-          "settings_language",
-          JSON.stringify("zh-TW"),
-        );
+        expect(mockSetItemAsync).toHaveBeenCalledWith("settings_language", JSON.stringify("zh-TW"));
       });
 
       it("koを設定してSecureStoreに永続化できること", async () => {
@@ -269,10 +267,7 @@ describe("useSettingsStore", () => {
 
         // Assert
         expect(useSettingsStore.getState().language).toBe("ko");
-        expect(mockSetItemAsync).toHaveBeenCalledWith(
-          "settings_language",
-          JSON.stringify("ko"),
-        );
+        expect(mockSetItemAsync).toHaveBeenCalledWith("settings_language", JSON.stringify("ko"));
       });
     });
 

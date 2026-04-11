@@ -15,7 +15,10 @@
     "done": "완료",
     "search": "검색",
     "skip": "건너뛰기",
-    "start": "시작하기"
+    "start": "시작하기",
+    "accessibility": {
+      "tapToChange": "탭하여 변경"
+    }
   },
   "auth": {
     "login": "로그인",
@@ -203,6 +206,10 @@
       "summaryLanguage": "요약 언어",
       "deleteAccount": "계정 삭제",
       "notLoggedIn": "로그인되지 않음"
+    },
+    "plan": {
+      "premium": "프리미엄",
+      "free": "무료"
     },
     "languageSelect": {
       "title": "언어 설정",

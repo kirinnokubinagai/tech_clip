@@ -15,7 +15,10 @@
     "done": "完成",
     "search": "搜尋",
     "skip": "跳過",
-    "start": "開始"
+    "start": "開始",
+    "accessibility": {
+      "tapToChange": "點擊更改"
+    }
   },
   "auth": {
     "login": "登入",
@@ -203,6 +206,10 @@
       "summaryLanguage": "摘要語言",
       "deleteAccount": "刪除帳號",
       "notLoggedIn": "未登入"
+    },
+    "plan": {
+      "premium": "進階版",
+      "free": "免費版"
     },
     "languageSelect": {
       "title": "語言設定",

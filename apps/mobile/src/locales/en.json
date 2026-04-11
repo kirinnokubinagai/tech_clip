@@ -15,7 +15,10 @@
     "done": "Done",
     "search": "Search",
     "skip": "Skip",
-    "start": "Get Started"
+    "start": "Get Started",
+    "accessibility": {
+      "tapToChange": "Tap to change"
+    }
   },
   "auth": {
     "login": "Log in",
@@ -87,7 +90,9 @@
     "favoritesFilterClearLabel": "Clear favorites filter",
     "loadingArticles": "Loading...",
     "fetchError": "Failed to fetch articles",
-    "noArticles": "No articles"
+    "noArticles": "No articles",
+    "offlineCachedArticles": "Offline: Showing cached articles",
+    "offlineNoCache": "Offline: No cache available"
   },
   "article": {
     "save": "Save article",
@@ -201,6 +206,10 @@
       "deleteAccount": "Delete Account",
       "notLoggedIn": "Not logged in",
       "summaryLanguage": "Summary Language"
+    },
+    "plan": {
+      "premium": "Premium",
+      "free": "Free"
     },
     "languageSelect": {
       "title": "Language Settings",

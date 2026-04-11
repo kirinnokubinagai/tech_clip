@@ -32,7 +32,13 @@ jest.mock("@mobile/stores/auth-store", () => ({
 }));
 
 jest.mock("@mobile/stores/settings-store", () => ({
-  LANGUAGE_LABEL_MAP: { ja: "日本語", en: "English", "zh-CN": "简体中文", "zh-TW": "繁體中文", ko: "한국어" },
+  LANGUAGE_LABEL_MAP: {
+    ja: "日本語",
+    en: "English",
+    "zh-CN": "简体中文",
+    "zh-TW": "繁體中文",
+    ko: "한국어",
+  },
   SUMMARY_LANGUAGE_LABELS: {
     ja: "日本語",
     en: "English",

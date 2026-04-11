@@ -57,7 +57,9 @@ export default function LanguageScreen() {
   const language = useSettingsStore((s) => s.language);
   const setLanguage = useSettingsStore((s) => s.setLanguage);
 
-  const languageEntries = Object.entries(LANGUAGE_LABEL_MAP) as [Language, string][];
+  const languageEntries = (Object.keys(LANGUAGE_LABEL_MAP) as Language[]).map(
+    (code) => [code, LANGUAGE_LABEL_MAP[code]] as [Language, string],
+  );
 
   /**
    * 言語を選択して前の画面に戻る

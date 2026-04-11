@@ -64,6 +64,7 @@ const ICON_COLOR = DARK_COLORS.textMuted;
  * @param trailing - 右側に表示するカスタムウィジェット（Switchなど）
  */
 function SettingsRow({ icon, label, value, onPress, trailing, testID }: SettingsRowProps) {
+  const { t } = useTranslation();
   const content = (
     <View className="flex-row items-center px-4 py-3">
       <View className="mr-3">{icon}</View>
@@ -80,7 +81,7 @@ function SettingsRow({ icon, label, value, onPress, trailing, testID }: Settings
         onPress={onPress}
         accessibilityRole="button"
         accessibilityLabel={value ? `${label}、現在の設定: ${value}` : label}
-        accessibilityHint={`${label}の設定を変更します`}
+        accessibilityHint={t("common.accessibility.tapToChange")}
       >
         {content}
       </Pressable>
@@ -230,7 +231,7 @@ export default function SettingsScreen() {
         <SettingsRow
           icon={<CreditCard size={ICON_SIZE} color={ICON_COLOR} />}
           label={t("settings.items.plan")}
-          value={isSubscribed ? "Premium" : "Free"}
+          value={isSubscribed ? t("settings.plan.premium") : t("settings.plan.free")}
         />
       </View>
 

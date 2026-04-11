@@ -17,9 +17,9 @@ describe("i18n", () => {
       expect(i18n.hasResourceBundle("en", "translation")).toBe(true);
     });
 
-    it("フォールバック言語が日本語であること", async () => {
+    it("フォールバック言語として英語・日本語の順であること", async () => {
       // Assert
-      expect(i18n.options.fallbackLng).toContain("ja");
+      expect(i18n.options.fallbackLng).toEqual(["en", "ja"]);
     });
   });
 

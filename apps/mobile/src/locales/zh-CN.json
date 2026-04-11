@@ -15,7 +15,10 @@
     "done": "完成",
     "search": "搜索",
     "skip": "跳过",
-    "start": "开始"
+    "start": "开始",
+    "accessibility": {
+      "tapToChange": "点击更改"
+    }
   },
   "auth": {
     "login": "登录",
@@ -203,6 +206,10 @@
       "summaryLanguage": "摘要语言",
       "deleteAccount": "删除账户",
       "notLoggedIn": "未登录"
+    },
+    "plan": {
+      "premium": "高级版",
+      "free": "免费版"
     },
     "languageSelect": {
       "title": "语言设置",

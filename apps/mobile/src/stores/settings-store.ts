@@ -1,5 +1,6 @@
 import { getLocales } from "expo-localization";
 import * as SecureStore from "expo-secure-store";
+import i18n from "i18next";
 import { create } from "zustand";
 
 import { apiFetch } from "@/lib/api";
@@ -57,6 +58,12 @@ function normalizeStoredLanguage(stored: string): {
     return { language: DEFAULT_LANGUAGE, needsMigration: true };
   }
 
+  /** SecureStore保存値の最大文字数（locale コードは最大10文字以内） */
+  const MAX_LANGUAGE_CODE_LENGTH = 10;
+  if (parsed.length > MAX_LANGUAGE_CODE_LENGTH) {
+    return { language: DEFAULT_LANGUAGE, needsMigration: true };
+  }
+
   if ((LOCALE_CODES as ReadonlyArray<string>).includes(parsed)) {
     return { language: parsed as Language, needsMigration: false };
   }
@@ -66,7 +73,7 @@ function normalizeStoredLanguage(stored: string): {
 }
 
 /** 要約言語コード選択肢 */
-const SUMMARY_LANGUAGE_OPTIONS = ["ja", "en", "zh", "ko"] as const;
+const SUMMARY_LANGUAGE_OPTIONS = ["ja", "en", "zh", "zh-CN", "zh-TW", "ko"] as const;
 
 /** 要約言語コードの型 */
 export type SummaryLanguage = (typeof SUMMARY_LANGUAGE_OPTIONS)[number];
@@ -76,6 +83,8 @@ export const SUMMARY_LANGUAGE_LABELS: Record<SummaryLanguage, string> = {
   ja: "日本語",
   en: "English",
   zh: "中文",
+  "zh-CN": "简体中文",
+  "zh-TW": "繁體中文",
   ko: "한국어",
 } as const;
 
@@ -183,12 +192,13 @@ export const useSettingsStore = create<SettingsStore>((set, get) => ({
   },
 
   /**
-   * 言語設定を変更してSecureStoreに永続化する
+   * 言語設定を変更してSecureStoreに永続化し、i18nの表示言語を同期する
    *
    * @param language - 設定するlocaleコード
    */
   setLanguage: async (language: Language) => {
     await SecureStore.setItemAsync(LANGUAGE_KEY, JSON.stringify(language));
+    await i18n.changeLanguage(language);
     set({ language });
   },
 

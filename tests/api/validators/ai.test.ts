@@ -41,6 +41,30 @@ describe("GenerateTranslationSchema", () => {
       expect(result.data?.targetLanguage).toBe("zh");
     });
 
+    it("targetLanguage=zh-CNでバリデーションが通ること", () => {
+      // Arrange
+      const input = { targetLanguage: "zh-CN" };
+
+      // Act
+      const result = GenerateTranslationSchema.safeParse(input);
+
+      // Assert
+      expect(result.success).toBe(true);
+      expect(result.data?.targetLanguage).toBe("zh-CN");
+    });
+
+    it("targetLanguage=zh-TWでバリデーションが通ること", () => {
+      // Arrange
+      const input = { targetLanguage: "zh-TW" };
+
+      // Act
+      const result = GenerateTranslationSchema.safeParse(input);
+
+      // Assert
+      expect(result.success).toBe(true);
+      expect(result.data?.targetLanguage).toBe("zh-TW");
+    });
+
     it("targetLanguage=koでバリデーションが通ること", () => {
       // Arrange
       const input = { targetLanguage: "ko" };
@@ -64,7 +88,11 @@ describe("GenerateTranslationSchema", () => {
 
       // Assert
       expect(result.success).toBe(false);
-      expect(result.error?.issues[0].message).toContain("en");
+      const message = result.error?.issues[0].message ?? "";
+      expect(message).toContain("en");
+      expect(message).toContain("ja");
+      expect(message).toContain("zh");
+      expect(message).toContain("ko");
     });
 
     it("targetLanguageが未指定の場合エラーになること", () => {
@@ -140,6 +168,30 @@ describe("GenerateSummarySchema", () => {
       // Assert
       expect(result.success).toBe(true);
       expect(result.data?.language).toBe("zh");
+    });
+
+    it("language=zh-CNを指定してバリデーションが通ること", () => {
+      // Arrange
+      const input = { language: "zh-CN" };
+
+      // Act
+      const result = GenerateSummarySchema.safeParse(input);
+
+      // Assert
+      expect(result.success).toBe(true);
+      expect(result.data?.language).toBe("zh-CN");
+    });
+
+    it("language=zh-TWを指定してバリデーションが通ること", () => {
+      // Arrange
+      const input = { language: "zh-TW" };
+
+      // Act
+      const result = GenerateSummarySchema.safeParse(input);
+
+      // Assert
+      expect(result.success).toBe(true);
+      expect(result.data?.language).toBe("zh-TW");
     });
 
     it("language=koを指定してバリデーションが通ること", () => {

@@ -22,22 +22,22 @@ describe("UI_TO_API_LANGUAGE", () => {
   });
 
   describe("zh-CN", () => {
-    it("zh-CNがAPIコードzhにマッピングされること", () => {
+    it("zh-CNがAPIコードzh-CNにマッピングされること", () => {
       // Arrange & Act
       const result = UI_TO_API_LANGUAGE["zh-CN"];
 
       // Assert
-      expect(result).toBe("zh");
+      expect(result).toBe("zh-CN");
     });
   });
 
   describe("zh-TW", () => {
-    it("zh-TWがAPIコードzhにマッピングされること", () => {
+    it("zh-TWがAPIコードzh-TWにマッピングされること", () => {
       // Arrange & Act
       const result = UI_TO_API_LANGUAGE["zh-TW"];
 
       // Assert
-      expect(result).toBe("zh");
+      expect(result).toBe("zh-TW");
     });
   });
 

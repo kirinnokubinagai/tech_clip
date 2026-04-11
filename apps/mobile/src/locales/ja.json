@@ -15,7 +15,10 @@
     "done": "完了",
     "search": "検索",
     "skip": "スキップ",
-    "start": "始める"
+    "start": "始める",
+    "accessibility": {
+      "tapToChange": "タップして変更"
+    }
   },
   "auth": {
     "login": "ログイン",
@@ -203,6 +206,10 @@
       "summaryLanguage": "要約言語",
       "deleteAccount": "アカウントを削除する",
       "notLoggedIn": "未ログイン"
+    },
+    "plan": {
+      "premium": "プレミアム",
+      "free": "無料"
     },
     "languageSelect": {
       "title": "言語設定",

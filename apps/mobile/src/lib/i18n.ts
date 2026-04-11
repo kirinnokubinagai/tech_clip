@@ -11,8 +11,11 @@ import zhTW from "../locales/zh-TW.json";
 /** サポートする言語一覧 */
 const SUPPORTED_LANGUAGES = ["ja", "en", "zh-CN", "zh-TW", "ko"] as const;
 
+/** サポートする言語コードの型 */
+type Language = (typeof SUPPORTED_LANGUAGES)[number];
+
 /** デフォルト言語 */
-const DEFAULT_LANGUAGE = "ja";
+const DEFAULT_LANGUAGE: Language = "ja";
 
 /**
  * デバイスのロケールからサポート言語を解決する
@@ -21,7 +24,7 @@ const DEFAULT_LANGUAGE = "ja";
  *
  * @returns サポートされている言語コード
  */
-function resolveDeviceLanguage(): string {
+function resolveDeviceLanguage(): Language {
   const locales = getLocales();
   if (locales.length === 0) {
     return DEFAULT_LANGUAGE;
@@ -36,18 +39,18 @@ function resolveDeviceLanguage(): string {
   const code = locale.languageCode ?? "";
 
   if (tag.startsWith("zh-Hans") || tag === "zh-CN" || code === "zh-Hans") {
-    return "zh-CN";
+    return "zh-CN" as const;
   }
   if (tag.startsWith("zh-Hant") || tag === "zh-TW" || tag === "zh-HK" || code === "zh-Hant") {
-    return "zh-TW";
+    return "zh-TW" as const;
   }
 
-  const isSupported = SUPPORTED_LANGUAGES.includes(code as (typeof SUPPORTED_LANGUAGES)[number]);
+  const isSupported = SUPPORTED_LANGUAGES.includes(code as Language);
   if (!isSupported) {
     return DEFAULT_LANGUAGE;
   }
 
-  return code;
+  return code as Language;
 }
 
 i18n.use(initReactI18next).init({
@@ -61,6 +64,7 @@ i18n.use(initReactI18next).init({
   lng: resolveDeviceLanguage(),
   fallbackLng: ["en", "ja"],
   interpolation: {
+    // React Native では XSS リスクが低いため false に設定
     escapeValue: false,
   },
 });

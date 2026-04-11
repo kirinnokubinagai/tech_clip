@@ -1,14 +1,14 @@
 import { z } from "zod";
 
 /** サポートされる言語 */
-const SUPPORTED_LANGUAGES = ["en", "ja", "zh", "ko"] as const;
+const SUPPORTED_LANGUAGES = ["en", "ja", "zh", "zh-CN", "zh-TW", "ko"] as const;
 
 /**
  * 翻訳生成リクエストのZodスキーマ
  */
 export const GenerateTranslationSchema = z.object({
   targetLanguage: z.enum(SUPPORTED_LANGUAGES, {
-    error: "targetLanguageはen、ja、zh、koで指定してください",
+    error: "targetLanguageはen、ja、zh、zh-CN、zh-TW、koで指定してください",
   }),
 });
 
@@ -18,7 +18,7 @@ export const GenerateTranslationSchema = z.object({
 export const GenerateSummarySchema = z.object({
   language: z
     .enum(SUPPORTED_LANGUAGES, {
-      error: "languageはen、ja、zh、koで指定してください",
+      error: "languageはen、ja、zh、zh-CN、zh-TW、koで指定してください",
     })
     .optional(),
 });
