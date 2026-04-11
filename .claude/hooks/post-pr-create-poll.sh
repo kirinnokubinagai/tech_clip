@@ -3,38 +3,42 @@
 # gh pr create 実行後に自動的に poll-pr-review.sh をバックグラウンドで起動する
 #
 # PostToolUse (Bash) フックとして呼び出される
-# ARGUMENTS 環境変数: {"command": "...", "output": "..."}
+# ARGUMENTS 環境変数: {"command": "..."}
+# timeout: 15s (gh pr view のネットワーク呼び出しのため他フックより長め)
 
 set -uo pipefail
 
-ARGUMENTS="${ARGUMENTS:-}"
-[[ -z "${ARGUMENTS}" ]] && exit 0
+# jq が必要（他フックと同様の早期チェック）
+command -v jq >/dev/null 2>&1 || exit 0
 
 # コマンド文字列を取得
-command_str=$(echo "${ARGUMENTS}" | jq -r '.command // ""' 2>/dev/null || true)
-[[ -z "${command_str}" ]] && exit 0
+command_str=$(printf '%s' "${ARGUMENTS:-}" | jq -r '.command // ""' 2>/dev/null || true)
+[[ -n "${command_str}" ]] || exit 0
 
-# gh pr create を含むコマンドのみ処理
-echo "${command_str}" | grep -q "gh pr create" || exit 0
+# gh pr create を含むコマンドのみ処理（単語境界を考慮した正規表現）
+# "git commit -m 'gh pr create'" などの誤検知を防ぐ
+echo "${command_str}" | grep -qE '(^|&&[[:space:]]*|;[[:space:]]*)gh[[:space:]]+pr[[:space:]]+create([[:space:]]|$)' || exit 0
 
-# --dry-run や --web フラグは PR を作成しないのでスキップ
-echo "${command_str}" | grep -qE "(--dry-run|--web)" && exit 0
-
-# worktree パスを cd コマンドから抽出
-# パターン: "cd /path/to/worktree && ..."
+# worktree パスを cd コマンドから抽出（スペースなしパスのみ対応）
 worktree_path=""
-if echo "${command_str}" | grep -qE "^cd "; then
-  raw_path=$(echo "${command_str}" | sed -E 's|^cd ([^ ]+).*|\1|' | head -1)
+if echo "${command_str}" | grep -qE "^cd [^&;[:space:]]"; then
+  raw_path=$(echo "${command_str}" | sed -E 's|^cd ([^[:space:]&;]+).*|\1|' | head -1)
   # クォートを除去
-  worktree_path="${raw_path//\'/}"
-  worktree_path="${worktree_path//\"/}"
+  raw_path="${raw_path//\'/}"
+  raw_path="${raw_path//\"/}"
+  # realpath で正規化
+  if [[ -d "${raw_path}" ]]; then
+    worktree_path=$(cd "${raw_path}" 2>/dev/null && pwd -P) || worktree_path=""
+  fi
 fi
 
-if [[ -z "${worktree_path}" ]] || [[ ! -d "${worktree_path}" ]]; then
-  worktree_path="$(pwd)"
-fi
+# worktree パスが特定できない場合はスキップ（誤った CWD でポーリングしないよう pwd フォールバックは使わない）
+[[ -n "${worktree_path}" ]] || exit 0
 
-# PR番号を取得（PR が存在しない場合は終了）
+# git リポジトリ内であることを確認（ディレクトリトラバーサル対策）
+git -C "${worktree_path}" rev-parse --is-inside-work-tree >/dev/null 2>&1 || exit 0
+
+# PR番号を取得（--dry-run / --web などで PR が未作成の場合は自然にスキップ）
 PR_NUMBER=$(cd "${worktree_path}" && gh pr view HEAD --json number --jq '.number' 2>/dev/null || true)
 if [[ -z "${PR_NUMBER}" ]] || ! [[ "${PR_NUMBER}" =~ ^[0-9]+$ ]]; then
   exit 0
@@ -42,20 +46,25 @@ fi
 
 # プロジェクトルートとスクリプトパス
 ROOT=$(git -C "${worktree_path}" rev-parse --show-toplevel 2>/dev/null || true)
-[[ -z "${ROOT}" ]] && exit 0
+[[ -n "${ROOT}" ]] || exit 0
 
 POLL_SCRIPT="${ROOT}/scripts/poll-pr-review.sh"
 [[ -f "${POLL_SCRIPT}" ]] || exit 0
 
+# ユーザー固有のログディレクトリ（/tmp シンボリックリンク攻撃対策）
+LOG_DIR="${TMPDIR:-/tmp}/tech-clip-poll-pr-$(id -u)"
+mkdir -p "${LOG_DIR}" && chmod 700 "${LOG_DIR}" || exit 0
+LOG_FILE="${LOG_DIR}/poll-pr-${PR_NUMBER}.log"
+
 # 既に同じ PR のポーリングが実行中かチェック
-if pgrep -f "poll-pr-review.sh ${PR_NUMBER}" > /dev/null 2>&1; then
+# 末尾アンカーで PR#1 のチェックが PR#12 にマッチする誤検知を防止
+if pgrep -f "poll-pr-review\\.sh ${PR_NUMBER}$" > /dev/null 2>&1; then
   echo "[poll-pr] PR #${PR_NUMBER} は既にポーリング中です" >&2
   exit 0
 fi
 
-# バックグラウンドでポーリング開始
-LOG_FILE="/tmp/poll-pr-${PR_NUMBER}.log"
-nohup bash "${POLL_SCRIPT}" "${PR_NUMBER}" > "${LOG_FILE}" 2>&1 &
+# バックグラウンドでポーリング開始（stdin も /dev/null にリダイレクト）
+nohup bash "${POLL_SCRIPT}" "${PR_NUMBER}" </dev/null >"${LOG_FILE}" 2>&1 &
 disown $!
 
 echo "[poll-pr] PR #${PR_NUMBER} のポーリングを開始しました (log: ${LOG_FILE})" >&2
