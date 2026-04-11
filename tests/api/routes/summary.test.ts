@@ -320,7 +320,7 @@ describe("POST /api/articles/:id/summary", () => {
     expect(mockSummarizeArticle).toHaveBeenCalledOnce();
   });
 
-  it("記事にcontentがない場合500を返すこと", async () => {
+  it("記事にcontentがない場合422を返すこと", async () => {
     // Arrange
     const app = createTestApp();
     const articleNoContent = { ...MOCK_ARTICLE, content: null };
@@ -334,10 +334,10 @@ describe("POST /api/articles/:id/summary", () => {
     });
 
     // Assert
-    expect(res.status).toBe(HTTP_INTERNAL_SERVER_ERROR);
+    expect(res.status).toBe(HTTP_UNPROCESSABLE_ENTITY);
     const body = (await res.json()) as ErrorResponseBody;
     expect(body.success).toBe(false);
-    expect(body.error.code).toBe("INTERNAL_ERROR");
+    expect(body.error.code).toBe("VALIDATION_FAILED");
   });
 
   it("要約サービスがエラーを返した場合500を返すこと", async () => {
@@ -358,6 +358,159 @@ describe("POST /api/articles/:id/summary", () => {
     const body = (await res.json()) as ErrorResponseBody;
     expect(body.success).toBe(false);
     expect(body.error.code).toBe("INTERNAL_ERROR");
+  });
+});
+
+describe("POST /api/articles/:id/summary（KV キャッシュ）", () => {
+  beforeEach(() => {
+    vi.restoreAllMocks();
+    mockSelectWhere.mockReset();
+    mockSelectFrom.mockReturnValue({ where: mockSelectWhere });
+    mockSelect.mockReturnValue({ from: mockSelectFrom });
+    mockInsertValues.mockReset();
+    mockInsertReturning.mockReset();
+    mockInsert.mockReturnValue({ values: mockInsertValues });
+    mockInsertValues.mockReturnValue({ returning: mockInsertReturning });
+    mockInsertReturning.mockResolvedValue([MOCK_SUMMARY]);
+    mockUpdateSet.mockReset();
+    mockUpdateWhere.mockReset();
+    mockUpdate.mockReturnValue({ set: mockUpdateSet });
+    mockUpdateSet.mockReturnValue({ where: mockUpdateWhere });
+    mockUpdateWhere.mockResolvedValue([]);
+    mockSummarizeArticle.mockReset();
+    mockSummarizeArticle.mockResolvedValue({
+      summary: "テスト要約コンテンツ",
+      model: "gemma-4-26b-a4b",
+    });
+  });
+
+  it("KV キャッシュヒット時に summarizeFn を呼び出さないこと", async () => {
+    // Arrange
+    const cachedData = {
+      summary: MOCK_SUMMARY.summary,
+      model: MOCK_SUMMARY.model,
+      createdAt: MOCK_SUMMARY.createdAt.toISOString(),
+    };
+    const mockCache = {
+      get: vi.fn().mockResolvedValue(JSON.stringify(cachedData)),
+      put: vi.fn().mockResolvedValue(undefined),
+    } as unknown as KVNamespace;
+
+    type Variables = {
+      user: typeof MOCK_USER;
+      session: Record<string, unknown>;
+    };
+    const app = new Hono<{ Variables: Variables }>();
+    app.use("/api/articles/:id/summary", (c, next) => {
+      c.set("user", MOCK_USER);
+      c.set("session", { id: "session_01" });
+      return next();
+    });
+    const summaryRoute = createSummaryRoute({
+      db: mockDb as never,
+      summarizeFn: mockSummarizeArticle,
+      ai: MOCK_AI,
+      modelTag: "gemma-4-26b-a4b",
+      cache: mockCache,
+    });
+    app.route("/api", summaryRoute);
+
+    mockSelectWhere.mockResolvedValue([MOCK_ARTICLE]);
+
+    // Act
+    const res = await app.request("/api/articles/article_001/summary", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ language: "ja" }),
+    });
+
+    // Assert
+    expect(res.status).toBe(HTTP_OK);
+    const body = (await res.json()) as SummaryResponseBody;
+    expect(body.success).toBe(true);
+    expect(body.data?.status).toBe("completed");
+    expect(mockSummarizeArticle).not.toHaveBeenCalled();
+  });
+
+  it("KV キャッシュ書き込み失敗時もレスポンス 200 を返すこと", async () => {
+    // Arrange
+    const mockCache = {
+      get: vi.fn().mockResolvedValue(null),
+      put: vi.fn().mockRejectedValue(new Error("KV 書き込みエラー")),
+    } as unknown as KVNamespace;
+
+    type Variables = {
+      user: typeof MOCK_USER;
+      session: Record<string, unknown>;
+    };
+    const app = new Hono<{ Variables: Variables }>();
+    app.use("/api/articles/:id/summary", (c, next) => {
+      c.set("user", MOCK_USER);
+      c.set("session", { id: "session_01" });
+      return next();
+    });
+    const summaryRoute = createSummaryRoute({
+      db: mockDb as never,
+      summarizeFn: mockSummarizeArticle,
+      ai: MOCK_AI,
+      modelTag: "gemma-4-26b-a4b",
+      cache: mockCache,
+    });
+    app.route("/api", summaryRoute);
+
+    mockSelectWhere.mockResolvedValueOnce([MOCK_ARTICLE]).mockResolvedValueOnce([]);
+
+    // Act
+    const res = await app.request("/api/articles/article_001/summary", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ language: "ja" }),
+    });
+
+    // Assert
+    expect(res.status).toBe(HTTP_OK);
+    const body = (await res.json()) as SummaryResponseBody;
+    expect(body.success).toBe(true);
+    expect(mockSummarizeArticle).toHaveBeenCalledOnce();
+  });
+
+  it("KV キャッシュキーが summary:v1:<articleId>:<lang> 形式であること", async () => {
+    // Arrange
+    const mockCache = {
+      get: vi.fn().mockResolvedValue(null),
+      put: vi.fn().mockResolvedValue(undefined),
+    } as unknown as KVNamespace;
+
+    type Variables = {
+      user: typeof MOCK_USER;
+      session: Record<string, unknown>;
+    };
+    const app = new Hono<{ Variables: Variables }>();
+    app.use("/api/articles/:id/summary", (c, next) => {
+      c.set("user", MOCK_USER);
+      c.set("session", { id: "session_01" });
+      return next();
+    });
+    const summaryRoute = createSummaryRoute({
+      db: mockDb as never,
+      summarizeFn: mockSummarizeArticle,
+      ai: MOCK_AI,
+      modelTag: "gemma-4-26b-a4b",
+      cache: mockCache,
+    });
+    app.route("/api", summaryRoute);
+
+    mockSelectWhere.mockResolvedValueOnce([MOCK_ARTICLE]).mockResolvedValueOnce([]);
+
+    // Act
+    await app.request("/api/articles/article_001/summary", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ language: "ja" }),
+    });
+
+    // Assert
+    expect(mockCache.get).toHaveBeenCalledWith("summary:v1:article_001:ja");
   });
 });
 

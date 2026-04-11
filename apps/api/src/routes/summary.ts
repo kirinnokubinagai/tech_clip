@@ -244,8 +244,11 @@ export function createSummaryRoute(options: SummaryRouteOptions) {
 
     if (!article.content) {
       return c.json(
-        { success: false, error: { code: INTERNAL_ERROR_CODE, message: NO_CONTENT_ERROR_MESSAGE } },
-        HTTP_INTERNAL_SERVER_ERROR,
+        {
+          success: false,
+          error: { code: VALIDATION_ERROR_CODE, message: NO_CONTENT_ERROR_MESSAGE },
+        },
+        HTTP_UNPROCESSABLE_ENTITY,
       );
     }
 
