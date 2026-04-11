@@ -60,10 +60,11 @@ install_turboquant_hooks(
 export HF_TOKEN=your_hf_token_here
 
 HF_HOME=/runpod-volume/hf-cache python3 -c "
+import os
 from huggingface_hub import snapshot_download
 snapshot_download(
     repo_id='raydelossantos/gemma-4-26B-A4B-it-GPTQ-Int4',
-    token='${HF_TOKEN}',
+    token=os.environ.get('HF_TOKEN'),
 )
 "
 ```

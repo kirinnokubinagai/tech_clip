@@ -1,3 +1,4 @@
-vllm==0.9.0
+# vllm はベースイメージ (vllm/vllm-openai) に同梱のため不要
 runpod==1.7.4
+# turboquant は pip audit 対象外のため定期的に upstream コミット履歴を手動確認すること
 git+https://github.com/0xSero/turboquant.git@7ac9b8d165a3f7d5e6df33b0450bc1f88ec0d4d5

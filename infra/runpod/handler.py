@@ -26,8 +26,8 @@ import os
 from typing import Any
 
 import runpod
+import torch
 from vllm import LLM, SamplingParams
-from transformers import AutoTokenizer
 
 logging.basicConfig(
     level=logging.INFO,
@@ -74,14 +74,11 @@ TURBOQUANT_KEY_BITS = 3
 TURBOQUANT_VALUE_BITS = 2
 TURBOQUANT_BUFFER_SIZE = 128
 
-model_id_env: str = os.environ.get("MODEL_ID", DEFAULT_MODEL_ID)
-if model_id_env not in ALLOWED_MODEL_IDS:
-    raise ValueError(f"許可されていないモデルID: {model_id_env}")
-MODEL_ID: str = model_id_env
+MODEL_ID: str = os.environ.get("MODEL_ID", DEFAULT_MODEL_ID)
 
 # グローバルモデル（コールドスタート時のみロード）
 _llm: LLM | None = None
-_tokenizer: AutoTokenizer | None = None
+_tokenizer: Any | None = None
 
 
 def _install_turboquant_hooks(llm_instance: LLM) -> int:
@@ -134,13 +131,16 @@ def _install_turboquant_hooks(llm_instance: LLM) -> int:
         return 0
 
 
-def _load_model() -> tuple[LLM, AutoTokenizer]:
+def _load_model() -> tuple[LLM, Any]:
     """
     vLLM で GPTQ モデルをロードし、TurboQuant フックをインストールする。
 
     Returns:
         (llm, tokenizer) のタプル
     """
+    if MODEL_ID not in ALLOWED_MODEL_IDS:
+        raise ValueError(f"許可されていないモデルID: {MODEL_ID}")
+
     logger.info("モデルをロード中: %s", MODEL_ID)
 
     llm = LLM(
@@ -149,11 +149,11 @@ def _load_model() -> tuple[LLM, AutoTokenizer]:
         dtype="float16",
         gpu_memory_utilization=GPU_MEMORY_UTILIZATION,
         max_model_len=4096,
-        trust_remote_code=True,
+        trust_remote_code=False,  # GPTQ は transformers 本体でサポート
         max_num_seqs=1,
     )
 
-    tokenizer = AutoTokenizer.from_pretrained(MODEL_ID)
+    tokenizer = llm.get_tokenizer()
 
     logger.info("モデルのロード完了。TurboQuant フックをインストール中...")
     _install_turboquant_hooks(llm)
@@ -161,7 +161,7 @@ def _load_model() -> tuple[LLM, AutoTokenizer]:
     return llm, tokenizer
 
 
-def _get_model() -> tuple[LLM, AutoTokenizer]:
+def _get_model() -> tuple[LLM, Any]:
     """
     グローバルモデルを返す。未初期化の場合はロードする。
 
@@ -364,6 +364,9 @@ def handler(job: dict) -> dict:
         output = _generate(job_input)
     except ValueError as e:
         return {"error": str(e)}
+    except torch.cuda.OutOfMemoryError:
+        logger.error("GPU メモリ不足エラー", exc_info=True)
+        return {"error": "推論エラーが発生しました"}
     except Exception:
         logger.error("推論エラー", exc_info=True)
         return {"error": "推論エラーが発生しました"}
