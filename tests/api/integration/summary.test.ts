@@ -32,9 +32,9 @@ const MOCK_SUMMARY = {
   id: "summary_001",
   articleId: MOCK_ARTICLE.id,
   language: "ja",
-  content: "これはテスト要約です。",
+  summary: "これはテスト要約です。",
+  model: "gemma-4-26b-a4b",
   createdAt: new Date("2024-01-01"),
-  updatedAt: new Date("2024-01-01"),
 };
 
 /** テスト用 Ai モックバインディング */

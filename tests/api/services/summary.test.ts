@@ -1,6 +1,6 @@
 import { DEFAULT_GEMMA_MODEL_TAG, WORKERS_AI_GEMMA_MODEL_ID } from "@api/lib/ai-model";
 import type { SummaryResult } from "@api/services/summary";
-import { summarizeArticle } from "@api/services/summary";
+import { sanitizeArticleContent, summarizeArticle } from "@api/services/summary";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const MOCK_SUMMARY_TEXT = "## 概要\nこの記事はTypeScriptの型システムについて解説しています。";
@@ -202,5 +202,85 @@ describe("summary service", () => {
     // Assert
     expect(typeof result.summary).toBe("string");
     expect(typeof result.model).toBe("string");
+  });
+});
+
+describe("sanitizeArticleContent", () => {
+  it("script タグとその内容を除去できること", () => {
+    // Arrange
+    const input = '<p>記事本文</p><script>alert("xss")</script>';
+
+    // Act
+    const result = sanitizeArticleContent(input);
+
+    // Assert
+    expect(result).not.toContain("<script>");
+    expect(result).not.toContain("alert");
+    expect(result).toContain("記事本文");
+  });
+
+  it("style タグとその内容を除去できること", () => {
+    // Arrange
+    const input = "<p>本文</p><style>.a { color: red; }</style>";
+
+    // Act
+    const result = sanitizeArticleContent(input);
+
+    // Assert
+    expect(result).not.toContain("<style>");
+    expect(result).not.toContain("color: red");
+    expect(result).toContain("本文");
+  });
+
+  it("HTML タグを除去してプレーンテキストにできること", () => {
+    // Arrange
+    const input = "<h1>タイトル</h1><p>段落<strong>強調</strong>テキスト</p>";
+
+    // Act
+    const result = sanitizeArticleContent(input);
+
+    // Assert
+    expect(result).not.toContain("<h1>");
+    expect(result).not.toContain("<p>");
+    expect(result).not.toContain("<strong>");
+    expect(result).toContain("タイトル");
+    expect(result).toContain("強調");
+  });
+
+  it("HTML エンティティをデコードできること", () => {
+    // Arrange
+    const input = "1 &amp; 2 &lt;3 &gt;4 &quot;hello&quot; &#039;world&#039;";
+
+    // Act
+    const result = sanitizeArticleContent(input);
+
+    // Assert
+    expect(result).toContain("1 & 2");
+    expect(result).toContain("<3");
+    expect(result).toContain(">4");
+    expect(result).toContain('"hello"');
+    expect(result).toContain("'world'");
+  });
+
+  it("MAX_CONTENT_LENGTH を超える場合に切り詰めること", () => {
+    // Arrange
+    const input = "a".repeat(30000);
+
+    // Act
+    const result = sanitizeArticleContent(input);
+
+    // Assert
+    expect(result.length).toBeLessThanOrEqual(24000);
+  });
+
+  it("連続する空白を1つに正規化できること", () => {
+    // Arrange
+    const input = "テキスト   複数\n\n空白\t\t含む";
+
+    // Act
+    const result = sanitizeArticleContent(input);
+
+    // Assert
+    expect(result).not.toMatch(/\s{2}/);
   });
 });
