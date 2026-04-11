@@ -299,15 +299,27 @@ export function createSummaryRoute(options: SummaryRouteOptions) {
         .where(eq(aiJobs.id, jobId));
 
       if (cache) {
-        await cache.put(
-          buildKvKey(articleId, language),
-          JSON.stringify({
-            summary: result.summary,
-            model: result.model,
-            createdAt: completedAt.toISOString(),
-          }),
-          { expirationTtl: KV_CACHE_TTL_SECONDS },
-        );
+        try {
+          await cache.put(
+            buildKvKey(articleId, language),
+            JSON.stringify({
+              summary: result.summary,
+              model: result.model,
+              createdAt: completedAt.toISOString(),
+            }),
+            { expirationTtl: KV_CACHE_TTL_SECONDS },
+          );
+        } catch (cacheError) {
+          const cacheLogger = createLogger("summary-route");
+          cacheLogger.warn("KV キャッシュ書き込みに失敗しました", {
+            articleId,
+            language,
+            error:
+              cacheError instanceof Error
+                ? { name: cacheError.name, message: cacheError.message }
+                : cacheError,
+          });
+        }
       }
 
       return c.json(
@@ -337,7 +349,10 @@ export function createSummaryRoute(options: SummaryRouteOptions) {
           .update(aiJobs)
           .set({
             status: "failed",
-            errorMessage: SUMMARY_GENERATION_ERROR_MESSAGE,
+            errorMessage:
+              error instanceof Error
+                ? `${error.name}: ${error.message}`.slice(0, 500)
+                : SUMMARY_GENERATION_ERROR_MESSAGE,
             updatedAt: failedAt,
           })
           .where(eq(aiJobs.id, jobId));
@@ -436,7 +451,7 @@ export function createSummaryRoute(options: SummaryRouteOptions) {
           status: "failed",
           progress: 0,
           jobId: job.id,
-          error: job.errorMessage ?? SUMMARY_GENERATION_ERROR_MESSAGE,
+          error: SUMMARY_GENERATION_ERROR_MESSAGE,
         },
       });
     }
