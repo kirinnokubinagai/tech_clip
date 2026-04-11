@@ -4,6 +4,8 @@ import type { Database } from "./db";
 /** Cloudflare Workers バインディング型定義 */
 export type Bindings = {
   TURSO_DATABASE_URL: string;
+  /** Cloudflare Workers AI バインディング */
+  AI: Ai;
   TURSO_AUTH_TOKEN: string;
   RUNPOD_API_KEY: string;
   RUNPOD_ENDPOINT_ID: string;
