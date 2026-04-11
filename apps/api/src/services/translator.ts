@@ -5,6 +5,9 @@ import { sanitizeArticleContent } from "./summary";
 /** 翻訳時の最大トークン数 */
 const MAX_TRANSLATION_TOKENS = 4096;
 
+/** タイトルの最大文字数 */
+const MAX_TITLE_LENGTH = 500;
+
 /** 翻訳時の temperature */
 const TRANSLATION_TEMPERATURE = 0.3;
 
@@ -36,7 +39,6 @@ export type TranslateArticleParams = {
   ai: Ai;
   content: string;
   title: string;
-  sourceLanguage: string;
   targetLanguage: string;
   /** DB 保存用モデルタグ override（省略時は DEFAULT_GEMMA_MODEL_TAG を使用） */
   modelTag?: string;
@@ -52,7 +54,6 @@ type CodeBlockExtractionResult = {
 type BuildPromptParams = {
   content: string;
   title: string;
-  sourceLanguage: string;
   targetLanguage: string;
 };
 
@@ -165,7 +166,7 @@ export function parseTranslationResponse(responseText: string): {
     if (error instanceof Error && error.message === "翻訳レスポンスの解析に失敗しました") {
       throw error;
     }
-    throw new Error("翻訳レスポンスの解析に失敗しました");
+    throw new Error("翻訳レスポンスの解析に失敗しました", { cause: error });
   }
 }
 
@@ -195,13 +196,13 @@ export async function translateArticle(params: TranslateArticleParams): Promise<
   const resolvedModelTag = params.modelTag ?? DEFAULT_GEMMA_MODEL_TAG;
 
   try {
-    const sanitized = sanitizeArticleContent(params.content);
-    const { text: extracted, blocks } = extractCodeBlocks(sanitized);
+    const sanitizedTitle = sanitizeArticleContent(params.title).slice(0, MAX_TITLE_LENGTH);
+    const sanitizedContent = sanitizeArticleContent(params.content);
+    const { text: extracted, blocks } = extractCodeBlocks(sanitizedContent);
 
     const messages = buildPrompt({
       content: extracted,
-      title: params.title,
-      sourceLanguage: params.sourceLanguage,
+      title: sanitizedTitle,
       targetLanguage: params.targetLanguage,
     });
 
@@ -225,7 +226,6 @@ export async function translateArticle(params: TranslateArticleParams): Promise<
     };
   } catch (error) {
     logger.error("Workers AI 翻訳生成エラー", {
-      sourceLanguage: params.sourceLanguage,
       targetLanguage: params.targetLanguage,
       modelTag: params.modelTag,
       error: error instanceof Error ? { name: error.name, message: error.message } : error,
