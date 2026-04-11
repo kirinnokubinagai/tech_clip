@@ -35,6 +35,8 @@ direnv exec <worktree> pnpm typecheck   # TypeScript 型チェック
 direnv exec <worktree> pnpm test        # テスト実行
 ```
 
+> **注意**: `<worktree>` は呼び出し元から渡される worktree 絶対パスに置換すること（例: `/Users/foo/tech_clip/issue-123`）。
+
 いずれかが失敗した場合は、コードレビューを開始する前にその旨を報告して終了する。
 全チェック通過を確認してからコードレビューに進む。
 

@@ -168,7 +168,7 @@ bash scripts/poll-pr-review.sh <pr-number>
 ```text
 poll-pr-review.sh → CHANGES_REQUESTED
   → Agent(coder, mode="acceptEdits") で修正依頼（変更内容を渡す）
-  → Agent(code-reviewer) + Agent(security-reviewer) で再レビュー
+  → Agent(code-reviewer, mode="acceptEdits") + Agent(security-reviewer, mode="acceptEdits") で再レビュー
   → 両方 PASS → マーカー再作成 → git push → poll-pr-review.sh を再実行
   → APPROVED になるまで繰り返す
 ```
