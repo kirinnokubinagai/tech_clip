@@ -172,6 +172,32 @@ describe("summary service", () => {
     expect(inputs.messages[0].content).toContain("Korean");
   });
 
+  it("language が zh-CN のとき Simplified Chinese がプロンプトに含まれること", async () => {
+    // Arrange
+    const ai = createMockAi(MOCK_SUMMARY_TEXT);
+
+    // Act
+    await summarizeArticle({ ai, content: MOCK_CONTENT, language: "zh-CN" });
+
+    // Assert
+    const call = (ai.run as ReturnType<typeof vi.fn>).mock.calls[0];
+    const inputs = call[1] as { messages: Array<{ role: string; content: string }> };
+    expect(inputs.messages[0].content).toContain("Simplified Chinese");
+  });
+
+  it("language が zh-TW のとき Traditional Chinese がプロンプトに含まれること", async () => {
+    // Arrange
+    const ai = createMockAi(MOCK_SUMMARY_TEXT);
+
+    // Act
+    await summarizeArticle({ ai, content: MOCK_CONTENT, language: "zh-TW" });
+
+    // Assert
+    const call = (ai.run as ReturnType<typeof vi.fn>).mock.calls[0];
+    const inputs = call[1] as { messages: Array<{ role: string; content: string }> };
+    expect(inputs.messages[0].content).toContain("Traditional Chinese");
+  });
+
   it("レスポンスの response フィールドが string 以外の場合エラーになること", async () => {
     // Arrange
     const ai = {
