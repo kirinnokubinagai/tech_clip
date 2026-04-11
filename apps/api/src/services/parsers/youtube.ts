@@ -42,9 +42,6 @@ const CAPTION_ENTRIES_MAX = 10_000;
 /** 動画 ID 抽出用パターン（11文字の英数字・ハイフン・アンダースコア） */
 const VIDEO_ID_REGEX = /^[A-Za-z0-9_-]{11}$/;
 
-/** ytInitialPlayerResponse を抽出する正規表現 */
-const PLAYER_RESPONSE_REGEX = /var\s+ytInitialPlayerResponse\s*=\s*(\{[\s\S]*?\});/;
-
 /** 字幕 XML 内の text タグを抽出する正規表現 */
 const CAPTION_TEXT_REGEX = /<text[^>]*>([\s\S]*?)<\/text>/g;
 
@@ -196,6 +193,34 @@ async function fetchVideoPageHtml(videoUrl: string): Promise<string> {
 }
 
 /**
+ * テキスト中の指定位置以降から最初の JSON オブジェクトをブラケット深度カウントで抽出する
+ *
+ * ReDoS を回避するため正規表現を使わず、'{' / '}' の深度を追跡して抽出する。
+ *
+ * @param text - 検索対象のテキスト
+ * @param startIndex - 検索開始位置
+ * @returns 抽出した JSON 文字列。見つからない場合は null
+ */
+function extractJsonObject(text: string, startIndex: number): string | null {
+  const start = text.indexOf("{", startIndex);
+  if (start === -1) {
+    return null;
+  }
+  let depth = 0;
+  for (let i = start; i < text.length; i++) {
+    if (text[i] === "{") {
+      depth++;
+    } else if (text[i] === "}") {
+      depth--;
+      if (depth === 0) {
+        return text.slice(start, i + 1);
+      }
+    }
+  }
+  return null;
+}
+
+/**
  * 動画ページの HTML から字幕トラック一覧を抽出する
  *
  * @param html - 動画ページの HTML
@@ -206,20 +231,26 @@ function extractCaptionTracks(html: string): CaptionTrack[] {
   if (markerIndex === -1) {
     return [];
   }
-  const searchStart = Math.max(0, markerIndex - 10);
-  const searchArea = html.slice(searchStart, markerIndex + PLAYER_RESPONSE_SEARCH_RANGE);
-  const match = PLAYER_RESPONSE_REGEX.exec(searchArea);
-  if (!match?.[1]) {
+  const searchEnd = Math.min(html.length, markerIndex + PLAYER_RESPONSE_SEARCH_RANGE);
+  const searchArea = html.slice(markerIndex, searchEnd);
+
+  const jsonStart = searchArea.indexOf("{");
+  if (jsonStart === -1) {
     return [];
   }
 
-  if (match[1].length > PLAYER_RESPONSE_JSON_MAX_LENGTH) {
+  const jsonStr = extractJsonObject(searchArea, jsonStart);
+  if (!jsonStr) {
+    return [];
+  }
+
+  if (jsonStr.length > PLAYER_RESPONSE_JSON_MAX_LENGTH) {
     return [];
   }
 
   let parsed: PlayerResponse;
   try {
-    parsed = JSON.parse(match[1]) as PlayerResponse;
+    parsed = JSON.parse(jsonStr) as PlayerResponse;
   } catch {
     return [];
   }

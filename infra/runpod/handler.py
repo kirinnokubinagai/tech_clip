@@ -73,11 +73,13 @@ def validate_messages(messages: Any) -> list[dict]:
     for i, msg in enumerate(messages):
         if not isinstance(msg, dict):
             raise ValueError(f"messages[{i}] はオブジェクト形式である必要があります")
-        if not isinstance(msg.get("role"), str) or msg["role"] not in valid_roles:
+        role = msg.get("role")
+        if isinstance(role, bool) or not isinstance(role, str) or role not in valid_roles:
             raise ValueError(
                 f"messages[{i}].role は {valid_roles} のいずれかである必要があります"
             )
-        if not isinstance(msg.get("content"), str):
+        content = msg.get("content")
+        if isinstance(content, bool) or not isinstance(content, str):
             raise ValueError(f"messages[{i}].content は文字列である必要があります")
         if len(msg["content"]) > MESSAGE_CONTENT_MAX_LENGTH:
             raise ValueError(
@@ -100,7 +102,7 @@ def validate_max_tokens(value: Any) -> int:
     Raises:
         ValueError: 型・範囲が不正な場合
     """
-    if not isinstance(value, int):
+    if isinstance(value, bool) or not isinstance(value, int):
         raise ValueError("max_tokens は整数である必要があります")
     if value <= 0 or value > MAX_TOKENS_LIMIT:
         raise ValueError(f"max_tokens は 1 以上 {MAX_TOKENS_LIMIT} 以下である必要があります")
@@ -120,7 +122,7 @@ def validate_temperature(value: Any) -> float:
     Raises:
         ValueError: 型・範囲が不正な場合
     """
-    if not isinstance(value, (int, float)):
+    if isinstance(value, bool) or not isinstance(value, (int, float)):
         raise ValueError("temperature は数値である必要があります")
     temperature = float(value)
     if temperature < 0.0 or temperature > 1.0:
