@@ -9,3 +9,5 @@
 40018	IGNORE	(SQL Injection - Drizzle ORMのパラメータ化クエリを使用しており誤検知。ZAPがJSON APIにSQLペイロードを送信した結果の偽陽性)
 10098	IGNORE	(Cross-Domain Misconfiguration - ローカル開発環境のCORS設定。本番はCloudflare Workersの厳格なCORS設定を使用)
 10106	IGNORE	(HTTP Only Site - ローカル開発はHTTP。本番環境はCloudflare経由でHTTPS強制)
+10023	WARN	(Information Disclosure - Debug Error Messages - /summary・/translateはZAPテスト環境でAI bindingがlocal-mode-onlyのため500を返す。実際のAI呼び出し不可は仕様)
+90022	WARN	(Application Error Disclosure - /summary・/translateはZAPテスト環境でAI bindingがlocal-mode-onlyのため500を返す。実際のAI呼び出し不可は仕様)

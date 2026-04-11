@@ -32,7 +32,9 @@ TURSO_DATABASE_URL="${TURSO_DATABASE_URL}" \
 TURSO_AUTH_TOKEN="${TURSO_AUTH_TOKEN}" \
 BETTER_AUTH_SECRET="${BETTER_AUTH_SECRET}" \
 ENVIRONMENT="${ENVIRONMENT}" \
-  pnpm --filter @tech-clip/api exec wrangler dev --port "${API_PORT}" > /tmp/api.log 2>&1 &
+  pnpm --filter @tech-clip/api exec wrangler dev --port "${API_PORT}" --local > /tmp/api.log 2>&1 &
+# --local を付けないと AI binding (remote mode) のために CLOUDFLARE_API_TOKEN が必須になる。
+# ZAP スキャンは AI エンドポイントを実際に叩く必要はなく、API サーバの起動だけが目的なのでローカルモードで十分。
 
 ZAP_API_KEY=$(openssl rand -hex 16)
 
