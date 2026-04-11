@@ -7,9 +7,6 @@ export type Bindings = {
   /** Cloudflare Workers AI バインディング */
   AI: Ai;
   TURSO_AUTH_TOKEN: string;
-  RUNPOD_API_KEY: string;
-  RUNPOD_ENDPOINT_ID: string;
-  RUNPOD_LOCAL_ENDPOINT_ID?: string;
   ENVIRONMENT: string;
   BETTER_AUTH_SECRET: string;
   GOOGLE_CLIENT_ID: string;
