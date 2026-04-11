@@ -1,36 +1,35 @@
-FROM runpod/pytorch:2.8.0-py3.11-cuda12.8.1-cudnn-devel-ubuntu22.04
+FROM nvidia/cuda:12.8.0-cudnn9-devel-ubuntu22.04
+
+ENV DEBIAN_FRONTEND=noninteractive
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    python3.12 python3.12-pip git && \
+    rm -rf /var/lib/apt/lists/*
+
+# CUDA 対応 PyTorch（Transformers の基盤）
+RUN python3.12 -m pip install --no-cache-dir \
+    torch --index-url https://download.pytorch.org/whl/cu128
+
+# TurboQuant（SWA バイパス付き、Gemma 4 対応）
+# back2matching/turboquant は Gemma 4 のハイブリッド注意機構（SWA）をバイパスし、
+# グローバル注意層のみ KV キャッシュを圧縮する。
+# fused-turboquant（PyPI 公式）は SWA 未対応のため使用しない。
+RUN python3.12 -m pip install --no-cache-dir turboquant
+
+# HuggingFace Transformers + RunPod SDK
+RUN python3.12 -m pip install --no-cache-dir \
+    "transformers>=4.51.0" \
+    accelerate \
+    auto-round \
+    "runpod>=1.7.4"
 
 WORKDIR /app
-
-# vLLM と RunPod サーバーレスランタイムのみを入れる。
-# モデルは image に焼かず、RunPod の cached models / Hugging Face cache を使う。
-RUN pip install --no-cache-dir \
-    vllm==0.7.3 \
-    runpod==1.7.4
-
-# ハンドラーをコピー
 COPY handler.py .
 
-# デフォルトは量子化なし（bfloat16）。AWQ を使う場合は MODEL_NAME を AWQ モデルに
-# 変更し、VLLM_QUANTIZATION=awq を同時に設定すること。
-# 注意: モデル変更はレビュー必須。許可モデル一覧は管理ドキュメントで管理する。
-ARG MODEL_NAME=google/gemma-3-12b-it
-ENV MODEL_NAME=${MODEL_NAME}
-ENV MODEL_PATH=${MODEL_NAME}
+# モデル ID は環境変数で上書き可能
+ENV MODEL_ID=Intel/gemma-4-26B-A4B-it-int4-mixed-AutoRound
 
-# 量子化設定（awq / gptq_marlin / fp8 / 空文字で非量子化）
-# AWQ 量子化済みモデルを使う場合は "awq" を設定する。
-# 量子化モデルは信頼できる組織（例: neuralmagic / RedHatAI / google）のものを指定する。
-ARG VLLM_QUANTIZATION=
-ENV VLLM_QUANTIZATION=${VLLM_QUANTIZATION}
+# モデルキャッシュをボリュームマウントへ（コールドスタート対策）
+ENV HF_HOME=/runpod-volume/hf-cache
+ENV TRANSFORMERS_OFFLINE=0
 
-# AWQ 量子化時は dtype=auto を推奨（vLLM が自動でカーネルを選択する）
-ENV VLLM_DTYPE=auto
-
-# 量子化で VRAM に余裕が出るため非量子化より大きく設定できる
-ENV MAX_MODEL_LEN=8192
-ENV MAX_NUM_SEQS=4
-ENV GPU_MEMORY_UTILIZATION=0.90
-ENV TENSOR_PARALLEL_SIZE=1
-
-CMD ["python", "-u", "handler.py"]
+CMD ["python3.12", "-u", "handler.py"]

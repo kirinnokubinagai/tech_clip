@@ -1,7 +1,8 @@
 # RunPod サーバーレスデプロイ手順
 
-TechClip の AI 要約・翻訳機能で使用する Gemma 3 12B IT モデルを RunPod Serverless にデプロイする手順。
-デフォルトは Google 公式 `google/gemma-3-12b-it` を使用する。量子化モデルを利用する場合は `VLLM_QUANTIZATION` 環境変数と信頼できる組織（例: neuralmagic / RedHatAI / google）の AWQ モデルを別途指定する。量子化により推論速度が向上し、16GB GPU でも `MAX_MODEL_LEN=8192` を実現できる。
+TechClip の AI 要約・翻訳機能で使用する `Intel/gemma-4-26B-A4B-it-int4-mixed-AutoRound` モデルを RunPod Serverless にデプロイする手順。
+
+HuggingFace Transformers で直接ロードし、TurboQuant（back2matching/turboquant）で KV キャッシュを圧縮することで、RTX 4080 / A4000（16GB VRAM）での動作を実現する。
 
 ## 前提条件
 
@@ -10,15 +11,32 @@ TechClip の AI 要約・翻訳機能で使用する Gemma 3 12B IT モデルを
 - RunPod アカウント（https://runpod.io）
 - RunPod API キー
 
+## モデル情報
+
+| 項目 | 値 |
+|------|-----|
+| モデル ID | `Intel/gemma-4-26B-A4B-it-int4-mixed-AutoRound` |
+| 量子化方式 | Intel AutoRound int4-mixed |
+| 推定 VRAM（モデル重み） | ~14 GB |
+| 推奨残余 VRAM（KV キャッシュ等） | ~2 GB |
+| 推奨 GPU | RTX 4080 / A4000（16GB VRAM） |
+
+## TurboQuant について
+
+Gemma 4 26B-A4B はハイブリッド注意機構を持つ（25層 SWA + 5層 Global Attention）。
+
+- `fused-turboquant`（PyPI 公式）は SWA 未対応のため **使用しない**
+- `turboquant`（back2matching/turboquant）は SWA をバイパスし、5つのグローバル注意層のみ KV キャッシュを **3.8x 圧縮**する
+
+これにより 16GB VRAM でモデル重みの他に十分なキャッシュ余裕を確保できる。
+
 ## デプロイ手順
 
 ### 1. Docker イメージのビルドとプッシュ
 
-`scripts/deploy-runpod.sh` を使用する。
-
 ```bash
 # 環境変数を設定
-export DOCKER_IMAGE=your-dockerhub-username/techclip-gemma:latest
+export DOCKER_IMAGE=your-dockerhub-username/techclip-gemma4:latest
 
 # ビルドとプッシュ
 bash scripts/deploy-runpod.sh
@@ -28,10 +46,10 @@ bash scripts/deploy-runpod.sh
 
 ```bash
 # ビルド（リポジトリルートから実行）
-docker build -t your-dockerhub-username/techclip-gemma:latest infra/runpod/
+docker build -t your-dockerhub-username/techclip-gemma4:latest infra/runpod/
 
 # プッシュ
-docker push your-dockerhub-username/techclip-gemma:latest
+docker push your-dockerhub-username/techclip-gemma4:latest
 ```
 
 ### 2. RunPod テンプレートと endpoint の自動作成
@@ -44,7 +62,7 @@ docker push your-dockerhub-username/techclip-gemma:latest
 bash scripts/provision-runpod.sh \
   --type gemma \
   --target production \
-  --image your-dockerhub-username/techclip-gemma:latest
+  --image your-dockerhub-username/techclip-gemma4:latest
 ```
 
 `--target local` で作成した endpoint は、開発環境では `RUNPOD_LOCAL_ENDPOINT_ID` として使う。
@@ -58,10 +76,10 @@ bash scripts/provision-runpod.sh \
 
 | 項目 | 値 |
 |------|-----|
-| Template Name | `techclip-gemma3-12b-awq` |
-| Container Image | `your-dockerhub-username/techclip-gemma:latest` |
+| Template Name | `techclip-gemma4-26b-int4` |
+| Container Image | `your-dockerhub-username/techclip-gemma4:latest` |
 | Container Disk | `20 GB` |
-| GPU | 16GB VRAM 以上の GPU（例: A4000 16GB、RTX 4000 Ada 20GB） |
+| GPU | RTX 4080 / A4000（16GB VRAM） |
 | FlashBoot | `ON` |
 | Cached Models | `ON` |
 
@@ -73,7 +91,7 @@ bash scripts/provision-runpod.sh \
 
 | 項目 | 推奨値 |
 |------|--------|
-| Endpoint Name | `techclip-gemma3` |
+| Endpoint Name | `techclip-gemma4` |
 | Min Provisioned Workers | `0`（コスト最適化） |
 | Max Workers | `1` から開始 |
 | Idle Timeout | `120` 秒 |
@@ -130,8 +148,9 @@ wrangler secret put RUNPOD_ENDPOINT_ID --env production
         "content": "次の記事を要約してください: ..."
       }
     ],
-    "max_tokens": 4096,
-    "temperature": 0.3
+    "max_new_tokens": 512,
+    "temperature": 0.7,
+    "top_p": 0.9
   }
 }
 ```
@@ -155,80 +174,40 @@ wrangler secret put RUNPOD_ENDPOINT_ID --env production
 
 ## モデル設定
 
-この Docker image はモデルを build 時に含めない。RunPod の `cached models` と Hugging Face cache を使って起動時にモデルを解決する。
+Docker image はモデルを build 時に含めない。RunPod の `cached models` と Hugging Face cache を使って起動時にモデルをロードする（コールドスタート対策）。
 
-モデル名は以下の優先順で解決する:
-1. `GEMMA_MODEL_NAME` 環境変数
-2. `MODEL_PATH` 環境変数
-3. `MODEL_NAME` 環境変数
-4. デフォルト（`google/gemma-3-12b-it`）
+モデル ID は `MODEL_ID` 環境変数で上書き可能:
 
-**注意**: `MODEL_NAME` は外部から任意のモデルに上書き可能なため、許可モデル一覧は管理ドキュメントで管理し変更はレビュー必須とする。
+```env
+MODEL_ID=Intel/gemma-4-26B-A4B-it-int4-mixed-AutoRound
+```
 
 ### デフォルト環境変数
 
 ```env
-MODEL_NAME=google/gemma-3-12b-it
-VLLM_QUANTIZATION=
-VLLM_DTYPE=auto
-MAX_MODEL_LEN=8192
-MAX_NUM_SEQS=4
-GPU_MEMORY_UTILIZATION=0.90
-TENSOR_PARALLEL_SIZE=1
+MODEL_ID=Intel/gemma-4-26B-A4B-it-int4-mixed-AutoRound
+HF_HOME=/runpod-volume/hf-cache
+TRANSFORMERS_OFFLINE=0
 ```
-
-### 量子化設定（VLLM_QUANTIZATION）
-
-`VLLM_QUANTIZATION` 環境変数で量子化方式を制御する:
-
-| 値 | 説明 |
-|----|------|
-| `awq` | AWQ 量子化（推奨）。Marlin カーネルで高速推論 |
-| `gptq_marlin` | GPTQ + Marlin カーネル |
-| `fp8` | FP8 量子化（H100 / H200 等の対応 GPU が必要） |
-| 空文字 / 未設定 | 量子化なし（後方互換）。`bfloat16` で動作 |
-
-AWQ 量子化を使う場合は `VLLM_DTYPE=auto` を推奨する（vLLM が自動でカーネルを選択する）。
-
-### 非量子化で動かす場合
-
-```env
-MODEL_NAME=google/gemma-3-12b-it
-VLLM_QUANTIZATION=
-VLLM_DTYPE=bfloat16
-MAX_MODEL_LEN=4096
-MAX_NUM_SEQS=2
-GPU_MEMORY_UTILIZATION=0.85
-```
-
-## 量子化のメリット
-
-| 指標 | 非量子化（bfloat16） | AWQ 量子化 |
-|------|---------------------|------------|
-| モデルサイズ | 約 24 GB | 約 7 GB |
-| 推論速度 | ベースライン | 約 2-3x 高速（GPU 環境・ワークロードにより異なる） |
-| 最大コンテキスト長（16GB GPU） | 4096 | 8192 |
-| 同時シーケンス数（16GB GPU） | 2 | 4 |
-
-量子化により同じ GPU メモリでより多くのリクエストを並列処理できる。
 
 ## トラブルシューティング
 
 ### OOM エラーが発生する場合
 
-`GPU_MEMORY_UTILIZATION`、`MAX_MODEL_LEN`、`MAX_NUM_SEQS` を下げる。改善しない場合は 24GB GPU に上げる。
+16GB VRAM GPU（RTX 4080 / A4000）を使用していること、および他のプロセスが VRAM を占有していないことを確認する。改善しない場合は 24GB 以上の GPU に変更する。
+
+### TurboQuant パッチが失敗する場合
+
+ハンドラーは TurboQuant のパッチ適用失敗を警告として記録し、圧縮なしで推論を続行する。
+ログに `TurboQuant パッチの適用に失敗しました` と出ている場合は turboquant パッケージのインストール状況を確認する。
 
 ### コールドスタートが遅い場合
 
-`FlashBoot` と `Cached Models` を有効にする。初回ロード後は cold start をかなり短縮できる。AWQ 量子化はモデルサイズが小さいため、非量子化より cold start も短縮される。
+`FlashBoot` と `Cached Models` を有効にする。`HF_HOME=/runpod-volume/hf-cache` を設定してモデルキャッシュを永続ボリュームに保存することで、2回目以降の起動を大幅に短縮できる。
 
 ### タイムアウトが発生する場合
 
 エンドポイントの **Execution Timeout** を増やす（推奨: 300 秒）。
-
-### 量子化モデルで精度が落ちる場合
-
-`VLLM_QUANTIZATION` を空にして非量子化モードに切り替える（後方互換のため動作する）。
 
 ## バージョン管理
 
@@ -236,8 +215,11 @@ GPU_MEMORY_UTILIZATION=0.85
 
 | コンポーネント | バージョン | 備考 |
 |----------------|------------|------|
-| ベースイメージ | `runpod/pytorch:2.8.0-py3.11-cuda12.8.1-cudnn-devel-ubuntu22.04` | CUDA 12.8.1 |
-| vLLM | `0.7.3` | AWQ / GPTQ-Marlin / FP8 量子化対応 |
-| RunPod SDK | `1.7.4` | サーバーレスランタイム |
+| ベースイメージ | `nvidia/cuda:12.8.0-cudnn9-devel-ubuntu22.04` | CUDA 12.8.0 |
+| Python | `3.12` | |
+| transformers | `>=4.51.0` | Gemma 4 対応 |
+| turboquant | 最新（back2matching/turboquant） | SWA バイパス対応 |
+| auto-round | 最新 | Intel AutoRound int4 サポート |
+| RunPod SDK | `>=1.7.4` | サーバーレスランタイム |
 
 バージョンを変更する場合は `Dockerfile` の `pip install` 行を更新し、動作確認後にこのテーブルを更新すること。

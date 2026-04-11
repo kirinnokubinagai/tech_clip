@@ -1,81 +1,129 @@
 """
-RunPodサーバーレスハンドラー
+RunPod サーバーレスハンドラー
 
-Google Gemma 3 12B IT モデル（AWQ/GPTQ 量子化対応）を vLLM で起動し、
-RunPod サーバーレス API のリクエストを処理する。
+Intel/gemma-4-26B-A4B-it-int4-mixed-AutoRound モデルを
+HuggingFace Transformers でロードし、RunPod サーバーレス API のリクエストを処理する。
+
+TurboQuant（back2matching/turboquant）を使って KV キャッシュを圧縮する。
+Gemma 4 のハイブリッド注意機構（25層 SWA + 5層 Global Attention）に対応しており、
+グローバル注意層のみ 3.8x の KV キャッシュ圧縮を適用する。
 
 リクエスト形式:
-    {"input": {"messages": [{"role": "user", "content": "..."}], "max_tokens": 4096}}
+    {
+        "input": {
+            "messages": [{"role": "user", "content": "..."}],
+            "max_new_tokens": 512,
+            "temperature": 0.7,
+            "top_p": 0.9
+        }
+    }
 
 レスポンス形式:
     {"output": {"choices": [{"message": {"role": "assistant", "content": "..."}}]}}
-
-モデル名は以下の優先順で解決する:
-    GEMMA_MODEL_NAME 環境変数 -> MODEL_PATH 環境変数 -> MODEL_NAME 環境変数 -> デフォルト
-
-量子化は VLLM_QUANTIZATION 環境変数で制御する（awq / gptq_marlin / fp8 / 空で非量子化）。
 """
 
 import logging
 import os
 from typing import Any
-import runpod
-from vllm import LLM, SamplingParams
 
+import runpod
+import torch
+from transformers import AutoModelForCausalLM, AutoProcessor
+
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
+)
 logger = logging.getLogger(__name__)
+
+# デフォルトモデル ID（環境変数で上書き可能）
+DEFAULT_MODEL_ID = "Intel/gemma-4-26B-A4B-it-int4-mixed-AutoRound"
 
 # メッセージ本文の最大文字数
 MESSAGE_CONTENT_MAX_LENGTH = 50000
 
-# max_tokens の最大値
-MAX_TOKENS_LIMIT = 8192
+# max_new_tokens の上限・デフォルト値
+MAX_NEW_TOKENS_LIMIT = 2048
+DEFAULT_MAX_NEW_TOKENS = 512
 
-# モデル参照の解決優先順位:
-#   1. GEMMA_MODEL_NAME (Gemma 系切り替え用の専用変数)
-#   2. MODEL_PATH (汎用パス指定)
-#   3. MODEL_NAME (Dockerfile からの注入)
-#   4. デフォルト (google/gemma-3-12b-it)
-MODEL_REF = (
-    os.environ.get("GEMMA_MODEL_NAME")
-    or os.environ.get("MODEL_PATH")
-    or os.environ.get("MODEL_NAME", "google/gemma-3-12b-it")
-)
-if not any(os.environ.get(k) for k in ("GEMMA_MODEL_NAME", "MODEL_PATH", "MODEL_NAME")):
-    logger.warning("モデル指定の環境変数が未設定のためデフォルトモデルを使用します: %s", MODEL_REF)
-MAX_MODEL_LEN = int(os.environ.get("MAX_MODEL_LEN", "8192"))
-MAX_NUM_SEQS = int(os.environ.get("MAX_NUM_SEQS", "4"))
-GPU_MEMORY_UTILIZATION = float(os.environ.get("GPU_MEMORY_UTILIZATION", "0.90"))
-TENSOR_PARALLEL_SIZE = int(os.environ.get("TENSOR_PARALLEL_SIZE", "1"))
+# temperature の有効範囲
+TEMPERATURE_MIN = 0.0
+TEMPERATURE_MAX = 2.0
+DEFAULT_TEMPERATURE = 0.7
 
-# 量子化設定: 環境変数 VLLM_QUANTIZATION で制御する
-# awq / gptq_marlin / fp8 を指定するか、空文字・未設定で非量子化（後方互換）
-_ALLOWED_QUANTIZATION = {"awq", "gptq_marlin", "fp8"}
-_RAW = os.environ.get("VLLM_QUANTIZATION", "").strip()
-VLLM_QUANTIZATION = _RAW if _RAW else None
-if VLLM_QUANTIZATION and VLLM_QUANTIZATION not in _ALLOWED_QUANTIZATION:
-    raise ValueError(
-        f"VLLM_QUANTIZATION の値が不正です: {VLLM_QUANTIZATION!r}。"
-        f"許可値: {_ALLOWED_QUANTIZATION}"
+# top_p の有効範囲
+TOP_P_MIN = 0.0
+TOP_P_MAX = 1.0
+DEFAULT_TOP_P = 0.9
+
+# TurboQuant KV キャッシュ圧縮ビット数
+TURBOQUANT_BITS = 4
+
+MODEL_ID: str = os.environ.get("MODEL_ID", DEFAULT_MODEL_ID)
+
+# グローバルモデル（コールドスタート時のみロード）
+_model: AutoModelForCausalLM | None = None
+_processor: AutoProcessor | None = None
+
+
+def _load_model() -> tuple[AutoModelForCausalLM, AutoProcessor]:
+    """
+    モデルとプロセッサをロードする。
+
+    TurboQuant によるKVキャッシュ圧縮を試みる。
+    patch_model が失敗した場合は警告を出して続行する。
+
+    Returns:
+        (model, processor) のタプル
+    """
+    logger.info("モデルをロード中: %s", MODEL_ID)
+
+    model = AutoModelForCausalLM.from_pretrained(
+        MODEL_ID,
+        device_map="auto",
+        torch_dtype="auto",
     )
+    processor = AutoProcessor.from_pretrained(MODEL_ID)
 
-# AWQ 量子化時は "auto" を推奨。非量子化時は "bfloat16" を維持する
-VLLM_DTYPE = os.environ.get("VLLM_DTYPE", "bfloat16")
+    logger.info("モデルのロード完了。TurboQuant パッチを適用中...")
 
-llm_kwargs: dict[str, Any] = {
-    "model": MODEL_REF,
-    "dtype": VLLM_DTYPE,
-    "max_model_len": MAX_MODEL_LEN,
-    "max_num_seqs": MAX_NUM_SEQS,
-    "gpu_memory_utilization": GPU_MEMORY_UTILIZATION,
-    "tensor_parallel_size": TENSOR_PARALLEL_SIZE,
-}
-if VLLM_QUANTIZATION:
-    llm_kwargs["quantization"] = VLLM_QUANTIZATION
+    try:
+        import turboquant  # type: ignore[import-untyped]
 
-llm = LLM(**llm_kwargs)
+        if hasattr(turboquant, "patch_model"):
+            turboquant.patch_model(model, bits=TURBOQUANT_BITS)
+            logger.info("turboquant.patch_model の適用完了（bits=%d）", TURBOQUANT_BITS)
+        elif hasattr(turboquant, "hf") and hasattr(turboquant.hf, "patch_model"):
+            turboquant.hf.patch_model(model, bits=TURBOQUANT_BITS)
+            logger.info("turboquant.hf.patch_model の適用完了（bits=%d）", TURBOQUANT_BITS)
+        else:
+            logger.warning(
+                "turboquant に patch_model が見つかりません。KV キャッシュ圧縮をスキップします"
+            )
+    except Exception as e:
+        logger.warning(
+            "TurboQuant パッチの適用に失敗しました（%s: %s）。圧縮なしで続行します",
+            type(e).__name__,
+            e,
+        )
+
+    return model, processor
 
 
-def validate_messages(messages: Any) -> list[dict]:
+def _get_model() -> tuple[AutoModelForCausalLM, AutoProcessor]:
+    """
+    グローバルモデルを返す。未初期化の場合はロードする。
+
+    Returns:
+        (model, processor) のタプル
+    """
+    global _model, _processor
+    if _model is None or _processor is None:
+        _model, _processor = _load_model()
+    return _model, _processor
+
+
+def _validate_messages(messages: Any) -> list[dict]:
     """
     messages の型・内容を検証する。
 
@@ -105,7 +153,7 @@ def validate_messages(messages: Any) -> list[dict]:
         content = msg.get("content")
         if isinstance(content, bool) or not isinstance(content, str):
             raise ValueError(f"messages[{i}].content は文字列である必要があります")
-        if len(msg["content"]) > MESSAGE_CONTENT_MAX_LENGTH:
+        if len(content) > MESSAGE_CONTENT_MAX_LENGTH:
             raise ValueError(
                 f"messages[{i}].content は {MESSAGE_CONTENT_MAX_LENGTH} 文字以内である必要があります"
             )
@@ -113,27 +161,29 @@ def validate_messages(messages: Any) -> list[dict]:
     return messages
 
 
-def validate_max_tokens(value: Any) -> int:
+def _validate_max_new_tokens(value: Any) -> int:
     """
-    max_tokens の値を検証する。
+    max_new_tokens の値を検証する。
 
     Args:
-        value: 検証対象の max_tokens 値
+        value: 検証対象の max_new_tokens 値
 
     Returns:
-        検証済み max_tokens 整数値
+        検証済み max_new_tokens 整数値
 
     Raises:
         ValueError: 型・範囲が不正な場合
     """
     if isinstance(value, bool) or not isinstance(value, int):
-        raise ValueError("max_tokens は整数である必要があります")
-    if value <= 0 or value > MAX_TOKENS_LIMIT:
-        raise ValueError(f"max_tokens は 1 以上 {MAX_TOKENS_LIMIT} 以下である必要があります")
+        raise ValueError("max_new_tokens は整数である必要があります")
+    if value <= 0 or value > MAX_NEW_TOKENS_LIMIT:
+        raise ValueError(
+            f"max_new_tokens は 1 以上 {MAX_NEW_TOKENS_LIMIT} 以下である必要があります"
+        )
     return value
 
 
-def validate_temperature(value: Any) -> float:
+def _validate_temperature(value: Any) -> float:
     """
     temperature の値を検証する。
 
@@ -149,17 +199,47 @@ def validate_temperature(value: Any) -> float:
     if isinstance(value, bool) or not isinstance(value, (int, float)):
         raise ValueError("temperature は数値である必要があります")
     temperature = float(value)
-    if temperature < 0.0 or temperature > 1.0:
-        raise ValueError("temperature は 0.0 以上 1.0 以下である必要があります")
+    if temperature < TEMPERATURE_MIN or temperature > TEMPERATURE_MAX:
+        raise ValueError(
+            f"temperature は {TEMPERATURE_MIN} 以上 {TEMPERATURE_MAX} 以下である必要があります"
+        )
     return temperature
 
 
-def handle_messages_request(job_input: dict) -> dict:
+def _validate_top_p(value: Any) -> float:
     """
-    messages キーを使ったリクエストを処理する（要約・翻訳共通）。
+    top_p の値を検証する。
 
     Args:
-        job_input: {"messages": [{"role": "user", "content": "..."}], "max_tokens": 4096}
+        value: 検証対象の top_p 値
+
+    Returns:
+        検証済み top_p 浮動小数点数値
+
+    Raises:
+        ValueError: 型・範囲が不正な場合
+    """
+    if isinstance(value, bool) or not isinstance(value, (int, float)):
+        raise ValueError("top_p は数値である必要があります")
+    top_p = float(value)
+    if top_p < TOP_P_MIN or top_p > TOP_P_MAX:
+        raise ValueError(
+            f"top_p は {TOP_P_MIN} 以上 {TOP_P_MAX} 以下である必要があります"
+        )
+    return top_p
+
+
+def _generate(job_input: dict) -> dict:
+    """
+    messages 形式のリクエストを処理し、テキストを生成する。
+
+    Args:
+        job_input: {
+            "messages": [...],
+            "max_new_tokens": 512,
+            "temperature": 0.7,
+            "top_p": 0.9
+        }
 
     Returns:
         {"choices": [{"message": {"role": "assistant", "content": "..."}}]}
@@ -167,30 +247,39 @@ def handle_messages_request(job_input: dict) -> dict:
     Raises:
         ValueError: 入力バリデーション失敗時
     """
-    messages = validate_messages(job_input["messages"])
-    raw_max_tokens = job_input.get("max_tokens", 4096)
-    max_tokens = validate_max_tokens(raw_max_tokens)
-    raw_temperature = job_input.get("temperature", 0.3)
-    temperature = validate_temperature(raw_temperature)
-
-    tokenizer = llm.get_tokenizer()
-    prompt = tokenizer.apply_chat_template(
-        messages,
-        tokenize=False,
-        add_generation_prompt=True,
+    messages = _validate_messages(job_input["messages"])
+    max_new_tokens = _validate_max_new_tokens(
+        job_input.get("max_new_tokens", DEFAULT_MAX_NEW_TOKENS)
     )
-    if not isinstance(prompt, str):
-        raise ValueError(
-            f"apply_chat_template が str を返しませんでした: {type(prompt).__name__}"
+    temperature = _validate_temperature(
+        job_input.get("temperature", DEFAULT_TEMPERATURE)
+    )
+    top_p = _validate_top_p(job_input.get("top_p", DEFAULT_TOP_P))
+
+    model, processor = _get_model()
+
+    inputs = processor.apply_chat_template(
+        messages,
+        add_generation_prompt=True,
+        tokenize=True,
+        return_tensors="pt",
+        return_dict=True,
+    )
+    inputs = inputs.to(model.device)
+    input_len = inputs["input_ids"].shape[-1]
+
+    with torch.inference_mode():
+        output_ids = model.generate(
+            **inputs,
+            max_new_tokens=max_new_tokens,
+            temperature=temperature,
+            top_p=top_p,
+            do_sample=True,
         )
 
-    sampling_params = SamplingParams(
-        max_tokens=max_tokens,
-        temperature=temperature,
-    )
-
-    outputs = llm.generate([prompt], sampling_params)
-    generated_text = outputs[0].outputs[0].text
+    # 入力トークンを除いた生成部分のみデコード
+    generated_ids = output_ids[:, input_len:]
+    generated_text: str = processor.decode(generated_ids[0], skip_special_tokens=True)
 
     return {
         "choices": [
@@ -208,13 +297,11 @@ def handler(job: dict) -> dict:
     """
     RunPod サーバーレスハンドラーのエントリーポイント。
 
-    Gemma 3 では messages 形式のみをサポートする。
-
     Args:
         job: RunPod ジョブオブジェクト（{"input": {...}}）
 
     Returns:
-        生成結果（{"output": {...}} 形式）
+        生成結果（{"output": {...}} 形式）またはエラー（{"error": "..."} 形式）
     """
     job_input = job.get("input", {})
 
@@ -222,7 +309,7 @@ def handler(job: dict) -> dict:
         return {"error": "input に messages キーが必要です"}
 
     try:
-        output = handle_messages_request(job_input)
+        output = _generate(job_input)
     except ValueError as e:
         return {"error": str(e)}
     except Exception as e:
