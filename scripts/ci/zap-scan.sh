@@ -12,6 +12,24 @@
 
 set -euo pipefail
 
+# ============================================================================
+# 設計メモ: AI エンドポイントの ZAP スキャンカバレッジ
+# ============================================================================
+# wrangler dev --local では AI binding が "not supported" になるため、
+# /api/articles/:id/summary と /api/articles/:id/translate は 500 を返す。
+# 結果として ZAP は AI エンドポイントの POST/GET ペイロードに対して
+# 実質的なセキュリティ検証ができない。これは既知の制約である。
+#
+# このギャップを埋めるには以下のいずれかが必要:
+#   1. Staging デプロイ後に追加で ZAP スキャンを行う
+#   2. AI エンドポイント専用の統合テスト（既に tests/api/integration に存在）
+#   3. 手動でのセキュリティテスト（リリース前チェックリスト）
+#
+# 実装側では routes/summary.ts と routes/ai.ts の catch ブロックが常に
+# 定数エラーメッセージを返す設計を維持すること（.zap/rules.tsv の
+# 10023/90022 WARN 免除はこの前提で有効）。
+# ============================================================================
+
 # 必ずリポジトリルートで実行される前提
 cd "$(git rev-parse --show-toplevel)"
 
@@ -28,13 +46,15 @@ cleanup() {
 }
 trap cleanup EXIT
 
+# --local を付けないと AI binding (remote mode) のために CLOUDFLARE_API_TOKEN が必須になる。
+# ZAP スキャンは AI エンドポイントを実際に叩く必要はなく、API サーバの起動だけが目的なのでローカルモードで十分。
+# NOTE: wrangler 4.77.0 で動作確認済み。--local フラグの廃止は wrangler のリリースノートを確認すること。
+#       廃止された場合は wrangler dev --env <env> 相当の代替手段を検討する。
 TURSO_DATABASE_URL="${TURSO_DATABASE_URL}" \
 TURSO_AUTH_TOKEN="${TURSO_AUTH_TOKEN}" \
 BETTER_AUTH_SECRET="${BETTER_AUTH_SECRET}" \
 ENVIRONMENT="${ENVIRONMENT}" \
   pnpm --filter @tech-clip/api exec wrangler dev --port "${API_PORT}" --local > /tmp/api.log 2>&1 &
-# --local を付けないと AI binding (remote mode) のために CLOUDFLARE_API_TOKEN が必須になる。
-# ZAP スキャンは AI エンドポイントを実際に叩く必要はなく、API サーバの起動だけが目的なのでローカルモードで十分。
 
 ZAP_API_KEY=$(openssl rand -hex 16)
 
