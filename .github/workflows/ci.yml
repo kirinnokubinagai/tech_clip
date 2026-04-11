@@ -38,8 +38,7 @@ jobs:
     permissions:
       contents: read
       pull-requests: write
-      # id-token: write は不要（claude-code-action は OIDC ではなく
-      # claude_code_oauth_token シークレットで認証するため）
+      id-token: write  # claude-code-action が OIDC トークンを取得する際に必要
     outputs:
       result: ${{ steps.review.outcome }}
       needs_work: ${{ steps.check-label.outputs.needs_work }}
@@ -235,18 +234,27 @@ jobs:
 
             cd apps/api && pnpm exec drizzle-kit migrate >> "${SETUP_LOG}" 2>&1 && cd ../..
 
+            SIGNUP_BODY=$(jq -n \
+              --arg email "${ZAP_TEST_EMAIL}" \
+              --arg password "${ZAP_TEST_PASSWORD}" \
+              --arg name "ZAP Test User" \
+              '{email: $email, password: $password, name: $name}')
             SIGNUP_STATUS=$(curl -s -o /tmp/signup.json -w "%{http_code}" \
               -X POST "http://localhost:${API_PORT}/api/auth/sign-up/email" \
               -H "Content-Type: application/json" \
-              -d "$(jq -n --arg email "${ZAP_TEST_EMAIL}" --arg password "${ZAP_TEST_PASSWORD}" --arg name "ZAP Test User" '"'"'{email:$email,password:$password,name:$name}'"'"')" 2>&1)
+              -d "${SIGNUP_BODY}")
             if [ "${SIGNUP_STATUS}" != "200" ] && [ "${SIGNUP_STATUS}" != "201" ] && [ "${SIGNUP_STATUS}" != "409" ]; then
               echo "::warning::ZAPテストユーザー登録が失敗しました（HTTP ${SIGNUP_STATUS}）。未認証スキャンのみ実施します。"
             fi
             echo "sign-up: HTTP ${SIGNUP_STATUS}" >> "${SETUP_LOG}"
 
+            SIGNIN_BODY=$(jq -n \
+              --arg email "${ZAP_TEST_EMAIL}" \
+              --arg password "${ZAP_TEST_PASSWORD}" \
+              '{email: $email, password: $password}')
             RESPONSE=$(curl -s -X POST "http://localhost:${API_PORT}/api/auth/sign-in/email" \
               -H "Content-Type: application/json" \
-              -d "$(jq -n --arg email "${ZAP_TEST_EMAIL}" --arg password "${ZAP_TEST_PASSWORD}" '"'"'{email:$email,password:$password}'"'"')")
+              -d "${SIGNIN_BODY}")
             TOKEN=$(echo "${RESPONSE}" | jq -r ".token // .data.token // .data.session.token // empty" 2>/dev/null || echo "")
             if [ -n "${TOKEN}" ]; then
               # トークン単体に加え "Bearer <TOKEN>" 形式でも ZAP ログ等にマスクが適用されるよう両方登録
