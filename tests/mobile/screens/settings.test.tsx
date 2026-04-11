@@ -2,6 +2,12 @@ import SettingsScreen from "@mobile-app/(tabs)/settings";
 import { fireEvent, render } from "@testing-library/react-native";
 import { Alert } from "react-native";
 
+const mockPush = jest.fn();
+
+jest.mock("expo-router", () => ({
+  useRouter: () => ({ push: mockPush }),
+}));
+
 const mockSignOut = jest.fn();
 const mockDeleteAccount = jest.fn();
 const mockSetLanguage = jest.fn();
@@ -26,7 +32,7 @@ jest.mock("@mobile/stores/auth-store", () => ({
 }));
 
 jest.mock("@mobile/stores/settings-store", () => ({
-  LANGUAGE_LABEL_MAP: { ja: "日本語", en: "English" },
+  LANGUAGE_LABEL_MAP: { ja: "日本語", en: "English", "zh-CN": "简体中文", "zh-TW": "繁體中文", ko: "한국어" },
   SUMMARY_LANGUAGE_LABELS: {
     ja: "日本語",
     en: "English",
@@ -63,6 +69,7 @@ jest.spyOn(Alert, "alert");
 
 beforeEach(() => {
   jest.clearAllMocks();
+  mockPush.mockReset();
   mockLoadLanguage.mockResolvedValue(undefined);
   mockLoadSummaryLanguage.mockResolvedValue(undefined);
   mockFetchNotificationSettings.mockResolvedValue(undefined);
@@ -204,32 +211,15 @@ describe("言語設定の永続化", () => {
     expect(mockLoadLanguage).toHaveBeenCalledTimes(1);
   });
 
-  it("言語選択ダイアログで日本語を選択するとsetLanguageが呼ばれること", async () => {
+  it("言語設定ボタンを押すと/settings/languageに遷移すること", async () => {
     // Arrange
     const { getByTestId } = await render(<SettingsScreen />);
-    await fireEvent.press(getByTestId("settings-language-button"));
 
     // Act
-    const buttons = (Alert.alert as jest.Mock).mock.calls[0][2];
-    const jaButton = buttons.find((b: { text: string }) => b.text === "日本語");
-    jaButton.onPress();
-
-    // Assert
-    expect(mockSetLanguage).toHaveBeenCalledWith("ja");
-  });
-
-  it("言語選択ダイアログでEnglishを選択するとsetLanguageが呼ばれること", async () => {
-    // Arrange
-    const { getByTestId } = await render(<SettingsScreen />);
     await fireEvent.press(getByTestId("settings-language-button"));
 
-    // Act
-    const buttons = (Alert.alert as jest.Mock).mock.calls[0][2];
-    const enButton = buttons.find((b: { text: string }) => b.text === "English");
-    enButton.onPress();
-
     // Assert
-    expect(mockSetLanguage).toHaveBeenCalledWith("en");
+    expect(mockPush).toHaveBeenCalledWith("/settings/language");
   });
 });
 

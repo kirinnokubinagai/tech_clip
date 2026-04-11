@@ -19,6 +19,8 @@ const CODE_BLOCK_PLACEHOLDER_SUFFIX = "}}";
 const LANGUAGE_DISPLAY_NAMES: Record<string, string> = {
   en: "English",
   ja: "Japanese",
+  zh: "Chinese",
+  ko: "Korean",
 };
 
 /** 翻訳オプション */

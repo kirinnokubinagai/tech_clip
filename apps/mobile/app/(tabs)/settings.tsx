@@ -105,7 +105,6 @@ export default function SettingsScreen() {
 
   const languageLabel = useSettingsStore((s) => LANGUAGE_LABEL_MAP[s.language]);
   const summaryLanguageLabel = useSettingsStore((s) => SUMMARY_LANGUAGE_LABELS[s.summaryLanguage]);
-  const setLanguage = useSettingsStore((s) => s.setLanguage);
   const loadLanguage = useSettingsStore((s) => s.loadLanguage);
   const setSummaryLanguage = useSettingsStore((s) => s.setSummaryLanguage);
   const loadSummaryLanguage = useSettingsStore((s) => s.loadSummaryLanguage);
@@ -163,24 +162,10 @@ export default function SettingsScreen() {
   }
 
   /**
-   * 言語選択のアクションシートを表示する
+   * 言語選択画面に遷移する
    */
   function handleLanguageSelect() {
-    Alert.alert(t("settings.languageSelect.title"), t("settings.languageSelect.prompt"), [
-      {
-        text: "日本語",
-        onPress: () => {
-          setLanguage("ja");
-        },
-      },
-      {
-        text: "English",
-        onPress: () => {
-          setLanguage("en");
-        },
-      },
-      { text: t("common.cancel"), style: "cancel" },
-    ]);
+    router.push("/settings/language");
   }
 
   /**

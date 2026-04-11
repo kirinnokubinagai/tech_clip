@@ -28,6 +28,32 @@ describe("GenerateTranslationSchema", () => {
     });
   });
 
+  describe("正常系（新言語）", () => {
+    it("targetLanguage=zhでバリデーションが通ること", () => {
+      // Arrange
+      const input = { targetLanguage: "zh" };
+
+      // Act
+      const result = GenerateTranslationSchema.safeParse(input);
+
+      // Assert
+      expect(result.success).toBe(true);
+      expect(result.data?.targetLanguage).toBe("zh");
+    });
+
+    it("targetLanguage=koでバリデーションが通ること", () => {
+      // Arrange
+      const input = { targetLanguage: "ko" };
+
+      // Act
+      const result = GenerateTranslationSchema.safeParse(input);
+
+      // Assert
+      expect(result.success).toBe(true);
+      expect(result.data?.targetLanguage).toBe("ko");
+    });
+  });
+
   describe("異常系", () => {
     it("サポートされていない言語コードでエラーになること", () => {
       // Arrange
@@ -103,10 +129,36 @@ describe("GenerateSummarySchema", () => {
     });
   });
 
+  describe("正常系（新言語）", () => {
+    it("language=zhを指定してバリデーションが通ること", () => {
+      // Arrange
+      const input = { language: "zh" };
+
+      // Act
+      const result = GenerateSummarySchema.safeParse(input);
+
+      // Assert
+      expect(result.success).toBe(true);
+      expect(result.data?.language).toBe("zh");
+    });
+
+    it("language=koを指定してバリデーションが通ること", () => {
+      // Arrange
+      const input = { language: "ko" };
+
+      // Act
+      const result = GenerateSummarySchema.safeParse(input);
+
+      // Assert
+      expect(result.success).toBe(true);
+      expect(result.data?.language).toBe("ko");
+    });
+  });
+
   describe("異常系", () => {
     it("サポートされていない言語コードでエラーになること", () => {
       // Arrange
-      const input = { language: "zh" };
+      const input = { language: "fr" };
 
       // Act
       const result = GenerateSummarySchema.safeParse(input);

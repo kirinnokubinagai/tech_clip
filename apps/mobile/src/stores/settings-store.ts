@@ -11,7 +11,7 @@ const LANGUAGE_KEY = "settings_language";
 const SUMMARY_LANGUAGE_KEY = "settings_summary_language";
 
 /** サポートするlocaleコード */
-const LOCALE_CODES = ["ja", "en"] as const;
+const LOCALE_CODES = ["ja", "en", "zh-CN", "zh-TW", "ko"] as const;
 
 /** localeコードの型 */
 export type Language = (typeof LOCALE_CODES)[number];
@@ -21,12 +21,13 @@ const DEFAULT_LANGUAGE: Language = "ja";
 
 /**
  * localeコードから表示名へのマッピング
- * 現時点では ja/en のみ対応のため恒等写像に近いが、
- * 将来 zh/ko など非対称マッピングが必要になる可能性を考慮して維持する
  */
 export const LANGUAGE_LABEL_MAP: Record<Language, string> = {
   ja: "日本語",
   en: "English",
+  "zh-CN": "简体中文",
+  "zh-TW": "繁體中文",
+  ko: "한국어",
 };
 
 /** 旧形式表示名からlocaleコードへの移行マッピング */

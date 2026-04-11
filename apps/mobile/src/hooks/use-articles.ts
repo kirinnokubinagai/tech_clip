@@ -235,7 +235,7 @@ export function useToggleFavorite() {
 type SummaryLanguage = "ja" | "en" | "zh" | "ko";
 
 /** 翻訳でサポートされる言語 */
-type TranslationLanguage = "en" | "ja";
+type TranslationLanguage = "en" | "ja" | "zh" | "ko";
 
 /** 要約リクエストのパラメータ */
 type RequestSummaryParams = {

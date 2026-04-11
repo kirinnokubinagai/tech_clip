@@ -16,6 +16,7 @@ import {
 import { useNetworkStatus } from "@/hooks/use-network-status";
 import { DARK_COLORS } from "@/lib/constants";
 import { formatArticleDate } from "@/lib/date-format";
+import { UI_TO_API_LANGUAGE } from "@/lib/language-code";
 import { getOfflineArticleById } from "@/lib/localDb";
 import { useSettingsStore } from "@/stores/settings-store";
 import type { ArticleDetail } from "@/types/article";
@@ -160,6 +161,7 @@ export default function ArticleDetailScreen() {
   const router = useRouter();
 
   const language = useSettingsStore((s) => s.language);
+  const apiLanguage = UI_TO_API_LANGUAGE[language];
   const { isOffline } = useNetworkStatus();
   const {
     data: onlineArticle,
@@ -226,16 +228,16 @@ export default function ArticleDetailScreen() {
 
   const handleRequestSummary = useCallback(() => {
     if (!article) return;
-    requestSummary.mutate({ articleId: article.id, language });
-  }, [article, language, requestSummary]);
+    requestSummary.mutate({ articleId: article.id, language: apiLanguage });
+  }, [article, apiLanguage, requestSummary]);
 
   const handleRequestTranslation = useCallback(() => {
     if (!article) return;
     requestTranslation.mutate({
       articleId: article.id,
-      targetLanguage: language,
+      targetLanguage: apiLanguage,
     });
-  }, [article, language, requestTranslation]);
+  }, [article, apiLanguage, requestTranslation]);
 
   useEffect(() => {
     if (!article || !requestSummary.data?.success) return;
