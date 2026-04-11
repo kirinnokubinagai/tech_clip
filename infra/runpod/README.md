@@ -1,7 +1,7 @@
 # RunPod サーバーレスデプロイ手順
 
 TechClip の AI 要約・翻訳機能で使用する Gemma 3 12B IT モデルを RunPod Serverless にデプロイする手順。
-デフォルトは AWQ 量子化済みモデル `abhishek/gemma-3-12b-it-awq` を使用する。量子化により推論速度が向上し、16GB GPU でも `MAX_MODEL_LEN=8192` を実現できる。
+デフォルトは Google 公式 `google/gemma-3-12b-it` を使用する。量子化モデルを利用する場合は `VLLM_QUANTIZATION` 環境変数と信頼できる組織（例: neuralmagic / RedHatAI / google）の AWQ モデルを別途指定する。量子化により推論速度が向上し、16GB GPU でも `MAX_MODEL_LEN=8192` を実現できる。
 
 ## 前提条件
 
@@ -41,7 +41,8 @@ docker push your-dockerhub-username/techclip-gemma:latest
 `scripts/provision-runpod.sh` を使うと、template / endpoint をコードから作成または更新できる。
 
 ```bash
-RUNPOD_API_KEY=your_runpod_api_key_here \
+# APIキーはシェル変数ではなく .env ファイル経由で読み込むことを推奨（シェル履歴にキーが残るため）
+# 例: echo 'RUNPOD_API_KEY=your_runpod_api_key_here' >> .env && source .env
 bash scripts/provision-runpod.sh \
   --type gemma \
   --target production \
@@ -62,7 +63,7 @@ bash scripts/provision-runpod.sh \
 | Template Name | `techclip-gemma3-12b-awq` |
 | Container Image | `your-dockerhub-username/techclip-gemma:latest` |
 | Container Disk | `20 GB` |
-| GPU | `16GB` tier（A4000 / A4500 / RTX 4000） |
+| GPU | 16GB VRAM 以上の GPU（例: A4000 16GB、RTX 4000 Ada 20GB） |
 | FlashBoot | `ON` |
 | Cached Models | `ON` |
 
@@ -162,13 +163,15 @@ wrangler secret put RUNPOD_ENDPOINT_ID --env production
 1. `GEMMA_MODEL_NAME` 環境変数
 2. `MODEL_PATH` 環境変数
 3. `MODEL_NAME` 環境変数
-4. デフォルト（`abhishek/gemma-3-12b-it-awq`）
+4. デフォルト（`google/gemma-3-12b-it`）
+
+**注意**: `MODEL_NAME` は外部から任意のモデルに上書き可能なため、許可モデル一覧は管理ドキュメントで管理し変更はレビュー必須とする。
 
 ### デフォルト環境変数
 
 ```env
-MODEL_NAME=abhishek/gemma-3-12b-it-awq
-VLLM_QUANTIZATION=awq
+MODEL_NAME=google/gemma-3-12b-it
+VLLM_QUANTIZATION=
 VLLM_DTYPE=auto
 MAX_MODEL_LEN=8192
 MAX_NUM_SEQS=4
@@ -205,7 +208,7 @@ GPU_MEMORY_UTILIZATION=0.85
 | 指標 | 非量子化（bfloat16） | AWQ 量子化 |
 |------|---------------------|------------|
 | モデルサイズ | 約 24 GB | 約 7 GB |
-| 推論速度 | ベースライン | 約 2-3x 高速 |
+| 推論速度 | ベースライン | 約 2-3x 高速（GPU 環境・ワークロードにより異なる） |
 | 最大コンテキスト長（16GB GPU） | 4096 | 8192 |
 | 同時シーケンス数（16GB GPU） | 2 | 4 |
 

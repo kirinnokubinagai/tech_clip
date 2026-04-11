@@ -16,10 +16,13 @@ RunPod サーバーレス API のリクエストを処理する。
 量子化は VLLM_QUANTIZATION 環境変数で制御する（awq / gptq_marlin / fp8 / 空で非量子化）。
 """
 
+import logging
 import os
 from typing import Any
 import runpod
 from vllm import LLM, SamplingParams
+
+logger = logging.getLogger(__name__)
 
 # メッセージ本文の最大文字数
 MESSAGE_CONTENT_MAX_LENGTH = 50000
@@ -37,6 +40,8 @@ MODEL_REF = (
     or os.environ.get("MODEL_PATH")
     or os.environ.get("MODEL_NAME", "google/gemma-3-12b-it")
 )
+if not os.environ.get("MODEL_NAME"):
+    logger.warning("MODEL_NAME が未設定のためデフォルトモデルを使用します: %s", MODEL_REF)
 MAX_MODEL_LEN = int(os.environ.get("MAX_MODEL_LEN", "8192"))
 MAX_NUM_SEQS = int(os.environ.get("MAX_NUM_SEQS", "4"))
 GPU_MEMORY_UTILIZATION = float(os.environ.get("GPU_MEMORY_UTILIZATION", "0.90"))
@@ -44,12 +49,19 @@ TENSOR_PARALLEL_SIZE = int(os.environ.get("TENSOR_PARALLEL_SIZE", "1"))
 
 # 量子化設定: 環境変数 VLLM_QUANTIZATION で制御する
 # awq / gptq_marlin / fp8 を指定するか、空文字・未設定で非量子化（後方互換）
-VLLM_QUANTIZATION = os.environ.get("VLLM_QUANTIZATION") or None
+_ALLOWED_QUANTIZATION = {"awq", "gptq_marlin", "fp8"}
+_RAW = os.environ.get("VLLM_QUANTIZATION", "").strip()
+VLLM_QUANTIZATION = _RAW if _RAW else None
+if VLLM_QUANTIZATION and VLLM_QUANTIZATION not in _ALLOWED_QUANTIZATION:
+    raise ValueError(
+        f"VLLM_QUANTIZATION の値が不正です: {VLLM_QUANTIZATION!r}。"
+        f"許可値: {_ALLOWED_QUANTIZATION}"
+    )
 
 # AWQ 量子化時は "auto" を推奨。非量子化時は "bfloat16" を維持する
 VLLM_DTYPE = os.environ.get("VLLM_DTYPE", "bfloat16")
 
-llm_kwargs: dict = {
+llm_kwargs: dict[str, Any] = {
     "model": MODEL_REF,
     "dtype": VLLM_DTYPE,
     "max_model_len": MAX_MODEL_LEN,
@@ -167,6 +179,10 @@ def handle_messages_request(job_input: dict) -> dict:
         tokenize=False,
         add_generation_prompt=True,
     )
+    if not isinstance(prompt, str):
+        raise ValueError(
+            f"apply_chat_template が str を返しませんでした: {type(prompt).__name__}"
+        )
 
     sampling_params = SamplingParams(
         max_tokens=max_tokens,
@@ -209,6 +225,8 @@ def handler(job: dict) -> dict:
         output = handle_messages_request(job_input)
     except ValueError as e:
         return {"error": str(e)}
+    except Exception as e:
+        return {"error": f"推論エラーが発生しました: {type(e).__name__}"}
 
     return {"output": output}
 
