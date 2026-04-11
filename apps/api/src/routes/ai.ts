@@ -1,7 +1,6 @@
 import { and, eq } from "drizzle-orm";
 import { Hono } from "hono";
 import { ulid } from "ulid";
-import { z } from "zod";
 
 import type { Database } from "../db";
 import { aiJobs, articles, translations } from "../db/schema";
@@ -29,19 +28,13 @@ import type {
   TranslationJobStatus,
   TranslationResult,
 } from "../services/translator";
+import { GenerateTranslationSchema } from "../validators/ai";
 
 const ARTICLE_NOT_FOUND_MESSAGE = "記事が見つかりません";
 const TRANSLATION_NOT_FOUND_MESSAGE = "翻訳が見つかりません";
 const TRANSLATION_ERROR_MESSAGE = "翻訳処理に失敗しました";
 const NO_CONTENT_MESSAGE = "翻訳するコンテンツがありません";
-const SUPPORTED_LANGUAGES = ["en", "ja"] as const;
 const DEFAULT_TARGET_LANGUAGE = "en";
-
-const TranslateRequestSchema = z.object({
-  targetLanguage: z.enum(SUPPORTED_LANGUAGES, {
-    error: "targetLanguageはenまたはjaで指定してください",
-  }),
-});
 
 type TranslateArticleFn = (options: TranslateOptions) => Promise<TranslationResult>;
 type CreateTranslationJobFn = (
@@ -136,7 +129,7 @@ export function createAiRoute(options: AiRouteOptions) {
     }
 
     const body = await c.req.json().catch(() => ({}));
-    const validation = TranslateRequestSchema.safeParse(body);
+    const validation = GenerateTranslationSchema.safeParse(body);
     if (!validation.success) {
       return c.json(
         {
@@ -469,8 +462,8 @@ export function createAiRoute(options: AiRouteOptions) {
       );
     }
 
-    const targetLanguage = c.req.query("targetLanguage");
-    if (!targetLanguage) {
+    const targetLanguageRaw = c.req.query("targetLanguage");
+    if (!targetLanguageRaw) {
       return c.json(
         {
           success: false,
@@ -483,6 +476,28 @@ export function createAiRoute(options: AiRouteOptions) {
         HTTP_UNPROCESSABLE_ENTITY,
       );
     }
+
+    const langValidation = GenerateTranslationSchema.safeParse({
+      targetLanguage: targetLanguageRaw,
+    });
+    if (!langValidation.success) {
+      return c.json(
+        {
+          success: false,
+          error: {
+            code: VALIDATION_ERROR_CODE,
+            message: VALIDATION_ERROR_MESSAGE,
+            details: langValidation.error.issues.map((e) => ({
+              field: e.path.join("."),
+              message: e.message,
+            })),
+          },
+        },
+        HTTP_UNPROCESSABLE_ENTITY,
+      );
+    }
+
+    const targetLanguage = langValidation.data.targetLanguage;
     const articleId = c.req.param("id");
     const ownership = await ensureOwnedArticle(db, articleId, user.id);
 

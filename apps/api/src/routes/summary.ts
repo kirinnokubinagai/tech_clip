@@ -1,6 +1,5 @@
 import { and, eq } from "drizzle-orm";
 import { Hono } from "hono";
-import { z } from "zod";
 
 import type { Database } from "../db";
 import { aiJobs, articles, summaries } from "../db/schema";
@@ -23,20 +22,14 @@ import {
   HTTP_UNPROCESSABLE_ENTITY,
 } from "../lib/http-status";
 import type { RunPodConfig, SummaryJobStatus, SummaryResult } from "../services/summary";
+import { GenerateSummarySchema } from "../validators/ai";
 
 const ARTICLE_NOT_FOUND_MESSAGE = "記事が見つかりません";
 const SUMMARY_NOT_FOUND_MESSAGE = "要約が見つかりません";
 const INTERNAL_ERROR_CODE = "INTERNAL_ERROR";
 const SUMMARY_GENERATION_ERROR_MESSAGE = "要約の生成に失敗しました";
 const NO_CONTENT_ERROR_MESSAGE = "記事のコンテンツがありません";
-const SUPPORTED_LANGUAGES = ["ja", "en", "zh", "ko"] as const;
 const DEFAULT_LANGUAGE = "ja";
-
-const CreateSummarySchema = z.object({
-  language: z.enum(SUPPORTED_LANGUAGES, {
-    error: `languageは${SUPPORTED_LANGUAGES.join(", ")}のいずれかで指定してください`,
-  }),
-});
 
 type SummarizeFn = (params: {
   content: string;
@@ -103,7 +96,7 @@ export function createSummaryRoute(options: SummaryRouteOptions) {
     }
 
     const body = await c.req.json().catch(() => ({}));
-    const validation = CreateSummarySchema.safeParse(body);
+    const validation = GenerateSummarySchema.safeParse(body);
     if (!validation.success) {
       return c.json(
         {
@@ -121,8 +114,22 @@ export function createSummaryRoute(options: SummaryRouteOptions) {
       );
     }
 
+    if (!validation.data.language) {
+      return c.json(
+        {
+          success: false,
+          error: {
+            code: VALIDATION_ERROR_CODE,
+            message: VALIDATION_ERROR_MESSAGE,
+            details: [{ field: "language", message: "languageは必須です" }],
+          },
+        },
+        HTTP_UNPROCESSABLE_ENTITY,
+      );
+    }
+
     const articleId = c.req.param("id");
-    const { language } = validation.data;
+    const language = validation.data.language;
     const ownership = await ensureOwnedArticle(db, articleId, user.id as string);
 
     if ("error" in ownership) {

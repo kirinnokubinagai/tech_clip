@@ -6,10 +6,14 @@ import { create } from "zustand";
 import { apiFetch } from "@/lib/api";
 import {
   DEFAULT_UI_LANGUAGE,
+  type Language,
   resolveChineseVariant,
   SUPPORTED_SUMMARY_LANGUAGES,
   SUPPORTED_UI_LANGUAGES,
+  type SummaryLanguage,
 } from "@/lib/language-code";
+
+export type { Language, SummaryLanguage };
 
 /** SecureStoreキー: 言語設定 */
 const LANGUAGE_KEY = "settings_language";
@@ -19,9 +23,6 @@ const SUMMARY_LANGUAGE_KEY = "settings_summary_language";
 
 /** SecureStore保存値の最大文字数（locale コードは最大10文字以内） */
 const MAX_LANGUAGE_CODE_LENGTH = 10;
-
-/** localeコードの型 */
-export type Language = (typeof SUPPORTED_UI_LANGUAGES)[number];
 
 /** デフォルト言語 */
 const DEFAULT_LANGUAGE: Language = DEFAULT_UI_LANGUAGE;
@@ -75,9 +76,6 @@ function normalizeStoredLanguage(stored: string): {
   const migrated = LEGACY_LANGUAGE_MIGRATION_MAP[parsed];
   return { language: migrated ?? DEFAULT_LANGUAGE, needsMigration: true };
 }
-
-/** 要約言語コードの型 */
-export type SummaryLanguage = (typeof SUPPORTED_SUMMARY_LANGUAGES)[number];
 
 /** 要約言語コードと表示名のマップ */
 export const SUMMARY_LANGUAGE_LABELS: Record<SummaryLanguage, string> = {
@@ -232,7 +230,9 @@ export const useSettingsStore = create<SettingsStore>((set, get) => ({
         return;
       }
     } catch {
-      // fall through
+      console.warn(
+        "SecureStore の要約言語設定のパースに失敗しました。デバイス言語にフォールバックします",
+      );
     }
     const fallback = resolveDeviceSummaryLanguage();
     await SecureStore.setItemAsync(SUMMARY_LANGUAGE_KEY, JSON.stringify(fallback));

@@ -13,6 +13,12 @@ export const SUPPORTED_SUMMARY_LANGUAGES = ["ja", "en", "zh", "zh-CN", "zh-TW", 
 /** 要約言語コードの型 */
 export type SummaryLang = (typeof SUPPORTED_SUMMARY_LANGUAGES)[number];
 
+/** UI言語コードの型エイリアス（settings-store.ts との互換性のため） */
+export type Language = UiLanguage;
+
+/** 要約言語コードの型エイリアス（settings-store.ts との互換性のため） */
+export type SummaryLanguage = SummaryLang;
+
 /**
  * UI 言語コード（地域コード含む）→ API 要約・翻訳言語コード のマッピング
  *
@@ -49,6 +55,12 @@ export function resolveChineseVariant(
     languageCode === "zh-Hant"
   ) {
     return "zh-TW";
+  }
+  if (languageTag.startsWith("zh-SG") || languageTag === "zh-Hans-SG") {
+    return "zh-CN";
+  }
+  if (languageTag === "zh" || languageCode === "zh") {
+    return "zh-CN";
   }
   return null;
 }

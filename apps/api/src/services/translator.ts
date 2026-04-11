@@ -17,9 +17,7 @@ const CODE_BLOCK_PLACEHOLDER_PREFIX = "{{CODE_BLOCK_";
 const CODE_BLOCK_PLACEHOLDER_SUFFIX = "}}";
 
 /** ターゲット言語の表示名マッピング */
-const LANGUAGE_DISPLAY_NAMES: Record<(typeof SUPPORTED_LANGUAGES)[number], string> & {
-  [key: string]: string | undefined;
-} = {
+const LANGUAGE_DISPLAY_NAMES: Record<(typeof SUPPORTED_LANGUAGES)[number], string> = {
   en: "English",
   ja: "Japanese",
   zh: "Chinese",
@@ -27,6 +25,19 @@ const LANGUAGE_DISPLAY_NAMES: Record<(typeof SUPPORTED_LANGUAGES)[number], strin
   "zh-TW": "Traditional Chinese",
   ko: "Korean",
 };
+
+/**
+ * 言語コードの表示名を取得する
+ *
+ * @param targetLanguage - 言語コード
+ * @returns 表示名。サポートされていない場合は言語コード自体を返す
+ */
+function getLanguageDisplayName(targetLanguage: string): string {
+  if (Object.hasOwn(LANGUAGE_DISPLAY_NAMES, targetLanguage)) {
+    return LANGUAGE_DISPLAY_NAMES[targetLanguage as (typeof SUPPORTED_LANGUAGES)[number]];
+  }
+  return targetLanguage;
+}
 
 /** プロンプトインジェクション対策: ユーザーコンテンツの開始デリミタ */
 const USER_CONTENT_DELIMITER = "---USER_CONTENT_START---";
@@ -95,7 +106,7 @@ export function restoreCodeBlocks(text: string, blocks: string[]): string {
 }
 
 export function buildPrompt(text: string, targetLanguage: string): string {
-  const languageName = LANGUAGE_DISPLAY_NAMES[targetLanguage] ?? targetLanguage;
+  const languageName = getLanguageDisplayName(targetLanguage);
 
   return `Translate the following text to ${languageName}.
 Rules:
@@ -115,7 +126,7 @@ function buildArticleTranslationPrompt(
   content: string,
   targetLanguage: string,
 ): string {
-  const languageName = LANGUAGE_DISPLAY_NAMES[targetLanguage] ?? targetLanguage;
+  const languageName = getLanguageDisplayName(targetLanguage);
 
   return `Translate the following article to ${languageName}.
 Rules:

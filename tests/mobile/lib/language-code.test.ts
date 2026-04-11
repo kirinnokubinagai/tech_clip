@@ -54,13 +54,45 @@ describe("resolveChineseVariant", () => {
     expect(resolveChineseVariant("en-US", "en")).toBeNull();
     expect(resolveChineseVariant("ja-JP", "ja")).toBeNull();
   });
+
+  it("zh-SG が zh-CN に解決されること", () => {
+    // Arrange & Act
+    const result = resolveChineseVariant("zh-SG", "zh");
+
+    // Assert
+    expect(result).toBe("zh-CN");
+  });
+
+  it("zh-Hans-SG が zh-CN に解決されること", () => {
+    // Arrange & Act
+    const result = resolveChineseVariant("zh-Hans-SG", "zh-Hans");
+
+    // Assert
+    expect(result).toBe("zh-CN");
+  });
+
+  it("zh 単独が zh-CN に解決されること", () => {
+    // Arrange & Act
+    const result = resolveChineseVariant("zh", "zh");
+
+    // Assert
+    expect(result).toBe("zh-CN");
+  });
+
+  it("languageCode が zh 単独の場合も zh-CN に解決されること", () => {
+    // Arrange & Act
+    const result = resolveChineseVariant("", "zh");
+
+    // Assert
+    expect(result).toBe("zh-CN");
+  });
 });
 
 describe("UI_TO_API_LANGUAGE", () => {
   describe("ja", () => {
     it("jaがAPIコードjaにマッピングされること", () => {
       // Arrange & Act
-      const result = UI_TO_API_LANGUAGE["ja"];
+      const result = UI_TO_API_LANGUAGE.ja;
 
       // Assert
       expect(result).toBe("ja");
@@ -70,7 +102,7 @@ describe("UI_TO_API_LANGUAGE", () => {
   describe("en", () => {
     it("enがAPIコードenにマッピングされること", () => {
       // Arrange & Act
-      const result = UI_TO_API_LANGUAGE["en"];
+      const result = UI_TO_API_LANGUAGE.en;
 
       // Assert
       expect(result).toBe("en");
@@ -100,7 +132,7 @@ describe("UI_TO_API_LANGUAGE", () => {
   describe("ko", () => {
     it("koがAPIコードkoにマッピングされること", () => {
       // Arrange & Act
-      const result = UI_TO_API_LANGUAGE["ko"];
+      const result = UI_TO_API_LANGUAGE.ko;
 
       // Assert
       expect(result).toBe("ko");

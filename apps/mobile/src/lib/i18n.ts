@@ -11,10 +11,8 @@ import {
   DEFAULT_UI_LANGUAGE,
   resolveChineseVariant,
   SUPPORTED_UI_LANGUAGES,
+  type UiLanguage,
 } from "./language-code";
-
-/** サポートする言語コードの型 */
-type Language = (typeof SUPPORTED_UI_LANGUAGES)[number];
 
 /**
  * デバイスのロケールからサポート言語を解決する
@@ -23,7 +21,7 @@ type Language = (typeof SUPPORTED_UI_LANGUAGES)[number];
  *
  * @returns サポートされている言語コード
  */
-function resolveDeviceLanguage(): Language {
+function resolveDeviceLanguage(): UiLanguage {
   const locales = getLocales();
   if (locales.length === 0) {
     return DEFAULT_UI_LANGUAGE;
@@ -42,12 +40,12 @@ function resolveDeviceLanguage(): Language {
     return chineseVariant;
   }
 
-  const isSupported = SUPPORTED_UI_LANGUAGES.includes(code as Language);
+  const isSupported = SUPPORTED_UI_LANGUAGES.includes(code as UiLanguage);
   if (!isSupported) {
     return DEFAULT_UI_LANGUAGE;
   }
 
-  return code as Language;
+  return code as UiLanguage;
 }
 
 i18n.use(initReactI18next).init({
