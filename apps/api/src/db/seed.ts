@@ -32,7 +32,7 @@ const ARTICLES_PER_USER_MAX = 30;
 const TAGS_PER_USER = 5;
 
 /** AIモデル名（seedデータ用） */
-const SEED_AI_MODEL = "qwen-3.5-9b";
+const SEED_AI_MODEL = "gemma-4-26b-a4b";
 
 /** 記事ソース一覧 */
 const ARTICLE_SOURCES = [
