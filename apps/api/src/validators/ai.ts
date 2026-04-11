@@ -8,7 +8,7 @@ export const SUPPORTED_LANGUAGES = ["en", "ja", "zh", "zh-CN", "zh-TW", "ko"] as
  */
 export const GenerateTranslationSchema = z.object({
   targetLanguage: z.enum(SUPPORTED_LANGUAGES, {
-    error: "targetLanguageはen、ja、zh、zh-CN、zh-TW、koで指定してください",
+    error: `targetLanguageは${SUPPORTED_LANGUAGES.join("、")}で指定してください`,
   }),
 });
 
@@ -18,7 +18,7 @@ export const GenerateTranslationSchema = z.object({
 export const GenerateSummarySchema = z.object({
   language: z
     .enum(SUPPORTED_LANGUAGES, {
-      error: "languageはen、ja、zh、zh-CN、zh-TW、koで指定してください",
+      error: `languageは${SUPPORTED_LANGUAGES.join("、")}で指定してください`,
     })
     .optional(),
 });
@@ -28,3 +28,13 @@ export type GenerateTranslationInput = z.infer<typeof GenerateTranslationSchema>
 
 /** GenerateSummarySchemaの型 */
 export type GenerateSummaryInput = z.infer<typeof GenerateSummarySchema>;
+
+/**
+ * 値がサポート言語コードかどうかを判定する型ガード
+ *
+ * @param v - 検証対象の文字列
+ * @returns SUPPORTED_LANGUAGES のいずれかかどうか
+ */
+export function isSupportedLanguage(v: string): v is (typeof SUPPORTED_LANGUAGES)[number] {
+  return (SUPPORTED_LANGUAGES as readonly string[]).includes(v);
+}

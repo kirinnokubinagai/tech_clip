@@ -1,6 +1,8 @@
+import { LANGUAGE_DISPLAY_NAMES } from "../lib/language-display-names";
 import { DEFAULT_GEMMA_MODEL_TAG, WORKERS_AI_GEMMA_MODEL_ID } from "../lib/ai-model";
 import { createLogger } from "../lib/logger";
-import type { SUPPORTED_LANGUAGES } from "../validators/ai";
+import { isWorkersAiTextResponse } from "../lib/workers-ai";
+import { isSupportedLanguage } from "../validators/ai";
 import { sanitizeArticleContent } from "./summary";
 
 /** 翻訳時の最大トークン数 */
@@ -27,16 +29,6 @@ const USER_CONTENT_DELIMITER = "---USER_CONTENT_START---";
 /** プロンプトインジェクション対策: ユーザーコンテンツの終了デリミタ */
 const USER_CONTENT_END = "---USER_CONTENT_END---";
 
-/** ターゲット言語の表示名マッピング */
-const LANGUAGE_DISPLAY_NAMES: Record<(typeof SUPPORTED_LANGUAGES)[number], string> = {
-  en: "English",
-  ja: "Japanese",
-  zh: "Chinese",
-  "zh-CN": "Simplified Chinese",
-  "zh-TW": "Traditional Chinese",
-  ko: "Korean",
-};
-
 /**
  * 言語コードの表示名を取得する
  *
@@ -44,8 +36,8 @@ const LANGUAGE_DISPLAY_NAMES: Record<(typeof SUPPORTED_LANGUAGES)[number], strin
  * @returns 表示名。サポートされていない場合は言語コード自体を返す
  */
 function getLanguageDisplayName(targetLanguage: string): string {
-  if (Object.hasOwn(LANGUAGE_DISPLAY_NAMES, targetLanguage)) {
-    return LANGUAGE_DISPLAY_NAMES[targetLanguage as (typeof SUPPORTED_LANGUAGES)[number]];
+  if (isSupportedLanguage(targetLanguage)) {
+    return LANGUAGE_DISPLAY_NAMES[targetLanguage];
   }
   return targetLanguage;
 }
@@ -195,20 +187,6 @@ export function parseTranslationResponse(responseText: string): {
     }
     throw new Error("翻訳レスポンスの解析に失敗しました", { cause: error });
   }
-}
-
-/**
- * Workers AI レスポンスの型ガード
- *
- * @param value - 検証対象の値
- * @returns response フィールドが string かどうか
- */
-function isWorkersAiTextResponse(value: unknown): value is { response: string } {
-  if (typeof value !== "object" || value === null) {
-    return false;
-  }
-  const v = value as Record<string, unknown>;
-  return typeof v.response === "string";
 }
 
 /**

@@ -42,7 +42,7 @@ const KV_KEY_PREFIX = "translate:v1";
 
 const TranslateRequestSchema = z.object({
   targetLanguage: z.enum(SUPPORTED_LANGUAGES, {
-    error: "targetLanguageはen、ja、zh、zh-CN、zh-TW、koで指定してください",
+    error: `targetLanguageは${SUPPORTED_LANGUAGES.join("、")}で指定してください`,
   }),
 });
 

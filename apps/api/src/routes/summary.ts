@@ -52,7 +52,7 @@ const CreateSummarySchema = z.object({
 type SummarizeFn = (params: {
   ai: Ai;
   content: string;
-  language: string;
+  language: (typeof SUPPORTED_LANGUAGES)[number];
   modelTag?: string;
 }) => Promise<SummaryResult>;
 
