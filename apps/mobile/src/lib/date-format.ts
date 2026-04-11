@@ -4,6 +4,9 @@ import type { Language } from "@/stores/settings-store";
 const INTL_LOCALE_MAP: Record<Language, string> = {
   ja: "ja-JP",
   en: "en-US",
+  "zh-CN": "zh-CN",
+  "zh-TW": "zh-TW",
+  ko: "ko-KR",
 };
 
 /** デフォルトのlocale */

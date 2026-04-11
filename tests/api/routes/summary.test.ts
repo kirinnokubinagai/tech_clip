@@ -474,6 +474,52 @@ describe("POST /api/articles/:id/summary（KV キャッシュ）", () => {
     expect(mockSummarizeArticle).toHaveBeenCalledOnce();
   });
 
+  it("zh-CN を指定したとき summarizeFn が zh-CN で呼び出されること", async () => {
+    // Arrange
+    const mockCache = {
+      get: vi.fn().mockResolvedValue(null),
+      put: vi.fn().mockResolvedValue(undefined),
+    } as unknown as KVNamespace;
+
+    type Variables = {
+      user: typeof MOCK_USER;
+      session: Record<string, unknown>;
+    };
+    const app = new Hono<{ Variables: Variables }>();
+    app.use("/api/articles/:id/summary", (c, next) => {
+      c.set("user", MOCK_USER);
+      c.set("session", { id: "session_01" });
+      return next();
+    });
+    const summaryRoute = createSummaryRoute({
+      db: mockDb as never,
+      summarizeFn: mockSummarizeArticle,
+      ai: MOCK_AI,
+      modelTag: "gemma-4-26b-a4b",
+      cache: mockCache,
+    });
+    app.route("/api", summaryRoute);
+
+    mockSelectWhere.mockResolvedValueOnce([MOCK_ARTICLE]).mockResolvedValueOnce([]);
+
+    // Act
+    const res = await app.request("/api/articles/article_001/summary", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ language: "zh-CN" }),
+    });
+
+    // Assert
+    expect(res.status).toBe(HTTP_OK);
+    const body = (await res.json()) as SummaryResponseBody;
+    expect(body.success).toBe(true);
+    expect(body.data?.status).toBe("completed");
+    expect(mockSummarizeArticle).toHaveBeenCalledWith(
+      expect.objectContaining({ language: "zh-CN" }),
+    );
+    expect(mockCache.get).toHaveBeenCalledWith("summary:v1:article_001:zh-CN");
+  });
+
   it("KV キャッシュキーが summary:v1:<articleId>:<lang> 形式であること", async () => {
     // Arrange
     const mockCache = {
