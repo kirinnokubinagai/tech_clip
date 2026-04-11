@@ -31,7 +31,8 @@ concurrency:
 jobs:
   # ── Step 1: AIレビュー ────────────────────────────────────────────────────
   claude-review:
-    if: github.event_name == 'pull_request'
+    # 同一リポジトリの PR のみ実行（フォーク PR で id-token: write が悪用されるのを防ぐ）
+    if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-latest
     timeout-minutes: 10
     continue-on-error: true  # トークン制限による失敗は後続をブロックしない
@@ -234,7 +235,7 @@ jobs:
 
             cd apps/api && pnpm exec drizzle-kit migrate >> "${SETUP_LOG}" 2>&1 && cd ../..
 
-            SIGNUP_BODY=$(jq -n \
+            SIGNUP_BODY=$(jq -cn \
               --arg email "${ZAP_TEST_EMAIL}" \
               --arg password "${ZAP_TEST_PASSWORD}" \
               --arg name "ZAP Test User" \
@@ -248,7 +249,7 @@ jobs:
             fi
             echo "sign-up: HTTP ${SIGNUP_STATUS}" >> "${SETUP_LOG}"
 
-            SIGNIN_BODY=$(jq -n \
+            SIGNIN_BODY=$(jq -cn \
               --arg email "${ZAP_TEST_EMAIL}" \
               --arg password "${ZAP_TEST_PASSWORD}" \
               '{email: $email, password: $password}')
