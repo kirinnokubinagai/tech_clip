@@ -1,5 +1,4 @@
 import {
-  HTTP_CREATED,
   HTTP_FORBIDDEN,
   HTTP_INTERNAL_SERVER_ERROR,
   HTTP_NOT_FOUND,
@@ -45,7 +44,7 @@ const MOCK_TRANSLATION = {
   targetLanguage: "en",
   translatedTitle: "How to use React Hooks",
   translatedContent: "# React Hooks\n\nThis is test content.",
-  model: "qwen3.5-9b",
+  model: "gemma-4-26b-a4b",
   createdAt: new Date("2024-01-15"),
 };
 
@@ -83,16 +82,28 @@ const mockInsert = vi.fn().mockReturnValue({
   values: mockInsertValues,
 });
 
+/** モックの db.update クエリ結果 */
+const mockUpdateSet = vi.fn().mockReturnValue({
+  where: vi.fn().mockResolvedValue(undefined),
+});
+const mockUpdate = vi.fn().mockReturnValue({
+  set: mockUpdateSet,
+});
+
 /** モックのDBインスタンス */
 const mockDb = {
   select: mockSelect,
   insert: mockInsert,
+  update: mockUpdate,
 };
 
-/** モックの translateArticle 関数 */
-const mockTranslateArticle = vi.fn();
-const mockCreateTranslationJob = vi.fn();
-const mockGetTranslationJobStatus = vi.fn();
+/** モックの Workers AI */
+const mockAi = {
+  run: vi.fn(),
+};
+
+/** モックの translateFn */
+const mockTranslateFn = vi.fn();
 
 /**
  * 認証ありのテスト用Honoアプリを作成する
@@ -114,13 +125,8 @@ function createTestApp() {
 
   const aiRoute = createAiRoute({
     db: mockDb as never,
-    translateArticleFn: mockTranslateArticle,
-    createTranslationJobFn: mockCreateTranslationJob,
-    getTranslationJobStatusFn: mockGetTranslationJobStatus,
-    runpodConfig: {
-      apiKey: "test-api-key",
-      endpointId: "test-endpoint-id",
-    },
+    ai: mockAi as unknown as Ai,
+    translateFn: mockTranslateFn,
   });
   app.route("/api/articles", aiRoute);
 
@@ -137,13 +143,8 @@ function createTestAppWithoutAuth() {
 
   const aiRoute = createAiRoute({
     db: mockDb as never,
-    translateArticleFn: mockTranslateArticle,
-    createTranslationJobFn: mockCreateTranslationJob,
-    getTranslationJobStatusFn: mockGetTranslationJobStatus,
-    runpodConfig: {
-      apiKey: "test-api-key",
-      endpointId: "test-endpoint-id",
-    },
+    ai: mockAi as unknown as Ai,
+    translateFn: mockTranslateFn,
   });
   app.route("/api/articles", aiRoute);
 
@@ -153,9 +154,17 @@ function createTestAppWithoutAuth() {
 describe("POST /api/articles/:id/translate", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    mockCreateTranslationJob.mockResolvedValue({
-      providerJobId: "run_abc123",
-      model: "qwen3.5-9b",
+    mockTranslateFn.mockResolvedValue({
+      translatedTitle: "How to use React Hooks",
+      translatedContent: "# React Hooks\n\nTest content.",
+      model: "gemma-4-26b-a4b",
+    });
+    mockInsertValues.mockReturnValue({
+      returning: mockInsertReturning,
+    });
+    mockInsertReturning.mockResolvedValue([MOCK_TRANSLATION]);
+    mockUpdateSet.mockReturnValue({
+      where: vi.fn().mockResolvedValue(undefined),
     });
   });
 
@@ -261,8 +270,8 @@ describe("POST /api/articles/:id/translate", () => {
     });
   });
 
-  describe("キャッシュ", () => {
-    it("既存の翻訳がある場合キャッシュから返すこと", async () => {
+  describe("キャッシュ（DB）", () => {
+    it("既存の翻訳がある場合DBキャッシュから返すこと", async () => {
       // Arrange
       const app = createTestApp();
       mockSelectWhere
@@ -289,12 +298,12 @@ describe("POST /api/articles/:id/translate", () => {
         translatedContent: MOCK_TRANSLATION.translatedContent,
         model: MOCK_TRANSLATION.model,
       });
-      expect(mockTranslateArticle).not.toHaveBeenCalled();
+      expect(mockTranslateFn).not.toHaveBeenCalled();
     });
   });
 
   describe("翻訳実行", () => {
-    it("新規翻訳を実行して201を返すこと", async () => {
+    it("新規翻訳を同期で実行して200を返すこと", async () => {
       // Arrange
       const app = createTestApp();
       mockSelectWhere.mockResolvedValueOnce([MOCK_ARTICLE]).mockResolvedValueOnce([]);
@@ -309,11 +318,11 @@ describe("POST /api/articles/:id/translate", () => {
       const res = await app.request(req);
 
       // Assert
-      expect(res.status).toBe(HTTP_CREATED);
+      expect(res.status).toBe(HTTP_OK);
       const body = (await res.json()) as SuccessResponseBody;
       expect(body.success).toBe(true);
-      expect(body.data.status).toBe("queued");
-      expect(mockCreateTranslationJob).toHaveBeenCalledOnce();
+      expect(body.data.status).toBe("completed");
+      expect(mockTranslateFn).toHaveBeenCalledOnce();
     });
 
     it("記事にcontentがない場合422を返すこと", async () => {
@@ -343,7 +352,7 @@ describe("POST /api/articles/:id/translate", () => {
       const app = createTestApp();
       mockSelectWhere.mockResolvedValueOnce([MOCK_ARTICLE]).mockResolvedValueOnce([]);
 
-      mockCreateTranslationJob.mockRejectedValue(new Error("RunPod APIリクエストに失敗しました"));
+      mockTranslateFn.mockRejectedValue(new Error("Workers AI 翻訳エラー"));
 
       const req = new Request("http://localhost/api/articles/article_001/translate", {
         method: "POST",
