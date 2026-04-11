@@ -63,41 +63,42 @@ if [ -z "$REPO_ROOT" ]; then
   echo "DENY: git リポジトリルートが特定できませんでした: $FILE_PATH" >&2
   exit 2
 fi
+REPO_ROOT=$(realpath -m "$REPO_ROOT" 2>/dev/null)
+if [ -z "$REPO_ROOT" ]; then
+  echo "DENY: REPO_ROOT のパス正規化に失敗しました" >&2
+  exit 2
+fi
 
 # orchestratorが直接編集できないファイル（明示的ブロック対象）
 is_blocked_file() {
   local path="$1"
-
-  # macOS case-insensitive FS 対策
-  shopt -s nocasematch
+  local lower_path="${path,,}"
+  local lower_root="${REPO_ROOT,,}"
   local matched=1
   # .review-passed は Edit/Write 経由での作成を防止し、マーカー作成は Bash touch に限定する（レビュー完了後の orchestrator による明示的な touch を強制）
-  [[ "$path" == "$REPO_ROOT/.claude/.review-passed" ]] && matched=0
+  [[ "$lower_path" == "$lower_root/.claude/.review-passed" ]] && matched=0
   # .omc/state/ は実行フロー状態ファイル（直接編集による動作操作を防止）
-  [[ "$path" == "$REPO_ROOT/.omc/state" ]] && matched=0
-  [[ "$path" == "$REPO_ROOT/.omc/state/"* ]] && matched=0
-  shopt -u nocasematch
+  [[ "$lower_path" == "$lower_root/.omc/state" ]] && matched=0
+  [[ "$lower_path" == "$lower_root/.omc/state/"* ]] && matched=0
   return $matched
 }
 
-# orchestration/config ファイルかどうかを判定する（repo_root 直下のみ許可）
+# orchestration/config ファイルかどうかを判定する（.claude/**, .omc/** は再帰的に許可、ルート config ファイルは直下のみ許可）
 is_orchestration_file() {
   local path="$1"
-
-  # macOS case-insensitive FS 対策
-  shopt -s nocasematch
+  local lower_path="${path,,}"
+  local lower_root="${REPO_ROOT,,}"
   local matched=1
-  [[ "$path" == "$REPO_ROOT/.claude/"* ]] && matched=0
-  [[ "$path" == "$REPO_ROOT/.omc/"* ]] && matched=0
-  [[ "$path" == "$REPO_ROOT/CLAUDE.md" ]] && matched=0
-  [[ "$path" == "$REPO_ROOT/AGENTS.md" ]] && matched=0
-  [[ "$path" == "$REPO_ROOT/flake.nix" ]] && matched=0
-  [[ "$path" == "$REPO_ROOT/.gitignore" ]] && matched=0
-  [[ "$path" == "$REPO_ROOT/.env.example" ]] && matched=0
-  [[ "$path" == "$REPO_ROOT/turbo.json" ]] && matched=0
-  [[ "$path" == "$REPO_ROOT/package.json" ]] && matched=0
-  [[ "$path" == "$REPO_ROOT/pnpm-workspace.yaml" ]] && matched=0
-  shopt -u nocasematch
+  [[ "$lower_path" == "$lower_root/.claude/"* ]] && matched=0
+  [[ "$lower_path" == "$lower_root/.omc/"* ]] && matched=0
+  [[ "$lower_path" == "$lower_root/claude.md" ]] && matched=0
+  [[ "$lower_path" == "$lower_root/agents.md" ]] && matched=0
+  [[ "$lower_path" == "$lower_root/flake.nix" ]] && matched=0
+  [[ "$lower_path" == "$lower_root/.gitignore" ]] && matched=0
+  [[ "$lower_path" == "$lower_root/.env.example" ]] && matched=0
+  [[ "$lower_path" == "$lower_root/turbo.json" ]] && matched=0
+  [[ "$lower_path" == "$lower_root/package.json" ]] && matched=0
+  [[ "$lower_path" == "$lower_root/pnpm-workspace.yaml" ]] && matched=0
   return $matched
 }
 
@@ -105,9 +106,11 @@ is_orchestration_file() {
 # apps/, packages/, tests/ 配下のファイルは coder agent 経由を強制
 is_source_file() {
   local path="$1"
-  [[ "$path" == "$REPO_ROOT/apps/"* ]] && return 0
-  [[ "$path" == "$REPO_ROOT/packages/"* ]] && return 0
-  [[ "$path" == "$REPO_ROOT/tests/"* ]] && return 0
+  local lower_path="${path,,}"
+  local lower_root="${REPO_ROOT,,}"
+  [[ "$lower_path" == "$lower_root/apps/"* ]] && return 0
+  [[ "$lower_path" == "$lower_root/packages/"* ]] && return 0
+  [[ "$lower_path" == "$lower_root/tests/"* ]] && return 0
   return 1
 }
 
@@ -115,13 +118,11 @@ is_source_file() {
 if is_blocked_file "$FILE_PATH"; then
   echo "DENY: このファイルはorchestratorによる直接編集が禁止されています。" >&2
   echo "  対象ファイル: $FILE_PATH" >&2
-  shopt -s nocasematch
-  if [[ "$FILE_PATH" == *"/.review-passed" ]]; then
+  if [[ "${FILE_PATH,,}" == *"/.review-passed" ]]; then
     echo "  理由: Edit/Write 経由では作成できません。レビュー PASS 後に \`touch\` で作成してください。" >&2
   else
     echo "  理由: 実行フロー状態ファイルです（直接編集による動作操作を防止）。" >&2
   fi
-  shopt -u nocasematch
   exit 2
 fi
 

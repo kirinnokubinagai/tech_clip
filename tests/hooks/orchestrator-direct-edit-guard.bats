@@ -121,7 +121,7 @@ run_script_with_file() {
 
     # Assert
     [ "$status" -eq 2 ]
-    [[ "${output}" == *"DENY"* ]] || [[ "${lines[*]}" == *"DENY"* ]]
+    [[ "${output}" == *"DENY"* ]]
 }
 
 @test "apps/配下の.tsxファイルはブロックされること" {
@@ -251,6 +251,7 @@ run_script_with_file() {
 
     # Assert
     [ "$status" -eq 2 ]
+    [[ "${output}" == *"相対パスは安全でないため拒否します"* ]]
 }
 
 @test "apps/api/package.jsonはブロックされること" {
@@ -286,7 +287,7 @@ run_script_with_file() {
 
     # Assert
     [ "$status" -eq 2 ]
-    [[ "${output}" == *"coder"* ]] || [[ "${lines[*]}" == *"coder"* ]]
+    [[ "${output}" == *"coder"* ]]
 }
 
 # --- 明示的ブロック対象（is_blocked_file）---
@@ -300,7 +301,7 @@ run_script_with_file() {
 
     # Assert
     [ "$status" -eq 2 ]
-    [[ "${output}" == *"DENY"* ]] || [[ "${lines[*]}" == *"DENY"* ]]
+    [[ "${output}" == *"DENY"* ]]
 }
 
 @test ".omc/state/配下のファイルはブロックされること" {
@@ -312,7 +313,7 @@ run_script_with_file() {
 
     # Assert
     [ "$status" -eq 2 ]
-    [[ "${output}" == *"DENY"* ]] || [[ "${lines[*]}" == *"DENY"* ]]
+    [[ "${output}" == *"DENY"* ]]
 }
 
 @test "大文字パスの.CLAUDE/.review-passedはブロックされること" {
@@ -324,7 +325,7 @@ run_script_with_file() {
 
     # Assert
     [ "$status" -eq 2 ]
-    [[ "${output}" == *"DENY"* ]] || [[ "${lines[*]}" == *"DENY"* ]]
+    [[ "${output}" == *"DENY"* ]]
 }
 
 @test "大文字パスの.OMC/STATE/配下のファイルはブロックされること" {
@@ -336,7 +337,7 @@ run_script_with_file() {
 
     # Assert
     [ "$status" -eq 2 ]
-    [[ "${output}" == *"DENY"* ]] || [[ "${lines[*]}" == *"DENY"* ]]
+    [[ "${output}" == *"DENY"* ]]
 }
 
 @test "パストラバーサル経由の.review-passedはブロックされること" {
@@ -348,7 +349,7 @@ run_script_with_file() {
 
     # Assert
     [ "$status" -eq 2 ]
-    [[ "${output}" == *"DENY"* ]] || [[ "${lines[*]}" == *"DENY"* ]]
+    [[ "${output}" == *"DENY"* ]]
 }
 
 @test "パストラバーサル経由の.omc/state/配下のファイルはブロックされること" {
@@ -360,7 +361,7 @@ run_script_with_file() {
 
     # Assert
     [ "$status" -eq 2 ]
-    [[ "${output}" == *"DENY"* ]] || [[ "${lines[*]}" == *"DENY"* ]]
+    [[ "${output}" == *"DENY"* ]]
 }
 
 # --- .claude/ 全体と .omc/ 全体の許可 ---
@@ -528,7 +529,27 @@ run_script_with_file() {
 
     # Assert
     [ "$status" -eq 2 ]
-    [[ "${output}" == *"DENY"* ]] || [[ "${lines[*]}" == *"DENY"* ]]
+    [[ "${output}" == *"DENY"* ]]
+}
+
+@test "detached HEAD状態でも.claude/.review-passedはブロックされること" {
+    # Arrange
+    local commit_hash
+    commit_hash=$(git -C "$REPO_DIR" rev-parse HEAD)
+    git -C "$REPO_DIR" checkout --detach "$commit_hash"
+    run run_script_with_file "$REPO_DIR/.claude/.review-passed"
+    [ "$status" -eq 2 ]
+    [[ "${output}" == *"Edit/Write 経由では作成できません"* ]]
+}
+
+@test "detached HEAD状態でも.omc/state/配下はブロックされること" {
+    # Arrange
+    local commit_hash
+    commit_hash=$(git -C "$REPO_DIR" rev-parse HEAD)
+    git -C "$REPO_DIR" checkout --detach "$commit_hash"
+    run run_script_with_file "$REPO_DIR/.omc/state/autopilot-state.json"
+    [ "$status" -eq 2 ]
+    [[ "${output}" == *"実行フロー状態ファイル"* ]]
 }
 
 @test "detached HEAD状態でもorchestrationファイルは許可されること" {
@@ -555,7 +576,7 @@ run_script_with_file() {
 
     # Assert
     [ "$status" -eq 2 ]
-    [[ "${output}" == *"DENY"* ]] || [[ "${lines[*]}" == *"DENY"* ]]
+    [[ "${output}" == *"DENY"* ]]
 }
 
 @test "worktreeの非mainブランチでも.omc/state/配下のEdit/Writeはブロックされること" {
@@ -568,5 +589,5 @@ run_script_with_file() {
 
     # Assert
     [ "$status" -eq 2 ]
-    [[ "${output}" == *"DENY"* ]] || [[ "${lines[*]}" == *"DENY"* ]]
+    [[ "${output}" == *"DENY"* ]]
 }

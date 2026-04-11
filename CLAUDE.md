@@ -102,7 +102,7 @@ bash scripts/create-worktree.sh <issue-number> <kebab-case-description>
 
 ② Agent(coder, mode="acceptEdits")（①完了後）
    - TDD で実装する（Red → Green → Refactor）
-   - pnpm turbo check で lint をクリアする
+   - pnpm lint で lint をクリアする
    - lint エラー 0 件になったらコミットする
    - worktree パスと Issue 番号を渡す
    - 完了を待ってからレビューループへ
