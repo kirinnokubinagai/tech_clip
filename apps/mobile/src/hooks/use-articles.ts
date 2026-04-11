@@ -1,6 +1,7 @@
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { apiFetch } from "@/lib/api";
+import type { SummaryLang } from "@/lib/language-code";
 import { upsertArticle, upsertSummary, upsertTranslation } from "@/lib/localDb";
 import type {
   ArticleDetail,
@@ -231,22 +232,16 @@ export function useToggleFavorite() {
   });
 }
 
-/** 要約でサポートされる言語 */
-type SummaryLanguage = "ja" | "en" | "zh" | "zh-CN" | "zh-TW" | "ko";
-
-/** 翻訳でサポートされる言語 */
-type TranslationLanguage = "en" | "ja" | "zh" | "zh-CN" | "zh-TW" | "ko";
-
 /** 要約リクエストのパラメータ */
 type RequestSummaryParams = {
   articleId: string;
-  language: SummaryLanguage;
+  language: SummaryLang;
 };
 
 /** 翻訳リクエストのパラメータ */
 type RequestTranslationParams = {
   articleId: string;
-  targetLanguage: TranslationLanguage;
+  targetLanguage: SummaryLang;
 };
 
 /**

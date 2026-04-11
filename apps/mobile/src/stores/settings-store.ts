@@ -5,6 +5,7 @@ import { create } from "zustand";
 
 import { apiFetch } from "@/lib/api";
 import {
+  DEFAULT_UI_LANGUAGE,
   resolveChineseVariant,
   SUPPORTED_SUMMARY_LANGUAGES,
   SUPPORTED_UI_LANGUAGES,
@@ -23,7 +24,7 @@ const MAX_LANGUAGE_CODE_LENGTH = 10;
 export type Language = (typeof SUPPORTED_UI_LANGUAGES)[number];
 
 /** デフォルト言語 */
-const DEFAULT_LANGUAGE: Language = "ja";
+const DEFAULT_LANGUAGE: Language = DEFAULT_UI_LANGUAGE;
 
 /**
  * localeコードから表示名へのマッピング

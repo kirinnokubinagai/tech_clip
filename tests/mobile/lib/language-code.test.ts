@@ -1,4 +1,60 @@
-import { UI_TO_API_LANGUAGE } from "@mobile/lib/language-code";
+import { resolveChineseVariant, UI_TO_API_LANGUAGE } from "@mobile/lib/language-code";
+
+describe("resolveChineseVariant", () => {
+  it("zh-Hans-CN が zh-CN に解決されること", () => {
+    // Arrange & Act
+    const result = resolveChineseVariant("zh-Hans-CN", "zh-Hans");
+
+    // Assert
+    expect(result).toBe("zh-CN");
+  });
+
+  it("zh-Hant-TW が zh-TW に解決されること", () => {
+    // Arrange & Act
+    const result = resolveChineseVariant("zh-Hant-TW", "zh-Hant");
+
+    // Assert
+    expect(result).toBe("zh-TW");
+  });
+
+  it("zh-HK が zh-TW に解決されること", () => {
+    // Arrange & Act
+    const result = resolveChineseVariant("zh-HK", "zh");
+
+    // Assert
+    expect(result).toBe("zh-TW");
+  });
+
+  it("zh-Hans のみでも zh-CN に解決されること", () => {
+    // Arrange & Act
+    const result = resolveChineseVariant("", "zh-Hans");
+
+    // Assert
+    expect(result).toBe("zh-CN");
+  });
+
+  it("zh-Hant のみでも zh-TW に解決されること", () => {
+    // Arrange & Act
+    const result = resolveChineseVariant("", "zh-Hant");
+
+    // Assert
+    expect(result).toBe("zh-TW");
+  });
+
+  it("zh-CN 明示でも zh-CN に解決されること", () => {
+    // Arrange & Act
+    const result = resolveChineseVariant("zh-CN", "zh");
+
+    // Assert
+    expect(result).toBe("zh-CN");
+  });
+
+  it("中国語以外は null を返すこと", () => {
+    // Arrange & Act & Assert
+    expect(resolveChineseVariant("en-US", "en")).toBeNull();
+    expect(resolveChineseVariant("ja-JP", "ja")).toBeNull();
+  });
+});
 
 describe("UI_TO_API_LANGUAGE", () => {
   describe("ja", () => {

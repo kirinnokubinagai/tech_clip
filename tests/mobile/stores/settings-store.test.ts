@@ -495,6 +495,48 @@ describe("useSettingsStore", () => {
         expect(useSettingsStore.getState().summaryLanguage).toBe("en");
       });
 
+      it("デバイスが zh-Hans-CN の場合 zh-CN に解決されること", async () => {
+        // Arrange
+        mockGetItemAsync.mockResolvedValue(null);
+        mockGetLocales.mockReturnValue([
+          { languageCode: "zh-Hans", languageTag: "zh-Hans-CN" },
+        ] as ReturnType<typeof getLocales>);
+
+        // Act
+        await useSettingsStore.getState().loadSummaryLanguage();
+
+        // Assert
+        expect(useSettingsStore.getState().summaryLanguage).toBe("zh-CN");
+      });
+
+      it("デバイスが zh-Hant-TW の場合 zh-TW に解決されること", async () => {
+        // Arrange
+        mockGetItemAsync.mockResolvedValue(null);
+        mockGetLocales.mockReturnValue([
+          { languageCode: "zh-Hant", languageTag: "zh-Hant-TW" },
+        ] as ReturnType<typeof getLocales>);
+
+        // Act
+        await useSettingsStore.getState().loadSummaryLanguage();
+
+        // Assert
+        expect(useSettingsStore.getState().summaryLanguage).toBe("zh-TW");
+      });
+
+      it("デバイスが zh-HK の場合 zh-TW に解決されること", async () => {
+        // Arrange
+        mockGetItemAsync.mockResolvedValue(null);
+        mockGetLocales.mockReturnValue([{ languageCode: "zh", languageTag: "zh-HK" }] as ReturnType<
+          typeof getLocales
+        >);
+
+        // Act
+        await useSettingsStore.getState().loadSummaryLanguage();
+
+        // Assert
+        expect(useSettingsStore.getState().summaryLanguage).toBe("zh-TW");
+      });
+
       it("保存値がJSON不正の場合はデバイス言語にフォールバックすること", async () => {
         // Arrange
         mockGetItemAsync.mockResolvedValue("invalid-json{{{");

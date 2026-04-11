@@ -1,7 +1,7 @@
 import { z } from "zod";
 
 /** サポートされる言語 */
-const SUPPORTED_LANGUAGES = ["en", "ja", "zh", "zh-CN", "zh-TW", "ko"] as const;
+export const SUPPORTED_LANGUAGES = ["en", "ja", "zh", "zh-CN", "zh-TW", "ko"] as const;
 
 /**
  * 翻訳生成リクエストのZodスキーマ

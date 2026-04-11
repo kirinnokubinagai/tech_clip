@@ -4,6 +4,9 @@ export const SUPPORTED_UI_LANGUAGES = ["ja", "en", "zh-CN", "zh-TW", "ko"] as co
 /** UI言語コードの型 */
 export type UiLanguage = (typeof SUPPORTED_UI_LANGUAGES)[number];
 
+/** デフォルトUI言語 */
+export const DEFAULT_UI_LANGUAGE: UiLanguage = "ja";
+
 /** サポートする要約言語コード一覧 */
 export const SUPPORTED_SUMMARY_LANGUAGES = ["ja", "en", "zh", "zh-CN", "zh-TW", "ko"] as const;
 

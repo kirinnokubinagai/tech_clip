@@ -1,4 +1,5 @@
 import { DEFAULT_GEMMA_MODEL_TAG } from "../lib/ai-model";
+import type { SUPPORTED_LANGUAGES } from "../validators/ai";
 
 /** RunPod API ベースURL */
 const RUNPOD_API_BASE = "https://api.runpod.ai/v2";
@@ -16,7 +17,9 @@ const CODE_BLOCK_PLACEHOLDER_PREFIX = "{{CODE_BLOCK_";
 const CODE_BLOCK_PLACEHOLDER_SUFFIX = "}}";
 
 /** ターゲット言語の表示名マッピング */
-const LANGUAGE_DISPLAY_NAMES: Record<string, string> = {
+const LANGUAGE_DISPLAY_NAMES: Record<(typeof SUPPORTED_LANGUAGES)[number], string> & {
+  [key: string]: string | undefined;
+} = {
   en: "English",
   ja: "Japanese",
   zh: "Chinese",
