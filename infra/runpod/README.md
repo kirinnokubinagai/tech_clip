@@ -24,13 +24,11 @@ export DOCKER_IMAGE=your-dockerhub-username/techclip-gemma:latest
 bash scripts/deploy-runpod.sh
 ```
 
-または手動でビルド・プッシュする場合:
+または手動でビルド・プッシュする場合（リポジトリルートから実行）:
 
 ```bash
-cd infra/runpod
-
-# ビルド
-docker build -t your-dockerhub-username/techclip-gemma:latest .
+# ビルド（リポジトリルートから実行）
+docker build -t your-dockerhub-username/techclip-gemma:latest infra/runpod/
 
 # プッシュ
 docker push your-dockerhub-username/techclip-gemma:latest
@@ -231,3 +229,15 @@ GPU_MEMORY_UTILIZATION=0.85
 ### 量子化モデルで精度が落ちる場合
 
 `VLLM_QUANTIZATION` を空にして非量子化モードに切り替える（後方互換のため動作する）。
+
+## バージョン管理
+
+以下の組み合わせで動作確認済み:
+
+| コンポーネント | バージョン | 備考 |
+|----------------|------------|------|
+| ベースイメージ | `runpod/pytorch:2.8.0-py3.11-cuda12.8.1-cudnn-devel-ubuntu22.04` | CUDA 12.8.1 |
+| vLLM | `0.7.3` | AWQ / GPTQ-Marlin / FP8 量子化対応 |
+| RunPod SDK | `1.7.4` | サーバーレスランタイム |
+
+バージョンを変更する場合は `Dockerfile` の `pip install` 行を更新し、動作確認後にこのテーブルを更新すること。

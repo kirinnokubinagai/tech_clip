@@ -11,8 +11,8 @@ RUN pip install --no-cache-dir \
 # ハンドラーをコピー
 COPY handler.py .
 
-# デフォルトは信頼できる組織の Gemma 3 12B IT AWQ 量子化済みモデル。
-# MODEL_NAME 環境変数で HuggingFace モデル名を差し替え可能。
+# デフォルトは量子化なし（bfloat16）。AWQ を使う場合は MODEL_NAME を AWQ モデルに
+# 変更し、VLLM_QUANTIZATION=awq を同時に設定すること。
 # 注意: モデル変更はレビュー必須。許可モデル一覧は管理ドキュメントで管理する。
 ARG MODEL_NAME=google/gemma-3-12b-it
 ENV MODEL_NAME=${MODEL_NAME}

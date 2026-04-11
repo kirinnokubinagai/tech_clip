@@ -40,8 +40,8 @@ MODEL_REF = (
     or os.environ.get("MODEL_PATH")
     or os.environ.get("MODEL_NAME", "google/gemma-3-12b-it")
 )
-if not os.environ.get("MODEL_NAME"):
-    logger.warning("MODEL_NAME が未設定のためデフォルトモデルを使用します: %s", MODEL_REF)
+if not any(os.environ.get(k) for k in ("GEMMA_MODEL_NAME", "MODEL_PATH", "MODEL_NAME")):
+    logger.warning("モデル指定の環境変数が未設定のためデフォルトモデルを使用します: %s", MODEL_REF)
 MAX_MODEL_LEN = int(os.environ.get("MAX_MODEL_LEN", "8192"))
 MAX_NUM_SEQS = int(os.environ.get("MAX_NUM_SEQS", "4"))
 GPU_MEMORY_UTILIZATION = float(os.environ.get("GPU_MEMORY_UTILIZATION", "0.90"))
@@ -226,6 +226,7 @@ def handler(job: dict) -> dict:
     except ValueError as e:
         return {"error": str(e)}
     except Exception as e:
+        logger.error("推論エラー: %s: %s", type(e).__name__, e)
         return {"error": f"推論エラーが発生しました: {type(e).__name__}"}
 
     return {"output": output}
