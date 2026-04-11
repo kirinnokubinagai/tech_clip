@@ -1,8 +1,19 @@
 import { getLocales } from "expo-localization";
 import * as SecureStore from "expo-secure-store";
+import i18n from "i18next";
 import { create } from "zustand";
 
 import { apiFetch } from "@/lib/api";
+import {
+  DEFAULT_UI_LANGUAGE,
+  type Language,
+  resolveChineseVariant,
+  SUPPORTED_SUMMARY_LANGUAGES,
+  SUPPORTED_UI_LANGUAGES,
+  type SummaryLanguage,
+} from "@/lib/language-code";
+
+export type { Language, SummaryLanguage };
 
 /** SecureStoreキー: 言語設定 */
 const LANGUAGE_KEY = "settings_language";
@@ -10,23 +21,21 @@ const LANGUAGE_KEY = "settings_language";
 /** SecureStoreキー: 要約言語設定 */
 const SUMMARY_LANGUAGE_KEY = "settings_summary_language";
 
-/** サポートするlocaleコード */
-const LOCALE_CODES = ["ja", "en"] as const;
-
-/** localeコードの型 */
-export type Language = (typeof LOCALE_CODES)[number];
+/** SecureStore保存値の最大文字数（locale コードは最大10文字以内） */
+const MAX_LANGUAGE_CODE_LENGTH = 10;
 
 /** デフォルト言語 */
-const DEFAULT_LANGUAGE: Language = "ja";
+const DEFAULT_LANGUAGE: Language = DEFAULT_UI_LANGUAGE;
 
 /**
  * localeコードから表示名へのマッピング
- * 現時点では ja/en のみ対応のため恒等写像に近いが、
- * 将来 zh/ko など非対称マッピングが必要になる可能性を考慮して維持する
  */
 export const LANGUAGE_LABEL_MAP: Record<Language, string> = {
   ja: "日本語",
   en: "English",
+  "zh-CN": "简体中文",
+  "zh-TW": "繁體中文",
+  ko: "한국어",
 };
 
 /** 旧形式表示名からlocaleコードへの移行マッピング */
@@ -56,7 +65,11 @@ function normalizeStoredLanguage(stored: string): {
     return { language: DEFAULT_LANGUAGE, needsMigration: true };
   }
 
-  if ((LOCALE_CODES as ReadonlyArray<string>).includes(parsed)) {
+  if (parsed.length > MAX_LANGUAGE_CODE_LENGTH) {
+    return { language: DEFAULT_LANGUAGE, needsMigration: true };
+  }
+
+  if ((SUPPORTED_UI_LANGUAGES as ReadonlyArray<string>).includes(parsed)) {
     return { language: parsed as Language, needsMigration: false };
   }
 
@@ -64,19 +77,15 @@ function normalizeStoredLanguage(stored: string): {
   return { language: migrated ?? DEFAULT_LANGUAGE, needsMigration: true };
 }
 
-/** 要約言語コード選択肢 */
-const SUMMARY_LANGUAGE_OPTIONS = ["ja", "en", "zh", "ko"] as const;
-
-/** 要約言語コードの型 */
-export type SummaryLanguage = (typeof SUMMARY_LANGUAGE_OPTIONS)[number];
-
 /** 要約言語コードと表示名のマップ */
 export const SUMMARY_LANGUAGE_LABELS: Record<SummaryLanguage, string> = {
   ja: "日本語",
   en: "English",
   zh: "中文",
+  "zh-CN": "简体中文",
+  "zh-TW": "繁體中文",
   ko: "한국어",
-} as const;
+};
 
 /** デフォルト要約言語 */
 const DEFAULT_SUMMARY_LANGUAGE: SummaryLanguage = "ja";
@@ -88,11 +97,13 @@ const DEFAULT_SUMMARY_LANGUAGE: SummaryLanguage = "ja";
  * @returns サポートされている要約言語コードであればtrue
  */
 function isSupportedSummaryLanguage(value: string): value is SummaryLanguage {
-  return (SUMMARY_LANGUAGE_OPTIONS as readonly string[]).includes(value);
+  return (SUPPORTED_SUMMARY_LANGUAGES as readonly string[]).includes(value);
 }
 
 /**
  * デバイスのロケールから要約言語コードを解決する
+ *
+ * languageTag を優先し zh-Hans-* → zh-CN、zh-Hant-* → zh-TW のマッピングを行う
  *
  * @returns サポートされている要約言語コード
  */
@@ -101,14 +112,23 @@ function resolveDeviceSummaryLanguage(): SummaryLanguage {
   if (locales.length === 0) {
     return DEFAULT_SUMMARY_LANGUAGE;
   }
-  const deviceLang = locales[0]?.languageCode;
-  if (!deviceLang) {
+  const locale = locales[0];
+  if (!locale) {
     return DEFAULT_SUMMARY_LANGUAGE;
   }
-  if (!isSupportedSummaryLanguage(deviceLang)) {
+
+  const tag = locale.languageTag ?? "";
+  const code = locale.languageCode ?? "";
+
+  const chineseVariant = resolveChineseVariant(tag, code);
+  if (chineseVariant !== null) {
+    return chineseVariant;
+  }
+
+  if (!code || !isSupportedSummaryLanguage(code)) {
     return DEFAULT_SUMMARY_LANGUAGE;
   }
-  return deviceLang;
+  return code;
 }
 
 /** 通知設定の型 */
@@ -182,12 +202,13 @@ export const useSettingsStore = create<SettingsStore>((set, get) => ({
   },
 
   /**
-   * 言語設定を変更してSecureStoreに永続化する
+   * 言語設定を変更してSecureStoreに永続化し、i18nの表示言語を同期する
    *
    * @param language - 設定するlocaleコード
    */
   setLanguage: async (language: Language) => {
     await SecureStore.setItemAsync(LANGUAGE_KEY, JSON.stringify(language));
+    await i18n.changeLanguage(language);
     set({ language });
   },
 
@@ -209,7 +230,9 @@ export const useSettingsStore = create<SettingsStore>((set, get) => ({
         return;
       }
     } catch {
-      // fall through
+      console.warn(
+        "SecureStore の要約言語設定のパースに失敗しました。デバイス言語にフォールバックします",
+      );
     }
     const fallback = resolveDeviceSummaryLanguage();
     await SecureStore.setItemAsync(SUMMARY_LANGUAGE_KEY, JSON.stringify(fallback));

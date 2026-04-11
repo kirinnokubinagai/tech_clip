@@ -15,7 +15,12 @@
     "done": "完了",
     "search": "検索",
     "skip": "スキップ",
-    "start": "始める"
+    "start": "始める",
+    "generating": "生成中...",
+    "accessibility": {
+      "tapToChange": "タップして変更",
+      "currentValue": "{{label}}、現在の設定: {{value}}"
+    }
   },
   "auth": {
     "login": "ログイン",
@@ -123,7 +128,9 @@
     "thumbnailAlt": "記事のサムネイル",
     "urlRequired": "URLを入力してください",
     "urlInvalid": "有効なURLを入力してください",
-    "noMatch": "「{{query}}」に一致する記事がありません"
+    "noMatch": "「{{query}}」に一致する記事がありません",
+    "summaryLabel": "要約",
+    "translationLabel": "翻訳"
   },
   "search": {
     "placeholder": "記事を検索...",
@@ -203,6 +210,10 @@
       "summaryLanguage": "要約言語",
       "deleteAccount": "アカウントを削除する",
       "notLoggedIn": "未ログイン"
+    },
+    "plan": {
+      "premium": "プレミアム",
+      "free": "無料"
     },
     "languageSelect": {
       "title": "言語設定",

@@ -475,6 +475,53 @@ describe("POST /api/articles/:id/translate（KV キャッシュ）", () => {
     expect(mockTranslateFn).toHaveBeenCalledOnce();
   });
 
+  it("zh-CN を指定したとき translateFn が zh-CN で呼び出されること", async () => {
+    // Arrange
+    const mockCache = {
+      get: vi.fn().mockResolvedValue(null),
+      put: vi.fn().mockResolvedValue(undefined),
+    } as unknown as KVNamespace;
+
+    type Variables = {
+      user: typeof MOCK_USER;
+      session: Record<string, unknown>;
+    };
+    const app = new Hono<{ Variables: Variables }>();
+    app.use("/api/articles/*", (c, next) => {
+      c.set("user", MOCK_USER);
+      c.set("session", { id: "session_01" });
+      return next();
+    });
+    const aiRoute = createAiRoute({
+      db: mockDb as never,
+      ai: mockAi as unknown as Ai,
+      translateFn: mockTranslateFn,
+      cache: mockCache,
+    });
+    app.route("/api/articles", aiRoute);
+
+    mockSelectWhere.mockResolvedValueOnce([MOCK_ARTICLE]).mockResolvedValueOnce([]);
+
+    const req = new Request("http://localhost/api/articles/article_001/translate", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ targetLanguage: "zh-CN" }),
+    });
+
+    // Act
+    const res = await app.request(req);
+
+    // Assert
+    expect(res.status).toBe(HTTP_OK);
+    const body = (await res.json()) as SuccessResponseBody;
+    expect(body.success).toBe(true);
+    expect(body.data.status).toBe("completed");
+    expect(mockTranslateFn).toHaveBeenCalledWith(
+      expect.objectContaining({ targetLanguage: "zh-CN" }),
+    );
+    expect(mockCache.get).toHaveBeenCalledWith("translate:v1:article_001:zh-CN");
+  });
+
   it("KV キャッシュキーが translate:v1:<articleId>:<lang> 形式であること", async () => {
     // Arrange
     const mockCache = {

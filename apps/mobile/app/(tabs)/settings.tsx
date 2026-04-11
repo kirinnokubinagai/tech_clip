@@ -64,6 +64,7 @@ const ICON_COLOR = DARK_COLORS.textMuted;
  * @param trailing - 右側に表示するカスタムウィジェット（Switchなど）
  */
 function SettingsRow({ icon, label, value, onPress, trailing, testID }: SettingsRowProps) {
+  const { t } = useTranslation();
   const content = (
     <View className="flex-row items-center px-4 py-3">
       <View className="mr-3">{icon}</View>
@@ -79,8 +80,10 @@ function SettingsRow({ icon, label, value, onPress, trailing, testID }: Settings
         testID={testID}
         onPress={onPress}
         accessibilityRole="button"
-        accessibilityLabel={value ? `${label}、現在の設定: ${value}` : label}
-        accessibilityHint={`${label}の設定を変更します`}
+        accessibilityLabel={
+          value ? t("common.accessibility.currentValue", { label, value }) : label
+        }
+        accessibilityHint={t("common.accessibility.tapToChange")}
       >
         {content}
       </Pressable>
@@ -105,7 +108,6 @@ export default function SettingsScreen() {
 
   const languageLabel = useSettingsStore((s) => LANGUAGE_LABEL_MAP[s.language]);
   const summaryLanguageLabel = useSettingsStore((s) => SUMMARY_LANGUAGE_LABELS[s.summaryLanguage]);
-  const setLanguage = useSettingsStore((s) => s.setLanguage);
   const loadLanguage = useSettingsStore((s) => s.loadLanguage);
   const setSummaryLanguage = useSettingsStore((s) => s.setSummaryLanguage);
   const loadSummaryLanguage = useSettingsStore((s) => s.loadSummaryLanguage);
@@ -163,24 +165,10 @@ export default function SettingsScreen() {
   }
 
   /**
-   * 言語選択のアクションシートを表示する
+   * 言語選択画面に遷移する
    */
   function handleLanguageSelect() {
-    Alert.alert(t("settings.languageSelect.title"), t("settings.languageSelect.prompt"), [
-      {
-        text: "日本語",
-        onPress: () => {
-          setLanguage("ja");
-        },
-      },
-      {
-        text: "English",
-        onPress: () => {
-          setLanguage("en");
-        },
-      },
-      { text: t("common.cancel"), style: "cancel" },
-    ]);
+    router.push("/settings/language");
   }
 
   /**
@@ -245,7 +233,7 @@ export default function SettingsScreen() {
         <SettingsRow
           icon={<CreditCard size={ICON_SIZE} color={ICON_COLOR} />}
           label={t("settings.items.plan")}
-          value={isSubscribed ? "Premium" : "Free"}
+          value={isSubscribed ? t("settings.plan.premium") : t("settings.plan.free")}
         />
       </View>
 
