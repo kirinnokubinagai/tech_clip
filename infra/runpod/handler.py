@@ -1,7 +1,8 @@
 """
 RunPodサーバーレスハンドラー
 
-Google Gemma 3 12B IT モデルを vLLM で起動し、RunPod サーバーレス API のリクエストを処理する。
+Google Gemma 3 12B IT モデル（AWQ/GPTQ 量子化対応）を vLLM で起動し、
+RunPod サーバーレス API のリクエストを処理する。
 
 リクエスト形式:
     {"input": {"messages": [{"role": "user", "content": "..."}], "max_tokens": 4096}}
@@ -11,6 +12,8 @@ Google Gemma 3 12B IT モデルを vLLM で起動し、RunPod サーバーレス
 
 モデル名は以下の優先順で解決する:
     GEMMA_MODEL_NAME 環境変数 -> MODEL_PATH 環境変数 -> MODEL_NAME 環境変数 -> デフォルト
+
+量子化は VLLM_QUANTIZATION 環境変数で制御する（awq / gptq_marlin / fp8 / 空で非量子化）。
 """
 
 import os
@@ -34,21 +37,30 @@ MODEL_REF = (
     or os.environ.get("MODEL_PATH")
     or os.environ.get("MODEL_NAME", "google/gemma-3-12b-it")
 )
-MAX_MODEL_LEN = int(os.environ.get("MAX_MODEL_LEN", "4096"))
-MAX_NUM_SEQS = int(os.environ.get("MAX_NUM_SEQS", "2"))
-GPU_MEMORY_UTILIZATION = float(os.environ.get("GPU_MEMORY_UTILIZATION", "0.85"))
+MAX_MODEL_LEN = int(os.environ.get("MAX_MODEL_LEN", "8192"))
+MAX_NUM_SEQS = int(os.environ.get("MAX_NUM_SEQS", "4"))
+GPU_MEMORY_UTILIZATION = float(os.environ.get("GPU_MEMORY_UTILIZATION", "0.90"))
 TENSOR_PARALLEL_SIZE = int(os.environ.get("TENSOR_PARALLEL_SIZE", "1"))
 
-# Gemma は量子化なしのネイティブ fp16/bf16 を想定する。
-# 16GB GPU で動かす場合は MAX_MODEL_LEN と MAX_NUM_SEQS を小さく保つ。
-llm = LLM(
-    model=MODEL_REF,
-    dtype="bfloat16",
-    max_model_len=MAX_MODEL_LEN,
-    max_num_seqs=MAX_NUM_SEQS,
-    gpu_memory_utilization=GPU_MEMORY_UTILIZATION,
-    tensor_parallel_size=TENSOR_PARALLEL_SIZE,
-)
+# 量子化設定: 環境変数 VLLM_QUANTIZATION で制御する
+# awq / gptq_marlin / fp8 を指定するか、空文字・未設定で非量子化（後方互換）
+VLLM_QUANTIZATION = os.environ.get("VLLM_QUANTIZATION") or None
+
+# AWQ 量子化時は "auto" を推奨。非量子化時は "bfloat16" を維持する
+VLLM_DTYPE = os.environ.get("VLLM_DTYPE", "bfloat16")
+
+llm_kwargs: dict = {
+    "model": MODEL_REF,
+    "dtype": VLLM_DTYPE,
+    "max_model_len": MAX_MODEL_LEN,
+    "max_num_seqs": MAX_NUM_SEQS,
+    "gpu_memory_utilization": GPU_MEMORY_UTILIZATION,
+    "tensor_parallel_size": TENSOR_PARALLEL_SIZE,
+}
+if VLLM_QUANTIZATION:
+    llm_kwargs["quantization"] = VLLM_QUANTIZATION
+
+llm = LLM(**llm_kwargs)
 
 
 def validate_messages(messages: Any) -> list[dict]:
