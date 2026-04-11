@@ -64,7 +64,6 @@ describe("translator", () => {
       const result = buildPrompt({
         content: "テスト",
         title: "タイトル",
-        sourceLanguage: "ja",
         targetLanguage: "en",
       });
 
@@ -79,7 +78,6 @@ describe("translator", () => {
       const result = buildPrompt({
         content: "Test content",
         title: "Title",
-        sourceLanguage: "en",
         targetLanguage: "ja",
       });
 
@@ -147,7 +145,6 @@ describe("translator", () => {
         ai: mockAi as unknown as Ai,
         content: "# React Hooks\n\nテスト本文です。",
         title: "React Hooksの使い方",
-        sourceLanguage: "ja",
         targetLanguage: "en",
       });
 
@@ -169,7 +166,6 @@ describe("translator", () => {
         ai: mockAi as unknown as Ai,
         content: "テスト",
         title: "テスト",
-        sourceLanguage: "ja",
         targetLanguage: "en",
         modelTag: "custom-tag",
       });
@@ -190,7 +186,6 @@ describe("translator", () => {
         ai: mockAi as unknown as Ai,
         content: `テスト\n\n${codeBlock}`,
         title: "タイトル",
-        sourceLanguage: "ja",
         targetLanguage: "en",
       });
 
@@ -208,7 +203,6 @@ describe("translator", () => {
         ai: mockAi as unknown as Ai,
         content: "テスト",
         title: "タイトル",
-        sourceLanguage: "ja",
         targetLanguage: "en",
       }).catch((e: unknown) => e);
 
@@ -227,7 +221,6 @@ describe("translator", () => {
           ai: mockAi as unknown as Ai,
           content: "テスト",
           title: "タイトル",
-          sourceLanguage: "ja",
           targetLanguage: "en",
         }),
       ).rejects.toThrow("翻訳の生成に失敗しました");
@@ -245,7 +238,6 @@ describe("translator", () => {
         ai: mockAi as unknown as Ai,
         content: htmlContent,
         title: "タイトル",
-        sourceLanguage: "ja",
         targetLanguage: "en",
       });
 
