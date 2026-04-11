@@ -18,6 +18,7 @@ USER appuser
 
 ENV MODEL_ID=raydelossantos/gemma-4-26B-A4B-it-GPTQ-Int4
 ENV HF_HOME=/runpod-volume/hf-cache
+# TRANSFORMERS_OFFLINE=1: ネットワークボリューム（HF_HOME）へのモデル事前ダウンロードが必須
 ENV TRANSFORMERS_OFFLINE=1
 
 CMD ["python", "-u", "handler.py"]

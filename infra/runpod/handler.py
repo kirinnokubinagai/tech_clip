@@ -100,7 +100,11 @@ def _install_turboquant_hooks(llm_instance: LLM) -> int:
         engine = llm_instance.llm_engine
         core = getattr(engine, "engine_core", engine)
         inner = getattr(core, "engine_core", core)
-        executor = inner.model_executor
+        executor = getattr(inner, "model_executor", None)
+
+        if executor is None or not hasattr(executor, "collective_rpc"):
+            logger.warning("TurboQuant: model_executor が見つかりません。フックなしで続行します")
+            return 0
 
         def _install(worker):
             return len(
@@ -331,6 +335,9 @@ def _generate(job_input: dict) -> dict:
         )
 
     outputs = llm.generate([prompt], sampling_params)
+    if not outputs or not outputs[0].outputs:
+        logger.error("推論結果が空です")
+        raise ValueError("推論結果が空です")
     generated_text: str = outputs[0].outputs[0].text
 
     return {

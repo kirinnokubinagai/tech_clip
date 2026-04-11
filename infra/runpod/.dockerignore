@@ -11,4 +11,5 @@ tests/
 __tests__/
 *.test.py
 *.spec.py
+# ドキュメント類（README.md を含む）は実行に不要
 *.md
