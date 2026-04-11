@@ -19,7 +19,7 @@ import { createPublicArticlesRoute } from "../routes/public-articles";
 import { createSearchRoute, escapeLikeWildcards } from "../routes/search";
 import { createSummaryRoute } from "../routes/summary";
 import { parseArticle } from "../services/article-parser";
-import { createSummaryJob, getSummaryJobStatus, summarizeArticle } from "../services/summary";
+import { summarizeArticle } from "../services/summary";
 import {
   createTranslationJob,
   getTranslationJobStatus,
@@ -108,13 +108,9 @@ export async function handleArticles(
   const summaryRoute = createSummaryRoute({
     db,
     summarizeFn: summarizeArticle,
-    createSummaryJobFn: createSummaryJob,
-    getSummaryJobStatusFn: getSummaryJobStatus,
-    runpodConfig: {
-      apiKey: env.RUNPOD_API_KEY,
-      endpointId: getRunPodEndpointId(env),
-      modelTag: gemmaModelTag,
-    },
+    ai: env.AI,
+    modelTag: gemmaModelTag,
+    cache: env.CACHE,
   });
 
   const aiRoute = createAiRoute({

@@ -14,7 +14,6 @@ import {
   VALIDATION_ERROR_MESSAGE,
 } from "../lib/error-codes";
 import {
-  HTTP_CREATED,
   HTTP_FORBIDDEN,
   HTTP_INTERNAL_SERVER_ERROR,
   HTTP_NOT_FOUND,
@@ -22,7 +21,7 @@ import {
   HTTP_UNAUTHORIZED,
   HTTP_UNPROCESSABLE_ENTITY,
 } from "../lib/http-status";
-import type { RunPodConfig, SummaryJobStatus, SummaryResult } from "../services/summary";
+import type { SummaryResult } from "../services/summary";
 
 const ARTICLE_NOT_FOUND_MESSAGE = "記事が見つかりません";
 const SUMMARY_NOT_FOUND_MESSAGE = "要約が見つかりません";
@@ -32,6 +31,9 @@ const NO_CONTENT_ERROR_MESSAGE = "記事のコンテンツがありません";
 const SUPPORTED_LANGUAGES = ["ja", "en", "zh", "ko"] as const;
 const DEFAULT_LANGUAGE = "ja";
 
+/** KV キャッシュ TTL（90日 = 秒単位） */
+const KV_CACHE_TTL_SECONDS = 60 * 60 * 24 * 90;
+
 const CreateSummarySchema = z.object({
   language: z.enum(SUPPORTED_LANGUAGES, {
     error: `languageは${SUPPORTED_LANGUAGES.join(", ")}のいずれかで指定してください`,
@@ -39,34 +41,38 @@ const CreateSummarySchema = z.object({
 });
 
 type SummarizeFn = (params: {
+  ai: Ai;
   content: string;
   language: string;
-  config: RunPodConfig;
+  modelTag?: string;
 }) => Promise<SummaryResult>;
-
-type CreateSummaryJobFn = (params: {
-  content: string;
-  language: string;
-  config: RunPodConfig;
-}) => Promise<{ providerJobId: string; model: string }>;
-
-type GetSummaryJobStatusFn = (params: {
-  providerJobId: string;
-  config: RunPodConfig;
-}) => Promise<SummaryJobStatus>;
 
 type SummaryRouteOptions = {
   db: Database;
   summarizeFn: SummarizeFn;
-  createSummaryJobFn: CreateSummaryJobFn;
-  getSummaryJobStatusFn: GetSummaryJobStatusFn;
-  runpodConfig: RunPodConfig;
+  ai: Ai;
+  modelTag?: string;
+  /** env.CACHE KV namespace（テストでは省略可） */
+  cache?: KVNamespace;
 };
 
-function buildRequestKey(articleId: string, language: string): string {
-  return `summary:${articleId}:${language}`;
+/**
+ * KV キャッシュキーを生成する
+ *
+ * @param articleId - 記事ID
+ * @param language - 言語コード
+ * @returns KV キャッシュキー
+ */
+function buildKvKey(articleId: string, language: string): string {
+  return `summary:v1:${articleId}:${language}`;
 }
 
+/**
+ * ステータスに対応するプログレス値を返す
+ *
+ * @param status - ジョブステータス
+ * @returns プログレス値（0-100）
+ */
 function buildProgress(status: "queued" | "running" | "completed" | "failed"): number {
   if (status === "queued") return 15;
   if (status === "running") return 65;
@@ -74,6 +80,14 @@ function buildProgress(status: "queued" | "running" | "completed" | "failed"): n
   return 0;
 }
 
+/**
+ * 記事の所有者チェックを行う
+ *
+ * @param db - データベースインスタンス
+ * @param articleId - 記事ID
+ * @param userId - ユーザーID
+ * @returns 記事オブジェクト、またはエラー種別
+ */
 async function ensureOwnedArticle(db: Database, articleId: string, userId: string) {
   const articleResults = await db.select().from(articles).where(eq(articles.id, articleId));
 
@@ -89,8 +103,14 @@ async function ensureOwnedArticle(db: Database, articleId: string, userId: strin
   return { article };
 }
 
+/**
+ * 要約ルートを生成する
+ *
+ * @param options - ルートオプション
+ * @returns Hono ルートインスタンス
+ */
 export function createSummaryRoute(options: SummaryRouteOptions) {
-  const { db, createSummaryJobFn, getSummaryJobStatusFn, runpodConfig } = options;
+  const { db, summarizeFn, ai, modelTag, cache } = options;
   const route = new Hono<{ Variables: { user?: Record<string, unknown> } }>();
 
   route.post("/articles/:id/summary", async (c) => {
@@ -142,6 +162,7 @@ export function createSummaryRoute(options: SummaryRouteOptions) {
     }
 
     const article = ownership.article;
+
     const existingSummaries = await db
       .select()
       .from(summaries)
@@ -170,68 +191,81 @@ export function createSummaryRoute(options: SummaryRouteOptions) {
       );
     }
 
-    const requestKey = buildRequestKey(articleId, language);
-    const existingJobs =
-      (await db
-        .select()
-        .from(aiJobs)
-        .where(and(eq(aiJobs.requestKey, requestKey), eq(aiJobs.articleId, articleId)))) ?? [];
-    existingJobs.sort((a, b) => b.updatedAt.getTime() - a.updatedAt.getTime());
+    const now = new Date();
+    const jobId = crypto.randomUUID();
+    await db.insert(aiJobs).values({
+      id: jobId,
+      articleId,
+      requestKey: buildKvKey(articleId, language),
+      jobType: "summary",
+      language,
+      status: "running",
+      providerJobId: null,
+      model: modelTag ?? "unknown",
+      errorMessage: null,
+      createdAt: now,
+      updatedAt: now,
+      completedAt: null,
+    });
 
-    const activeJob = existingJobs.find(
-      (job) => job.status === "queued" || job.status === "running",
-    );
+    try {
+      const result = await summarizeFn({
+        ai,
+        content: article.content,
+        language,
+        modelTag,
+      });
 
-    if (activeJob) {
+      const [summaryRecord] = await db
+        .insert(summaries)
+        .values({
+          id: crypto.randomUUID(),
+          articleId,
+          language,
+          summary: result.summary,
+          model: result.model,
+          createdAt: now,
+        })
+        .returning();
+
+      await db
+        .update(aiJobs)
+        .set({
+          status: "completed",
+          errorMessage: null,
+          updatedAt: now,
+          completedAt: now,
+        })
+        .where(eq(aiJobs.id, jobId));
+
+      if (cache) {
+        await cache.put(buildKvKey(articleId, language), "1", {
+          expirationTtl: KV_CACHE_TTL_SECONDS,
+        });
+      }
+
       return c.json(
         {
           success: true,
           data: {
-            status: activeJob.status,
-            progress: buildProgress(activeJob.status as "queued" | "running"),
-            jobId: activeJob.id,
+            status: "completed",
+            progress: 100,
+            jobId,
+            summary: summaryRecord,
           },
         },
         HTTP_OK,
       );
-    }
-
-    try {
-      const createdJob = await createSummaryJobFn({
-        content: article.content,
-        language,
-        config: runpodConfig,
-      });
-
-      const now = new Date();
-      const jobId = crypto.randomUUID();
-      await db.insert(aiJobs).values({
-        id: jobId,
-        articleId,
-        requestKey,
-        jobType: "summary",
-        language,
-        status: "queued",
-        providerJobId: createdJob.providerJobId,
-        model: createdJob.model,
-        errorMessage: null,
-        createdAt: now,
-        updatedAt: now,
-        completedAt: null,
-      });
-
-      return c.json(
-        {
-          success: true,
-          data: {
-            status: "queued",
-            progress: buildProgress("queued"),
-            jobId,
-          },
-        },
-        HTTP_CREATED,
-      );
     } catch {
+      await db
+        .update(aiJobs)
+        .set({
+          status: "failed",
+          errorMessage: SUMMARY_GENERATION_ERROR_MESSAGE,
+          updatedAt: now,
+        })
+        .where(eq(aiJobs.id, jobId));
+
       return c.json(
         {
           success: false,
@@ -287,6 +321,7 @@ export function createSummaryRoute(options: SummaryRouteOptions) {
     }
 
     const job = jobResults[0];
+
     if (job.status === "completed") {
       const cachedSummary = await db
         .select()
@@ -310,7 +345,7 @@ export function createSummaryRoute(options: SummaryRouteOptions) {
       }
     }
 
-    if (!job.providerJobId) {
+    if (job.status === "failed") {
       return c.json({
         success: true,
         data: {
@@ -322,107 +357,14 @@ export function createSummaryRoute(options: SummaryRouteOptions) {
       });
     }
 
-    try {
-      const status = await getSummaryJobStatusFn({
-        providerJobId: job.providerJobId,
-        config: runpodConfig,
-      });
-      const now = new Date();
-
-      if (status.status === "completed") {
-        const existingSummary = await db
-          .select()
-          .from(summaries)
-          .where(
-            and(
-              eq(summaries.articleId, articleId),
-              eq(summaries.language, job.language ?? DEFAULT_LANGUAGE),
-            ),
-          );
-
-        const summaryRecord =
-          existingSummary[0] ??
-          (
-            await db
-              .insert(summaries)
-              .values({
-                id: crypto.randomUUID(),
-                articleId,
-                language: job.language ?? DEFAULT_LANGUAGE,
-                summary: status.summary,
-                model: status.model,
-                createdAt: now,
-              })
-              .returning()
-          )[0];
-
-        await db
-          .update(aiJobs)
-          .set({
-            status: "completed",
-            errorMessage: null,
-            updatedAt: now,
-            completedAt: now,
-          })
-          .where(eq(aiJobs.id, job.id));
-
-        return c.json({
-          success: true,
-          data: {
-            status: "completed",
-            progress: 100,
-            jobId: job.id,
-            summary: summaryRecord,
-          },
-        });
-      }
-
-      if (status.status === "failed") {
-        await db
-          .update(aiJobs)
-          .set({
-            status: "failed",
-            errorMessage: status.error,
-            updatedAt: now,
-          })
-          .where(eq(aiJobs.id, job.id));
-
-        return c.json({
-          success: true,
-          data: {
-            status: "failed",
-            progress: 0,
-            jobId: job.id,
-            error: status.error,
-          },
-        });
-      }
-
-      await db
-        .update(aiJobs)
-        .set({
-          status: status.status,
-          updatedAt: now,
-        })
-        .where(eq(aiJobs.id, job.id));
-
-      return c.json({
-        success: true,
-        data: {
-          status: status.status,
-          progress: buildProgress(status.status),
-          jobId: job.id,
-        },
-      });
-    } catch {
-      return c.json(
-        {
-          success: false,
-          error: { code: INTERNAL_ERROR_CODE, message: SUMMARY_GENERATION_ERROR_MESSAGE },
-        },
-        HTTP_INTERNAL_SERVER_ERROR,
-      );
-    }
+    return c.json({
+      success: true,
+      data: {
+        status: job.status,
+        progress: buildProgress(job.status as "queued" | "running" | "completed" | "failed"),
+        jobId: job.id,
+      },
+    });
   });
 
   route.get("/articles/:id/summary", async (c) => {
