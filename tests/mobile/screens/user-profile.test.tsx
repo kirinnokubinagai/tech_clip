@@ -61,7 +61,7 @@ describe("UserProfileScreen", () => {
 
       // Assert
       await waitFor(() => {
-        expect(getByTestId("follow-button")).toBeDefined();
+        expect(getByTestId("follow-button")).not.toBeNull();
       });
     });
 
@@ -100,7 +100,7 @@ describe("UserProfileScreen", () => {
 
       // Assert
       await waitFor(() => {
-        expect(getByTestId("user-profile-loading")).toBeDefined();
+        expect(getByTestId("user-profile-loading")).not.toBeNull();
       });
     });
   });
@@ -120,7 +120,7 @@ describe("UserProfileScreen", () => {
 
       // Assert
       await waitFor(() => {
-        expect(getByTestId("user-profile-error")).toBeDefined();
+        expect(getByTestId("user-profile-error")).not.toBeNull();
       });
     });
 

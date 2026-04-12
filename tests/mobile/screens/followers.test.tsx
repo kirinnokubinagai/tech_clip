@@ -54,7 +54,7 @@ describe("FollowersScreen", () => {
 
       // Assert
       await waitFor(() => {
-        expect(getByTestId("followers-list")).toBeDefined();
+        expect(getByTestId("followers-list")).not.toBeNull();
       });
     });
 
@@ -67,8 +67,8 @@ describe("FollowersScreen", () => {
 
       // Assert
       await waitFor(() => {
-        expect(getByText("田中太郎")).toBeDefined();
-        expect(getByText("佐藤花子")).toBeDefined();
+        expect(getByText("田中太郎")).not.toBeNull();
+        expect(getByText("佐藤花子")).not.toBeNull();
       });
     });
   });
@@ -84,7 +84,7 @@ describe("FollowersScreen", () => {
 
       // Assert
       await waitFor(() => {
-        expect(getByText("高橋実")).toBeDefined();
+        expect(getByText("高橋実")).not.toBeNull();
       });
     });
 
@@ -97,7 +97,7 @@ describe("FollowersScreen", () => {
 
       // Assert
       await waitFor(() => {
-        expect(getByText("高橋実")).toBeDefined();
+        expect(getByText("高橋実")).not.toBeNull();
       });
     });
   });
@@ -116,7 +116,7 @@ describe("FollowersScreen", () => {
 
       // Assert
       await waitFor(() => {
-        expect(getByTestId("followers-loading")).toBeDefined();
+        expect(getByTestId("followers-loading")).not.toBeNull();
       });
     });
   });
@@ -135,7 +135,7 @@ describe("FollowersScreen", () => {
 
       // Assert
       await waitFor(() => {
-        expect(getByTestId("followers-error")).toBeDefined();
+        expect(getByTestId("followers-error")).not.toBeNull();
       });
     });
   });
@@ -154,7 +154,7 @@ describe("FollowersScreen", () => {
 
       // Assert
       await waitFor(() => {
-        expect(getByTestId("followers-empty")).toBeDefined();
+        expect(getByTestId("followers-empty")).not.toBeNull();
       });
     });
 
@@ -172,7 +172,7 @@ describe("FollowersScreen", () => {
 
       // Assert
       await waitFor(() => {
-        expect(getByTestId("followers-empty")).toBeDefined();
+        expect(getByTestId("followers-empty")).not.toBeNull();
       });
     });
   });

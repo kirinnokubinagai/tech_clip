@@ -48,8 +48,8 @@ export default function ProfileScreen() {
     name: user.name,
     bio: null,
     avatarUrl: user.image,
-    followersCount: undefined, // TODO: 認証ユーザーのフォロワー数はAPIから取得予定
-    followingCount: undefined, // TODO: 認証ユーザーのフォロー数はAPIから取得予定
+    followersCount: undefined,
+    followingCount: undefined,
   };
 
   return (

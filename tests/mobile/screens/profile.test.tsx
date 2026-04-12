@@ -54,7 +54,7 @@ describe("ProfileScreen", () => {
 
       // Assert
       await waitFor(() => {
-        expect(getByTestId("profile-settings-button")).toBeDefined();
+        expect(getByTestId("profile-settings-button")).not.toBeNull();
       });
     });
   });
@@ -78,7 +78,7 @@ describe("ProfileScreen", () => {
 
       // Assert
       await waitFor(() => {
-        expect(getByTestId("profile-loading")).toBeDefined();
+        expect(getByTestId("profile-loading")).not.toBeNull();
       });
     });
   });
@@ -102,7 +102,7 @@ describe("ProfileScreen", () => {
 
       // Assert
       await waitFor(() => {
-        expect(getByTestId("profile-guest")).toBeDefined();
+        expect(getByTestId("profile-guest")).not.toBeNull();
       });
     });
   });
