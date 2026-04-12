@@ -71,3 +71,32 @@ export const SUPPORTED_SOURCE_COUNT = SOURCE_DEFINITIONS.length;
 export function getSourceDefinition(source: ArticleSource): SourceDefinition {
   return SOURCE_CONFIG[source] ?? SOURCE_CONFIG.other;
 }
+
+/** ソースフィルターの「すべて」エントリ */
+type FilterAllEntry = {
+  value: undefined;
+  i18nKey: "home.filterAll";
+};
+
+/** ソースフィルターのソースエントリ */
+type FilterSourceEntry = {
+  value: ArticleSource;
+  label: string;
+};
+
+/** ソースフィルターの選択肢の型 */
+export type SourceFilterOption = FilterAllEntry | FilterSourceEntry;
+
+/**
+ * ホーム画面ソースフィルターの選択肢
+ *
+ * SOURCE_DEFINITIONS から導出する。先頭は「すべて」エントリ（i18nKey）、
+ * 続いて SOURCE_DEFINITIONS の全ソースを label 付きで並べる。
+ */
+export const SOURCE_FILTER_OPTIONS: readonly SourceFilterOption[] = [
+  { value: undefined, i18nKey: "home.filterAll" },
+  ...SOURCE_DEFINITIONS.filter(({ id }) => id !== "other").map(({ id, label }) => ({
+    value: id,
+    label,
+  })),
+];

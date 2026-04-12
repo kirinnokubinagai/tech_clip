@@ -233,8 +233,8 @@ worktree-isolation-guard.sh により以下の制限がある（mainブランチ
 **main ブランチ上での Edit/Write は全ファイルに対して禁止**（`.claude-user/` と `.omc/` を除く gitignore 済みファイルのみ許可）。
 `.claude/**` や `scripts/` であっても必ず worktree 経由で変更すること。
 
-なお `.claude/.review-passed` と `.omc/state/**` は worktree 上でも Edit/Write がブロックされる（is_blocked_file による）。
-これらのファイルは `touch`/`cat >` 等の Bash コマンドでのみ作成・変更可能（例: `touch <worktree>/.claude/.review-passed`）。
+なお `.omc/state/**` は worktree 上でも Edit/Write がブロックされる（is_blocked_file による）。
+`.claude/.review-passed` は Write ツールまたは `touch`/`cat >` 等の Bash コマンドで作成・変更可能（例: `touch <worktree>/.claude/.review-passed`）。
 
 | 項目 | 詳細 |
 |---|---|

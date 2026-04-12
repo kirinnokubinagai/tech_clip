@@ -1,6 +1,7 @@
 import { router } from "expo-router";
 import { ArrowRight, BookMarked, Sparkles, Tag } from "lucide-react-native";
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Pressable, ScrollView, Text, View } from "react-native";
 
 import { LIGHT_COLORS, SUPPORTED_SOURCE_COUNT } from "@/lib/constants";
@@ -8,49 +9,30 @@ import { logger } from "@/lib/logger";
 import { requestTrackingPermission } from "@/lib/tracking";
 import { useUIStore } from "@/stores/ui-store";
 
-/** オンボーディングページのデータ */
-const ONBOARDING_PAGES = [
-  {
-    id: "save",
-    title: "技術記事をワンタップで保存",
-    description: `Zenn、Qiita、dev.toなど${SUPPORTED_SOURCE_COUNT}ソースに対応。気になった記事をすぐ保存できます。`,
-    Icon: BookMarked,
-  },
-  {
-    id: "ai",
-    title: "AIが要約・翻訳",
-    description: "英語記事も日本語で読める。要点だけ把握したいときはAI要約で時短。",
-    Icon: Sparkles,
-  },
-  {
-    id: "organize",
-    title: "お気に入り・タグで整理",
-    description: "タグ付けで記事を分類。お気に入り登録でいつでも素早くアクセス。",
-    Icon: Tag,
-  },
-  {
-    id: "start",
-    title: "さあ、始めましょう",
-    description: "アカウントを作成して、技術知識を効率よく管理しましょう。",
-    Icon: ArrowRight,
-  },
+/** オンボーディングページのメタデータ（IDとアイコンのみ保持） */
+const ONBOARDING_PAGE_META = [
+  { id: "save", Icon: BookMarked },
+  { id: "ai", Icon: Sparkles },
+  { id: "organize", Icon: Tag },
+  { id: "start", Icon: ArrowRight },
 ] as const;
 
 /** ページ数 */
-const PAGE_COUNT = ONBOARDING_PAGES.length;
+const PAGE_COUNT = ONBOARDING_PAGE_META.length;
 
 /**
  * オンボーディング画面
  * 初回起動時のみ表示される4ページのウォークスルー
  */
 export default function OnboardingScreen() {
+  const { t } = useTranslation();
   const hasSeenOnboarding = useUIStore((s) => s.hasSeenOnboarding);
   const setHasSeenOnboarding = useUIStore((s) => s.setHasSeenOnboarding);
 
   const [currentIndex, setCurrentIndex] = useState(0);
 
   const isLastPage = currentIndex === PAGE_COUNT - 1;
-  const currentPage = ONBOARDING_PAGES[currentIndex];
+  const currentPageMeta = ONBOARDING_PAGE_META[currentIndex];
 
   const handleFinish = async () => {
     try {
@@ -75,21 +57,28 @@ export default function OnboardingScreen() {
     return null;
   }
 
+  const pageId = currentPageMeta.id;
+  const pageTitle = t(`onboarding.pages.${pageId}.title`);
+  const pageDescription =
+    pageId === "save"
+      ? t("onboarding.pages.save.description", { count: SUPPORTED_SOURCE_COUNT })
+      : t(`onboarding.pages.${pageId}.description`);
+
   return (
     <View className="flex-1 bg-white">
       <ScrollView contentContainerStyle={{ flexGrow: 1 }} scrollEnabled={false}>
         <View className="flex-1 items-center justify-center px-8">
           <View className="mb-8 h-24 w-24 items-center justify-center rounded-2xl bg-stone-100">
-            <currentPage.Icon size={48} color={LIGHT_COLORS.neutral} strokeWidth={1.5} />
+            <currentPageMeta.Icon size={48} color={LIGHT_COLORS.neutral} strokeWidth={1.5} />
           </View>
           <Text
             testID="onboarding-title"
             className="mb-4 text-center text-2xl font-bold text-stone-900"
           >
-            {currentPage.title}
+            {pageTitle}
           </Text>
           <Text className="text-center text-base leading-relaxed text-stone-500">
-            {currentPage.description}
+            {pageDescription}
           </Text>
         </View>
       </ScrollView>
@@ -98,10 +87,13 @@ export default function OnboardingScreen() {
       <View
         testID="page-indicator"
         className="flex-row items-center justify-center py-4"
-        accessibilityLabel={`${currentIndex + 1}ページ目（全${PAGE_COUNT}ページ）`}
+        accessibilityLabel={t("onboarding.accessibility.pageIndicator", {
+          current: currentIndex + 1,
+          total: PAGE_COUNT,
+        })}
         accessible={true}
       >
-        {ONBOARDING_PAGES.map((page, index) => (
+        {ONBOARDING_PAGE_META.map((page, index) => (
           <View
             key={page.id}
             className={`mx-1 h-2 rounded-full ${
@@ -120,10 +112,10 @@ export default function OnboardingScreen() {
           onPress={handleSkip}
           className="px-4 py-3"
           accessibilityRole="button"
-          accessibilityLabel="スキップ"
-          accessibilityHint="オンボーディングをスキップしてログイン画面に進みます"
+          accessibilityLabel={t("onboarding.skip")}
+          accessibilityHint={t("onboarding.accessibility.skipHint")}
         >
-          <Text className="text-base text-stone-500">スキップ</Text>
+          <Text className="text-base text-stone-500">{t("onboarding.skip")}</Text>
         </Pressable>
 
         {isLastPage ? (
@@ -132,10 +124,10 @@ export default function OnboardingScreen() {
             onPress={handleFinish}
             className="rounded-xl bg-stone-800 px-8 py-3"
             accessibilityRole="button"
-            accessibilityLabel="始める"
-            accessibilityHint="アカウント作成画面に進みます"
+            accessibilityLabel={t("onboarding.start")}
+            accessibilityHint={t("onboarding.accessibility.startHint")}
           >
-            <Text className="text-base font-semibold text-white">始める</Text>
+            <Text className="text-base font-semibold text-white">{t("onboarding.start")}</Text>
           </Pressable>
         ) : (
           <Pressable
@@ -143,10 +135,12 @@ export default function OnboardingScreen() {
             onPress={handleNext}
             className="rounded-xl bg-stone-800 px-8 py-3"
             accessibilityRole="button"
-            accessibilityLabel="次へ"
-            accessibilityHint={`次のページ（${currentIndex + 2}ページ目）に進みます`}
+            accessibilityLabel={t("onboarding.next")}
+            accessibilityHint={t("onboarding.accessibility.nextPageHint", {
+              next: currentIndex + 2,
+            })}
           >
-            <Text className="text-base font-semibold text-white">次へ</Text>
+            <Text className="text-base font-semibold text-white">{t("onboarding.next")}</Text>
           </Pressable>
         )}
       </View>
