@@ -1,4 +1,4 @@
-import { and, desc, eq, lt } from "drizzle-orm";
+import { and, desc, eq, inArray, lt } from "drizzle-orm";
 import type { Auth } from "../auth";
 import type { Database } from "../db";
 import { follows, users } from "../db/schema";
@@ -52,26 +52,84 @@ export async function handleUsers(
       if (params.cursor) {
         conditions.push(lt(follows.createdAt, params.cursor));
       }
-      const results = await db
+      const followRows = await db
         .select()
         .from(follows)
         .where(and(...conditions))
         .orderBy(desc(follows.createdAt))
         .limit(params.limit);
-      return toRecordArray(results);
+
+      if (followRows.length === 0) {
+        return [];
+      }
+
+      const followerIds = followRows.map((row) => row.followerId);
+      const userRows = await db
+        .select({
+          id: users.id,
+          name: users.name,
+          bio: users.bio,
+          avatarUrl: users.avatarUrl,
+        })
+        .from(users)
+        .where(inArray(users.id, followerIds));
+
+      const userMap = new Map(userRows.map((u) => [u.id, u]));
+
+      return toRecordArray(
+        followRows.map((row) => {
+          const u = userMap.get(row.followerId);
+          return {
+            id: row.followerId,
+            name: u?.name ?? null,
+            bio: u?.bio ?? null,
+            avatarUrl: u?.avatarUrl ?? null,
+            createdAt: row.createdAt,
+          };
+        }),
+      );
     },
     getFollowingFn: async (params) => {
       const conditions = [eq(follows.followerId, params.userId)];
       if (params.cursor) {
         conditions.push(lt(follows.createdAt, params.cursor));
       }
-      const results = await db
+      const followRows = await db
         .select()
         .from(follows)
         .where(and(...conditions))
         .orderBy(desc(follows.createdAt))
         .limit(params.limit);
-      return toRecordArray(results);
+
+      if (followRows.length === 0) {
+        return [];
+      }
+
+      const followingIds = followRows.map((row) => row.followingId);
+      const userRows = await db
+        .select({
+          id: users.id,
+          name: users.name,
+          bio: users.bio,
+          avatarUrl: users.avatarUrl,
+        })
+        .from(users)
+        .where(inArray(users.id, followingIds));
+
+      const userMap = new Map(userRows.map((u) => [u.id, u]));
+
+      return toRecordArray(
+        followRows.map((row) => {
+          const u = userMap.get(row.followingId);
+          return {
+            id: row.followingId,
+            name: u?.name ?? null,
+            bio: u?.bio ?? null,
+            avatarUrl: u?.avatarUrl ?? null,
+            createdAt: row.createdAt,
+          };
+        }),
+      );
     },
     isFollowingFn: async (followerId, followingId) => {
       const [result] = await db

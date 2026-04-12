@@ -4,18 +4,13 @@ import { ArrowLeft } from "lucide-react-native";
 import { useCallback, useState } from "react";
 import { ActivityIndicator, FlatList, Pressable, Text, View } from "react-native";
 
+import type { FollowUserItem } from "@/hooks/use-follows";
+import { useFollowers, useFollowing } from "@/hooks/use-follows";
 import { DARK_COLORS } from "@/lib/constants";
+import { useAuthStore } from "@/stores/auth-store";
 
 /** タブの種類 */
 type TabType = "followers" | "following";
-
-/** ユーザーアイテムの型 */
-type UserItem = {
-  id: string;
-  name: string;
-  bio: string | null;
-  avatarUrl: string | null;
-};
 
 /** 戻るアイコンのサイズ（px） */
 const BACK_ICON_SIZE = 24;
@@ -52,35 +47,8 @@ function getInitials(name: string): string {
   return name.slice(0, 2).toUpperCase();
 }
 
-/**
- * プレースホルダーのフォロワーリストを生成する
- * API実装後に置き換え予定
- *
- * @returns ダミーのユーザーリスト
- */
-function createPlaceholderFollowers(): UserItem[] {
-  return [
-    { id: "1", name: "田中太郎", bio: "フロントエンドエンジニア", avatarUrl: null },
-    { id: "2", name: "佐藤花子", bio: "バックエンドエンジニア", avatarUrl: null },
-    { id: "3", name: "鈴木一郎", bio: null, avatarUrl: null },
-  ];
-}
-
-/**
- * プレースホルダーのフォロー中リストを生成する
- * API実装後に置き換え予定
- *
- * @returns ダミーのユーザーリスト
- */
-function createPlaceholderFollowing(): UserItem[] {
-  return [
-    { id: "4", name: "高橋実", bio: "モバイルエンジニア", avatarUrl: null },
-    { id: "5", name: "伊藤めぐみ", bio: "デザイナー", avatarUrl: null },
-  ];
-}
-
 type UserListItemProps = {
-  item: UserItem;
+  item: FollowUserItem;
   onPress: (userId: string) => void;
 };
 
@@ -95,12 +63,14 @@ function UserListItem({ item, onPress }: UserListItemProps) {
     onPress(item.id);
   }, [item.id, onPress]);
 
+  const displayName = item.name ?? item.id;
+
   return (
     <Pressable
       testID={`user-item-${item.id}`}
       onPress={handlePress}
       accessibilityRole="button"
-      accessibilityLabel={`${item.name}のプロフィールを表示`}
+      accessibilityLabel={`${displayName}のプロフィールを表示`}
       className="flex-row items-center gap-3 px-4 py-3 border-b border-border"
     >
       {item.avatarUrl ? (
@@ -131,12 +101,12 @@ function UserListItem({ item, onPress }: UserListItemProps) {
               fontWeight: "bold",
             }}
           >
-            {getInitials(item.name)}
+            {getInitials(displayName)}
           </Text>
         </View>
       )}
       <View className="flex-1">
-        <Text className="text-base font-semibold text-text">{item.name}</Text>
+        <Text className="text-base font-semibold text-text">{displayName}</Text>
         {item.bio && (
           <Text className="text-sm text-text-muted mt-0.5" numberOfLines={1}>
             {item.bio}
@@ -152,19 +122,27 @@ function UserListItem({ item, onPress }: UserListItemProps) {
  *
  * タブで切り替え可能。ユーザーアイテムをタップするとプロフィール画面へ遷移。
  * クエリパラメータ `tab` で初期タブを指定可能（"followers" | "following"）。
+ * クエリパラメータ `userId` で対象ユーザーIDを指定可能（未指定時は認証済みユーザー自身）。
  */
 export default function FollowersScreen() {
-  const { tab } = useLocalSearchParams<{ tab?: string }>();
+  const { tab, userId: paramUserId } = useLocalSearchParams<{ tab?: string; userId?: string }>();
   const router = useRouter();
+  const authUser = useAuthStore((state) => state.user);
+
+  const targetUserId = paramUserId ?? authUser?.id ?? "";
 
   const initialTab: TabType = tab === "following" ? "following" : "followers";
   const [activeTab, setActiveTab] = useState<TabType>(initialTab);
-  const [isLoading] = useState(false);
 
-  const followers = createPlaceholderFollowers();
-  const following = createPlaceholderFollowing();
+  const followersQuery = useFollowers(targetUserId);
+  const followingQuery = useFollowing(targetUserId);
 
-  const currentList = activeTab === "followers" ? followers : following;
+  const activeQuery = activeTab === "followers" ? followersQuery : followingQuery;
+
+  const currentList = activeQuery.data?.pages.flatMap((page) => page.items) ?? [];
+
+  const isLoading = activeQuery.isLoading;
+  const isError = activeQuery.isError;
 
   const handleBack = useCallback(() => {
     router.back();
@@ -182,11 +160,17 @@ export default function FollowersScreen() {
   }, []);
 
   const renderItem = useCallback(
-    ({ item }: { item: UserItem }) => <UserListItem item={item} onPress={handleUserPress} />,
+    ({ item }: { item: FollowUserItem }) => <UserListItem item={item} onPress={handleUserPress} />,
     [handleUserPress],
   );
 
-  const keyExtractor = useCallback((item: UserItem) => item.id, []);
+  const keyExtractor = useCallback((item: FollowUserItem) => item.id, []);
+
+  const handleEndReached = useCallback(() => {
+    if (activeQuery.hasNextPage && !activeQuery.isFetchingNextPage) {
+      activeQuery.fetchNextPage();
+    }
+  }, [activeQuery]);
 
   const renderEmpty = useCallback(() => {
     if (isLoading) {
@@ -266,7 +250,23 @@ export default function FollowersScreen() {
         </Pressable>
       </View>
 
-      {isLoading ? (
+      {isError ? (
+        <View testID="followers-error" className="flex-1 items-center justify-center px-4">
+          <Text className="text-text-muted text-base text-center">
+            {activeTab === "followers"
+              ? "フォロワーの取得に失敗しました"
+              : "フォロー中の取得に失敗しました"}
+          </Text>
+          <Pressable
+            onPress={() => activeQuery.refetch()}
+            className="mt-4 bg-primary rounded-lg px-6 py-3"
+            accessibilityRole="button"
+            accessibilityLabel="再試行"
+          >
+            <Text className="text-white font-semibold">再試行</Text>
+          </Pressable>
+        </View>
+      ) : isLoading ? (
         <View testID="followers-loading" className="flex-1 items-center justify-center">
           <ActivityIndicator size="large" color={PRIMARY_COLOR} />
           <Text className="text-text-muted mt-3">読み込み中...</Text>
@@ -279,6 +279,8 @@ export default function FollowersScreen() {
           keyExtractor={keyExtractor}
           ListEmptyComponent={renderEmpty}
           contentContainerStyle={{ flexGrow: 1 }}
+          onEndReached={handleEndReached}
+          onEndReachedThreshold={0.5}
         />
       )}
     </View>
