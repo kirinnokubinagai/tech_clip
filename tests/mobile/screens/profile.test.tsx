@@ -24,6 +24,44 @@ const { useAuthStore } = jest.requireMock("@mobile/stores/auth-store") as {
   useAuthStore: jest.Mock;
 };
 
+/** テスト用ユーザーオブジェクト */
+const MOCK_USER = {
+  id: "user_01",
+  name: "テストユーザー",
+  email: "test@example.com",
+  image: null,
+  createdAt: "2024-01-01T00:00:00Z",
+  updatedAt: "2024-01-01T00:00:00Z",
+};
+
+/**
+ * 未ログイン状態をモックする
+ */
+function mockGuestState() {
+  useAuthStore.mockImplementation((selector: (state: Record<string, unknown>) => unknown) =>
+    selector({
+      user: null,
+      isAuthenticated: false,
+      isLoading: false,
+      checkSession: mockCheckSession,
+    }),
+  );
+}
+
+/**
+ * ログイン済み状態をモックする
+ */
+function mockAuthenticatedState(overrides: Partial<typeof MOCK_USER> = {}) {
+  useAuthStore.mockImplementation((selector: (state: Record<string, unknown>) => unknown) =>
+    selector({
+      user: { ...MOCK_USER, ...overrides },
+      isAuthenticated: true,
+      isLoading: false,
+      checkSession: mockCheckSession,
+    }),
+  );
+}
+
 beforeEach(() => {
   jest.clearAllMocks();
   mockPush.mockReset();
@@ -34,14 +72,7 @@ describe("ProfileScreen", () => {
   describe("未ログイン時", () => {
     it("ログイン誘導メッセージが表示されること", async () => {
       // Arrange
-      useAuthStore.mockImplementation((selector: (state: Record<string, unknown>) => unknown) =>
-        selector({
-          user: null,
-          isAuthenticated: false,
-          isLoading: false,
-          checkSession: mockCheckSession,
-        }),
-      );
+      mockGuestState();
 
       // Act
       const { queryByTestId } = await render(<ProfileScreen />);
@@ -54,14 +85,7 @@ describe("ProfileScreen", () => {
 
     it("ログインボタンが表示されること", async () => {
       // Arrange
-      useAuthStore.mockImplementation((selector: (state: Record<string, unknown>) => unknown) =>
-        selector({
-          user: null,
-          isAuthenticated: false,
-          isLoading: false,
-          checkSession: mockCheckSession,
-        }),
-      );
+      mockGuestState();
 
       // Act
       const { queryByTestId } = await render(<ProfileScreen />);
@@ -74,14 +98,7 @@ describe("ProfileScreen", () => {
 
     it("ログインボタンを押すとログイン画面に遷移すること", async () => {
       // Arrange
-      useAuthStore.mockImplementation((selector: (state: Record<string, unknown>) => unknown) =>
-        selector({
-          user: null,
-          isAuthenticated: false,
-          isLoading: false,
-          checkSession: mockCheckSession,
-        }),
-      );
+      mockGuestState();
       const { getByTestId } = await render(<ProfileScreen />);
       const loginButton = getByTestId("profile-login-button");
 
@@ -94,14 +111,7 @@ describe("ProfileScreen", () => {
 
     it("ProfileHeaderがゲスト固定表示されないこと", async () => {
       // Arrange
-      useAuthStore.mockImplementation((selector: (state: Record<string, unknown>) => unknown) =>
-        selector({
-          user: null,
-          isAuthenticated: false,
-          isLoading: false,
-          checkSession: mockCheckSession,
-        }),
-      );
+      mockGuestState();
 
       // Act
       const { queryByTestId } = await render(<ProfileScreen />);
@@ -138,21 +148,7 @@ describe("ProfileScreen", () => {
   describe("ログイン済み", () => {
     it("ProfileHeaderにユーザー名が表示されること", async () => {
       // Arrange
-      useAuthStore.mockImplementation((selector: (state: Record<string, unknown>) => unknown) =>
-        selector({
-          user: {
-            id: "user_01",
-            name: "テストユーザー",
-            email: "test@example.com",
-            image: null,
-            createdAt: "2024-01-01T00:00:00Z",
-            updatedAt: "2024-01-01T00:00:00Z",
-          },
-          isAuthenticated: true,
-          isLoading: false,
-          checkSession: mockCheckSession,
-        }),
-      );
+      mockAuthenticatedState();
 
       // Act
       const { getByTestId } = await render(<ProfileScreen />);
@@ -166,21 +162,7 @@ describe("ProfileScreen", () => {
 
     it("ProfileHeaderにアバターが表示されること（avatarUrl がある場合）", async () => {
       // Arrange
-      useAuthStore.mockImplementation((selector: (state: Record<string, unknown>) => unknown) =>
-        selector({
-          user: {
-            id: "user_01",
-            name: "テストユーザー",
-            email: "test@example.com",
-            image: "https://example.com/avatar.png",
-            createdAt: "2024-01-01T00:00:00Z",
-            updatedAt: "2024-01-01T00:00:00Z",
-          },
-          isAuthenticated: true,
-          isLoading: false,
-          checkSession: mockCheckSession,
-        }),
-      );
+      mockAuthenticatedState({ image: "https://example.com/avatar.png" });
 
       // Act
       const { queryByTestId } = await render(<ProfileScreen />);
@@ -193,21 +175,7 @@ describe("ProfileScreen", () => {
 
     it("avatarUrl がない場合はフォールバックアバターが表示されること", async () => {
       // Arrange
-      useAuthStore.mockImplementation((selector: (state: Record<string, unknown>) => unknown) =>
-        selector({
-          user: {
-            id: "user_01",
-            name: "テストユーザー",
-            email: "test@example.com",
-            image: null,
-            createdAt: "2024-01-01T00:00:00Z",
-            updatedAt: "2024-01-01T00:00:00Z",
-          },
-          isAuthenticated: true,
-          isLoading: false,
-          checkSession: mockCheckSession,
-        }),
-      );
+      mockAuthenticatedState();
 
       // Act
       const { queryByTestId } = await render(<ProfileScreen />);
@@ -220,21 +188,7 @@ describe("ProfileScreen", () => {
 
     it("設定ボタンを押すと設定画面に遷移すること", async () => {
       // Arrange
-      useAuthStore.mockImplementation((selector: (state: Record<string, unknown>) => unknown) =>
-        selector({
-          user: {
-            id: "user_01",
-            name: "テストユーザー",
-            email: "test@example.com",
-            image: null,
-            createdAt: "2024-01-01T00:00:00Z",
-            updatedAt: "2024-01-01T00:00:00Z",
-          },
-          isAuthenticated: true,
-          isLoading: false,
-          checkSession: mockCheckSession,
-        }),
-      );
+      mockAuthenticatedState();
       const { getByTestId } = await render(<ProfileScreen />);
 
       // Act
