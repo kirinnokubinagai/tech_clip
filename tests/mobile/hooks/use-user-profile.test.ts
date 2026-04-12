@@ -65,13 +65,14 @@ describe("useUserProfile", () => {
     apiFetch.mockResolvedValue(mockProfileResponse);
 
     // Act
-    renderHook(() => useUserProfile(TEST_USER_ID), {
+    const { result } = renderHook(() => useUserProfile(TEST_USER_ID), {
       wrapper: Wrapper,
     });
 
     // Assert
-    await waitFor(() => expect(apiFetch).toHaveBeenCalled());
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
     expect(apiFetch).toHaveBeenCalledWith(`/api/users/${TEST_USER_ID}/profile`);
+    expect(result.current.data).toEqual(mockProfileResponse.data);
   });
 
   it("ユーザーが存在しない場合はエラーになること", async () => {
@@ -79,12 +80,12 @@ describe("useUserProfile", () => {
     apiFetch.mockResolvedValue(mockNotFoundResponse);
 
     // Act
-    renderHook(() => useUserProfile(TEST_USER_ID), {
+    const { result } = renderHook(() => useUserProfile(TEST_USER_ID), {
       wrapper: Wrapper,
     });
 
     // Assert
-    await waitFor(() => expect(apiFetch).toHaveBeenCalled());
+    await waitFor(() => expect(result.current.isError).toBe(true));
     expect(apiFetch).toHaveBeenCalledWith(`/api/users/${TEST_USER_ID}/profile`);
   });
 

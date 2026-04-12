@@ -24,7 +24,7 @@ export async function handlePublicProfile(db: Database, request: Request): Promi
   const publicProfileRoute = createPublicProfileRoute({
     getProfileFn: async (userId) => {
       const [found] = await db.select().from(users).where(eq(users.id, userId));
-      if (!found) {
+      if (!found?.isProfilePublic) {
         return null;
       }
 
@@ -38,14 +38,12 @@ export async function handlePublicProfile(db: Database, request: Request): Promi
         .from(follows)
         .where(eq(follows.followerId, userId));
 
-      const user = found as unknown as Record<string, unknown>;
-
       return {
-        id: user.id as string,
-        name: (user.name as string | null) ?? null,
-        username: (user.username as string | null) ?? null,
-        bio: (user.bio as string | null) ?? null,
-        avatarUrl: (user.avatarUrl as string | null) ?? null,
+        id: found.id,
+        name: found.name ?? null,
+        username: found.username ?? null,
+        bio: found.bio ?? null,
+        avatarUrl: found.avatarUrl ?? null,
         followersCount: followersResult?.count ?? 0,
         followingCount: followingResult?.count ?? 0,
       };
