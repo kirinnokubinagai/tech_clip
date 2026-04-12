@@ -307,7 +307,13 @@
     "startA11yHint": "Go to account creation screen",
     "nextA11yLabel": "Next",
     "nextA11yHint": "Go to page {{page}}",
-    "pageIndicatorLabel": "Page {{current}} of {{total}}"
+    "pageIndicatorLabel": "Page {{current}} of {{total}}",
+    "accessibility": {
+      "pageIndicator": "Page {{current}} of {{total}}",
+      "nextPageHint": "Go to page {{next}}",
+      "skipHint": "Skip onboarding and go to login",
+      "startHint": "Go to account creation"
+    }
   },
   "shareIntent": {
     "loading": "Loading",

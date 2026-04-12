@@ -283,7 +283,7 @@
     "pages": {
       "save": {
         "title": "기술 기사를 한 번에 저장",
-        "description": "Zenn, Qiita, dev.to 등 18개 사이트를 지원합니다. 관심 있는 기사를 바로 저장하세요."
+        "description": "Zenn, Qiita, dev.to 등 {{count}}개 소스를 지원합니다. 관심 있는 기사를 바로 저장하세요."
       },
       "ai": {
         "title": "AI가 요약하고 번역합니다",
@@ -307,7 +307,13 @@
     "startA11yHint": "계정 생성 화면으로 이동합니다",
     "nextA11yLabel": "다음",
     "nextA11yHint": "{{page}} 페이지로 이동합니다",
-    "pageIndicatorLabel": "{{total}} 페이지 중 {{current}} 페이지"
+    "pageIndicatorLabel": "{{total}} 페이지 중 {{current}} 페이지",
+    "accessibility": {
+      "pageIndicator": "{{current}}페이지（전체 {{total}}페이지）",
+      "nextPageHint": "다음 페이지（{{next}}페이지）로 이동합니다",
+      "skipHint": "온보딩을 건너뛰고 로그인 화면으로 이동합니다",
+      "startHint": "계정 만들기 화면으로 이동합니다"
+    }
   },
   "shareIntent": {
     "loading": "불러오는 중",

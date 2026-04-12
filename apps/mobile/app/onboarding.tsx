@@ -9,8 +9,8 @@ import { logger } from "@/lib/logger";
 import { requestTrackingPermission } from "@/lib/tracking";
 import { useUIStore } from "@/stores/ui-store";
 
-/** オンボーディングページのメタ情報（テキストは翻訳キーから解決する） */
-const ONBOARDING_PAGES = [
+/** オンボーディングページのメタデータ（IDとアイコンのみ保持） */
+const ONBOARDING_PAGE_META = [
   { id: "save", Icon: BookMarked },
   { id: "ai", Icon: Sparkles },
   { id: "organize", Icon: Tag },
@@ -18,7 +18,7 @@ const ONBOARDING_PAGES = [
 ] as const;
 
 /** ページ数 */
-const PAGE_COUNT = ONBOARDING_PAGES.length;
+const PAGE_COUNT = ONBOARDING_PAGE_META.length;
 
 /**
  * オンボーディング画面
@@ -32,11 +32,7 @@ export default function OnboardingScreen() {
   const [currentIndex, setCurrentIndex] = useState(0);
 
   const isLastPage = currentIndex === PAGE_COUNT - 1;
-  const currentPage = ONBOARDING_PAGES[currentIndex];
-  const currentPageTitle = t(`onboarding.pages.${currentPage.id}.title`);
-  const currentPageDescription = t(`onboarding.pages.${currentPage.id}.description`, {
-    count: SUPPORTED_SOURCE_COUNT,
-  });
+  const currentPageMeta = ONBOARDING_PAGE_META[currentIndex];
 
   const handleFinish = async () => {
     try {
@@ -61,21 +57,28 @@ export default function OnboardingScreen() {
     return null;
   }
 
+  const pageId = currentPageMeta.id;
+  const pageTitle = t(`onboarding.pages.${pageId}.title`);
+  const pageDescription =
+    pageId === "save"
+      ? t("onboarding.pages.save.description", { count: SUPPORTED_SOURCE_COUNT })
+      : t(`onboarding.pages.${pageId}.description`);
+
   return (
     <View className="flex-1 bg-white">
       <ScrollView contentContainerStyle={{ flexGrow: 1 }} scrollEnabled={false}>
         <View className="flex-1 items-center justify-center px-8">
           <View className="mb-8 h-24 w-24 items-center justify-center rounded-2xl bg-stone-100">
-            <currentPage.Icon size={48} color={LIGHT_COLORS.neutral} strokeWidth={1.5} />
+            <currentPageMeta.Icon size={48} color={LIGHT_COLORS.neutral} strokeWidth={1.5} />
           </View>
           <Text
             testID="onboarding-title"
             className="mb-4 text-center text-2xl font-bold text-stone-900"
           >
-            {currentPageTitle}
+            {pageTitle}
           </Text>
           <Text className="text-center text-base leading-relaxed text-stone-500">
-            {currentPageDescription}
+            {pageDescription}
           </Text>
         </View>
       </ScrollView>
@@ -84,13 +87,13 @@ export default function OnboardingScreen() {
       <View
         testID="page-indicator"
         className="flex-row items-center justify-center py-4"
-        accessibilityLabel={t("onboarding.pageIndicatorLabel", {
+        accessibilityLabel={t("onboarding.accessibility.pageIndicator", {
           current: currentIndex + 1,
           total: PAGE_COUNT,
         })}
         accessible={true}
       >
-        {ONBOARDING_PAGES.map((page, index) => (
+        {ONBOARDING_PAGE_META.map((page, index) => (
           <View
             key={page.id}
             className={`mx-1 h-2 rounded-full ${
@@ -109,8 +112,8 @@ export default function OnboardingScreen() {
           onPress={handleSkip}
           className="px-4 py-3"
           accessibilityRole="button"
-          accessibilityLabel={t("onboarding.skipA11yLabel")}
-          accessibilityHint={t("onboarding.skipA11yHint")}
+          accessibilityLabel={t("onboarding.skip")}
+          accessibilityHint={t("onboarding.accessibility.skipHint")}
         >
           <Text className="text-base text-stone-500">{t("onboarding.skip")}</Text>
         </Pressable>
@@ -121,8 +124,8 @@ export default function OnboardingScreen() {
             onPress={handleFinish}
             className="rounded-xl bg-stone-800 px-8 py-3"
             accessibilityRole="button"
-            accessibilityLabel={t("onboarding.startA11yLabel")}
-            accessibilityHint={t("onboarding.startA11yHint")}
+            accessibilityLabel={t("onboarding.start")}
+            accessibilityHint={t("onboarding.accessibility.startHint")}
           >
             <Text className="text-base font-semibold text-white">{t("onboarding.start")}</Text>
           </Pressable>
@@ -132,8 +135,10 @@ export default function OnboardingScreen() {
             onPress={handleNext}
             className="rounded-xl bg-stone-800 px-8 py-3"
             accessibilityRole="button"
-            accessibilityLabel={t("onboarding.nextA11yLabel")}
-            accessibilityHint={t("onboarding.nextA11yHint", { page: currentIndex + 2 })}
+            accessibilityLabel={t("onboarding.next")}
+            accessibilityHint={t("onboarding.accessibility.nextPageHint", {
+              next: currentIndex + 2,
+            })}
           >
             <Text className="text-base font-semibold text-white">{t("onboarding.next")}</Text>
           </Pressable>
