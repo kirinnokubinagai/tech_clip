@@ -18,9 +18,6 @@ on:
       - '.omc/**'
       - 'tests/e2e/maestro/**'
 
-env:
-  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
-
 # デフォルトで全権限を read-only にし、各ジョブで必要な権限のみを上書きする
 permissions: read-all
 

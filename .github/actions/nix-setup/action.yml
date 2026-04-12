@@ -1,16 +1,14 @@
 name: Nix Setup
-description: Install Nix and install project dependencies
+description: Install Nix, setup cachix, and install project dependencies
 
 runs:
   using: composite
   steps:
-    - name: Install Nix
-      shell: bash
-      run: |
-        curl --proto '=https' --tlsv1.2 -sSf -L https://install.determinate.systems/nix | sh -s -- install linux --no-confirm
-        echo "/nix/var/nix/profiles/default/bin" >> "$GITHUB_PATH"
+    - uses: cachix/install-nix-action@ba0dd844c9180cbf77aa72a116d6fbc515d0e87b  # v27
+      with:
+        nix_path: nixpkgs=channel:nixpkgs-unstable
+    - uses: DeterminateSystems/magic-nix-cache-action@6221693898146dc97e38ad0e013488a16477a4c4  # v9
+      continue-on-error: true
     - name: Install deps (nix develop)
       shell: bash
-      run: |
-        . /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh
-        nix develop .#ci --command pnpm install --frozen-lockfile
+      run: nix develop .#ci --command pnpm install --frozen-lockfile
