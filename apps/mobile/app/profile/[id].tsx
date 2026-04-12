@@ -29,7 +29,7 @@ export default function UserProfileScreen() {
 
   const { data: user, isLoading, isError, refetch } = useUserProfile(id);
 
-  const { mutate: followToggle } = useFollowToggle();
+  const { mutateAsync: followToggle } = useFollowToggle();
 
   const handleBack = useCallback(() => {
     router.back();
@@ -37,7 +37,7 @@ export default function UserProfileScreen() {
 
   const handleFollowToggle = useCallback(
     async (userId: string, currentlyFollowing: boolean) => {
-      followToggle({ userId, isFollowing: currentlyFollowing });
+      await followToggle({ userId, isFollowing: currentlyFollowing });
     },
     [followToggle],
   );

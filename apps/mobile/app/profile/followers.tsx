@@ -130,13 +130,13 @@ export default function FollowersScreen() {
     data: followersData,
     isLoading: isFollowersLoading,
     isError: isFollowersError,
-  } = useFollowers();
+  } = useFollowers(undefined, { enabled: activeTab === "followers" });
 
   const {
     data: followingData,
     isLoading: isFollowingLoading,
     isError: isFollowingError,
-  } = useFollowing();
+  } = useFollowing(undefined, { enabled: activeTab === "following" });
 
   const isLoading = activeTab === "followers" ? isFollowersLoading : isFollowingLoading;
   const isError = activeTab === "followers" ? isFollowersError : isFollowingError;
