@@ -57,19 +57,31 @@ type ThemeColors = {
 /**
  * ライト/ダーク共通で使う意味ベースのカラー
  *
- * アーキテクチャ:
+ * ## アーキテクチャ
  * - SEMANTIC_COLORS（共有）→ LIGHT_COLORS（ライトテーマ）にスプレッド
  * - SEMANTIC_COLORS（共有）→ DARK_COLORS（ダークテーマ）にスプレッド
- * - error / success / warning / accent / favorite / neutral / white はここで一元管理
+ * - error / success / warning / favorite / neutral / white はここで一元管理
+ *
+ * ## accent トークンについて
+ * 現在 accent = "#14b8a6" は Primary と同値。
+ * TODO(#855): Primary に一本化し accent トークンを削除する（docs/mobile-theme.md 移行タスク#2 参照）
+ *
+ * ## 新色を追加するルール
+ * - 既存トークンでカバーできない意味的状態が新たに生まれたときのみ追加する
+ * - グラデーション・ネオン・蛍光系カラーは禁止（AIっぽい印象を避けるため）
+ * - 追加時は docs/mobile-theme.md にも記載すること
  */
 const SEMANTIC_COLORS = {
-  /** アクセントカラー */
+  /**
+   * アクセントカラー（Primary と同値）
+   * @deprecated Primary に一本化予定。docs/mobile-theme.md 移行タスク#2 参照
+   */
   accent: "#14b8a6",
-  /** エラー色 */
+  /** エラー色（危険操作・失敗状態） */
   error: "#ef4444",
-  /** 成功色 */
+  /** 成功色（完了・OK状態） */
   success: "#22c55e",
-  /** 警告色 */
+  /** 警告色（注意が必要な状態） */
   warning: "#f59e0b",
   /** お気に入りやいいねに使う赤色 */
   favorite: "#ef4444",
@@ -82,6 +94,14 @@ const SEMANTIC_COLORS = {
 /**
  * ライトテーマカラー定義
  * SEMANTIC_COLORS の共有セマンティック色 + ライト固有のレイアウト色で構成
+ *
+ * ## Primary カラーについて
+ * primary = "#14b8a6"（Teal）をブランドメインカラーとして採用。
+ * ダークテーマも同色に統一する予定。docs/mobile-theme.md 参照
+ *
+ * ## サーフェスカラーについて
+ * background / surface / card / border はテーマ固有の値であり、
+ * テーマ切替時に LIGHT_COLORS / DARK_COLORS を useColorScheme で動的に選択すること
  */
 export const LIGHT_COLORS = {
   /** 背景色 */
@@ -114,6 +134,11 @@ export const LIGHT_COLORS = {
 /**
  * ダークテーマカラー定義
  * SEMANTIC_COLORS の共有セマンティック色 + ダーク固有のレイアウト色で構成
+ *
+ * ## Primary カラーについて
+ * 現在 primary = "#6366f1"（Indigo）はライトテーマ（Teal #14b8a6）と色相が異なり、
+ * ブランドが分裂している。
+ * TODO(#855): "#14b8a6"（Teal）に統一する。docs/mobile-theme.md 移行タスク#1 参照
  */
 export const DARK_COLORS = {
   /** アプリ全体の背景色 */
@@ -124,9 +149,15 @@ export const DARK_COLORS = {
   card: "#1a1a2e",
   /** 境界線色 */
   border: "#2d2d44",
-  /** プライマリアクション色 */
+  /**
+   * プライマリアクション色
+   * TODO(#855): "#14b8a6"（Teal）に変更してブランドカラーを統一する
+   */
   primary: "#6366f1",
-  /** プライマリの明色 */
+  /**
+   * プライマリの明色
+   * TODO(#855): primary 変更後は "#5eead4"（Teal-300）に合わせる
+   */
   primaryLight: "#818cf8",
   /** 主要テキスト色 */
   text: "#e2e8f0",

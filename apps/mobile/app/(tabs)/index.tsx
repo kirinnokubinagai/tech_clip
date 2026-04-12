@@ -9,27 +9,11 @@ import { useArticles, useToggleFavorite } from "@/hooks/use-articles";
 import { useColors } from "@/hooks/use-colors";
 import { useNetworkStatus } from "@/hooks/use-network-status";
 import { useOfflineArticles } from "@/hooks/use-offline-articles";
+import { SOURCE_FILTER_OPTIONS } from "@/lib/sources";
 import type { ArticleListItem, ArticleSource } from "@/types/article";
 
 /** フィルターアイコンサイズ */
 const FILTER_ICON_SIZE = 16;
-
-/** ソースフィルターの選択肢（固有名詞はそのまま、「すべて」のみ翻訳） */
-const SOURCE_FILTER_STATIC: {
-  value: ArticleSource | undefined;
-  staticLabel?: string;
-  i18nKey?: string;
-}[] = [
-  { i18nKey: "home.filterAll", value: undefined },
-  { staticLabel: "Zenn", value: "zenn" },
-  { staticLabel: "Qiita", value: "qiita" },
-  { staticLabel: "はてな", value: "hatena" },
-  { staticLabel: "note", value: "note" },
-  { staticLabel: "Dev.to", value: "devto" },
-  { staticLabel: "Medium", value: "medium" },
-  { staticLabel: "GitHub", value: "github" },
-  { staticLabel: "HN", value: "hackernews" },
-];
 
 /**
  * ホーム画面
@@ -73,8 +57,8 @@ export default function HomeScreen() {
 
   const sourceFilters = useMemo(
     () =>
-      SOURCE_FILTER_STATIC.map((opt) => ({
-        label: opt.i18nKey ? t(opt.i18nKey) : (opt.staticLabel ?? ""),
+      SOURCE_FILTER_OPTIONS.map((opt) => ({
+        label: "i18nKey" in opt ? t(opt.i18nKey) : opt.label,
         value: opt.value,
       })),
     [t],

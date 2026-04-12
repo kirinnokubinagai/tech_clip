@@ -1,6 +1,7 @@
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { ArrowLeft } from "lucide-react-native";
 import { useCallback, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { ActivityIndicator, Pressable, ScrollView, Text, View } from "react-native";
 
 import { FollowButton } from "@/components/FollowButton";
@@ -35,6 +36,7 @@ function createPlaceholderUser(id: string): ProfileHeaderUser {
  * ProfileHeaderコンポーネントを再利用。
  */
 export default function UserProfileScreen() {
+  const { t } = useTranslation();
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const colors = useColors();
@@ -60,7 +62,7 @@ export default function UserProfileScreen() {
         className="flex-1 bg-background items-center justify-center"
       >
         <ActivityIndicator size="large" color={colors.primary} />
-        <Text className="text-text-muted mt-3">読み込み中...</Text>
+        <Text className="text-text-muted mt-3">{t("profile.loadingUser")}</Text>
       </View>
     );
   }
@@ -71,9 +73,7 @@ export default function UserProfileScreen() {
         testID="user-profile-error"
         className="flex-1 bg-background items-center justify-center px-4"
       >
-        <Text className="text-text-muted text-base text-center">
-          ユーザー情報の取得に失敗しました
-        </Text>
+        <Text className="text-text-muted text-base text-center">{t("profile.fetchError")}</Text>
         <Pressable
           onPress={() => {
             setIsError(false);
@@ -82,19 +82,19 @@ export default function UserProfileScreen() {
           }}
           className="mt-4 bg-primary rounded-lg px-6 py-3"
           accessibilityRole="button"
-          accessibilityLabel="再試行"
-          accessibilityHint="ユーザー情報の取得を再試行します"
+          accessibilityLabel={t("common.retry")}
+          accessibilityHint={t("profile.retryHint")}
         >
-          <Text className="text-white font-semibold">再試行</Text>
+          <Text className="text-white font-semibold">{t("common.retry")}</Text>
         </Pressable>
         <Pressable
           onPress={handleBack}
           className="mt-3"
           accessibilityRole="button"
-          accessibilityLabel="戻る"
-          accessibilityHint="前の画面に戻ります"
+          accessibilityLabel={t("profile.back")}
+          accessibilityHint={t("profile.backHint")}
         >
-          <Text className="text-primary">戻る</Text>
+          <Text className="text-primary">{t("profile.back")}</Text>
         </Pressable>
       </View>
     );
@@ -107,7 +107,7 @@ export default function UserProfileScreen() {
           testID="user-profile-back-button"
           onPress={handleBack}
           accessibilityRole="button"
-          accessibilityLabel="戻る"
+          accessibilityLabel={t("profile.back")}
           hitSlop={8}
         >
           <ArrowLeft size={BACK_ICON_SIZE} color={colors.text} />
@@ -125,10 +125,12 @@ export default function UserProfileScreen() {
 
         <View className="px-4">
           <View className="border-t border-border pt-4">
-            <Text className="text-base font-semibold text-text mb-3">保存した記事</Text>
+            <Text className="text-base font-semibold text-text mb-3">
+              {t("profile.savedArticles")}
+            </Text>
             <View className="items-center py-8">
               <Text className="text-text-muted text-sm text-center">
-                このユーザーの公開記事はまだありません
+                {t("profile.noPublicArticles")}
               </Text>
             </View>
           </View>
