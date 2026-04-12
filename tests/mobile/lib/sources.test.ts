@@ -2,6 +2,7 @@ import {
   getSourceDefinition,
   SOURCE_CONFIG,
   SOURCE_DEFINITIONS,
+  SOURCE_FILTER_OPTIONS,
   SUPPORTED_SOURCE_COUNT,
   SUPPORTED_SOURCES,
 } from "@/lib/sources";
@@ -88,5 +89,80 @@ describe("SOURCE_CONFIG", () => {
     // Assert
     expect(SOURCE_CONFIG.youtube.label).toBe("YouTube");
     expect(SOURCE_CONFIG.youtube.id).toBe("youtube");
+  });
+});
+
+describe("SOURCE_FILTER_OPTIONS", () => {
+  it("SOURCE_FILTER_OPTIONSが配列であること", () => {
+    // Assert
+    expect(Array.isArray(SOURCE_FILTER_OPTIONS)).toBe(true);
+  });
+
+  it("SOURCE_FILTER_OPTIONSに要素が存在すること", () => {
+    // Assert
+    expect(SOURCE_FILTER_OPTIONS.length).toBeGreaterThan(0);
+  });
+
+  it("先頭要素が「すべて」エントリ（value: undefined）であること", () => {
+    // Act
+    const first = SOURCE_FILTER_OPTIONS[0];
+
+    // Assert
+    expect(first.value).toBeUndefined();
+    expect("i18nKey" in first && first.i18nKey).toBe("home.filterAll");
+  });
+
+  it("otherを除くSOURCE_DEFINITIONSの各ソースが含まれること", () => {
+    // Arrange
+    const sourceValues = SOURCE_FILTER_OPTIONS.slice(1).map((opt) => opt.value);
+    const filteredDefs = SOURCE_DEFINITIONS.filter(({ id }) => id !== "other");
+
+    // Assert
+    for (const def of filteredDefs) {
+      expect(sourceValues).toContain(def.id);
+    }
+  });
+
+  it("otherがSOURCE_FILTER_OPTIONSに含まれないこと", () => {
+    // Arrange
+    const sourceValues = SOURCE_FILTER_OPTIONS.slice(1).map((opt) => opt.value);
+
+    // Assert
+    expect(sourceValues).not.toContain("other");
+  });
+
+  it("各ソースエントリに value と label が含まれること", () => {
+    // Arrange
+    const sourceOptions = SOURCE_FILTER_OPTIONS.slice(1);
+
+    // Assert
+    for (const opt of sourceOptions) {
+      expect(typeof opt.value).toBe("string");
+      expect("label" in opt && typeof opt.label).toBe("string");
+      expect("label" in opt && opt.label.length).toBeGreaterThan(0);
+    }
+  });
+
+  it("other除外後のSOURCE_DEFINITIONSと件数が一致すること", () => {
+    // Arrange: 先頭の「すべて」エントリを除く
+    const sourceOptions = SOURCE_FILTER_OPTIONS.slice(1);
+    const filteredDefs = SOURCE_DEFINITIONS.filter(({ id }) => id !== "other");
+
+    // Assert
+    expect(sourceOptions.length).toBe(filteredDefs.length);
+  });
+
+  it("SOURCE_FILTER_OPTIONSがother除外済みSOURCE_DEFINITIONSの全ソースを含むこと", () => {
+    // Arrange
+    const sourceOptions = SOURCE_FILTER_OPTIONS.slice(1);
+    const filteredDefs = SOURCE_DEFINITIONS.filter(({ id }) => id !== "other");
+
+    // Assert: other以外の全ソース定義に対応するエントリが存在する
+    for (const def of filteredDefs) {
+      const found = sourceOptions.some(
+        (opt) => opt.value === def.id && "label" in opt && opt.label === def.label,
+      );
+      expect(found).toBe(true);
+    }
   });
 });
