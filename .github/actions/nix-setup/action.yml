@@ -11,4 +11,6 @@ runs:
         echo "/nix/var/nix/profiles/default/bin" >> "$GITHUB_PATH"
     - name: Install deps (nix develop)
       shell: bash
-      run: nix develop .#ci --command pnpm install --frozen-lockfile
+      run: |
+        . /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh
+        nix develop .#ci --command pnpm install --frozen-lockfile
