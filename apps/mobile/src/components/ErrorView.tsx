@@ -69,7 +69,7 @@ export function ErrorView({
   const colors = useColors();
 
   /** エラー種別ごとのアイコン色 */
-  const ERROR_TYPE_COLORS: Record<ErrorType, string> = {
+  const errorTypeColors: Record<ErrorType, string> = {
     network: colors.warning,
     server: colors.error,
     generic: colors.error,
@@ -93,7 +93,7 @@ export function ErrorView({
 
   return (
     <View testID="error-view" className="flex-1 items-center justify-center px-8 py-12">
-      {getErrorIcon(errorType, ERROR_TYPE_COLORS)}
+      {getErrorIcon(errorType, errorTypeColors)}
 
       <Text testID="error-view-title" className="text-lg font-semibold text-text mt-4 text-center">
         {displayTitle}

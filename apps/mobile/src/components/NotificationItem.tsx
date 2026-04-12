@@ -109,7 +109,7 @@ export function NotificationItem({ notification, onPress }: NotificationItemProp
   const colors = useColors();
 
   /** 通知種別ごとのアイコン色 */
-  const TYPE_ICON_COLORS: Record<NotificationType, string> = {
+  const typeIconColors: Record<NotificationType, string> = {
     like: colors.favorite,
     comment: colors.info,
     follow: colors.success,
@@ -125,7 +125,7 @@ export function NotificationItem({ notification, onPress }: NotificationItemProp
       accessibilityRole="button"
       accessibilityLabel={notification.title}
     >
-      <View className="mt-0.5">{getNotificationIcon(notification.type, TYPE_ICON_COLORS)}</View>
+      <View className="mt-0.5">{getNotificationIcon(notification.type, typeIconColors)}</View>
 
       <View className="flex-1 gap-0.5">
         <View className="flex-row items-center justify-between">
