@@ -13,8 +13,11 @@ const FOLLOWING_ICON_COLOR = DARK_COLORS.text;
 /** 未フォローボタンのアイコンカラー */
 const NOT_FOLLOWING_ICON_COLOR = DARK_COLORS.white;
 
-/** ローディングインジケーターカラー */
-const LOADING_COLOR = DARK_COLORS.primary;
+/** フォロー済みブランチのローディングインジケーターカラー */
+const FOLLOWING_LOADING_COLOR = DARK_COLORS.primary;
+
+/** 未フォローブランチのローディングインジケーターカラー（白: 青背景上で視認可能） */
+const NOT_FOLLOWING_LOADING_COLOR = DARK_COLORS.white;
 
 type FollowButtonProps = {
   userId: string;
@@ -64,13 +67,13 @@ export function FollowButton({
         onPress={handlePress}
         disabled={isLoading}
         accessibilityState={{ disabled: isLoading }}
-        className="flex-row items-center justify-center gap-1.5 rounded-lg px-4 py-2 border border-border bg-surface opacity-[var(--opacity)]"
+        className="flex-row items-center justify-center gap-1.5 rounded-lg px-4 py-2 border border-border bg-surface"
         style={isLoading ? { opacity: 0.5 } : undefined}
         accessibilityRole="button"
         accessibilityLabel={isLoading ? "フォロー切り替え中" : "フォロー解除"}
       >
         {isLoading ? (
-          <ActivityIndicator size="small" color={LOADING_COLOR} />
+          <ActivityIndicator size="small" color={FOLLOWING_LOADING_COLOR} />
         ) : (
           <UserMinus size={ICON_SIZE} color={FOLLOWING_ICON_COLOR} />
         )}
@@ -93,7 +96,7 @@ export function FollowButton({
       accessibilityLabel={isLoading ? "フォロー切り替え中" : "フォローする"}
     >
       {isLoading ? (
-        <ActivityIndicator size="small" color={LOADING_COLOR} />
+        <ActivityIndicator size="small" color={NOT_FOLLOWING_LOADING_COLOR} />
       ) : (
         <UserPlus size={ICON_SIZE} color={NOT_FOLLOWING_ICON_COLOR} />
       )}
