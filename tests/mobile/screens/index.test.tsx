@@ -133,7 +133,7 @@ describe("HomeScreen", () => {
     });
   });
 
-  it("エラー時に再試行UIが表示されること", async () => {
+  it("エラー時にエラーメッセージが表示されること", async () => {
     (useArticles as jest.Mock).mockReturnValue({
       ...DEFAULT_USE_ARTICLES_MOCK,
       isError: true,
@@ -148,11 +148,51 @@ describe("HomeScreen", () => {
     });
   });
 
+  it("エラー時に再試行ボタンが表示されること", async () => {
+    (useArticles as jest.Mock).mockReturnValue({
+      ...DEFAULT_USE_ARTICLES_MOCK,
+      isError: true,
+      data: undefined,
+    });
+
+    const { getByText } = await render(<HomeScreen />);
+
+    await waitFor(() => {
+      expect(getByText("再試行")).not.toBeNull();
+    });
+  });
+
   it("未実装の詳細フィルター導線が表示されないこと", async () => {
     const { queryByLabelText } = await render(<HomeScreen />);
 
     await waitFor(() => {
       expect(queryByLabelText("フィルター")).toBeNull();
+    });
+  });
+
+  it("手書き配列にしかなかった'HN'ラベルが存在しないこと", async () => {
+    // Arrange
+    (useArticles as jest.Mock).mockReturnValue(DEFAULT_USE_ARTICLES_MOCK);
+
+    // Act
+    const { queryByLabelText } = await render(<HomeScreen />);
+
+    // Assert
+    await waitFor(() => {
+      expect(queryByLabelText("HN")).toBeNull();
+    });
+  });
+
+  it("sources.tsで定義されたHacker Newsラベルが存在すること", async () => {
+    // Arrange
+    (useArticles as jest.Mock).mockReturnValue(DEFAULT_USE_ARTICLES_MOCK);
+
+    // Act
+    const { getByLabelText } = await render(<HomeScreen />);
+
+    // Assert
+    await waitFor(() => {
+      expect(getByLabelText("Hacker News")).not.toBeNull();
     });
   });
 
