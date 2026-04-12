@@ -162,6 +162,9 @@
     "back": "뒤로",
     "edit": {
       "title": "프로필 편집",
+      "nameLabel": "이름",
+      "usernameLabel": "사용자 이름",
+      "bioLabel": "자기소개",
       "namePlaceholder": "이름을 입력하세요",
       "usernamePlaceholder": "username",
       "bioPlaceholder": "자기소개를 입력하세요",

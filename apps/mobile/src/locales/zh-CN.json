@@ -162,6 +162,9 @@
     "back": "返回",
     "edit": {
       "title": "编辑个人资料",
+      "nameLabel": "姓名",
+      "usernameLabel": "用户名",
+      "bioLabel": "简介",
       "namePlaceholder": "请输入姓名",
       "usernamePlaceholder": "username",
       "bioPlaceholder": "请输入个人简介",

@@ -162,6 +162,9 @@
     "back": "返回",
     "edit": {
       "title": "編輯個人資料",
+      "nameLabel": "姓名",
+      "usernameLabel": "使用者名稱",
+      "bioLabel": "簡介",
       "namePlaceholder": "請輸入姓名",
       "usernamePlaceholder": "username",
       "bioPlaceholder": "請輸入個人簡介",

@@ -83,6 +83,7 @@ function createPlaceholderFollowing(): UserItem[] {
 type UserListItemProps = {
   item: UserItem;
   onPress: (userId: string) => void;
+  userProfileLabel: string;
 };
 
 /**
@@ -90,9 +91,9 @@ type UserListItemProps = {
  *
  * @param item - 表示するユーザーデータ
  * @param onPress - タップ時のコールバック
+ * @param userProfileLabel - アクセシビリティラベル（翻訳済み文字列）
  */
-function UserListItem({ item, onPress }: UserListItemProps) {
-  const { t } = useTranslation();
+function UserListItem({ item, onPress, userProfileLabel }: UserListItemProps) {
   const handlePress = useCallback(() => {
     onPress(item.id);
   }, [item.id, onPress]);
@@ -102,7 +103,7 @@ function UserListItem({ item, onPress }: UserListItemProps) {
       testID={`user-item-${item.id}`}
       onPress={handlePress}
       accessibilityRole="button"
-      accessibilityLabel={t("profile.followers.userProfileLabel", { name: item.name })}
+      accessibilityLabel={userProfileLabel}
       className="flex-row items-center gap-3 px-4 py-3 border-b border-border"
     >
       {item.avatarUrl ? (
@@ -185,8 +186,14 @@ export default function FollowersScreen() {
   }, []);
 
   const renderItem = useCallback(
-    ({ item }: { item: UserItem }) => <UserListItem item={item} onPress={handleUserPress} />,
-    [handleUserPress],
+    ({ item }: { item: UserItem }) => (
+      <UserListItem
+        item={item}
+        onPress={handleUserPress}
+        userProfileLabel={t("profile.followers.userProfileLabel", { name: item.name })}
+      />
+    ),
+    [handleUserPress, t],
   );
 
   const keyExtractor = useCallback((item: UserItem) => item.id, []);
