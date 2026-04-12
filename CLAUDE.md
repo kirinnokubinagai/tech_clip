@@ -230,11 +230,10 @@ worktree-isolation-guard.sh により以下の制限がある（mainブランチ
 | Read / Grep / Glob | mainブランチから兄弟 worktree へのアクセスはブロックされる |
 | Bash（`cat`, `touch` 等） | worktree-isolation-guard の対象外（ただし他 hook による制約は受ける） |
 
-**例外（Edit/Write でも許可）:**
-- `.claude/**` 配下のファイル（設定ファイル）
-- `flake.nix`、`CLAUDE.md`、`AGENTS.md`、`turbo.json`、`package.json` 等のルート config
+**main ブランチ上での Edit/Write は全ファイルに対して禁止**（`.claude-user/` と `.omc/` を除く gitignore 済みファイルのみ許可）。
+`.claude/**` や `scripts/` であっても必ず worktree 経由で変更すること。
 
-ただし `.claude/.review-passed` と `.omc/state/**` は Edit/Write がブロックされる（is_blocked_file による）。
+なお `.claude/.review-passed` と `.omc/state/**` は worktree 上でも Edit/Write がブロックされる（is_blocked_file による）。
 これらのファイルは `touch`/`cat >` 等の Bash コマンドでのみ作成・変更可能（例: `touch <worktree>/.claude/.review-passed`）。
 
 | 項目 | 詳細 |
