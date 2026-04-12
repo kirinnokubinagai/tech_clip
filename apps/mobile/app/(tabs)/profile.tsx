@@ -33,7 +33,10 @@ export default function ProfileScreen() {
 
   if (!user) {
     return (
-      <View testID="profile-guest" className="flex-1 items-center justify-center px-4 bg-background">
+      <View
+        testID="profile-guest"
+        className="flex-1 items-center justify-center px-4 bg-background"
+      >
         <Text className="text-base text-text-muted text-center">
           ログインすると保存した記事やお気に入りが表示されます
         </Text>
