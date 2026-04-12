@@ -4,7 +4,7 @@ import { ActivityIndicator, Pressable, ScrollView, Text, View } from "react-nati
 import type { ProfileHeaderUser } from "@/components/ProfileHeader";
 import { ProfileHeader } from "@/components/ProfileHeader";
 import { DARK_COLORS } from "@/lib/constants";
-import { useAuthStore } from "../../src/stores/auth-store";
+import { useAuthStore } from "@/stores/auth-store";
 
 /** プライマリカラー */
 const PRIMARY_COLOR = DARK_COLORS.primary;
