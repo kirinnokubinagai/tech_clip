@@ -62,13 +62,13 @@ const ICON_SIZE = 20;
  */
 function SettingsRow({ icon, label, value, onPress, trailing, testID }: SettingsRowProps) {
   const { t } = useTranslation();
-  const COLORS = useColors();
+  const colors = useColors();
   const content = (
     <View className="flex-row items-center px-4 py-3">
       <View className="mr-3">{icon}</View>
       <Text className="flex-1 text-base text-text">{label}</Text>
       {value ? <Text className="text-sm text-text-muted mr-2">{value}</Text> : null}
-      {trailing ? trailing : <ChevronRight size={16} color={COLORS.textMuted} />}
+      {trailing ? trailing : <ChevronRight size={16} color={colors.textMuted} />}
     </View>
   );
 
@@ -99,7 +99,7 @@ function SettingsRow({ icon, label, value, onPress, trailing, testID }: Settings
 export default function SettingsScreen() {
   const { t } = useTranslation();
   const router = useRouter();
-  const COLORS = useColors();
+  const colors = useColors();
   const signOut = useAuthStore((s) => s.signOut);
   const deleteAccount = useAuthStore((s) => s.deleteAccount);
   const user = useAuthStore((s) => s.user);
@@ -207,20 +207,20 @@ export default function SettingsScreen() {
       <SectionTitle title={t("settings.sections.account")} />
       <View className="bg-surface mx-4 rounded-xl border border-border">
         <SettingsRow
-          icon={<User size={ICON_SIZE} color={COLORS.textMuted} />}
+          icon={<User size={ICON_SIZE} color={colors.textMuted} />}
           label={user?.name ?? t("settings.items.notLoggedIn")}
           value={user?.email ?? ""}
         />
         <SectionDivider />
         <SettingsRow
-          icon={<KeyRound size={ICON_SIZE} color={COLORS.textMuted} />}
+          icon={<KeyRound size={ICON_SIZE} color={colors.textMuted} />}
           label={t("settings.items.changePassword")}
           onPress={() => router.push("/settings/change-password")}
         />
         <SectionDivider />
         <SettingsRow
           testID="settings-logout-button"
-          icon={<LogOut size={ICON_SIZE} color={COLORS.error} />}
+          icon={<LogOut size={ICON_SIZE} color={colors.error} />}
           label={t("settings.items.logout")}
           onPress={handleLogout}
           trailing={<View />}
@@ -230,7 +230,7 @@ export default function SettingsScreen() {
       <SectionTitle title={t("settings.sections.subscription")} />
       <View className="bg-surface mx-4 rounded-xl border border-border">
         <SettingsRow
-          icon={<CreditCard size={ICON_SIZE} color={COLORS.textMuted} />}
+          icon={<CreditCard size={ICON_SIZE} color={colors.textMuted} />}
           label={t("settings.items.plan")}
           value={isSubscribed ? t("settings.plan.premium") : t("settings.plan.free")}
         />
@@ -240,7 +240,7 @@ export default function SettingsScreen() {
       <View className="bg-surface mx-4 rounded-xl border border-border">
         <SettingsRow
           testID="settings-language-button"
-          icon={<Globe size={ICON_SIZE} color={COLORS.textMuted} />}
+          icon={<Globe size={ICON_SIZE} color={colors.textMuted} />}
           label={t("settings.items.language")}
           value={languageLabel}
           onPress={handleLanguageSelect}
@@ -248,22 +248,22 @@ export default function SettingsScreen() {
         <SectionDivider />
         <SettingsRow
           testID="settings-summary-language-button"
-          icon={<Languages size={ICON_SIZE} color={COLORS.textMuted} />}
+          icon={<Languages size={ICON_SIZE} color={colors.textMuted} />}
           label={t("settings.items.summaryLanguage")}
           value={summaryLanguageLabel}
           onPress={handleSummaryLanguageSelect}
         />
         <SectionDivider />
         <SettingsRow
-          icon={<Bell size={ICON_SIZE} color={COLORS.textMuted} />}
+          icon={<Bell size={ICON_SIZE} color={colors.textMuted} />}
           label={t("settings.items.notifications")}
           trailing={
             <Switch
               testID="settings-notification-switch"
               value={isNotificationsEnabled}
               onValueChange={handleNotificationToggle}
-              trackColor={{ false: COLORS.border, true: COLORS.primary }}
-              thumbColor={COLORS.white}
+              trackColor={{ false: colors.border, true: colors.primary }}
+              thumbColor={colors.white}
               accessibilityLabel={t("settings.items.notifications")}
               accessibilityHint={
                 isNotificationsEnabled
@@ -280,7 +280,7 @@ export default function SettingsScreen() {
       <View className="bg-surface mx-4 rounded-xl border border-border">
         <SettingsRow
           testID="settings-delete-account-button"
-          icon={<Trash2 size={ICON_SIZE} color={COLORS.error} />}
+          icon={<Trash2 size={ICON_SIZE} color={colors.error} />}
           label={t("settings.items.deleteAccount")}
           onPress={handleDeleteAccount}
           trailing={<View />}

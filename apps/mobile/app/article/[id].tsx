@@ -47,84 +47,84 @@ export default function ArticleDetailScreen() {
   const { t } = useTranslation();
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
-  const COLORS = useColors();
+  const colors = useColors();
 
   /** Markdownのスタイル定義 */
   const markdownStyles = {
     body: {
-      color: COLORS.text,
+      color: colors.text,
       fontSize: 16,
       lineHeight: 26,
     },
     heading1: {
-      color: COLORS.text,
+      color: colors.text,
       fontSize: 24,
       fontWeight: "bold" as const,
       marginTop: 24,
       marginBottom: 12,
     },
     heading2: {
-      color: COLORS.text,
+      color: colors.text,
       fontSize: 20,
       fontWeight: "bold" as const,
       marginTop: 20,
       marginBottom: 10,
     },
     heading3: {
-      color: COLORS.text,
+      color: colors.text,
       fontSize: 18,
       fontWeight: "600" as const,
       marginTop: 16,
       marginBottom: 8,
     },
     paragraph: {
-      color: COLORS.text,
+      color: colors.text,
       fontSize: 16,
       lineHeight: 26,
       marginBottom: 12,
     },
     link: {
-      color: COLORS.primaryLight,
+      color: colors.primaryLight,
     },
     blockquote: {
-      backgroundColor: COLORS.card,
-      borderLeftColor: COLORS.primary,
+      backgroundColor: colors.card,
+      borderLeftColor: colors.primary,
       borderLeftWidth: 3,
       paddingLeft: 12,
       paddingVertical: 8,
       marginVertical: 8,
     },
     code_inline: {
-      backgroundColor: COLORS.card,
-      color: COLORS.primaryLight,
+      backgroundColor: colors.card,
+      color: colors.primaryLight,
       paddingHorizontal: 6,
       paddingVertical: 2,
       borderRadius: 4,
       fontSize: 14,
     },
     code_block: {
-      backgroundColor: COLORS.surface,
-      color: COLORS.text,
+      backgroundColor: colors.surface,
+      color: colors.text,
       padding: 12,
       borderRadius: 8,
       fontSize: 14,
       lineHeight: 22,
     },
     fence: {
-      backgroundColor: COLORS.surface,
-      color: COLORS.text,
+      backgroundColor: colors.surface,
+      color: colors.text,
       padding: 12,
       borderRadius: 8,
       fontSize: 14,
       lineHeight: 22,
     },
     list_item: {
-      color: COLORS.text,
+      color: colors.text,
       fontSize: 16,
       lineHeight: 26,
     },
     hr: {
-      backgroundColor: COLORS.border,
+      backgroundColor: colors.border,
       height: 1,
       marginVertical: 16,
     },
@@ -307,7 +307,7 @@ export default function ArticleDetailScreen() {
   if (isLoading) {
     return (
       <View className="flex-1 bg-background items-center justify-center">
-        <ActivityIndicator size="large" color={COLORS.primary} />
+        <ActivityIndicator size="large" color={colors.primary} />
         <Text className="text-text-muted mt-3">{t("common.loading")}</Text>
       </View>
     );
@@ -336,7 +336,7 @@ export default function ArticleDetailScreen() {
           accessibilityLabel={t("common.back")}
           hitSlop={8}
         >
-          <ArrowLeft size={BACK_ICON_SIZE} color={COLORS.text} />
+          <ArrowLeft size={BACK_ICON_SIZE} color={colors.text} />
         </Pressable>
         <View className="flex-row items-center gap-4">
           <Pressable
@@ -345,7 +345,7 @@ export default function ArticleDetailScreen() {
             accessibilityLabel={t("article.openInBrowser")}
             hitSlop={8}
           >
-            <ExternalLink size={HEADER_ICON_SIZE} color={COLORS.textMuted} />
+            <ExternalLink size={HEADER_ICON_SIZE} color={colors.textMuted} />
           </Pressable>
           <Pressable
             onPress={handleToggleFavorite}
@@ -357,8 +357,8 @@ export default function ArticleDetailScreen() {
           >
             <Heart
               size={HEADER_ICON_SIZE}
-              color={article.isFavorite ? COLORS.favorite : COLORS.textMuted}
-              fill={article.isFavorite ? COLORS.favorite : "transparent"}
+              color={article.isFavorite ? colors.favorite : colors.textMuted}
+              fill={article.isFavorite ? colors.favorite : "transparent"}
             />
           </Pressable>
         </View>
@@ -391,7 +391,7 @@ export default function ArticleDetailScreen() {
             disabled={requestSummary.isPending || !!article.summary || !!summaryJob}
             className="flex-row items-center gap-1.5 rounded-lg px-4 py-2.5"
             style={{
-              backgroundColor: article.summary ? COLORS.successSurface : COLORS.card,
+              backgroundColor: article.summary ? colors.successSurface : colors.card,
               opacity: requestSummary.isPending || summaryJob ? 0.6 : 1,
             }}
             accessibilityRole="button"
@@ -399,16 +399,16 @@ export default function ArticleDetailScreen() {
             testID="summary-button"
           >
             {requestSummary.isPending || summaryJob ? (
-              <ActivityIndicator size="small" color={COLORS.primary} />
+              <ActivityIndicator size="small" color={colors.primary} />
             ) : (
               <Sparkles
                 size={ACTION_ICON_SIZE}
-                color={article.summary ? COLORS.success : COLORS.primary}
+                color={article.summary ? colors.success : colors.primary}
               />
             )}
             <Text
               className="text-sm font-medium"
-              style={{ color: article.summary ? COLORS.success : COLORS.primaryLight }}
+              style={{ color: article.summary ? colors.success : colors.primaryLight }}
             >
               {article.summary ? t("article.summarized") : t("article.summarize")}
             </Text>
@@ -419,7 +419,7 @@ export default function ArticleDetailScreen() {
             disabled={requestTranslation.isPending || !!article.translation || !!translationJob}
             className="flex-row items-center gap-1.5 rounded-lg px-4 py-2.5"
             style={{
-              backgroundColor: article.translation ? COLORS.successSurface : COLORS.card,
+              backgroundColor: article.translation ? colors.successSurface : colors.card,
               opacity: requestTranslation.isPending || translationJob ? 0.6 : 1,
             }}
             accessibilityRole="button"
@@ -427,16 +427,16 @@ export default function ArticleDetailScreen() {
             testID="translation-button"
           >
             {requestTranslation.isPending || translationJob ? (
-              <ActivityIndicator size="small" color={COLORS.primary} />
+              <ActivityIndicator size="small" color={colors.primary} />
             ) : (
               <Languages
                 size={ACTION_ICON_SIZE}
-                color={article.translation ? COLORS.success : COLORS.primary}
+                color={article.translation ? colors.success : colors.primary}
               />
             )}
             <Text
               className="text-sm font-medium"
-              style={{ color: article.translation ? COLORS.success : COLORS.primaryLight }}
+              style={{ color: article.translation ? colors.success : colors.primaryLight }}
             >
               {article.translation ? t("article.translated") : t("article.translate")}
             </Text>
@@ -448,12 +448,12 @@ export default function ArticleDetailScreen() {
             <Text className="text-sm font-medium text-text mb-2">{t("common.generating")}</Text>
             <View
               className="h-2 rounded-full overflow-hidden"
-              style={{ backgroundColor: COLORS.card }}
+              style={{ backgroundColor: colors.card }}
             >
               <View
                 className="h-full rounded-full"
                 style={{
-                  backgroundColor: COLORS.primaryLight,
+                  backgroundColor: colors.primaryLight,
                   width: `${Math.min(summaryJob.progress, 80)}%`,
                 }}
               />
@@ -466,12 +466,12 @@ export default function ArticleDetailScreen() {
             <Text className="text-sm font-medium text-text mb-2">{t("common.generating")}</Text>
             <View
               className="h-2 rounded-full overflow-hidden"
-              style={{ backgroundColor: COLORS.card }}
+              style={{ backgroundColor: colors.card }}
             >
               <View
                 className="h-full rounded-full"
                 style={{
-                  backgroundColor: COLORS.success,
+                  backgroundColor: colors.success,
                   width: `${Math.min(translationJob.progress, 80)}%`,
                 }}
               />
@@ -482,7 +482,7 @@ export default function ArticleDetailScreen() {
         {article.summary && (
           <View className="mx-4 mt-2 p-4 rounded-xl bg-card border border-border">
             <View className="flex-row items-center gap-2 mb-2">
-              <Sparkles size={SECTION_ICON_SIZE} color={COLORS.success} />
+              <Sparkles size={SECTION_ICON_SIZE} color={colors.success} />
               <Text className="text-sm font-semibold text-success">
                 {t("article.summaryLabel")}
               </Text>
@@ -494,7 +494,7 @@ export default function ArticleDetailScreen() {
         {article.translation && (
           <View className="mx-4 mt-3 p-4 rounded-xl bg-card border border-border">
             <View className="flex-row items-center gap-2 mb-2">
-              <Globe size={SECTION_ICON_SIZE} color={COLORS.primaryLight} />
+              <Globe size={SECTION_ICON_SIZE} color={colors.primaryLight} />
               <Text className="text-sm font-semibold text-primary-light">
                 {t("article.translationLabel")}
               </Text>
@@ -510,7 +510,7 @@ export default function ArticleDetailScreen() {
             <View className="items-center py-8">
               <Text className="text-text-muted text-center">{t("article.noContent")}</Text>
               <Pressable onPress={handleOpenExternal} className="mt-3 flex-row items-center gap-2">
-                <ExternalLink size={SECTION_ICON_SIZE} color={COLORS.primary} />
+                <ExternalLink size={SECTION_ICON_SIZE} color={colors.primary} />
                 <Text className="text-primary">{t("article.viewOriginal")}</Text>
               </Pressable>
             </View>

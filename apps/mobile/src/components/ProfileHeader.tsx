@@ -64,7 +64,7 @@ function formatCount(count: number): string {
  * @param onSettingsPress - 設定アイコンタップ時のコールバック
  */
 export function ProfileHeader({ user, onSettingsPress }: ProfileHeaderProps) {
-  const COLORS = useColors();
+  const colors = useColors();
   return (
     <View testID="profile-header" className="px-4 pt-4 pb-6 bg-surface border-b border-border">
       <View className="flex-row items-start justify-between mb-4">
@@ -83,12 +83,12 @@ export function ProfileHeader({ user, onSettingsPress }: ProfileHeaderProps) {
                 width: AVATAR_SIZE,
                 height: AVATAR_SIZE,
                 borderRadius: AVATAR_SIZE / 2,
-                backgroundColor: COLORS.border,
+                backgroundColor: colors.border,
                 alignItems: "center",
                 justifyContent: "center",
               }}
             >
-              <Text style={{ color: COLORS.text, fontSize: 24, fontWeight: "bold" }}>
+              <Text style={{ color: colors.text, fontSize: 24, fontWeight: "bold" }}>
                 {getInitials(user.name)}
               </Text>
             </View>
@@ -115,7 +115,7 @@ export function ProfileHeader({ user, onSettingsPress }: ProfileHeaderProps) {
             hitSlop={8}
             className="p-1"
           >
-            <Settings size={SETTINGS_ICON_SIZE} color={COLORS.textMuted} />
+            <Settings size={SETTINGS_ICON_SIZE} color={colors.textMuted} />
           </Pressable>
         )}
       </View>

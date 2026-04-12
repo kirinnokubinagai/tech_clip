@@ -106,15 +106,15 @@ function formatRelativeTime(isoString: string): string {
  * @param onPress - タップ時のコールバック
  */
 export function NotificationItem({ notification, onPress }: NotificationItemProps) {
-  const COLORS = useColors();
+  const colors = useColors();
 
   /** 通知種別ごとのアイコン色 */
   const TYPE_ICON_COLORS: Record<NotificationType, string> = {
-    like: COLORS.favorite,
-    comment: COLORS.info,
-    follow: COLORS.success,
-    system: COLORS.warning,
-    article: COLORS.primary,
+    like: colors.favorite,
+    comment: colors.info,
+    follow: colors.success,
+    system: colors.warning,
+    article: colors.primary,
   };
 
   return (
@@ -144,7 +144,7 @@ export function NotificationItem({ notification, onPress }: NotificationItemProp
               <View
                 testID="unread-indicator"
                 className="w-2 h-2 rounded-full"
-                style={{ backgroundColor: COLORS.primary }}
+                style={{ backgroundColor: colors.primary }}
               />
             )}
           </View>

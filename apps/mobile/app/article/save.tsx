@@ -47,7 +47,7 @@ function validateUrl(url: string): string | null {
  * NativeWindダークテーマ、authStore + apiFetch使用。
  */
 export default function SaveScreen() {
-  const COLORS = useColors();
+  const colors = useColors();
   const { url: sharedUrl } = useLocalSearchParams<{ url?: string }>();
   const [url, setUrl] = useState(sharedUrl ?? "");
   const [preview, setPreview] = useState<ArticlePreview | null>(null);
@@ -143,7 +143,7 @@ export default function SaveScreen() {
               accessibilityHint="前の画面に戻ります"
               className="mr-3 p-1"
             >
-              <ArrowLeft size={ICON_SIZE_LG} color={COLORS.text} />
+              <ArrowLeft size={ICON_SIZE_LG} color={colors.text} />
             </Pressable>
             <Text className="text-xl font-bold text-text">記事を保存</Text>
           </View>
@@ -179,7 +179,7 @@ export default function SaveScreen() {
           {/* ローディング */}
           {isFetching && (
             <View testID="fetch-loading" className="items-center py-8">
-              <Loader2 size={ICON_SIZE_LG} color={COLORS.primary} />
+              <Loader2 size={ICON_SIZE_LG} color={colors.primary} />
               <Text className="mt-2 text-text-muted text-sm">記事を取得中...</Text>
             </View>
           )}
@@ -193,7 +193,7 @@ export default function SaveScreen() {
             >
               <AlertCircle
                 size={ERROR_ICON_SIZE}
-                color={COLORS.error}
+                color={colors.error}
                 accessibilityElementsHidden={true}
                 importantForAccessibility="no-hide-descendants"
               />
@@ -244,7 +244,7 @@ export default function SaveScreen() {
 
                 {/* URL表示 */}
                 <View className="flex-row items-center gap-1">
-                  <ExternalLink size={ICON_SIZE_SM} color={COLORS.textDim} />
+                  <ExternalLink size={ICON_SIZE_SM} color={colors.textDim} />
                   <Text className="text-text-dim text-xs flex-1" numberOfLines={1}>
                     {url.trim()}
                   </Text>

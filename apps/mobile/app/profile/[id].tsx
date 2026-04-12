@@ -37,7 +37,7 @@ function createPlaceholderUser(id: string): ProfileHeaderUser {
 export default function UserProfileScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
-  const COLORS = useColors();
+  const colors = useColors();
 
   const [isLoading, setIsLoading] = useState(false);
   const [isError, setIsError] = useState(false);
@@ -59,7 +59,7 @@ export default function UserProfileScreen() {
         testID="user-profile-loading"
         className="flex-1 bg-background items-center justify-center"
       >
-        <ActivityIndicator size="large" color={COLORS.primary} />
+        <ActivityIndicator size="large" color={colors.primary} />
         <Text className="text-text-muted mt-3">読み込み中...</Text>
       </View>
     );
@@ -110,7 +110,7 @@ export default function UserProfileScreen() {
           accessibilityLabel="戻る"
           hitSlop={8}
         >
-          <ArrowLeft size={BACK_ICON_SIZE} color={COLORS.text} />
+          <ArrowLeft size={BACK_ICON_SIZE} color={colors.text} />
         </Pressable>
         <Text className="text-lg font-bold text-text">{user.name}</Text>
         <View style={{ width: BACK_ICON_SIZE }} />

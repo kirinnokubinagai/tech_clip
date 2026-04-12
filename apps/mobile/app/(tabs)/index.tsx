@@ -40,7 +40,7 @@ const SOURCE_FILTER_STATIC: {
 export default function HomeScreen() {
   const { t } = useTranslation();
   const router = useRouter();
-  const COLORS = useColors();
+  const colors = useColors();
   const [selectedSource, setSelectedSource] = useState<ArticleSource | undefined>(undefined);
   const [isFavoriteOnly, setIsFavoriteOnly] = useState(false);
 
@@ -117,10 +117,10 @@ export default function HomeScreen() {
     if (!isFetchingNextPage) return null;
     return (
       <View className="py-4 items-center">
-        <ActivityIndicator size="small" color={COLORS.primary} />
+        <ActivityIndicator size="small" color={colors.primary} />
       </View>
     );
-  }, [isFetchingNextPage, COLORS.primary]);
+  }, [isFetchingNextPage, colors.primary]);
 
   const renderEmpty = useCallback(() => {
     if (isLoading || isOfflineLoading) return null;
@@ -144,13 +144,13 @@ export default function HomeScreen() {
             accessibilityLabel="再試行"
             accessibilityHint="記事の取得を再試行します"
           >
-            <RefreshCw size={FILTER_ICON_SIZE} color={COLORS.primary} />
+            <RefreshCw size={FILTER_ICON_SIZE} color={colors.primary} />
             <Text className="text-primary">{t("common.retry")}</Text>
           </Pressable>
         )}
       </View>
     );
-  }, [isLoading, isOfflineLoading, isOffline, isError, refetch, t, COLORS.primary]);
+  }, [isLoading, isOfflineLoading, isOffline, isError, refetch, t, colors.primary]);
 
   return (
     <View className="flex-1 bg-background">
@@ -166,7 +166,7 @@ export default function HomeScreen() {
               onPress={() => setSelectedSource(item.value)}
               className="rounded-full px-3 py-1.5"
               style={{
-                backgroundColor: selectedSource === item.value ? COLORS.primary : COLORS.card,
+                backgroundColor: selectedSource === item.value ? colors.primary : colors.card,
               }}
               accessibilityRole="button"
               accessibilityLabel={item.label}
@@ -176,7 +176,7 @@ export default function HomeScreen() {
               <Text
                 className="text-sm"
                 style={{
-                  color: selectedSource === item.value ? COLORS.white : COLORS.textMuted,
+                  color: selectedSource === item.value ? colors.white : colors.textMuted,
                 }}
               >
                 {item.label}
@@ -189,7 +189,7 @@ export default function HomeScreen() {
             onPress={() => setIsFavoriteOnly((prev) => !prev)}
             className="flex-row items-center gap-1.5 rounded-full px-3 py-1.5"
             style={{
-              backgroundColor: isFavoriteOnly ? COLORS.dangerSurface : COLORS.card,
+              backgroundColor: isFavoriteOnly ? colors.dangerSurface : colors.card,
             }}
             accessibilityRole="button"
             accessibilityLabel={
@@ -198,12 +198,12 @@ export default function HomeScreen() {
           >
             <Heart
               size={FILTER_ICON_SIZE}
-              color={isFavoriteOnly ? COLORS.favorite : COLORS.textMuted}
-              fill={isFavoriteOnly ? COLORS.favorite : "transparent"}
+              color={isFavoriteOnly ? colors.favorite : colors.textMuted}
+              fill={isFavoriteOnly ? colors.favorite : "transparent"}
             />
             <Text
               className="text-sm"
-              style={{ color: isFavoriteOnly ? COLORS.favorite : COLORS.textMuted }}
+              style={{ color: isFavoriteOnly ? colors.favorite : colors.textMuted }}
             >
               {t("home.favorites")}
             </Text>
@@ -213,7 +213,7 @@ export default function HomeScreen() {
 
       {isLoading || isOfflineLoading ? (
         <View className="flex-1 items-center justify-center">
-          <ActivityIndicator size="large" color={COLORS.primary} />
+          <ActivityIndicator size="large" color={colors.primary} />
           <Text className="text-text-muted mt-3">{t("home.loadingArticles")}</Text>
         </View>
       ) : (
@@ -229,7 +229,7 @@ export default function HomeScreen() {
             <RefreshControl
               refreshing={isRefetching}
               onRefresh={() => refetch()}
-              tintColor={COLORS.primary}
+              tintColor={colors.primary}
             />
           }
           contentContainerStyle={{ paddingTop: 4, paddingBottom: 20 }}

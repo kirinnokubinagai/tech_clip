@@ -66,13 +66,13 @@ export function ErrorView({
   retryLabel,
 }: ErrorViewProps) {
   const { t } = useTranslation();
-  const COLORS = useColors();
+  const colors = useColors();
 
   /** エラー種別ごとのアイコン色 */
   const ERROR_TYPE_COLORS: Record<ErrorType, string> = {
-    network: COLORS.warning,
-    server: COLORS.error,
-    generic: COLORS.error,
+    network: colors.warning,
+    server: colors.error,
+    generic: colors.error,
   };
 
   const defaultTitles: Record<ErrorType, string> = {
@@ -111,7 +111,7 @@ export function ErrorView({
           accessibilityRole="button"
           accessibilityLabel={displayRetryLabel}
         >
-          <RefreshCw size={RETRY_VIEW_ICON_SIZE} color={COLORS.white} />
+          <RefreshCw size={RETRY_VIEW_ICON_SIZE} color={colors.white} />
           <Text className="text-white font-semibold">{displayRetryLabel}</Text>
         </Pressable>
       )}

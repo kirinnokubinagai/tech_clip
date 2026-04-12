@@ -26,7 +26,7 @@ type LanguageRowProps = {
  * @param onSelect - 選択時のコールバック
  */
 function LanguageRow({ code, label, isSelected, onSelect }: LanguageRowProps) {
-  const COLORS = useColors();
+  const colors = useColors();
   return (
     <Pressable
       testID={`language-option-${code}`}
@@ -39,7 +39,7 @@ function LanguageRow({ code, label, isSelected, onSelect }: LanguageRowProps) {
         <Text className="text-base text-text">{label}</Text>
         {isSelected ? (
           <View testID={`language-check-${code}`}>
-            <Check size={CHECK_ICON_SIZE} color={COLORS.primary} />
+            <Check size={CHECK_ICON_SIZE} color={colors.primary} />
           </View>
         ) : null}
       </View>

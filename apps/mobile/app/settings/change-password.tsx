@@ -74,7 +74,7 @@ export function validateChangePasswordForm(data: ChangePasswordFormData, t: TFun
  * 現在のパスワード、新しいパスワード、確認用パスワードの入力フォームを提供する
  */
 export default function ChangePasswordScreen() {
-  const COLORS = useColors();
+  const colors = useColors();
   const { t } = useTranslation();
   const router = useRouter();
   const changePassword = useAuthStore((s) => s.changePassword);
@@ -147,7 +147,7 @@ export default function ChangePasswordScreen() {
           accessibilityLabel={t("common.back")}
           hitSlop={8}
         >
-          <ArrowLeft size={BACK_ICON_SIZE} color={COLORS.text} />
+          <ArrowLeft size={BACK_ICON_SIZE} color={colors.text} />
         </Pressable>
         <Text className="text-lg font-bold text-text">{t("settings.changePassword.title")}</Text>
         <View style={{ width: BACK_ICON_SIZE }} />

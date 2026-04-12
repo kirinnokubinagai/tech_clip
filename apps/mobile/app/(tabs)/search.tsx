@@ -22,7 +22,7 @@ const CLEAR_ICON_SIZE = 18;
  */
 export default function SearchScreen() {
   const router = useRouter();
-  const COLORS = useColors();
+  const colors = useColors();
   const [inputValue, setInputValue] = useState("");
   const [debouncedQuery, setDebouncedQuery] = useState("");
   const inputRef = useRef<TextInput>(null);
@@ -85,17 +85,17 @@ export default function SearchScreen() {
     if (!isFetchingNextPage) return null;
     return (
       <View className="py-4 items-center">
-        <ActivityIndicator size="small" color={COLORS.primary} />
+        <ActivityIndicator size="small" color={colors.primary} />
       </View>
     );
-  }, [isFetchingNextPage, COLORS.primary]);
+  }, [isFetchingNextPage, colors.primary]);
 
   const renderEmpty = useCallback(() => {
     if (isLoading) return null;
     if (!debouncedQuery) {
       return (
         <View className="flex-1 items-center justify-center py-20">
-          <Search size={48} color={COLORS.border} />
+          <Search size={48} color={colors.border} />
           <Text className="text-text-muted text-base mt-4">キーワードで記事を検索</Text>
           <Text className="text-text-dim text-sm mt-1">タイトルや内容から検索できます</Text>
         </View>
@@ -113,18 +113,18 @@ export default function SearchScreen() {
         )}
       </View>
     );
-  }, [isLoading, debouncedQuery, isError, refetch, COLORS.border]);
+  }, [isLoading, debouncedQuery, isError, refetch, colors.border]);
 
   return (
     <View className="flex-1 bg-background">
       <View className="px-4 pt-2 pb-3">
         <View className="flex-row items-center bg-card rounded-xl border border-border px-3 py-2 gap-2">
-          <Search size={SEARCH_ICON_SIZE} color={COLORS.textDim} />
+          <Search size={SEARCH_ICON_SIZE} color={colors.textDim} />
           <TextInput
             ref={inputRef}
             className="flex-1 text-text text-base py-1"
             placeholder="記事を検索..."
-            placeholderTextColor={COLORS.textDim}
+            placeholderTextColor={colors.textDim}
             value={inputValue}
             onChangeText={setInputValue}
             returnKeyType="search"
@@ -138,7 +138,7 @@ export default function SearchScreen() {
               accessibilityLabel="検索をクリア"
               hitSlop={8}
             >
-              <X size={CLEAR_ICON_SIZE} color={COLORS.textDim} />
+              <X size={CLEAR_ICON_SIZE} color={colors.textDim} />
             </Pressable>
           )}
         </View>
@@ -146,7 +146,7 @@ export default function SearchScreen() {
 
       {isLoading && debouncedQuery ? (
         <View className="flex-1 items-center justify-center">
-          <ActivityIndicator size="large" color={COLORS.primary} />
+          <ActivityIndicator size="large" color={colors.primary} />
           <Text className="text-text-muted mt-3">検索中...</Text>
         </View>
       ) : (

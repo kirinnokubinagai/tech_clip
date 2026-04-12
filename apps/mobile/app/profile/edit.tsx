@@ -112,7 +112,7 @@ export function validateProfileForm(data: ProfileFormData): FormErrors {
  * NativeWindダークテーマ対応。
  */
 export default function ProfileEditScreen() {
-  const COLORS = useColors();
+  const colors = useColors();
   const router = useRouter();
   const user = useAuthStore((s) => s.user);
   const { toast, show: showToast, dismiss: dismissToast } = useToast();
@@ -208,7 +208,7 @@ export default function ProfileEditScreen() {
           accessibilityLabel="戻る"
           hitSlop={8}
         >
-          <ArrowLeft size={BACK_ICON_SIZE} color={COLORS.text} />
+          <ArrowLeft size={BACK_ICON_SIZE} color={colors.text} />
         </Pressable>
         <Text className="text-lg font-bold text-text">プロフィール編集</Text>
         <View style={{ width: BACK_ICON_SIZE }} />
@@ -244,14 +244,14 @@ export default function ProfileEditScreen() {
                   width: AVATAR_SIZE,
                   height: AVATAR_SIZE,
                   borderRadius: AVATAR_SIZE / 2,
-                  backgroundColor: COLORS.border,
+                  backgroundColor: colors.border,
                   alignItems: "center",
                   justifyContent: "center",
                 }}
               >
                 <Text
                   style={{
-                    color: COLORS.text,
+                    color: colors.text,
                     fontSize: 28,
                     fontWeight: "bold",
                   }}
@@ -269,12 +269,12 @@ export default function ProfileEditScreen() {
                 width: 28,
                 height: 28,
                 borderRadius: 14,
-                backgroundColor: COLORS.primary,
+                backgroundColor: colors.primary,
                 alignItems: "center",
                 justifyContent: "center",
               }}
             >
-              <Camera size={CAMERA_ICON_SIZE} color={COLORS.white} />
+              <Camera size={CAMERA_ICON_SIZE} color={colors.white} />
             </View>
           </Pressable>
         </View>
@@ -346,7 +346,7 @@ export default function ProfileEditScreen() {
           <View className="pt-4">
             {isSaving ? (
               <View className="rounded-lg items-center justify-center px-4 py-2.5 bg-primary opacity-50">
-                <ActivityIndicator color={COLORS.white} />
+                <ActivityIndicator color={colors.white} />
               </View>
             ) : (
               <Button onPress={handleSave} disabled={isSaving}>

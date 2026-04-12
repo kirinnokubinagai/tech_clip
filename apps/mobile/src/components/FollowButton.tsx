@@ -27,7 +27,7 @@ export function FollowButton({
 }: FollowButtonProps) {
   const [isFollowing, setIsFollowing] = useState(initialFollowing);
   const [isLoading, setIsLoading] = useState(false);
-  const COLORS = useColors();
+  const colors = useColors();
 
   const handlePress = useCallback(async () => {
     setIsLoading(true);
@@ -53,7 +53,7 @@ export function FollowButton({
         accessibilityRole="button"
         accessibilityLabel="フォロー切り替え中"
       >
-        <ActivityIndicator size="small" color={COLORS.primary} />
+        <ActivityIndicator size="small" color={colors.primary} />
       </Pressable>
     );
   }
@@ -67,7 +67,7 @@ export function FollowButton({
         accessibilityRole="button"
         accessibilityLabel="フォロー解除"
       >
-        <UserMinus size={ICON_SIZE} color={COLORS.text} />
+        <UserMinus size={ICON_SIZE} color={colors.text} />
         <Text testID="follow-button-label" className="text-sm font-medium text-text">
           フォロー中
         </Text>
@@ -83,7 +83,7 @@ export function FollowButton({
       accessibilityRole="button"
       accessibilityLabel="フォローする"
     >
-      <UserPlus size={ICON_SIZE} color={COLORS.white} />
+      <UserPlus size={ICON_SIZE} color={colors.white} />
       <Text testID="follow-button-label" className="text-sm font-semibold text-white">
         フォローする
       </Text>

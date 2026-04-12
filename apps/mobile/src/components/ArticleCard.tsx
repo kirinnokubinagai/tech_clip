@@ -44,7 +44,7 @@ export const ArticleCard = memo(function ArticleCard({
   onToggleFavorite,
 }: ArticleCardProps) {
   const language = useSettingsStore((s) => s.language);
-  const COLORS = useColors();
+  const colors = useColors();
 
   return (
     <Pressable
@@ -103,14 +103,14 @@ export const ArticleCard = memo(function ArticleCard({
                 <Heart
                   testID="favorite-icon-filled"
                   size={FAVORITE_ICON_SIZE}
-                  color={COLORS.favorite}
-                  fill={COLORS.favorite}
+                  color={colors.favorite}
+                  fill={colors.favorite}
                 />
               ) : (
                 <Heart
                   testID="favorite-icon-outline"
                   size={FAVORITE_ICON_SIZE}
-                  color={COLORS.textMuted}
+                  color={colors.textMuted}
                 />
               )}
             </Pressable>

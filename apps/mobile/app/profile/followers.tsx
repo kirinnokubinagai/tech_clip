@@ -76,7 +76,7 @@ type UserListItemProps = {
  * @param onPress - タップ時のコールバック
  */
 function UserListItem({ item, onPress }: UserListItemProps) {
-  const COLORS = useColors();
+  const colors = useColors();
   const handlePress = useCallback(() => {
     onPress(item.id);
   }, [item.id, onPress]);
@@ -105,14 +105,14 @@ function UserListItem({ item, onPress }: UserListItemProps) {
             width: AVATAR_SIZE,
             height: AVATAR_SIZE,
             borderRadius: AVATAR_SIZE / 2,
-            backgroundColor: COLORS.border,
+            backgroundColor: colors.border,
             alignItems: "center",
             justifyContent: "center",
           }}
         >
           <Text
             style={{
-              color: COLORS.text,
+              color: colors.text,
               fontSize: 16,
               fontWeight: "bold",
             }}
@@ -140,7 +140,7 @@ function UserListItem({ item, onPress }: UserListItemProps) {
  * クエリパラメータ `tab` で初期タブを指定可能（"followers" | "following"）。
  */
 export default function FollowersScreen() {
-  const COLORS = useColors();
+  const colors = useColors();
   const { tab } = useLocalSearchParams<{ tab?: string }>();
   const router = useRouter();
 
@@ -198,7 +198,7 @@ export default function FollowersScreen() {
           accessibilityLabel="戻る"
           hitSlop={8}
         >
-          <ArrowLeft size={BACK_ICON_SIZE} color={COLORS.text} />
+          <ArrowLeft size={BACK_ICON_SIZE} color={colors.text} />
         </Pressable>
         <Text className="text-lg font-bold text-text">
           {activeTab === "followers" ? "フォロワー" : "フォロー中"}
@@ -215,7 +215,7 @@ export default function FollowersScreen() {
           className="flex-1 items-center py-3"
           style={
             activeTab === "followers"
-              ? { borderBottomWidth: 2, borderBottomColor: COLORS.primary }
+              ? { borderBottomWidth: 2, borderBottomColor: colors.primary }
               : undefined
           }
         >
@@ -237,7 +237,7 @@ export default function FollowersScreen() {
           className="flex-1 items-center py-3"
           style={
             activeTab === "following"
-              ? { borderBottomWidth: 2, borderBottomColor: COLORS.primary }
+              ? { borderBottomWidth: 2, borderBottomColor: colors.primary }
               : undefined
           }
         >
@@ -255,7 +255,7 @@ export default function FollowersScreen() {
 
       {isLoading ? (
         <View testID="followers-loading" className="flex-1 items-center justify-center">
-          <ActivityIndicator size="large" color={COLORS.primary} />
+          <ActivityIndicator size="large" color={colors.primary} />
           <Text className="text-text-muted mt-3">読み込み中...</Text>
         </View>
       ) : (
