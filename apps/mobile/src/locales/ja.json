@@ -156,9 +156,15 @@
     "guestUser": "ゲストユーザー",
     "loadingUser": "読み込み中...",
     "fetchError": "ユーザー情報の取得に失敗しました",
+    "retryHint": "ユーザー情報の取得を再試行します",
+    "backHint": "前の画面に戻ります",
+    "loadingHint": "しばらくお待ちください",
     "back": "戻る",
     "edit": {
       "title": "プロフィール編集",
+      "nameLabel": "名前",
+      "usernameLabel": "ユーザー名",
+      "bioLabel": "自己紹介",
       "namePlaceholder": "名前を入力",
       "usernamePlaceholder": "username",
       "bioPlaceholder": "自己紹介を入力",
@@ -184,7 +190,10 @@
       "noFollowers": "フォロワーはまだいません",
       "noFollowing": "フォロー中のユーザーはいません",
       "userProfileLabel": "{{name}}のプロフィールを表示",
-      "loading": "読み込み中..."
+      "loading": "読み込み中...",
+      "retry": "再試行",
+      "errorFollowers": "フォロワーの取得に失敗しました",
+      "errorFollowing": "フォロー中の取得に失敗しました"
     }
   },
   "settings": {
@@ -281,7 +290,7 @@
     "pages": {
       "save": {
         "title": "技術記事をワンタップで保存",
-        "description": "Zenn、Qiita、dev.toなど18サイトに対応。気になった記事をすぐ保存できます。"
+        "description": "Zenn、Qiita、dev.toなど{{count}}ソースに対応。気になった記事をすぐ保存できます。"
       },
       "ai": {
         "title": "AIが要約・翻訳",
@@ -298,7 +307,13 @@
     },
     "skip": "スキップ",
     "next": "次へ",
-    "start": "始める"
+    "start": "始める",
+    "accessibility": {
+      "pageIndicator": "{{current}}ページ目（全{{total}}ページ）",
+      "nextPageHint": "次のページ（{{next}}ページ目）に進みます",
+      "skipHint": "オンボーディングをスキップしてログイン画面に進みます",
+      "startHint": "アカウント作成画面に進みます"
+    }
   },
   "shareIntent": {
     "loading": "読み込み中",

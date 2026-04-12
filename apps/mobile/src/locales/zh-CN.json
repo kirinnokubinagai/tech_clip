@@ -156,9 +156,15 @@
     "guestUser": "访客用户",
     "loadingUser": "加载中...",
     "fetchError": "获取用户信息失败",
+    "retryHint": "重新获取用户信息",
+    "backHint": "返回上一个页面",
+    "loadingHint": "请稍候",
     "back": "返回",
     "edit": {
       "title": "编辑个人资料",
+      "nameLabel": "姓名",
+      "usernameLabel": "用户名",
+      "bioLabel": "简介",
       "namePlaceholder": "请输入姓名",
       "usernamePlaceholder": "username",
       "bioPlaceholder": "请输入个人简介",
@@ -184,7 +190,10 @@
       "noFollowers": "暂无关注者",
       "noFollowing": "未关注任何用户",
       "userProfileLabel": "查看{{name}}的个人资料",
-      "loading": "加载中..."
+      "loading": "加载中...",
+      "retry": "重试",
+      "errorFollowers": "获取关注者失败",
+      "errorFollowing": "获取关注中失败"
     }
   },
   "settings": {
@@ -281,7 +290,7 @@
     "pages": {
       "save": {
         "title": "一键保存技术文章",
-        "description": "支持Zenn、Qiita、dev.to等18个网站，随时保存感兴趣的文章。"
+        "description": "支持Zenn、Qiita、dev.to等{{count}}个来源，随时保存感兴趣的文章。"
       },
       "ai": {
         "title": "AI摘要与翻译",
@@ -298,7 +307,13 @@
     },
     "skip": "跳过",
     "next": "下一步",
-    "start": "开始"
+    "start": "开始",
+    "accessibility": {
+      "pageIndicator": "第{{current}}页（共{{total}}页）",
+      "nextPageHint": "前往第{{next}}页",
+      "skipHint": "跳过引导并前往登录界面",
+      "startHint": "前往创建账户界面"
+    }
   },
   "shareIntent": {
     "loading": "加载中",

@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import { View } from "react-native";
 
 import { Skeleton } from "../Skeleton";
@@ -21,11 +22,12 @@ const STAT_WIDTH = 60;
  * プロフィール画面のローディングスケルトン
  */
 export function ProfileSkeleton() {
+  const { t } = useTranslation();
   return (
     <View
       className="items-center px-4 pt-8"
-      accessibilityLabel="プロフィールを読み込み中"
-      accessibilityHint="しばらくお待ちください"
+      accessibilityLabel={t("profile.loadingUser")}
+      accessibilityHint={t("profile.loadingHint")}
       accessible={true}
     >
       <Skeleton width={AVATAR_SIZE} height={AVATAR_SIZE} borderRadius={40} />

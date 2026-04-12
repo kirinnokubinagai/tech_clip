@@ -156,9 +156,15 @@
     "guestUser": "게스트 사용자",
     "loadingUser": "불러오는 중...",
     "fetchError": "사용자 정보를 불러오는데 실패했습니다",
+    "retryHint": "사용자 정보를 다시 불러옵니다",
+    "backHint": "이전 화면으로 돌아갑니다",
+    "loadingHint": "잠시 기다려 주세요",
     "back": "뒤로",
     "edit": {
       "title": "프로필 편집",
+      "nameLabel": "이름",
+      "usernameLabel": "사용자 이름",
+      "bioLabel": "자기소개",
       "namePlaceholder": "이름을 입력하세요",
       "usernamePlaceholder": "username",
       "bioPlaceholder": "자기소개를 입력하세요",
@@ -184,7 +190,10 @@
       "noFollowers": "팔로워가 아직 없습니다",
       "noFollowing": "팔로잉 중인 사용자가 없습니다",
       "userProfileLabel": "{{name}}의 프로필 보기",
-      "loading": "불러오는 중..."
+      "loading": "불러오는 중...",
+      "retry": "다시 시도",
+      "errorFollowers": "팔로워를 불러오는데 실패했습니다",
+      "errorFollowing": "팔로잉을 불러오는데 실패했습니다"
     }
   },
   "settings": {
@@ -281,7 +290,7 @@
     "pages": {
       "save": {
         "title": "기술 기사를 한 번에 저장",
-        "description": "Zenn, Qiita, dev.to 등 18개 사이트를 지원합니다. 관심 있는 기사를 바로 저장하세요."
+        "description": "Zenn, Qiita, dev.to 등 {{count}}개 소스를 지원합니다. 관심 있는 기사를 바로 저장하세요."
       },
       "ai": {
         "title": "AI가 요약하고 번역합니다",
@@ -298,7 +307,13 @@
     },
     "skip": "건너뛰기",
     "next": "다음",
-    "start": "시작하기"
+    "start": "시작하기",
+    "accessibility": {
+      "pageIndicator": "{{current}}페이지（전체 {{total}}페이지）",
+      "nextPageHint": "다음 페이지（{{next}}페이지）로 이동합니다",
+      "skipHint": "온보딩을 건너뛰고 로그인 화면으로 이동합니다",
+      "startHint": "계정 만들기 화면으로 이동합니다"
+    }
   },
   "shareIntent": {
     "loading": "불러오는 중",
