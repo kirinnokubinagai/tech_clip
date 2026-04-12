@@ -8,6 +8,7 @@ env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 # 同一PRの再レビューが同時に複数実行されるのを防ぐ
+# cancel-in-progress: true は意図的 — 新しい再レビューコメントが来たら古い実行を破棄して最新コンテキストで再起動する。古い結果は無意味なため。
 concurrency:
   group: pr-comment-review-${{ github.event.issue.number }}
   cancel-in-progress: true
@@ -55,6 +56,8 @@ jobs:
         if: steps.fork-check.outputs.skip != 'true'
         with:
           # with: パラメータは env 変数を参照できないため ${{ }} 直接参照が必須
+          # PRのheadブランチをチェックアウトするのは意図的 — レビューはPR実際のSKILL.mdを参照する必要がある。
+          # プロンプトインジェクションリスクは author_association フィルタ（MEMBER/COLLABORATOR/OWNER のみ）で軽減済み。
           ref: refs/pull/${{ github.event.issue.number }}/head
 
       - id: review
