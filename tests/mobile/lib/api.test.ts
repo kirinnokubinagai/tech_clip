@@ -256,11 +256,17 @@ describe("apiFetch", () => {
         }),
       );
 
-      // Act & Assert
-      await expect(apiFetch("/articles")).rejects.toMatchObject({
-        status: 500,
-      });
-      await expect(apiFetch("/articles")).rejects.toBeInstanceOf(ApiHttpError);
+      // Act
+      let caughtError: unknown;
+      try {
+        await apiFetch("/articles");
+      } catch (e) {
+        caughtError = e;
+      }
+
+      // Assert
+      expect(caughtError).toBeInstanceOf(ApiHttpError);
+      expect((caughtError as ApiHttpError).status).toBe(500);
     });
 
     it("502で本文が空の場合はApiHttpErrorをスローすること", async () => {

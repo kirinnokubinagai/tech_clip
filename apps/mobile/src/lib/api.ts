@@ -85,9 +85,6 @@ export class ApiHttpError extends ApiError {
  * fetch自体が失敗した場合（オフライン、タイムアウト等）にスローする
  */
 export class ApiNetworkError extends ApiError {
-  /** 元のエラー */
-  public readonly cause?: unknown;
-
   constructor(message: string, cause?: unknown) {
     super(message);
     this.name = "ApiNetworkError";
@@ -168,12 +165,14 @@ function isSuccessStatus(status: number): boolean {
 }
 
 /**
- * Content-TypeヘッダーがJSONを示しているかどうかを判定する
+ * レスポンスをJSONとしてパースすべきかどうかを判定する
+ * Content-TypeがJSONを示している場合、またはContent-Typeヘッダーが存在しない場合に true を返す
+ * Content-TypeなしはJSONとして扱う（一部サーバーがヘッダーを省略するため）
  *
  * @param response - fetchレスポンス
- * @returns JSONを示している、またはヘッダーが無ければ true
+ * @returns JSONとしてパースすべきなら true
  */
-function isJsonContentType(response: Response): boolean {
+function shouldParseAsJson(response: Response): boolean {
   const contentType = response.headers.get("content-type");
   if (!contentType) {
     return true;
@@ -256,7 +255,7 @@ async function tryParseJson(response: Response): Promise<unknown> {
  * @throws ApiParseError - Content-TypeがJSON以外、またはJSONパース失敗時
  */
 async function parseSuccessBody<T>(response: Response): Promise<T> {
-  if (!isJsonContentType(response)) {
+  if (!shouldParseAsJson(response)) {
     throw new ApiParseError(response.status, PARSE_ERROR_MESSAGE);
   }
   const parsed = await tryParseJson(response);
