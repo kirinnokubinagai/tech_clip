@@ -22,11 +22,11 @@ jobs:
       deployments: write
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
-      - uses: ./.github/actions/nix-setup
       - name: Mask secrets
         run: |
           echo "::add-mask::${{ secrets.CLOUDFLARE_API_TOKEN }}"
           echo "::add-mask::${{ secrets.CLOUDFLARE_ACCOUNT_ID }}"
+      - uses: ./.github/actions/nix-setup
       - name: Deploy API to staging
         working-directory: apps/api
         run: nix develop --command pnpm wrangler deploy --env staging
@@ -111,11 +111,11 @@ jobs:
       deployments: write
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
-      - uses: ./.github/actions/nix-setup
       - name: Mask secrets
         run: |
           echo "::add-mask::${{ secrets.CLOUDFLARE_API_TOKEN }}"
           echo "::add-mask::${{ secrets.CLOUDFLARE_ACCOUNT_ID }}"
+      - uses: ./.github/actions/nix-setup
       - name: Deploy API to production
         working-directory: apps/api
         run: nix develop --command pnpm wrangler deploy --env production
