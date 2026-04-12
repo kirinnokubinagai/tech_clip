@@ -1,11 +1,11 @@
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { ArrowLeft } from "lucide-react-native";
-import { useCallback, useState } from "react";
+import { useCallback } from "react";
 import { ActivityIndicator, Pressable, ScrollView, Text, View } from "react-native";
 
 import { FollowButton } from "@/components/FollowButton";
-import type { ProfileHeaderUser } from "@/components/ProfileHeader";
 import { ProfileHeader } from "@/components/ProfileHeader";
+import { useFollowToggle, useUserProfile } from "@/hooks/use-user-profile";
 import { DARK_COLORS } from "@/lib/constants";
 
 /** 戻るアイコンのサイズ（px） */
@@ -18,23 +18,6 @@ const TEXT_COLOR = DARK_COLORS.text;
 const PRIMARY_COLOR = DARK_COLORS.primary;
 
 /**
- * プレースホルダーのユーザーデータを生成する
- * API実装後に置き換え予定
- *
- * @param id - ユーザーID
- * @returns ダミーのProfileHeaderUser
- */
-function createPlaceholderUser(id: string): ProfileHeaderUser {
-  return {
-    name: `ユーザー ${id}`,
-    bio: "技術記事が好きなエンジニアです。",
-    avatarUrl: null,
-    followersCount: 42,
-    followingCount: 18,
-  };
-}
-
-/**
  * 他ユーザープロフィール画面
  *
  * 他ユーザーのプロフィール情報を表示し、フォローボタンを提供する。
@@ -44,19 +27,24 @@ export default function UserProfileScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
 
-  const [isLoading, setIsLoading] = useState(false);
-  const [isError, setIsError] = useState(false);
+  const { data: user, isLoading, isError, refetch } = useUserProfile(id);
 
-  const user = createPlaceholderUser(id);
-  const [isFollowing] = useState(false);
+  const { mutate: followToggle } = useFollowToggle();
 
   const handleBack = useCallback(() => {
     router.back();
   }, [router]);
 
-  const handleFollowToggle = useCallback(async (_userId: string, _currentlyFollowing: boolean) => {
-    await new Promise((resolve) => setTimeout(resolve, 300));
-  }, []);
+  const handleFollowToggle = useCallback(
+    async (userId: string, currentlyFollowing: boolean) => {
+      followToggle({ userId, isFollowing: currentlyFollowing });
+    },
+    [followToggle],
+  );
+
+  const handleRetry = useCallback(() => {
+    refetch();
+  }, [refetch]);
 
   if (isLoading) {
     return (
@@ -70,7 +58,7 @@ export default function UserProfileScreen() {
     );
   }
 
-  if (isError) {
+  if (isError || !user) {
     return (
       <View
         testID="user-profile-error"
@@ -80,11 +68,7 @@ export default function UserProfileScreen() {
           ユーザー情報の取得に失敗しました
         </Text>
         <Pressable
-          onPress={() => {
-            setIsError(false);
-            setIsLoading(true);
-            setTimeout(() => setIsLoading(false), 500);
-          }}
+          onPress={handleRetry}
           className="mt-4 bg-primary rounded-lg px-6 py-3"
           accessibilityRole="button"
           accessibilityLabel="再試行"
@@ -125,7 +109,7 @@ export default function UserProfileScreen() {
         <ProfileHeader user={user} />
 
         <View testID="user-profile-follow-section" className="px-4 py-4">
-          <FollowButton userId={id} isFollowing={isFollowing} onToggle={handleFollowToggle} />
+          <FollowButton userId={id} isFollowing={false} onToggle={handleFollowToggle} />
         </View>
 
         <View className="px-4">
