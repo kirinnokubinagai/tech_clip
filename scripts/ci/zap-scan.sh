@@ -9,6 +9,9 @@
 #   TURSO_AUTH_TOKEN     - Turso 認証トークン
 #   BETTER_AUTH_SECRET   - Better Auth シークレット
 #   ENVIRONMENT          - 実行環境名
+#
+# ※ BETTER_AUTH_SECRET / ZAP_TEST_EMAIL / ZAP_TEST_PASSWORD が未設定の場合は
+#   CI用ダミー値が自動生成される（secrets 未設定環境での動作保証）
 
 set -euo pipefail
 
@@ -34,6 +37,10 @@ set -euo pipefail
 cd "$(git rev-parse --show-toplevel)"
 
 API_PORT=8787
+# スキャン全体の最大実行時間（分）
+MAX_SCAN_DURATION_MINS=5
+# 1ルールあたりの最大実行時間（分）
+MAX_RULE_DURATION_MINS=1
 ZAP_HOME=$(mktemp -d)
 SETUP_LOG=/tmp/zap-setup.log
 touch "${SETUP_LOG}"
@@ -50,6 +57,10 @@ trap cleanup EXIT
 # ZAP スキャンは AI エンドポイントを実際に叩く必要はなく、API サーバの起動だけが目的なのでローカルモードで十分。
 # NOTE: wrangler 4.77.0 で動作確認済み。--local フラグの廃止は wrangler のリリースノートを確認すること。
 #       廃止された場合は wrangler dev --env <env> 相当の代替手段を検討する。
+: "${BETTER_AUTH_SECRET:=$(openssl rand -hex 32)}"
+: "${ZAP_TEST_EMAIL:="zap-test-$(openssl rand -hex 4)@example.com"}"
+: "${ZAP_TEST_PASSWORD:="ZapTest$(openssl rand -hex 8)!"}"
+
 TURSO_DATABASE_URL="${TURSO_DATABASE_URL}" \
 TURSO_AUTH_TOKEN="${TURSO_AUTH_TOKEN}" \
 BETTER_AUTH_SECRET="${BETTER_AUTH_SECRET}" \
@@ -133,6 +144,25 @@ if [ -n "${TOKEN}" ]; then
       --data-urlencode "initiators=" > /dev/null 2>&1
   )
 fi
+
+# スキャン時間上限を設定（タイムアウト防止）
+ZAP_DURATION_RESULT=$(curl -s "http://localhost:${ZAP_PORT}/JSON/ascan/action/setOptionMaxScanDurationInMins/" \
+  --data-urlencode "apikey=${ZAP_API_KEY}" \
+  --data-urlencode "Integer=${MAX_SCAN_DURATION_MINS}")
+if ! printf '%s' "${ZAP_DURATION_RESULT}" | jq -e '.Result == "OK"' > /dev/null 2>&1; then
+  echo "::error::スキャン全体時間上限の設定に失敗しました: ${ZAP_DURATION_RESULT}"
+  exit 1
+fi
+echo "setOptionMaxScanDurationInMins: ${ZAP_DURATION_RESULT}" >> "${SETUP_LOG}"
+
+ZAP_RULE_RESULT=$(curl -s "http://localhost:${ZAP_PORT}/JSON/ascan/action/setOptionMaxRuleDurationInMins/" \
+  --data-urlencode "apikey=${ZAP_API_KEY}" \
+  --data-urlencode "Integer=${MAX_RULE_DURATION_MINS}")
+if ! printf '%s' "${ZAP_RULE_RESULT}" | jq -e '.Result == "OK"' > /dev/null 2>&1; then
+  echo "::error::スキャンルール時間上限の設定に失敗しました: ${ZAP_RULE_RESULT}"
+  exit 1
+fi
+echo "setOptionMaxRuleDurationInMins: ${ZAP_RULE_RESULT}" >> "${SETUP_LOG}"
 
 echo "アクティブスキャン実行中..."
 SCAN_ID=$(curl -s "http://localhost:${ZAP_PORT}/JSON/ascan/action/scan/" \
