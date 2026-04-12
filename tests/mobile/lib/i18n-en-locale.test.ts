@@ -19,9 +19,9 @@ function extractLeafEntries(
     const fullKey = prefix ? `${prefix}.${k}` : k;
     if (v !== null && typeof v === "object" && !Array.isArray(v)) {
       result.push(...extractLeafEntries(v as Record<string, unknown>, fullKey));
-    } else {
-      result.push({ key: fullKey, value: v });
+      continue;
     }
+    result.push({ key: fullKey, value: v });
   }
   return result;
 }

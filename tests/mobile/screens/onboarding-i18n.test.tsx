@@ -58,8 +58,6 @@ describe("OnboardingScreen（i18n 対応状況の記録）", () => {
   describe("i18n 対応後の期待値（現在は失敗する）", () => {
     it.failing("英語ロケール時にスキップボタンが英語で表示されること（i18n 未対応のため現在は失敗）", async () => {
       // Arrange
-      // NOTE: jest.mock はファイル先頭にホイストされるため、このブロック内での呼び出しはモジュール解決に影響しない。
-      // OnboardingScreen に i18n を実装した後、このテストは別ファイルで書き直す必要がある。
 
       // Act
       const { getByText } = await render(<OnboardingScreen />);
