@@ -18,8 +18,37 @@
     "start": "Get Started",
     "accessibility": {
       "tapToChange": "Tap to change",
-      "currentValue": "{{label}}, current: {{value}}"
-    }
+      "currentValue": "{{label}}, current: {{value}}",
+      "loading": "Loading",
+      "loadingHint": "Loading content",
+      "pleaseWait": "Please wait",
+      "loadingArticleList": "Loading article list",
+      "loadingProfile": "Loading profile",
+      "loadingArticleDetail": "Loading article detail",
+      "tagInput": "Enter new tag",
+      "addTag": "Add tag",
+      "followSwitching": "Switching follow status",
+      "unfollow": "Unfollow",
+      "follow": "Follow",
+      "offline": "You are offline",
+      "close": "Close",
+      "purchasePremium": "Purchase premium plan",
+      "settings": "Settings",
+      "deselectTag": "Deselect {{tag}}",
+      "selectTag": "Select {{tag}}"
+    },
+    "following": "Following",
+    "follow": "Follow",
+    "offline": "Offline",
+    "tagInputPlaceholder": "Add new tag",
+    "tagLimitMessage": "You can select up to {{max}} tags"
+  },
+  "premium": {
+    "title": "Premium Plan",
+    "monthlyUsage": "Monthly AI feature usage",
+    "limitReached": "You have reached the free plan limit",
+    "featuresTitle": "Features available with premium plan",
+    "purchaseButton": "Purchase premium plan"
   },
   "auth": {
     "login": "Log in",
@@ -151,6 +180,8 @@
     "loadingNotifications": "Loading..."
   },
   "profile": {
+    "followersLabel": "Followers",
+    "followingLabel": "Following",
     "loginPrompt": "Log in to see your saved articles and favorites",
     "editProfile": "Edit Profile",
     "savedArticles": "Saved Articles",
