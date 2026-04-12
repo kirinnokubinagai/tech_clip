@@ -89,13 +89,16 @@ Primary スケール（Tailwind Teal ベース）
 セマンティックカラーはライト / ダーク共通で同一値を使用する。
 色だけで意味を伝えないよう、アイコンやラベルと組み合わせること。
 
-| トークン | 値 | 用途 |
-|---------|-----|------|
-| `success` | `#22c55e` | 成功状態（完了、OK） |
-| `error` | `#ef4444` | エラー状態、危険操作 |
-| `warning` | `#f59e0b` | 警告、注意が必要な状態 |
-| `info` | `#3b82f6` | 情報、ヒント |
-| `favorite` | `#ef4444` | お気に入り / いいね（赤） |
+| トークン | 値 | 用途 | 現在の定義場所 |
+|---------|-----|------|--------------|
+| `success` | `#22c55e` | 成功状態（完了、OK） | `SEMANTIC_COLORS` |
+| `error` | `#ef4444` | エラー状態、危険操作 | `SEMANTIC_COLORS` |
+| `warning` | `#f59e0b` | 警告、注意が必要な状態 | `SEMANTIC_COLORS` |
+| `info` | `#3b82f6` | 情報、ヒント | `LIGHT_COLORS` / `DARK_COLORS`（タスク #7 で `SEMANTIC_COLORS` に移行予定） |
+| `favorite` | `#ef4444` | お気に入り / いいね（赤） | `SEMANTIC_COLORS` |
+
+> **注意**: `info` は現状 `LIGHT_COLORS` / `DARK_COLORS` に定義されている。
+> 両テーマで同一値（`#3b82f6`）を使用しており、将来 `SEMANTIC_COLORS` に集約する予定（移行タスク #7）。
 
 セマンティックカラーの `successSurface` / `dangerSurface` はテーマ固有のため、
 ライト / ダークそれぞれに定義する（現状どおり `LIGHT_COLORS` / `DARK_COLORS` に含める）。
@@ -145,6 +148,7 @@ Primary スケール（Tailwind Teal ベース）
 | 4 | `_layout.tsx` の `|| true` を除去し、`useColorScheme` に完全対応 | `_layout.tsx` |
 | 5 | `article/[id].tsx` のカラー参照をテーマ動的切替に対応 | `article/[id].tsx` |
 | 6 | `ThemeColors` 型から `accent` トークンを削除（Primary 一本化後） | `constants.ts` |
+| 7 | `LIGHT_COLORS.info` / `DARK_COLORS.info` を `SEMANTIC_COLORS` に移動 | `constants.ts` |
 
 ---
 
