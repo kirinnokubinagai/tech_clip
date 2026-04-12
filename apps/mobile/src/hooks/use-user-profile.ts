@@ -7,9 +7,6 @@ import { apiFetch } from "@/lib/api";
 /** 公開プロフィールのクエリキー */
 const USER_PROFILE_QUERY_KEY = "user-profile";
 
-/** 後方互換のための型エイリアス */
-export type UserPublicProfile = PublicProfile;
-
 /** 公開プロフィールAPIのレスポンス型 */
 type UserPublicProfileResponse =
   | {
@@ -31,7 +28,7 @@ type UserPublicProfileResponse =
  * @returns 公開プロフィールデータ
  * @throws APIエラー時
  */
-async function fetchUserProfile(userId: string): Promise<UserPublicProfile> {
+async function fetchUserProfile(userId: string): Promise<PublicProfile> {
   const response = await apiFetch<UserPublicProfileResponse>(`/api/users/${userId}/profile`);
 
   if (!response.success) {

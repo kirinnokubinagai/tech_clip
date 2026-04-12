@@ -4,8 +4,6 @@ import { Hono } from "hono";
 import { NOT_FOUND_ERROR_CODE } from "../lib/error-codes";
 import { HTTP_NOT_FOUND, HTTP_OK } from "../lib/http-status";
 
-export type { PublicProfile };
-
 /** ユーザー未発見エラーメッセージ */
 const USER_NOT_FOUND_MESSAGE = "ユーザーが見つかりません";
 
