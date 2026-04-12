@@ -74,9 +74,9 @@ export default function ProfileScreen() {
             onPress={handleLoginPress}
             className="bg-primary rounded-lg px-8 py-3"
             accessibilityRole="button"
-            accessibilityLabel="ログイン"
+            accessibilityLabel={t("auth.login")}
           >
-            <Text className="text-white font-semibold text-base">ログイン</Text>
+            <Text className="text-white font-semibold text-base">{t("auth.login")}</Text>
           </Pressable>
         </View>
       </ScrollView>
