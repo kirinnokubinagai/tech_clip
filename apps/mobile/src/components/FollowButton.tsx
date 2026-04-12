@@ -2,19 +2,10 @@ import { UserMinus, UserPlus } from "lucide-react-native";
 import { useCallback, useState } from "react";
 import { ActivityIndicator, Pressable, Text } from "react-native";
 
-import { DARK_COLORS } from "@/lib/constants";
+import { useColors } from "@/hooks/use-colors";
 
 /** フォローボタンのアイコンサイズ（px） */
 const ICON_SIZE = 16;
-
-/** フォロー済みボタンのアイコンカラー */
-const FOLLOWING_ICON_COLOR = DARK_COLORS.text;
-
-/** 未フォローボタンのアイコンカラー */
-const NOT_FOLLOWING_ICON_COLOR = DARK_COLORS.white;
-
-/** ローディングインジケーターカラー */
-const LOADING_COLOR = DARK_COLORS.primary;
 
 type FollowButtonProps = {
   userId: string;
@@ -36,6 +27,7 @@ export function FollowButton({
 }: FollowButtonProps) {
   const [isFollowing, setIsFollowing] = useState(initialFollowing);
   const [isLoading, setIsLoading] = useState(false);
+  const COLORS = useColors();
 
   const handlePress = useCallback(async () => {
     setIsLoading(true);
@@ -61,7 +53,7 @@ export function FollowButton({
         accessibilityRole="button"
         accessibilityLabel="フォロー切り替え中"
       >
-        <ActivityIndicator size="small" color={LOADING_COLOR} />
+        <ActivityIndicator size="small" color={COLORS.primary} />
       </Pressable>
     );
   }
@@ -75,7 +67,7 @@ export function FollowButton({
         accessibilityRole="button"
         accessibilityLabel="フォロー解除"
       >
-        <UserMinus size={ICON_SIZE} color={FOLLOWING_ICON_COLOR} />
+        <UserMinus size={ICON_SIZE} color={COLORS.text} />
         <Text testID="follow-button-label" className="text-sm font-medium text-text">
           フォロー中
         </Text>
@@ -91,7 +83,7 @@ export function FollowButton({
       accessibilityRole="button"
       accessibilityLabel="フォローする"
     >
-      <UserPlus size={ICON_SIZE} color={NOT_FOLLOWING_ICON_COLOR} />
+      <UserPlus size={ICON_SIZE} color={COLORS.white} />
       <Text testID="follow-button-label" className="text-sm font-semibold text-white">
         フォローする
       </Text>

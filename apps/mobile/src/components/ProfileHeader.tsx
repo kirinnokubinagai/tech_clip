@@ -2,7 +2,7 @@ import { Image } from "expo-image";
 import { Settings } from "lucide-react-native";
 import { Pressable, Text, View } from "react-native";
 
-import { DARK_COLORS } from "@/lib/constants";
+import { useColors } from "@/hooks/use-colors";
 
 /** プロフィールヘッダーに渡すユーザーデータ */
 export type ProfileHeaderUser = {
@@ -23,15 +23,6 @@ const AVATAR_SIZE = 80;
 
 /** 設定アイコンのサイズ（px） */
 const SETTINGS_ICON_SIZE = 22;
-
-/** 設定アイコンのカラー */
-const SETTINGS_ICON_COLOR = DARK_COLORS.textMuted;
-
-/** アバターのフォールバック背景色 */
-const AVATAR_FALLBACK_BG = DARK_COLORS.border;
-
-/** アバターのフォールバックテキスト色 */
-const AVATAR_FALLBACK_TEXT_COLOR = DARK_COLORS.text;
 
 /**
  * ユーザー名の頭文字を取得する
@@ -73,6 +64,7 @@ function formatCount(count: number): string {
  * @param onSettingsPress - 設定アイコンタップ時のコールバック
  */
 export function ProfileHeader({ user, onSettingsPress }: ProfileHeaderProps) {
+  const COLORS = useColors();
   return (
     <View testID="profile-header" className="px-4 pt-4 pb-6 bg-surface border-b border-border">
       <View className="flex-row items-start justify-between mb-4">
@@ -91,12 +83,12 @@ export function ProfileHeader({ user, onSettingsPress }: ProfileHeaderProps) {
                 width: AVATAR_SIZE,
                 height: AVATAR_SIZE,
                 borderRadius: AVATAR_SIZE / 2,
-                backgroundColor: AVATAR_FALLBACK_BG,
+                backgroundColor: COLORS.border,
                 alignItems: "center",
                 justifyContent: "center",
               }}
             >
-              <Text style={{ color: AVATAR_FALLBACK_TEXT_COLOR, fontSize: 24, fontWeight: "bold" }}>
+              <Text style={{ color: COLORS.text, fontSize: 24, fontWeight: "bold" }}>
                 {getInitials(user.name)}
               </Text>
             </View>
@@ -123,7 +115,7 @@ export function ProfileHeader({ user, onSettingsPress }: ProfileHeaderProps) {
             hitSlop={8}
             className="p-1"
           >
-            <Settings size={SETTINGS_ICON_SIZE} color={SETTINGS_ICON_COLOR} />
+            <Settings size={SETTINGS_ICON_SIZE} color={COLORS.textMuted} />
           </Pressable>
         )}
       </View>

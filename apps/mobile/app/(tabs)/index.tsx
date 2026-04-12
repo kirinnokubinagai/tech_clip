@@ -6,22 +6,10 @@ import { ActivityIndicator, FlatList, Pressable, RefreshControl, Text, View } fr
 
 import { ArticleCard } from "@/components/ArticleCard";
 import { useArticles, useToggleFavorite } from "@/hooks/use-articles";
+import { useColors } from "@/hooks/use-colors";
 import { useNetworkStatus } from "@/hooks/use-network-status";
 import { useOfflineArticles } from "@/hooks/use-offline-articles";
-import { DARK_COLORS } from "@/lib/constants";
 import type { ArticleListItem, ArticleSource } from "@/types/article";
-
-/** フィルターチップのアクティブ背景色 */
-const FILTER_ACTIVE_BG = DARK_COLORS.primary;
-
-/** フィルターチップの非アクティブ背景色 */
-const FILTER_INACTIVE_BG = DARK_COLORS.card;
-
-/** お気に入りフィルターのアクティブ色 */
-const FAVORITE_ACTIVE_COLOR = DARK_COLORS.favorite;
-
-/** お気に入りフィルターの非アクティブ色 */
-const FAVORITE_INACTIVE_COLOR = DARK_COLORS.textMuted;
 
 /** フィルターアイコンサイズ */
 const FILTER_ICON_SIZE = 16;
@@ -52,6 +40,7 @@ const SOURCE_FILTER_STATIC: {
 export default function HomeScreen() {
   const { t } = useTranslation();
   const router = useRouter();
+  const COLORS = useColors();
   const [selectedSource, setSelectedSource] = useState<ArticleSource | undefined>(undefined);
   const [isFavoriteOnly, setIsFavoriteOnly] = useState(false);
 
@@ -128,10 +117,10 @@ export default function HomeScreen() {
     if (!isFetchingNextPage) return null;
     return (
       <View className="py-4 items-center">
-        <ActivityIndicator size="small" color={FILTER_ACTIVE_BG} />
+        <ActivityIndicator size="small" color={COLORS.primary} />
       </View>
     );
-  }, [isFetchingNextPage]);
+  }, [isFetchingNextPage, COLORS.primary]);
 
   const renderEmpty = useCallback(() => {
     if (isLoading || isOfflineLoading) return null;
@@ -155,13 +144,13 @@ export default function HomeScreen() {
             accessibilityLabel="再試行"
             accessibilityHint="記事の取得を再試行します"
           >
-            <RefreshCw size={FILTER_ICON_SIZE} color={FILTER_ACTIVE_BG} />
+            <RefreshCw size={FILTER_ICON_SIZE} color={COLORS.primary} />
             <Text className="text-primary">{t("common.retry")}</Text>
           </Pressable>
         )}
       </View>
     );
-  }, [isLoading, isOfflineLoading, isOffline, isError, refetch, t]);
+  }, [isLoading, isOfflineLoading, isOffline, isError, refetch, t, COLORS.primary]);
 
   return (
     <View className="flex-1 bg-background">
@@ -177,8 +166,7 @@ export default function HomeScreen() {
               onPress={() => setSelectedSource(item.value)}
               className="rounded-full px-3 py-1.5"
               style={{
-                backgroundColor:
-                  selectedSource === item.value ? FILTER_ACTIVE_BG : FILTER_INACTIVE_BG,
+                backgroundColor: selectedSource === item.value ? COLORS.primary : COLORS.card,
               }}
               accessibilityRole="button"
               accessibilityLabel={item.label}
@@ -188,7 +176,7 @@ export default function HomeScreen() {
               <Text
                 className="text-sm"
                 style={{
-                  color: selectedSource === item.value ? DARK_COLORS.white : DARK_COLORS.textMuted,
+                  color: selectedSource === item.value ? COLORS.white : COLORS.textMuted,
                 }}
               >
                 {item.label}
@@ -201,7 +189,7 @@ export default function HomeScreen() {
             onPress={() => setIsFavoriteOnly((prev) => !prev)}
             className="flex-row items-center gap-1.5 rounded-full px-3 py-1.5"
             style={{
-              backgroundColor: isFavoriteOnly ? DARK_COLORS.dangerSurface : FILTER_INACTIVE_BG,
+              backgroundColor: isFavoriteOnly ? COLORS.dangerSurface : COLORS.card,
             }}
             accessibilityRole="button"
             accessibilityLabel={
@@ -210,12 +198,12 @@ export default function HomeScreen() {
           >
             <Heart
               size={FILTER_ICON_SIZE}
-              color={isFavoriteOnly ? FAVORITE_ACTIVE_COLOR : FAVORITE_INACTIVE_COLOR}
-              fill={isFavoriteOnly ? FAVORITE_ACTIVE_COLOR : "transparent"}
+              color={isFavoriteOnly ? COLORS.favorite : COLORS.textMuted}
+              fill={isFavoriteOnly ? COLORS.favorite : "transparent"}
             />
             <Text
               className="text-sm"
-              style={{ color: isFavoriteOnly ? FAVORITE_ACTIVE_COLOR : DARK_COLORS.textMuted }}
+              style={{ color: isFavoriteOnly ? COLORS.favorite : COLORS.textMuted }}
             >
               {t("home.favorites")}
             </Text>
@@ -225,7 +213,7 @@ export default function HomeScreen() {
 
       {isLoading || isOfflineLoading ? (
         <View className="flex-1 items-center justify-center">
-          <ActivityIndicator size="large" color={FILTER_ACTIVE_BG} />
+          <ActivityIndicator size="large" color={COLORS.primary} />
           <Text className="text-text-muted mt-3">{t("home.loadingArticles")}</Text>
         </View>
       ) : (
@@ -241,7 +229,7 @@ export default function HomeScreen() {
             <RefreshControl
               refreshing={isRefetching}
               onRefresh={() => refetch()}
-              tintColor={DARK_COLORS.primary}
+              tintColor={COLORS.primary}
             />
           }
           contentContainerStyle={{ paddingTop: 4, paddingBottom: 20 }}

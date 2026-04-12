@@ -4,9 +4,9 @@ import { AlertCircle, ArrowLeft, ExternalLink, Loader2 } from "lucide-react-nati
 import { useCallback, useState } from "react";
 import { Image, Pressable, ScrollView, Text, View } from "react-native";
 import { Button, Card, Input, SourceBadge, Toast } from "@/components/ui";
+import { useColors } from "@/hooks/use-colors";
 import { useToast } from "@/hooks/use-toast";
 import { apiFetch } from "@/lib/api";
-import { DARK_COLORS } from "@/lib/constants";
 import type { ArticlePreview, ParseArticleResponse, SaveArticleResponse } from "@/types/article";
 
 /** URL正規表現パターン */
@@ -23,12 +23,6 @@ const ICON_SIZE_LG = 24;
 
 /** エラーアイコンのサイズ */
 const ERROR_ICON_SIZE = 16;
-
-/** エラーメッセージの表示色 */
-const ERROR_COLOR = DARK_COLORS.error;
-
-/** ローディングスピナーの色 */
-const SPINNER_COLOR = DARK_COLORS.primary;
 
 /**
  * URL入力のクライアントバリデーション
@@ -53,6 +47,7 @@ function validateUrl(url: string): string | null {
  * NativeWindダークテーマ、authStore + apiFetch使用。
  */
 export default function SaveScreen() {
+  const COLORS = useColors();
   const { url: sharedUrl } = useLocalSearchParams<{ url?: string }>();
   const [url, setUrl] = useState(sharedUrl ?? "");
   const [preview, setPreview] = useState<ArticlePreview | null>(null);
@@ -148,7 +143,7 @@ export default function SaveScreen() {
               accessibilityHint="前の画面に戻ります"
               className="mr-3 p-1"
             >
-              <ArrowLeft size={ICON_SIZE_LG} color={DARK_COLORS.text} />
+              <ArrowLeft size={ICON_SIZE_LG} color={COLORS.text} />
             </Pressable>
             <Text className="text-xl font-bold text-text">記事を保存</Text>
           </View>
@@ -184,7 +179,7 @@ export default function SaveScreen() {
           {/* ローディング */}
           {isFetching && (
             <View testID="fetch-loading" className="items-center py-8">
-              <Loader2 size={ICON_SIZE_LG} color={SPINNER_COLOR} />
+              <Loader2 size={ICON_SIZE_LG} color={COLORS.primary} />
               <Text className="mt-2 text-text-muted text-sm">記事を取得中...</Text>
             </View>
           )}
@@ -198,7 +193,7 @@ export default function SaveScreen() {
             >
               <AlertCircle
                 size={ERROR_ICON_SIZE}
-                color={ERROR_COLOR}
+                color={COLORS.error}
                 accessibilityElementsHidden={true}
                 importantForAccessibility="no-hide-descendants"
               />
@@ -249,7 +244,7 @@ export default function SaveScreen() {
 
                 {/* URL表示 */}
                 <View className="flex-row items-center gap-1">
-                  <ExternalLink size={ICON_SIZE_SM} color={DARK_COLORS.textDim} />
+                  <ExternalLink size={ICON_SIZE_SM} color={COLORS.textDim} />
                   <Text className="text-text-dim text-xs flex-1" numberOfLines={1}>
                     {url.trim()}
                   </Text>

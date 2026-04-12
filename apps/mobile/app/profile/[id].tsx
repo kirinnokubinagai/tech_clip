@@ -6,16 +6,10 @@ import { ActivityIndicator, Pressable, ScrollView, Text, View } from "react-nati
 import { FollowButton } from "@/components/FollowButton";
 import type { ProfileHeaderUser } from "@/components/ProfileHeader";
 import { ProfileHeader } from "@/components/ProfileHeader";
-import { DARK_COLORS } from "@/lib/constants";
+import { useColors } from "@/hooks/use-colors";
 
 /** 戻るアイコンのサイズ（px） */
 const BACK_ICON_SIZE = 24;
-
-/** テキストカラー */
-const TEXT_COLOR = DARK_COLORS.text;
-
-/** プライマリカラー */
-const PRIMARY_COLOR = DARK_COLORS.primary;
 
 /**
  * プレースホルダーのユーザーデータを生成する
@@ -43,6 +37,7 @@ function createPlaceholderUser(id: string): ProfileHeaderUser {
 export default function UserProfileScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
+  const COLORS = useColors();
 
   const [isLoading, setIsLoading] = useState(false);
   const [isError, setIsError] = useState(false);
@@ -64,7 +59,7 @@ export default function UserProfileScreen() {
         testID="user-profile-loading"
         className="flex-1 bg-background items-center justify-center"
       >
-        <ActivityIndicator size="large" color={PRIMARY_COLOR} />
+        <ActivityIndicator size="large" color={COLORS.primary} />
         <Text className="text-text-muted mt-3">読み込み中...</Text>
       </View>
     );
@@ -115,7 +110,7 @@ export default function UserProfileScreen() {
           accessibilityLabel="戻る"
           hitSlop={8}
         >
-          <ArrowLeft size={BACK_ICON_SIZE} color={TEXT_COLOR} />
+          <ArrowLeft size={BACK_ICON_SIZE} color={COLORS.text} />
         </Pressable>
         <Text className="text-lg font-bold text-text">{user.name}</Text>
         <View style={{ width: BACK_ICON_SIZE }} />

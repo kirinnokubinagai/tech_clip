@@ -2,7 +2,7 @@ import { useRouter } from "expo-router";
 import { Check } from "lucide-react-native";
 import { useTranslation } from "react-i18next";
 import { FlatList, Pressable, Text, View } from "react-native";
-import { DARK_COLORS } from "@/lib/constants";
+import { useColors } from "@/hooks/use-colors";
 import type { Language } from "../../src/stores/settings-store";
 import { LANGUAGE_LABEL_MAP, useSettingsStore } from "../../src/stores/settings-store";
 
@@ -26,6 +26,7 @@ type LanguageRowProps = {
  * @param onSelect - 選択時のコールバック
  */
 function LanguageRow({ code, label, isSelected, onSelect }: LanguageRowProps) {
+  const COLORS = useColors();
   return (
     <Pressable
       testID={`language-option-${code}`}
@@ -38,7 +39,7 @@ function LanguageRow({ code, label, isSelected, onSelect }: LanguageRowProps) {
         <Text className="text-base text-text">{label}</Text>
         {isSelected ? (
           <View testID={`language-check-${code}`}>
-            <Check size={CHECK_ICON_SIZE} color={DARK_COLORS.primary} />
+            <Check size={CHECK_ICON_SIZE} color={COLORS.primary} />
           </View>
         ) : null}
       </View>

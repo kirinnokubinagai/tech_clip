@@ -4,21 +4,15 @@ import { ActivityIndicator, FlatList, Pressable, RefreshControl, Text, View } fr
 
 import { NotificationItem } from "@/components/NotificationItem";
 import { EmptyState } from "@/components/ui";
+import { useColors } from "@/hooks/use-colors";
 import { useMarkAllAsRead, useMarkAsRead, useNotifications } from "@/hooks/use-notifications";
-import { DARK_COLORS } from "@/lib/constants";
 import type { NotificationItem as NotificationItemType } from "@/types/notification";
-
-/** ローディングインジケーターの色 */
-const LOADING_COLOR = DARK_COLORS.primary;
 
 /** ヘッダーアイコンサイズ */
 const HEADER_ICON_SIZE = 20;
 
 /** 空状態アイコンサイズ */
 const EMPTY_ICON_SIZE = 48;
-
-/** 空状態アイコン色 */
-const EMPTY_ICON_COLOR = DARK_COLORS.textDim;
 
 /**
  * 通知一覧画面
@@ -27,6 +21,7 @@ const EMPTY_ICON_COLOR = DARK_COLORS.textDim;
  * 全既読、個別既読に対応。
  */
 export default function NotificationsScreen() {
+  const COLORS = useColors();
   const {
     data,
     fetchNextPage,
@@ -73,10 +68,10 @@ export default function NotificationsScreen() {
     if (!isFetchingNextPage) return null;
     return (
       <View className="py-4 items-center">
-        <ActivityIndicator size="small" color={LOADING_COLOR} />
+        <ActivityIndicator size="small" color={COLORS.primary} />
       </View>
     );
-  }, [isFetchingNextPage]);
+  }, [isFetchingNextPage, COLORS.primary]);
 
   const renderEmpty = useCallback(() => {
     if (isLoading) return null;
@@ -92,7 +87,7 @@ export default function NotificationsScreen() {
             accessibilityLabel="再試行"
             accessibilityHint="通知の取得を再試行します"
           >
-            <RefreshCw size={HEADER_ICON_SIZE} color={LOADING_COLOR} />
+            <RefreshCw size={HEADER_ICON_SIZE} color={COLORS.primary} />
             <Text className="text-primary">再試行</Text>
           </Pressable>
         </View>
@@ -100,12 +95,12 @@ export default function NotificationsScreen() {
     }
     return (
       <EmptyState
-        icon={<BellOff size={EMPTY_ICON_SIZE} color={EMPTY_ICON_COLOR} />}
+        icon={<BellOff size={EMPTY_ICON_SIZE} color={COLORS.textDim} />}
         title="通知はありません"
         description="新しい通知が届くとここに表示されます"
       />
     );
-  }, [isLoading, isError, refetch]);
+  }, [isLoading, isError, refetch, COLORS.primary, COLORS.textDim]);
 
   return (
     <View className="flex-1 bg-background">
@@ -118,7 +113,7 @@ export default function NotificationsScreen() {
             accessibilityRole="button"
             accessibilityLabel="すべて既読にする"
           >
-            <CheckCheck size={HEADER_ICON_SIZE} color={LOADING_COLOR} />
+            <CheckCheck size={HEADER_ICON_SIZE} color={COLORS.primary} />
             <Text className="text-sm text-primary">すべて既読</Text>
           </Pressable>
         </View>
@@ -126,7 +121,7 @@ export default function NotificationsScreen() {
 
       {isLoading ? (
         <View className="flex-1 items-center justify-center">
-          <ActivityIndicator testID="loading-indicator" size="large" color={LOADING_COLOR} />
+          <ActivityIndicator testID="loading-indicator" size="large" color={COLORS.primary} />
           <Text className="text-text-muted mt-3">読み込み中...</Text>
         </View>
       ) : (
@@ -144,7 +139,7 @@ export default function NotificationsScreen() {
             <RefreshControl
               refreshing={isRefetching}
               onRefresh={() => refetch()}
-              tintColor={LOADING_COLOR}
+              tintColor={COLORS.primary}
             />
           }
           contentContainerStyle={{ paddingBottom: 20 }}

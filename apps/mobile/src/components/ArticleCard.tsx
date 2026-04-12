@@ -4,7 +4,7 @@ import { memo } from "react";
 import { Pressable, Text, View } from "react-native";
 
 import { SourceBadge } from "@/components/ui";
-import { DARK_COLORS } from "@/lib/constants";
+import { useColors } from "@/hooks/use-colors";
 import { formatArticleDate } from "@/lib/date-format";
 import { useSettingsStore } from "@/stores/settings-store";
 import type { ArticleListItem } from "@/types/article";
@@ -27,12 +27,6 @@ const THUMBNAIL_HEIGHT = 160;
 /** お気に入りアイコンのサイズ（px） */
 const FAVORITE_ICON_SIZE = 20;
 
-/** お気に入り済みのアイコンカラー */
-const FAVORITE_ACTIVE_COLOR = DARK_COLORS.favorite;
-
-/** お気に入り未設定のアイコンカラー */
-const FAVORITE_INACTIVE_COLOR = DARK_COLORS.textMuted;
-
 /**
  * 記事カードコンポーネント
  *
@@ -50,6 +44,7 @@ export const ArticleCard = memo(function ArticleCard({
   onToggleFavorite,
 }: ArticleCardProps) {
   const language = useSettingsStore((s) => s.language);
+  const COLORS = useColors();
 
   return (
     <Pressable
@@ -108,14 +103,14 @@ export const ArticleCard = memo(function ArticleCard({
                 <Heart
                   testID="favorite-icon-filled"
                   size={FAVORITE_ICON_SIZE}
-                  color={FAVORITE_ACTIVE_COLOR}
-                  fill={FAVORITE_ACTIVE_COLOR}
+                  color={COLORS.favorite}
+                  fill={COLORS.favorite}
                 />
               ) : (
                 <Heart
                   testID="favorite-icon-outline"
                   size={FAVORITE_ICON_SIZE}
-                  color={FAVORITE_INACTIVE_COLOR}
+                  color={COLORS.textMuted}
                 />
               )}
             </Pressable>
