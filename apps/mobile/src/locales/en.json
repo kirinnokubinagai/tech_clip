@@ -16,11 +16,39 @@
     "search": "Search",
     "skip": "Skip",
     "start": "Get Started",
-    "generating": "Generating...",
     "accessibility": {
       "tapToChange": "Tap to change",
-      "currentValue": "{{label}}, current: {{value}}"
-    }
+      "currentValue": "{{label}}, current: {{value}}",
+      "loading": "Loading",
+      "loadingHint": "Loading content",
+      "pleaseWait": "Please wait",
+      "loadingArticleList": "Loading article list",
+      "loadingProfile": "Loading profile",
+      "loadingArticleDetail": "Loading article detail",
+      "tagInput": "Enter new tag",
+      "addTag": "Add tag",
+      "followSwitching": "Switching follow status",
+      "unfollow": "Unfollow",
+      "follow": "Follow",
+      "offline": "You are offline",
+      "close": "Close",
+      "purchasePremium": "Purchase premium plan",
+      "settings": "Settings",
+      "deselectTag": "Deselect {{tag}}",
+      "selectTag": "Select {{tag}}"
+    },
+    "following": "Following",
+    "follow": "Follow",
+    "offline": "Offline",
+    "tagInputPlaceholder": "Add new tag",
+    "tagLimitMessage": "You can select up to {{max}} tags"
+  },
+  "premium": {
+    "title": "Premium Plan",
+    "monthlyUsage": "Monthly AI feature usage",
+    "limitReached": "You have reached the free plan limit",
+    "featuresTitle": "Features available with premium plan",
+    "purchaseButton": "Purchase premium plan"
   },
   "auth": {
     "login": "Log in",
@@ -93,8 +121,11 @@
     "loadingArticles": "Loading...",
     "fetchError": "Failed to fetch articles",
     "noArticles": "No articles",
-    "offlineCachedArticles": "Offline: Showing cached articles",
-    "offlineNoCache": "Offline: No cache available"
+    "offlineCachedArticles": "Offline: showing cached articles",
+    "offlineNoCache": "Offline: no cached articles",
+    "retryLabel": "Retry",
+    "retryHint": "Retry fetching articles",
+    "sourceFilterHint": "Show only {{label}} articles"
   },
   "article": {
     "save": "Save article",
@@ -102,6 +133,7 @@
     "readLater": "Read later",
     "noArticles": "No articles",
     "readingTime": "{{minutes}} min read",
+    "backA11yLabel": "Back",
     "summary": "Summary",
     "summarized": "Summarized",
     "summarize": "Summarize",
@@ -129,8 +161,7 @@
     "urlRequired": "Please enter a URL",
     "urlInvalid": "Please enter a valid URL",
     "noMatch": "No articles matching \"{{query}}\"",
-    "summaryLabel": "Summary",
-    "translationLabel": "Translation"
+    "generating": "Generating..."
   },
   "search": {
     "placeholder": "Search articles...",
@@ -149,6 +180,8 @@
     "loadingNotifications": "Loading..."
   },
   "profile": {
+    "followersLabel": "Followers",
+    "followingLabel": "Following",
     "loginPrompt": "Log in to see your saved articles and favorites",
     "editProfile": "Edit Profile",
     "savedArticles": "Saved Articles",
@@ -156,9 +189,15 @@
     "guestUser": "Guest",
     "loadingUser": "Loading...",
     "fetchError": "Failed to fetch user info",
+    "retryHint": "Retry fetching user info",
+    "backHint": "Go back to the previous screen",
+    "loadingHint": "Please wait a moment",
     "back": "Back",
     "edit": {
       "title": "Edit Profile",
+      "nameLabel": "Name",
+      "usernameLabel": "Username",
+      "bioLabel": "Bio",
       "namePlaceholder": "Enter your name",
       "usernamePlaceholder": "username",
       "bioPlaceholder": "Enter your bio",

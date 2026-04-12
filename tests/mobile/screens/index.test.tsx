@@ -4,6 +4,8 @@ import { useOfflineArticles } from "@mobile/hooks/use-offline-articles";
 import HomeScreen from "@mobile-app/(tabs)/index";
 import { render, waitFor } from "@testing-library/react-native";
 
+import { setMockLocale } from "../helpers/i18n-test-utils";
+
 jest.mock("@mobile/hooks/use-articles", () => ({
   useArticles: jest.fn(),
   useToggleFavorite: jest.fn(),
@@ -57,6 +59,7 @@ const DEFAULT_USE_TOGGLE_FAVORITE_MOCK = {
 describe("HomeScreen", () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    setMockLocale("ja");
     (useArticles as jest.Mock).mockReturnValue(DEFAULT_USE_ARTICLES_MOCK);
     (useToggleFavorite as jest.Mock).mockReturnValue(DEFAULT_USE_TOGGLE_FAVORITE_MOCK);
     (useNetworkStatus as jest.Mock).mockReturnValue({
@@ -78,7 +81,7 @@ describe("HomeScreen", () => {
     const { getByText } = await render(<HomeScreen />);
 
     await waitFor(() => {
-      expect(getByText("テスト記事1")).toBeTruthy();
+      expect(getByText("テスト記事1")).not.toBeNull();
     });
   });
 
@@ -96,7 +99,7 @@ describe("HomeScreen", () => {
 
     await waitFor(() => {
       expect(useOfflineArticles).toHaveBeenCalledTimes(1);
-      expect(getByText("テスト記事1")).toBeTruthy();
+      expect(getByText("テスト記事1")).not.toBeNull();
     });
   });
 
@@ -113,7 +116,7 @@ describe("HomeScreen", () => {
     const { getByText } = await render(<HomeScreen />);
 
     await waitFor(() => {
-      expect(getByText("オフライン：キャッシュがありません")).toBeTruthy();
+      expect(getByText("オフライン：キャッシュがありません")).not.toBeNull();
     });
   });
 
@@ -126,11 +129,11 @@ describe("HomeScreen", () => {
     const { getByText } = await render(<HomeScreen />);
 
     await waitFor(() => {
-      expect(getByText("読み込み中...")).toBeTruthy();
+      expect(getByText("読み込み中...")).not.toBeNull();
     });
   });
 
-  it("エラー時に再試行UIが表示されること", async () => {
+  it("エラー時にエラーメッセージが表示されること", async () => {
     (useArticles as jest.Mock).mockReturnValue({
       ...DEFAULT_USE_ARTICLES_MOCK,
       isError: true,
@@ -140,8 +143,22 @@ describe("HomeScreen", () => {
     const { getByText } = await render(<HomeScreen />);
 
     await waitFor(() => {
-      expect(getByText("記事の取得に失敗しました")).toBeTruthy();
-      expect(getByText("再試行")).toBeTruthy();
+      expect(getByText("記事の取得に失敗しました")).not.toBeNull();
+      expect(getByText("再試行")).not.toBeNull();
+    });
+  });
+
+  it("エラー時に再試行ボタンが表示されること", async () => {
+    (useArticles as jest.Mock).mockReturnValue({
+      ...DEFAULT_USE_ARTICLES_MOCK,
+      isError: true,
+      data: undefined,
+    });
+
+    const { getByText } = await render(<HomeScreen />);
+
+    await waitFor(() => {
+      expect(getByText("再試行")).not.toBeNull();
     });
   });
 
@@ -150,6 +167,127 @@ describe("HomeScreen", () => {
 
     await waitFor(() => {
       expect(queryByLabelText("フィルター")).toBeNull();
+    });
+  });
+
+  it("手書き配列にしかなかった'HN'ラベルが存在しないこと", async () => {
+    // Arrange
+    (useArticles as jest.Mock).mockReturnValue(DEFAULT_USE_ARTICLES_MOCK);
+
+    // Act
+    const { queryByLabelText } = await render(<HomeScreen />);
+
+    // Assert
+    await waitFor(() => {
+      expect(queryByLabelText("HN")).toBeNull();
+    });
+  });
+
+  it("sources.tsで定義されたHacker Newsラベルが存在すること", async () => {
+    // Arrange
+    (useArticles as jest.Mock).mockReturnValue(DEFAULT_USE_ARTICLES_MOCK);
+
+    // Act
+    const { getByLabelText } = await render(<HomeScreen />);
+
+    // Assert
+    await waitFor(() => {
+      expect(getByLabelText("Hacker News")).not.toBeNull();
+    });
+  });
+
+  describe("多言語対応", () => {
+    it("英語ロケールでローディング文言が英語で表示されること", async () => {
+      // Arrange
+      setMockLocale("en");
+      (useArticles as jest.Mock).mockReturnValue({
+        ...DEFAULT_USE_ARTICLES_MOCK,
+        isLoading: true,
+      });
+
+      // Act
+      const { getByText } = await render(<HomeScreen />);
+
+      // Assert
+      await waitFor(() => {
+        expect(getByText("Loading...")).not.toBeNull();
+      });
+    });
+
+    it("英語ロケールでエラー時に英語の再試行UIが表示されること", async () => {
+      // Arrange
+      setMockLocale("en");
+      (useArticles as jest.Mock).mockReturnValue({
+        ...DEFAULT_USE_ARTICLES_MOCK,
+        isError: true,
+        data: undefined,
+      });
+
+      // Act
+      const { getByText } = await render(<HomeScreen />);
+
+      // Assert
+      await waitFor(() => {
+        expect(getByText("Failed to fetch articles")).not.toBeNull();
+        expect(getByText("Retry")).not.toBeNull();
+      });
+    });
+
+    it("英語ロケールでオフライン時に英語の空メッセージが表示されること", async () => {
+      // Arrange
+      setMockLocale("en");
+      (useNetworkStatus as jest.Mock).mockReturnValue({
+        isOnline: false,
+        isOffline: true,
+      });
+      (useOfflineArticles as jest.Mock).mockReturnValue({
+        articles: [],
+        isLoading: false,
+      });
+
+      // Act
+      const { getByText } = await render(<HomeScreen />);
+
+      // Assert
+      await waitFor(() => {
+        expect(getByText("Offline: no cached articles")).not.toBeNull();
+      });
+    });
+  });
+
+  describe("a11y 翻訳キー", () => {
+    it("日本語ロケールでソースフィルタの accessibilityHint が {{label}} 補間込みで表示されること", async () => {
+      // Arrange
+      setMockLocale("ja");
+      (useArticles as jest.Mock).mockReturnValue({
+        ...DEFAULT_USE_ARTICLES_MOCK,
+        data: { pages: [{ items: MOCK_ARTICLES, nextCursor: null, hasNext: false }] },
+      });
+
+      // Act
+      const { getAllByHintText } = await render(<HomeScreen />);
+
+      // Assert: "すべて" ソースフィルタの hint が補間されること
+      await waitFor(() => {
+        expect(getAllByHintText("すべての記事のみ表示します")).not.toHaveLength(0);
+      });
+    });
+
+    it("英語ロケールでソースフィルタの accessibilityHint が {{label}} 補間込みで英語表示されること", async () => {
+      // Arrange
+      setMockLocale("en");
+      (useArticles as jest.Mock).mockReturnValue({
+        ...DEFAULT_USE_ARTICLES_MOCK,
+        data: { pages: [{ items: MOCK_ARTICLES, nextCursor: null, hasNext: false }] },
+      });
+
+      // Act
+      const { getAllByHintText } = await render(<HomeScreen />);
+
+      // Assert: "All" source filter hint が補間されること
+      await waitFor(() => {
+        expect(getAllByHintText("Show only All articles")).not.toHaveLength(0);
+      });
     });
   });
 });

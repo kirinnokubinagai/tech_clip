@@ -3,6 +3,7 @@ import * as ImagePicker from "expo-image-picker";
 import { useRouter } from "expo-router";
 import { ArrowLeft, Camera } from "lucide-react-native";
 import { useCallback, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { ActivityIndicator, Alert, Pressable, ScrollView, Text, View } from "react-native";
 
 import { Button } from "@/components/ui/Button";
@@ -61,6 +62,9 @@ type ProfileFormData = {
 /** バリデーションエラーの型 */
 type FormErrors = Partial<Record<keyof ProfileFormData, string>>;
 
+/** t関数の型 */
+type TFunction = (key: string, opts?: Record<string, unknown>) => string;
+
 /**
  * ユーザー名の頭文字を取得する
  *
@@ -79,39 +83,40 @@ function getInitials(name: string): string {
  * フォームデータのバリデーションを実行する
  *
  * @param data - バリデーション対象のフォームデータ
+ * @param t - 翻訳関数
  * @returns エラーオブジェクト。エラーがない場合は空オブジェクト
  */
-export function validateProfileForm(data: ProfileFormData): FormErrors {
+export function validateProfileForm(data: ProfileFormData, t: TFunction): FormErrors {
   const errors: FormErrors = {};
 
   if (!data.name.trim()) {
-    errors.name = "名前を入力してください";
+    errors.name = t("profile.edit.validation.nameRequired");
   }
   if (data.name.length > NAME_MAX_LENGTH) {
-    errors.name = `名前は${NAME_MAX_LENGTH}文字以内で入力してください`;
+    errors.name = t("profile.edit.validation.nameTooLong", { max: NAME_MAX_LENGTH });
   }
 
   if (data.username && !USERNAME_REGEX.test(data.username)) {
-    errors.username = "ユーザー名は英数字とアンダースコアのみ使用できます";
+    errors.username = t("profile.edit.validation.usernameInvalid");
   }
   if (data.username.length > USERNAME_MAX_LENGTH) {
-    errors.username = `ユーザー名は${USERNAME_MAX_LENGTH}文字以内で入力してください`;
+    errors.username = t("profile.edit.validation.usernameTooLong", { max: USERNAME_MAX_LENGTH });
   }
 
   if (data.bio.length > BIO_MAX_LENGTH) {
-    errors.bio = `自己紹介は${BIO_MAX_LENGTH}文字以内で入力してください`;
+    errors.bio = t("profile.edit.validation.bioTooLong", { max: BIO_MAX_LENGTH });
   }
 
   if (data.twitterUrl && data.twitterUrl.length > SNS_LINK_MAX_LENGTH) {
-    errors.twitterUrl = `URLは${SNS_LINK_MAX_LENGTH}文字以内で入力してください`;
+    errors.twitterUrl = t("profile.edit.validation.urlTooLong", { max: SNS_LINK_MAX_LENGTH });
   }
 
   if (data.githubUrl && data.githubUrl.length > SNS_LINK_MAX_LENGTH) {
-    errors.githubUrl = `URLは${SNS_LINK_MAX_LENGTH}文字以内で入力してください`;
+    errors.githubUrl = t("profile.edit.validation.urlTooLong", { max: SNS_LINK_MAX_LENGTH });
   }
 
   if (data.websiteUrl && data.websiteUrl.length > SNS_LINK_MAX_LENGTH) {
-    errors.websiteUrl = `URLは${SNS_LINK_MAX_LENGTH}文字以内で入力してください`;
+    errors.websiteUrl = t("profile.edit.validation.urlTooLong", { max: SNS_LINK_MAX_LENGTH });
   }
 
   return errors;
@@ -124,6 +129,7 @@ export function validateProfileForm(data: ProfileFormData): FormErrors {
  * NativeWindダークテーマ対応。
  */
 export default function ProfileEditScreen() {
+  const { t } = useTranslation();
   const router = useRouter();
   const user = useAuthStore((s) => s.user);
   const { toast, show: showToast, dismiss: dismissToast } = useToast();
@@ -164,7 +170,7 @@ export default function ProfileEditScreen() {
     const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
 
     if (!permissionResult.granted) {
-      Alert.alert("権限エラー", "画像ライブラリへのアクセスが許可されていません");
+      Alert.alert(t("common.errorTitle"), t("profile.edit.permissionError"));
       return;
     }
 
@@ -178,10 +184,10 @@ export default function ProfileEditScreen() {
     if (!result.canceled && result.assets[0]) {
       setAvatarUri(result.assets[0].uri);
     }
-  }, []);
+  }, [t]);
 
   const handleSave = useCallback(async () => {
-    const validationErrors = validateProfileForm(formData);
+    const validationErrors = validateProfileForm(formData, t);
 
     if (Object.keys(validationErrors).length > 0) {
       setErrors(validationErrors);
@@ -192,14 +198,14 @@ export default function ProfileEditScreen() {
 
     try {
       await new Promise((resolve) => setTimeout(resolve, 500));
-      showToast("プロフィールを更新しました", "success");
+      showToast(t("profile.edit.saveSuccess"), "success");
       router.back();
     } catch {
-      Alert.alert("エラー", "プロフィールの保存に失敗しました");
+      Alert.alert(t("common.errorTitle"), t("profile.edit.saveFailed"));
     } finally {
       setIsSaving(false);
     }
-  }, [formData, router, showToast]);
+  }, [formData, router, showToast, t]);
 
   const displayName = formData.name || user?.name || "";
 
@@ -216,12 +222,12 @@ export default function ProfileEditScreen() {
           testID="profile-edit-back-button"
           onPress={handleBack}
           accessibilityRole="button"
-          accessibilityLabel="戻る"
+          accessibilityLabel={t("profile.back")}
           hitSlop={8}
         >
           <ArrowLeft size={BACK_ICON_SIZE} color={TEXT_COLOR} />
         </Pressable>
-        <Text className="text-lg font-bold text-text">プロフィール編集</Text>
+        <Text className="text-lg font-bold text-text">{t("profile.edit.title")}</Text>
         <View style={{ width: BACK_ICON_SIZE }} />
       </View>
 
@@ -235,7 +241,7 @@ export default function ProfileEditScreen() {
             testID="profile-edit-avatar-button"
             onPress={handlePickAvatar}
             accessibilityRole="button"
-            accessibilityLabel="アバター画像を変更"
+            accessibilityLabel={t("profile.edit.avatarLabel")}
           >
             {avatarUri ? (
               <Image
@@ -292,8 +298,8 @@ export default function ProfileEditScreen() {
 
         <View className="px-4 gap-4">
           <Input
-            label="名前"
-            placeholder="名前を入力"
+            label={t("profile.edit.nameLabel")}
+            placeholder={t("profile.edit.namePlaceholder")}
             value={formData.name}
             onChangeText={(text) => updateField("name", text)}
             error={errors.name}
@@ -301,8 +307,8 @@ export default function ProfileEditScreen() {
           />
 
           <Input
-            label="ユーザー名"
-            placeholder="username"
+            label={t("profile.edit.usernameLabel")}
+            placeholder={t("profile.edit.usernamePlaceholder")}
             value={formData.username}
             onChangeText={(text) => updateField("username", text)}
             error={errors.username}
@@ -310,8 +316,8 @@ export default function ProfileEditScreen() {
           />
 
           <Input
-            label="自己紹介"
-            placeholder="自己紹介を入力"
+            label={t("profile.edit.bioLabel")}
+            placeholder={t("profile.edit.bioPlaceholder")}
             value={formData.bio}
             onChangeText={(text) => updateField("bio", text)}
             error={errors.bio}
@@ -319,7 +325,9 @@ export default function ProfileEditScreen() {
           />
 
           <View className="pt-2">
-            <Text className="text-text font-semibold text-base mb-3">SNSリンク</Text>
+            <Text className="text-text font-semibold text-base mb-3">
+              {t("profile.edit.snsLinks")}
+            </Text>
 
             <View className="gap-4">
               <Input
@@ -361,7 +369,7 @@ export default function ProfileEditScreen() {
               </View>
             ) : (
               <Button onPress={handleSave} disabled={isSaving}>
-                保存する
+                {t("profile.edit.saveButton")}
               </Button>
             )}
           </View>

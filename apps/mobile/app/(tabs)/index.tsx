@@ -9,6 +9,7 @@ import { useArticles, useToggleFavorite } from "@/hooks/use-articles";
 import { useNetworkStatus } from "@/hooks/use-network-status";
 import { useOfflineArticles } from "@/hooks/use-offline-articles";
 import { DARK_COLORS } from "@/lib/constants";
+import { SOURCE_FILTER_OPTIONS } from "@/lib/sources";
 import type { ArticleListItem, ArticleSource } from "@/types/article";
 
 /** フィルターチップのアクティブ背景色 */
@@ -25,23 +26,6 @@ const FAVORITE_INACTIVE_COLOR = DARK_COLORS.textMuted;
 
 /** フィルターアイコンサイズ */
 const FILTER_ICON_SIZE = 16;
-
-/** ソースフィルターの選択肢（固有名詞はそのまま、「すべて」のみ翻訳） */
-const SOURCE_FILTER_STATIC: {
-  value: ArticleSource | undefined;
-  staticLabel?: string;
-  i18nKey?: string;
-}[] = [
-  { i18nKey: "home.filterAll", value: undefined },
-  { staticLabel: "Zenn", value: "zenn" },
-  { staticLabel: "Qiita", value: "qiita" },
-  { staticLabel: "はてな", value: "hatena" },
-  { staticLabel: "note", value: "note" },
-  { staticLabel: "Dev.to", value: "devto" },
-  { staticLabel: "Medium", value: "medium" },
-  { staticLabel: "GitHub", value: "github" },
-  { staticLabel: "HN", value: "hackernews" },
-];
 
 /**
  * ホーム画面
@@ -84,8 +68,8 @@ export default function HomeScreen() {
 
   const sourceFilters = useMemo(
     () =>
-      SOURCE_FILTER_STATIC.map((opt) => ({
-        label: opt.i18nKey ? t(opt.i18nKey) : (opt.staticLabel ?? ""),
+      SOURCE_FILTER_OPTIONS.map((opt) => ({
+        label: "i18nKey" in opt ? t(opt.i18nKey) : opt.label,
         value: opt.value,
       })),
     [t],
@@ -152,8 +136,8 @@ export default function HomeScreen() {
             onPress={() => refetch()}
             className="mt-4 flex-row items-center gap-2"
             accessibilityRole="button"
-            accessibilityLabel="再試行"
-            accessibilityHint="記事の取得を再試行します"
+            accessibilityLabel={t("home.retryLabel")}
+            accessibilityHint={t("home.retryHint")}
           >
             <RefreshCw size={FILTER_ICON_SIZE} color={FILTER_ACTIVE_BG} />
             <Text className="text-primary">{t("common.retry")}</Text>
@@ -182,7 +166,7 @@ export default function HomeScreen() {
               }}
               accessibilityRole="button"
               accessibilityLabel={item.label}
-              accessibilityHint={`${item.label}の記事のみ表示します`}
+              accessibilityHint={t("home.sourceFilterHint", { label: item.label })}
               accessibilityState={{ selected: selectedSource === item.value }}
             >
               <Text

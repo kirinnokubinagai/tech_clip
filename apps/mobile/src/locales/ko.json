@@ -16,11 +16,39 @@
     "search": "검색",
     "skip": "건너뛰기",
     "start": "시작하기",
-    "generating": "생성 중...",
     "accessibility": {
       "tapToChange": "탭하여 변경",
-      "currentValue": "{{label}}, 현재 설정: {{value}}"
-    }
+      "currentValue": "{{label}}, 현재 설정: {{value}}",
+      "loading": "불러오는 중",
+      "loadingHint": "콘텐츠를 불러오고 있습니다",
+      "pleaseWait": "잠시 기다려 주세요",
+      "loadingArticleList": "기사 목록을 불러오는 중",
+      "loadingProfile": "프로필을 불러오는 중",
+      "loadingArticleDetail": "기사 상세 정보를 불러오는 중",
+      "tagInput": "새 태그 입력",
+      "addTag": "태그 추가",
+      "followSwitching": "팔로우 상태 변경 중",
+      "unfollow": "팔로우 취소",
+      "follow": "팔로우",
+      "offline": "오프라인 상태입니다",
+      "close": "닫기",
+      "purchasePremium": "프리미엄 플랜 구매",
+      "settings": "설정",
+      "deselectTag": "{{tag}} 선택 해제",
+      "selectTag": "{{tag}} 선택"
+    },
+    "following": "팔로잉",
+    "follow": "팔로우",
+    "offline": "오프라인",
+    "tagInputPlaceholder": "새 태그 추가",
+    "tagLimitMessage": "태그는 최대 {{max}}개까지 선택할 수 있습니다"
+  },
+  "premium": {
+    "title": "프리미엄 플랜",
+    "monthlyUsage": "이번 달 AI 기능 사용 횟수",
+    "limitReached": "무료 플랜 한도에 도달했습니다",
+    "featuresTitle": "프리미엄 플랜에서 이용 가능한 기능",
+    "purchaseButton": "프리미엄 플랜 구매"
   },
   "auth": {
     "login": "로그인",
@@ -94,7 +122,10 @@
     "fetchError": "기사를 불러오는데 실패했습니다",
     "noArticles": "기사가 없습니다",
     "offlineCachedArticles": "오프라인: 캐시된 기사를 표시 중",
-    "offlineNoCache": "오프라인: 캐시가 없습니다"
+    "offlineNoCache": "오프라인: 캐시가 없습니다",
+    "retryLabel": "다시 시도",
+    "retryHint": "기사 불러오기를 다시 시도합니다",
+    "sourceFilterHint": "{{label}} 기사만 표시합니다"
   },
   "article": {
     "save": "기사 저장",
@@ -129,8 +160,8 @@
     "urlRequired": "URL을 입력해 주세요",
     "urlInvalid": "유효한 URL을 입력해 주세요",
     "noMatch": "「{{query}}」에 일치하는 기사가 없습니다",
-    "summaryLabel": "요약",
-    "translationLabel": "번역"
+    "backA11yLabel": "뒤로",
+    "generating": "생성 중..."
   },
   "search": {
     "placeholder": "기사 검색...",
@@ -149,6 +180,8 @@
     "loadingNotifications": "불러오는 중..."
   },
   "profile": {
+    "followersLabel": "팔로워",
+    "followingLabel": "팔로잉",
     "loginPrompt": "로그인하면 저장한 기사와 즐겨찾기를 볼 수 있습니다",
     "editProfile": "프로필 편집",
     "savedArticles": "저장한 기사",
@@ -156,9 +189,15 @@
     "guestUser": "게스트 사용자",
     "loadingUser": "불러오는 중...",
     "fetchError": "사용자 정보를 불러오는데 실패했습니다",
+    "retryHint": "사용자 정보를 다시 불러옵니다",
+    "backHint": "이전 화면으로 돌아갑니다",
+    "loadingHint": "잠시 기다려 주세요",
     "back": "뒤로",
     "edit": {
       "title": "프로필 편집",
+      "nameLabel": "이름",
+      "usernameLabel": "사용자 이름",
+      "bioLabel": "자기소개",
       "namePlaceholder": "이름을 입력하세요",
       "usernamePlaceholder": "username",
       "bioPlaceholder": "자기소개를 입력하세요",

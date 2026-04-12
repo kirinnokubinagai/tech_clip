@@ -16,11 +16,39 @@
     "search": "搜索",
     "skip": "跳过",
     "start": "开始",
-    "generating": "生成中...",
     "accessibility": {
       "tapToChange": "点击更改",
-      "currentValue": "{{label}}，当前设置: {{value}}"
-    }
+      "currentValue": "{{label}}，当前设置: {{value}}",
+      "loading": "加载中",
+      "loadingHint": "正在加载内容",
+      "pleaseWait": "请稍候",
+      "loadingArticleList": "正在加载文章列表",
+      "loadingProfile": "正在加载个人资料",
+      "loadingArticleDetail": "正在加载文章详情",
+      "tagInput": "输入新标签",
+      "addTag": "添加标签",
+      "followSwitching": "正在切换关注状态",
+      "unfollow": "取消关注",
+      "follow": "关注",
+      "offline": "您已离线",
+      "close": "关闭",
+      "purchasePremium": "购买高级方案",
+      "settings": "设置",
+      "deselectTag": "取消选择{{tag}}",
+      "selectTag": "选择{{tag}}"
+    },
+    "following": "关注中",
+    "follow": "关注",
+    "offline": "离线",
+    "tagInputPlaceholder": "添加新标签",
+    "tagLimitMessage": "最多可选择{{max}}个标签"
+  },
+  "premium": {
+    "title": "高级方案",
+    "monthlyUsage": "本月AI功能使用次数",
+    "limitReached": "已达到免费方案上限",
+    "featuresTitle": "高级方案可用功能",
+    "purchaseButton": "购买高级方案"
   },
   "auth": {
     "login": "登录",
@@ -94,7 +122,10 @@
     "fetchError": "获取文章失败",
     "noArticles": "没有文章",
     "offlineCachedArticles": "离线：显示已缓存文章",
-    "offlineNoCache": "离线：没有缓存"
+    "offlineNoCache": "离线：没有缓存",
+    "retryLabel": "重试",
+    "retryHint": "重新获取文章",
+    "sourceFilterHint": "仅显示{{label}}文章"
   },
   "article": {
     "save": "保存文章",
@@ -129,8 +160,8 @@
     "urlRequired": "请输入URL",
     "urlInvalid": "请输入有效的URL",
     "noMatch": "没有匹配「{{query}}」的文章",
-    "summaryLabel": "摘要",
-    "translationLabel": "翻译"
+    "backA11yLabel": "返回",
+    "generating": "生成中..."
   },
   "search": {
     "placeholder": "搜索文章...",
@@ -149,6 +180,8 @@
     "loadingNotifications": "加载中..."
   },
   "profile": {
+    "followersLabel": "粉丝",
+    "followingLabel": "关注中",
     "loginPrompt": "登录后可查看保存的文章和收藏",
     "editProfile": "编辑个人资料",
     "savedArticles": "已保存文章",
@@ -156,9 +189,15 @@
     "guestUser": "访客用户",
     "loadingUser": "加载中...",
     "fetchError": "获取用户信息失败",
+    "retryHint": "重新获取用户信息",
+    "backHint": "返回上一个页面",
+    "loadingHint": "请稍候",
     "back": "返回",
     "edit": {
       "title": "编辑个人资料",
+      "nameLabel": "姓名",
+      "usernameLabel": "用户名",
+      "bioLabel": "简介",
       "namePlaceholder": "请输入姓名",
       "usernamePlaceholder": "username",
       "bioPlaceholder": "请输入个人简介",
