@@ -1,5 +1,6 @@
 import { Plus, X } from "lucide-react-native";
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Pressable, Text, TextInput, View } from "react-native";
 
 import { DARK_COLORS } from "@/lib/constants";
@@ -46,6 +47,7 @@ export function TagPicker({
   onAddTag,
   maxTags = DEFAULT_MAX_TAGS,
 }: TagPickerProps) {
+  const { t } = useTranslation();
   const [newTagText, setNewTagText] = useState("");
   const isAtLimit = selectedTags.length >= maxTags;
 
@@ -113,14 +115,14 @@ export function TagPicker({
             onSubmitEditing={handleAddTag}
             maxLength={TAG_MAX_LENGTH}
             returnKeyType="done"
-            accessibilityLabel="新しいタグを入力"
+            accessibilityLabel={t("common.accessibility.tagInput")}
           />
           <Pressable
             testID="tag-add-button"
             onPress={handleAddTag}
             disabled={!newTagText.trim()}
             accessibilityRole="button"
-            accessibilityLabel="タグを追加"
+            accessibilityLabel={t("common.accessibility.addTag")}
             className={`p-2 rounded-lg border ${
               newTagText.trim()
                 ? "bg-primary border-primary"

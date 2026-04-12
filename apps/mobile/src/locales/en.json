@@ -19,7 +19,22 @@
     "generating": "Generating...",
     "accessibility": {
       "tapToChange": "Tap to change",
-      "currentValue": "{{label}}, current: {{value}}"
+      "currentValue": "{{label}}, current: {{value}}",
+      "loading": "Loading",
+      "loadingHint": "Loading content",
+      "pleaseWait": "Please wait",
+      "loadingArticleList": "Loading article list",
+      "loadingProfile": "Loading profile",
+      "loadingArticleDetail": "Loading article detail",
+      "tagInput": "Enter new tag",
+      "addTag": "Add tag",
+      "followSwitching": "Switching follow status",
+      "unfollow": "Unfollow",
+      "follow": "Follow",
+      "offline": "You are offline",
+      "close": "Close",
+      "purchasePremium": "Purchase premium plan",
+      "settings": "Settings"
     }
   },
   "auth": {

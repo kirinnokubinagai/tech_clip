@@ -19,7 +19,22 @@
     "generating": "生成中...",
     "accessibility": {
       "tapToChange": "点击更改",
-      "currentValue": "{{label}}，当前设置: {{value}}"
+      "currentValue": "{{label}}，当前设置: {{value}}",
+      "loading": "加载中",
+      "loadingHint": "正在加载内容",
+      "pleaseWait": "请稍候",
+      "loadingArticleList": "正在加载文章列表",
+      "loadingProfile": "正在加载个人资料",
+      "loadingArticleDetail": "正在加载文章详情",
+      "tagInput": "输入新标签",
+      "addTag": "添加标签",
+      "followSwitching": "正在切换关注状态",
+      "unfollow": "取消关注",
+      "follow": "关注",
+      "offline": "您已离线",
+      "close": "关闭",
+      "purchasePremium": "购买高级方案",
+      "settings": "设置"
     }
   },
   "auth": {

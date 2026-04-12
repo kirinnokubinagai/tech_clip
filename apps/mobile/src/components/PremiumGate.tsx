@@ -1,4 +1,5 @@
 import { Check, X } from "lucide-react-native";
+import { useTranslation } from "react-i18next";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 
 import { DARK_COLORS } from "@/lib/constants";
@@ -152,6 +153,7 @@ export function PremiumGate({
   onPurchase,
   onClose,
 }: PremiumGateProps) {
+  const { t } = useTranslation();
   return (
     <View testID="premium-gate-container" style={styles.container}>
       <View style={styles.card}>
@@ -161,7 +163,7 @@ export function PremiumGate({
             testID="close-button"
             onPress={onClose}
             accessibilityRole="button"
-            accessibilityLabel="閉じる"
+            accessibilityLabel={t("common.accessibility.close")}
             hitSlop={8}
             style={styles.closeButton}
           >
@@ -192,7 +194,7 @@ export function PremiumGate({
           testID="purchase-button"
           onPress={onPurchase}
           accessibilityRole="button"
-          accessibilityLabel="プレミアムプランを購入する"
+          accessibilityLabel={t("common.accessibility.purchasePremium")}
           style={styles.purchaseButton}
         >
           <Text style={styles.purchaseButtonText}>プレミアムプランを購入する</Text>

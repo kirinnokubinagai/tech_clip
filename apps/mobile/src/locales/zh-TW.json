@@ -19,7 +19,22 @@
     "generating": "生成中...",
     "accessibility": {
       "tapToChange": "點擊更改",
-      "currentValue": "{{label}}，目前設定: {{value}}"
+      "currentValue": "{{label}}，目前設定: {{value}}",
+      "loading": "載入中",
+      "loadingHint": "正在載入內容",
+      "pleaseWait": "請稍候",
+      "loadingArticleList": "正在載入文章列表",
+      "loadingProfile": "正在載入個人資料",
+      "loadingArticleDetail": "正在載入文章詳情",
+      "tagInput": "輸入新標籤",
+      "addTag": "新增標籤",
+      "followSwitching": "正在切換追蹤狀態",
+      "unfollow": "取消追蹤",
+      "follow": "追蹤",
+      "offline": "您已離線",
+      "close": "關閉",
+      "purchasePremium": "購買進階方案",
+      "settings": "設定"
     }
   },
   "auth": {

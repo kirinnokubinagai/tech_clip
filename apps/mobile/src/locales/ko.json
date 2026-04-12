@@ -19,7 +19,22 @@
     "generating": "생성 중...",
     "accessibility": {
       "tapToChange": "탭하여 변경",
-      "currentValue": "{{label}}, 현재 설정: {{value}}"
+      "currentValue": "{{label}}, 현재 설정: {{value}}",
+      "loading": "불러오는 중",
+      "loadingHint": "콘텐츠를 불러오고 있습니다",
+      "pleaseWait": "잠시 기다려 주세요",
+      "loadingArticleList": "기사 목록을 불러오는 중",
+      "loadingProfile": "프로필을 불러오는 중",
+      "loadingArticleDetail": "기사 상세 정보를 불러오는 중",
+      "tagInput": "새 태그 입력",
+      "addTag": "태그 추가",
+      "followSwitching": "팔로우 상태 변경 중",
+      "unfollow": "팔로우 취소",
+      "follow": "팔로우",
+      "offline": "오프라인 상태입니다",
+      "close": "닫기",
+      "purchasePremium": "프리미엄 플랜 구매",
+      "settings": "설정"
     }
   },
   "auth": {
