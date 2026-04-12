@@ -81,7 +81,7 @@ export default function UserProfileScreen() {
   }
 
   const profileHeaderUser = {
-    name: profile.name ?? profile.username,
+    name: profile.name ?? profile.username ?? "",
     bio: profile.bio,
     avatarUrl: profile.avatarUrl,
     followersCount: profile.followersCount,
