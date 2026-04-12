@@ -10,7 +10,7 @@ Zenn、Qiita、dev.to、YouTube などの技術コンテンツを保存するだ
 - 他アプリの共有ボタンから直接保存（Share Intent 対応）
 - AI による要約生成（長文記事を数行に凝縮、デバイス言語に自動対応）
 - AI による翻訳（任意の言語間で翻訳可能）
-- 17 ソース対応（`other` を含む。対応定義は `apps/mobile/src/lib/sources.ts` に集約）
+- 19 ソース対応（`other` を含む。対応定義は `apps/mobile/src/lib/sources.ts` に集約）
 - オフライン閲覧（バックグラウンド同期実装済み）
 - タグ・お気に入りで整理
 - プレミアムプラン（RevenueCat によるサブスクリプション）
@@ -39,9 +39,9 @@ Zenn、Qiita、dev.to、YouTube などの技術コンテンツを保存するだ
 | LogRocket | 記事 | 対応済み |
 | CSS-Tricks | 記事 | 対応済み |
 | Smashing Magazine | 記事 | 対応済み |
+| YouTube | 動画 (字幕要約) | 対応済み (字幕なし動画は 422) |
+| Twitter / X | ツイート / スレッド | 対応済み (oEmbed API 経由) |
 | その他 URL | 汎用パーサー | 対応済み |
-| YouTube | 動画 (字幕要約) | 予定 (#541) |
-| Twitter / X | ツイート / スレッド | 予定 (#542) |
 
 ## Tech Stack
 
