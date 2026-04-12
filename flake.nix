@@ -79,6 +79,8 @@
             git
             jq
             curl
+            openssl
+            python3
             zap
             bats
             shellcheck
