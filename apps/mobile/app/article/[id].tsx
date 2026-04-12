@@ -350,7 +350,7 @@ export default function ArticleDetailScreen() {
           <Text className="text-white font-semibold">{t("common.retry")}</Text>
         </Pressable>
         <Pressable onPress={handleBack} className="mt-3">
-          <Text className="text-primary">{t("article.backA11yLabel")}</Text>
+          <Text className="text-primary">{t("common.back")}</Text>
         </Pressable>
       </View>
     );
