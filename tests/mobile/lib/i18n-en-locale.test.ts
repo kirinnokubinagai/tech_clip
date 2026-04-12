@@ -8,32 +8,36 @@ import enTranslations from "../../../apps/mobile/src/locales/en.json";
 import jaTranslations from "../../../apps/mobile/src/locales/ja.json";
 
 /**
- * ネストされたオブジェクトからドット区切りキーを抽出する
+ * ネストされたオブジェクトからリーフエントリ（キーと値のペア）を抽出する
  */
-function extractKeys(obj: Record<string, unknown>, prefix = ""): string[] {
-  const keys: string[] = [];
+function extractLeafEntries(
+  obj: Record<string, unknown>,
+  prefix = "",
+): Array<{ key: string; value: unknown }> {
+  const result: Array<{ key: string; value: unknown }> = [];
   for (const [k, v] of Object.entries(obj)) {
     const fullKey = prefix ? `${prefix}.${k}` : k;
     if (v !== null && typeof v === "object" && !Array.isArray(v)) {
-      keys.push(...extractKeys(v as Record<string, unknown>, fullKey));
+      result.push(...extractLeafEntries(v as Record<string, unknown>, fullKey));
     } else {
-      keys.push(fullKey);
+      result.push({ key: fullKey, value: v });
     }
   }
-  return keys;
+  return result;
 }
 
 describe("i18n / 英語ロケール整合性", () => {
-  const jaKeys = extractKeys(jaTranslations as unknown as Record<string, unknown>);
-  const enKeys = extractKeys(enTranslations as unknown as Record<string, unknown>);
+  const jaEntries = extractLeafEntries(jaTranslations as unknown as Record<string, unknown>);
+  const enEntries = extractLeafEntries(enTranslations as unknown as Record<string, unknown>);
+  const jaKeys = jaEntries.map((e) => e.key);
+  const enKeys = enEntries.map((e) => e.key);
 
-  it("ja.json と en.json のキー数が一致すること", () => {
-    // Arrange & Act
+  it("ja.json と en.json のキーセットが一致すること", () => {
+    // Arrange
     const jaSorted = [...jaKeys].sort();
     const enSorted = [...enKeys].sort();
 
-    // Assert
-    expect(enKeys.length).toBe(jaKeys.length);
+    // Act & Assert
     expect(enSorted).toEqual(jaSorted);
   });
 
@@ -60,25 +64,8 @@ describe("i18n / 英語ロケール整合性", () => {
   });
 
   it("en.json のすべてのキーが空文字でないこと", () => {
-    // Arrange
-    function extractValues(
-      obj: Record<string, unknown>,
-      prefix = "",
-    ): Array<{ key: string; value: unknown }> {
-      const result: Array<{ key: string; value: unknown }> = [];
-      for (const [k, v] of Object.entries(obj)) {
-        const fullKey = prefix ? `${prefix}.${k}` : k;
-        if (v !== null && typeof v === "object" && !Array.isArray(v)) {
-          result.push(...extractValues(v as Record<string, unknown>, fullKey));
-        } else {
-          result.push({ key: fullKey, value: v });
-        }
-      }
-      return result;
-    }
-
     // Act
-    const emptyValues = extractValues(enTranslations as unknown as Record<string, unknown>).filter(
+    const emptyValues = enEntries.filter(
       ({ value }) => typeof value === "string" && value.trim() === "",
     );
 

@@ -60,26 +60,6 @@ describe("OnboardingScreen（i18n 対応状況の記録）", () => {
       // Arrange
       // NOTE: jest.mock はファイル先頭にホイストされるため、このブロック内での呼び出しはモジュール解決に影響しない。
       // OnboardingScreen に i18n を実装した後、このテストは別ファイルで書き直す必要がある。
-      jest.mock("react-i18next", () => {
-        const enTranslations = jest.requireActual(
-          "../../../apps/mobile/src/locales/en.json",
-        ) as Record<string, unknown>;
-        const t = (key: string) => {
-          const parts = key.split(".");
-          let current: unknown = enTranslations;
-          for (const part of parts) {
-            if (typeof current !== "object" || current === null) return key;
-            current = (current as Record<string, unknown>)[part];
-          }
-          return typeof current === "string" ? current : key;
-        };
-        return {
-          useTranslation: () => ({ t, i18n: { language: "en", changeLanguage: jest.fn() } }),
-          initReactI18next: { type: "3rdParty", init: () => {} },
-          Trans: ({ children }: { children: React.ReactNode }) => children,
-          I18nextProvider: ({ children }: { children: React.ReactNode }) => children,
-        };
-      });
 
       // Act
       const { getByText } = await render(<OnboardingScreen />);

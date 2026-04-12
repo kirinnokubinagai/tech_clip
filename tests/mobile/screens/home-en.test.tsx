@@ -67,7 +67,7 @@ describe("HomeScreen（英語ロケール）", () => {
   describe("フィルターUI", () => {
     it("ソースフィルターの「全て」ラベルが英語で表示されること", async () => {
       // Arrange & Act
-      const { getByText } = await render(<HomeScreen />);
+      const { getByText } = render(<HomeScreen />);
 
       // Assert
       await waitFor(() => {
@@ -77,7 +77,7 @@ describe("HomeScreen（英語ロケール）", () => {
 
     it("お気に入りフィルターが英語で表示されること", async () => {
       // Arrange & Act
-      const { getByText } = await render(<HomeScreen />);
+      const { getByText } = render(<HomeScreen />);
 
       // Assert
       await waitFor(() => {
@@ -95,7 +95,7 @@ describe("HomeScreen（英語ロケール）", () => {
       });
 
       // Act
-      const { getByText } = await render(<HomeScreen />);
+      const { getByText } = render(<HomeScreen />);
 
       // Assert
       await waitFor(() => {
@@ -114,7 +114,7 @@ describe("HomeScreen（英語ロケール）", () => {
       });
 
       // Act
-      const { getByText } = await render(<HomeScreen />);
+      const { getByText } = render(<HomeScreen />);
 
       // Assert
       await waitFor(() => {
@@ -131,7 +131,7 @@ describe("HomeScreen（英語ロケール）", () => {
       });
 
       // Act
-      const { getByText } = await render(<HomeScreen />);
+      const { getByText } = render(<HomeScreen />);
 
       // Assert
       await waitFor(() => {
@@ -153,7 +153,7 @@ describe("HomeScreen（英語ロケール）", () => {
       });
 
       // Act
-      const { getByText } = await render(<HomeScreen />);
+      const { getByText } = render(<HomeScreen />);
 
       // Assert
       await waitFor(() => {
@@ -171,7 +171,7 @@ describe("HomeScreen（英語ロケール）", () => {
       });
 
       // Act
-      const { queryByText } = await render(<HomeScreen />);
+      const { queryByText } = render(<HomeScreen />);
 
       // Assert
       await waitFor(() => {
@@ -188,7 +188,7 @@ describe("HomeScreen（英語ロケール）", () => {
       });
 
       // Act
-      const { queryByText } = await render(<HomeScreen />);
+      const { queryByText } = render(<HomeScreen />);
 
       // Assert
       await waitFor(() => {
