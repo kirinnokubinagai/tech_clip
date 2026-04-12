@@ -202,7 +202,7 @@ describe("OnboardingScreen", () => {
       expect(getByLabelText("スキップ")).not.toBeNull();
     });
 
-    it("日本語ロケールで次へボタンの accessibilityLabel が補間込みで正しく翻訳されること", async () => {
+    it("日本語ロケールで次へボタンの accessibilityLabel が正しく翻訳されること", async () => {
       // Arrange
       setMockLocale("ja");
 

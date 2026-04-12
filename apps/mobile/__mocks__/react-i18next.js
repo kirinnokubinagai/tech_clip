@@ -10,6 +10,7 @@ const enTranslations = jest.requireActual("../src/locales/en.json");
 /** 現在のモックロケール */
 let currentLocale = "ja";
 
+// NOTE: 現在 ja/en のみサポート。ko/zh-CN/zh-TW は jaTranslations にフォールバックする。
 /** ロケール別の翻訳辞書 */
 const translations = {
   ja: jaTranslations,
