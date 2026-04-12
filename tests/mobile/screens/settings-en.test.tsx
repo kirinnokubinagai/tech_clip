@@ -78,7 +78,7 @@ describe("SettingsScreen（英語ロケール）", () => {
   describe("セクションタイトル", () => {
     it("アカウントセクションが英語で表示されること", async () => {
       // Arrange & Act
-      const { getByText } = render(<SettingsScreen />);
+      const { getByText } = await render(<SettingsScreen />);
 
       // Assert
       expect(getByText("Account")).toBeTruthy();
@@ -86,7 +86,7 @@ describe("SettingsScreen（英語ロケール）", () => {
 
     it("サブスクリプションセクションが英語で表示されること", async () => {
       // Arrange & Act
-      const { getByText } = render(<SettingsScreen />);
+      const { getByText } = await render(<SettingsScreen />);
 
       // Assert
       expect(getByText("Subscription")).toBeTruthy();
@@ -94,7 +94,7 @@ describe("SettingsScreen（英語ロケール）", () => {
 
     it("一般セクションが英語で表示されること", async () => {
       // Arrange & Act
-      const { getByText } = render(<SettingsScreen />);
+      const { getByText } = await render(<SettingsScreen />);
 
       // Assert
       expect(getByText("General")).toBeTruthy();
@@ -104,7 +104,7 @@ describe("SettingsScreen（英語ロケール）", () => {
   describe("設定項目", () => {
     it("言語設定項目が英語で表示されること", async () => {
       // Arrange & Act
-      const { getByText } = render(<SettingsScreen />);
+      const { getByText } = await render(<SettingsScreen />);
 
       // Assert
       expect(getByText("Language")).toBeTruthy();
@@ -112,7 +112,7 @@ describe("SettingsScreen（英語ロケール）", () => {
 
     it("通知設定項目が英語で表示されること", async () => {
       // Arrange & Act
-      const { getByText } = render(<SettingsScreen />);
+      const { getByText } = await render(<SettingsScreen />);
 
       // Assert
       expect(getByText("Notifications")).toBeTruthy();
@@ -120,7 +120,7 @@ describe("SettingsScreen（英語ロケール）", () => {
 
     it("パスワード変更項目が英語で表示されること", async () => {
       // Arrange & Act
-      const { getByText } = render(<SettingsScreen />);
+      const { getByText } = await render(<SettingsScreen />);
 
       // Assert
       expect(getByText("Change Password")).toBeTruthy();
@@ -128,7 +128,7 @@ describe("SettingsScreen（英語ロケール）", () => {
 
     it("ログアウト項目が英語で表示されること", async () => {
       // Arrange & Act
-      const { getByText } = render(<SettingsScreen />);
+      const { getByText } = await render(<SettingsScreen />);
 
       // Assert
       expect(getByText("Log Out")).toBeTruthy();
@@ -138,7 +138,7 @@ describe("SettingsScreen（英語ロケール）", () => {
   describe("日本語ハードコードの不在確認", () => {
     it("「アカウント」という日本語テキストが表示されないこと", async () => {
       // Arrange & Act
-      const { queryByText } = render(<SettingsScreen />);
+      const { queryByText } = await render(<SettingsScreen />);
 
       // Assert
       expect(queryByText("アカウント")).toBeNull();
@@ -146,7 +146,7 @@ describe("SettingsScreen（英語ロケール）", () => {
 
     it("「ログアウト」という日本語テキストが表示されないこと", async () => {
       // Arrange & Act
-      const { queryByText } = render(<SettingsScreen />);
+      const { queryByText } = await render(<SettingsScreen />);
 
       // Assert
       expect(queryByText("ログアウト")).toBeNull();
@@ -154,7 +154,7 @@ describe("SettingsScreen（英語ロケール）", () => {
 
     it("「言語」という日本語テキストが表示されないこと", async () => {
       // Arrange & Act
-      const { queryByText } = render(<SettingsScreen />);
+      const { queryByText } = await render(<SettingsScreen />);
 
       // Assert
       expect(queryByText("言語")).toBeNull();
