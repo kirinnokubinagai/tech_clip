@@ -16,7 +16,6 @@
     "search": "검색",
     "skip": "건너뛰기",
     "start": "시작하기",
-    "generating": "생성 중...",
     "accessibility": {
       "tapToChange": "탭하여 변경",
       "currentValue": "{{label}}, 현재 설정: {{value}}"
@@ -94,7 +93,10 @@
     "fetchError": "기사를 불러오는데 실패했습니다",
     "noArticles": "기사가 없습니다",
     "offlineCachedArticles": "오프라인: 캐시된 기사를 표시 중",
-    "offlineNoCache": "오프라인: 캐시가 없습니다"
+    "offlineNoCache": "오프라인: 캐시가 없습니다",
+    "retryLabel": "다시 시도",
+    "retryHint": "기사 불러오기를 다시 시도합니다",
+    "sourceFilterHint": "{{label}} 기사만 표시합니다"
   },
   "article": {
     "save": "기사 저장",
@@ -129,8 +131,8 @@
     "urlRequired": "URL을 입력해 주세요",
     "urlInvalid": "유효한 URL을 입력해 주세요",
     "noMatch": "「{{query}}」에 일치하는 기사가 없습니다",
-    "summaryLabel": "요약",
-    "translationLabel": "번역"
+    "backA11yLabel": "뒤로",
+    "generating": "생성 중..."
   },
   "search": {
     "placeholder": "기사 검색...",

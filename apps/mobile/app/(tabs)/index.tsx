@@ -136,8 +136,8 @@ export default function HomeScreen() {
             onPress={() => refetch()}
             className="mt-4 flex-row items-center gap-2"
             accessibilityRole="button"
-            accessibilityLabel="再試行"
-            accessibilityHint="記事の取得を再試行します"
+            accessibilityLabel={t("home.retryLabel")}
+            accessibilityHint={t("home.retryHint")}
           >
             <RefreshCw size={FILTER_ICON_SIZE} color={FILTER_ACTIVE_BG} />
             <Text className="text-primary">{t("common.retry")}</Text>
@@ -166,7 +166,7 @@ export default function HomeScreen() {
               }}
               accessibilityRole="button"
               accessibilityLabel={item.label}
-              accessibilityHint={`${item.label}の記事のみ表示します`}
+              accessibilityHint={t("home.sourceFilterHint", { label: item.label })}
               accessibilityState={{ selected: selectedSource === item.value }}
             >
               <Text

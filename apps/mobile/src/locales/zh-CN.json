@@ -16,7 +16,6 @@
     "search": "搜索",
     "skip": "跳过",
     "start": "开始",
-    "generating": "生成中...",
     "accessibility": {
       "tapToChange": "点击更改",
       "currentValue": "{{label}}，当前设置: {{value}}"
@@ -94,7 +93,10 @@
     "fetchError": "获取文章失败",
     "noArticles": "没有文章",
     "offlineCachedArticles": "离线：显示已缓存文章",
-    "offlineNoCache": "离线：没有缓存"
+    "offlineNoCache": "离线：没有缓存",
+    "retryLabel": "重试",
+    "retryHint": "重新获取文章",
+    "sourceFilterHint": "仅显示{{label}}文章"
   },
   "article": {
     "save": "保存文章",
@@ -129,8 +131,8 @@
     "urlRequired": "请输入URL",
     "urlInvalid": "请输入有效的URL",
     "noMatch": "没有匹配「{{query}}」的文章",
-    "summaryLabel": "摘要",
-    "translationLabel": "翻译"
+    "backA11yLabel": "返回",
+    "generating": "生成中..."
   },
   "search": {
     "placeholder": "搜索文章...",

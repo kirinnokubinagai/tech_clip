@@ -16,7 +16,6 @@
     "search": "搜尋",
     "skip": "跳過",
     "start": "開始",
-    "generating": "生成中...",
     "accessibility": {
       "tapToChange": "點擊更改",
       "currentValue": "{{label}}，目前設定: {{value}}"
@@ -94,7 +93,10 @@
     "fetchError": "取得文章失敗",
     "noArticles": "沒有文章",
     "offlineCachedArticles": "離線：顯示已快取文章",
-    "offlineNoCache": "離線：沒有快取"
+    "offlineNoCache": "離線：沒有快取",
+    "retryLabel": "重試",
+    "retryHint": "重新取得文章",
+    "sourceFilterHint": "僅顯示{{label}}文章"
   },
   "article": {
     "save": "儲存文章",
@@ -129,8 +131,8 @@
     "urlRequired": "請輸入URL",
     "urlInvalid": "請輸入有效的URL",
     "noMatch": "沒有符合「{{query}}」的文章",
-    "summaryLabel": "摘要",
-    "translationLabel": "翻譯"
+    "backA11yLabel": "返回",
+    "generating": "生成中..."
   },
   "search": {
     "placeholder": "搜尋文章...",
