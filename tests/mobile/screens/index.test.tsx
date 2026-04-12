@@ -153,17 +153,29 @@ describe("HomeScreen", () => {
     });
   });
 
-  it("手書き配列にしかなかった'HN'ラベルが存在せずHacker Newsラベルが存在すること", async () => {
+  it("手書き配列にしかなかった'HN'ラベルが存在しないこと", async () => {
     // Arrange
     (useArticles as jest.Mock).mockReturnValue(DEFAULT_USE_ARTICLES_MOCK);
 
     // Act
-    const { queryByLabelText, getByLabelText } = await render(<HomeScreen />);
+    const { queryByLabelText } = await render(<HomeScreen />);
 
+    // Assert
     await waitFor(() => {
-      // 旧手書き配列では "HN" だったが sources.ts では "Hacker News" が正しいラベル
       expect(queryByLabelText("HN")).toBeNull();
-      expect(getByLabelText("Hacker News")).toBeTruthy();
+    });
+  });
+
+  it("sources.tsで定義されたHacker Newsラベルが存在すること", async () => {
+    // Arrange
+    (useArticles as jest.Mock).mockReturnValue(DEFAULT_USE_ARTICLES_MOCK);
+
+    // Act
+    const { getByLabelText } = await render(<HomeScreen />);
+
+    // Assert
+    await waitFor(() => {
+      expect(getByLabelText("Hacker News")).not.toBeNull();
     });
   });
 });
