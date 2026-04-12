@@ -1,21 +1,13 @@
+import type { PublicProfile } from "@tech-clip/types";
 import { Hono } from "hono";
 
 import { NOT_FOUND_ERROR_CODE } from "../lib/error-codes";
 import { HTTP_NOT_FOUND, HTTP_OK } from "../lib/http-status";
 
+export type { PublicProfile };
+
 /** ユーザー未発見エラーメッセージ */
 const USER_NOT_FOUND_MESSAGE = "ユーザーが見つかりません";
-
-/** 公開プロフィールの型 */
-export type PublicProfile = {
-  id: string;
-  name: string | null;
-  username: string | null;
-  bio: string | null;
-  avatarUrl: string | null;
-  followersCount: number;
-  followingCount: number;
-};
 
 /** プロフィール取得関数の型 */
 export type GetPublicProfileFn = (userId: string) => Promise<PublicProfile | null>;

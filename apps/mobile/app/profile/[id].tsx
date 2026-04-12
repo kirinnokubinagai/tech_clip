@@ -12,6 +12,9 @@ import { DARK_COLORS } from "@/lib/constants";
 /** 戻るアイコンのサイズ（px） */
 const BACK_ICON_SIZE = 24;
 
+/** スクロール下部のパディング（px） */
+const SCROLL_BOTTOM_PADDING = 40;
+
 /** テキストカラー */
 const TEXT_COLOR = DARK_COLORS.text;
 
@@ -35,9 +38,10 @@ export default function UserProfileScreen() {
     router.back();
   }, [router]);
 
-  const handleFollowToggle = useCallback(async (_userId: string, _currentlyFollowing: boolean) => {
-    await new Promise((resolve) => setTimeout(resolve, 300));
-  }, []);
+  const handleFollowToggle = useCallback(
+    async (_userId: string, _currentlyFollowing: boolean): Promise<void> => {},
+    [],
+  );
 
   if (isLoading) {
     return (
@@ -104,7 +108,10 @@ export default function UserProfileScreen() {
         <View style={{ width: BACK_ICON_SIZE }} />
       </View>
 
-      <ScrollView className="flex-1" contentContainerStyle={{ paddingBottom: 40 }}>
+      <ScrollView
+        className="flex-1"
+        contentContainerStyle={{ paddingBottom: SCROLL_BOTTOM_PADDING }}
+      >
         <ProfileHeader user={profileHeaderUser} />
 
         <View testID="user-profile-follow-section" className="px-4 py-4">

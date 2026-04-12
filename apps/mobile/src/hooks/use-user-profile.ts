@@ -1,26 +1,20 @@
 import { useQuery } from "@tanstack/react-query";
 
+import type { PublicProfile } from "@tech-clip/types";
+
 import { apiFetch } from "@/lib/api";
 
 /** 公開プロフィールのクエリキー */
 const USER_PROFILE_QUERY_KEY = "user-profile";
 
-/** 公開プロフィールの型 */
-export type UserPublicProfile = {
-  id: string;
-  name: string | null;
-  username: string | null;
-  bio: string | null;
-  avatarUrl: string | null;
-  followersCount: number;
-  followingCount: number;
-};
+/** 後方互換のための型エイリアス */
+export type UserPublicProfile = PublicProfile;
 
 /** 公開プロフィールAPIのレスポンス型 */
 type UserPublicProfileResponse =
   | {
       success: true;
-      data: UserPublicProfile;
+      data: PublicProfile;
     }
   | {
       success: false;
