@@ -2,6 +2,7 @@ import { Image } from "expo-image";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { ArrowLeft } from "lucide-react-native";
 import { useCallback, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { ActivityIndicator, FlatList, Pressable, Text, View } from "react-native";
 import type { FollowUser } from "@/hooks/use-follow";
 import { useFollowers, useFollowing } from "@/hooks/use-follow";
@@ -48,6 +49,7 @@ function getInitials(name: string): string {
 type UserListItemProps = {
   item: FollowUser;
   onPress: (userId: string) => void;
+  userProfileLabel: string;
 };
 
 /**
@@ -55,8 +57,9 @@ type UserListItemProps = {
  *
  * @param item - 表示するユーザーデータ
  * @param onPress - タップ時のコールバック
+ * @param userProfileLabel - アクセシビリティラベル（翻訳済み文字列）
  */
-function UserListItem({ item, onPress }: UserListItemProps) {
+function UserListItem({ item, onPress, userProfileLabel }: UserListItemProps) {
   const handlePress = useCallback(() => {
     onPress(item.id);
   }, [item.id, onPress]);
@@ -66,7 +69,7 @@ function UserListItem({ item, onPress }: UserListItemProps) {
       testID={`user-item-${item.id}`}
       onPress={handlePress}
       accessibilityRole="button"
-      accessibilityLabel={`${item.name}のプロフィールを表示`}
+      accessibilityLabel={userProfileLabel}
       className="flex-row items-center gap-3 px-4 py-3 border-b border-border"
     >
       {item.avatarUrl ? (
@@ -120,6 +123,7 @@ function UserListItem({ item, onPress }: UserListItemProps) {
  * クエリパラメータ `tab` で初期タブを指定可能（"followers" | "following"）。
  */
 export default function FollowersScreen() {
+  const { t } = useTranslation();
   const { tab } = useLocalSearchParams<{ tab?: string }>();
   const router = useRouter();
 
@@ -158,8 +162,14 @@ export default function FollowersScreen() {
   }, []);
 
   const renderItem = useCallback(
-    ({ item }: { item: FollowUser }) => <UserListItem item={item} onPress={handleUserPress} />,
-    [handleUserPress],
+    ({ item }: { item: FollowUser }) => (
+      <UserListItem
+        item={item}
+        onPress={handleUserPress}
+        userProfileLabel={t("profile.followers.userProfileLabel", { name: item.name })}
+      />
+    ),
+    [handleUserPress, t],
   );
 
   const keyExtractor = useCallback((item: FollowUser) => item.id, []);
@@ -169,13 +179,15 @@ export default function FollowersScreen() {
       return null;
     }
     const message =
-      activeTab === "followers" ? "フォロワーはまだいません" : "フォロー中のユーザーはいません";
+      activeTab === "followers"
+        ? t("profile.followers.noFollowers")
+        : t("profile.followers.noFollowing");
     return (
       <View testID="followers-empty" className="items-center py-12 px-4">
         <Text className="text-text-muted text-sm text-center">{message}</Text>
       </View>
     );
-  }, [activeTab, isLoading]);
+  }, [activeTab, isLoading, t]);
 
   return (
     <View testID="followers-screen" className="flex-1 bg-background">
@@ -184,13 +196,15 @@ export default function FollowersScreen() {
           testID="followers-back-button"
           onPress={handleBack}
           accessibilityRole="button"
-          accessibilityLabel="戻る"
+          accessibilityLabel={t("common.back")}
           hitSlop={8}
         >
           <ArrowLeft size={BACK_ICON_SIZE} color={TEXT_COLOR} />
         </Pressable>
         <Text className="text-lg font-bold text-text">
-          {activeTab === "followers" ? "フォロワー" : "フォロー中"}
+          {activeTab === "followers"
+            ? t("profile.followers.followersTab")
+            : t("profile.followers.followingTab")}
         </Text>
         <View style={{ width: BACK_ICON_SIZE }} />
       </View>
@@ -215,7 +229,7 @@ export default function FollowersScreen() {
                 : "text-sm text-text-muted"
             }
           >
-            フォロワー
+            {t("profile.followers.followersTab")}
           </Text>
         </Pressable>
         <Pressable
@@ -237,7 +251,7 @@ export default function FollowersScreen() {
                 : "text-sm text-text-muted"
             }
           >
-            フォロー中
+            {t("profile.followers.followingTab")}
           </Text>
         </Pressable>
       </View>
@@ -245,7 +259,7 @@ export default function FollowersScreen() {
       {isLoading ? (
         <View testID="followers-loading" className="flex-1 items-center justify-center">
           <ActivityIndicator size="large" color={PRIMARY_COLOR} />
-          <Text className="text-text-muted mt-3">読み込み中...</Text>
+          <Text className="text-text-muted mt-3">{t("profile.followers.loading")}</Text>
         </View>
       ) : isError ? (
         <View testID="followers-error" className="flex-1 items-center justify-center px-4">

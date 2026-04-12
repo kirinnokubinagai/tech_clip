@@ -1,4 +1,5 @@
 import { useRouter } from "expo-router";
+import { useTranslation } from "react-i18next";
 import { ActivityIndicator, ScrollView, Text, View } from "react-native";
 import type { ProfileHeaderUser } from "@/components/ProfileHeader";
 import { ProfileHeader } from "@/components/ProfileHeader";
@@ -15,9 +16,19 @@ const PRIMARY_COLOR = DARK_COLORS.primary;
  * 未認証時はゲスト表示またはローディング表示を返す。
  */
 export default function ProfileScreen() {
+  const { t } = useTranslation();
   const router = useRouter();
   const user = useAuthStore((state) => state.user);
   const isLoading = useAuthStore((state) => state.isLoading);
+
+  /** プロフィール画面のプレースホルダーユーザーデータ */
+  const placeholderUser: ProfileHeaderUser = {
+    name: t("profile.guestUser"),
+    bio: null,
+    avatarUrl: null,
+    followersCount: 0,
+    followingCount: 0,
+  };
 
   const handleSettingsPress = () => {
     router.push("/(tabs)/settings");
@@ -33,14 +44,12 @@ export default function ProfileScreen() {
 
   if (!user) {
     return (
-      <View
-        testID="profile-guest"
-        className="flex-1 items-center justify-center px-4 bg-background"
-      >
-        <Text className="text-base text-text-muted text-center">
-          ログインすると保存した記事やお気に入りが表示されます
-        </Text>
-      </View>
+      <ScrollView className="flex-1 bg-background">
+        <ProfileHeader user={placeholderUser} onSettingsPress={handleSettingsPress} />
+        <View testID="profile-guest" className="flex-1 items-center justify-center px-4 py-12">
+          <Text className="text-base text-text-muted text-center">{t("profile.loginPrompt")}</Text>
+        </View>
+      </ScrollView>
     );
   }
 
@@ -56,9 +65,7 @@ export default function ProfileScreen() {
     <ScrollView className="flex-1 bg-background">
       <ProfileHeader user={profileUser} onSettingsPress={handleSettingsPress} />
       <View className="flex-1 items-center justify-center px-4 py-12">
-        <Text className="text-base text-text-muted text-center">
-          保存した記事やお気に入りがここに表示されます
-        </Text>
+        <Text className="text-base text-text-muted text-center">{t("profile.savedArticles")}</Text>
       </View>
     </ScrollView>
   );

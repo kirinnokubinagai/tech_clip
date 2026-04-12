@@ -1,5 +1,6 @@
 import { Image } from "expo-image";
 import { Settings } from "lucide-react-native";
+import { useTranslation } from "react-i18next";
 import { Pressable, Text, View } from "react-native";
 
 import { DARK_COLORS } from "@/lib/constants";
@@ -78,6 +79,7 @@ function formatCount(count: number | undefined): string {
  * @param onSettingsPress - 設定アイコンタップ時のコールバック
  */
 export function ProfileHeader({ user, onSettingsPress }: ProfileHeaderProps) {
+  const { t } = useTranslation();
   return (
     <View testID="profile-header" className="px-4 pt-4 pb-6 bg-surface border-b border-border">
       <View className="flex-row items-start justify-between mb-4">
@@ -124,7 +126,7 @@ export function ProfileHeader({ user, onSettingsPress }: ProfileHeaderProps) {
             testID="profile-settings-button"
             onPress={onSettingsPress}
             accessibilityRole="button"
-            accessibilityLabel="設定"
+            accessibilityLabel={t("tabs.settings")}
             hitSlop={8}
             className="p-1"
           >
@@ -138,13 +140,13 @@ export function ProfileHeader({ user, onSettingsPress }: ProfileHeaderProps) {
           <Text testID="profile-followers-count" className="text-lg font-bold text-text">
             {formatCount(user.followersCount)}
           </Text>
-          <Text className="text-xs text-text-muted">フォロワー</Text>
+          <Text className="text-xs text-text-muted">{t("profile.followers.followersTab")}</Text>
         </View>
         <View className="items-center">
           <Text testID="profile-following-count" className="text-lg font-bold text-text">
             {formatCount(user.followingCount)}
           </Text>
-          <Text className="text-xs text-text-muted">フォロー中</Text>
+          <Text className="text-xs text-text-muted">{t("profile.followers.followingTab")}</Text>
         </View>
       </View>
     </View>

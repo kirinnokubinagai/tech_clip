@@ -1,0 +1,96 @@
+name: PR Comment Re-review
+
+on:
+  issue_comment:
+    types: [created]
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+# 同一PRの再レビューが同時に複数実行されるのを防ぐ
+# cancel-in-progress: true は意図的 — 新しい再レビューコメントが来たら古い実行を破棄して最新コンテキストで再起動する。古い結果は無意味なため。
+concurrency:
+  group: pr-comment-review-${{ github.event.issue.number }}
+  cancel-in-progress: true
+
+permissions: {}
+
+jobs:
+  pr-comment-review:
+    # PRへのコメントかつ同一リポジトリのPRのみ実行
+    if: |
+      github.event.issue.pull_request != null &&
+      github.event.comment.user.type != 'Bot' &&
+      github.event.comment.user.login != 'github-actions[bot]' &&
+      github.event.comment.user.login != 'claude[bot]' &&
+      github.event.repository.full_name == github.repository &&
+      contains(fromJSON('["MEMBER","COLLABORATOR","OWNER"]'), github.event.comment.author_association) &&
+      (
+        contains(github.event.comment.body, '再レビュー') ||
+        contains(github.event.comment.body, '/re-review') ||
+        contains(github.event.comment.body, '@claude レビュー') ||
+        contains(github.event.comment.body, '@claude review')
+      )
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    continue-on-error: true
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - name: フォーク PR チェック
+        id: fork-check
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ github.event.issue.number }}
+          REPO_OWNER: ${{ github.repository_owner }}
+        run: |
+          HEAD_REPO=$(gh pr view "$PR_NUMBER" --json headRepository --jq '.headRepository.owner.login')
+          if [ "$HEAD_REPO" != "$REPO_OWNER" ]; then
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "skip=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v4.2.2
+        if: steps.fork-check.outputs.skip != 'true'
+        with:
+          # with: パラメータは env 変数を参照できないため ${{ }} 直接参照が必須
+          # PRのheadブランチをチェックアウトするのは意図的 — レビューはPR実際のSKILL.mdを参照する必要がある。
+          # プロンプトインジェクションリスクは author_association フィルタ（MEMBER/COLLABORATOR/OWNER のみ）で軽減済み。
+          ref: refs/pull/${{ github.event.issue.number }}/head
+
+      - id: review
+        if: steps.fork-check.outputs.skip != 'true'
+        env:
+          PR_NUMBER: ${{ github.event.issue.number }}
+        uses: anthropics/claude-code-action@b47fd721da662d48c5680e154ad16a73ed74d2e0  # v1
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          claude_args: |
+            --allowedTools Skill,Read,Grep,Glob,"Bash(gh pr comment:*)","Bash(gh pr edit:*)"
+          prompt: |
+            このPRの差分をレビューしてください。
+            レビューには必ず .claude/skills/review/code-review/SKILL.md と .claude/skills/review/pr-review/SKILL.md を Read ツールで読み取り、記載されたチェックリストと出力フォーマットに厳密に従ってください。
+
+            既存のPRコメント（前回のレビュー指摘への回答）も確認してください。
+            前回の指摘に対してコメントで適切に回答・説明されている場合は、その指摘を解決済みとして扱ってください。
+
+            結果は日本語でPRコメントに投稿してください。
+            改善提案（💡）が1件でもある場合は、Approve相当の判定を出してはいけません。
+
+            レビュー完了後、以下のルールに従いラベルを操作してください:
+            - 重大な問題（🔴）が0件かつ軽微な問題（🟡）が0件かつ改善提案（💡）が0件の場合:
+              gh pr edit "$PR_NUMBER" --add-label "AI Review: PASS" --remove-label "AI Review: NEEDS WORK"
+            - 1つでも問題や改善提案がある場合:
+              gh pr edit "$PR_NUMBER" --add-label "AI Review: NEEDS WORK" --remove-label "AI Review: PASS"
+
+            重要: gh pr review --approve は絶対に実行しないでください。
+
+      - name: 再レビュー済みラベルを追加
+        if: always() && steps.fork-check.outputs.skip != 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ github.event.issue.number }}
+        run: |
+          gh pr edit "$PR_NUMBER" --add-label "再レビュー済み" 2>/dev/null || true
