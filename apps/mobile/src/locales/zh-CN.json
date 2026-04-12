@@ -281,7 +281,7 @@
     "pages": {
       "save": {
         "title": "一键保存技术文章",
-        "description": "支持Zenn、Qiita、dev.to等18个网站，随时保存感兴趣的文章。"
+        "description": "支持Zenn、Qiita、dev.to等{{count}}个来源，随时保存感兴趣的文章。"
       },
       "ai": {
         "title": "AI摘要与翻译",
@@ -298,7 +298,13 @@
     },
     "skip": "跳过",
     "next": "下一步",
-    "start": "开始"
+    "start": "开始",
+    "accessibility": {
+      "pageIndicator": "第{{current}}页（共{{total}}页）",
+      "nextPageHint": "前往第{{next}}页",
+      "skipHint": "跳过引导并前往登录界面",
+      "startHint": "前往创建账户界面"
+    }
   },
   "shareIntent": {
     "loading": "加载中",
