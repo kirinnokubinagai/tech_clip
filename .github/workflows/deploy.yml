@@ -56,6 +56,8 @@ jobs:
     environment: staging
     permissions:
       contents: read
+      actions: write
+      deployments: write
     env:
       STAGING_API_URL: https://tech-clip-api-staging.workers.dev
     steps:
