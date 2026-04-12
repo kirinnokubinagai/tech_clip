@@ -143,7 +143,7 @@ Primary スケール（Tailwind Teal ベース）
 | # | 内容 | 関連ファイル |
 |---|------|-------------|
 | 1 | `DARK_COLORS.primary` を `#6366f1` → `#14b8a6` に変更 | `constants.ts`, `tailwind.config.js` |
-| 2 | `SEMANTIC_COLORS.accent` を削除し `primary` に一本化 | `constants.ts` |
+| 2 | `SEMANTIC_COLORS.accent` を削除し `primary` に一本化 | `constants.ts`, `tailwind.config.js` |
 | 3 | `tailwind.config.js` にライトテーマ対応の CSS 変数 or `dark:` バリアントを追加 | `tailwind.config.js`, `global.css` |
 | 4 | `_layout.tsx` の `|| true` を除去し、`useColorScheme` に完全対応 | `_layout.tsx` |
 | 5 | `article/[id].tsx` のカラー参照をテーマ動的切替に対応 | `article/[id].tsx` |
