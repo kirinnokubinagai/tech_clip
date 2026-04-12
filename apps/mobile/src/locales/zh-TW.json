@@ -93,7 +93,10 @@
     "fetchError": "取得文章失敗",
     "noArticles": "沒有文章",
     "offlineCachedArticles": "離線：顯示已快取文章",
-    "offlineNoCache": "離線：沒有快取"
+    "offlineNoCache": "離線：沒有快取",
+    "retryLabel": "重試",
+    "retryHint": "重新取得文章",
+    "sourceFilterHint": "僅顯示{{label}}文章"
   },
   "article": {
     "save": "儲存文章",
@@ -127,7 +130,9 @@
     "thumbnailAlt": "文章縮圖",
     "urlRequired": "請輸入URL",
     "urlInvalid": "請輸入有效的URL",
-    "noMatch": "沒有符合「{{query}}」的文章"
+    "noMatch": "沒有符合「{{query}}」的文章",
+    "backA11yLabel": "返回",
+    "generating": "生成中..."
   },
   "search": {
     "placeholder": "搜尋文章...",
@@ -295,7 +300,14 @@
     },
     "skip": "跳過",
     "next": "下一步",
-    "start": "開始"
+    "start": "開始",
+    "skipA11yLabel": "跳過",
+    "skipA11yHint": "跳過新手引導並前往登入頁面",
+    "startA11yLabel": "開始使用",
+    "startA11yHint": "前往建立帳號頁面",
+    "nextA11yLabel": "下一步",
+    "nextA11yHint": "前往第{{page}}頁",
+    "pageIndicatorLabel": "第{{current}}頁，共{{total}}頁"
   },
   "shareIntent": {
     "loading": "載入中",

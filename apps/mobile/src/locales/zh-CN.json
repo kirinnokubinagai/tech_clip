@@ -93,7 +93,10 @@
     "fetchError": "获取文章失败",
     "noArticles": "没有文章",
     "offlineCachedArticles": "离线：显示已缓存文章",
-    "offlineNoCache": "离线：没有缓存"
+    "offlineNoCache": "离线：没有缓存",
+    "retryLabel": "重试",
+    "retryHint": "重新获取文章",
+    "sourceFilterHint": "仅显示{{label}}文章"
   },
   "article": {
     "save": "保存文章",
@@ -127,7 +130,9 @@
     "thumbnailAlt": "文章缩略图",
     "urlRequired": "请输入URL",
     "urlInvalid": "请输入有效的URL",
-    "noMatch": "没有匹配「{{query}}」的文章"
+    "noMatch": "没有匹配「{{query}}」的文章",
+    "backA11yLabel": "返回",
+    "generating": "生成中..."
   },
   "search": {
     "placeholder": "搜索文章...",
@@ -295,7 +300,14 @@
     },
     "skip": "跳过",
     "next": "下一步",
-    "start": "开始"
+    "start": "开始",
+    "skipA11yLabel": "跳过",
+    "skipA11yHint": "跳过新手引导并前往登录页面",
+    "startA11yLabel": "开始使用",
+    "startA11yHint": "前往创建账户页面",
+    "nextA11yLabel": "下一步",
+    "nextA11yHint": "前往第{{page}}页",
+    "pageIndicatorLabel": "第{{current}}页，共{{total}}页"
   },
   "shareIntent": {
     "loading": "加载中",

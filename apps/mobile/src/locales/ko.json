@@ -93,7 +93,10 @@
     "fetchError": "기사를 불러오는데 실패했습니다",
     "noArticles": "기사가 없습니다",
     "offlineCachedArticles": "오프라인: 캐시된 기사를 표시 중",
-    "offlineNoCache": "오프라인: 캐시가 없습니다"
+    "offlineNoCache": "오프라인: 캐시가 없습니다",
+    "retryLabel": "다시 시도",
+    "retryHint": "기사 불러오기를 다시 시도합니다",
+    "sourceFilterHint": "{{label}} 기사만 표시합니다"
   },
   "article": {
     "save": "기사 저장",
@@ -127,7 +130,9 @@
     "thumbnailAlt": "기사 썸네일",
     "urlRequired": "URL을 입력해 주세요",
     "urlInvalid": "유효한 URL을 입력해 주세요",
-    "noMatch": "「{{query}}」에 일치하는 기사가 없습니다"
+    "noMatch": "「{{query}}」에 일치하는 기사가 없습니다",
+    "backA11yLabel": "뒤로",
+    "generating": "생성 중..."
   },
   "search": {
     "placeholder": "기사 검색...",
@@ -295,7 +300,14 @@
     },
     "skip": "건너뛰기",
     "next": "다음",
-    "start": "시작하기"
+    "start": "시작하기",
+    "skipA11yLabel": "건너뛰기",
+    "skipA11yHint": "온보딩을 건너뛰고 로그인 화면으로 이동합니다",
+    "startA11yLabel": "시작하기",
+    "startA11yHint": "계정 생성 화면으로 이동합니다",
+    "nextA11yLabel": "다음",
+    "nextA11yHint": "{{page}} 페이지로 이동합니다",
+    "pageIndicatorLabel": "{{total}} 페이지 중 {{current}} 페이지"
   },
   "shareIntent": {
     "loading": "불러오는 중",
