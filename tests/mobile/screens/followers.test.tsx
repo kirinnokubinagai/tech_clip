@@ -81,7 +81,7 @@ describe("FollowersScreen", () => {
       const { getByTestId } = await render(<FollowersScreen />);
 
       // Assert
-      expect(getByTestId("followers-screen")).toBeDefined();
+      expect(getByTestId("followers-screen")).not.toBeNull();
     });
 
     it("タブが表示されること", async () => {
@@ -89,9 +89,9 @@ describe("FollowersScreen", () => {
       const { getByTestId } = await render(<FollowersScreen />);
 
       // Assert
-      expect(getByTestId("followers-tabs")).toBeDefined();
-      expect(getByTestId("tab-followers")).toBeDefined();
-      expect(getByTestId("tab-following")).toBeDefined();
+      expect(getByTestId("followers-tabs")).not.toBeNull();
+      expect(getByTestId("tab-followers")).not.toBeNull();
+      expect(getByTestId("tab-following")).not.toBeNull();
     });
 
     it("戻るボタンが表示されること", async () => {
@@ -99,7 +99,7 @@ describe("FollowersScreen", () => {
       const { getByTestId } = await render(<FollowersScreen />);
 
       // Assert
-      expect(getByTestId("followers-back-button")).toBeDefined();
+      expect(getByTestId("followers-back-button")).not.toBeNull();
     });
   });
 
@@ -110,8 +110,8 @@ describe("FollowersScreen", () => {
 
       // Assert
       await waitFor(() => {
-        expect(getByTestId("user-item-user-1")).toBeDefined();
-        expect(getByTestId("user-item-user-2")).toBeDefined();
+        expect(getByTestId("user-item-user-1")).not.toBeNull();
+        expect(getByTestId("user-item-user-2")).not.toBeNull();
       });
     });
 
@@ -121,8 +121,8 @@ describe("FollowersScreen", () => {
 
       // Assert
       await waitFor(() => {
-        expect(getByText("田中太郎")).toBeDefined();
-        expect(getByText("佐藤花子")).toBeDefined();
+        expect(getByText("田中太郎")).not.toBeNull();
+        expect(getByText("佐藤花子")).not.toBeNull();
       });
     });
 
@@ -132,7 +132,7 @@ describe("FollowersScreen", () => {
 
       // Assert
       await waitFor(() => {
-        expect(getByText("フロントエンドエンジニア")).toBeDefined();
+        expect(getByText("フロントエンドエンジニア")).not.toBeNull();
       });
     });
   });
@@ -147,7 +147,7 @@ describe("FollowersScreen", () => {
 
       // Assert
       await waitFor(() => {
-        expect(getByText("鈴木一郎")).toBeDefined();
+        expect(getByText("鈴木一郎")).not.toBeNull();
       });
     });
   });
@@ -162,7 +162,7 @@ describe("FollowersScreen", () => {
       const { getByTestId } = await render(<FollowersScreen />);
 
       // Assert
-      expect(getByTestId("followers-loading")).toBeDefined();
+      expect(getByTestId("followers-loading")).not.toBeNull();
     });
   });
 
@@ -176,7 +176,7 @@ describe("FollowersScreen", () => {
 
       // Assert
       await waitFor(() => {
-        expect(getByTestId("followers-empty")).toBeDefined();
+        expect(getByTestId("followers-empty")).not.toBeNull();
       });
     });
   });
@@ -191,7 +191,7 @@ describe("FollowersScreen", () => {
       const { getByTestId } = await render(<FollowersScreen />);
 
       // Assert
-      expect(getByTestId("followers-error")).toBeDefined();
+      expect(getByTestId("followers-error")).not.toBeNull();
     });
   });
 

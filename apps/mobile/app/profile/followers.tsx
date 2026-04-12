@@ -33,6 +33,9 @@ const AVATAR_FALLBACK_TEXT_COLOR = DARK_COLORS.text;
 /** アクティブタブの下線カラー */
 const ACTIVE_TAB_BORDER_COLOR = DARK_COLORS.primary;
 
+/** 無限スクロールの発火閾値（リスト全体に対する割合） */
+const END_REACHED_THRESHOLD = 0.5;
+
 /**
  * ユーザー名の頭文字を取得する
  *
@@ -225,7 +228,7 @@ export default function FollowersScreen() {
         ListEmptyComponent={renderEmpty}
         contentContainerStyle={{ flexGrow: 1 }}
         onEndReached={handleEndReached}
-        onEndReachedThreshold={0.5}
+        onEndReachedThreshold={END_REACHED_THRESHOLD}
       />
     );
   }
