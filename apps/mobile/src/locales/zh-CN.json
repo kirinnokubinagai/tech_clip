@@ -34,8 +34,22 @@
       "offline": "您已离线",
       "close": "关闭",
       "purchasePremium": "购买高级方案",
-      "settings": "设置"
-    }
+      "settings": "设置",
+      "deselectTag": "取消选择{{tag}}",
+      "selectTag": "选择{{tag}}"
+    },
+    "following": "关注中",
+    "follow": "关注",
+    "offline": "离线",
+    "tagInputPlaceholder": "添加新标签",
+    "tagLimitMessage": "最多可选择{{max}}个标签"
+  },
+  "premium": {
+    "title": "高级方案",
+    "monthlyUsage": "本月AI功能使用次数",
+    "limitReached": "已达到免费方案上限",
+    "featuresTitle": "高级方案可用功能",
+    "purchaseButton": "购买高级方案"
   },
   "auth": {
     "login": "登录",
@@ -164,6 +178,8 @@
     "loadingNotifications": "加载中..."
   },
   "profile": {
+    "followersLabel": "粉丝",
+    "followingLabel": "关注中",
     "loginPrompt": "登录后可查看保存的文章和收藏",
     "editProfile": "编辑个人资料",
     "savedArticles": "已保存文章",

@@ -82,7 +82,7 @@ export function FollowButton({
           <UserMinus size={ICON_SIZE} color={FOLLOWING_ICON_COLOR} />
         )}
         <Text testID="follow-button-label" className="text-sm font-medium text-text">
-          フォロー中
+          {t("common.following")}
         </Text>
       </Pressable>
     );
@@ -107,7 +107,7 @@ export function FollowButton({
         <UserPlus size={ICON_SIZE} color={NOT_FOLLOWING_ICON_COLOR} />
       )}
       <Text testID="follow-button-label" className="text-sm font-semibold text-white">
-        フォローする
+        {t("common.follow")}
       </Text>
     </Pressable>
   );

@@ -84,7 +84,11 @@ export function TagPicker({
               }}
               disabled={isDisabled}
               accessibilityRole="button"
-              accessibilityLabel={isSelected ? `${tag}を解除` : `${tag}を選択`}
+              accessibilityLabel={
+                isSelected
+                  ? t("common.accessibility.deselectTag", { tag })
+                  : t("common.accessibility.selectTag", { tag })
+              }
               accessibilityState={{ selected: isSelected, disabled: isDisabled }}
               className={`flex-row items-center gap-1 rounded-full border px-3 py-1.5 ${
                 isSelected
@@ -108,7 +112,7 @@ export function TagPicker({
           <TextInput
             testID="tag-input"
             className="flex-1 bg-surface border border-border rounded-lg px-3 py-2 text-text text-sm"
-            placeholder="新しいタグを追加"
+            placeholder={t("common.tagInputPlaceholder")}
             placeholderTextColor={PLACEHOLDER_COLOR}
             value={newTagText}
             onChangeText={setNewTagText}
@@ -139,7 +143,7 @@ export function TagPicker({
 
       {isAtLimit && (
         <Text testID="tag-limit-message" className="text-xs text-warning">
-          {`タグは最大${maxTags}個まで選択できます`}
+          {t("common.tagLimitMessage", { max: maxTags })}
         </Text>
       )}
     </View>

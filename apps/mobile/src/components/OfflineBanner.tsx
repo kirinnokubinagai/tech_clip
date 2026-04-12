@@ -32,7 +32,7 @@ export function OfflineBanner() {
       accessibilityLabel={t("common.accessibility.offline")}
     >
       <WifiOff size={OFFLINE_ICON_SIZE} color={OFFLINE_ICON_COLOR} />
-      <Text className="text-white text-sm font-medium">オフライン</Text>
+      <Text className="text-white text-sm font-medium">{t("common.offline")}</Text>
     </View>
   );
 }

@@ -135,13 +135,13 @@ export function ProfileHeader({ user, onSettingsPress }: ProfileHeaderProps) {
           <Text testID="profile-followers-count" className="text-lg font-bold text-text">
             {formatCount(user.followersCount)}
           </Text>
-          <Text className="text-xs text-text-muted">フォロワー</Text>
+          <Text className="text-xs text-text-muted">{t("profile.followersLabel")}</Text>
         </View>
         <View className="items-center">
           <Text testID="profile-following-count" className="text-lg font-bold text-text">
             {formatCount(user.followingCount)}
           </Text>
-          <Text className="text-xs text-text-muted">フォロー中</Text>
+          <Text className="text-xs text-text-muted">{t("profile.followingLabel")}</Text>
         </View>
       </View>
     </View>

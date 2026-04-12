@@ -34,8 +34,22 @@
       "offline": "You are offline",
       "close": "Close",
       "purchasePremium": "Purchase premium plan",
-      "settings": "Settings"
-    }
+      "settings": "Settings",
+      "deselectTag": "Deselect {{tag}}",
+      "selectTag": "Select {{tag}}"
+    },
+    "following": "Following",
+    "follow": "Follow",
+    "offline": "Offline",
+    "tagInputPlaceholder": "Add new tag",
+    "tagLimitMessage": "You can select up to {{max}} tags"
+  },
+  "premium": {
+    "title": "Premium Plan",
+    "monthlyUsage": "Monthly AI feature usage",
+    "limitReached": "You have reached the free plan limit",
+    "featuresTitle": "Features available with premium plan",
+    "purchaseButton": "Purchase premium plan"
   },
   "auth": {
     "login": "Log in",
@@ -164,6 +178,8 @@
     "loadingNotifications": "Loading..."
   },
   "profile": {
+    "followersLabel": "Followers",
+    "followingLabel": "Following",
     "loginPrompt": "Log in to see your saved articles and favorites",
     "editProfile": "Edit Profile",
     "savedArticles": "Saved Articles",
