@@ -1,6 +1,7 @@
 import { useArticles, useToggleFavorite } from "@mobile/hooks/use-articles";
 import { useNetworkStatus } from "@mobile/hooks/use-network-status";
 import { useOfflineArticles } from "@mobile/hooks/use-offline-articles";
+import { SOURCE_DEFINITIONS } from "@mobile/lib/sources";
 import HomeScreen from "@mobile-app/(tabs)/index";
 import { render, waitFor } from "@testing-library/react-native";
 
@@ -150,6 +151,34 @@ describe("HomeScreen", () => {
 
     await waitFor(() => {
       expect(queryByLabelText("フィルター")).toBeNull();
+    });
+  });
+
+  it("SOURCE_FILTER_OPTIONSがSOURCE_DEFINITIONSの全ソースを含むこと", () => {
+    // Arrange: SOURCE_FILTER_OPTIONS は SOURCE_DEFINITIONS から導出されている
+    const { SOURCE_FILTER_OPTIONS } = require("@mobile/lib/sources");
+    const sourceOptions = SOURCE_FILTER_OPTIONS.slice(1);
+
+    // Assert: 全ソース定義に対応するエントリが存在する
+    for (const def of SOURCE_DEFINITIONS) {
+      const found = sourceOptions.some(
+        (opt: { value: string; label: string }) => opt.value === def.id && opt.label === def.label,
+      );
+      expect(found).toBe(true);
+    }
+  });
+
+  it("手書き配列にしかなかった'HN'ラベルが存在せずHacker Newsラベルが存在すること", async () => {
+    // Arrange
+    (useArticles as jest.Mock).mockReturnValue(DEFAULT_USE_ARTICLES_MOCK);
+
+    // Act
+    const { queryByLabelText, getByLabelText } = await render(<HomeScreen />);
+
+    await waitFor(() => {
+      // 旧手書き配列では "HN" だったが sources.ts では "Hacker News" が正しいラベル
+      expect(queryByLabelText("HN")).toBeNull();
+      expect(getByLabelText("Hacker News")).toBeTruthy();
     });
   });
 });
