@@ -8,7 +8,7 @@ const USER_PROFILE_QUERY_KEY = "user-profile";
 /** ユーザープロフィールAPIレスポンスの型 */
 type UserProfileResponse = {
   success: true;
-  data: ProfileHeaderUser & { id: string };
+  data: ProfileHeaderUser & { id: string; isFollowing: boolean };
 };
 
 /** フォロートグルAPIレスポンスの型 */

@@ -10,14 +10,8 @@ export type FollowUser = {
   avatarUrl: string | null;
 };
 
-/** フォロワー一覧レスポンスの型 */
-type FollowersResponse = {
-  success: true;
-  data: FollowUser[];
-};
-
-/** フォロー中一覧レスポンスの型 */
-type FollowingResponse = {
+/** フォロワー/フォロー中一覧レスポンスの型 */
+type FollowListResponse = {
   success: true;
   data: FollowUser[];
 };
@@ -39,10 +33,9 @@ export function useFollowers(userId?: string) {
     queryKey: [FOLLOWERS_QUERY_KEY, userId],
     queryFn: async () => {
       const path = userId ? `/api/users/${userId}/followers` : "/api/users/me/followers";
-      const data = await apiFetch<FollowersResponse>(path);
+      const data = await apiFetch<FollowListResponse>(path);
       return data.data;
     },
-    enabled: true,
   });
 }
 
@@ -57,9 +50,8 @@ export function useFollowing(userId?: string) {
     queryKey: [FOLLOWING_QUERY_KEY, userId],
     queryFn: async () => {
       const path = userId ? `/api/users/${userId}/following` : "/api/users/me/following";
-      const data = await apiFetch<FollowingResponse>(path);
+      const data = await apiFetch<FollowListResponse>(path);
       return data.data;
     },
-    enabled: true,
   });
 }

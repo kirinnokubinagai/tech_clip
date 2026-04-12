@@ -109,7 +109,7 @@ export default function UserProfileScreen() {
         <ProfileHeader user={user} />
 
         <View testID="user-profile-follow-section" className="px-4 py-4">
-          <FollowButton userId={id} isFollowing={false} onToggle={handleFollowToggle} />
+          <FollowButton userId={id} isFollowing={user.isFollowing} onToggle={handleFollowToggle} />
         </View>
 
         <View className="px-4">
