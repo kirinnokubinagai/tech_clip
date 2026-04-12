@@ -1,4 +1,6 @@
 # TechClip プロジェクトロードマップ
+# 状態の不一致は scripts/sync-roadmap.sh で検証・自動修正できる
+# 詳細な同期ルールは docs/CONTRIBUTING.md を参照
 
 ## プロジェクト概要
 
