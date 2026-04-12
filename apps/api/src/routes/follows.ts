@@ -282,7 +282,7 @@ export function createFollowsRoute(options: FollowsRouteOptions) {
 
     const hasNext = fetchedFollowers.length > limit;
     const data = hasNext ? fetchedFollowers.slice(0, limit) : fetchedFollowers;
-    const nextCursor = hasNext ? (data[data.length - 1].id as string) : null;
+    const nextCursor = hasNext ? (data[data.length - 1].createdAt as string) : null;
 
     return c.json({
       success: true,
@@ -351,7 +351,7 @@ export function createFollowsRoute(options: FollowsRouteOptions) {
 
     const hasNext = fetchedFollowing.length > limit;
     const data = hasNext ? fetchedFollowing.slice(0, limit) : fetchedFollowing;
-    const nextCursor = hasNext ? (data[data.length - 1].id as string) : null;
+    const nextCursor = hasNext ? (data[data.length - 1].createdAt as string) : null;
 
     return c.json({
       success: true,
