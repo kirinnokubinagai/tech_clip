@@ -29,16 +29,25 @@ TIMEOUT_SECONDS="${POLL_PR_REVIEW_TIMEOUT_SECONDS:-1800}"
 # ポーリング間隔（デフォルト: 60秒）
 POLL_INTERVAL_SECONDS="${POLL_PR_REVIEW_INTERVAL_SECONDS:-60}"
 
+if [[ ! "${TIMEOUT_SECONDS}" =~ ^[0-9]+$ ]] || (( TIMEOUT_SECONDS <= 0 )); then
+  echo "エラー: POLL_PR_REVIEW_TIMEOUT_SECONDS は正の整数で指定してください: ${TIMEOUT_SECONDS}" >&2
+  exit 1
+fi
+if [[ ! "${POLL_INTERVAL_SECONDS}" =~ ^[0-9]+$ ]] || (( POLL_INTERVAL_SECONDS <= 0 )); then
+  echo "エラー: POLL_PR_REVIEW_INTERVAL_SECONDS は正の整数で指定してください: ${POLL_INTERVAL_SECONDS}" >&2
+  exit 1
+fi
+
 # 中断シグナルを受けたらクリーンに終了する
 trap 'echo "INTERRUPTED" >&2; exit 130' INT TERM
 
 elapsed=0
 
 while (( elapsed < TIMEOUT_SECONDS )); do
-  gh_output=$(gh pr view "${PR_NUMBER}" --json reviewDecision --jq '.reviewDecision // ""' 2>&1) || {
-    echo "WARN: gh pr view 失敗（認証失効・ネットワーク断の可能性）: ${gh_output}" >&2
+  if ! gh_output=$(gh pr view "${PR_NUMBER}" --json reviewDecision --jq '.reviewDecision // ""' 2>/dev/null); then
+    echo "WARN: gh pr view 失敗（認証失効・ネットワーク断の可能性）" >&2
     gh_output=""
-  }
+  fi
   review_decision="${gh_output}"
 
   if [[ "${review_decision}" == "APPROVED" ]]; then
@@ -62,14 +71,18 @@ while (( elapsed < TIMEOUT_SECONDS )); do
 
   # コメント形式のレビュー（Claude bot 等が PR comment で投稿する場合）も検出する
   # 「🔄 Request Changes」または明示的な CHANGES_REQUESTED マーカーを含むコメントのみ対象
-  # 誤検知防止のため "Request Changes" 単独は除外し、🔄 と組み合わせた場合のみ対象とする
+  # 誤検知防止のため author.login で Claude bot / github-actions bot に限定する
   changes_comment_count=$(gh pr view "${PR_NUMBER}" --json comments --jq '
-    [.comments[] | select(.body | test("🔄.*Request Changes|CHANGES_REQUESTED"; "i"))] | length
+    [.comments[]
+     | select((.author.login // "") | test("github-actions\\[bot\\]|claude|app/claude"; "i"))
+     | select(.body | test("(?s)🔄.*Request Changes|CHANGES_REQUESTED"; "i"))] | length
   ' 2>/dev/null || echo "0")
 
   if [[ "${changes_comment_count}" -gt 0 ]]; then
     comment_content=$(gh pr view "${PR_NUMBER}" --json comments --jq '
-      [.comments[] | select(.body | test("🔄.*Request Changes|CHANGES_REQUESTED"; "i"))]
+      [.comments[]
+       | select((.author.login // "") | test("github-actions\\[bot\\]|claude|app/claude"; "i"))
+       | select(.body | test("(?s)🔄.*Request Changes|CHANGES_REQUESTED"; "i"))]
       | map("[@" + (.author.login // "unknown") + "]:\n" + .body)
       | join("\n\n---\n\n")
     ' 2>/dev/null || true)
@@ -81,7 +94,8 @@ while (( elapsed < TIMEOUT_SECONDS )); do
   fi
 
   # LGTM / Approve 系コメントも検出する
-  # 誤検知防止のため特定のフレーズのみ対象とする:
+  # 誤検知防止のため author.login で Claude bot / github-actions bot に限定し、
+  # 特定のフレーズのみ対象とする:
   #   "全件 PASS" / "全件PASS": レビュアーエージェントの PASS 宣言
   #   "✅.*PASS": CI/レビュー結果の ✅ + PASS
   #   "LGTM": 標準的な承認表現
@@ -89,7 +103,9 @@ while (( elapsed < TIMEOUT_SECONDS )); do
   #   "マージ可能": Claude bot の承認判定フレーズ
   #   "指摘[^0-9]?0[^0-9]": 「指摘0件」のような確定0件表現（10件等との誤検知防止）
   approve_comment_count=$(gh pr view "${PR_NUMBER}" --json comments --jq '
-    [.comments[] | select(.body | test("全件 ?PASS|LGTM|Approve 相当|マージ可能|✅.*PASS|指摘[^0-9]?0[^0-9]"; "i"))] | length
+    [.comments[]
+     | select((.author.login // "") | test("github-actions\\[bot\\]|claude|app/claude"; "i"))
+     | select(.body | test("全件 ?PASS|LGTM|Approve 相当|マージ可能|✅.*PASS|指摘[^0-9]?0[^0-9]"; "i"))] | length
   ' 2>/dev/null || echo "0")
 
   if [[ "${approve_comment_count}" -gt 0 ]] && [[ "${changes_comment_count}" -eq 0 ]]; then
