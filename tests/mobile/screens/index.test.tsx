@@ -130,7 +130,7 @@ describe("HomeScreen", () => {
     });
   });
 
-  it("エラー時に再試行UIが表示されること", async () => {
+  it("エラー時にエラーメッセージが表示されること", async () => {
     (useArticles as jest.Mock).mockReturnValue({
       ...DEFAULT_USE_ARTICLES_MOCK,
       isError: true,
@@ -140,8 +140,21 @@ describe("HomeScreen", () => {
     const { getByText } = await render(<HomeScreen />);
 
     await waitFor(() => {
-      expect(getByText("記事の取得に失敗しました")).toBeTruthy();
-      expect(getByText("再試行")).toBeTruthy();
+      expect(getByText("記事の取得に失敗しました")).not.toBeNull();
+    });
+  });
+
+  it("エラー時に再試行ボタンが表示されること", async () => {
+    (useArticles as jest.Mock).mockReturnValue({
+      ...DEFAULT_USE_ARTICLES_MOCK,
+      isError: true,
+      data: undefined,
+    });
+
+    const { getByText } = await render(<HomeScreen />);
+
+    await waitFor(() => {
+      expect(getByText("再試行")).not.toBeNull();
     });
   });
 
