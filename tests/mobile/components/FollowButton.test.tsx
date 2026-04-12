@@ -176,6 +176,23 @@ describe("FollowButton", () => {
       });
     });
 
+    it("フォロー解除に失敗した場合に元のフォロー状態にロールバックされること", async () => {
+      // Arrange
+      const onToggle = jest.fn().mockRejectedValue(new Error("通信エラー"));
+      const { getByTestId } = await render(
+        <FollowButton userId="user-1" isFollowing={true} onToggle={onToggle} />,
+      );
+
+      // Act
+      await fireEvent.press(getByTestId("follow-button"));
+
+      // Assert - エラー後に元の状態（フォロー中）に戻ること
+      await waitFor(() => {
+        const label = getByTestId("follow-button-label");
+        expect(label.props.children).toBe("フォロー中");
+      });
+    });
+
     it("フォロー中からフォロー解除に楽観更新されること", async () => {
       // Arrange
       let resolveToggle: () => void = () => {};
