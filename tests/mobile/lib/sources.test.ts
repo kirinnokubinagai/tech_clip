@@ -105,7 +105,7 @@ describe("SOURCE_FILTER_OPTIONS", () => {
 
     // Assert
     expect(first.value).toBeUndefined();
-    expect(first.i18nKey).toBe("home.filterAll");
+    expect("i18nKey" in first && first.i18nKey).toBe("home.filterAll");
   });
 
   it("SOURCE_DEFINITIONS の各ソースが含まれること", () => {
@@ -125,8 +125,8 @@ describe("SOURCE_FILTER_OPTIONS", () => {
     // Assert
     for (const opt of sourceOptions) {
       expect(typeof opt.value).toBe("string");
-      expect(typeof opt.label).toBe("string");
-      expect(opt.label.length).toBeGreaterThan(0);
+      expect("label" in opt && typeof opt.label).toBe("string");
+      expect("label" in opt && opt.label.length).toBeGreaterThan(0);
     }
   });
 
@@ -144,7 +144,9 @@ describe("SOURCE_FILTER_OPTIONS", () => {
 
     // Assert: 全ソース定義に対応するエントリが存在する
     for (const def of SOURCE_DEFINITIONS) {
-      const found = sourceOptions.some((opt) => opt.value === def.id && opt.label === def.label);
+      const found = sourceOptions.some(
+        (opt) => opt.value === def.id && "label" in opt && opt.label === def.label,
+      );
       expect(found).toBe(true);
     }
   });
