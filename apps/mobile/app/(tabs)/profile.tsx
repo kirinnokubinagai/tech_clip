@@ -10,18 +10,21 @@ import { useAuthStore } from "@/stores/auth-store";
 const PRIMARY_COLOR = DARK_COLORS.primary;
 
 /**
- * auth state の User を ProfileHeaderUser に変換する
+ * 認証済みユーザー情報をプロフィールヘッダー用に変換する
+ *
+ * bio / followersCount / followingCount は GET /users/me 実装後に反映予定のため、
+ * 現在は固定値（null / 0 / 0）を返す。
  *
  * @param user - 認証ストアのユーザー情報
- * @returns ProfileHeaderUser 形式に変換したデータ
+ * @returns プロフィールヘッダー表示用のユーザーオブジェクト
  */
 function toProfileHeaderUser(user: { name: string; image: string | null }): ProfileHeaderUser {
   return {
     name: user.name,
-    bio: null, // TODO: GET /users/me でプロフィール情報を取得後に反映
+    bio: null,
     avatarUrl: user.image,
-    followersCount: 0, // TODO: GET /users/me でフォロワー数を取得後に反映
-    followingCount: 0, // TODO: GET /users/me でフォロー数を取得後に反映
+    followersCount: 0,
+    followingCount: 0,
   };
 }
 

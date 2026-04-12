@@ -44,11 +44,11 @@ describe("ProfileScreen", () => {
       );
 
       // Act
-      const { getByTestId } = await render(<ProfileScreen />);
+      const { queryByTestId } = await render(<ProfileScreen />);
 
       // Assert
       await waitFor(() => {
-        expect(getByTestId("profile-guest-message")).toBeDefined();
+        expect(queryByTestId("profile-guest-message")).not.toBeNull();
       });
     });
 
@@ -64,11 +64,11 @@ describe("ProfileScreen", () => {
       );
 
       // Act
-      const { getByTestId } = await render(<ProfileScreen />);
+      const { queryByTestId } = await render(<ProfileScreen />);
 
       // Assert
       await waitFor(() => {
-        expect(getByTestId("profile-login-button")).toBeDefined();
+        expect(queryByTestId("profile-login-button")).not.toBeNull();
       });
     });
 
@@ -126,11 +126,11 @@ describe("ProfileScreen", () => {
       );
 
       // Act
-      const { getByTestId } = await render(<ProfileScreen />);
+      const { queryByTestId } = await render(<ProfileScreen />);
 
       // Assert
       await waitFor(() => {
-        expect(getByTestId("profile-loading")).toBeDefined();
+        expect(queryByTestId("profile-loading")).not.toBeNull();
       });
     });
   });
@@ -183,11 +183,11 @@ describe("ProfileScreen", () => {
       );
 
       // Act
-      const { getByTestId } = await render(<ProfileScreen />);
+      const { queryByTestId } = await render(<ProfileScreen />);
 
       // Assert
       await waitFor(() => {
-        expect(getByTestId("profile-avatar-image")).toBeDefined();
+        expect(queryByTestId("profile-avatar-image")).not.toBeNull();
       });
     });
 
@@ -210,11 +210,11 @@ describe("ProfileScreen", () => {
       );
 
       // Act
-      const { getByTestId } = await render(<ProfileScreen />);
+      const { queryByTestId } = await render(<ProfileScreen />);
 
       // Assert
       await waitFor(() => {
-        expect(getByTestId("profile-avatar-fallback")).toBeDefined();
+        expect(queryByTestId("profile-avatar-fallback")).not.toBeNull();
       });
     });
 
