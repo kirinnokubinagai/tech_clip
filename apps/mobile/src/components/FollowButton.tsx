@@ -1,5 +1,6 @@
 import { UserMinus, UserPlus } from "lucide-react-native";
 import { useCallback, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { ActivityIndicator, Pressable, Text } from "react-native";
 
 import { DARK_COLORS } from "@/lib/constants";
@@ -40,6 +41,7 @@ export function FollowButton({
   isFollowing: initialFollowing,
   onToggle,
 }: FollowButtonProps) {
+  const { t } = useTranslation();
   const [isFollowing, setIsFollowing] = useState(initialFollowing);
   const [isLoading, setIsLoading] = useState(false);
 
@@ -70,7 +72,9 @@ export function FollowButton({
         className="flex-row items-center justify-center gap-1.5 rounded-lg px-4 py-2 border border-border bg-surface"
         style={isLoading ? { opacity: 0.5 } : undefined}
         accessibilityRole="button"
-        accessibilityLabel={isLoading ? "フォロー切り替え中" : "フォロー解除"}
+        accessibilityLabel={
+          isLoading ? t("common.accessibility.followSwitching") : t("common.accessibility.unfollow")
+        }
       >
         {isLoading ? (
           <ActivityIndicator size="small" color={FOLLOWING_LOADING_COLOR} />
@@ -78,7 +82,7 @@ export function FollowButton({
           <UserMinus size={ICON_SIZE} color={FOLLOWING_ICON_COLOR} />
         )}
         <Text testID="follow-button-label" className="text-sm font-medium text-text">
-          フォロー中
+          {t("common.following")}
         </Text>
       </Pressable>
     );
@@ -93,7 +97,9 @@ export function FollowButton({
       className="flex-row items-center justify-center gap-1.5 rounded-lg px-4 py-2 bg-primary"
       style={isLoading ? { opacity: 0.5 } : undefined}
       accessibilityRole="button"
-      accessibilityLabel={isLoading ? "フォロー切り替え中" : "フォローする"}
+      accessibilityLabel={
+        isLoading ? t("common.accessibility.followSwitching") : t("common.accessibility.follow")
+      }
     >
       {isLoading ? (
         <ActivityIndicator size="small" color={NOT_FOLLOWING_LOADING_COLOR} />
@@ -101,7 +107,7 @@ export function FollowButton({
         <UserPlus size={ICON_SIZE} color={NOT_FOLLOWING_ICON_COLOR} />
       )}
       <Text testID="follow-button-label" className="text-sm font-semibold text-white">
-        フォローする
+        {t("common.follow")}
       </Text>
     </Pressable>
   );
