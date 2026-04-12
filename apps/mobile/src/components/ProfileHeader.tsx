@@ -9,8 +9,10 @@ export type ProfileHeaderUser = {
   name: string;
   bio: string | null;
   avatarUrl: string | null;
-  followersCount: number;
-  followingCount: number;
+  /** undefined のとき "-" を表示（APIから取得できない場合） */
+  followersCount: number | undefined;
+  /** undefined のとき "-" を表示（APIから取得できない場合） */
+  followingCount: number | undefined;
 };
 
 type ProfileHeaderProps = {
@@ -50,10 +52,13 @@ function getInitials(name: string): string {
 /**
  * 数値を短縮表記にフォーマットする
  *
- * @param count - フォーマットする数値
+ * @param count - フォーマットする数値。undefinedの場合は"-"を返す
  * @returns フォーマットされた文字列
  */
-function formatCount(count: number): string {
+function formatCount(count: number | undefined): string {
+  if (count === undefined) {
+    return "-";
+  }
   if (count >= 10000) {
     return `${(count / 10000).toFixed(1)}万`;
   }

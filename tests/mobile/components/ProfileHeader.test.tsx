@@ -120,6 +120,30 @@ describe("ProfileHeader", () => {
       const count = getByTestId("profile-followers-count");
       expect(count.props.children).toBe("42");
     });
+
+    it("followersCountがundefinedのとき'-'が表示されること", async () => {
+      // Arrange
+      const user = { ...baseUser, followersCount: undefined };
+
+      // Act
+      const { getByTestId } = await render(<ProfileHeader user={user} />);
+
+      // Assert
+      const count = getByTestId("profile-followers-count");
+      expect(count.props.children).toBe("-");
+    });
+
+    it("followingCountがundefinedのとき'-'が表示されること", async () => {
+      // Arrange
+      const user = { ...baseUser, followingCount: undefined };
+
+      // Act
+      const { getByTestId } = await render(<ProfileHeader user={user} />);
+
+      // Assert
+      const count = getByTestId("profile-following-count");
+      expect(count.props.children).toBe("-");
+    });
   });
 
   describe("インタラクション", () => {
