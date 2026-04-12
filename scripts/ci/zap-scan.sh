@@ -50,6 +50,11 @@ trap cleanup EXIT
 # ZAP スキャンは AI エンドポイントを実際に叩く必要はなく、API サーバの起動だけが目的なのでローカルモードで十分。
 # NOTE: wrangler 4.77.0 で動作確認済み。--local フラグの廃止は wrangler のリリースノートを確認すること。
 #       廃止された場合は wrangler dev --env <env> 相当の代替手段を検討する。
+# CI用フォールバック: シークレットが未設定の場合はダミー値を使用
+: "${BETTER_AUTH_SECRET:=$(openssl rand -hex 32)}"
+: "${ZAP_TEST_EMAIL:="zap-test-$(openssl rand -hex 4)@example.com"}"
+: "${ZAP_TEST_PASSWORD:="ZapTest$(openssl rand -hex 8)!"}"
+
 TURSO_DATABASE_URL="${TURSO_DATABASE_URL}" \
 TURSO_AUTH_TOKEN="${TURSO_AUTH_TOKEN}" \
 BETTER_AUTH_SECRET="${BETTER_AUTH_SECRET}" \
@@ -133,6 +138,14 @@ if [ -n "${TOKEN}" ]; then
       --data-urlencode "initiators=" > /dev/null 2>&1
   )
 fi
+
+# スキャン時間上限を設定（タイムアウト防止）
+curl -s "http://localhost:${ZAP_PORT}/JSON/ascan/action/setOptionMaxScanDurationInMins/" \
+  --data-urlencode "apikey=${ZAP_API_KEY}" \
+  --data-urlencode "Integer=5" >> "${SETUP_LOG}" 2>&1
+curl -s "http://localhost:${ZAP_PORT}/JSON/ascan/action/setOptionMaxRuleDurationInMins/" \
+  --data-urlencode "apikey=${ZAP_API_KEY}" \
+  --data-urlencode "Integer=1" >> "${SETUP_LOG}" 2>&1
 
 echo "アクティブスキャン実行中..."
 SCAN_ID=$(curl -s "http://localhost:${ZAP_PORT}/JSON/ascan/action/scan/" \
