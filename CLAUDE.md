@@ -174,6 +174,7 @@ bash scripts/poll-pr-review.sh <pr-number>
 |------|-----------|
 | `APPROVED` | 完了。ユーザーに報告 |
 | `CHANGES_REQUESTED` | レビュー内容を読み、coder に修正依頼 → code-reviewer/security-reviewer で再レビュー → マーカー再作成 → 再プッシュ → Step 4 に戻る |
+| `CONFLICT` | コンフリクト解消フローを実行（下記）→ Step 4 に戻る |
 | `TIMEOUT` | タイムアウト。ユーザーに手動確認を依頼 |
 
 **修正ループの流れ:**
@@ -181,6 +182,18 @@ bash scripts/poll-pr-review.sh <pr-number>
 ```text
 poll-pr-review.sh → CHANGES_REQUESTED
   → Agent(coder, mode="acceptEdits") で修正依頼（変更内容を渡す）
+  → Agent(code-reviewer, mode="acceptEdits") + Agent(security-reviewer, mode="acceptEdits") で再レビュー
+  → 両方 PASS → マーカー再作成 → git push → poll-pr-review.sh を再実行
+  → APPROVED になるまで繰り返す
+```
+
+**コンフリクト解消フロー:**
+
+```text
+poll-pr-review.sh → CONFLICT
+  → git -C <worktree> fetch origin
+  → git -C <worktree> merge origin/main（コンフリクトが発生する）
+  → Skill(conflict-resolver) でコンフリクトを解消
   → Agent(code-reviewer, mode="acceptEdits") + Agent(security-reviewer, mode="acceptEdits") で再レビュー
   → 両方 PASS → マーカー再作成 → git push → poll-pr-review.sh を再実行
   → APPROVED になるまで繰り返す
