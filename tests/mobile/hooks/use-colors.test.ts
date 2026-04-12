@@ -1,5 +1,5 @@
-import * as ReactNative from "react-native";
 import { renderHook } from "@testing-library/react-native";
+import * as ReactNative from "react-native";
 import { useColors } from "../../../apps/mobile/src/hooks/use-colors";
 import { DARK_COLORS } from "../../../apps/mobile/src/lib/constants";
 
