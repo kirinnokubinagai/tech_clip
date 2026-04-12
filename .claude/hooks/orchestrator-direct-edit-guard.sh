@@ -140,7 +140,7 @@ fi
 #    apps/, packages/, tests/, scripts/, .claude/** 等ファイル種類に関係なく全て対象
 # symbolic-ref 失敗時（detached HEAD / .git 破損等）は空文字となり、安全側に倒してブロックする
 CURRENT_BRANCH=$(git -C "$REPO_ROOT" symbolic-ref --short HEAD 2>/dev/null || true)
-if [ "$CURRENT_BRANCH" = "main" ] || [ -z "$CURRENT_BRANCH" ]; then
+if [ "$CURRENT_BRANCH" = "main" ] || [ "$CURRENT_BRANCH" = "master" ] || [ -z "$CURRENT_BRANCH" ]; then
   echo "DENY: orchestratorによる main ブランチ上での直接編集は禁止されています。" >&2
   echo "  対象ファイル: $FILE_PATH" >&2
   echo "" >&2

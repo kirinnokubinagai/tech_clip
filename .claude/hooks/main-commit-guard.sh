@@ -12,11 +12,14 @@ if ! command -v jq >/dev/null 2>&1; then
   exit 0
 fi
 
-command_str=$(printf '%s' "${ARGUMENTS:-}" | jq -r '.command // ""' 2>/dev/null || true)
+if ! command_str=$(printf '%s' "${ARGUMENTS:-}" | jq -r '.command // ""' 2>/dev/null); then
+  printf '{"decision":"block","reason":"main-commit-guard: ARGUMENTS の JSON 解析に失敗しました"}\n'
+  exit 0
+fi
 [[ -n "${command_str}" ]] || exit 0
 
-# git commit を含むコマンドのみ対象（||, &, サブシェル、git フラグ等も考慮）
-if ! printf '%s\n' "${command_str}" | grep -qE '\bgit\b.*\bcommit\b'; then
+# git commit を含むコマンドのみ対象（|, &, ; の区切りを越えないパターンで偽陽性を抑制）
+if ! printf '%s\n' "${command_str}" | grep -qE '\bgit\b[^|&;]*\bcommit\b'; then
   exit 0
 fi
 
