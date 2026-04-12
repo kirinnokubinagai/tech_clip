@@ -114,7 +114,7 @@ jobs:
           # スキップすることで不要な CI 実行を避ける。
           # hooks/ のみ別途 hooks-test ジョブで検証する（下記 HOOKS_CHANGED 参照）。
           CHANGED=$(git diff --name-only "origin/${{ github.base_ref }}...HEAD" 2>/dev/null \
-            | grep -cvE '^\.claude/' || echo 0)
+            | grep -cvE '^(\.claude/|docs/|.*\.md$)' || echo 0)
           echo "code=$([ "${CHANGED:-0}" -gt 0 ] && echo 'true' || echo 'false')" >> "$GITHUB_OUTPUT"
           HOOKS_CHANGED=$(git diff --name-only "origin/${{ github.base_ref }}...HEAD" 2>/dev/null \
             | grep -cE '^\.claude/hooks/' || echo 0)
