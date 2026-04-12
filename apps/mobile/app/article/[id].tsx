@@ -311,7 +311,7 @@ export default function ArticleDetailScreen() {
     return (
       <View className="flex-1 bg-background items-center justify-center">
         <ActivityIndicator size="large" color={colors.primary} />
-        <Text className="text-text-muted mt-3">{t("common.loading")}</Text>
+        <Text className="text-text-muted mt-3">{t("article.loadingArticle")}</Text>
       </View>
     );
   }
@@ -336,7 +336,7 @@ export default function ArticleDetailScreen() {
         <Pressable
           onPress={handleBack}
           accessibilityRole="button"
-          accessibilityLabel={t("common.back")}
+          accessibilityLabel={t("article.backA11yLabel")}
           hitSlop={8}
         >
           <ArrowLeft size={BACK_ICON_SIZE} color={colors.text} />
@@ -448,7 +448,7 @@ export default function ArticleDetailScreen() {
 
         {summaryJob && (
           <View className="mx-4 mt-2 rounded-xl bg-card border border-border p-4">
-            <Text className="text-sm font-medium text-text mb-2">{t("common.generating")}</Text>
+            <Text className="text-sm font-medium text-text mb-2">{t("article.generating")}</Text>
             <View
               className="h-2 rounded-full overflow-hidden"
               style={{ backgroundColor: colors.card }}
@@ -466,7 +466,7 @@ export default function ArticleDetailScreen() {
 
         {translationJob && (
           <View className="mx-4 mt-2 rounded-xl bg-card border border-border p-4">
-            <Text className="text-sm font-medium text-text mb-2">{t("common.generating")}</Text>
+            <Text className="text-sm font-medium text-text mb-2">{t("article.generating")}</Text>
             <View
               className="h-2 rounded-full overflow-hidden"
               style={{ backgroundColor: colors.card }}
@@ -486,9 +486,7 @@ export default function ArticleDetailScreen() {
           <View className="mx-4 mt-2 p-4 rounded-xl bg-card border border-border">
             <View className="flex-row items-center gap-2 mb-2">
               <Sparkles size={SECTION_ICON_SIZE} color={colors.success} />
-              <Text className="text-sm font-semibold text-success">
-                {t("article.summaryLabel")}
-              </Text>
+              <Text className="text-sm font-semibold text-success">{t("article.summary")}</Text>
             </View>
             <Text className="text-sm text-text leading-relaxed">{article.summary}</Text>
           </View>
@@ -499,7 +497,7 @@ export default function ArticleDetailScreen() {
             <View className="flex-row items-center gap-2 mb-2">
               <Globe size={SECTION_ICON_SIZE} color={colors.primaryLight} />
               <Text className="text-sm font-semibold text-primary-light">
-                {t("article.translationLabel")}
+                {t("article.translation")}
               </Text>
             </View>
             <Text className="text-sm text-text leading-relaxed">{article.translation}</Text>

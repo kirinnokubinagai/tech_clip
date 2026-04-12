@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import { View } from "react-native";
 
 import { Skeleton } from "../Skeleton";
@@ -18,11 +19,12 @@ const BODY_LINE_COUNT = 8;
  * 記事詳細画面のローディングスケルトン
  */
 export function ArticleDetailSkeleton() {
+  const { t } = useTranslation();
   return (
     <View
       className="px-4"
-      accessibilityLabel="記事の詳細を読み込み中"
-      accessibilityHint="しばらくお待ちください"
+      accessibilityLabel={t("common.accessibility.loadingArticleDetail")}
+      accessibilityHint={t("common.accessibility.pleaseWait")}
       accessible={true}
     >
       <Skeleton width="100%" height={HEADER_IMAGE_HEIGHT} borderRadius={12} />

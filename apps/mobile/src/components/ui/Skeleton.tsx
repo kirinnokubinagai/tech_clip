@@ -1,4 +1,5 @@
 import { useEffect, useRef } from "react";
+import { useTranslation } from "react-i18next";
 import { Animated, type DimensionValue, View } from "react-native";
 
 import { DARK_COLORS } from "@/lib/constants";
@@ -28,6 +29,7 @@ const MAX_OPACITY = 0.7;
  * @param className - 追加のNativeWindクラス名
  */
 export function Skeleton({ width, height, borderRadius = 8, className = "" }: SkeletonProps) {
+  const { t } = useTranslation();
   const opacity = useRef(new Animated.Value(MIN_OPACITY)).current;
 
   useEffect(() => {
@@ -56,8 +58,8 @@ export function Skeleton({ width, height, borderRadius = 8, className = "" }: Sk
   return (
     <View
       className={className}
-      accessibilityLabel="読み込み中"
-      accessibilityHint="コンテンツを読み込んでいます"
+      accessibilityLabel={t("common.accessibility.loading")}
+      accessibilityHint={t("common.accessibility.loadingHint")}
       accessible={true}
     >
       <Animated.View

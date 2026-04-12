@@ -1,5 +1,6 @@
 import { Check, X } from "lucide-react-native";
 import { useMemo } from "react";
+import { useTranslation } from "react-i18next";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 
 import { useColors } from "@/hooks/use-colors";
@@ -43,6 +44,7 @@ export function PremiumGate({
   onPurchase,
   onClose,
 }: PremiumGateProps) {
+  const { t } = useTranslation();
   const colors = useColors();
 
   const styles = useMemo(
@@ -136,12 +138,12 @@ export function PremiumGate({
     <View testID="premium-gate-container" style={styles.container}>
       <View style={styles.card}>
         <View style={styles.header}>
-          <Text style={styles.headerTitle}>プレミアムプラン</Text>
+          <Text style={styles.headerTitle}>{t("premium.title")}</Text>
           <Pressable
             testID="close-button"
             onPress={onClose}
             accessibilityRole="button"
-            accessibilityLabel="閉じる"
+            accessibilityLabel={t("common.accessibility.close")}
             hitSlop={8}
             style={styles.closeButton}
           >
@@ -150,14 +152,14 @@ export function PremiumGate({
         </View>
 
         <View style={styles.usageCard}>
-          <Text style={styles.usageLabel}>今月のAI機能使用回数</Text>
+          <Text style={styles.usageLabel}>{t("premium.monthlyUsage")}</Text>
           <Text style={styles.usageCount}>{`${currentUsage} / ${maxUsage}`}</Text>
           {currentUsage >= maxUsage && (
-            <Text style={styles.usageLimit}>無料プランの上限に達しました</Text>
+            <Text style={styles.usageLimit}>{t("premium.limitReached")}</Text>
           )}
         </View>
 
-        <Text style={styles.featuresTitle}>プレミアムプランで利用できる機能</Text>
+        <Text style={styles.featuresTitle}>{t("premium.featuresTitle")}</Text>
 
         <ScrollView style={styles.featuresList} showsVerticalScrollIndicator={false}>
           {features.map((feature) => (
@@ -172,10 +174,10 @@ export function PremiumGate({
           testID="purchase-button"
           onPress={onPurchase}
           accessibilityRole="button"
-          accessibilityLabel="プレミアムプランを購入する"
+          accessibilityLabel={t("common.accessibility.purchasePremium")}
           style={styles.purchaseButton}
         >
-          <Text style={styles.purchaseButtonText}>プレミアムプランを購入する</Text>
+          <Text style={styles.purchaseButtonText}>{t("premium.purchaseButton")}</Text>
         </Pressable>
       </View>
     </View>

@@ -113,7 +113,7 @@ export function ProfileHeader({ user, onSettingsPress }: ProfileHeaderProps) {
             testID="profile-settings-button"
             onPress={onSettingsPress}
             accessibilityRole="button"
-            accessibilityLabel={t("tabs.settings")}
+            accessibilityLabel={t("common.accessibility.settings")}
             hitSlop={8}
             className="p-1"
           >
@@ -127,13 +127,13 @@ export function ProfileHeader({ user, onSettingsPress }: ProfileHeaderProps) {
           <Text testID="profile-followers-count" className="text-lg font-bold text-text">
             {formatCount(user.followersCount)}
           </Text>
-          <Text className="text-xs text-text-muted">{t("profile.followers.followersTab")}</Text>
+          <Text className="text-xs text-text-muted">{t("profile.followersLabel")}</Text>
         </View>
         <View className="items-center">
           <Text testID="profile-following-count" className="text-lg font-bold text-text">
             {formatCount(user.followingCount)}
           </Text>
-          <Text className="text-xs text-text-muted">{t("profile.followers.followingTab")}</Text>
+          <Text className="text-xs text-text-muted">{t("profile.followingLabel")}</Text>
         </View>
       </View>
     </View>
