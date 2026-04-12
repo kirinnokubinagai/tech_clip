@@ -8,11 +8,14 @@
 #   2. meta_file チェック（main 上でも ALLOW）
 #      - .claude-user/**: メモリファイル（gitignore済み）
 #      - .omc/**:         実行状態ファイル（gitignore済み）
-#   3. main ブランチチェック（main なら全 DENY）
+#   3. クロスworktreeチェック（セッションが main で、ファイルが兄弟 worktree 内なら DENY）
+#      worktree-isolation-guard.sh の .claude/ 例外を補完する
+#      → これにより「小さな修正だから直接編集する」という例外的判断をフック層でブロックする
+#   4. main ブランチチェック（ファイルのリポジトリが main なら全 DENY）
 #      ファイル種類（apps/, packages/, tests/, scripts/, .claude/** 等）に関係なく全てブロック
-#   4. orchestration_file チェック（main 以外なら ALLOW）
+#   5. orchestration_file チェック（main 以外なら ALLOW）
 #      - .claude/**, CLAUDE.md, AGENTS.md, flake.nix 等
-#   5. それ以外 ALLOW（worktree 内バックグラウンドエージェントの動作を許可）
+#   6. それ以外 ALLOW（worktree 内バックグラウンドエージェントの動作を許可）
 
 TOOL_INPUT="${CLAUDE_TOOL_INPUT:-}"
 
@@ -136,7 +139,27 @@ if is_meta_file "$FILE_PATH"; then
   exit 0
 fi
 
-# 3. main ブランチ（または detached HEAD）上では全 Edit/Write をブロック
+# 3. クロスworktreeチェック: セッションが main のときに兄弟 worktree 内のファイルを直接編集するのをブロック
+#    worktree-isolation-guard.sh と同じロジック（.claude/ 例外を持たないため、hook ファイルも含め全てカバー）
+SESSION_BRANCH=$(git branch --show-current 2>/dev/null || true)
+if [[ "$SESSION_BRANCH" == "main" || "$SESSION_BRANCH" == "master" ]]; then
+  _GIT_COMMON_DIR=$(git rev-parse --git-common-dir 2>/dev/null || true)
+  if [[ -n "$_GIT_COMMON_DIR" ]]; then
+    _MAIN_REPO_ROOT=$(cd "$_GIT_COMMON_DIR/.." && pwd -P 2>/dev/null || true)
+    _MAIN_REPO_ROOT=$(realpath -m "$_MAIN_REPO_ROOT" 2>/dev/null || echo "")
+    _WORKTREE_BASE=$(dirname "$_MAIN_REPO_ROOT")
+    if [[ -n "$_MAIN_REPO_ROOT" && "$FILE_PATH" == "${_WORKTREE_BASE}/"* && "$FILE_PATH" != "${_MAIN_REPO_ROOT}/"* ]]; then
+      echo "DENY: mainブランチのオーケストレーターは兄弟worktreeのファイルを直接編集できません。" >&2
+      echo "  対象ファイル: $FILE_PATH" >&2
+      echo "" >&2
+      echo "  ❌ 「修正が小さいから直接編集する」は禁止です。必ず以下のフローに従うこと:" >&2
+      echo "  → Agent(coder, mode=\"acceptEdits\") でworktree内の修正を委譲してください。" >&2
+      exit 2
+    fi
+  fi
+fi
+
+# 4. main ブランチ（または detached HEAD）上では全 Edit/Write をブロック
 #    apps/, packages/, tests/, scripts/, .claude/** 等ファイル種類に関係なく全て対象
 # symbolic-ref 失敗時（detached HEAD / .git 破損等）は空文字となり、安全側に倒してブロックする
 CURRENT_BRANCH=$(git -C "$REPO_ROOT" symbolic-ref --short HEAD 2>/dev/null || true)
@@ -154,10 +177,10 @@ if [ "$CURRENT_BRANCH" = "main" ] || [ "$CURRENT_BRANCH" = "master" ] || [ -z "$
   exit 2
 fi
 
-# 4. main 以外のブランチ（worktree）: orchestration ファイルは自由に編集可
+# 5. main 以外のブランチ（worktree）: orchestration ファイルは自由に編集可
 if is_orchestration_file "$FILE_PATH"; then
   exit 0
 fi
 
-# 5. それ以外（worktree 内ソースファイル等）は許可
+# 6. それ以外（worktree 内ソースファイル等）は許可
 exit 0
