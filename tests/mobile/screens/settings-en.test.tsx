@@ -6,10 +6,13 @@
 import SettingsScreen from "@mobile-app/(tabs)/settings";
 import { render } from "@testing-library/react-native";
 
-import { i18nEnMockFactory } from "../helpers/i18n-en-mock";
-
 /** en.json から実際の英語翻訳を解決するモック */
-jest.mock("react-i18next", i18nEnMockFactory);
+jest.mock("react-i18next", () => {
+  const { i18nEnMockFactory } = jest.requireActual("../helpers/i18n-en-mock") as {
+    i18nEnMockFactory: () => unknown;
+  };
+  return (i18nEnMockFactory as () => unknown)();
+});
 
 jest.mock("expo-router", () => ({
   useRouter: () => ({ push: jest.fn() }),
