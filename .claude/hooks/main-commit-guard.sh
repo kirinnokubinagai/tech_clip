@@ -64,6 +64,6 @@ else
   fi
 fi
 
-[[ "${current_branch}" == "main" ]] || exit 0
+[[ "${current_branch}" == "main" || "${current_branch}" == "master" ]] || exit 0
 
 printf '{"decision":"block","reason":"main ブランチへの直接コミットは禁止されています。bash scripts/create-worktree.sh <issue-number> <description> で worktree を作成してください。"}\n'
