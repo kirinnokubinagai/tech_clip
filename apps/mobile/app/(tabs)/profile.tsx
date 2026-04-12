@@ -15,7 +15,7 @@ export default function ProfileScreen() {
   const router = useRouter();
 
   /** プロフィール画面のプレースホルダーユーザーデータ */
-  const PLACEHOLDER_USER: ProfileHeaderUser = {
+  const placeholderUser: ProfileHeaderUser = {
     name: t("profile.guestUser"),
     bio: null,
     avatarUrl: null,
@@ -29,7 +29,7 @@ export default function ProfileScreen() {
 
   return (
     <ScrollView className="flex-1 bg-background">
-      <ProfileHeader user={PLACEHOLDER_USER} onSettingsPress={handleSettingsPress} />
+      <ProfileHeader user={placeholderUser} onSettingsPress={handleSettingsPress} />
       <View className="flex-1 items-center justify-center px-4 py-12">
         <Text className="text-base text-text-muted text-center">{t("profile.loginPrompt")}</Text>
       </View>
