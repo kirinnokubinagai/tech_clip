@@ -139,6 +139,52 @@
             "statusMessage": "Checking worktree isolation..."
           }
         ]
+      },
+      {
+        "matcher": "MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"$(git rev-parse --show-toplevel 2>/dev/null || echo .)/.claude/hooks/orchestrator-direct-edit-guard.sh\"",
+            "timeout": 5,
+            "statusMessage": "Checking orchestrator direct edit..."
+          },
+          {
+            "type": "command",
+            "command": "bash \"$(git rev-parse --show-toplevel 2>/dev/null || echo .)/.claude/hooks/main-edit-guard.sh\"",
+            "timeout": 5,
+            "statusMessage": "Checking branch for multi-edit..."
+          },
+          {
+            "type": "command",
+            "command": "bash \"$(git rev-parse --show-toplevel 2>/dev/null || echo .)/.claude/hooks/worktree-isolation-guard.sh\"",
+            "timeout": 5,
+            "statusMessage": "Checking worktree isolation..."
+          }
+        ]
+      },
+      {
+        "matcher": "NotebookEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"$(git rev-parse --show-toplevel 2>/dev/null || echo .)/.claude/hooks/orchestrator-direct-edit-guard.sh\"",
+            "timeout": 5,
+            "statusMessage": "Checking orchestrator direct edit..."
+          },
+          {
+            "type": "command",
+            "command": "bash \"$(git rev-parse --show-toplevel 2>/dev/null || echo .)/.claude/hooks/main-edit-guard.sh\"",
+            "timeout": 5,
+            "statusMessage": "Checking branch for notebook edit..."
+          },
+          {
+            "type": "command",
+            "command": "bash \"$(git rev-parse --show-toplevel 2>/dev/null || echo .)/.claude/hooks/worktree-isolation-guard.sh\"",
+            "timeout": 5,
+            "statusMessage": "Checking worktree isolation..."
+          }
+        ]
       }
     ],
     "PostToolUse": [

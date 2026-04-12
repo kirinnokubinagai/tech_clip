@@ -2,9 +2,17 @@
 # pre-commit: mainブランチ保護 + シークレット検知
 
 # main ブランチへの直接コミットをブロック
-branch=$(git rev-parse --abbrev-ref HEAD 2>/dev/null || true)
+branch=$(git symbolic-ref --short HEAD 2>/dev/null || true)
+if [[ -z "${branch}" ]]; then
+  # Detached HEAD: HEAD が main コミットと一致するか確認
+  head_sha=$(git rev-parse HEAD 2>/dev/null || true)
+  main_sha=$(git rev-parse refs/heads/main 2>/dev/null || true)
+  if [[ -n "${head_sha}" && -n "${main_sha}" && "${head_sha}" == "${main_sha}" ]]; then
+    branch="main"
+  fi
+fi
 
-if [[ "${branch}" == "main" ]]; then
+if [[ "${branch}" == "main" || "${branch}" == "master" ]]; then
   echo "ERROR: main ブランチへの直接コミットは禁止されています。" >&2
   echo "       Issue に対応する worktree を作成してから作業してください:" >&2
   echo "         bash scripts/create-worktree.sh <issue-number> <description>" >&2
