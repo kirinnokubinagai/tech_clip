@@ -474,7 +474,6 @@ export default function ArticleDetailScreen() {
 
         {summaryJob && (
           <View className="mx-4 mt-2 rounded-xl bg-card border border-border p-4">
-<<<<<<< HEAD
             <Text className="text-sm font-medium text-text mb-2">{t("article.generating")}</Text>
             <View
               className="h-2 rounded-full overflow-hidden"
