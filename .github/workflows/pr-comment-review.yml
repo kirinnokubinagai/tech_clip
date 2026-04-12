@@ -12,7 +12,7 @@ concurrency:
   group: pr-comment-review-${{ github.event.issue.number }}
   cancel-in-progress: true
 
-permissions: read-all
+permissions: {}
 
 jobs:
   pr-comment-review:
@@ -54,6 +54,7 @@ jobs:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v4.2.2
         if: steps.fork-check.outputs.skip != 'true'
         with:
+          # with: パラメータは env 変数を参照できないため ${{ }} 直接参照が必須
           ref: refs/pull/${{ github.event.issue.number }}/head
 
       - id: review
