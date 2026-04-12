@@ -37,24 +37,31 @@ type FollowListPage = {
 };
 
 /**
- * フォロワー一覧をAPIから取得する
+ * フォローリストをAPIから取得する共通ヘルパー
  *
  * @param userId - 対象ユーザーID
  * @param cursor - ページネーションカーソル
- * @returns フォロワー一覧データ
+ * @param segment - URLセグメント（"followers" または "following"）
+ * @param errorMessage - 失敗時に throw するエラーメッセージ
+ * @returns フォローリストページデータ
  */
-async function fetchFollowers(userId: string, cursor: string | undefined): Promise<FollowListPage> {
+async function fetchFollowList(
+  userId: string,
+  cursor: string | undefined,
+  segment: "followers" | "following",
+  errorMessage: string,
+): Promise<FollowListPage> {
   const params = new URLSearchParams();
   if (cursor) params.set("cursor", cursor);
   params.set("limit", String(DEFAULT_PAGE_LIMIT));
 
   const queryString = params.toString();
-  const path = `/api/users/${userId}/followers${queryString ? `?${queryString}` : ""}`;
+  const path = `/api/users/${userId}/${segment}${queryString ? `?${queryString}` : ""}`;
 
   const response = await apiFetch<FollowListResponse>(path);
 
   if (!response.success) {
-    throw new Error("フォロワー一覧の取得に失敗しました");
+    throw new Error(errorMessage);
   }
 
   return {
@@ -65,6 +72,17 @@ async function fetchFollowers(userId: string, cursor: string | undefined): Promi
 }
 
 /**
+ * フォロワー一覧をAPIから取得する
+ *
+ * @param userId - 対象ユーザーID
+ * @param cursor - ページネーションカーソル
+ * @returns フォロワー一覧データ
+ */
+async function fetchFollowers(userId: string, cursor: string | undefined): Promise<FollowListPage> {
+  return fetchFollowList(userId, cursor, "followers", "フォロワー一覧の取得に失敗しました");
+}
+
+/**
  * フォロー中一覧をAPIから取得する
  *
  * @param userId - 対象ユーザーID
@@ -72,24 +90,7 @@ async function fetchFollowers(userId: string, cursor: string | undefined): Promi
  * @returns フォロー中一覧データ
  */
 async function fetchFollowing(userId: string, cursor: string | undefined): Promise<FollowListPage> {
-  const params = new URLSearchParams();
-  if (cursor) params.set("cursor", cursor);
-  params.set("limit", String(DEFAULT_PAGE_LIMIT));
-
-  const queryString = params.toString();
-  const path = `/api/users/${userId}/following${queryString ? `?${queryString}` : ""}`;
-
-  const response = await apiFetch<FollowListResponse>(path);
-
-  if (!response.success) {
-    throw new Error("フォロー中一覧の取得に失敗しました");
-  }
-
-  return {
-    items: response.data,
-    nextCursor: response.meta.nextCursor,
-    hasNext: response.meta.hasNext,
-  };
+  return fetchFollowList(userId, cursor, "following", "フォロー中一覧の取得に失敗しました");
 }
 
 /**

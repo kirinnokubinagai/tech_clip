@@ -185,6 +185,51 @@ export default function FollowersScreen() {
     );
   }, [activeTab, isLoading]);
 
+  /**
+   * コンテンツエリアをレンダリングする
+   */
+  function renderContent() {
+    if (isError) {
+      return (
+        <View testID="followers-error" className="flex-1 items-center justify-center px-4">
+          <Text className="text-text-muted text-base text-center">
+            {activeTab === "followers"
+              ? "フォロワーの取得に失敗しました"
+              : "フォロー中の取得に失敗しました"}
+          </Text>
+          <Pressable
+            onPress={() => activeQuery.refetch()}
+            className="mt-4 bg-primary rounded-lg px-6 py-3"
+            accessibilityRole="button"
+            accessibilityLabel="再試行"
+          >
+            <Text className="text-white font-semibold">再試行</Text>
+          </Pressable>
+        </View>
+      );
+    }
+    if (isLoading) {
+      return (
+        <View testID="followers-loading" className="flex-1 items-center justify-center">
+          <ActivityIndicator size="large" color={PRIMARY_COLOR} />
+          <Text className="text-text-muted mt-3">読み込み中...</Text>
+        </View>
+      );
+    }
+    return (
+      <FlatList
+        testID="followers-list"
+        data={currentList}
+        renderItem={renderItem}
+        keyExtractor={keyExtractor}
+        ListEmptyComponent={renderEmpty}
+        contentContainerStyle={{ flexGrow: 1 }}
+        onEndReached={handleEndReached}
+        onEndReachedThreshold={0.5}
+      />
+    );
+  }
+
   return (
     <View testID="followers-screen" className="flex-1 bg-background">
       <View className="flex-row items-center justify-between px-4 pt-14 pb-3 bg-surface border-b border-border">
@@ -250,39 +295,7 @@ export default function FollowersScreen() {
         </Pressable>
       </View>
 
-      {isError ? (
-        <View testID="followers-error" className="flex-1 items-center justify-center px-4">
-          <Text className="text-text-muted text-base text-center">
-            {activeTab === "followers"
-              ? "フォロワーの取得に失敗しました"
-              : "フォロー中の取得に失敗しました"}
-          </Text>
-          <Pressable
-            onPress={() => activeQuery.refetch()}
-            className="mt-4 bg-primary rounded-lg px-6 py-3"
-            accessibilityRole="button"
-            accessibilityLabel="再試行"
-          >
-            <Text className="text-white font-semibold">再試行</Text>
-          </Pressable>
-        </View>
-      ) : isLoading ? (
-        <View testID="followers-loading" className="flex-1 items-center justify-center">
-          <ActivityIndicator size="large" color={PRIMARY_COLOR} />
-          <Text className="text-text-muted mt-3">読み込み中...</Text>
-        </View>
-      ) : (
-        <FlatList
-          testID="followers-list"
-          data={currentList}
-          renderItem={renderItem}
-          keyExtractor={keyExtractor}
-          ListEmptyComponent={renderEmpty}
-          contentContainerStyle={{ flexGrow: 1 }}
-          onEndReached={handleEndReached}
-          onEndReachedThreshold={0.5}
-        />
-      )}
+      {renderContent()}
     </View>
   );
 }
