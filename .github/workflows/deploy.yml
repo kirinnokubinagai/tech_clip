@@ -21,7 +21,7 @@ jobs:
       contents: read
       deployments: write
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v4.2.2
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
       - uses: ./.github/actions/nix-setup
       - name: Mask secrets
         run: |
@@ -59,7 +59,7 @@ jobs:
     env:
       STAGING_API_URL: https://tech-clip-api-staging.workers.dev
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v4.2.2
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
       - name: Mask secrets
         run: |
           echo "::add-mask::${{ secrets.ZAP_TEST_EMAIL }}"
@@ -108,7 +108,7 @@ jobs:
       contents: read
       deployments: write
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v4.2.2
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
       - uses: ./.github/actions/nix-setup
       - name: Mask secrets
         run: |
