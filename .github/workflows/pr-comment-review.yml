@@ -36,15 +36,16 @@ jobs:
     permissions:
       contents: read
       pull-requests: write
-      id-token: write
     steps:
       - name: フォーク PR チェック
         id: fork-check
         env:
           GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ github.event.issue.number }}
+          REPO_OWNER: ${{ github.repository_owner }}
         run: |
-          HEAD_REPO=$(gh pr view ${{ github.event.issue.number }} --json headRepository --jq '.headRepository.owner.login')
-          if [ "$HEAD_REPO" != "${{ github.repository_owner }}" ]; then
+          HEAD_REPO=$(gh pr view "$PR_NUMBER" --json headRepository --jq '.headRepository.owner.login')
+          if [ "$HEAD_REPO" != "$REPO_OWNER" ]; then
             echo "skip=true" >> "$GITHUB_OUTPUT"
           else
             echo "skip=false" >> "$GITHUB_OUTPUT"
@@ -57,6 +58,8 @@ jobs:
 
       - id: review
         if: steps.fork-check.outputs.skip != 'true'
+        env:
+          PR_NUMBER: ${{ github.event.issue.number }}
         uses: anthropics/claude-code-action@b47fd721da662d48c5680e154ad16a73ed74d2e0  # v1
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
@@ -74,9 +77,9 @@ jobs:
 
             レビュー完了後、以下のルールに従いラベルを操作してください:
             - 重大な問題（🔴）が0件かつ軽微な問題（🟡）が0件かつ改善提案（💡）が0件の場合:
-              gh pr edit ${{ github.event.issue.number }} --add-label "AI Review: PASS" --remove-label "AI Review: NEEDS WORK"
+              gh pr edit "$PR_NUMBER" --add-label "AI Review: PASS" --remove-label "AI Review: NEEDS WORK"
             - 1つでも問題や改善提案がある場合:
-              gh pr edit ${{ github.event.issue.number }} --add-label "AI Review: NEEDS WORK" --remove-label "AI Review: PASS"
+              gh pr edit "$PR_NUMBER" --add-label "AI Review: NEEDS WORK" --remove-label "AI Review: PASS"
 
             重要: gh pr review --approve は絶対に実行しないでください。
 
@@ -84,5 +87,6 @@ jobs:
         if: always() && steps.fork-check.outputs.skip != 'true'
         env:
           GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ github.event.issue.number }}
         run: |
-          gh pr edit ${{ github.event.issue.number }} --add-label "再レビュー済み" 2>/dev/null || true
+          gh pr edit "$PR_NUMBER" --add-label "再レビュー済み" 2>/dev/null || true
