@@ -8,14 +8,24 @@ on:
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
+# デフォルトで全権限を read-only にし、各ジョブで必要な権限のみを上書きする
+permissions: read-all
+
 jobs:
   deploy-staging:
     if: github.ref == 'refs/heads/main'
     name: Deploy to Staging
     runs-on: ubuntu-latest
     environment: staging
+    permissions:
+      contents: read
+      deployments: write
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+      - name: Mask secrets
+        run: |
+          echo "::add-mask::${{ secrets.CLOUDFLARE_API_TOKEN }}"
+          echo "::add-mask::${{ secrets.CLOUDFLARE_ACCOUNT_ID }}"
       - uses: ./.github/actions/nix-setup
       - name: Deploy API to staging
         working-directory: apps/api
@@ -44,10 +54,18 @@ jobs:
     needs: deploy-staging
     runs-on: ubuntu-latest
     environment: staging
+    permissions:
+      contents: read
+      actions: write
+      deployments: write
     env:
       STAGING_API_URL: https://tech-clip-api-staging.workers.dev
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+      - name: Mask secrets
+        run: |
+          echo "::add-mask::${{ secrets.ZAP_TEST_EMAIL }}"
+          echo "::add-mask::${{ secrets.ZAP_TEST_PASSWORD }}"
       - name: Register test user and obtain auth token (staging)
         id: auth
         run: |
@@ -63,9 +81,10 @@ jobs:
             echo "警告: 認証トークンを取得できませんでした。未認証スキャンのみ実施します"
             TOKEN="dummy-token-for-unauthenticated-scan"
           fi
+          echo "::add-mask::$TOKEN"
           echo "token=$TOKEN" >> "$GITHUB_OUTPUT"
       - name: OWASP ZAP API Scan (staging)
-        uses: zaproxy/action-api-scan@v0.10.0
+        uses: zaproxy/action-api-scan@5158fe4d9d8fcc75ea204db81317cce7f9e5453d  # v0.10.0
         env:
           ZAP_AUTH_HEADER: Authorization
           ZAP_AUTH_HEADER_VALUE: Bearer ${{ steps.auth.outputs.token }}
@@ -77,7 +96,7 @@ jobs:
           allow_issue_writing: false
       - name: Upload ZAP Report (staging)
         if: always()
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
         with:
           name: zap-report-staging
           path: report_html.html
@@ -87,8 +106,15 @@ jobs:
     name: Deploy to Production
     runs-on: ubuntu-latest
     environment: production
+    permissions:
+      contents: read
+      deployments: write
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+      - name: Mask secrets
+        run: |
+          echo "::add-mask::${{ secrets.CLOUDFLARE_API_TOKEN }}"
+          echo "::add-mask::${{ secrets.CLOUDFLARE_ACCOUNT_ID }}"
       - uses: ./.github/actions/nix-setup
       - name: Deploy API to production
         working-directory: apps/api
