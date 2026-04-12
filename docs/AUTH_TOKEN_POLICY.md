@@ -52,7 +52,7 @@ REFRESH_TOKEN_KEY = "refresh_token"   # 独自リフレッシュトークン
 
 | 項目 | 値 |
 |------|-----|
-| 生成元 | `generateRefreshToken()` (crypto.getRandomValues, 48 byte hex) |
+| 生成元 | `generateRefreshToken()` (crypto.getRandomValues, 24バイト / 48文字 hex, 192bit エントロピー) |
 | 保存場所 | DB: `refresh_tokens.token_hash`（SHA-256 ハッシュ） / クライアント: SecureStore |
 | 有効期限 | セッションの `expiresAt` に準拠 |
 | 失効条件 | セッション期限到達 / トークン再利用検知 / 明示的なサインアウト |
