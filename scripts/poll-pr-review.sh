@@ -38,6 +38,12 @@ if [[ ! "${POLL_INTERVAL_SECONDS}" =~ ^[0-9]+$ ]] || (( POLL_INTERVAL_SECONDS <=
   exit 1
 fi
 
+# jq の存在確認（未インストール時はサイレントに誤動作するため事前チェック）
+if ! command -v jq >/dev/null 2>&1; then
+  echo "エラー: jq が必要です。nix develop で環境に入ってから実行してください。" >&2
+  exit 1
+fi
+
 # 中断シグナルを受けたらクリーンに終了する
 trap 'echo "INTERRUPTED" >&2; exit 130' INT TERM
 
@@ -103,7 +109,7 @@ while (( elapsed < TIMEOUT_SECONDS )); do
   # 誤検知防止のため author.login で Claude bot / github-actions bot に限定し、
   # 特定のフレーズのみ対象とする:
   #   "全件 PASS" / "全件PASS": レビュアーエージェントの PASS 宣言
-  #   "✅.*PASS": CI/レビュー結果の ✅ + PASS（dotall フラグで複数行対応）
+  #   "✅.*\bPASS\b": CI/レビュー結果の ✅ + PASS（単語境界で "passed" 等の誤検知防止）
   #   "\bLGTM\b": 標準的な承認表現（単語境界で LGTMFAIL 等の誤検知防止）
   #   "Approve 相当": Claude bot の承認コメントフレーズ
   #   "マージ可能(?:です|と判断|。|！|$)": Claude bot の承認判定フレーズ（「マージ可能性がある」等の誤検知防止）
@@ -111,7 +117,7 @@ while (( elapsed < TIMEOUT_SECONDS )); do
   approve_comment_count=$(printf '%s' "${pr_data}" | jq '
     [.comments[]
      | select((.author.login // "") | test("^(github-actions\\[bot\\]|claude\\[bot\\]|claude-code\\[bot\\]|app/claude)$"; "i"))
-     | select(.body | test("(?s)全件 ?PASS|\\bLGTM\\b|Approve 相当|マージ可能(?:です|と判断|。|！|$)|✅.*PASS|指摘[^0-9]?0(?![0-9])"; "i"))] | length
+     | select(.body | test("(?s)全件 ?PASS|\\bLGTM\\b|Approve 相当|マージ可能(?:です|と判断|。|！|$)|✅.*\\bPASS\\b|指摘[^0-9]?0(?![0-9])"; "i"))] | length
   ' 2>/dev/null || echo "0")
 
   if [[ "${approve_comment_count}" -gt 0 ]] && [[ "${changes_comment_count}" -eq 0 ]]; then
