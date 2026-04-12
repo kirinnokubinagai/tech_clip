@@ -60,6 +60,10 @@ if [[ -L "${LOG_DIR}" ]]; then
 fi
 chmod 700 "${LOG_DIR}" || exit 0
 LOG_FILE="${LOG_DIR}/poll-pr-${PR_NUMBER}.log"
+if [[ -L "${LOG_FILE}" ]]; then
+  echo "[poll-pr] ログファイルがシンボリックリンクです。中止します: ${LOG_FILE}" >&2
+  exit 0
+fi
 
 # 既に同じ PR のポーリングが実行中かチェック
 # 末尾アンカーで PR#1 のチェックが PR#12 にマッチする誤検知を防止
