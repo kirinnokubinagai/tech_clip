@@ -48,8 +48,8 @@ const PARSE_ERROR_MESSAGE = "レスポンスの解析に失敗しました";
  * APIエラーの基底クラス
  */
 export class ApiError extends Error {
-  constructor(message: string) {
-    super(message);
+  constructor(message: string, options?: ErrorOptions) {
+    super(message, options);
     this.name = "ApiError";
   }
 }
@@ -86,9 +86,8 @@ export class ApiHttpError extends ApiError {
  */
 export class ApiNetworkError extends ApiError {
   constructor(message: string, cause?: unknown) {
-    super(message);
+    super(message, { cause });
     this.name = "ApiNetworkError";
-    this.cause = cause;
   }
 }
 
