@@ -1,4 +1,4 @@
-import { HTTP_NOT_FOUND, HTTP_OK } from "@api/lib/http-status";
+import { HTTP_INTERNAL_SERVER_ERROR, HTTP_NOT_FOUND, HTTP_OK } from "@api/lib/http-status";
 import { createPublicProfileRoute } from "@api/routes/public-profile";
 import { Hono } from "hono";
 import { beforeEach, describe, expect, it, vi } from "vitest";
@@ -116,7 +116,7 @@ describe("createPublicProfileRoute", () => {
       const res = await app.request(`/api/users/${TARGET_USER_ID}/profile`);
 
       // Assert
-      expect(res.status).toBe(500);
+      expect(res.status).toBe(HTTP_INTERNAL_SERVER_ERROR);
     });
   });
 });
