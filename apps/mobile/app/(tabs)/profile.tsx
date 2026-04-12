@@ -18,10 +18,10 @@ const PRIMARY_COLOR = DARK_COLORS.primary;
 function toProfileHeaderUser(user: { name: string; image: string | null }): ProfileHeaderUser {
   return {
     name: user.name,
-    bio: null,
+    bio: null, // TODO: GET /users/me でプロフィール情報を取得後に反映
     avatarUrl: user.image,
-    followersCount: 0,
-    followingCount: 0,
+    followersCount: 0, // TODO: GET /users/me でフォロワー数を取得後に反映
+    followingCount: 0, // TODO: GET /users/me でフォロー数を取得後に反映
   };
 }
 
