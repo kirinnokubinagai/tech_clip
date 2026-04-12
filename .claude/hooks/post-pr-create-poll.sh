@@ -17,7 +17,7 @@ command_str=$(printf '%s' "${ARGUMENTS:-}" | jq -r '.command // ""' 2>/dev/null 
 
 # gh pr create を含むコマンドのみ処理（単語境界を考慮した正規表現）
 # "git commit -m 'gh pr create'" などの誤検知を防ぐ
-printf '%s\n' "${command_str}" | grep -qE '(^|&&[[:space:]]*|;[[:space:]]*)gh[[:space:]]+pr[[:space:]]+create([[:space:]]|$)' || exit 0
+printf '%s\n' "${command_str}" | grep -qE '(^|&&[[:space:]]*|\|\|[[:space:]]*|;[[:space:]]*)gh[[:space:]]+pr[[:space:]]+create([[:space:]]|$)' || exit 0
 
 # worktree パスを cd コマンドから抽出（スペースなしパスのみ対応）
 worktree_path=""

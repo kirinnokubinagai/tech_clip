@@ -62,6 +62,8 @@ while (( elapsed < TIMEOUT_SECONDS )); do
 
   review_decision=$(printf '%s' "${pr_data}" | jq -r '.reviewDecision // ""')
 
+  # 正式レビューの APPROVED を最優先で処理する
+  # ヒューマンレビュアーによる正式 Approve はコメント形式の bot 判定より優先する
   if [[ "${review_decision}" == "APPROVED" ]]; then
     echo "APPROVED"
     exit 0
@@ -84,6 +86,7 @@ while (( elapsed < TIMEOUT_SECONDS )); do
   # コメント形式のレビュー（Claude bot 等が PR comment で投稿する場合）も検出する
   # 「🔄 Request Changes」または明示的な CHANGES_REQUESTED マーカーを含むコメントのみ対象
   # 誤検知防止のため author.login で Claude bot / github-actions bot に限定する
+  # app/claude: GitHub App として動作する Claude bot の login 形式
   changes_comment_count=$(printf '%s' "${pr_data}" | jq '
     [.comments[]
      | select((.author.login // "") | test("^(github-actions\\[bot\\]|claude\\[bot\\]|claude-code\\[bot\\]|app/claude)$"; "i"))
@@ -91,6 +94,7 @@ while (( elapsed < TIMEOUT_SECONDS )); do
   ' 2>/dev/null || echo "0")
 
   if [[ "${changes_comment_count}" -gt 0 ]]; then
+    # app/claude: GitHub App として動作する Claude bot の login 形式
     comment_content=$(printf '%s' "${pr_data}" | jq -r '
       [.comments[]
        | select((.author.login // "") | test("^(github-actions\\[bot\\]|claude\\[bot\\]|claude-code\\[bot\\]|app/claude)$"; "i"))
@@ -114,10 +118,11 @@ while (( elapsed < TIMEOUT_SECONDS )); do
   #   "Approve 相当": Claude bot の承認コメントフレーズ
   #   "マージ可能(?:です|と判断|。|！|$)": Claude bot の承認判定フレーズ（「マージ可能性がある」等の誤検知防止）
   #   "指摘[^0-9]?0(?![0-9])": 「指摘0件」のような確定0件表現（10件等との誤検知防止）
+  # app/claude: GitHub App として動作する Claude bot の login 形式
   approve_comment_count=$(printf '%s' "${pr_data}" | jq '
     [.comments[]
      | select((.author.login // "") | test("^(github-actions\\[bot\\]|claude\\[bot\\]|claude-code\\[bot\\]|app/claude)$"; "i"))
-     | select(.body | test("(?s)全件 ?PASS|\\bLGTM\\b|Approve 相当|マージ可能(?:です|と判断|。|！|$)|✅.*\\bPASS\\b|指摘[^0-9]?0(?![0-9])"; "i"))] | length
+     | select(.body | test("(?s)全件 ?PASS(?!\\w)|\\bLGTM\\b|Approve 相当|マージ可能(?:です|と判断|。|！|$)|✅.*\\bPASS\\b|指摘[^0-9]?0(?![0-9])"; "i"))] | length
   ' 2>/dev/null || echo "0")
 
   if [[ "${approve_comment_count}" -gt 0 ]] && [[ "${changes_comment_count}" -eq 0 ]]; then
