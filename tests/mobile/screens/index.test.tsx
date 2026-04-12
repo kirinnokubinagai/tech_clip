@@ -78,7 +78,7 @@ describe("HomeScreen", () => {
     const { getByText } = await render(<HomeScreen />);
 
     await waitFor(() => {
-      expect(getByText("テスト記事1")).toBeTruthy();
+      expect(getByText("テスト記事1")).not.toBeNull();
     });
   });
 
@@ -96,7 +96,7 @@ describe("HomeScreen", () => {
 
     await waitFor(() => {
       expect(useOfflineArticles).toHaveBeenCalledTimes(1);
-      expect(getByText("テスト記事1")).toBeTruthy();
+      expect(getByText("テスト記事1")).not.toBeNull();
     });
   });
 
@@ -113,7 +113,7 @@ describe("HomeScreen", () => {
     const { getByText } = await render(<HomeScreen />);
 
     await waitFor(() => {
-      expect(getByText("オフライン：キャッシュがありません")).toBeTruthy();
+      expect(getByText("オフライン：キャッシュがありません")).not.toBeNull();
     });
   });
 
@@ -126,7 +126,7 @@ describe("HomeScreen", () => {
     const { getByText } = await render(<HomeScreen />);
 
     await waitFor(() => {
-      expect(getByText("読み込み中...")).toBeTruthy();
+      expect(getByText("読み込み中...")).not.toBeNull();
     });
   });
 
