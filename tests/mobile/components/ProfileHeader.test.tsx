@@ -33,7 +33,7 @@ describe("ProfileHeader", () => {
 
       // Assert
       const bio = getByTestId("profile-bio");
-      expect(bio).toBeDefined();
+      expect(bio.props.children).toBe("フロントエンドエンジニア。React Nativeが好き。");
     });
 
     it("bioがnullの場合は非表示になること", async () => {

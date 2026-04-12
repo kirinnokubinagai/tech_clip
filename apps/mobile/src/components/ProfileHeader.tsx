@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 import { Pressable, Text, View } from "react-native";
 
 import { DARK_COLORS } from "@/lib/constants";
+import { getInitials } from "@/utils/formatters";
 
 /** プロフィールヘッダーに渡すユーザーデータ */
 export type ProfileHeaderUser = {
@@ -35,20 +36,6 @@ const AVATAR_FALLBACK_BG = DARK_COLORS.border;
 
 /** アバターのフォールバックテキスト色 */
 const AVATAR_FALLBACK_TEXT_COLOR = DARK_COLORS.text;
-
-/**
- * ユーザー名の頭文字を取得する
- *
- * @param name - ユーザー名
- * @returns 頭文字（最大2文字）
- */
-function getInitials(name: string): string {
-  const parts = name.trim().split(/\s+/);
-  if (parts.length >= 2) {
-    return `${parts[0][0]}${parts[1][0]}`.toUpperCase();
-  }
-  return name.slice(0, 2).toUpperCase();
-}
 
 /**
  * 数値を短縮表記にフォーマットする

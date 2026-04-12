@@ -190,7 +190,8 @@
       "noFollowers": "暂无关注者",
       "noFollowing": "未关注任何用户",
       "userProfileLabel": "查看{{name}}的个人资料",
-      "loading": "加载中..."
+      "loading": "加载中...",
+      "fetchError": "获取用户信息失败"
     }
   },
   "settings": {

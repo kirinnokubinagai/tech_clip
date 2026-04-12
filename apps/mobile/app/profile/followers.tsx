@@ -7,6 +7,7 @@ import { ActivityIndicator, FlatList, Pressable, Text, View } from "react-native
 import type { FollowUser } from "@/hooks/use-follow";
 import { useFollowers, useFollowing } from "@/hooks/use-follow";
 import { DARK_COLORS } from "@/lib/constants";
+import { getInitials } from "@/utils/formatters";
 
 /** タブの種類 */
 type TabType = "followers" | "following";
@@ -31,20 +32,6 @@ const AVATAR_FALLBACK_TEXT_COLOR = DARK_COLORS.text;
 
 /** アクティブタブの下線カラー */
 const ACTIVE_TAB_BORDER_COLOR = DARK_COLORS.primary;
-
-/**
- * ユーザー名の頭文字を取得する
- *
- * @param name - ユーザー名
- * @returns 頭文字（最大2文字）
- */
-function getInitials(name: string): string {
-  const parts = name.trim().split(/\s+/);
-  if (parts.length >= 2) {
-    return `${parts[0][0]}${parts[1][0]}`.toUpperCase();
-  }
-  return name.slice(0, 2).toUpperCase();
-}
 
 type UserListItemProps = {
   item: FollowUser;
@@ -264,7 +251,7 @@ export default function FollowersScreen() {
       ) : isError ? (
         <View testID="followers-error" className="flex-1 items-center justify-center px-4">
           <Text className="text-text-muted text-base text-center">
-            ユーザー情報の取得に失敗しました
+            {t("profile.followers.fetchError")}
           </Text>
         </View>
       ) : (
