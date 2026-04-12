@@ -14,8 +14,11 @@ const FOLLOWING_ICON_COLOR = DARK_COLORS.text;
 /** 未フォローボタンのアイコンカラー */
 const NOT_FOLLOWING_ICON_COLOR = DARK_COLORS.white;
 
-/** ローディングインジケーターカラー */
-const LOADING_COLOR = DARK_COLORS.primary;
+/** フォロー済みブランチのローディングインジケーターカラー */
+const FOLLOWING_LOADING_COLOR = DARK_COLORS.primary;
+
+/** 未フォローブランチのローディングインジケーターカラー（白: 青背景上で視認可能） */
+const NOT_FOLLOWING_LOADING_COLOR = DARK_COLORS.white;
 
 type FollowButtonProps = {
   userId: string;
@@ -25,6 +28,9 @@ type FollowButtonProps = {
 
 /**
  * フォロー/フォロー解除ボタンコンポーネント
+ *
+ * 楽観更新: ボタン押下直後にUIを更新し、API完了を待たない。
+ * API失敗時は元の状態にロールバックする。
  *
  * @param userId - 対象ユーザーのID
  * @param isFollowing - 現在フォロー中かどうか
@@ -40,44 +46,41 @@ export function FollowButton({
   const [isLoading, setIsLoading] = useState(false);
 
   const handlePress = useCallback(async () => {
+    const prevFollowing = isFollowing;
+
     setIsLoading(true);
+    setIsFollowing(!prevFollowing);
 
     try {
       if (onToggle) {
-        await onToggle(userId, isFollowing);
+        await onToggle(userId, prevFollowing);
       }
-      setIsFollowing((prev) => !prev);
     } catch {
-      /* フォロー状態変更失敗時は状態を維持 */
+      setIsFollowing(prevFollowing);
     } finally {
       setIsLoading(false);
     }
   }, [userId, isFollowing, onToggle]);
-
-  if (isLoading) {
-    return (
-      <Pressable
-        testID="follow-button"
-        disabled
-        className="flex-row items-center justify-center gap-1.5 rounded-lg px-4 py-2 border border-border opacity-50"
-        accessibilityRole="button"
-        accessibilityLabel={t("common.accessibility.followSwitching")}
-      >
-        <ActivityIndicator size="small" color={LOADING_COLOR} />
-      </Pressable>
-    );
-  }
 
   if (isFollowing) {
     return (
       <Pressable
         testID="follow-button"
         onPress={handlePress}
+        disabled={isLoading}
+        accessibilityState={{ disabled: isLoading }}
         className="flex-row items-center justify-center gap-1.5 rounded-lg px-4 py-2 border border-border bg-surface"
+        style={isLoading ? { opacity: 0.5 } : undefined}
         accessibilityRole="button"
-        accessibilityLabel={t("common.accessibility.unfollow")}
+        accessibilityLabel={
+          isLoading ? t("common.accessibility.followSwitching") : t("common.accessibility.unfollow")
+        }
       >
-        <UserMinus size={ICON_SIZE} color={FOLLOWING_ICON_COLOR} />
+        {isLoading ? (
+          <ActivityIndicator size="small" color={FOLLOWING_LOADING_COLOR} />
+        ) : (
+          <UserMinus size={ICON_SIZE} color={FOLLOWING_ICON_COLOR} />
+        )}
         <Text testID="follow-button-label" className="text-sm font-medium text-text">
           フォロー中
         </Text>
@@ -89,11 +92,20 @@ export function FollowButton({
     <Pressable
       testID="follow-button"
       onPress={handlePress}
+      disabled={isLoading}
+      accessibilityState={{ disabled: isLoading }}
       className="flex-row items-center justify-center gap-1.5 rounded-lg px-4 py-2 bg-primary"
+      style={isLoading ? { opacity: 0.5 } : undefined}
       accessibilityRole="button"
-      accessibilityLabel={t("common.accessibility.follow")}
+      accessibilityLabel={
+        isLoading ? t("common.accessibility.followSwitching") : t("common.accessibility.follow")
+      }
     >
-      <UserPlus size={ICON_SIZE} color={NOT_FOLLOWING_ICON_COLOR} />
+      {isLoading ? (
+        <ActivityIndicator size="small" color={NOT_FOLLOWING_LOADING_COLOR} />
+      ) : (
+        <UserPlus size={ICON_SIZE} color={NOT_FOLLOWING_ICON_COLOR} />
+      )}
       <Text testID="follow-button-label" className="text-sm font-semibold text-white">
         フォローする
       </Text>

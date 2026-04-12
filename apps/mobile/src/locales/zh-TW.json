@@ -296,7 +296,7 @@
     "pages": {
       "save": {
         "title": "一鍵儲存技術文章",
-        "description": "支援Zenn、Qiita、dev.to等18個網站，隨時儲存感興趣的文章。"
+        "description": "支援Zenn、Qiita、dev.to等{{count}}個來源，隨時儲存感興趣的文章。"
       },
       "ai": {
         "title": "AI摘要與翻譯",
@@ -313,7 +313,13 @@
     },
     "skip": "跳過",
     "next": "下一步",
-    "start": "開始"
+    "start": "開始",
+    "accessibility": {
+      "pageIndicator": "第{{current}}頁（共{{total}}頁）",
+      "nextPageHint": "前往第{{next}}頁",
+      "skipHint": "跳過引導並前往登入畫面",
+      "startHint": "前往建立帳號畫面"
+    }
   },
   "shareIntent": {
     "loading": "載入中",
