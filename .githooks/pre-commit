@@ -4,11 +4,14 @@
 # main ブランチへの直接コミットをブロック
 branch=$(git symbolic-ref --short HEAD 2>/dev/null || true)
 if [[ -z "${branch}" ]]; then
-  # Detached HEAD: HEAD が main コミットと一致するか確認
+  # Detached HEAD: HEAD が main/master コミットと一致するか確認
   head_sha=$(git rev-parse HEAD 2>/dev/null || true)
   main_sha=$(git rev-parse refs/heads/main 2>/dev/null || true)
+  master_sha=$(git rev-parse refs/heads/master 2>/dev/null || true)
   if [[ -n "${head_sha}" && -n "${main_sha}" && "${head_sha}" == "${main_sha}" ]]; then
     branch="main"
+  elif [[ -n "${head_sha}" && -n "${master_sha}" && "${head_sha}" == "${master_sha}" ]]; then
+    branch="master"
   fi
 fi
 

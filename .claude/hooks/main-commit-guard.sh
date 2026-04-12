@@ -52,8 +52,11 @@ if [[ -n "${target_dir}" ]]; then
   if [[ -z "${current_branch}" ]]; then
     head_sha=$(git -C "${target_dir}" rev-parse HEAD 2>/dev/null || true)
     main_sha=$(git -C "${target_dir}" rev-parse refs/heads/main 2>/dev/null || true)
+    master_sha=$(git -C "${target_dir}" rev-parse refs/heads/master 2>/dev/null || true)
     if [[ -n "${head_sha}" && "${head_sha}" == "${main_sha}" ]]; then
       current_branch="main"
+    elif [[ -n "${head_sha}" && "${head_sha}" == "${master_sha}" ]]; then
+      current_branch="master"
     fi
   fi
 else
@@ -61,8 +64,11 @@ else
   if [[ -z "${current_branch}" ]]; then
     head_sha=$(git rev-parse HEAD 2>/dev/null || true)
     main_sha=$(git rev-parse refs/heads/main 2>/dev/null || true)
+    master_sha=$(git rev-parse refs/heads/master 2>/dev/null || true)
     if [[ -n "${head_sha}" && "${head_sha}" == "${main_sha}" ]]; then
       current_branch="main"
+    elif [[ -n "${head_sha}" && "${head_sha}" == "${master_sha}" ]]; then
+      current_branch="master"
     fi
   fi
 fi
