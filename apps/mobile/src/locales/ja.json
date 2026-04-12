@@ -16,7 +16,6 @@
     "search": "検索",
     "skip": "スキップ",
     "start": "始める",
-    "generating": "生成中...",
     "accessibility": {
       "tapToChange": "タップして変更",
       "currentValue": "{{label}}、現在の設定: {{value}}"
@@ -133,9 +132,7 @@
     "urlRequired": "URLを入力してください",
     "urlInvalid": "有効なURLを入力してください",
     "noMatch": "「{{query}}」に一致する記事がありません",
-    "generating": "生成中...",
-    "summaryLabel": "要約",
-    "translationLabel": "翻訳"
+    "generating": "生成中..."
   },
   "search": {
     "placeholder": "記事を検索...",

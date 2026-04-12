@@ -16,7 +16,6 @@
     "search": "검색",
     "skip": "건너뛰기",
     "start": "시작하기",
-    "generating": "생성 중...",
     "accessibility": {
       "tapToChange": "탭하여 변경",
       "currentValue": "{{label}}, 현재 설정: {{value}}"
@@ -128,9 +127,7 @@
     "thumbnailAlt": "기사 썸네일",
     "urlRequired": "URL을 입력해 주세요",
     "urlInvalid": "유효한 URL을 입력해 주세요",
-    "noMatch": "「{{query}}」에 일치하는 기사가 없습니다",
-    "summaryLabel": "요약",
-    "translationLabel": "번역"
+    "noMatch": "「{{query}}」에 일치하는 기사가 없습니다"
   },
   "search": {
     "placeholder": "기사 검색...",
