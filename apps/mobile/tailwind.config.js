@@ -34,8 +34,8 @@ module.exports = {
           light: "#818cf8",
           dark: "#4f46e5",
         },
-        // accent は Primary（Teal）と同値のため将来削除予定
-        // TODO(#855): 削除して primary を使用する（docs/mobile-theme.md 移行タスク#2 参照）
+        // ⚠️ この値 (#f59e0b=Amber) は constants.ts の accent (#14b8a6=Teal) と異なる。
+        // TODO(#855): constants.ts と値を合わせたうえで、移行タスク#2 で削除する。
         accent: "#f59e0b",
         // テキストカラー（ダークテーマ固有）
         text: {
