@@ -82,6 +82,11 @@ is_blocked_file() {
   local lower_path="${path,,}"
   local lower_root="${REPO_ROOT,,}"
   local matched=1
+  # 設計上の注記: .review-passed は意図的にここでブロックしない。
+  # Bash touch コマンドは元々ブロックされていないため、coder エージェント等が
+  # touch でマーカーを作成することは常に技術的に可能だった。
+  # 最終防衛は pre-push-review-guard.sh（マーカー未存在時の push ブロック）が担う。
+  # Write ツールによる作成も同等に扱い、不要な制限を除去している。
   # .omc/state/ は実行フロー状態ファイル（直接編集による動作操作を防止）
   [[ "$lower_path" == "$lower_root/.omc/state" ]] && matched=0
   [[ "$lower_path" == "$lower_root/.omc/state/"* ]] && matched=0
