@@ -68,11 +68,11 @@ while (( elapsed < TIMEOUT_SECONDS )); do
     printf '\n'
     echo "--- Conflict Info ---"
     echo "PR #${PR_NUMBER} のブランチが origin/main とコンフリクトしています。"
-    echo "worktree 内で以下を実行してコンフリクトを解消してください:"
-    echo "  git fetch origin"
-    echo "  git merge origin/main"
-    echo "  # コンフリクトを手動または Skill(conflict-resolver) で解消"
-    echo "  git push origin HEAD"
+    echo "CLAUDE.md の「コンフリクト解消フロー」に従って解消してください。"
+    echo "  1. gh issue view <N> で現在の Issue の意図を確認する"
+    echo "  2. git -C <worktree> log origin/main --oneline -20 で main の変更を確認する"
+    echo "  3. Agent(coder) にコンフリクト箇所・両側の意図・方針を伝えて解消させる"
+    echo "  ※ 解消後、code-reviewer / security-reviewer の再レビューとマーカー再作成が必要です"
     exit 3
   fi
 
