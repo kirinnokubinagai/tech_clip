@@ -125,6 +125,12 @@
             "command": "bash \"$(git rev-parse --show-toplevel 2>/dev/null || echo .)/.claude/hooks/worktree-isolation-guard.sh\"",
             "timeout": 5,
             "statusMessage": "Checking worktree isolation..."
+          },
+          {
+            "type": "command",
+            "command": "bash \"$(git rev-parse --show-toplevel 2>/dev/null || echo .)/.claude/hooks/diagnosis-first-guard.sh\"",
+            "timeout": 5,
+            "statusMessage": "Diagnosis-first check..."
           }
         ]
       },
