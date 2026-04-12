@@ -13,6 +13,11 @@ jest.mock("expo-router", () => ({
   },
 }));
 
+jest.mock("@/lib/constants", () => ({
+  LIGHT_COLORS: { neutral: "#44403c" },
+  SUPPORTED_SOURCE_COUNT: 19,
+}));
+
 const mockSetHasSeenOnboarding = jest.fn().mockResolvedValue(undefined);
 
 jest.mock("@mobile/stores/ui-store", () => ({
@@ -32,7 +37,7 @@ describe("OnboardingScreen（i18n 対応状況の記録）", () => {
   describe("現在の状態（ハードコード日本語文字列の存在確認）", () => {
     it("最初のページタイトルが日本語でハードコードされていること", async () => {
       // Arrange & Act
-      const { getByTestId } = render(<OnboardingScreen />);
+      const { getByTestId } = await render(<OnboardingScreen />);
 
       // Assert
       expect(getByTestId("onboarding-title").props.children).toBe("技術記事をワンタップで保存");
@@ -40,7 +45,7 @@ describe("OnboardingScreen（i18n 対応状況の記録）", () => {
 
     it("スキップボタンに日本語テキストがハードコードされていること", async () => {
       // Arrange & Act
-      const { getByText } = render(<OnboardingScreen />);
+      const { getByText } = await render(<OnboardingScreen />);
 
       // Assert
       expect(getByText("スキップ")).toBeTruthy();
@@ -48,7 +53,7 @@ describe("OnboardingScreen（i18n 対応状況の記録）", () => {
 
     it("次へボタンに日本語テキストがハードコードされていること", async () => {
       // Arrange & Act
-      const { getByText } = render(<OnboardingScreen />);
+      const { getByText } = await render(<OnboardingScreen />);
 
       // Assert
       expect(getByText("次へ")).toBeTruthy();
@@ -60,7 +65,7 @@ describe("OnboardingScreen（i18n 対応状況の記録）", () => {
       // Arrange
 
       // Act
-      const { getByText } = render(<OnboardingScreen />);
+      const { getByText } = await render(<OnboardingScreen />);
 
       // Assert
       expect(getByText("Skip")).toBeTruthy();

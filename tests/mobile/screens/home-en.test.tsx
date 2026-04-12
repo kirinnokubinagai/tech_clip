@@ -9,10 +9,7 @@ import { useOfflineArticles } from "@mobile/hooks/use-offline-articles";
 import HomeScreen from "@mobile-app/(tabs)/index";
 import { render, waitFor } from "@testing-library/react-native";
 
-import { i18nEnMockFactory } from "../helpers/i18n-en-mock";
-
-/** en.json から実際の英語翻訳を解決するモック */
-jest.mock("react-i18next", i18nEnMockFactory);
+import { setMockLocale } from "../helpers/i18n-test-utils";
 
 jest.mock("@mobile/hooks/use-articles", () => ({
   useArticles: jest.fn(),
@@ -51,6 +48,7 @@ const DEFAULT_USE_TOGGLE_FAVORITE_MOCK = {
 
 describe("HomeScreen（英語ロケール）", () => {
   beforeEach(() => {
+    setMockLocale("en");
     jest.clearAllMocks();
     (useArticles as jest.Mock).mockReturnValue(DEFAULT_USE_ARTICLES_MOCK);
     (useToggleFavorite as jest.Mock).mockReturnValue(DEFAULT_USE_TOGGLE_FAVORITE_MOCK);
@@ -64,10 +62,14 @@ describe("HomeScreen（英語ロケール）", () => {
     });
   });
 
+  afterEach(() => {
+    setMockLocale("ja");
+  });
+
   describe("フィルターUI", () => {
     it("ソースフィルターの「全て」ラベルが英語で表示されること", async () => {
       // Arrange & Act
-      const { getByText } = render(<HomeScreen />);
+      const { getByText } = await render(<HomeScreen />);
 
       // Assert
       await waitFor(() => {
@@ -77,7 +79,7 @@ describe("HomeScreen（英語ロケール）", () => {
 
     it("お気に入りフィルターが英語で表示されること", async () => {
       // Arrange & Act
-      const { getByText } = render(<HomeScreen />);
+      const { getByText } = await render(<HomeScreen />);
 
       // Assert
       await waitFor(() => {
@@ -95,7 +97,7 @@ describe("HomeScreen（英語ロケール）", () => {
       });
 
       // Act
-      const { getByText } = render(<HomeScreen />);
+      const { getByText } = await render(<HomeScreen />);
 
       // Assert
       await waitFor(() => {
@@ -114,7 +116,7 @@ describe("HomeScreen（英語ロケール）", () => {
       });
 
       // Act
-      const { getByText } = render(<HomeScreen />);
+      const { getByText } = await render(<HomeScreen />);
 
       // Assert
       await waitFor(() => {
@@ -131,7 +133,7 @@ describe("HomeScreen（英語ロケール）", () => {
       });
 
       // Act
-      const { getByText } = render(<HomeScreen />);
+      const { getByText } = await render(<HomeScreen />);
 
       // Assert
       await waitFor(() => {
@@ -153,11 +155,11 @@ describe("HomeScreen（英語ロケール）", () => {
       });
 
       // Act
-      const { getByText } = render(<HomeScreen />);
+      const { getByText } = await render(<HomeScreen />);
 
       // Assert
       await waitFor(() => {
-        expect(getByText("Offline: No cache available")).toBeTruthy();
+        expect(getByText("Offline: no cached articles")).toBeTruthy();
       });
     });
   });
@@ -171,7 +173,7 @@ describe("HomeScreen（英語ロケール）", () => {
       });
 
       // Act
-      const { queryByText } = render(<HomeScreen />);
+      const { queryByText } = await render(<HomeScreen />);
 
       // Assert
       await waitFor(() => {
@@ -188,7 +190,7 @@ describe("HomeScreen（英語ロケール）", () => {
       });
 
       // Act
-      const { queryByText } = render(<HomeScreen />);
+      const { queryByText } = await render(<HomeScreen />);
 
       // Assert
       await waitFor(() => {
