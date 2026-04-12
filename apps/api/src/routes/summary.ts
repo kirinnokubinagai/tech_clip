@@ -24,13 +24,13 @@ import {
 } from "../lib/http-status";
 import { createLogger } from "../lib/logger";
 import type { SummaryResult } from "../services/summary";
+import { SUPPORTED_LANGUAGES } from "../validators/ai";
 
 const ARTICLE_NOT_FOUND_MESSAGE = "記事が見つかりません";
 const SUMMARY_NOT_FOUND_MESSAGE = "要約が見つかりません";
 const INTERNAL_ERROR_CODE = "INTERNAL_ERROR";
 const SUMMARY_GENERATION_ERROR_MESSAGE = "要約の生成に失敗しました";
 const NO_CONTENT_ERROR_MESSAGE = "記事のコンテンツがありません";
-const SUPPORTED_LANGUAGES = ["ja", "en", "zh", "ko"] as const;
 const DEFAULT_LANGUAGE = "ja";
 
 /** KV キャッシュに保存する要約データの形式 */
@@ -52,7 +52,7 @@ const CreateSummarySchema = z.object({
 type SummarizeFn = (params: {
   ai: Ai;
   content: string;
-  language: string;
+  language: (typeof SUPPORTED_LANGUAGES)[number];
   modelTag?: string;
 }) => Promise<SummaryResult>;
 

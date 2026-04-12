@@ -1,17 +1,14 @@
 import { z } from "zod";
 
-/** 翻訳でサポートされる言語 */
-const TRANSLATION_SUPPORTED_LANGUAGES = ["en", "ja"] as const;
-
-/** 要約でサポートされる言語 */
-const SUMMARY_SUPPORTED_LANGUAGES = ["ja", "en", "zh", "ko"] as const;
+/** サポートされる言語 */
+export const SUPPORTED_LANGUAGES = ["en", "ja", "zh", "zh-CN", "zh-TW", "ko"] as const;
 
 /**
  * 翻訳生成リクエストのZodスキーマ
  */
 export const GenerateTranslationSchema = z.object({
-  targetLanguage: z.enum(TRANSLATION_SUPPORTED_LANGUAGES, {
-    error: "targetLanguageはenまたはjaで指定してください",
+  targetLanguage: z.enum(SUPPORTED_LANGUAGES, {
+    error: `targetLanguageは${SUPPORTED_LANGUAGES.join("、")}で指定してください`,
   }),
 });
 
@@ -20,8 +17,8 @@ export const GenerateTranslationSchema = z.object({
  */
 export const GenerateSummarySchema = z.object({
   language: z
-    .enum(SUMMARY_SUPPORTED_LANGUAGES, {
-      error: "languageはja, en, zh, koのいずれかで指定してください",
+    .enum(SUPPORTED_LANGUAGES, {
+      error: `languageは${SUPPORTED_LANGUAGES.join("、")}で指定してください`,
     })
     .optional(),
 });
@@ -31,3 +28,13 @@ export type GenerateTranslationInput = z.infer<typeof GenerateTranslationSchema>
 
 /** GenerateSummarySchemaの型 */
 export type GenerateSummaryInput = z.infer<typeof GenerateSummarySchema>;
+
+/**
+ * 値がサポート言語コードかどうかを判定する型ガード
+ *
+ * @param v - 検証対象の文字列
+ * @returns SUPPORTED_LANGUAGES のいずれかかどうか
+ */
+export function isSupportedLanguage(v: string): v is (typeof SUPPORTED_LANGUAGES)[number] {
+  return (SUPPORTED_LANGUAGES as readonly string[]).includes(v);
+}

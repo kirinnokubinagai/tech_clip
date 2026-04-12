@@ -1,16 +1,24 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # pre-commit: mainブランチ保護 + シークレット検知
 
-# mainブランチへの直接コミットをブロック
-BRANCH=$(git branch --show-current 2>/dev/null)
-if [ "$BRANCH" = "main" ] || [ "$BRANCH" = "master" ]; then
-  echo ""
-  echo "🚫 mainブランチへの直接コミットは禁止されています"
-  echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-  echo "Worktreeを作成してください:"
-  echo "  WORKTREE_BASE=\$(dirname \"\$(git rev-parse --show-toplevel)\")"
-  echo "  git worktree add \"\${WORKTREE_BASE}/issue-N\" -b issue/N/short-desc"
-  echo ""
+# main ブランチへの直接コミットをブロック
+branch=$(git symbolic-ref --short HEAD 2>/dev/null || true)
+if [[ -z "${branch}" ]]; then
+  # Detached HEAD: HEAD が main/master コミットと一致するか確認
+  head_sha=$(git rev-parse HEAD 2>/dev/null || true)
+  main_sha=$(git rev-parse refs/heads/main 2>/dev/null || true)
+  master_sha=$(git rev-parse refs/heads/master 2>/dev/null || true)
+  if [[ -n "${head_sha}" && -n "${main_sha}" && "${head_sha}" == "${main_sha}" ]]; then
+    branch="main"
+  elif [[ -n "${head_sha}" && -n "${master_sha}" && "${head_sha}" == "${master_sha}" ]]; then
+    branch="master"
+  fi
+fi
+
+if [[ "${branch}" == "main" || "${branch}" == "master" ]]; then
+  echo "ERROR: main ブランチへの直接コミットは禁止されています。" >&2
+  echo "       Issue に対応する worktree を作成してから作業してください:" >&2
+  echo "         bash scripts/create-worktree.sh <issue-number> <description>" >&2
   exit 1
 fi
 

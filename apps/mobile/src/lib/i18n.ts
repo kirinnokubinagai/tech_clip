@@ -4,47 +4,62 @@ import { initReactI18next } from "react-i18next";
 
 import en from "../locales/en.json";
 import ja from "../locales/ja.json";
-
-/** サポートする言語一覧 */
-const SUPPORTED_LANGUAGES = ["ja", "en"] as const;
-
-/** デフォルト言語 */
-const DEFAULT_LANGUAGE = "ja";
+import ko from "../locales/ko.json";
+import zhCN from "../locales/zh-CN.json";
+import zhTW from "../locales/zh-TW.json";
+import {
+  DEFAULT_UI_LANGUAGE,
+  resolveChineseVariant,
+  SUPPORTED_UI_LANGUAGES,
+  type UiLanguage,
+} from "./language-code";
 
 /**
  * デバイスのロケールからサポート言語を解決する
  *
+ * languageTag を優先使用し zh-Hans-* → zh-CN、zh-Hant-* → zh-TW のマッピングを行う
+ *
  * @returns サポートされている言語コード
  */
-function resolveDeviceLanguage(): string {
+function resolveDeviceLanguage(): UiLanguage {
   const locales = getLocales();
   if (locales.length === 0) {
-    return DEFAULT_LANGUAGE;
+    return DEFAULT_UI_LANGUAGE;
   }
 
-  const deviceLang = locales[0]?.languageCode;
-  if (!deviceLang) {
-    return DEFAULT_LANGUAGE;
+  const locale = locales[0];
+  if (!locale) {
+    return DEFAULT_UI_LANGUAGE;
   }
 
-  const isSupported = SUPPORTED_LANGUAGES.includes(
-    deviceLang as (typeof SUPPORTED_LANGUAGES)[number],
-  );
+  const tag = locale.languageTag ?? "";
+  const code = locale.languageCode ?? "";
+
+  const chineseVariant = resolveChineseVariant(tag, code);
+  if (chineseVariant !== null) {
+    return chineseVariant;
+  }
+
+  const isSupported = SUPPORTED_UI_LANGUAGES.includes(code as UiLanguage);
   if (!isSupported) {
-    return DEFAULT_LANGUAGE;
+    return DEFAULT_UI_LANGUAGE;
   }
 
-  return deviceLang;
+  return code as UiLanguage;
 }
 
 i18n.use(initReactI18next).init({
   resources: {
     ja: { translation: ja },
     en: { translation: en },
+    "zh-CN": { translation: zhCN },
+    "zh-TW": { translation: zhTW },
+    ko: { translation: ko },
   },
   lng: resolveDeviceLanguage(),
-  fallbackLng: DEFAULT_LANGUAGE,
+  fallbackLng: ["en", "ja"],
   interpolation: {
+    // React Native では XSS リスクが低いため false に設定
     escapeValue: false,
   },
 });

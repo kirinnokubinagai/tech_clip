@@ -1,5 +1,8 @@
 import { DEFAULT_GEMMA_MODEL_TAG, WORKERS_AI_GEMMA_MODEL_ID } from "../lib/ai-model";
+import { LANGUAGE_DISPLAY_NAMES } from "../lib/language-display-names";
 import { createLogger } from "../lib/logger";
+import { isWorkersAiTextResponse } from "../lib/workers-ai";
+import type { SUPPORTED_LANGUAGES } from "../validators/ai";
 
 /** 要約生成結果 */
 export type SummaryResult = {
@@ -12,17 +15,9 @@ export type SummarizeArticleParams = {
   /** Cloudflare Workers AI バインディング */
   ai: Ai;
   content: string;
-  language: string;
+  language: (typeof SUPPORTED_LANGUAGES)[number];
   /** DB 保存用モデルタグ override（省略時は DEFAULT_GEMMA_MODEL_TAG を使用） */
   modelTag?: string;
-};
-
-/** 言語名マッピング */
-const LANGUAGE_NAMES: Record<string, string> = {
-  ja: "Japanese",
-  en: "English",
-  zh: "Chinese",
-  ko: "Korean",
 };
 
 /** 入力コンテンツ最大文字数（約6000トークン相当） */
@@ -70,20 +65,6 @@ export function sanitizeArticleContent(content: string): string {
 }
 
 /**
- * Workers AI レスポンスの型ガード
- *
- * @param value - 検証対象の値
- * @returns response フィールドが string かどうか
- */
-function isWorkersAiTextResponse(value: unknown): value is { response: string } {
-  if (typeof value !== "object" || value === null) {
-    return false;
-  }
-  const v = value as Record<string, unknown>;
-  return typeof v.response === "string";
-}
-
-/**
  * 記事コンテンツを Workers AI (Gemma) で要約する
  *
  * @param params - 要約パラメータ
@@ -94,7 +75,7 @@ export async function summarizeArticle(params: SummarizeArticleParams): Promise<
   const { ai, content, language, modelTag } = params;
   const resolvedModelTag = modelTag ?? DEFAULT_GEMMA_MODEL_TAG;
   const sanitized = sanitizeArticleContent(content);
-  const languageName = LANGUAGE_NAMES[language] ?? "Japanese";
+  const languageName = LANGUAGE_DISPLAY_NAMES[language];
 
   const systemPrompt = `Summarize the following article in ${languageName}. Provide:
 1. A concise summary (2-3 sentences)

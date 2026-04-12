@@ -57,6 +57,12 @@
             "command": "bash \"$(git rev-parse --show-toplevel 2>/dev/null || echo .)/.claude/hooks/pre-push-review-guard.sh\"",
             "timeout": 5,
             "statusMessage": "Checking review status..."
+          },
+          {
+            "type": "command",
+            "command": "bash \"$(git rev-parse --show-toplevel 2>/dev/null || echo .)/.claude/hooks/main-commit-guard.sh\"",
+            "timeout": 5,
+            "statusMessage": "Checking branch for commit..."
           }
         ]
       },
@@ -93,12 +99,6 @@
           },
           {
             "type": "command",
-            "command": "bash \"$(git rev-parse --show-toplevel 2>/dev/null || echo .)/.claude/hooks/main-edit-guard.sh\"",
-            "timeout": 5,
-            "statusMessage": "Checking branch for edit..."
-          },
-          {
-            "type": "command",
             "command": "bash \"$(git rev-parse --show-toplevel 2>/dev/null || echo .)/.claude/hooks/worktree-isolation-guard.sh\"",
             "timeout": 5,
             "statusMessage": "Checking worktree isolation..."
@@ -122,15 +122,61 @@
           },
           {
             "type": "command",
-            "command": "bash \"$(git rev-parse --show-toplevel 2>/dev/null || echo .)/.claude/hooks/main-edit-guard.sh\"",
+            "command": "bash \"$(git rev-parse --show-toplevel 2>/dev/null || echo .)/.claude/hooks/worktree-isolation-guard.sh\"",
             "timeout": 5,
-            "statusMessage": "Checking branch for write..."
+            "statusMessage": "Checking worktree isolation..."
+          },
+          {
+            "type": "command",
+            "command": "bash \"$(git rev-parse --show-toplevel 2>/dev/null || echo .)/.claude/hooks/diagnosis-first-guard.sh\"",
+            "timeout": 5,
+            "statusMessage": "Diagnosis-first check..."
+          }
+        ]
+      },
+      {
+        "matcher": "MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"$(git rev-parse --show-toplevel 2>/dev/null || echo .)/.claude/hooks/orchestrator-direct-edit-guard.sh\"",
+            "timeout": 5,
+            "statusMessage": "Checking orchestrator direct edit..."
           },
           {
             "type": "command",
             "command": "bash \"$(git rev-parse --show-toplevel 2>/dev/null || echo .)/.claude/hooks/worktree-isolation-guard.sh\"",
             "timeout": 5,
             "statusMessage": "Checking worktree isolation..."
+          },
+          {
+            "type": "command",
+            "command": "bash \"$(git rev-parse --show-toplevel 2>/dev/null || echo .)/.claude/hooks/diagnosis-first-guard.sh\"",
+            "timeout": 5,
+            "statusMessage": "Diagnosis-first check..."
+          }
+        ]
+      },
+      {
+        "matcher": "NotebookEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"$(git rev-parse --show-toplevel 2>/dev/null || echo .)/.claude/hooks/orchestrator-direct-edit-guard.sh\"",
+            "timeout": 5,
+            "statusMessage": "Checking orchestrator direct edit..."
+          },
+          {
+            "type": "command",
+            "command": "bash \"$(git rev-parse --show-toplevel 2>/dev/null || echo .)/.claude/hooks/worktree-isolation-guard.sh\"",
+            "timeout": 5,
+            "statusMessage": "Checking worktree isolation..."
+          },
+          {
+            "type": "command",
+            "command": "bash \"$(git rev-parse --show-toplevel 2>/dev/null || echo .)/.claude/hooks/diagnosis-first-guard.sh\"",
+            "timeout": 5,
+            "statusMessage": "Diagnosis-first check..."
           }
         ]
       }
@@ -150,6 +196,12 @@
             "command": "bash \"$(git rev-parse --show-toplevel 2>/dev/null || echo .)/.claude/hooks/post-push-cleanup.sh\"",
             "timeout": 5,
             "statusMessage": "Cleaning up review marker..."
+          },
+          {
+            "type": "command",
+            "command": "bash \"$(git rev-parse --show-toplevel 2>/dev/null || echo .)/.claude/hooks/post-pr-create-poll.sh\"",
+            "timeout": 15,
+            "statusMessage": "Starting PR review polling..."
           }
         ]
       }

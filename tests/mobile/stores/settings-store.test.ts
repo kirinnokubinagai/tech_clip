@@ -11,6 +11,10 @@ jest.mock("expo-localization", () => ({
   getLocales: jest.fn(() => [{ languageCode: "ja" }]),
 }));
 
+jest.mock("i18next", () => ({
+  changeLanguage: jest.fn().mockResolvedValue(undefined),
+}));
+
 import { LANGUAGE_LABEL_MAP, useSettingsStore } from "@mobile/stores/settings-store";
 import { getLocales } from "expo-localization";
 import * as SecureStore from "expo-secure-store";
@@ -203,6 +207,109 @@ describe("useSettingsStore", () => {
         // Assert
         expect(label).toBe("English");
       });
+
+      it("zh-CNの表示名が简体中文であること", () => {
+        // Arrange
+        useSettingsStore.setState({ language: "zh-CN" });
+
+        // Act
+        const label = LANGUAGE_LABEL_MAP[useSettingsStore.getState().language];
+
+        // Assert
+        expect(label).toBe("简体中文");
+      });
+
+      it("zh-TWの表示名が繁體中文であること", () => {
+        // Arrange
+        useSettingsStore.setState({ language: "zh-TW" });
+
+        // Act
+        const label = LANGUAGE_LABEL_MAP[useSettingsStore.getState().language];
+
+        // Assert
+        expect(label).toBe("繁體中文");
+      });
+
+      it("koの表示名が한국어であること", () => {
+        // Arrange
+        useSettingsStore.setState({ language: "ko" });
+
+        // Act
+        const label = LANGUAGE_LABEL_MAP[useSettingsStore.getState().language];
+
+        // Assert
+        expect(label).toBe("한국어");
+      });
+    });
+
+    describe("setLanguage（新言語）", () => {
+      it("zh-CNを設定してSecureStoreに永続化できること", async () => {
+        // Act
+        await useSettingsStore.getState().setLanguage("zh-CN");
+
+        // Assert
+        expect(useSettingsStore.getState().language).toBe("zh-CN");
+        expect(mockSetItemAsync).toHaveBeenCalledWith("settings_language", JSON.stringify("zh-CN"));
+      });
+
+      it("zh-TWを設定してSecureStoreに永続化できること", async () => {
+        // Act
+        await useSettingsStore.getState().setLanguage("zh-TW");
+
+        // Assert
+        expect(useSettingsStore.getState().language).toBe("zh-TW");
+        expect(mockSetItemAsync).toHaveBeenCalledWith("settings_language", JSON.stringify("zh-TW"));
+      });
+
+      it("koを設定してSecureStoreに永続化できること", async () => {
+        // Act
+        await useSettingsStore.getState().setLanguage("ko");
+
+        // Assert
+        expect(useSettingsStore.getState().language).toBe("ko");
+        expect(mockSetItemAsync).toHaveBeenCalledWith("settings_language", JSON.stringify("ko"));
+      });
+    });
+
+    describe("loadLanguage（新言語）", () => {
+      it("保存済みのlocaleコード（zh-CN）を読み込めること", async () => {
+        // Arrange
+        mockGetItemAsync.mockResolvedValue('"zh-CN"');
+
+        // Act
+        await useSettingsStore.getState().loadLanguage();
+
+        // Assert
+        const state = useSettingsStore.getState();
+        expect(state.language).toBe("zh-CN");
+        expect(state.isLanguageLoaded).toBe(true);
+      });
+
+      it("保存済みのlocaleコード（zh-TW）を読み込めること", async () => {
+        // Arrange
+        mockGetItemAsync.mockResolvedValue('"zh-TW"');
+
+        // Act
+        await useSettingsStore.getState().loadLanguage();
+
+        // Assert
+        const state = useSettingsStore.getState();
+        expect(state.language).toBe("zh-TW");
+        expect(state.isLanguageLoaded).toBe(true);
+      });
+
+      it("保存済みのlocaleコード（ko）を読み込めること", async () => {
+        // Arrange
+        mockGetItemAsync.mockResolvedValue('"ko"');
+
+        // Act
+        await useSettingsStore.getState().loadLanguage();
+
+        // Assert
+        const state = useSettingsStore.getState();
+        expect(state.language).toBe("ko");
+        expect(state.isLanguageLoaded).toBe(true);
+      });
     });
   });
 
@@ -388,6 +495,48 @@ describe("useSettingsStore", () => {
         expect(useSettingsStore.getState().summaryLanguage).toBe("en");
       });
 
+      it("デバイスが zh-Hans-CN の場合 zh-CN に解決されること", async () => {
+        // Arrange
+        mockGetItemAsync.mockResolvedValue(null);
+        mockGetLocales.mockReturnValue([
+          { languageCode: "zh-Hans", languageTag: "zh-Hans-CN" },
+        ] as ReturnType<typeof getLocales>);
+
+        // Act
+        await useSettingsStore.getState().loadSummaryLanguage();
+
+        // Assert
+        expect(useSettingsStore.getState().summaryLanguage).toBe("zh-CN");
+      });
+
+      it("デバイスが zh-Hant-TW の場合 zh-TW に解決されること", async () => {
+        // Arrange
+        mockGetItemAsync.mockResolvedValue(null);
+        mockGetLocales.mockReturnValue([
+          { languageCode: "zh-Hant", languageTag: "zh-Hant-TW" },
+        ] as ReturnType<typeof getLocales>);
+
+        // Act
+        await useSettingsStore.getState().loadSummaryLanguage();
+
+        // Assert
+        expect(useSettingsStore.getState().summaryLanguage).toBe("zh-TW");
+      });
+
+      it("デバイスが zh-HK の場合 zh-TW に解決されること", async () => {
+        // Arrange
+        mockGetItemAsync.mockResolvedValue(null);
+        mockGetLocales.mockReturnValue([{ languageCode: "zh", languageTag: "zh-HK" }] as ReturnType<
+          typeof getLocales
+        >);
+
+        // Act
+        await useSettingsStore.getState().loadSummaryLanguage();
+
+        // Assert
+        expect(useSettingsStore.getState().summaryLanguage).toBe("zh-TW");
+      });
+
       it("保存値がJSON不正の場合はデバイス言語にフォールバックすること", async () => {
         // Arrange
         mockGetItemAsync.mockResolvedValue("invalid-json{{{");
@@ -486,6 +635,36 @@ describe("useSettingsStore", () => {
         expect(mockSetItemAsync).toHaveBeenCalledWith(
           "settings_summary_language",
           JSON.stringify("zh"),
+        );
+      });
+
+      it("要約言語をzh-CNに変更してSecureStoreに永続化できること", async () => {
+        // Arrange
+        const newLanguage = "zh-CN" as const;
+
+        // Act
+        await useSettingsStore.getState().setSummaryLanguage(newLanguage);
+
+        // Assert
+        expect(useSettingsStore.getState().summaryLanguage).toBe("zh-CN");
+        expect(mockSetItemAsync).toHaveBeenCalledWith(
+          "settings_summary_language",
+          JSON.stringify("zh-CN"),
+        );
+      });
+
+      it("要約言語をzh-TWに変更してSecureStoreに永続化できること", async () => {
+        // Arrange
+        const newLanguage = "zh-TW" as const;
+
+        // Act
+        await useSettingsStore.getState().setSummaryLanguage(newLanguage);
+
+        // Assert
+        expect(useSettingsStore.getState().summaryLanguage).toBe("zh-TW");
+        expect(mockSetItemAsync).toHaveBeenCalledWith(
+          "settings_summary_language",
+          JSON.stringify("zh-TW"),
         );
       });
 

@@ -17,9 +17,9 @@ describe("i18n", () => {
       expect(i18n.hasResourceBundle("en", "translation")).toBe(true);
     });
 
-    it("フォールバック言語が日本語であること", async () => {
+    it("フォールバック言語として英語・日本語の順であること", async () => {
       // Assert
-      expect(i18n.options.fallbackLng).toContain("ja");
+      expect(i18n.options.fallbackLng).toEqual(["en", "ja"]);
     });
   });
 
@@ -100,6 +100,108 @@ describe("i18n", () => {
 
       // Assert
       expect(result).toBe("Password must be at least 8 characters");
+    });
+  });
+
+  describe("簡体中文（zh-CN）翻訳", () => {
+    beforeEach(() => {
+      i18n.changeLanguage("zh-CN");
+    });
+
+    afterEach(() => {
+      i18n.changeLanguage("ja");
+    });
+
+    it("auth.loginを簡体中文で翻訳できること", () => {
+      // Act
+      const result = i18n.t("auth.login");
+
+      // Assert
+      expect(result).toBe("登录");
+    });
+
+    it("common.loadingを簡体中文で翻訳できること", () => {
+      // Act
+      const result = i18n.t("common.loading");
+
+      // Assert
+      expect(result).toBe("加载中...");
+    });
+
+    it("インターポレーションが簡体中文でも機能すること", () => {
+      // Act
+      const result = i18n.t("auth.validation.passwordMinLength", { min: 8 });
+
+      // Assert
+      expect(result).toContain("8");
+    });
+  });
+
+  describe("繁體中文（zh-TW）翻訳", () => {
+    beforeEach(() => {
+      i18n.changeLanguage("zh-TW");
+    });
+
+    afterEach(() => {
+      i18n.changeLanguage("ja");
+    });
+
+    it("auth.loginを繁體中文で翻訳できること", () => {
+      // Act
+      const result = i18n.t("auth.login");
+
+      // Assert
+      expect(result).toBe("登入");
+    });
+
+    it("common.loadingを繁體中文で翻訳できること", () => {
+      // Act
+      const result = i18n.t("common.loading");
+
+      // Assert
+      expect(result).toBe("載入中...");
+    });
+
+    it("インターポレーションが繁體中文でも機能すること", () => {
+      // Act
+      const result = i18n.t("auth.validation.passwordMinLength", { min: 8 });
+
+      // Assert
+      expect(result).toContain("8");
+    });
+  });
+
+  describe("한국어（ko）翻訳", () => {
+    beforeEach(() => {
+      i18n.changeLanguage("ko");
+    });
+
+    afterEach(() => {
+      i18n.changeLanguage("ja");
+    });
+
+    it("auth.loginを韓国語で翻訳できること", () => {
+      // Act
+      const result = i18n.t("auth.login");
+
+      // Assert
+      expect(result).toBe("로그인");
+    });
+
+    it("common.loadingを韓国語で翻訳できること", () => {
+      // Act
+      const result = i18n.t("common.loading");
+
+      // Assert
+      expect(result).toBe("불러오는 중...");
+    });
+
+    it("インターポレーションが韓国語でも機能すること", () => {
+      // Act
+      const result = i18n.t("auth.validation.passwordMinLength", { min: 8 });
+
+      // Assert
+      expect(result).toContain("8");
     });
   });
 

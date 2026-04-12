@@ -26,12 +26,12 @@ import {
 } from "../lib/http-status";
 import { createLogger } from "../lib/logger";
 import type { TranslateArticleParams, TranslationResult } from "../services/translator";
+import { SUPPORTED_LANGUAGES } from "../validators/ai";
 
 const ARTICLE_NOT_FOUND_MESSAGE = "記事が見つかりません";
 const TRANSLATION_NOT_FOUND_MESSAGE = "翻訳が見つかりません";
 const TRANSLATION_ERROR_MESSAGE = "翻訳処理に失敗しました";
 const NO_CONTENT_MESSAGE = "翻訳するコンテンツがありません";
-const SUPPORTED_LANGUAGES = ["en", "ja"] as const;
 const DEFAULT_TARGET_LANGUAGE = "en";
 
 /** KV キャッシュ TTL（90日 = 秒単位） */
@@ -42,7 +42,7 @@ const KV_KEY_PREFIX = "translate:v1";
 
 const TranslateRequestSchema = z.object({
   targetLanguage: z.enum(SUPPORTED_LANGUAGES, {
-    error: "targetLanguageはenまたはjaで指定してください",
+    error: `targetLanguageは${SUPPORTED_LANGUAGES.join("、")}で指定してください`,
   }),
 });
 
