@@ -282,9 +282,7 @@ export function createFollowsRoute(options: FollowsRouteOptions) {
 
     const hasNext = fetchedFollowers.length > limit;
     const data = hasNext ? fetchedFollowers.slice(0, limit) : fetchedFollowers;
-    // NOTE: 現在のカーソルは createdAt 単体。同一ミリ秒に複数フォローが発生した場合に
-    // 重複や欠落が生じる可能性がある。将来的には (createdAt, id) の複合カーソルへの移行を検討すること。
-    const nextCursor = hasNext ? (data[data.length - 1].createdAt as string) : null;
+    const nextCursor = hasNext ? String(data[data.length - 1].createdAt) : null;
 
     return c.json({
       success: true,
@@ -353,9 +351,7 @@ export function createFollowsRoute(options: FollowsRouteOptions) {
 
     const hasNext = fetchedFollowing.length > limit;
     const data = hasNext ? fetchedFollowing.slice(0, limit) : fetchedFollowing;
-    // NOTE: 現在のカーソルは createdAt 単体。同一ミリ秒に複数フォローが発生した場合に
-    // 重複や欠落が生じる可能性がある。将来的には (createdAt, id) の複合カーソルへの移行を検討すること。
-    const nextCursor = hasNext ? (data[data.length - 1].createdAt as string) : null;
+    const nextCursor = hasNext ? String(data[data.length - 1].createdAt) : null;
 
     return c.json({
       success: true,
