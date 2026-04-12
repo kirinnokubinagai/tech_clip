@@ -156,9 +156,15 @@
     "guestUser": "訪客用戶",
     "loadingUser": "載入中...",
     "fetchError": "取得用戶資訊失敗",
+    "retryHint": "重新取得用戶資訊",
+    "backHint": "返回上一個頁面",
+    "loadingHint": "請稍候",
     "back": "返回",
     "edit": {
       "title": "編輯個人資料",
+      "nameLabel": "姓名",
+      "usernameLabel": "使用者名稱",
+      "bioLabel": "簡介",
       "namePlaceholder": "請輸入姓名",
       "usernamePlaceholder": "username",
       "bioPlaceholder": "請輸入個人簡介",
@@ -281,7 +287,7 @@
     "pages": {
       "save": {
         "title": "一鍵儲存技術文章",
-        "description": "支援Zenn、Qiita、dev.to等18個網站，隨時儲存感興趣的文章。"
+        "description": "支援Zenn、Qiita、dev.to等{{count}}個來源，隨時儲存感興趣的文章。"
       },
       "ai": {
         "title": "AI摘要與翻譯",
@@ -298,7 +304,13 @@
     },
     "skip": "跳過",
     "next": "下一步",
-    "start": "開始"
+    "start": "開始",
+    "accessibility": {
+      "pageIndicator": "第{{current}}頁（共{{total}}頁）",
+      "nextPageHint": "前往第{{next}}頁",
+      "skipHint": "跳過引導並前往登入畫面",
+      "startHint": "前往建立帳號畫面"
+    }
   },
   "shareIntent": {
     "loading": "載入中",

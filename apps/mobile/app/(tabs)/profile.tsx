@@ -1,4 +1,5 @@
 import { useRouter } from "expo-router";
+import { useTranslation } from "react-i18next";
 import { ActivityIndicator, Pressable, ScrollView, Text, View } from "react-native";
 
 import type { ProfileHeaderUser } from "@/components/ProfileHeader";
@@ -36,6 +37,7 @@ function toProfileHeaderUser(user: { name: string; image: string | null }): Prof
  * 未ログインの場合はログイン誘導メッセージとボタンを表示する。
  */
 export default function ProfileScreen() {
+  const { t } = useTranslation();
   const router = useRouter();
   const user = useAuthStore((s) => s.user);
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
@@ -65,7 +67,7 @@ export default function ProfileScreen() {
             testID="profile-guest-message"
             className="text-base text-text-muted text-center mb-6"
           >
-            ログインすると保存した記事やお気に入りが表示されます
+            {t("profile.loginPrompt")}
           </Text>
           <Pressable
             testID="profile-login-button"
@@ -87,9 +89,7 @@ export default function ProfileScreen() {
     <ScrollView className="flex-1 bg-background">
       <ProfileHeader user={profileUser} onSettingsPress={handleSettingsPress} />
       <View className="flex-1 items-center justify-center px-4 py-12">
-        <Text className="text-base text-text-muted text-center">
-          保存した記事やお気に入りがここに表示されます
-        </Text>
+        <Text className="text-base text-text-muted text-center">{t("profile.savedArticles")}</Text>
       </View>
     </ScrollView>
   );

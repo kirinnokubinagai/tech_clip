@@ -1,10 +1,18 @@
 import OnboardingScreen from "@mobile-app/onboarding";
 import { fireEvent, render, waitFor } from "@testing-library/react-native";
 
+/** テスト用ソース数（sources.ts の SUPPORTED_SOURCE_COUNT と一致させる） */
+const MOCK_SOURCE_COUNT = 19;
+
 jest.mock("expo-router", () => ({
   router: {
     replace: jest.fn(),
   },
+}));
+
+jest.mock("@/lib/constants", () => ({
+  LIGHT_COLORS: { neutral: "#44403c" },
+  SUPPORTED_SOURCE_COUNT: 19,
 }));
 
 const mockSetHasSeenOnboarding = jest.fn().mockResolvedValue(undefined);
@@ -127,6 +135,20 @@ describe("OnboardingScreen", () => {
         expect(mockRouter.replace).toHaveBeenCalledWith("/(auth)/login");
       });
       expect(mockSetHasSeenOnboarding).toHaveBeenCalledWith(true);
+    });
+  });
+
+  describe("i18n", () => {
+    it("最初のページの説明文にソース数が表示されること", async () => {
+      // Arrange & Act
+      const { getByText } = await render(<OnboardingScreen />);
+
+      // Assert
+      expect(
+        getByText(
+          `Zenn、Qiita、dev.toなど${MOCK_SOURCE_COUNT}ソースに対応。気になった記事をすぐ保存できます。`,
+        ),
+      ).toBeDefined();
     });
   });
 
