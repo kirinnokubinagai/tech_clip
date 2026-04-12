@@ -88,7 +88,7 @@ export default function UserProfileScreen() {
           className="mt-4 bg-primary rounded-lg px-6 py-3"
           accessibilityRole="button"
           accessibilityLabel={t("common.retry")}
-          accessibilityHint={t("profile.fetchError")}
+          accessibilityHint={t("profile.retryHint")}
         >
           <Text className="text-white font-semibold">{t("common.retry")}</Text>
         </Pressable>
@@ -97,7 +97,7 @@ export default function UserProfileScreen() {
           className="mt-3"
           accessibilityRole="button"
           accessibilityLabel={t("profile.back")}
-          accessibilityHint={t("profile.back")}
+          accessibilityHint={t("profile.backHint")}
         >
           <Text className="text-primary">{t("profile.back")}</Text>
         </Pressable>

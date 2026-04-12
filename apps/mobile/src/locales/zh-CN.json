@@ -156,6 +156,9 @@
     "guestUser": "访客用户",
     "loadingUser": "加载中...",
     "fetchError": "获取用户信息失败",
+    "retryHint": "重新获取用户信息",
+    "backHint": "返回上一个页面",
+    "loadingHint": "请稍候",
     "back": "返回",
     "edit": {
       "title": "编辑个人资料",

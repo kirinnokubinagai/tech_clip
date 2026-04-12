@@ -27,7 +27,7 @@ export function ProfileSkeleton() {
     <View
       className="items-center px-4 pt-8"
       accessibilityLabel={t("profile.loadingUser")}
-      accessibilityHint={t("common.loading")}
+      accessibilityHint={t("profile.loadingHint")}
       accessible={true}
     >
       <Skeleton width={AVATAR_SIZE} height={AVATAR_SIZE} borderRadius={40} />

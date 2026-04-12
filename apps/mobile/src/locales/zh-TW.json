@@ -156,6 +156,9 @@
     "guestUser": "訪客用戶",
     "loadingUser": "載入中...",
     "fetchError": "取得用戶資訊失敗",
+    "retryHint": "重新取得用戶資訊",
+    "backHint": "返回上一個頁面",
+    "loadingHint": "請稍候",
     "back": "返回",
     "edit": {
       "title": "編輯個人資料",
