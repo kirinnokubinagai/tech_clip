@@ -6,10 +6,13 @@
 import LoginScreen from "@mobile-app/(auth)/login";
 import { render } from "@testing-library/react-native";
 
-import { i18nEnMockFactory } from "../helpers/i18n-en-mock";
-
 /** en.json から実際の英語翻訳を解決するモック */
-jest.mock("react-i18next", i18nEnMockFactory);
+jest.mock("react-i18next", () => {
+  const { i18nEnMockFactory } = jest.requireActual("../helpers/i18n-en-mock") as {
+    i18nEnMockFactory: () => unknown;
+  };
+  return (i18nEnMockFactory as () => unknown)();
+});
 
 const mockSignIn = jest.fn();
 
@@ -35,7 +38,7 @@ describe("LoginScreen（英語ロケール）", () => {
   describe("ページタイトル・タグライン", () => {
     it("アプリタグラインが英語で表示されること", async () => {
       // Arrange & Act
-      const { getByText } = render(<LoginScreen />);
+      const { getByText } = await render(<LoginScreen />);
 
       // Assert
       expect(getByText("Tech news summarized by AI")).toBeTruthy();
@@ -45,7 +48,7 @@ describe("LoginScreen（英語ロケール）", () => {
   describe("フォームラベル", () => {
     it("メールアドレスラベルが英語で表示されること", async () => {
       // Arrange & Act
-      const { getByText } = render(<LoginScreen />);
+      const { getByText } = await render(<LoginScreen />);
 
       // Assert
       expect(getByText("Email")).toBeTruthy();
@@ -53,7 +56,7 @@ describe("LoginScreen（英語ロケール）", () => {
 
     it("パスワードラベルが英語で表示されること", async () => {
       // Arrange & Act
-      const { getByText } = render(<LoginScreen />);
+      const { getByText } = await render(<LoginScreen />);
 
       // Assert
       expect(getByText("Password")).toBeTruthy();
@@ -63,7 +66,7 @@ describe("LoginScreen（英語ロケール）", () => {
   describe("ボタン・リンク", () => {
     it("ログインボタンが英語で表示されること", async () => {
       // Arrange & Act
-      const { getByTestId } = render(<LoginScreen />);
+      const { getByTestId } = await render(<LoginScreen />);
 
       // Assert
       expect(getByTestId("login-submit-button")).toBeTruthy();
@@ -71,7 +74,7 @@ describe("LoginScreen（英語ロケール）", () => {
 
     it("パスワードリセット導線が英語で表示されること", async () => {
       // Arrange & Act
-      const { getByLabelText } = render(<LoginScreen />);
+      const { getByLabelText } = await render(<LoginScreen />);
 
       // Assert
       expect(getByLabelText("Forgot password?")).toBeTruthy();
@@ -79,7 +82,7 @@ describe("LoginScreen（英語ロケール）", () => {
 
     it("Googleログイン導線が英語で表示されること", async () => {
       // Arrange & Act
-      const { getByLabelText } = render(<LoginScreen />);
+      const { getByLabelText } = await render(<LoginScreen />);
 
       // Assert
       expect(getByLabelText("Continue with Google")).toBeTruthy();
@@ -87,7 +90,7 @@ describe("LoginScreen（英語ロケール）", () => {
 
     it("GitHubログイン導線が英語で表示されること", async () => {
       // Arrange & Act
-      const { getByLabelText } = render(<LoginScreen />);
+      const { getByLabelText } = await render(<LoginScreen />);
 
       // Assert
       expect(getByLabelText("Continue with GitHub")).toBeTruthy();
@@ -97,7 +100,7 @@ describe("LoginScreen（英語ロケール）", () => {
   describe("日本語ハードコードの不在確認", () => {
     it("「ログイン」という日本語テキストが表示されないこと", async () => {
       // Arrange & Act
-      const { queryByText } = render(<LoginScreen />);
+      const { queryByText } = await render(<LoginScreen />);
 
       // Assert
       expect(queryByText("ログイン")).toBeNull();
@@ -105,7 +108,7 @@ describe("LoginScreen（英語ロケール）", () => {
 
     it("「メールアドレス」という日本語テキストが表示されないこと", async () => {
       // Arrange & Act
-      const { queryByText } = render(<LoginScreen />);
+      const { queryByText } = await render(<LoginScreen />);
 
       // Assert
       expect(queryByText("メールアドレス")).toBeNull();
@@ -113,7 +116,7 @@ describe("LoginScreen（英語ロケール）", () => {
 
     it("「パスワード」という日本語テキストが表示されないこと", async () => {
       // Arrange & Act
-      const { queryByText } = render(<LoginScreen />);
+      const { queryByText } = await render(<LoginScreen />);
 
       // Assert
       expect(queryByText("パスワード")).toBeNull();
