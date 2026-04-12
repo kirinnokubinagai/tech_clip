@@ -19,7 +19,6 @@ const PRODUCTION_AVATAR_URL = "https://avatars.techclip.io";
  * @param params - クエリパラメータ（userId, limit, cursor）
  * @param filterColumn - WHERE 条件に使うカラム（followingId or followerId）
  * @param idColumn - SELECT して id として返すカラム（followerId or followingId）
- * @param joinColumn - users テーブルとの JOIN に使うカラム（followerId or followingId）
  * @returns フォローリストレコード配列
  */
 async function queryFollowList(
@@ -27,7 +26,6 @@ async function queryFollowList(
   params: FollowListQueryParams,
   filterColumn: typeof follows.followingId | typeof follows.followerId,
   idColumn: typeof follows.followerId | typeof follows.followingId,
-  joinColumn: typeof follows.followerId | typeof follows.followingId,
 ): Promise<Array<Record<string, unknown>>> {
   const conditions = [eq(filterColumn, params.userId)];
   if (params.cursor) {
@@ -42,7 +40,7 @@ async function queryFollowList(
       avatarUrl: users.avatarUrl,
     })
     .from(follows)
-    .leftJoin(users, eq(joinColumn, users.id))
+    .leftJoin(users, eq(idColumn, users.id))
     .where(and(...conditions))
     .orderBy(desc(follows.createdAt))
     .limit(params.limit);
@@ -95,9 +93,9 @@ export async function handleUsers(
         .where(and(eq(follows.followerId, followerId), eq(follows.followingId, followingId)));
     },
     getFollowersFn: async (params) =>
-      queryFollowList(db, params, follows.followingId, follows.followerId, follows.followerId),
+      queryFollowList(db, params, follows.followingId, follows.followerId),
     getFollowingFn: async (params) =>
-      queryFollowList(db, params, follows.followerId, follows.followingId, follows.followingId),
+      queryFollowList(db, params, follows.followerId, follows.followingId),
     isFollowingFn: async (followerId, followingId) => {
       const [result] = await db
         .select()

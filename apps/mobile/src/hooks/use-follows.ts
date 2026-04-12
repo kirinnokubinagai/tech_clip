@@ -100,10 +100,10 @@ async function fetchFollowing(userId: string, cursor: string | undefined): Promi
  * @returns TanStack QueryのuseInfiniteQuery結果
  */
 export function useFollowers(userId: string) {
-  return useInfiniteQuery({
+  return useInfiniteQuery<FollowListPage, Error, { pages: FollowListPage[] }, string[], string | undefined>({
     queryKey: [FOLLOWERS_QUERY_KEY, userId],
-    queryFn: ({ pageParam }) => fetchFollowers(userId, pageParam as string | undefined),
-    initialPageParam: undefined as string | undefined,
+    queryFn: ({ pageParam }) => fetchFollowers(userId, pageParam),
+    initialPageParam: undefined,
     getNextPageParam: (lastPage) => (lastPage.hasNext ? lastPage.nextCursor : undefined),
     enabled: !!userId,
   });
@@ -116,10 +116,10 @@ export function useFollowers(userId: string) {
  * @returns TanStack QueryのuseInfiniteQuery結果
  */
 export function useFollowing(userId: string) {
-  return useInfiniteQuery({
+  return useInfiniteQuery<FollowListPage, Error, { pages: FollowListPage[] }, string[], string | undefined>({
     queryKey: [FOLLOWING_QUERY_KEY, userId],
-    queryFn: ({ pageParam }) => fetchFollowing(userId, pageParam as string | undefined),
-    initialPageParam: undefined as string | undefined,
+    queryFn: ({ pageParam }) => fetchFollowing(userId, pageParam),
+    initialPageParam: undefined,
     getNextPageParam: (lastPage) => (lastPage.hasNext ? lastPage.nextCursor : undefined),
     enabled: !!userId,
   });

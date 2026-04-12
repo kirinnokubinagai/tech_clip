@@ -195,6 +195,20 @@ describe("FollowersScreen", () => {
     });
   });
 
+  describe("無限スクロール", () => {
+    it("リスト末尾に達したとき fetchNextPage が呼ばれること", async () => {
+      // Arrange
+      mockFollowersState.hasNextPage = true;
+
+      // Act
+      const { getByTestId } = await render(<FollowersScreen />);
+      fireEvent(getByTestId("followers-list"), "onEndReached");
+
+      // Assert
+      expect(mockFollowersState.fetchNextPage).toHaveBeenCalled();
+    });
+  });
+
   describe("ナビゲーション", () => {
     it("ユーザーアイテムをタップするとプロフィール画面に遷移すること", async () => {
       // Arrange
