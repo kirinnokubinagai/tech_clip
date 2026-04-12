@@ -301,13 +301,6 @@
     "skip": "건너뛰기",
     "next": "다음",
     "start": "시작하기",
-    "skipA11yLabel": "건너뛰기",
-    "skipA11yHint": "온보딩을 건너뛰고 로그인 화면으로 이동합니다",
-    "startA11yLabel": "시작하기",
-    "startA11yHint": "계정 생성 화면으로 이동합니다",
-    "nextA11yLabel": "다음",
-    "nextA11yHint": "{{page}} 페이지로 이동합니다",
-    "pageIndicatorLabel": "{{total}} 페이지 중 {{current}} 페이지",
     "accessibility": {
       "pageIndicator": "{{current}}페이지（전체 {{total}}페이지）",
       "nextPageHint": "다음 페이지（{{next}}페이지）로 이동합니다",

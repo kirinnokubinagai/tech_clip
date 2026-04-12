@@ -151,7 +151,7 @@ describe("OnboardingScreen", () => {
         getByText(
           `Zenn、Qiita、dev.toなど${MOCK_SOURCE_COUNT}ソースに対応。気になった記事をすぐ保存できます。`,
         ),
-      ).toBeDefined();
+      ).not.toBeNull();
     });
   });
 

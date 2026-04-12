@@ -301,13 +301,6 @@
     "skip": "スキップ",
     "next": "次へ",
     "start": "始める",
-    "skipA11yLabel": "スキップ",
-    "skipA11yHint": "オンボーディングをスキップしてログイン画面に進みます",
-    "startA11yLabel": "始める",
-    "startA11yHint": "アカウント作成画面に進みます",
-    "nextA11yLabel": "次へ",
-    "nextA11yHint": "次のページ（{{page}}ページ目）に進みます",
-    "pageIndicatorLabel": "{{current}}ページ目（全{{total}}ページ）",
     "accessibility": {
       "pageIndicator": "{{current}}ページ目（全{{total}}ページ）",
       "nextPageHint": "次のページ（{{next}}ページ目）に進みます",

@@ -359,7 +359,6 @@ export default function ArticleDetailScreen() {
   return (
     <View className="flex-1 bg-background">
       <View className="flex-row items-center justify-between px-4 pt-14 pb-3 bg-surface border-b border-border">
-        {/* backA11yLabel はボタンの表示テキストと a11y ラベルの両方に使用（現在同一文言のため共有） */}
         <Pressable
           onPress={handleBack}
           accessibilityRole="button"

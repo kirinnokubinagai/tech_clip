@@ -301,13 +301,6 @@
     "skip": "Skip",
     "next": "Next",
     "start": "Get Started",
-    "skipA11yLabel": "Skip",
-    "skipA11yHint": "Skip onboarding and go to login screen",
-    "startA11yLabel": "Get started",
-    "startA11yHint": "Go to account creation screen",
-    "nextA11yLabel": "Next",
-    "nextA11yHint": "Go to page {{page}}",
-    "pageIndicatorLabel": "Page {{current}} of {{total}}",
     "accessibility": {
       "pageIndicator": "Page {{current}} of {{total}}",
       "nextPageHint": "Go to page {{next}}",
