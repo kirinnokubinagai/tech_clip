@@ -17,12 +17,12 @@ command_str=$(printf '%s' "${ARGUMENTS:-}" | jq -r '.command // ""' 2>/dev/null 
 
 # gh pr create を含むコマンドのみ処理（単語境界を考慮した正規表現）
 # "git commit -m 'gh pr create'" などの誤検知を防ぐ
-echo "${command_str}" | grep -qE '(^|&&[[:space:]]*|;[[:space:]]*)gh[[:space:]]+pr[[:space:]]+create([[:space:]]|$)' || exit 0
+printf '%s\n' "${command_str}" | grep -qE '(^|&&[[:space:]]*|;[[:space:]]*)gh[[:space:]]+pr[[:space:]]+create([[:space:]]|$)' || exit 0
 
 # worktree パスを cd コマンドから抽出（スペースなしパスのみ対応）
 worktree_path=""
-if echo "${command_str}" | grep -qE "^cd [^&;[:space:]]"; then
-  raw_path=$(echo "${command_str}" | sed -E 's|^cd ([^[:space:]&;]+).*|\1|' | head -1)
+if printf '%s\n' "${command_str}" | grep -qE "^cd [^&;[:space:]]"; then
+  raw_path=$(printf '%s\n' "${command_str}" | sed -E 's|^cd ([^[:space:]&;]+).*|\1|' | head -1)
   # クォートを除去
   raw_path="${raw_path//\'/}"
   raw_path="${raw_path//\"/}"
@@ -53,7 +53,12 @@ POLL_SCRIPT="${ROOT}/scripts/poll-pr-review.sh"
 
 # ユーザー固有のログディレクトリ（/tmp シンボリックリンク攻撃対策）
 LOG_DIR="${TMPDIR:-/tmp}/tech-clip-poll-pr-$(id -u)"
-mkdir -p "${LOG_DIR}" && chmod 700 "${LOG_DIR}" || exit 0
+mkdir -p "${LOG_DIR}" || exit 0
+if [[ -L "${LOG_DIR}" ]]; then
+  echo "[poll-pr] ログディレクトリがシンボリックリンクです。中止します: ${LOG_DIR}" >&2
+  exit 0
+fi
+chmod 700 "${LOG_DIR}" || exit 0
 LOG_FILE="${LOG_DIR}/poll-pr-${PR_NUMBER}.log"
 
 # 既に同じ PR のポーリングが実行中かチェック
