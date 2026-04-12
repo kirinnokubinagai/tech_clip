@@ -65,7 +65,7 @@ describe("useUserProfile", () => {
     apiFetch.mockResolvedValue(mockProfileResponse);
 
     // Act
-    const { result } = renderHook(() => useUserProfile(TEST_USER_ID), {
+    const { result } = await renderHook(() => useUserProfile(TEST_USER_ID), {
       wrapper: Wrapper,
     });
 
@@ -80,7 +80,7 @@ describe("useUserProfile", () => {
     apiFetch.mockResolvedValue(mockNotFoundResponse);
 
     // Act
-    const { result } = renderHook(() => useUserProfile(TEST_USER_ID), {
+    const { result } = await renderHook(() => useUserProfile(TEST_USER_ID), {
       wrapper: Wrapper,
     });
 
