@@ -193,7 +193,21 @@ poll-pr-review.sh → CHANGES_REQUESTED
 poll-pr-review.sh → CONFLICT
   → git -C <worktree> fetch origin
   → git -C <worktree> merge origin/main（コンフリクトが発生する）
-  → Skill(conflict-resolver) でコンフリクトを解消
+
+  ※ 機械的にマージせず、必ず以下の順で「意図」を把握してから解消すること
+
+  【Step A: 両側の意図を把握する】
+  1. 現在の Issue（gh issue view <N>）を読み、このブランチが何をしようとしているか確認する
+  2. git log origin/main --oneline -20 で main に入ったコミットを確認する
+  3. コンフリクト箇所を読み、それぞれの変更が何を意図しているかを理解する
+
+  【Step B: 解消方針を決める】
+  - 両者の意図を両立できる場合 → 両方の変更を活かした形にマージする
+  - 片方が明らかに優先されるべき場合 → 理由をコミットメッセージに残す
+  - 判断が難しい場合 → より安全側（データ損失しない側）を選ぶ
+
+  【Step C: 解消・レビュー】
+  → Agent(coder, mode="acceptEdits") にコンフリクト箇所・両側の意図・方針を伝えて解消させる
   → Agent(code-reviewer, mode="acceptEdits") + Agent(security-reviewer, mode="acceptEdits") で再レビュー
   → 両方 PASS → マーカー再作成 → git push → poll-pr-review.sh を再実行
   → APPROVED になるまで繰り返す
