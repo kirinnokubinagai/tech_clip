@@ -83,6 +83,84 @@ describe("getErrorMessage", () => {
     });
   });
 
+  describe("簡体中文メッセージ", () => {
+    it("AUTH_REQUIREDに対して簡体中文メッセージを返すこと", () => {
+      // Arrange & Act
+      const result = getErrorMessage("AUTH_REQUIRED", "zh-CN");
+
+      // Assert
+      expect(result).toBe("需要登录");
+    });
+
+    it("INTERNAL_ERRORに対して簡体中文メッセージを返すこと", () => {
+      // Arrange & Act
+      const result = getErrorMessage("INTERNAL_ERROR", "zh-CN");
+
+      // Assert
+      expect(result).toBe("服务器发生错误");
+    });
+
+    it("未知のエラーコードに対してフォールバック簡体中文メッセージを返すこと", () => {
+      // Arrange & Act
+      const result = getErrorMessage("UNKNOWN_CODE", "zh-CN");
+
+      // Assert
+      expect(result).toBe("发生了意外错误");
+    });
+  });
+
+  describe("繁體中文メッセージ", () => {
+    it("AUTH_REQUIREDに対して繁體中文メッセージを返すこと", () => {
+      // Arrange & Act
+      const result = getErrorMessage("AUTH_REQUIRED", "zh-TW");
+
+      // Assert
+      expect(result).toBe("需要登入");
+    });
+
+    it("INTERNAL_ERRORに対して繁體中文メッセージを返すこと", () => {
+      // Arrange & Act
+      const result = getErrorMessage("INTERNAL_ERROR", "zh-TW");
+
+      // Assert
+      expect(result).toBe("伺服器發生錯誤");
+    });
+
+    it("未知のエラーコードに対してフォールバック繁體中文メッセージを返すこと", () => {
+      // Arrange & Act
+      const result = getErrorMessage("UNKNOWN_CODE", "zh-TW");
+
+      // Assert
+      expect(result).toBe("發生了意外錯誤");
+    });
+  });
+
+  describe("韓国語メッセージ", () => {
+    it("AUTH_REQUIREDに対して韓国語メッセージを返すこと", () => {
+      // Arrange & Act
+      const result = getErrorMessage("AUTH_REQUIRED", "ko");
+
+      // Assert
+      expect(result).toBe("로그인이 필요합니다");
+    });
+
+    it("INTERNAL_ERRORに対して韓国語メッセージを返すこと", () => {
+      // Arrange & Act
+      const result = getErrorMessage("INTERNAL_ERROR", "ko");
+
+      // Assert
+      expect(result).toBe("서버 오류가 발생했습니다");
+    });
+
+    it("未知のエラーコードに対してフォールバック韓国語メッセージを返すこと", () => {
+      // Arrange & Act
+      const result = getErrorMessage("UNKNOWN_CODE", "ko");
+
+      // Assert
+      expect(result).toBe("예기치 않은 오류가 발생했습니다");
+    });
+  });
+
   describe("英語メッセージ", () => {
     it("AUTH_REQUIREDに対して英語メッセージを返すこと", () => {
       // Arrange & Act

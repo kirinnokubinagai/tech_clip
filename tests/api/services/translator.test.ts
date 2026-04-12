@@ -85,6 +85,58 @@ describe("translator", () => {
       const userMessage = result.find((m) => m.role === "user");
       expect(userMessage?.content).toContain("Japanese");
     });
+
+    it("中国語翻訳プロンプトを構築できること", () => {
+      // Arrange / Act
+      const result = buildPrompt({
+        content: "Test content",
+        title: "Title",
+        targetLanguage: "zh",
+      });
+
+      // Assert
+      const userMessage = result.find((m) => m.role === "user");
+      expect(userMessage?.content).toContain("Chinese");
+    });
+
+    it("簡体字中国語翻訳プロンプトを構築できること", () => {
+      // Arrange / Act
+      const result = buildPrompt({
+        content: "Test content",
+        title: "Title",
+        targetLanguage: "zh-CN",
+      });
+
+      // Assert
+      const userMessage = result.find((m) => m.role === "user");
+      expect(userMessage?.content).toContain("Simplified Chinese");
+    });
+
+    it("繁体字中国語翻訳プロンプトを構築できること", () => {
+      // Arrange / Act
+      const result = buildPrompt({
+        content: "Test content",
+        title: "Title",
+        targetLanguage: "zh-TW",
+      });
+
+      // Assert
+      const userMessage = result.find((m) => m.role === "user");
+      expect(userMessage?.content).toContain("Traditional Chinese");
+    });
+
+    it("韓国語翻訳プロンプトを構築できること", () => {
+      // Arrange / Act
+      const result = buildPrompt({
+        content: "Test content",
+        title: "Title",
+        targetLanguage: "ko",
+      });
+
+      // Assert
+      const userMessage = result.find((m) => m.role === "user");
+      expect(userMessage?.content).toContain("Korean");
+    });
   });
 
   describe("parseTranslationResponse", () => {

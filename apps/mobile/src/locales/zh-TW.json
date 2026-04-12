@@ -1,0 +1,309 @@
+{
+  "common": {
+    "loading": "載入中...",
+    "error": "發生了錯誤",
+    "errorTitle": "錯誤",
+    "retry": "重試",
+    "cancel": "取消",
+    "save": "儲存",
+    "delete": "刪除",
+    "edit": "編輯",
+    "close": "關閉",
+    "confirm": "確認",
+    "back": "返回",
+    "next": "下一步",
+    "done": "完成",
+    "search": "搜尋",
+    "skip": "跳過",
+    "start": "開始",
+    "generating": "生成中...",
+    "accessibility": {
+      "tapToChange": "點擊更改",
+      "currentValue": "{{label}}，目前設定: {{value}}"
+    }
+  },
+  "auth": {
+    "login": "登入",
+    "logout": "登出",
+    "signup": "建立帳號",
+    "email": "電子郵件地址",
+    "password": "密碼",
+    "forgotPassword": "忘記密碼",
+    "noAccount": "尚無帳號",
+    "hasAccount": "已有帳號",
+    "register": "註冊",
+    "loginTitle": "登入",
+    "appTagline": "以AI摘要技術新聞",
+    "createAccount": "建立帳號",
+    "name": "姓名",
+    "namePlaceholder": "請輸入姓名",
+    "nameHint": "請輸入用於顯示的名稱",
+    "emailPlaceholder": "example@domain.com",
+    "emailHint": "請輸入電子郵件地址",
+    "passwordPlaceholder": "8個字元以上",
+    "passwordHint": "請輸入{{min}}個字元以上的密碼",
+    "passwordHide": "隱藏",
+    "passwordShow": "顯示",
+    "passwordHideLabel": "隱藏密碼",
+    "passwordShowLabel": "顯示密碼",
+    "loginHint": "使用電子郵件地址和密碼登入",
+    "forgotPasswordTitle": "重設密碼",
+    "forgotPasswordDescription": "將向已註冊的電子郵件地址傳送重設說明",
+    "forgotPasswordSubmit": "傳送重設郵件",
+    "forgotPasswordSuccess": "已傳送密碼重設郵件，請查收。",
+    "forgotPasswordEmailHint": "請輸入接收密碼重設郵件的電子郵件地址",
+    "socialSeparator": "或",
+    "continueWithGoogle": "透過Google登入",
+    "continueWithGithub": "透過GitHub登入",
+    "socialLoginFailed": "社群登入啟動失敗，請再試一次。",
+    "callback": {
+      "signingIn": "登入中...",
+      "backToLogin": "返回登入頁面",
+      "errorSocialLogin": "社群登入失敗，請再試一次。",
+      "errorNoToken": "未找到驗證權杖，請再試一次。",
+      "errorSaveToken": "儲存驗證資訊失敗，請再試一次。",
+      "errorCheckSession": "驗證確認失敗，請再試一次。"
+    },
+    "loginToRegister": "註冊",
+    "loginToRegisterPrompt": "尚無帳號的用戶",
+    "registerToLoginPrompt": "已有帳號？",
+    "registerHint": "使用輸入的資訊建立新帳號",
+    "registerFailed": "註冊失敗",
+    "loginFailed": "登入失敗，請再試一次",
+    "validation": {
+      "emailRequired": "請輸入電子郵件地址",
+      "emailInvalid": "電子郵件地址格式不正確",
+      "passwordRequired": "請輸入密碼",
+      "nameRequired": "請輸入姓名",
+      "passwordMinLength": "請輸入{{min}}個字元以上的密碼"
+    }
+  },
+  "tabs": {
+    "home": "首頁",
+    "search": "搜尋",
+    "notifications": "通知",
+    "profile": "個人資料",
+    "settings": "設定"
+  },
+  "home": {
+    "filterAll": "全部",
+    "favorites": "收藏",
+    "favoritesFilterLabel": "僅顯示收藏",
+    "favoritesFilterClearLabel": "清除收藏篩選",
+    "loadingArticles": "載入中...",
+    "fetchError": "取得文章失敗",
+    "noArticles": "沒有文章",
+    "offlineCachedArticles": "離線：顯示已快取文章",
+    "offlineNoCache": "離線：沒有快取"
+  },
+  "article": {
+    "save": "儲存文章",
+    "share": "分享",
+    "readLater": "稍後閱讀",
+    "noArticles": "沒有文章",
+    "readingTime": "約{{minutes}}分鐘閱讀",
+    "summary": "摘要",
+    "summarized": "已摘要",
+    "summarize": "摘要",
+    "translation": "翻譯",
+    "translated": "已翻譯",
+    "translate": "翻譯",
+    "openInBrowser": "在瀏覽器中開啟",
+    "addToFavorites": "加入收藏",
+    "removeFromFavorites": "取消收藏",
+    "noContent": "文章內容不可用",
+    "viewOriginal": "查看原文",
+    "fetchError": "取得文章失敗",
+    "loadingArticle": "載入中...",
+    "saveTitle": "儲存文章",
+    "urlLabel": "URL",
+    "urlPlaceholder": "https://",
+    "fetchButton": "取得",
+    "saveButton": "儲存",
+    "fetching": "取得文章中...",
+    "preview": "預覽",
+    "saveFailed": "儲存文章失敗",
+    "fetchFailed": "取得文章失敗",
+    "savedSuccess": "文章已儲存",
+    "thumbnailAlt": "文章縮圖",
+    "urlRequired": "請輸入URL",
+    "urlInvalid": "請輸入有效的URL",
+    "noMatch": "沒有符合「{{query}}」的文章",
+    "summaryLabel": "摘要",
+    "translationLabel": "翻譯"
+  },
+  "search": {
+    "placeholder": "搜尋文章...",
+    "clearLabel": "清除搜尋",
+    "hint": "以關鍵字搜尋文章",
+    "hintSub": "可以透過標題或內容搜尋",
+    "searching": "搜尋中...",
+    "error": "搜尋失敗"
+  },
+  "notifications": {
+    "markAllRead": "全部標為已讀",
+    "markAllReadLabel": "將全部標為已讀",
+    "empty": "沒有通知",
+    "emptyDescription": "有新通知時將顯示在這裡",
+    "fetchError": "取得通知失敗",
+    "loadingNotifications": "載入中..."
+  },
+  "profile": {
+    "loginPrompt": "登入後可查看已儲存的文章和收藏",
+    "editProfile": "編輯個人資料",
+    "savedArticles": "已儲存文章",
+    "noPublicArticles": "該用戶尚無公開文章",
+    "guestUser": "訪客用戶",
+    "loadingUser": "載入中...",
+    "fetchError": "取得用戶資訊失敗",
+    "back": "返回",
+    "edit": {
+      "title": "編輯個人資料",
+      "namePlaceholder": "請輸入姓名",
+      "usernamePlaceholder": "username",
+      "bioPlaceholder": "請輸入個人簡介",
+      "snsLinks": "SNS連結",
+      "saveButton": "儲存",
+      "avatarLabel": "更換大頭照",
+      "saveSuccess": "個人資料已更新",
+      "saveFailed": "儲存個人資料失敗",
+      "permissionError": "未取得存取圖片庫的權限",
+      "validation": {
+        "nameRequired": "請輸入姓名",
+        "nameTooLong": "姓名請輸入{{max}}個字元以內",
+        "usernameTooLong": "用戶名請輸入{{max}}個字元以內",
+        "usernameInvalid": "用戶名只能使用英數字和底線",
+        "bioTooLong": "個人簡介請輸入{{max}}個字元以內",
+        "urlTooLong": "URL請輸入{{max}}個字元以內"
+      }
+    },
+    "followers": {
+      "title": "追蹤者",
+      "followersTab": "追蹤者",
+      "followingTab": "追蹤中",
+      "noFollowers": "尚無追蹤者",
+      "noFollowing": "未追蹤任何用戶",
+      "userProfileLabel": "查看{{name}}的個人資料",
+      "loading": "載入中..."
+    }
+  },
+  "settings": {
+    "title": "設定",
+    "language": "語言",
+    "theme": "主題",
+    "notifications": "通知",
+    "account": "帳號",
+    "about": "關於本應用程式",
+    "version": "版本",
+    "sections": {
+      "account": "帳號",
+      "subscription": "訂閱",
+      "general": "一般",
+      "accountManagement": "帳號管理"
+    },
+    "items": {
+      "changePassword": "修改密碼",
+      "logout": "登出",
+      "plan": "方案",
+      "language": "語言",
+      "notifications": "通知",
+      "summaryLanguage": "摘要語言",
+      "deleteAccount": "刪除帳號",
+      "notLoggedIn": "未登入"
+    },
+    "plan": {
+      "premium": "進階版",
+      "free": "免費版"
+    },
+    "languageSelect": {
+      "title": "語言設定",
+      "prompt": "請選擇顯示語言"
+    },
+    "summaryLanguageSelect": {
+      "title": "摘要語言設定",
+      "prompt": "請選擇AI摘要的輸出語言"
+    },
+    "notificationHintOn": "點擊以開啟通知",
+    "notificationHintOff": "點擊以關閉通知",
+    "logout": {
+      "title": "登出",
+      "message": "確定要登出嗎？",
+      "confirm": "登出"
+    },
+    "notificationUpdateError": "更新通知設定失敗",
+    "summaryLanguageUpdateError": "更新摘要語言失敗",
+    "deleteAccount": {
+      "title": "刪除帳號",
+      "message": "刪除帳號將永久刪除所有資料，此操作無法撤銷。",
+      "confirm": "刪除",
+      "failed": "刪除帳號失敗，請再試一次。"
+    },
+    "changePassword": {
+      "title": "修改密碼",
+      "currentPassword": "目前密碼",
+      "currentPasswordPlaceholder": "請輸入目前密碼",
+      "newPassword": "新密碼",
+      "newPasswordPlaceholder": "請輸入新密碼",
+      "confirmPassword": "新密碼（確認）",
+      "confirmPasswordPlaceholder": "請再次輸入新密碼",
+      "saveButton": "修改",
+      "saveSuccess": "密碼已修改",
+      "saveFailed": "修改密碼失敗，請確認目前密碼是否正確。",
+      "validation": {
+        "currentPasswordRequired": "請輸入目前密碼",
+        "newPasswordRequired": "請輸入新密碼",
+        "newPasswordTooShort": "請輸入{{min}}個字元以上的密碼",
+        "newPasswordTooLong": "請輸入{{max}}個字元以內的密碼",
+        "confirmPasswordRequired": "請輸入確認密碼",
+        "passwordMismatch": "密碼不一致"
+      }
+    }
+  },
+  "errorBoundary": {
+    "unexpectedError": "發生了意外錯誤",
+    "appError": "應用程式發生了錯誤",
+    "retry": "重試"
+  },
+  "errorView": {
+    "titles": {
+      "network": "網路錯誤",
+      "server": "伺服器錯誤",
+      "generic": "發生了錯誤"
+    },
+    "messages": {
+      "network": "請檢查網路連線",
+      "server": "伺服器發生了問題，請稍後再試",
+      "generic": "發生了問題，請再試一次"
+    },
+    "retry": "重試"
+  },
+  "onboarding": {
+    "pages": {
+      "save": {
+        "title": "一鍵儲存技術文章",
+        "description": "支援Zenn、Qiita、dev.to等18個網站，隨時儲存感興趣的文章。"
+      },
+      "ai": {
+        "title": "AI摘要與翻譯",
+        "description": "英文文章也可用中文閱讀，想快速掌握重點時使用AI摘要節省時間。"
+      },
+      "organize": {
+        "title": "以收藏和標籤整理",
+        "description": "透過標籤對文章分類，收藏後隨時快速存取。"
+      },
+      "start": {
+        "title": "開始吧",
+        "description": "建立帳號，高效管理技術知識。"
+      }
+    },
+    "skip": "跳過",
+    "next": "下一步",
+    "start": "開始"
+  },
+  "shareIntent": {
+    "loading": "載入中",
+    "error": "讀取分享資料失敗",
+    "notFound": "未找到URL",
+    "close": "關閉"
+  }
+}
