@@ -28,15 +28,10 @@ export async function handlePublicProfile(db: Database, request: Request): Promi
         return null;
       }
 
-      const [followersResult] = await db
-        .select({ count: count() })
-        .from(follows)
-        .where(eq(follows.followingId, userId));
-
-      const [followingResult] = await db
-        .select({ count: count() })
-        .from(follows)
-        .where(eq(follows.followerId, userId));
+      const [[followersResult], [followingResult]] = await Promise.all([
+        db.select({ count: count() }).from(follows).where(eq(follows.followingId, userId)),
+        db.select({ count: count() }).from(follows).where(eq(follows.followerId, userId)),
+      ]);
 
       return {
         id: found.id,

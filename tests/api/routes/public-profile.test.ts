@@ -106,5 +106,17 @@ describe("createPublicProfileRoute", () => {
       // Assert
       expect(mockGetProfileFn).toHaveBeenCalledWith(TARGET_USER_ID);
     });
+
+    it("getProfileFn が例外をスローした場合 500 を返すこと", async () => {
+      // Arrange
+      mockGetProfileFn.mockRejectedValue(new Error("DB接続エラー"));
+      const app = createTestApp();
+
+      // Act
+      const res = await app.request(`/api/users/${TARGET_USER_ID}/profile`);
+
+      // Assert
+      expect(res.status).toBe(500);
+    });
   });
 });
