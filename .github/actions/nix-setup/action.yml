@@ -17,4 +17,4 @@ runs:
       shell: bash
       env:
         NIXPKGS_ALLOW_UNFREE: "1"
-      run: nix develop --command pnpm install --frozen-lockfile
+      run: nix develop .#ci --command pnpm install --frozen-lockfile

@@ -69,6 +69,24 @@
         };
       in
       {
+        # CI 用の最小限シェル（ローカル専用パッケージを除外して nix build を高速化・安定化）
+        devShells.ci = pkgs.mkShell {
+          buildInputs = with pkgs; [
+            nodejs_22
+            pnpm
+            turbo
+            biome
+            gh
+            git
+            jq
+            curl
+            zap
+            bats
+            shellcheck
+            actionlint
+          ];
+        };
+
         devShells.default = pkgs.mkShell {
           buildInputs = with pkgs; [
             nodejs_22

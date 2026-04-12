@@ -112,12 +112,12 @@ jobs:
             echo "hooks=true" >> "$GITHUB_OUTPUT"
             exit 0
           fi
-          # .claude/ 配下（agents/・rules/ 等の設定ファイル群）はコードチェックの対象外とする。
-          # これらはエージェント定義・プロジェクトルールであり lint/typecheck/test には関係しないため
+          # .claude/ 配下（agents/・rules/ 等の設定ファイル群）と docs/・*.md はコードチェックの対象外とする。
+          # これらはエージェント定義・プロジェクトルールまたはドキュメントであり lint/typecheck/test には関係しないため
           # スキップすることで不要な CI 実行を避ける。
           # hooks/ のみ別途 hooks-test ジョブで検証する（下記 HOOKS_CHANGED 参照）。
           CHANGED=$(git diff --name-only "origin/${{ github.base_ref }}...HEAD" 2>/dev/null \
-            | grep -cvE '^\.claude/' || echo 0)
+            | grep -cvE '^(\.claude/|docs/|.*\.md$)' || echo 0)
           echo "code=$([ "${CHANGED:-0}" -gt 0 ] && echo 'true' || echo 'false')" >> "$GITHUB_OUTPUT"
           HOOKS_CHANGED=$(git diff --name-only "origin/${{ github.base_ref }}...HEAD" 2>/dev/null \
             | grep -cE '^\.claude/hooks/' || echo 0)
@@ -138,15 +138,15 @@ jobs:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v4.2.2
       - uses: ./.github/actions/nix-setup
       - name: 実行権限チェック
-        run: nix develop --command ./scripts/check-executable-shell-files.sh
+        run: nix develop .#ci --command ./scripts/check-executable-shell-files.sh
       - name: Lint
-        run: nix develop --command pnpm lint
+        run: nix develop .#ci --command pnpm lint
       - name: Typecheck
-        run: nix develop --command pnpm typecheck
+        run: nix develop .#ci --command pnpm typecheck
       - name: Test
-        run: nix develop --command ./scripts/run-and-fail-on-stderr.sh pnpm test
+        run: nix develop .#ci --command ./scripts/run-and-fail-on-stderr.sh pnpm test
       - name: Audit
-        run: nix develop --command pnpm audit --prod
+        run: nix develop .#ci --command pnpm audit --prod
 
   # ── Step 4（並列）: hooks テスト（hooks 変更時のみ）──────────────────────
   hooks-test:
@@ -161,9 +161,9 @@ jobs:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v4.2.2
       - uses: ./.github/actions/nix-setup
       - name: 実行権限チェック
-        run: nix develop --command ./scripts/check-executable-shell-files.sh
+        run: nix develop .#ci --command ./scripts/check-executable-shell-files.sh
       - name: hooksテスト
-        run: nix develop --command bats tests/hooks/
+        run: nix develop .#ci --command bats tests/hooks/
 
   # ── Step 5（並列）: ZAP セキュリティスキャン（PR + コード変更時のみ）────
   zap:
@@ -190,7 +190,7 @@ jobs:
         run: |
           ZAP_PORT=$(python3 -c "import socket; s=socket.socket(); s.bind(('',0)); print(s.getsockname()[1]); s.close()")
           export ZAP_PORT
-          nix develop --command bash scripts/ci/zap-scan.sh
+          nix develop .#ci --command bash scripts/ci/zap-scan.sh
       - name: Upload ZAP Report
         if: always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
