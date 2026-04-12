@@ -49,20 +49,6 @@ export function FollowButton({
     }
   }, [userId, isFollowing, onToggle]);
 
-  if (isLoading) {
-    return (
-      <Pressable
-        testID="follow-button"
-        disabled
-        className="flex-row items-center justify-center gap-1.5 rounded-lg px-4 py-2 border border-border opacity-50"
-        accessibilityRole="button"
-        accessibilityLabel="フォロー切り替え中"
-      >
-        <ActivityIndicator size="small" color={colors.primary} />
-      </Pressable>
-    );
-  }
-
   if (isFollowing) {
     return (
       <Pressable
@@ -75,7 +61,11 @@ export function FollowButton({
         accessibilityRole="button"
         accessibilityLabel={isLoading ? "フォロー切り替え中" : "フォロー解除"}
       >
-        <UserMinus size={ICON_SIZE} color={colors.text} />
+        {isLoading ? (
+          <ActivityIndicator size="small" color={colors.primary} />
+        ) : (
+          <UserMinus size={ICON_SIZE} color={colors.text} />
+        )}
         <Text testID="follow-button-label" className="text-sm font-medium text-text">
           フォロー中
         </Text>
@@ -94,7 +84,11 @@ export function FollowButton({
       accessibilityRole="button"
       accessibilityLabel={isLoading ? "フォロー切り替え中" : "フォローする"}
     >
-      <UserPlus size={ICON_SIZE} color={colors.white} />
+      {isLoading ? (
+        <ActivityIndicator size="small" color={colors.white} />
+      ) : (
+        <UserPlus size={ICON_SIZE} color={colors.white} />
+      )}
       <Text testID="follow-button-label" className="text-sm font-semibold text-white">
         フォローする
       </Text>
