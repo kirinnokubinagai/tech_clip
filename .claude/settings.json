@@ -150,6 +150,12 @@
             "command": "bash \"$(git rev-parse --show-toplevel 2>/dev/null || echo .)/.claude/hooks/post-push-cleanup.sh\"",
             "timeout": 5,
             "statusMessage": "Cleaning up review marker..."
+          },
+          {
+            "type": "command",
+            "command": "bash \"$(git rev-parse --show-toplevel 2>/dev/null || echo .)/.claude/hooks/post-pr-create-poll.sh\"",
+            "timeout": 15,
+            "statusMessage": "Starting PR review polling..."
           }
         ]
       }
