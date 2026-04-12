@@ -12,10 +12,7 @@ concurrency:
   group: pr-comment-review-${{ github.event.issue.number }}
   cancel-in-progress: true
 
-permissions:
-  contents: read
-  pull-requests: write
-  id-token: write
+permissions: read-all
 
 jobs:
   pr-comment-review:
@@ -26,6 +23,7 @@ jobs:
       github.event.comment.user.login != 'github-actions[bot]' &&
       github.event.comment.user.login != 'claude[bot]' &&
       github.event.repository.full_name == github.repository &&
+      contains(fromJSON('["MEMBER","COLLABORATOR","OWNER"]'), github.event.comment.author_association) &&
       (
         contains(github.event.comment.body, '再レビュー') ||
         contains(github.event.comment.body, '/re-review') ||
@@ -35,12 +33,30 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     continue-on-error: true
+    permissions:
+      contents: read
+      pull-requests: write
+      id-token: write
     steps:
+      - name: フォーク PR チェック
+        id: fork-check
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          HEAD_REPO=$(gh pr view ${{ github.event.issue.number }} --json headRepository --jq '.headRepository.owner.login')
+          if [ "$HEAD_REPO" != "${{ github.repository_owner }}" ]; then
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "skip=false" >> "$GITHUB_OUTPUT"
+          fi
+
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v4.2.2
+        if: steps.fork-check.outputs.skip != 'true'
         with:
           ref: refs/pull/${{ github.event.issue.number }}/head
 
       - id: review
+        if: steps.fork-check.outputs.skip != 'true'
         uses: anthropics/claude-code-action@b47fd721da662d48c5680e154ad16a73ed74d2e0  # v1
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
@@ -65,7 +81,7 @@ jobs:
             重要: gh pr review --approve は絶対に実行しないでください。
 
       - name: 再レビュー済みラベルを追加
-        if: always()
+        if: always() && steps.fork-check.outputs.skip != 'true'
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
