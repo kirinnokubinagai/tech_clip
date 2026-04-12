@@ -1,5 +1,5 @@
 import { Bell, Heart, MessageCircle, Newspaper, UserPlus } from "lucide-react-native";
-import type { ReactNode } from "react";
+import { type ReactNode, useMemo } from "react";
 import { Pressable, Text, View } from "react-native";
 
 import { useColors } from "@/hooks/use-colors";
@@ -109,13 +109,16 @@ export function NotificationItem({ notification, onPress }: NotificationItemProp
   const colors = useColors();
 
   /** 通知種別ごとのアイコン色 */
-  const typeIconColors: Record<NotificationType, string> = {
-    like: colors.favorite,
-    comment: colors.info,
-    follow: colors.success,
-    system: colors.warning,
-    article: colors.primary,
-  };
+  const typeIconColors = useMemo<Record<NotificationType, string>>(
+    () => ({
+      like: colors.favorite,
+      comment: colors.info,
+      follow: colors.success,
+      system: colors.warning,
+      article: colors.primary,
+    }),
+    [colors],
+  );
 
   return (
     <Pressable

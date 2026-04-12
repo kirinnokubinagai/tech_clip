@@ -1,5 +1,6 @@
 import { Check, X } from "lucide-react-native";
-import { Pressable, ScrollView, Text, View } from "react-native";
+import { useMemo } from "react";
+import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 
 import { useColors } from "@/hooks/use-colors";
 
@@ -44,82 +45,125 @@ export function PremiumGate({
 }: PremiumGateProps) {
   const colors = useColors();
 
-  return (
-    <View
-      testID="premium-gate-container"
-      style={{
-        flex: 1,
-        backgroundColor: colors.background,
-        justifyContent: "center",
-        paddingHorizontal: 24,
-      }}
-    >
-      <View
-        style={{
+  const styles = useMemo(
+    () =>
+      StyleSheet.create({
+        container: {
+          flex: 1,
+          backgroundColor: colors.background,
+          justifyContent: "center",
+          paddingHorizontal: 24,
+        },
+        card: {
           backgroundColor: colors.surface,
           borderRadius: 16,
           borderWidth: 1,
           borderColor: colors.border,
           padding: 24,
-        }}
-      >
-        <View
-          style={{
-            flexDirection: "row",
-            justifyContent: "space-between",
-            alignItems: "center",
-            marginBottom: 24,
-          }}
-        >
-          <Text style={{ fontSize: 20, fontWeight: "bold", color: colors.text }}>
-            プレミアムプラン
-          </Text>
+        },
+        header: {
+          flexDirection: "row",
+          justifyContent: "space-between",
+          alignItems: "center",
+          marginBottom: 24,
+        },
+        headerTitle: {
+          fontSize: 20,
+          fontWeight: "bold",
+          color: colors.text,
+        },
+        closeButton: {
+          padding: 4,
+        },
+        usageCard: {
+          backgroundColor: colors.card,
+          borderRadius: 12,
+          padding: 16,
+          marginBottom: 24,
+          alignItems: "center",
+        },
+        usageLabel: {
+          fontSize: 14,
+          color: colors.textMuted,
+          marginBottom: 4,
+        },
+        usageCount: {
+          fontSize: 30,
+          fontWeight: "bold",
+          color: colors.text,
+        },
+        usageLimit: {
+          fontSize: 14,
+          color: colors.error,
+          marginTop: 4,
+        },
+        featuresTitle: {
+          fontSize: 16,
+          fontWeight: "600",
+          color: colors.text,
+          marginBottom: 12,
+        },
+        featuresList: {
+          marginBottom: 24,
+        },
+        featureItem: {
+          flexDirection: "row",
+          alignItems: "center",
+          gap: 12,
+          marginBottom: 12,
+        },
+        featureText: {
+          fontSize: 14,
+          color: colors.text,
+          flex: 1,
+        },
+        purchaseButton: {
+          backgroundColor: colors.primary,
+          borderRadius: 12,
+          paddingVertical: 16,
+          alignItems: "center",
+        },
+        purchaseButtonText: {
+          fontSize: 16,
+          fontWeight: "600",
+          color: colors.white,
+        },
+      }),
+    [colors],
+  );
+
+  return (
+    <View testID="premium-gate-container" style={styles.container}>
+      <View style={styles.card}>
+        <View style={styles.header}>
+          <Text style={styles.headerTitle}>プレミアムプラン</Text>
           <Pressable
             testID="close-button"
             onPress={onClose}
             accessibilityRole="button"
             accessibilityLabel="閉じる"
             hitSlop={8}
-            style={{ padding: 4 }}
+            style={styles.closeButton}
           >
             <X size={CLOSE_ICON_SIZE} color={colors.textMuted} />
           </Pressable>
         </View>
 
-        <View
-          style={{
-            backgroundColor: colors.card,
-            borderRadius: 12,
-            padding: 16,
-            marginBottom: 24,
-            alignItems: "center",
-          }}
-        >
-          <Text style={{ fontSize: 14, color: colors.textMuted, marginBottom: 4 }}>
-            今月のAI機能使用回数
-          </Text>
-          <Text style={{ fontSize: 30, fontWeight: "bold", color: colors.text }}>
-            {`${currentUsage} / ${maxUsage}`}
-          </Text>
+        <View style={styles.usageCard}>
+          <Text style={styles.usageLabel}>今月のAI機能使用回数</Text>
+          <Text style={styles.usageCount}>{`${currentUsage} / ${maxUsage}`}</Text>
           {currentUsage >= maxUsage && (
-            <Text style={{ fontSize: 14, color: colors.error, marginTop: 4 }}>
-              無料プランの上限に達しました
-            </Text>
+            <Text style={styles.usageLimit}>無料プランの上限に達しました</Text>
           )}
         </View>
 
-        <Text style={{ fontSize: 16, fontWeight: "600", color: colors.text, marginBottom: 12 }}>
-          プレミアムプランで利用できる機能
-        </Text>
+        <Text style={styles.featuresTitle}>プレミアムプランで利用できる機能</Text>
 
-        <ScrollView style={{ marginBottom: 24 }} showsVerticalScrollIndicator={false}>
+        <ScrollView style={styles.featuresList} showsVerticalScrollIndicator={false}>
           {features.map((feature) => (
-            <View
-              key={feature}
-              style={{ flexDirection: "row", alignItems: "center", gap: 12, marginBottom: 12 }}
-            >
+            <View key={feature} style={styles.featureItem}>
               <Check size={CHECK_ICON_SIZE} color={colors.primary} />
-              <Text style={{ fontSize: 14, color: colors.text, flex: 1 }}>{feature}</Text>
+              <Text style={styles.featureText}>{feature}</Text>
             </View>
           ))}
         </ScrollView>
@@ -129,16 +173,9 @@ export function PremiumGate({
           onPress={onPurchase}
           accessibilityRole="button"
           accessibilityLabel="プレミアムプランを購入する"
-          style={{
-            backgroundColor: colors.primary,
-            borderRadius: 12,
-            paddingVertical: 16,
-            alignItems: "center",
-          }}
+          style={styles.purchaseButton}
         >
-          <Text style={{ fontSize: 16, fontWeight: "600", color: colors.white }}>
-            プレミアムプランを購入する
-          </Text>
+          <Text style={styles.purchaseButtonText}>プレミアムプランを購入する</Text>
         </Pressable>
       </View>
     </View>

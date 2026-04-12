@@ -1,5 +1,5 @@
 import { AlertCircle, RefreshCw, WifiOff } from "lucide-react-native";
-import type { ReactNode } from "react";
+import { type ReactNode, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { Pressable, Text, View } from "react-native";
 
@@ -69,11 +69,14 @@ export function ErrorView({
   const colors = useColors();
 
   /** エラー種別ごとのアイコン色 */
-  const errorTypeColors: Record<ErrorType, string> = {
-    network: colors.warning,
-    server: colors.error,
-    generic: colors.error,
-  };
+  const errorTypeColors = useMemo<Record<ErrorType, string>>(
+    () => ({
+      network: colors.warning,
+      server: colors.error,
+      generic: colors.error,
+    }),
+    [colors],
+  );
 
   const defaultTitles: Record<ErrorType, string> = {
     network: t("errorView.titles.network"),

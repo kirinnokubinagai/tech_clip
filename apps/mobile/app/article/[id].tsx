@@ -1,6 +1,6 @@
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { ArrowLeft, ExternalLink, Globe, Heart, Languages, Sparkles } from "lucide-react-native";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { ActivityIndicator, Linking, Pressable, ScrollView, Text, View } from "react-native";
 import Markdown from "react-native-markdown-display";
@@ -50,88 +50,91 @@ export default function ArticleDetailScreen() {
   const colors = useColors();
 
   /** Markdownのスタイル定義 */
-  const markdownStyles = {
-    body: {
-      color: colors.text,
-      fontSize: 16,
-      lineHeight: 26,
-    },
-    heading1: {
-      color: colors.text,
-      fontSize: 24,
-      fontWeight: "bold" as const,
-      marginTop: 24,
-      marginBottom: 12,
-    },
-    heading2: {
-      color: colors.text,
-      fontSize: 20,
-      fontWeight: "bold" as const,
-      marginTop: 20,
-      marginBottom: 10,
-    },
-    heading3: {
-      color: colors.text,
-      fontSize: 18,
-      fontWeight: "600" as const,
-      marginTop: 16,
-      marginBottom: 8,
-    },
-    paragraph: {
-      color: colors.text,
-      fontSize: 16,
-      lineHeight: 26,
-      marginBottom: 12,
-    },
-    link: {
-      color: colors.primaryLight,
-    },
-    blockquote: {
-      backgroundColor: colors.card,
-      borderLeftColor: colors.primary,
-      borderLeftWidth: 3,
-      paddingLeft: 12,
-      paddingVertical: 8,
-      marginVertical: 8,
-    },
-    code_inline: {
-      backgroundColor: colors.card,
-      color: colors.primaryLight,
-      paddingHorizontal: 6,
-      paddingVertical: 2,
-      borderRadius: 4,
-      fontSize: 14,
-    },
-    code_block: {
-      backgroundColor: colors.surface,
-      color: colors.text,
-      padding: 12,
-      borderRadius: 8,
-      fontSize: 14,
-      lineHeight: 22,
-    },
-    fence: {
-      backgroundColor: colors.surface,
-      color: colors.text,
-      padding: 12,
-      borderRadius: 8,
-      fontSize: 14,
-      lineHeight: 22,
-    },
-    list_item: {
-      color: colors.text,
-      fontSize: 16,
-      lineHeight: 26,
-    },
-    hr: {
-      backgroundColor: colors.border,
-      height: 1,
-      marginVertical: 16,
-    },
-    image: {
-      borderRadius: 8,
-    },
-  };
+  const markdownStyles = useMemo(
+    () => ({
+      body: {
+        color: colors.text,
+        fontSize: 16,
+        lineHeight: 26,
+      },
+      heading1: {
+        color: colors.text,
+        fontSize: 24,
+        fontWeight: "bold" as const,
+        marginTop: 24,
+        marginBottom: 12,
+      },
+      heading2: {
+        color: colors.text,
+        fontSize: 20,
+        fontWeight: "bold" as const,
+        marginTop: 20,
+        marginBottom: 10,
+      },
+      heading3: {
+        color: colors.text,
+        fontSize: 18,
+        fontWeight: "600" as const,
+        marginTop: 16,
+        marginBottom: 8,
+      },
+      paragraph: {
+        color: colors.text,
+        fontSize: 16,
+        lineHeight: 26,
+        marginBottom: 12,
+      },
+      link: {
+        color: colors.primaryLight,
+      },
+      blockquote: {
+        backgroundColor: colors.card,
+        borderLeftColor: colors.primary,
+        borderLeftWidth: 3,
+        paddingLeft: 12,
+        paddingVertical: 8,
+        marginVertical: 8,
+      },
+      code_inline: {
+        backgroundColor: colors.card,
+        color: colors.primaryLight,
+        paddingHorizontal: 6,
+        paddingVertical: 2,
+        borderRadius: 4,
+        fontSize: 14,
+      },
+      code_block: {
+        backgroundColor: colors.surface,
+        color: colors.text,
+        padding: 12,
+        borderRadius: 8,
+        fontSize: 14,
+        lineHeight: 22,
+      },
+      fence: {
+        backgroundColor: colors.surface,
+        color: colors.text,
+        padding: 12,
+        borderRadius: 8,
+        fontSize: 14,
+        lineHeight: 22,
+      },
+      list_item: {
+        color: colors.text,
+        fontSize: 16,
+        lineHeight: 26,
+      },
+      hr: {
+        backgroundColor: colors.border,
+        height: 1,
+        marginVertical: 16,
+      },
+      image: {
+        borderRadius: 8,
+      },
+    }),
+    [colors],
+  );
 
   const language = useSettingsStore((s) => s.language);
   const apiLanguage = UI_TO_API_LANGUAGE[language];
