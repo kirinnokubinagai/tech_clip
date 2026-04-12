@@ -2,6 +2,7 @@ import {
   getSourceDefinition,
   SOURCE_CONFIG,
   SOURCE_DEFINITIONS,
+  SOURCE_FILTER_OPTIONS,
   SUPPORTED_SOURCE_COUNT,
   SUPPORTED_SOURCES,
 } from "@/lib/sources";
@@ -93,18 +94,12 @@ describe("SOURCE_CONFIG", () => {
 
 describe("SOURCE_FILTER_OPTIONS", () => {
   it("SOURCE_FILTER_OPTIONSをインポートできること", () => {
-    // Arrange
-    const { SOURCE_FILTER_OPTIONS } = require("@/lib/sources");
-
     // Assert
     expect(SOURCE_FILTER_OPTIONS).toBeDefined();
     expect(Array.isArray(SOURCE_FILTER_OPTIONS)).toBe(true);
   });
 
   it("先頭要素が「すべて」エントリ（value: undefined）であること", () => {
-    // Arrange
-    const { SOURCE_FILTER_OPTIONS } = require("@/lib/sources");
-
     // Act
     const first = SOURCE_FILTER_OPTIONS[0];
 
@@ -115,8 +110,7 @@ describe("SOURCE_FILTER_OPTIONS", () => {
 
   it("SOURCE_DEFINITIONS の各ソースが含まれること", () => {
     // Arrange
-    const { SOURCE_FILTER_OPTIONS } = require("@/lib/sources");
-    const sourceValues = SOURCE_FILTER_OPTIONS.slice(1).map((opt: { value: string }) => opt.value);
+    const sourceValues = SOURCE_FILTER_OPTIONS.slice(1).map((opt) => opt.value);
 
     // Assert
     for (const def of SOURCE_DEFINITIONS) {
@@ -126,7 +120,6 @@ describe("SOURCE_FILTER_OPTIONS", () => {
 
   it("各ソースエントリに value と label が含まれること", () => {
     // Arrange
-    const { SOURCE_FILTER_OPTIONS } = require("@/lib/sources");
     const sourceOptions = SOURCE_FILTER_OPTIONS.slice(1);
 
     // Assert
@@ -138,13 +131,21 @@ describe("SOURCE_FILTER_OPTIONS", () => {
   });
 
   it("手書き配列でなくSOURCE_DEFINITIONSと件数が一致すること", () => {
-    // Arrange
-    const { SOURCE_FILTER_OPTIONS } = require("@/lib/sources");
-
     // Act: 先頭の「すべて」エントリを除く
     const sourceOptions = SOURCE_FILTER_OPTIONS.slice(1);
 
     // Assert
     expect(sourceOptions.length).toBe(SOURCE_DEFINITIONS.length);
+  });
+
+  it("SOURCE_FILTER_OPTIONSがSOURCE_DEFINITIONSの全ソースを含むこと", () => {
+    // Arrange
+    const sourceOptions = SOURCE_FILTER_OPTIONS.slice(1);
+
+    // Assert: 全ソース定義に対応するエントリが存在する
+    for (const def of SOURCE_DEFINITIONS) {
+      const found = sourceOptions.some((opt) => opt.value === def.id && opt.label === def.label);
+      expect(found).toBe(true);
+    }
   });
 });
