@@ -18,13 +18,7 @@ jest.mock("expo-router", () => ({
 }));
 
 jest.mock("@/stores/auth-store", () => ({
-  useAuthStore: jest.fn((selector: (state: Record<string, unknown>) => unknown) =>
-    selector({
-      user: MOCK_AUTHENTICATED_USER,
-      isAuthenticated: true,
-      isLoading: false,
-    }),
-  ),
+  useAuthStore: jest.fn(),
 }));
 
 beforeEach(() => {
