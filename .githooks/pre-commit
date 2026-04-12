@@ -1,16 +1,13 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # pre-commit: mainブランチ保護 + シークレット検知
 
-# mainブランチへの直接コミットをブロック
-BRANCH=$(git branch --show-current 2>/dev/null)
-if [ "$BRANCH" = "main" ] || [ "$BRANCH" = "master" ]; then
-  echo ""
-  echo "🚫 mainブランチへの直接コミットは禁止されています"
-  echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-  echo "Worktreeを作成してください:"
-  echo "  WORKTREE_BASE=\$(dirname \"\$(git rev-parse --show-toplevel)\")"
-  echo "  git worktree add \"\${WORKTREE_BASE}/issue-N\" -b issue/N/short-desc"
-  echo ""
+# main ブランチへの直接コミットをブロック
+branch=$(git rev-parse --abbrev-ref HEAD 2>/dev/null || true)
+
+if [[ "${branch}" == "main" ]]; then
+  echo "ERROR: main ブランチへの直接コミットは禁止されています。" >&2
+  echo "       Issue に対応する worktree を作成してから作業してください:" >&2
+  echo "         bash scripts/create-worktree.sh <issue-number> <description>" >&2
   exit 1
 fi
 
