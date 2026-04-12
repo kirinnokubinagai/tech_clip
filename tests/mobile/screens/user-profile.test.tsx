@@ -9,6 +9,7 @@ const MOCK_USER_PROFILE = {
   avatarUrl: null,
   followersCount: 42,
   followingCount: 18,
+  isFollowing: false,
 };
 
 const mockBack = jest.fn();
@@ -61,6 +62,25 @@ describe("UserProfileScreen", () => {
       // Assert
       await waitFor(() => {
         expect(getByTestId("follow-button")).toBeDefined();
+      });
+    });
+
+    it("フォロー済み（isFollowing: true）の場合、フォローボタンが『フォロー中』と表示されること", async () => {
+      // Arrange
+      mockUseUserProfile.mockReturnValue({
+        data: { ...MOCK_USER_PROFILE, isFollowing: true },
+        isLoading: false,
+        isError: false,
+        refetch: jest.fn(),
+      });
+
+      // Act
+      const { getByTestId } = await render(<UserProfileScreen />);
+
+      // Assert
+      await waitFor(() => {
+        const label = getByTestId("follow-button-label");
+        expect(label.props.children).toBe("フォロー中");
       });
     });
   });
