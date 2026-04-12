@@ -69,6 +69,25 @@
         };
       in
       {
+        devShells.ci = pkgs.mkShell {
+          buildInputs = with pkgs; [
+            nodejs_22
+            pnpm
+            turbo
+            biome
+            gh
+            git
+            jq
+            curl
+            openssl
+            python3
+            zap
+            bats
+            shellcheck
+            actionlint
+          ];
+        };
+
         devShells.default = pkgs.mkShell {
           buildInputs = with pkgs; [
             nodejs_22
