@@ -134,4 +134,69 @@ describe("FollowButton", () => {
       expect(onToggle).toHaveBeenCalledWith("user-1", false);
     });
   });
+
+  describe("楽観更新", () => {
+    it("onToggle完了前にUI状態が即座に更新されること", async () => {
+      // Arrange
+      let resolveToggle: () => void = () => {};
+      const togglePromise = new Promise<void>((r) => {
+        resolveToggle = r;
+      });
+      const onToggle = jest.fn().mockReturnValue(togglePromise);
+      const { getByTestId } = await render(
+        <FollowButton userId="user-1" isFollowing={false} onToggle={onToggle} />,
+      );
+
+      // Act - タップ直後（API完了前）
+      fireEvent.press(getByTestId("follow-button"));
+
+      // Assert - API完了を待たずに状態が更新されること（楽観更新）
+      await waitFor(() => {
+        const label = getByTestId("follow-button-label");
+        expect(label.props.children).toBe("フォロー中");
+      });
+
+      resolveToggle();
+    });
+
+    it("onToggleがエラーの場合に元の状態にロールバックされること", async () => {
+      // Arrange
+      const onToggle = jest.fn().mockRejectedValue(new Error("通信エラー"));
+      const { getByTestId } = await render(
+        <FollowButton userId="user-1" isFollowing={false} onToggle={onToggle} />,
+      );
+
+      // Act
+      await fireEvent.press(getByTestId("follow-button"));
+
+      // Assert - エラー後に元の状態（未フォロー）に戻ること
+      await waitFor(() => {
+        const label = getByTestId("follow-button-label");
+        expect(label.props.children).toBe("フォローする");
+      });
+    });
+
+    it("フォロー中からフォロー解除に楽観更新されること", async () => {
+      // Arrange
+      let resolveToggle: () => void = () => {};
+      const togglePromise = new Promise<void>((r) => {
+        resolveToggle = r;
+      });
+      const onToggle = jest.fn().mockReturnValue(togglePromise);
+      const { getByTestId } = await render(
+        <FollowButton userId="user-1" isFollowing={true} onToggle={onToggle} />,
+      );
+
+      // Act - タップ直後（API完了前）
+      fireEvent.press(getByTestId("follow-button"));
+
+      // Assert - API完了を待たずに状態が更新されること（楽観更新）
+      await waitFor(() => {
+        const label = getByTestId("follow-button-label");
+        expect(label.props.children).toBe("フォローする");
+      });
+
+      resolveToggle();
+    });
+  });
 });
