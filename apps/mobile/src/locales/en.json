@@ -156,9 +156,15 @@
     "guestUser": "Guest",
     "loadingUser": "Loading...",
     "fetchError": "Failed to fetch user info",
+    "retryHint": "Retry fetching user info",
+    "backHint": "Go back to the previous screen",
+    "loadingHint": "Please wait a moment",
     "back": "Back",
     "edit": {
       "title": "Edit Profile",
+      "nameLabel": "Name",
+      "usernameLabel": "Username",
+      "bioLabel": "Bio",
       "namePlaceholder": "Enter your name",
       "usernamePlaceholder": "username",
       "bioPlaceholder": "Enter your bio",
@@ -281,7 +287,7 @@
     "pages": {
       "save": {
         "title": "Save Tech Articles with One Tap",
-        "description": "Supports 18 sites including Zenn, Qiita, and dev.to. Save articles you're interested in right away."
+        "description": "Supports {{count}} sources including Zenn, Qiita, and dev.to. Save articles you're interested in right away."
       },
       "ai": {
         "title": "AI Summarizes & Translates",
@@ -298,7 +304,13 @@
     },
     "skip": "Skip",
     "next": "Next",
-    "start": "Get Started"
+    "start": "Get Started",
+    "accessibility": {
+      "pageIndicator": "Page {{current}} of {{total}}",
+      "nextPageHint": "Go to page {{next}}",
+      "skipHint": "Skip onboarding and go to login",
+      "startHint": "Go to account creation"
+    }
   },
   "shareIntent": {
     "loading": "Loading",
