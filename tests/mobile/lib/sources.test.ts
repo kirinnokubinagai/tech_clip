@@ -93,10 +93,14 @@ describe("SOURCE_CONFIG", () => {
 });
 
 describe("SOURCE_FILTER_OPTIONS", () => {
-  it("SOURCE_FILTER_OPTIONSをインポートできること", () => {
+  it("SOURCE_FILTER_OPTIONSが配列であること", () => {
     // Assert
-    expect(SOURCE_FILTER_OPTIONS).toBeDefined();
     expect(Array.isArray(SOURCE_FILTER_OPTIONS)).toBe(true);
+  });
+
+  it("SOURCE_FILTER_OPTIONSに要素が存在すること", () => {
+    // Assert
+    expect(SOURCE_FILTER_OPTIONS.length).toBeGreaterThan(0);
   });
 
   it("先頭要素が「すべて」エントリ（value: undefined）であること", () => {
@@ -108,14 +112,23 @@ describe("SOURCE_FILTER_OPTIONS", () => {
     expect("i18nKey" in first && first.i18nKey).toBe("home.filterAll");
   });
 
-  it("SOURCE_DEFINITIONS の各ソースが含まれること", () => {
+  it("otherを除くSOURCE_DEFINITIONSの各ソースが含まれること", () => {
+    // Arrange
+    const sourceValues = SOURCE_FILTER_OPTIONS.slice(1).map((opt) => opt.value);
+    const filteredDefs = SOURCE_DEFINITIONS.filter(({ id }) => id !== "other");
+
+    // Assert
+    for (const def of filteredDefs) {
+      expect(sourceValues).toContain(def.id);
+    }
+  });
+
+  it("otherがSOURCE_FILTER_OPTIONSに含まれないこと", () => {
     // Arrange
     const sourceValues = SOURCE_FILTER_OPTIONS.slice(1).map((opt) => opt.value);
 
     // Assert
-    for (const def of SOURCE_DEFINITIONS) {
-      expect(sourceValues).toContain(def.id);
-    }
+    expect(sourceValues).not.toContain("other");
   });
 
   it("各ソースエントリに value と label が含まれること", () => {
@@ -130,20 +143,22 @@ describe("SOURCE_FILTER_OPTIONS", () => {
     }
   });
 
-  it("手書き配列でなくSOURCE_DEFINITIONSと件数が一致すること", () => {
-    // Act: 先頭の「すべて」エントリを除く
+  it("other除外後のSOURCE_DEFINITIONSと件数が一致すること", () => {
+    // Arrange: 先頭の「すべて」エントリを除く
     const sourceOptions = SOURCE_FILTER_OPTIONS.slice(1);
+    const filteredDefs = SOURCE_DEFINITIONS.filter(({ id }) => id !== "other");
 
     // Assert
-    expect(sourceOptions.length).toBe(SOURCE_DEFINITIONS.length);
+    expect(sourceOptions.length).toBe(filteredDefs.length);
   });
 
-  it("SOURCE_FILTER_OPTIONSがSOURCE_DEFINITIONSの全ソースを含むこと", () => {
+  it("SOURCE_FILTER_OPTIONSがother除外済みSOURCE_DEFINITIONSの全ソースを含むこと", () => {
     // Arrange
     const sourceOptions = SOURCE_FILTER_OPTIONS.slice(1);
+    const filteredDefs = SOURCE_DEFINITIONS.filter(({ id }) => id !== "other");
 
-    // Assert: 全ソース定義に対応するエントリが存在する
-    for (const def of SOURCE_DEFINITIONS) {
+    // Assert: other以外の全ソース定義に対応するエントリが存在する
+    for (const def of filteredDefs) {
       const found = sourceOptions.some(
         (opt) => opt.value === def.id && "label" in opt && opt.label === def.label,
       );

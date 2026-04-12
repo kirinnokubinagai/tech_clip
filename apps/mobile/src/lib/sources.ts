@@ -95,5 +95,8 @@ export type SourceFilterOption = FilterAllEntry | FilterSourceEntry;
  */
 export const SOURCE_FILTER_OPTIONS: readonly SourceFilterOption[] = [
   { value: undefined, i18nKey: "home.filterAll" },
-  ...SOURCE_DEFINITIONS.map(({ id, label }) => ({ value: id, label })),
+  ...SOURCE_DEFINITIONS.filter(({ id }) => id !== "other").map(({ id, label }) => ({
+    value: id,
+    label,
+  })),
 ];
