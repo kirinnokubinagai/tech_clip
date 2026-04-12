@@ -159,6 +159,9 @@
     "back": "Back",
     "edit": {
       "title": "Edit Profile",
+      "nameLabel": "Name",
+      "usernameLabel": "Username",
+      "bioLabel": "Bio",
       "namePlaceholder": "Enter your name",
       "usernamePlaceholder": "username",
       "bioPlaceholder": "Enter your bio",

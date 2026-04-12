@@ -159,6 +159,9 @@
     "back": "戻る",
     "edit": {
       "title": "プロフィール編集",
+      "nameLabel": "名前",
+      "usernameLabel": "ユーザー名",
+      "bioLabel": "自己紹介",
       "namePlaceholder": "名前を入力",
       "usernamePlaceholder": "username",
       "bioPlaceholder": "自己紹介を入力",
