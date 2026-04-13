@@ -8,6 +8,10 @@ describe("useColors", () => {
     jest.clearAllMocks();
   });
 
+  afterEach(() => {
+    jest.restoreAllMocks();
+  });
+
   it("ダークモードのとき DARK_COLORS を返すこと", async () => {
     // Arrange
     jest.spyOn(ReactNative, "useColorScheme").mockReturnValue("dark");
@@ -31,6 +35,7 @@ describe("useColors", () => {
     expect(result.current).toBe(DARK_COLORS);
   });
 
+  /** TODO(#891): FORCE_DARK_MODE を false に変更またはロジック除去時は LIGHT_COLORS を返す期待値に差し替える */
   it("colorScheme が null のとき DARK_COLORS を返すこと", async () => {
     // Arrange
     jest.spyOn(ReactNative, "useColorScheme").mockReturnValue(null);
