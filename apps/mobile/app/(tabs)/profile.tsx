@@ -4,11 +4,8 @@ import { ActivityIndicator, Pressable, ScrollView, Text, View } from "react-nati
 
 import type { ProfileHeaderUser } from "@/components/ProfileHeader";
 import { ProfileHeader } from "@/components/ProfileHeader";
-import { DARK_COLORS } from "@/lib/constants";
+import { useColors } from "@/hooks/use-colors";
 import { useAuthStore } from "@/stores/auth-store";
-
-/** プライマリカラー */
-const PRIMARY_COLOR = DARK_COLORS.primary;
 
 /**
  * 認証済みユーザー情報をプロフィールヘッダー用に変換する
@@ -39,6 +36,7 @@ function toProfileHeaderUser(user: { name: string; image: string | null }): Prof
 export default function ProfileScreen() {
   const { t } = useTranslation();
   const router = useRouter();
+  const colors = useColors();
   const user = useAuthStore((s) => s.user);
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const isLoading = useAuthStore((s) => s.isLoading);
@@ -54,7 +52,7 @@ export default function ProfileScreen() {
   if (isLoading) {
     return (
       <View testID="profile-loading" className="flex-1 bg-background items-center justify-center">
-        <ActivityIndicator size="large" color={PRIMARY_COLOR} />
+        <ActivityIndicator size="large" color={colors.primary} />
       </View>
     );
   }

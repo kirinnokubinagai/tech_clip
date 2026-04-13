@@ -62,13 +62,26 @@ function mockAuthenticatedState(overrides: Partial<typeof MOCK_USER> = {}) {
   );
 }
 
-beforeEach(() => {
-  jest.clearAllMocks();
-  mockPush.mockReset();
-  mockCheckSession.mockResolvedValue(undefined);
-});
+/**
+ * ローディング状態をモックする
+ */
+function mockLoadingState() {
+  useAuthStore.mockImplementation((selector: (state: Record<string, unknown>) => unknown) =>
+    selector({
+      user: null,
+      isAuthenticated: false,
+      isLoading: true,
+      checkSession: mockCheckSession,
+    }),
+  );
+}
 
 describe("ProfileScreen", () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    mockPush.mockReset();
+    mockCheckSession.mockResolvedValue(undefined);
+  });
   describe("未ログイン時", () => {
     it("ログイン誘導メッセージが表示されること", async () => {
       // Arrange
@@ -126,14 +139,7 @@ describe("ProfileScreen", () => {
   describe("ローディング中", () => {
     it("ローディングインジケータが表示されること", async () => {
       // Arrange
-      useAuthStore.mockImplementation((selector: (state: Record<string, unknown>) => unknown) =>
-        selector({
-          user: null,
-          isAuthenticated: false,
-          isLoading: true,
-          checkSession: mockCheckSession,
-        }),
-      );
+      mockLoadingState();
 
       // Act
       const { queryByTestId } = await render(<ProfileScreen />);
