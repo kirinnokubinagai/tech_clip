@@ -110,7 +110,7 @@ lint エラーがゼロになるまで修正する。
 ### フェーズ 4: コミット
 
 ```bash
-cd {worktree} && git add -p && git commit -m "chore: ..."
+cd {worktree} && git add . && git commit -m "chore: ..."
 ```
 
 ### フェーズ 5: impl-ready 書き込み

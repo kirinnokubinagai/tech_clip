@@ -89,14 +89,14 @@ while (( elapsed < TIMEOUT_SECONDS )); do
   # app/claude: GitHub App として動作する Claude bot の login 形式
   changes_comment_count=$(printf '%s' "${pr_data}" | jq '
     [.comments[]
-     | select((.author.login // "") | test("^(github-actions\\[bot\\]|claude\\[bot\\]|claude-code\\[bot\\]|app/claude)$"; "i"))
+     | select((.author.login // "") | test("^(github-actions\\[bot\\]|claude\\[bot\\]|claude-code\\[bot\\]|app/claude|claude)$"; "i"))
      | select(.body | test("(?s)🔄.*Request Changes|CHANGES_REQUESTED"; "i"))] | length
   ' 2>/dev/null || echo "0")
 
   if [[ "${changes_comment_count}" -gt 0 ]]; then
     comment_content=$(printf '%s' "${pr_data}" | jq -r '
       [.comments[]
-       | select((.author.login // "") | test("^(github-actions\\[bot\\]|claude\\[bot\\]|claude-code\\[bot\\]|app/claude)$"; "i"))
+       | select((.author.login // "") | test("^(github-actions\\[bot\\]|claude\\[bot\\]|claude-code\\[bot\\]|app/claude|claude)$"; "i"))
        | select(.body | test("(?s)🔄.*Request Changes|CHANGES_REQUESTED"; "i"))]
       | map("[@" + (.author.login // "unknown") + "]:\n" + .body)
       | join("\n\n---\n\n")
@@ -119,7 +119,7 @@ while (( elapsed < TIMEOUT_SECONDS )); do
   #   "指摘[^0-9]?0(?![0-9])": 「指摘0件」のような確定0件表現（10件等との誤検知防止）
   approve_comment_count=$(printf '%s' "${pr_data}" | jq '
     [.comments[]
-     | select((.author.login // "") | test("^(github-actions\\[bot\\]|claude\\[bot\\]|claude-code\\[bot\\]|app/claude)$"; "i"))
+     | select((.author.login // "") | test("^(github-actions\\[bot\\]|claude\\[bot\\]|claude-code\\[bot\\]|app/claude|claude)$"; "i"))
      | select(.body | test("(?s)全件 ?PASS(?!\\w)|\\bLGTM\\b|Approve 相当|マージ可能(?:です|と判断|。|！|$)|✅.*\\bPASS\\b|指摘[^0-9]?0(?![0-9])"; "i"))] | length
   ' 2>/dev/null || echo "0")
 
