@@ -19,6 +19,18 @@ export type FollowUserItem = {
   avatarUrl: string | null;
 };
 
+/** フォローリストAPIエラー（APIエラーコードを保持する） */
+export class FollowListApiError extends Error {
+  /** API エラーコード */
+  readonly code: string;
+
+  constructor(code: string, message: string) {
+    super(message);
+    this.name = "FollowListApiError";
+    this.code = code;
+  }
+}
+
 /** フォロー一覧APIレスポンス型 */
 type FollowListResponse =
   | {
@@ -68,7 +80,10 @@ async function fetchFollowList(
   const response = await apiFetch<FollowListResponse>(path);
 
   if (!response.success) {
-    throw new Error(response.error.message || errorMessage);
+    throw new FollowListApiError(
+      response.error.code,
+      response.error.message || errorMessage,
+    );
   }
 
   return {

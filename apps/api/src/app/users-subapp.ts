@@ -65,9 +65,9 @@ async function queryFollowList(
     .limit(params.limit);
 
   /**
-   * 非公開ユーザーのプロフィールポリシー:
-   * - id / createdAt はフォロー関係として存在を公開する
-   * - name / bio / avatarUrl は非公開ユーザーの場合 null を返す
+   * 非公開ユーザーは存在自体は公開するがプロフィール詳細は秘匿する。
+   * id と createdAt は返す（フォロー関係の事実は公開情報）。
+   * name / bio / avatarUrl は isProfilePublic が false の場合 null を返す。
    */
   return rows.map((row) => ({
     id: row.id,

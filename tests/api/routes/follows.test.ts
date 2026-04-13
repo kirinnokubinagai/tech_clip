@@ -264,9 +264,9 @@ describe("POST /api/users/:id/follow", () => {
       // Arrange
       mockUserExistsFn.mockResolvedValue(true);
       mockIsFollowingFn.mockResolvedValue(false);
-      mockFollowFn.mockRejectedValue(
-        new Error("UNIQUE constraint failed: follows.follower_id, follows.following_id"),
-      );
+      const dbError = new Error("D1_ERROR");
+      dbError.cause = new Error("UNIQUE constraint failed: follows.follower_id, follows.following_id");
+      mockFollowFn.mockRejectedValue(dbError);
       const app = createTestApp();
 
       // Act
