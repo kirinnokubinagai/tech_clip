@@ -13,6 +13,8 @@ import { DARK_COLORS, LIGHT_COLORS } from "@/lib/constants";
  */
 export function useColors() {
   const colorScheme = useColorScheme();
-  const isDark = colorScheme === "dark" || true;
+  /** ライトモード対応完了まで強制ダーク固定 */
+  const FORCE_DARK_MODE = true;
+  const isDark = FORCE_DARK_MODE ? true : colorScheme === "dark";
   return isDark ? DARK_COLORS : LIGHT_COLORS;
 }

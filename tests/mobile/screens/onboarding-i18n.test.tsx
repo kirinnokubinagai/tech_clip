@@ -13,10 +13,6 @@ jest.mock("expo-router", () => ({
   },
 }));
 
-jest.mock("@/lib/constants", () => ({
-  ...jest.requireActual("@/lib/constants"),
-}));
-
 const mockSetHasSeenOnboarding = jest.fn().mockResolvedValue(undefined);
 
 jest.mock("@mobile/stores/ui-store", () => ({
