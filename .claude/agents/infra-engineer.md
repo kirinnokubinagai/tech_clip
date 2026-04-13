@@ -121,14 +121,21 @@ git -C {worktree} rev-parse HEAD > /tmp/tech-clip-issue-{issue_number}/impl-read
 
 ### フェーズ 6: review-result.json ポーリング
 
+Bash ツールの `timeout: 300000` を指定してポーリングする:
+
 ```bash
-[ -f /tmp/tech-clip-issue-{issue_number}/review-result.json ] && cat /tmp/tech-clip-issue-{issue_number}/review-result.json
+CURRENT_HASH=$(cd {worktree} && git rev-parse HEAD)
+until [ -f /tmp/tech-clip-issue-{issue_number}/review-result.json ] && \
+  [ "$(jq -r '.commit' /tmp/tech-clip-issue-{issue_number}/review-result.json 2>/dev/null)" = "$CURRENT_HASH" ]; do
+  sleep 10
+done
+cat /tmp/tech-clip-issue-{issue_number}/review-result.json
 ```
 
-自分のコミットハッシュと一致する結果が来るまで待つ。
+自分のコミットハッシュと一致する結果が来たら内容を読む。
 
 - **PASS**: 終了する
-- **FAIL**: issues の内容を読んで修正 → フェーズ 2 へ戻る（コミット → impl-ready を新しいハッシュで上書き → ポーリング再開）
+- **FAIL**: issues の内容を読んで修正 → `review-result.json` を削除してからフェーズ 2 へ戻る（`rm -f /tmp/tech-clip-issue-{issue_number}/review-result.json` → コミット → impl-ready を新しいハッシュで上書き → ポーリング再開）
 
 ## ポーリング方針
 
@@ -146,7 +153,7 @@ cat /tmp/tech-clip-issue-{issue_number}/impl-ready
 
 ## Biome lint
 
-設定ファイル以外の TypeScript コードは pnpm biome check を通過させる。
+設定ファイル以外の TypeScript コードは `pnpm lint` を通過させる。
 
 ## 出力規約
 

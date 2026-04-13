@@ -286,8 +286,8 @@ oh-my-claudecode やその他のプラグイン由来のエージェントは使
 | `coder` | コーディング・機能実装（TDD、reviewer とファイル通信） |
 | `reviewer` | コード+セキュリティレビュー・push・PR 作成 |
 | `ui-designer` | UI コンポーネント実装 |
-| `infra-engineer` | インフラ・CI/CD 設定 |
 | `ui-reviewer` | UI/UX レビュー・push・PR 作成 |
+| `infra-engineer` | インフラ・CI/CD 設定 |
 | `infra-reviewer` | インフラレビュー・push・PR 作成 |
 
 ### エージェント連携パターン

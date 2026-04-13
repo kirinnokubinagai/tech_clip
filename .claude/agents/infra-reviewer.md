@@ -29,10 +29,11 @@ tools:
 
 ### フェーズ 1: impl-ready ポーリング
 
-`/tmp/tech-clip-issue-{issue_number}/impl-ready` をポーリングする（短い Bash 呼び出しを繰り返す）:
+Bash ツールの `timeout: 300000` を指定して `/tmp/tech-clip-issue-{issue_number}/impl-ready` をポーリングする:
 
 ```bash
-[ -f /tmp/tech-clip-issue-{issue_number}/impl-ready ] && cat /tmp/tech-clip-issue-{issue_number}/impl-ready
+until [ -f /tmp/tech-clip-issue-{issue_number}/impl-ready ]; do sleep 10; done
+cat /tmp/tech-clip-issue-{issue_number}/impl-ready
 ```
 
 新しいコミットハッシュが書かれていたらレビューを開始する。
@@ -129,7 +130,7 @@ EOF
 
 ### フェーズ 5: ループ制御
 
-- **FAIL**: フェーズ 1 に戻り、新しい impl-ready を待つ
+- **FAIL**: `rm -f /tmp/tech-clip-issue-{issue_number}/impl-ready` を実行してからフェーズ 1 に戻り、新しい impl-ready を待つ
 - **PASS**: フェーズ 6 へ進む
 
 ### フェーズ 6: PASS 後の push + PR 作成
