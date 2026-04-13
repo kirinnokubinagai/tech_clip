@@ -64,7 +64,7 @@ async function fetchFollowList(
   params.set("limit", String(DEFAULT_PAGE_LIMIT));
 
   const queryString = params.toString();
-  const path = `/api/users/${userId}/${segment}${queryString ? `?${queryString}` : ""}`;
+  const path = `/api/users/${encodeURIComponent(userId)}/${segment}${queryString ? `?${queryString}` : ""}`;
 
   const response = await apiFetch<FollowListResponse>(path);
 

@@ -49,10 +49,17 @@ export type FollowFn = (followerId: string, followingId: string) => Promise<Foll
 /** アンフォロー関数の型 */
 export type UnfollowFn = (followerId: string, followingId: string) => Promise<void>;
 
+/** フォロー一覧のユーザーアイテム型 */
+export type FollowListItem = {
+  id: string;
+  createdAt: Date | string;
+  name: string | null;
+  bio: string | null;
+  avatarUrl: string | null;
+};
+
 /** フォロワー/フォロー中一覧取得関数の型 */
-export type GetFollowListFn = (
-  params: FollowListQueryParams,
-) => Promise<Array<Record<string, unknown>>>;
+export type GetFollowListFn = (params: FollowListQueryParams) => Promise<Array<FollowListItem>>;
 
 /** フォロー状態確認関数の型 */
 export type IsFollowingFn = (followerId: string, followingId: string) => Promise<boolean>;
@@ -305,12 +312,25 @@ export function createFollowsRoute(options: FollowsRouteOptions) {
     }
 
     const limit = limitResult;
-    const cursor = c.req.query("cursor");
+    const cursorParam = c.req.query("cursor");
+
+    if (cursorParam !== undefined && parseCursor(cursorParam) === null) {
+      return c.json(
+        {
+          success: false,
+          error: {
+            code: VALIDATION_ERROR_CODE,
+            message: "cursorの形式が正しくありません",
+          },
+        },
+        HTTP_UNPROCESSABLE_ENTITY,
+      );
+    }
 
     const fetchedFollowers = await getFollowersFn({
       userId: targetUserId,
       limit: limit + 1,
-      cursor: cursor || undefined,
+      cursor: cursorParam || undefined,
     });
 
     const hasNext = fetchedFollowers.length > limit;
@@ -376,12 +396,25 @@ export function createFollowsRoute(options: FollowsRouteOptions) {
     }
 
     const limit = limitResult;
-    const cursor = c.req.query("cursor");
+    const cursorParam = c.req.query("cursor");
+
+    if (cursorParam !== undefined && parseCursor(cursorParam) === null) {
+      return c.json(
+        {
+          success: false,
+          error: {
+            code: VALIDATION_ERROR_CODE,
+            message: "cursorの形式が正しくありません",
+          },
+        },
+        HTTP_UNPROCESSABLE_ENTITY,
+      );
+    }
 
     const fetchedFollowing = await getFollowingFn({
       userId: targetUserId,
       limit: limit + 1,
-      cursor: cursor || undefined,
+      cursor: cursorParam || undefined,
     });
 
     const hasNext = fetchedFollowing.length > limit;

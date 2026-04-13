@@ -226,7 +226,8 @@
       "loading": "載入中...",
       "retry": "重試",
       "errorFollowers": "獲取追蹤者失敗",
-      "errorFollowing": "獲取追蹤中失敗"
+      "errorFollowing": "獲取追蹤中失敗",
+      "unknownUser": "未設置名稱"
     }
   },
   "settings": {

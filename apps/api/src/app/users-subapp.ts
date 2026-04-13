@@ -2,9 +2,9 @@ import { and, desc, eq, lt, or } from "drizzle-orm";
 import type { Auth } from "../auth";
 import type { Database } from "../db";
 import { follows, users } from "../db/schema";
-import { toRecord, toRecordArray } from "../lib/db-cast";
+import { toRecord } from "../lib/db-cast";
 import { fetchWithAuth } from "../lib/route-helpers";
-import type { FollowListQueryParams } from "../routes/follows";
+import type { FollowListItem, FollowListQueryParams } from "../routes/follows";
 import { createFollowsRoute, parseCursor } from "../routes/follows";
 import { createUsersRoute } from "../routes/users";
 import type { Bindings } from "../types";
@@ -29,19 +29,18 @@ async function queryFollowList(
   params: FollowListQueryParams,
   filterColumn: typeof follows.followingId | typeof follows.followerId,
   idColumn: typeof follows.followerId | typeof follows.followingId,
-): Promise<Array<Record<string, unknown>>> {
+): Promise<Array<FollowListItem>> {
   const conditions = [eq(filterColumn, params.userId)];
   if (params.cursor) {
     const parsed = parseCursor(params.cursor);
     if (parsed) {
       const { cursorTime, cursorId } = parsed;
-      const cursorCondition = or(
-        lt(follows.createdAt, cursorTime),
-        and(eq(follows.createdAt, cursorTime), lt(idColumn, cursorId)),
+      conditions.push(
+        or(
+          lt(follows.createdAt, cursorTime),
+          and(eq(follows.createdAt, cursorTime), lt(idColumn, cursorId)),
+        ),
       );
-      if (cursorCondition) {
-        conditions.push(cursorCondition);
-      }
     }
   }
   const rows = await db
@@ -58,15 +57,13 @@ async function queryFollowList(
     .orderBy(desc(follows.createdAt), desc(idColumn))
     .limit(params.limit);
 
-  return toRecordArray(
-    rows.map((row) => ({
-      id: row.id,
-      name: row.name ?? null,
-      bio: row.bio ?? null,
-      avatarUrl: row.avatarUrl ?? null,
-      createdAt: row.createdAt,
-    })),
-  );
+  return rows.map((row) => ({
+    id: row.id,
+    name: row.name ?? null,
+    bio: row.bio ?? null,
+    avatarUrl: row.avatarUrl ?? null,
+    createdAt: row.createdAt,
+  }));
 }
 
 /**

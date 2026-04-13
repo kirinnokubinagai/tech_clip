@@ -1,4 +1,5 @@
 import { useFollowers, useFollowing } from "@mobile/hooks/use-follows";
+import { apiFetch } from "@mobile/lib/api";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { renderHook, waitFor } from "@testing-library/react-native";
 import React from "react";
@@ -33,7 +34,7 @@ jest.mock("@mobile/lib/api", () => ({
   apiFetch: jest.fn(),
 }));
 
-const { apiFetch: mockApiFetch } = require("@mobile/lib/api") as { apiFetch: jest.Mock };
+const mockApiFetch = jest.mocked(apiFetch);
 
 /** テスト用QueryClient */
 let queryClient: QueryClient;

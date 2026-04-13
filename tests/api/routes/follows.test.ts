@@ -456,8 +456,20 @@ describe("GET /api/users/:id/followers", () => {
       // Arrange
       mockUserExistsFn.mockResolvedValue(true);
       mockGetFollowersFn.mockResolvedValue([
-        { id: "user_follower_01", name: "フォロワー1", image: null },
-        { id: "user_follower_02", name: "フォロワー2", image: null },
+        {
+          id: "user_follower_01",
+          name: "フォロワー1",
+          bio: null,
+          avatarUrl: null,
+          createdAt: "2024-01-01T00:00:00Z",
+        },
+        {
+          id: "user_follower_02",
+          name: "フォロワー2",
+          bio: null,
+          avatarUrl: null,
+          createdAt: "2024-01-02T00:00:00Z",
+        },
       ]);
       const app = createTestApp();
 
@@ -476,15 +488,18 @@ describe("GET /api/users/:id/followers", () => {
       mockUserExistsFn.mockResolvedValue(true);
       mockGetFollowersFn.mockResolvedValue([]);
       const app = createTestApp();
+      const validCursor = "2024-01-01T00:00:00Z|user_abc";
 
       // Act
-      await app.request(`/api/users/${MOCK_TARGET_USER.id}/followers?limit=10&cursor=abc`);
+      await app.request(
+        `/api/users/${MOCK_TARGET_USER.id}/followers?limit=10&cursor=${encodeURIComponent(validCursor)}`,
+      );
 
       // Assert
       expect(mockGetFollowersFn).toHaveBeenCalledWith({
         userId: MOCK_TARGET_USER.id,
         limit: 11,
-        cursor: "abc",
+        cursor: validCursor,
       });
     });
 
@@ -494,7 +509,9 @@ describe("GET /api/users/:id/followers", () => {
       const followers = Array.from({ length: 21 }, (_, i) => ({
         id: `user_follower_${String(i + 1).padStart(2, "0")}`,
         name: `フォロワー${i + 1}`,
-        image: null,
+        bio: null,
+        avatarUrl: null,
+        createdAt: `2024-01-${String(i + 1).padStart(2, "0")}T00:00:00Z`,
       }));
       mockGetFollowersFn.mockResolvedValue(followers);
       const app = createTestApp();
@@ -507,14 +524,20 @@ describe("GET /api/users/:id/followers", () => {
       const body = (await res.json()) as FollowListResponseBody;
       expect(body.data).toHaveLength(20);
       expect(body.meta.hasNext).toBe(true);
-      expect(body.meta.nextCursor).not.toBeNull();
+      expect(body.meta.nextCursor).toBe(buildCursor(followers[19].createdAt, followers[19].id));
     });
 
     it("次のページがない場合hasNextがfalseであること", async () => {
       // Arrange
       mockUserExistsFn.mockResolvedValue(true);
       mockGetFollowersFn.mockResolvedValue([
-        { id: "user_follower_01", name: "フォロワー1", image: null },
+        {
+          id: "user_follower_01",
+          name: "フォロワー1",
+          bio: null,
+          avatarUrl: null,
+          createdAt: "2024-01-01T00:00:00Z",
+        },
       ]);
       const app = createTestApp();
 
@@ -606,6 +629,24 @@ describe("GET /api/users/:id/followers", () => {
       expect(body.success).toBe(false);
       expect(body.error.code).toBe("VALIDATION_FAILED");
     });
+
+    it("不正な形式のcursorの場合422が返ること", async () => {
+      // Arrange
+      mockUserExistsFn.mockResolvedValue(true);
+      const app = createTestApp();
+
+      // Act
+      const res = await app.request(
+        `/api/users/${MOCK_TARGET_USER.id}/followers?cursor=invalidcursor`,
+      );
+
+      // Assert
+      expect(res.status).toBe(HTTP_UNPROCESSABLE_ENTITY);
+      const body = (await res.json()) as ErrorResponseBody;
+      expect(body.success).toBe(false);
+      expect(body.error.code).toBe("VALIDATION_FAILED");
+      expect(body.error.message).toBe("cursorの形式が正しくありません");
+    });
   });
 
   describe("レスポンス形式", () => {
@@ -659,8 +700,20 @@ describe("GET /api/users/:id/following", () => {
       // Arrange
       mockUserExistsFn.mockResolvedValue(true);
       mockGetFollowingFn.mockResolvedValue([
-        { id: "user_following_01", name: "フォロー中1", image: null },
-        { id: "user_following_02", name: "フォロー中2", image: null },
+        {
+          id: "user_following_01",
+          name: "フォロー中1",
+          bio: null,
+          avatarUrl: null,
+          createdAt: "2024-01-01T00:00:00Z",
+        },
+        {
+          id: "user_following_02",
+          name: "フォロー中2",
+          bio: null,
+          avatarUrl: null,
+          createdAt: "2024-01-02T00:00:00Z",
+        },
       ]);
       const app = createTestApp();
 
@@ -679,15 +732,18 @@ describe("GET /api/users/:id/following", () => {
       mockUserExistsFn.mockResolvedValue(true);
       mockGetFollowingFn.mockResolvedValue([]);
       const app = createTestApp();
+      const validCursor = "2024-01-01T00:00:00Z|user_abc";
 
       // Act
-      await app.request(`/api/users/${MOCK_TARGET_USER.id}/following?limit=10&cursor=abc`);
+      await app.request(
+        `/api/users/${MOCK_TARGET_USER.id}/following?limit=10&cursor=${encodeURIComponent(validCursor)}`,
+      );
 
       // Assert
       expect(mockGetFollowingFn).toHaveBeenCalledWith({
         userId: MOCK_TARGET_USER.id,
         limit: 11,
-        cursor: "abc",
+        cursor: validCursor,
       });
     });
 
@@ -697,7 +753,9 @@ describe("GET /api/users/:id/following", () => {
       const following = Array.from({ length: 21 }, (_, i) => ({
         id: `user_following_${String(i + 1).padStart(2, "0")}`,
         name: `フォロー中${i + 1}`,
-        image: null,
+        bio: null,
+        avatarUrl: null,
+        createdAt: `2024-01-${String(i + 1).padStart(2, "0")}T00:00:00Z`,
       }));
       mockGetFollowingFn.mockResolvedValue(following);
       const app = createTestApp();
@@ -710,7 +768,7 @@ describe("GET /api/users/:id/following", () => {
       const body = (await res.json()) as FollowListResponseBody;
       expect(body.data).toHaveLength(20);
       expect(body.meta.hasNext).toBe(true);
-      expect(body.meta.nextCursor).not.toBeNull();
+      expect(body.meta.nextCursor).toBe(buildCursor(following[19].createdAt, following[19].id));
     });
 
     it("フォロー中が0人の場合空配列を返すこと", async () => {
@@ -776,6 +834,24 @@ describe("GET /api/users/:id/following", () => {
       const body = (await res.json()) as ErrorResponseBody;
       expect(body.success).toBe(false);
       expect(body.error.code).toBe("VALIDATION_FAILED");
+    });
+
+    it("不正な形式のcursorの場合422が返ること", async () => {
+      // Arrange
+      mockUserExistsFn.mockResolvedValue(true);
+      const app = createTestApp();
+
+      // Act
+      const res = await app.request(
+        `/api/users/${MOCK_TARGET_USER.id}/following?cursor=invalidcursor`,
+      );
+
+      // Assert
+      expect(res.status).toBe(HTTP_UNPROCESSABLE_ENTITY);
+      const body = (await res.json()) as ErrorResponseBody;
+      expect(body.success).toBe(false);
+      expect(body.error.code).toBe("VALIDATION_FAILED");
+      expect(body.error.message).toBe("cursorの形式が正しくありません");
     });
   });
 

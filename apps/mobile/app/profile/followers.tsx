@@ -1,7 +1,7 @@
 import { Image } from "expo-image";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { ArrowLeft } from "lucide-react-native";
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { ActivityIndicator, FlatList, Pressable, Text, View } from "react-native";
 
@@ -51,11 +51,12 @@ type UserListItemProps = {
  */
 function UserListItem({ item, onPress, userProfileLabel }: UserListItemProps) {
   const colors = useColors();
+  const { t } = useTranslation();
   const handlePress = useCallback(() => {
     onPress(item.id);
   }, [item.id, onPress]);
 
-  const displayName = item.name ?? item.id;
+  const displayName = item.name ?? t("profile.followers.unknownUser");
 
   return (
     <Pressable
@@ -133,10 +134,7 @@ export default function FollowersScreen() {
 
   const activeQuery = activeTab === "followers" ? followersQuery : followingQuery;
 
-  const currentList = useMemo(
-    () => activeQuery.data?.pages.flatMap((page) => page.items) ?? [],
-    [activeQuery.data],
-  );
+  const currentList = activeQuery.data?.pages.flatMap((page) => page.items) ?? [];
 
   const isLoading = activeQuery.isLoading;
   const isError = activeQuery.isError;
@@ -169,11 +167,13 @@ export default function FollowersScreen() {
 
   const keyExtractor = useCallback((item: FollowUserItem) => item.id, []);
 
+  const { hasNextPage, isFetchingNextPage, fetchNextPage, refetch: activeRefetch } = activeQuery;
+
   const handleEndReached = useCallback(() => {
-    if (activeQuery.hasNextPage && !activeQuery.isFetchingNextPage) {
-      activeQuery.fetchNextPage();
+    if (hasNextPage && !isFetchingNextPage) {
+      fetchNextPage();
     }
-  }, [activeQuery]);
+  }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
 
   const renderEmpty = useCallback(() => {
     if (isLoading) {
@@ -190,7 +190,7 @@ export default function FollowersScreen() {
     );
   }, [activeTab, isLoading, t]);
 
-  const content = useMemo(() => {
+  const renderContent = () => {
     if (isError) {
       return (
         <View testID="followers-error" className="flex-1 items-center justify-center px-4">
@@ -200,7 +200,7 @@ export default function FollowersScreen() {
               : t("profile.followers.errorFollowing")}
           </Text>
           <Pressable
-            onPress={() => activeQuery.refetch()}
+            onPress={activeRefetch}
             className="mt-4 bg-primary rounded-lg px-6 py-3"
             accessibilityRole="button"
             accessibilityLabel={t("profile.followers.retry")}
@@ -230,19 +230,7 @@ export default function FollowersScreen() {
         onEndReachedThreshold={END_REACHED_THRESHOLD}
       />
     );
-  }, [
-    isError,
-    isLoading,
-    activeTab,
-    activeQuery,
-    colors.primary,
-    currentList,
-    renderItem,
-    keyExtractor,
-    renderEmpty,
-    handleEndReached,
-    t,
-  ]);
+  };
 
   return (
     <View testID="followers-screen" className="flex-1 bg-background">
@@ -311,7 +299,7 @@ export default function FollowersScreen() {
         </Pressable>
       </View>
 
-      {content}
+      {renderContent()}
     </View>
   );
 }
