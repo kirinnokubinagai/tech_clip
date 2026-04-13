@@ -65,7 +65,7 @@ while (( elapsed < TIMEOUT_SECONDS )); do
   mergeable=$(printf '%s' "${pr_data}" | jq -r '.mergeable // ""' 2>/dev/null || true)
   if [[ "${mergeable}" == "CONFLICTING" ]]; then
     echo "CONFLICT"
-    printf '\n'
+    echo ""
     echo "--- Conflict Info ---"
     echo "PR #${PR_NUMBER} のブランチが origin/main とコンフリクトしています。"
     echo "CLAUDE.md の「コンフリクト解消フロー」に従って解消してください。"
