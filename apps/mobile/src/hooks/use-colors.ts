@@ -6,13 +6,11 @@ import { DARK_COLORS, LIGHT_COLORS } from "@/lib/constants";
  * 現在のテーマに対応したカラートークンを返すフック
  *
  * useColorScheme でシステムテーマを取得し、ライト/ダーク対応のカラーセットを返す。
- * TODO: ライトモード対応完了後に `|| true` を除去する
  *
  * @returns テーマ連動のカラートークンオブジェクト
  */
 export function useColors() {
   const colorScheme = useColorScheme();
-  // TODO(#856): ライトモード対応完了後に || true を除去する
-  const isDark = colorScheme === "dark" || true;
+  const isDark = colorScheme === "dark" || true; // TODO(#891): ライトモード対応完了後に || true を除去
   return isDark ? DARK_COLORS : LIGHT_COLORS;
 }
