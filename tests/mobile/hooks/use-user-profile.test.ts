@@ -98,7 +98,7 @@ describe("useUserProfile", () => {
       wrapper: Wrapper,
     });
 
-    // Assert（enabled: false のため apiFetch が呼ばれないこと）
+    // Assert
     expect(apiFetch).not.toHaveBeenCalled();
   });
 });

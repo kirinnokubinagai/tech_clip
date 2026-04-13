@@ -49,5 +49,6 @@ export function useUserProfile(userId: string) {
     queryKey: [USER_PROFILE_QUERY_KEY, userId],
     queryFn: () => fetchUserProfile(userId),
     enabled: !!userId,
+    staleTime: 60 * 1000,
   });
 }
