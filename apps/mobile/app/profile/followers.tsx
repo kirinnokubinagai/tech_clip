@@ -147,8 +147,12 @@ export default function FollowersScreen() {
   const initialTab: TabType = tab === "following" ? "following" : "followers";
   const [activeTab, setActiveTab] = useState<TabType>(initialTab);
 
-  const followersQuery = useFollowers(targetUserId);
-  const followingQuery = useFollowing(targetUserId);
+  const followersQuery = useFollowers(targetUserId, {
+    enabled: !!targetUserId && activeTab === "followers",
+  });
+  const followingQuery = useFollowing(targetUserId, {
+    enabled: !!targetUserId && activeTab === "following",
+  });
 
   const activeQuery = activeTab === "followers" ? followersQuery : followingQuery;
 
@@ -193,7 +197,7 @@ export default function FollowersScreen() {
   const { hasNextPage, isFetchingNextPage, fetchNextPage, refetch: activeRefetch } = activeQuery;
 
   const handleRetry = useCallback(() => {
-    activeRefetch();
+    void activeRefetch();
   }, [activeRefetch]);
 
   const handleEndReached = useCallback(() => {

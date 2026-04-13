@@ -241,7 +241,46 @@ describe("POST /api/users/:id/follow", () => {
       expect(res.status).toBe(HTTP_CONFLICT);
       const body = (await res.json()) as ErrorResponseBody;
       expect(body.success).toBe(false);
-      expect(body.error.code).toBe("DUPLICATE");
+      expect(body.error.code).toBe("CONFLICT");
+      expect(body.error.message).toBe("すでにフォローしています");
+    });
+
+    it("フォロー済みの場合にレースコンディションで409を返すこと", async () => {
+      // Arrange
+      mockUserExistsFn.mockResolvedValue(true);
+      mockIsFollowingFn.mockResolvedValue(false);
+      mockFollowFn.mockRejectedValue(
+        new Error("UNIQUE constraint failed: follows.follower_id, follows.following_id"),
+      );
+      const app = createTestApp();
+
+      // Act
+      const res = await app.request(`/api/users/${MOCK_TARGET_USER.id}/follow`, {
+        method: "POST",
+      });
+
+      // Assert
+      expect(res.status).toBe(HTTP_CONFLICT);
+      const body = (await res.json()) as ErrorResponseBody;
+      expect(body.success).toBe(false);
+      expect(body.error.code).toBe("CONFLICT");
+      expect(body.error.message).toBe("すでにフォローしています");
+    });
+
+    it("followFnがUNIQUE以外のエラーをスローした場合に500を返すこと", async () => {
+      // Arrange
+      mockUserExistsFn.mockResolvedValue(true);
+      mockIsFollowingFn.mockResolvedValue(false);
+      mockFollowFn.mockRejectedValue(new Error("DB connection failed"));
+      const app = createTestApp();
+
+      // Act
+      const res = await app.request(`/api/users/${MOCK_TARGET_USER.id}/follow`, {
+        method: "POST",
+      });
+
+      // Assert
+      expect(res.status).toBe(500);
     });
   });
 

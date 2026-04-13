@@ -5,7 +5,6 @@ import {
   AUTH_ERROR_CODE,
   AUTH_ERROR_MESSAGE,
   CONFLICT_ERROR_CODE,
-  DUPLICATE_ERROR_CODE,
   NOT_FOUND_ERROR_CODE,
   VALIDATION_ERROR_CODE,
 } from "../lib/error-codes";
@@ -67,6 +66,25 @@ export type IsFollowingFn = (followerId: string, followingId: string) => Promise
 
 /** ユーザー存在確認関数の型 */
 export type UserExistsFn = (userId: string) => Promise<boolean>;
+
+/** ルートの変数型 */
+type RouteVariables = { user?: Record<string, unknown> };
+
+/**
+ * 認証済みユーザーIDを取得する
+ *
+ * @param c - Honoコンテキスト
+ * @returns 認証済みの場合は `{ ok: true; userId: string }`、未認証の場合は `{ ok: false }`
+ */
+function getAuthenticatedUserId(
+  c: Context<{ Variables: RouteVariables }>,
+): { ok: true; userId: string } | { ok: false } {
+  const user = c.get("user") as Record<string, unknown> | undefined;
+  if (!user?.id || typeof user.id !== "string") {
+    return { ok: false };
+  }
+  return { ok: true, userId: user.id };
+}
 
 /** createFollowsRouteのオプション */
 type FollowsRouteOptions = {
@@ -157,10 +175,7 @@ function isUniqueConstraintError(error: unknown): boolean {
 export function createFollowsRoute(options: FollowsRouteOptions) {
   const { followFn, unfollowFn, getFollowersFn, getFollowingFn, isFollowingFn, userExistsFn } =
     options;
-  const route = new Hono<{ Variables: { user?: Record<string, unknown> } }>();
-
-  /** ルートの変数型 */
-  type RouteVariables = { user?: Record<string, unknown> };
+  const route = new Hono<{ Variables: RouteVariables }>();
 
   /**
    * フォロワー/フォロー中一覧の共通GETハンドラーを生成する
@@ -170,8 +185,8 @@ export function createFollowsRoute(options: FollowsRouteOptions) {
    */
   function createFollowListHandler(getListFn: GetFollowListFn) {
     return async (c: Context<{ Variables: RouteVariables }>) => {
-      const user = c.get("user");
-      if (!user?.id || typeof user.id !== "string") {
+      const authResult = getAuthenticatedUserId(c);
+      if (!authResult.ok) {
         return c.json(
           {
             success: false,
@@ -184,7 +199,19 @@ export function createFollowsRoute(options: FollowsRouteOptions) {
         );
       }
 
-      const targetUserId = c.req.param("id") as string;
+      const targetUserId = c.req.param("id");
+      if (!targetUserId) {
+        return c.json(
+          {
+            success: false,
+            error: {
+              code: "INVALID_REQUEST",
+              message: "ユーザーIDが指定されていません",
+            },
+          },
+          400,
+        );
+      }
 
       const limitResult = parseLimitParam(c.req.query("limit"));
       if (!limitResult.ok) {
@@ -202,7 +229,7 @@ export function createFollowsRoute(options: FollowsRouteOptions) {
       }
 
       const limit = limitResult.value;
-      const cursorParam = c.req.query("cursor") as string | undefined;
+      const cursorParam = c.req.query("cursor");
 
       if (cursorParam !== undefined && parseCursor(cursorParam) === null) {
         return c.json(
@@ -254,8 +281,8 @@ export function createFollowsRoute(options: FollowsRouteOptions) {
   }
 
   route.post("/:id/follow", async (c) => {
-    const user = c.get("user");
-    if (!user?.id || typeof user.id !== "string") {
+    const authResult = getAuthenticatedUserId(c);
+    if (!authResult.ok) {
       return c.json(
         {
           success: false,
@@ -268,7 +295,7 @@ export function createFollowsRoute(options: FollowsRouteOptions) {
       );
     }
 
-    const followerId = user.id;
+    const followerId = authResult.userId;
     const followingId = c.req.param("id");
 
     if (followerId === followingId) {
@@ -304,7 +331,7 @@ export function createFollowsRoute(options: FollowsRouteOptions) {
         {
           success: false,
           error: {
-            code: DUPLICATE_ERROR_CODE,
+            code: CONFLICT_ERROR_CODE,
             message: "すでにフォローしています",
           },
         },
@@ -328,7 +355,7 @@ export function createFollowsRoute(options: FollowsRouteOptions) {
             success: false,
             error: {
               code: CONFLICT_ERROR_CODE,
-              message: "すでにフォロー済みです",
+              message: "すでにフォローしています",
             },
           },
           HTTP_CONFLICT,
@@ -339,8 +366,8 @@ export function createFollowsRoute(options: FollowsRouteOptions) {
   });
 
   route.delete("/:id/follow", async (c) => {
-    const user = c.get("user");
-    if (!user?.id || typeof user.id !== "string") {
+    const authResult = getAuthenticatedUserId(c);
+    if (!authResult.ok) {
       return c.json(
         {
           success: false,
@@ -353,7 +380,7 @@ export function createFollowsRoute(options: FollowsRouteOptions) {
       );
     }
 
-    const followerId = user.id;
+    const followerId = authResult.userId;
     const followingId = c.req.param("id");
 
     const targetExists = await userExistsFn(followingId);

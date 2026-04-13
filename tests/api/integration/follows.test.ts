@@ -199,7 +199,7 @@ describe("フォローAPI 統合テスト", () => {
 
       // Assert
       expect(res.status).toBe(HTTP_CONFLICT);
-      expect(body.error.code).toBe("DUPLICATE");
+      expect(body.error.code).toBe("CONFLICT");
     });
   });
 

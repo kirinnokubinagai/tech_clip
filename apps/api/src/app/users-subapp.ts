@@ -2,7 +2,6 @@ import { and, desc, eq, lt, or, type SQL } from "drizzle-orm";
 import type { Auth } from "../auth";
 import type { Database } from "../db";
 import { follows, users } from "../db/schema";
-import { toRecord } from "../lib/db-cast";
 import { fetchWithAuth } from "../lib/route-helpers";
 import type { FollowListItem, FollowListQueryParams } from "../routes/follows";
 import { createFollowsRoute, parseCursor } from "../routes/follows";
@@ -98,7 +97,11 @@ export async function handleUsers(
         .select()
         .from(follows)
         .where(and(eq(follows.followerId, followerId), eq(follows.followingId, followingId)));
-      return toRecord<{ followerId: string; followingId: string; createdAt: string }>(result);
+      return {
+        followerId: result.followerId,
+        followingId: result.followingId,
+        createdAt: result.createdAt,
+      };
     },
     unfollowFn: async (followerId, followingId) => {
       await db

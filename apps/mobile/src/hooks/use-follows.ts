@@ -68,7 +68,7 @@ async function fetchFollowList(
   const response = await apiFetch<FollowListResponse>(path);
 
   if (!response.success) {
-    throw new Error(response.error?.message || errorMessage);
+    throw new Error(response.error.message || errorMessage);
   }
 
   return {
@@ -100,16 +100,27 @@ async function fetchFollowing(userId: string, cursor: string | undefined): Promi
   return fetchFollowList(userId, cursor, "following", "フォロー中一覧の取得に失敗しました");
 }
 
+/** フォローリストhookのオプション */
+type FollowListOptions = {
+  enabled?: boolean;
+};
+
 /**
  * フォロワー/フォロー中一覧を取得する共通内部hook（無限スクロール対応）
  *
  * @param segment - URLセグメント（"followers" または "following"）
  * @param userId - 対象ユーザーID
+ * @param options - 追加オプション
  * @returns TanStack QueryのuseInfiniteQuery結果
  */
-function useFollowList(segment: "followers" | "following", userId: string) {
+function useFollowList(
+  segment: "followers" | "following",
+  userId: string,
+  options?: FollowListOptions,
+) {
   const queryKey = segment === "followers" ? FOLLOWERS_QUERY_KEY : FOLLOWING_QUERY_KEY;
   const fetchFn = segment === "followers" ? fetchFollowers : fetchFollowing;
+  const isEnabled = options?.enabled !== undefined ? options.enabled : !!userId;
   return useInfiniteQuery<
     FollowListPage,
     Error,
@@ -121,7 +132,7 @@ function useFollowList(segment: "followers" | "following", userId: string) {
     queryFn: ({ pageParam }) => fetchFn(userId, pageParam),
     initialPageParam: undefined,
     getNextPageParam: (lastPage) => lastPage.nextCursor ?? undefined,
-    enabled: !!userId,
+    enabled: isEnabled,
   });
 }
 
@@ -129,18 +140,20 @@ function useFollowList(segment: "followers" | "following", userId: string) {
  * フォロワー一覧を取得するhook（無限スクロール対応）
  *
  * @param userId - 対象ユーザーID
+ * @param options - 追加オプション
  * @returns TanStack QueryのuseInfiniteQuery結果
  */
-export function useFollowers(userId: string) {
-  return useFollowList("followers", userId);
+export function useFollowers(userId: string, options?: FollowListOptions) {
+  return useFollowList("followers", userId, options);
 }
 
 /**
  * フォロー中一覧を取得するhook（無限スクロール対応）
  *
  * @param userId - 対象ユーザーID
+ * @param options - 追加オプション
  * @returns TanStack QueryのuseInfiniteQuery結果
  */
-export function useFollowing(userId: string) {
-  return useFollowList("following", userId);
+export function useFollowing(userId: string, options?: FollowListOptions) {
+  return useFollowList("following", userId, options);
 }
