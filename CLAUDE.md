@@ -174,6 +174,7 @@ bash scripts/poll-pr-review.sh <pr-number>
 |------|-----------|
 | `APPROVED` | 完了。ユーザーに報告 |
 | `CHANGES_REQUESTED` | レビュー内容を読み、coder に修正依頼 → code-reviewer/security-reviewer で再レビュー → マーカー再作成 → 再プッシュ → Step 4 に戻る |
+| `CONFLICT` | コンフリクト解消フローを実行（下記）→ Step 4 に戻る |
 | `TIMEOUT` | タイムアウト。ユーザーに手動確認を依頼 |
 
 **修正ループの流れ:**
@@ -181,6 +182,32 @@ bash scripts/poll-pr-review.sh <pr-number>
 ```text
 poll-pr-review.sh → CHANGES_REQUESTED
   → Agent(coder, mode="acceptEdits") で修正依頼（変更内容を渡す）
+  → Agent(code-reviewer, mode="acceptEdits") + Agent(security-reviewer, mode="acceptEdits") で再レビュー
+  → 両方 PASS → マーカー再作成 → git push → poll-pr-review.sh を再実行
+  → APPROVED になるまで繰り返す
+```
+
+**コンフリクト解消フロー:**
+
+```text
+poll-pr-review.sh → CONFLICT
+  → git -C <worktree> fetch origin
+  → git -C <worktree> merge origin/main（コンフリクトが発生する）
+
+  ※ 機械的にマージせず、必ず以下の順で「意図」を把握してから解消すること
+
+  【Step A: 両側の意図を把握する】
+  1. 現在の Issue（gh issue view <N>）を読み、このブランチが何をしようとしているか確認する
+  2. git log origin/main --oneline -20 で main に入ったコミットを確認する
+  3. コンフリクト箇所を読み、それぞれの変更が何を意図しているかを理解する
+
+  【Step B: 解消方針を決める】
+  - 両者の意図を両立できる場合 → 両方の変更を活かした形にマージする
+  - 片方が明らかに優先されるべき場合 → 理由をコミットメッセージに残す
+  - 判断が難しい場合 → より安全側（データ損失しない側）を選ぶ
+
+  【Step C: 解消・レビュー】
+  → Agent(coder, mode="acceptEdits") にコンフリクト箇所・両側の意図・方針を伝えて解消させる
   → Agent(code-reviewer, mode="acceptEdits") + Agent(security-reviewer, mode="acceptEdits") で再レビュー
   → 両方 PASS → マーカー再作成 → git push → poll-pr-review.sh を再実行
   → APPROVED になるまで繰り返す
