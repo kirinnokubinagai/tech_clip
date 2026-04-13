@@ -160,7 +160,7 @@ cat /tmp/tech-clip-issue-{issue_number}/review-result.json
 自分のコミットハッシュと一致する結果が来たら内容を読む。
 
 - **PASS**: 終了する
-- **FAIL**: issues の内容を読んで修正 → `review-result.json` を削除してからフェーズ 2 へ戻る（`rm -f /tmp/tech-clip-issue-{issue_number}/review-result.json` → コミット → impl-ready を新しいハッシュで上書き → ポーリング再開）
+- **FAIL**: issues の内容を読んで修正 → `review-result.json` を削除してからフェーズ 2 へ戻る（`find /tmp/tech-clip-issue-{issue_number}/ -maxdepth 1 -name "review-result.json" -delete` → コミット → impl-ready を新しいハッシュで上書き → ポーリング再開）
 
 ## ポーリング方針
 

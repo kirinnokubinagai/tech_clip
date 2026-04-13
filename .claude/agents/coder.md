@@ -88,13 +88,18 @@ git -C {worktree} rev-parse HEAD > /tmp/tech-clip-issue-{issue_number}/impl-read
 ### フェーズ 6: review-result.json ポーリング
 
 ```bash
-[ -f /tmp/tech-clip-issue-{issue_number}/review-result.json ] && cat /tmp/tech-clip-issue-{issue_number}/review-result.json
+CURRENT_HASH=$(cd {worktree} && git rev-parse HEAD)
+until [ -f /tmp/tech-clip-issue-{issue_number}/review-result.json ] && \
+  [ "$(jq -r '.commit' /tmp/tech-clip-issue-{issue_number}/review-result.json 2>/dev/null)" = "$CURRENT_HASH" ]; do
+  sleep 10
+done
+cat /tmp/tech-clip-issue-{issue_number}/review-result.json
 ```
 
-自分のコミットハッシュと一致する結果が来るまで待つ。
+自分のコミットハッシュと一致する結果が来たら内容を読む。
 
 - **PASS**: 終了する
-- **FAIL**: issues の内容を読んで修正 → フェーズ 2 へ戻る（コミット → impl-ready を新しいハッシュで上書き → ポーリング再開）
+- **FAIL**: issues の内容を読んで修正 → `review-result.json` を削除してからフェーズ 2 へ戻る（`find /tmp/tech-clip-issue-{issue_number}/ -maxdepth 1 -name "review-result.json" -delete` → コミット → impl-ready を新しいハッシュで上書き → ポーリング再開）
 
 ## コーディング規約
 
@@ -142,7 +147,7 @@ cat /tmp/tech-clip-issue-{issue_number}/impl-ready
 
 ## Biome lint
 
-実装完了後は必ず `pnpm biome check` を実行し、lint エラーがないことを確認する。
+実装完了後は必ず `pnpm lint` を実行し、lint エラーがないことを確認する。
 
 ## 出力規約
 

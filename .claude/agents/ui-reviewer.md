@@ -122,7 +122,7 @@ EOF
 
 ### フェーズ 5: ループ制御
 
-- **FAIL**: `rm -f /tmp/tech-clip-issue-{issue_number}/impl-ready` を実行してからフェーズ 1 に戻り、新しい impl-ready を待つ
+- **FAIL**: `find /tmp/tech-clip-issue-{issue_number}/ -maxdepth 1 -name "impl-ready" -delete` を実行してからフェーズ 1 に戻り、新しい impl-ready を待つ
 - **PASS**: フェーズ 6 へ進む
 
 ### フェーズ 6: PASS 後の push + PR 作成
