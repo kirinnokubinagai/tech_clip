@@ -6,13 +6,7 @@
 import LoginScreen from "@mobile-app/(auth)/login";
 import { render } from "@testing-library/react-native";
 
-/** en.json から実際の英語翻訳を解決するモック */
-jest.mock("react-i18next", () => {
-  const { i18nEnMockFactory } = jest.requireActual("../helpers/i18n-en-mock") as {
-    i18nEnMockFactory: () => unknown;
-  };
-  return (i18nEnMockFactory as () => unknown)();
-});
+import { setMockLocale } from "../helpers/i18n-test-utils";
 
 const mockSignIn = jest.fn();
 
@@ -30,8 +24,13 @@ jest.mock("@/lib/api", () => ({
 }));
 
 beforeEach(() => {
+  setMockLocale("en");
   jest.clearAllMocks();
   global.fetch = jest.fn();
+});
+
+afterEach(() => {
+  setMockLocale("ja");
 });
 
 describe("LoginScreen（英語ロケール）", () => {

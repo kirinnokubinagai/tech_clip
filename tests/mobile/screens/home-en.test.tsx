@@ -9,13 +9,7 @@ import { useOfflineArticles } from "@mobile/hooks/use-offline-articles";
 import HomeScreen from "@mobile-app/(tabs)/index";
 import { render, waitFor } from "@testing-library/react-native";
 
-/** en.json から実際の英語翻訳を解決するモック */
-jest.mock("react-i18next", () => {
-  const { i18nEnMockFactory } = jest.requireActual("../helpers/i18n-en-mock") as {
-    i18nEnMockFactory: () => unknown;
-  };
-  return (i18nEnMockFactory as () => unknown)();
-});
+import { setMockLocale } from "../helpers/i18n-test-utils";
 
 jest.mock("@mobile/hooks/use-articles", () => ({
   useArticles: jest.fn(),
@@ -54,6 +48,7 @@ const DEFAULT_USE_TOGGLE_FAVORITE_MOCK = {
 
 describe("HomeScreen（英語ロケール）", () => {
   beforeEach(() => {
+    setMockLocale("en");
     jest.clearAllMocks();
     (useArticles as jest.Mock).mockReturnValue(DEFAULT_USE_ARTICLES_MOCK);
     (useToggleFavorite as jest.Mock).mockReturnValue(DEFAULT_USE_TOGGLE_FAVORITE_MOCK);
@@ -65,6 +60,10 @@ describe("HomeScreen（英語ロケール）", () => {
       articles: [],
       isLoading: false,
     });
+  });
+
+  afterEach(() => {
+    setMockLocale("ja");
   });
 
   describe("フィルターUI", () => {

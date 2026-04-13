@@ -1,9 +1,9 @@
 import { AlertCircle, RefreshCw, WifiOff } from "lucide-react-native";
-import type { ReactNode } from "react";
+import { type ReactNode, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { Pressable, Text, View } from "react-native";
 
-import { DARK_COLORS } from "@/lib/constants";
+import { useColors } from "@/hooks/use-colors";
 
 /** エラー種別 */
 type ErrorType = "network" | "server" | "generic";
@@ -22,21 +22,15 @@ const ERROR_VIEW_ICON_SIZE = 48;
 /** リトライアイコンサイズ（px） */
 const RETRY_VIEW_ICON_SIZE = 16;
 
-/** エラー種別ごとのアイコン色 */
-const ERROR_TYPE_COLORS: Record<ErrorType, string> = {
-  network: DARK_COLORS.warning,
-  server: DARK_COLORS.error,
-  generic: DARK_COLORS.error,
-};
-
 /**
  * エラー種別に対応するアイコンを返す
  *
  * @param errorType - エラー種別
+ * @param errorTypeColors - テーマ連動のエラー色マップ
  * @returns Lucideアイコンコンポーネント
  */
-function getErrorIcon(errorType: ErrorType): ReactNode {
-  const color = ERROR_TYPE_COLORS[errorType];
+function getErrorIcon(errorType: ErrorType, errorTypeColors: Record<ErrorType, string>): ReactNode {
+  const color = errorTypeColors[errorType];
 
   switch (errorType) {
     case "network":
@@ -72,6 +66,17 @@ export function ErrorView({
   retryLabel,
 }: ErrorViewProps) {
   const { t } = useTranslation();
+  const colors = useColors();
+
+  /** エラー種別ごとのアイコン色 */
+  const errorTypeColors = useMemo<Record<ErrorType, string>>(
+    () => ({
+      network: colors.warning,
+      server: colors.error,
+      generic: colors.error,
+    }),
+    [colors],
+  );
 
   const defaultTitles: Record<ErrorType, string> = {
     network: t("errorView.titles.network"),
@@ -91,7 +96,7 @@ export function ErrorView({
 
   return (
     <View testID="error-view" className="flex-1 items-center justify-center px-8 py-12">
-      {getErrorIcon(errorType)}
+      {getErrorIcon(errorType, errorTypeColors)}
 
       <Text testID="error-view-title" className="text-lg font-semibold text-text mt-4 text-center">
         {displayTitle}
@@ -109,7 +114,7 @@ export function ErrorView({
           accessibilityRole="button"
           accessibilityLabel={displayRetryLabel}
         >
-          <RefreshCw size={RETRY_VIEW_ICON_SIZE} color={DARK_COLORS.white} />
+          <RefreshCw size={RETRY_VIEW_ICON_SIZE} color={colors.white} />
           <Text className="text-white font-semibold">{displayRetryLabel}</Text>
         </Pressable>
       )}

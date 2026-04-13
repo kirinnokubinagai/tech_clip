@@ -13,6 +13,11 @@ jest.mock("expo-router", () => ({
   },
 }));
 
+jest.mock("@/lib/constants", () => ({
+  LIGHT_COLORS: { neutral: "#44403c" },
+  SUPPORTED_SOURCE_COUNT: 19,
+}));
+
 const mockSetHasSeenOnboarding = jest.fn().mockResolvedValue(undefined);
 
 jest.mock("@mobile/stores/ui-store", () => ({

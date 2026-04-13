@@ -6,13 +6,7 @@
 import SettingsScreen from "@mobile-app/(tabs)/settings";
 import { render } from "@testing-library/react-native";
 
-/** en.json から実際の英語翻訳を解決するモック */
-jest.mock("react-i18next", () => {
-  const { i18nEnMockFactory } = jest.requireActual("../helpers/i18n-en-mock") as {
-    i18nEnMockFactory: () => unknown;
-  };
-  return (i18nEnMockFactory as () => unknown)();
-});
+import { setMockLocale } from "../helpers/i18n-test-utils";
 
 jest.mock("expo-router", () => ({
   useRouter: () => ({ push: jest.fn() }),
@@ -73,6 +67,14 @@ jest.mock("@mobile/stores/settings-store", () => ({
     }),
   ),
 }));
+
+beforeEach(() => {
+  setMockLocale("en");
+});
+
+afterEach(() => {
+  setMockLocale("ja");
+});
 
 describe("SettingsScreen（英語ロケール）", () => {
   describe("セクションタイトル", () => {
