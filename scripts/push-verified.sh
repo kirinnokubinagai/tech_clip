@@ -9,6 +9,11 @@ set -euo pipefail
 LOCAL_SHA=$(git rev-parse HEAD)
 BRANCH=$(git rev-parse --abbrev-ref HEAD)
 
+if [ "${BRANCH}" = "HEAD" ]; then
+  echo "エラー: detached HEAD 状態です。ブランチをチェックアウトしてから実行してください。" >&2
+  exit 1
+fi
+
 echo "ブランチを push 中: ${BRANCH} (${LOCAL_SHA})"
 
 git push origin HEAD

@@ -118,7 +118,7 @@ bash scripts/create-worktree.sh <issue-number> <kebab-case-description>
    if code_reviewer == "全件 PASS（0件）" and security_reviewer == "全件 PASS（0件）":
        # ループ脱出 → push へ
        Bash: touch <worktree>/.claude/.review-passed
-       Bash: cd <worktree> && git push origin HEAD
+       Bash: cd <worktree> && bash scripts/push-verified.sh
        Bash: gh pr create → PR URL をユーザーに報告
    else:
        # 全指摘（CRITICAL / HIGH / MEDIUM / LOW すべて）を coder に渡す
@@ -182,7 +182,7 @@ bash scripts/poll-pr-review.sh <pr-number>
 poll-pr-review.sh → CHANGES_REQUESTED
   → Agent(coder, mode="acceptEdits") で修正依頼（変更内容を渡す）
   → Agent(code-reviewer, mode="acceptEdits") + Agent(security-reviewer, mode="acceptEdits") で再レビュー
-  → 両方 PASS → マーカー再作成 → git push → poll-pr-review.sh を再実行
+  → 両方 PASS → マーカー再作成 → bash scripts/push-verified.sh → poll-pr-review.sh を再実行
   → APPROVED になるまで繰り返す
 ```
 
