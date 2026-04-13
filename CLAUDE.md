@@ -136,7 +136,7 @@ bash scripts/create-worktree.sh <issue-number> <kebab-case-description>
 --- レビューループ ---
 ② [並列 spawn] Agent(infra-reviewer, mode="acceptEdits")
                Agent(security-reviewer, mode="acceptEdits")
-   両方 PASS → ループ脱出 → マーカー作成 → push → PR 作成
+   両方 PASS → ループ脱出 → マーカー作成 → bash scripts/push-verified.sh → PR 作成
    指摘あり  → Agent(infra-engineer) で修正 → ②へ戻る
 ```
 
@@ -148,7 +148,7 @@ bash scripts/create-worktree.sh <issue-number> <kebab-case-description>
 --- レビューループ ---
 ② [並列 spawn] Agent(ui-reviewer, mode="acceptEdits")
                Agent(code-reviewer, mode="acceptEdits")
-   両方 PASS → ループ脱出 → マーカー作成 → push → PR 作成
+   両方 PASS → ループ脱出 → マーカー作成 → bash scripts/push-verified.sh → PR 作成
    指摘あり  → Agent(ui-designer, mode="acceptEdits") で修正 → ②へ戻る
 ```
 
