@@ -19,12 +19,12 @@ describe("useColors", () => {
     expect(result.current).toBe(DARK_COLORS);
   });
 
-  it("現在 || true により常に DARK_COLORS を返すこと（ライトモード設定でも）", async () => {
+  it("FORCE_DARK_MODE により常に DARK_COLORS を返すこと（ライトモード設定でも）", async () => {
     // Arrange
     jest.spyOn(ReactNative, "useColorScheme").mockReturnValue("light");
 
     // Act
-    // TODO: ライトモード対応時に || true を除去すると LIGHT_COLORS が返る
+    // TODO: FORCE_DARK_MODE を false に変更またはロジック除去時に LIGHT_COLORS が返る
     const { result } = await renderHook(() => useColors());
 
     // Assert
