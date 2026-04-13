@@ -5,9 +5,9 @@ import { useCallback, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { ActivityIndicator, FlatList, Pressable, Text, View } from "react-native";
 
+import { useColors } from "@/hooks/use-colors";
 import type { FollowUserItem } from "@/hooks/use-follows";
 import { useFollowers, useFollowing } from "@/hooks/use-follows";
-import { useColors } from "@/hooks/use-colors";
 import { useAuthStore } from "@/stores/auth-store";
 
 /** タブの種類 */
@@ -21,7 +21,6 @@ const AVATAR_SIZE = 48;
 
 /** 無限スクロールの発火閾値（リスト全体に対する割合） */
 const END_REACHED_THRESHOLD = 0.5;
-
 
 /**
  * ユーザー名の頭文字を取得する
