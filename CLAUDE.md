@@ -298,7 +298,8 @@ oh-my-claudecode やその他のプラグイン由来のエージェントは使
 - Lint / Format は Biome を使う
 - 破壊的な Git コマンドを使わない
 - **レビューが通る前に push しない**（pre-push-review-guard.sh がブロックする）
-- **code-reviewer と security-reviewer の両方が「全件 PASS（0件）」を返すまで push しない**（CRITICAL / HIGH / MEDIUM / LOW 問わず指摘が 1 件でも残れば修正ループを続ける）
+- **code-reviewer と security-reviewer の両方が「全件 PASS（0件）」を返すまで push しない**（🔴/🟡/💡 問わず指摘が 1 件でも残れば修正ループを続ける）
+  - **注意**: 「全件 PASS（0件）」とは 🔴/🟡/💡 のいずれも 0 件であることを意味する。💡（改善提案）が 1 件でも残っている場合は PASS ではない
 - **オーケストレーターは main ブランチ上でソースファイルを直接編集しない。worktree 上でもエージェントへの委譲を優先する**
 - **TeamCreate / TaskCreate / SendMessage は使用しない**（Agent ツールで直接 spawn する）
 - **再レビューは新しい Agent を spawn する**（同じエージェントを再利用しない）
