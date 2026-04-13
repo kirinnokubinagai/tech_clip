@@ -8,12 +8,14 @@ import React from "react";
 const MOCK_FOLLOWERS = [
   {
     id: "user-1",
+    createdAt: "2024-01-01T00:00:00Z",
     name: "田中太郎",
     bio: "フロントエンドエンジニア",
     avatarUrl: null,
   },
   {
     id: "user-2",
+    createdAt: "2024-01-01T00:00:00Z",
     name: "佐藤花子",
     bio: null,
     avatarUrl: "https://example.com/avatar.jpg",
@@ -24,6 +26,7 @@ const MOCK_FOLLOWERS = [
 const MOCK_FOLLOWING = [
   {
     id: "user-3",
+    createdAt: "2024-01-01T00:00:00Z",
     name: "鈴木一郎",
     bio: "バックエンドエンジニア",
     avatarUrl: null,

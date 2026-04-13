@@ -4,8 +4,20 @@ import { fireEvent, render, waitFor } from "@testing-library/react-native";
 /** モックデータ: フォロワー一覧 */
 const MOCK_FOLLOWERS_PAGE = {
   items: [
-    { id: "user-1", name: "田中太郎", bio: "フロントエンドエンジニア", avatarUrl: null },
-    { id: "user-2", name: "佐藤花子", bio: null, avatarUrl: null },
+    {
+      id: "user-1",
+      createdAt: "2024-01-01T00:00:00Z",
+      name: "田中太郎",
+      bio: "フロントエンドエンジニア",
+      avatarUrl: null,
+    },
+    {
+      id: "user-2",
+      createdAt: "2024-01-01T00:00:00Z",
+      name: "佐藤花子",
+      bio: null,
+      avatarUrl: null,
+    },
   ],
   nextCursor: null,
   hasNext: false,
@@ -13,7 +25,15 @@ const MOCK_FOLLOWERS_PAGE = {
 
 /** モックデータ: フォロー中一覧 */
 const MOCK_FOLLOWING_PAGE = {
-  items: [{ id: "user-3", name: "鈴木一郎", bio: "バックエンドエンジニア", avatarUrl: null }],
+  items: [
+    {
+      id: "user-3",
+      createdAt: "2024-01-01T00:00:00Z",
+      name: "鈴木一郎",
+      bio: "バックエンドエンジニア",
+      avatarUrl: null,
+    },
+  ],
   nextCursor: null,
   hasNext: false,
 };

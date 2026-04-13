@@ -257,6 +257,13 @@ export default function FollowersScreen() {
         renderItem={renderItem}
         keyExtractor={keyExtractor}
         ListEmptyComponent={renderEmpty}
+        ListFooterComponent={
+          isFetchingNextPage ? (
+            <View className="py-4 items-center">
+              <ActivityIndicator size="small" color={colors.primary} />
+            </View>
+          ) : null
+        }
         contentContainerStyle={{ flexGrow: 1 }}
         onEndReached={handleEndReached}
         onEndReachedThreshold={END_REACHED_THRESHOLD}
@@ -273,6 +280,7 @@ export default function FollowersScreen() {
     renderItem,
     keyExtractor,
     renderEmpty,
+    isFetchingNextPage,
     handleEndReached,
   ]);
 
