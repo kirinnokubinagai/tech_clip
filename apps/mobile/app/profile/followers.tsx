@@ -4,9 +4,10 @@ import { ArrowLeft } from "lucide-react-native";
 import { useCallback, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { ActivityIndicator, FlatList, Pressable, Text, View } from "react-native";
+
+import { useColors } from "@/hooks/use-colors";
 import type { FollowUser } from "@/hooks/use-follow";
 import { useFollowers, useFollowing } from "@/hooks/use-follow";
-import { DARK_COLORS } from "@/lib/constants";
 import { getInitials } from "@/utils/formatters";
 
 /** タブの種類 */
@@ -17,21 +18,6 @@ const BACK_ICON_SIZE = 24;
 
 /** アバターのサイズ（px） */
 const AVATAR_SIZE = 48;
-
-/** テキストカラー */
-const TEXT_COLOR = DARK_COLORS.text;
-
-/** プライマリカラー */
-const PRIMARY_COLOR = DARK_COLORS.primary;
-
-/** アバターのフォールバック背景色 */
-const AVATAR_FALLBACK_BG = DARK_COLORS.border;
-
-/** アバターのフォールバックテキスト色 */
-const AVATAR_FALLBACK_TEXT_COLOR = DARK_COLORS.text;
-
-/** アクティブタブの下線カラー */
-const ACTIVE_TAB_BORDER_COLOR = DARK_COLORS.primary;
 
 type UserListItemProps = {
   item: FollowUser;
@@ -47,6 +33,7 @@ type UserListItemProps = {
  * @param userProfileLabel - アクセシビリティラベル（翻訳済み文字列）
  */
 function UserListItem({ item, onPress, userProfileLabel }: UserListItemProps) {
+  const colors = useColors();
   const handlePress = useCallback(() => {
     onPress(item.id);
   }, [item.id, onPress]);
@@ -75,14 +62,14 @@ function UserListItem({ item, onPress, userProfileLabel }: UserListItemProps) {
             width: AVATAR_SIZE,
             height: AVATAR_SIZE,
             borderRadius: AVATAR_SIZE / 2,
-            backgroundColor: AVATAR_FALLBACK_BG,
+            backgroundColor: colors.border,
             alignItems: "center",
             justifyContent: "center",
           }}
         >
           <Text
             style={{
-              color: AVATAR_FALLBACK_TEXT_COLOR,
+              color: colors.text,
               fontSize: 16,
               fontWeight: "bold",
             }}
@@ -110,6 +97,7 @@ function UserListItem({ item, onPress, userProfileLabel }: UserListItemProps) {
  * クエリパラメータ `tab` で初期タブを指定可能（"followers" | "following"）。
  */
 export default function FollowersScreen() {
+  const colors = useColors();
   const { t } = useTranslation();
   const { tab } = useLocalSearchParams<{ tab?: string }>();
   const router = useRouter();
@@ -186,7 +174,7 @@ export default function FollowersScreen() {
           accessibilityLabel={t("common.back")}
           hitSlop={8}
         >
-          <ArrowLeft size={BACK_ICON_SIZE} color={TEXT_COLOR} />
+          <ArrowLeft size={BACK_ICON_SIZE} color={colors.text} />
         </Pressable>
         <Text className="text-lg font-bold text-text">
           {activeTab === "followers"
@@ -205,7 +193,7 @@ export default function FollowersScreen() {
           className="flex-1 items-center py-3"
           style={
             activeTab === "followers"
-              ? { borderBottomWidth: 2, borderBottomColor: ACTIVE_TAB_BORDER_COLOR }
+              ? { borderBottomWidth: 2, borderBottomColor: colors.primary }
               : undefined
           }
         >
@@ -227,7 +215,7 @@ export default function FollowersScreen() {
           className="flex-1 items-center py-3"
           style={
             activeTab === "following"
-              ? { borderBottomWidth: 2, borderBottomColor: ACTIVE_TAB_BORDER_COLOR }
+              ? { borderBottomWidth: 2, borderBottomColor: colors.primary }
               : undefined
           }
         >
@@ -245,7 +233,7 @@ export default function FollowersScreen() {
 
       {isLoading ? (
         <View testID="followers-loading" className="flex-1 items-center justify-center">
-          <ActivityIndicator size="large" color={PRIMARY_COLOR} />
+          <ActivityIndicator size="large" color={colors.primary} />
           <Text className="text-text-muted mt-3">{t("profile.followers.loading")}</Text>
         </View>
       ) : isError ? (

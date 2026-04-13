@@ -16,11 +16,39 @@
     "search": "搜尋",
     "skip": "跳過",
     "start": "開始",
-    "generating": "生成中...",
     "accessibility": {
       "tapToChange": "點擊更改",
-      "currentValue": "{{label}}，目前設定: {{value}}"
-    }
+      "currentValue": "{{label}}，目前設定: {{value}}",
+      "loading": "載入中",
+      "loadingHint": "正在載入內容",
+      "pleaseWait": "請稍候",
+      "loadingArticleList": "正在載入文章列表",
+      "loadingProfile": "正在載入個人資料",
+      "loadingArticleDetail": "正在載入文章詳情",
+      "tagInput": "輸入新標籤",
+      "addTag": "新增標籤",
+      "followSwitching": "正在切換追蹤狀態",
+      "unfollow": "取消追蹤",
+      "follow": "追蹤",
+      "offline": "您已離線",
+      "close": "關閉",
+      "purchasePremium": "購買進階方案",
+      "settings": "設定",
+      "deselectTag": "取消選擇{{tag}}",
+      "selectTag": "選擇{{tag}}"
+    },
+    "following": "追蹤中",
+    "follow": "追蹤",
+    "offline": "離線",
+    "tagInputPlaceholder": "新增標籤",
+    "tagLimitMessage": "最多可選擇{{max}}個標籤"
+  },
+  "premium": {
+    "title": "進階方案",
+    "monthlyUsage": "本月AI功能使用次數",
+    "limitReached": "已達到免費方案上限",
+    "featuresTitle": "進階方案可用功能",
+    "purchaseButton": "購買進階方案"
   },
   "auth": {
     "login": "登入",
@@ -94,7 +122,10 @@
     "fetchError": "取得文章失敗",
     "noArticles": "沒有文章",
     "offlineCachedArticles": "離線：顯示已快取文章",
-    "offlineNoCache": "離線：沒有快取"
+    "offlineNoCache": "離線：沒有快取",
+    "retryLabel": "重試",
+    "retryHint": "重新取得文章",
+    "sourceFilterHint": "僅顯示{{label}}文章"
   },
   "article": {
     "save": "儲存文章",
@@ -129,8 +160,8 @@
     "urlRequired": "請輸入URL",
     "urlInvalid": "請輸入有效的URL",
     "noMatch": "沒有符合「{{query}}」的文章",
-    "summaryLabel": "摘要",
-    "translationLabel": "翻譯"
+    "backA11yLabel": "返回",
+    "generating": "生成中..."
   },
   "search": {
     "placeholder": "搜尋文章...",
@@ -149,6 +180,8 @@
     "loadingNotifications": "載入中..."
   },
   "profile": {
+    "followersLabel": "追蹤者",
+    "followingLabel": "追蹤中",
     "loginPrompt": "登入後可查看已儲存的文章和收藏",
     "editProfile": "編輯個人資料",
     "savedArticles": "已儲存文章",

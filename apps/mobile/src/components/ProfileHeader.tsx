@@ -3,7 +3,7 @@ import { Settings } from "lucide-react-native";
 import { useTranslation } from "react-i18next";
 import { Pressable, Text, View } from "react-native";
 
-import { DARK_COLORS } from "@/lib/constants";
+import { useColors } from "@/hooks/use-colors";
 import { getInitials } from "@/utils/formatters";
 
 /** プロフィールヘッダーに渡すユーザーデータ */
@@ -27,15 +27,6 @@ const AVATAR_SIZE = 80;
 
 /** 設定アイコンのサイズ（px） */
 const SETTINGS_ICON_SIZE = 22;
-
-/** 設定アイコンのカラー */
-const SETTINGS_ICON_COLOR = DARK_COLORS.textMuted;
-
-/** アバターのフォールバック背景色 */
-const AVATAR_FALLBACK_BG = DARK_COLORS.border;
-
-/** アバターのフォールバックテキスト色 */
-const AVATAR_FALLBACK_TEXT_COLOR = DARK_COLORS.text;
 
 /**
  * 数値を短縮表記にフォーマットする
@@ -66,6 +57,7 @@ function formatCount(count: number | undefined): string {
  * @param onSettingsPress - 設定アイコンタップ時のコールバック
  */
 export function ProfileHeader({ user, onSettingsPress }: ProfileHeaderProps) {
+  const colors = useColors();
   const { t } = useTranslation();
   return (
     <View testID="profile-header" className="px-4 pt-4 pb-6 bg-surface border-b border-border">
@@ -85,12 +77,12 @@ export function ProfileHeader({ user, onSettingsPress }: ProfileHeaderProps) {
                 width: AVATAR_SIZE,
                 height: AVATAR_SIZE,
                 borderRadius: AVATAR_SIZE / 2,
-                backgroundColor: AVATAR_FALLBACK_BG,
+                backgroundColor: colors.border,
                 alignItems: "center",
                 justifyContent: "center",
               }}
             >
-              <Text style={{ color: AVATAR_FALLBACK_TEXT_COLOR, fontSize: 24, fontWeight: "bold" }}>
+              <Text style={{ color: colors.text, fontSize: 24, fontWeight: "bold" }}>
                 {getInitials(user.name)}
               </Text>
             </View>
@@ -113,11 +105,11 @@ export function ProfileHeader({ user, onSettingsPress }: ProfileHeaderProps) {
             testID="profile-settings-button"
             onPress={onSettingsPress}
             accessibilityRole="button"
-            accessibilityLabel={t("tabs.settings")}
+            accessibilityLabel={t("common.accessibility.settings")}
             hitSlop={8}
             className="p-1"
           >
-            <Settings size={SETTINGS_ICON_SIZE} color={SETTINGS_ICON_COLOR} />
+            <Settings size={SETTINGS_ICON_SIZE} color={colors.textMuted} />
           </Pressable>
         )}
       </View>
@@ -127,13 +119,13 @@ export function ProfileHeader({ user, onSettingsPress }: ProfileHeaderProps) {
           <Text testID="profile-followers-count" className="text-lg font-bold text-text">
             {formatCount(user.followersCount)}
           </Text>
-          <Text className="text-xs text-text-muted">{t("profile.followers.followersTab")}</Text>
+          <Text className="text-xs text-text-muted">{t("profile.followersLabel")}</Text>
         </View>
         <View className="items-center">
           <Text testID="profile-following-count" className="text-lg font-bold text-text">
             {formatCount(user.followingCount)}
           </Text>
-          <Text className="text-xs text-text-muted">{t("profile.followers.followingTab")}</Text>
+          <Text className="text-xs text-text-muted">{t("profile.followingLabel")}</Text>
         </View>
       </View>
     </View>
