@@ -41,6 +41,7 @@ export default function ProfileScreen() {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const isLoading = useAuthStore((s) => s.isLoading);
 
+  /** 設定画面への遷移を処理する */
   const handleSettingsPress = () => {
     router.push("/(tabs)/settings");
   };
