@@ -38,12 +38,12 @@ ls {worktree}/docs/superpowers/specs/*.md | sort | tail -1
 
 最新の spec ファイルを読む。存在しない場合はオーケストレーターから渡された指示のみで進める。
 
-### フェーズ 2: coder-ready ポーリング
+### フェーズ 2: impl-ready ポーリング
 
-`/tmp/tech-clip-issue-{issue_number}/coder-ready` をポーリングする（短い Bash 呼び出しを繰り返す）:
+`/tmp/tech-clip-issue-{issue_number}/impl-ready` をポーリングする（短い Bash 呼び出しを繰り返す）:
 
 ```bash
-[ -f /tmp/tech-clip-issue-{issue_number}/coder-ready ] && cat /tmp/tech-clip-issue-{issue_number}/coder-ready
+[ -f /tmp/tech-clip-issue-{issue_number}/impl-ready ] && cat /tmp/tech-clip-issue-{issue_number}/impl-ready
 ```
 
 新しいコミットハッシュが書かれていたらレビューを開始する。
@@ -87,7 +87,7 @@ cd {worktree} && direnv exec {worktree} pnpm test
 
 ```json
 {
-  "commit": "<coder-ready に書かれていたコミットハッシュ>",
+  "commit": "<impl-ready に書かれていたコミットハッシュ>",
   "status": "FAIL",
   "issues": [
     {
