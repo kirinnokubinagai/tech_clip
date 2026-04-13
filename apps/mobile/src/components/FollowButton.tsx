@@ -3,22 +3,10 @@ import { useCallback, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { ActivityIndicator, Pressable, Text } from "react-native";
 
-import { DARK_COLORS } from "@/lib/constants";
+import { useColors } from "@/hooks/use-colors";
 
 /** フォローボタンのアイコンサイズ（px） */
 const ICON_SIZE = 16;
-
-/** フォロー済みボタンのアイコンカラー */
-const FOLLOWING_ICON_COLOR = DARK_COLORS.text;
-
-/** 未フォローボタンのアイコンカラー */
-const NOT_FOLLOWING_ICON_COLOR = DARK_COLORS.white;
-
-/** フォロー済みブランチのローディングインジケーターカラー */
-const FOLLOWING_LOADING_COLOR = DARK_COLORS.primary;
-
-/** 未フォローブランチのローディングインジケーターカラー（白: 青背景上で視認可能） */
-const NOT_FOLLOWING_LOADING_COLOR = DARK_COLORS.white;
 
 type FollowButtonProps = {
   userId: string;
@@ -44,6 +32,7 @@ export function FollowButton({
   const { t } = useTranslation();
   const [isFollowing, setIsFollowing] = useState(initialFollowing);
   const [isLoading, setIsLoading] = useState(false);
+  const colors = useColors();
 
   const handlePress = useCallback(async () => {
     const prevFollowing = isFollowing;
@@ -77,9 +66,9 @@ export function FollowButton({
         }
       >
         {isLoading ? (
-          <ActivityIndicator size="small" color={FOLLOWING_LOADING_COLOR} />
+          <ActivityIndicator size="small" color={colors.primary} />
         ) : (
-          <UserMinus size={ICON_SIZE} color={FOLLOWING_ICON_COLOR} />
+          <UserMinus size={ICON_SIZE} color={colors.text} />
         )}
         <Text testID="follow-button-label" className="text-sm font-medium text-text">
           {t("common.following")}
@@ -102,9 +91,9 @@ export function FollowButton({
       }
     >
       {isLoading ? (
-        <ActivityIndicator size="small" color={NOT_FOLLOWING_LOADING_COLOR} />
+        <ActivityIndicator size="small" color={colors.white} />
       ) : (
-        <UserPlus size={ICON_SIZE} color={NOT_FOLLOWING_ICON_COLOR} />
+        <UserPlus size={ICON_SIZE} color={colors.white} />
       )}
       <Text testID="follow-button-label" className="text-sm font-semibold text-white">
         {t("common.follow")}
