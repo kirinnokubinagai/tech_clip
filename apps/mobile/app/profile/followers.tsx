@@ -187,7 +187,7 @@ export default function FollowersScreen() {
     [router],
   );
 
-  const handleTabPress = useCallback((tab: TabType) => setActiveTab(tab), []);
+  const handleTabPress = useCallback((nextTab: TabType) => setActiveTab(nextTab), []);
 
   const renderItem = useCallback(
     ({ item }: { item: FollowUserItem }) => {
@@ -295,7 +295,7 @@ export default function FollowersScreen() {
   ]);
 
   if (!targetUserId) {
-    return <ErrorView message={t("profile.followers.unknownUser")} />;
+    return <ErrorView message={t("profile.followers.userNotSpecified")} />;
   }
 
   return (

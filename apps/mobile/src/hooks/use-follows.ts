@@ -51,14 +51,12 @@ type FollowListPage = {
  * @param userId - 対象ユーザーID
  * @param cursor - ページネーションカーソル
  * @param segment - URLセグメント（"followers" または "following"）
- * @param errorMessage - 失敗時に throw するエラーメッセージ
  * @returns フォローリストページデータ
  */
 async function fetchFollowList(
   userId: string,
   cursor: string | undefined,
   segment: "followers" | "following",
-  errorMessage: string,
 ): Promise<FollowListPage> {
   const params = new URLSearchParams();
   if (cursor) params.set("cursor", cursor);
@@ -69,7 +67,7 @@ async function fetchFollowList(
   const response = await apiFetch<FollowListResponse>(path);
 
   if (!response.success) {
-    throw new Error(response.error.message ?? errorMessage);
+    throw new Error(response.error.message);
   }
 
   return {
@@ -87,7 +85,7 @@ async function fetchFollowList(
  * @returns フォロワー一覧データ
  */
 async function fetchFollowers(userId: string, cursor: string | undefined): Promise<FollowListPage> {
-  return fetchFollowList(userId, cursor, "followers", "フォロワー一覧の取得に失敗しました");
+  return fetchFollowList(userId, cursor, "followers");
 }
 
 /**
@@ -98,7 +96,7 @@ async function fetchFollowers(userId: string, cursor: string | undefined): Promi
  * @returns フォロー中一覧データ
  */
 async function fetchFollowing(userId: string, cursor: string | undefined): Promise<FollowListPage> {
-  return fetchFollowList(userId, cursor, "following", "フォロー中一覧の取得に失敗しました");
+  return fetchFollowList(userId, cursor, "following");
 }
 
 /** フォローリストhookのオプション */

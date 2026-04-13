@@ -227,7 +227,8 @@
       "retry": "重试",
       "errorFollowers": "获取关注者失败",
       "errorFollowing": "获取关注中失败",
-      "unknownUser": "未设置名称"
+      "unknownUser": "未设置名称",
+      "userNotSpecified": "未指定用户"
     }
   },
   "settings": {

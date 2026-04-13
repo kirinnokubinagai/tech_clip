@@ -38,6 +38,10 @@ async function queryFollowList(
   if (params.cursor) {
     const parsed = parseCursor(params.cursor);
     if (!parsed) {
+      /**
+       * ルート層でのバリデーション漏れを検知するための内部整合性チェック。
+       * 通常この throw は実行されない。
+       */
       throw new Error("カーソル形式が不正です");
     }
     const { cursorTime, cursorId } = parsed;

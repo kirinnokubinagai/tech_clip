@@ -227,7 +227,8 @@
       "retry": "Retry",
       "errorFollowers": "Failed to load followers",
       "errorFollowing": "Failed to load following",
-      "unknownUser": "Unknown user"
+      "unknownUser": "Unknown user",
+      "userNotSpecified": "User not specified"
     }
   },
   "settings": {

@@ -284,8 +284,9 @@ export function createFollowsRoute(options: FollowsRouteOptions) {
 
       const hasNext = fetched.length > limit;
       const data = hasNext ? fetched.slice(0, limit) : fetched;
-      const lastItem = data.length > 0 ? data[data.length - 1] : null;
-      const nextCursor = hasNext && lastItem ? buildCursor(lastItem.createdAt, lastItem.id) : null;
+      const nextCursor = hasNext
+        ? buildCursor(data[data.length - 1].createdAt, data[data.length - 1].id)
+        : null;
 
       return c.json({
         success: true,

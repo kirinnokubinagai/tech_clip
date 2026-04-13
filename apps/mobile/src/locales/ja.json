@@ -227,7 +227,8 @@
       "retry": "再試行",
       "errorFollowers": "フォロワーの取得に失敗しました",
       "errorFollowing": "フォロー中の取得に失敗しました",
-      "unknownUser": "名前未設定"
+      "unknownUser": "名前未設定",
+      "userNotSpecified": "ユーザーが指定されていません"
     }
   },
   "settings": {
