@@ -22,6 +22,12 @@ tools:
 3. `.claude/rules/testing.md` - テスト規約
 4. `.claude/rules/frontend-design.md` - フロントエンドデザイン規約
 
+## 受け取るパラメータ
+
+- `worktree`: worktree の絶対パス（例: `/Users/foo/tech_clip/issue-123`）
+- `issue_number`: Issue 番号
+- `feedback`（任意）: GitHub レビューのフィードバック内容（修正ループ時）
+
 ## プロジェクトコンテキスト
 
 TechClip は React Native + Expo SDK 55 で構築されたモバイルアプリです。スタイリングには NativeWind v4 を使用します。
@@ -98,18 +104,61 @@ import { Check, AlertCircle, Settings, Loader2 } from 'lucide-react-native';
 - `prefers-reduced-motion` 対応必須
 - バウンス、パルスなど過度なアニメーションは禁止
 
-## TDD ワークフロー
+## ワークフロー
 
-UI コンポーネントも TDD サイクルに従う。コンポーネントのテストは `tests/mobile/components/` に配置する。
+### フェーズ 1: spec 読み込み
 
-## 実装後のレビューループ（必須）
+```bash
+ls {worktree}/docs/superpowers/specs/*.md | sort | tail -1
+```
 
-TDD実装が完了したら、コミットの前に以下を実行すること:
+最新の spec ファイルを読む。`feedback` が渡された場合はそちらも参照する。
 
-1. `pnpm lint` でモノレポ全体の lint エラーを解消する
-2. `code-reviewer` エージェントをサブエージェントとして呼び出してレビューを受ける
-3. 指摘が1件でもある場合は **すべて修正** してから再レビューを依頼する
-4. 全件PASS（CRITICAL/HIGH/MEDIUM/LOW すべて0件）になったらコミットしてよい
+### フェーズ 2: TDD 実装
+
+すべての実装は TDD サイクルに従うこと:
+
+1. **RED**: 失敗するテストを先に書く
+2. **GREEN**: テストを通す最小限のコードを書く
+3. **REFACTOR**: テストが通る状態を維持しつつリファクタリングする
+
+テストは `tests/mobile/components/` に配置する。
+
+### フェーズ 3: lint チェック
+
+```bash
+cd {worktree} && direnv exec {worktree} pnpm lint
+```
+
+lint エラーがゼロになるまで修正する。
+
+### フェーズ 4: コミット
+
+```bash
+cd {worktree} && git add -p && git commit -m "feat: ..."
+```
+
+### フェーズ 5: impl-ready 書き込み
+
+```bash
+git -C {worktree} rev-parse HEAD > /tmp/tech-clip-issue-{issue_number}/impl-ready
+```
+
+### フェーズ 6: review-result.json ポーリング
+
+```bash
+[ -f /tmp/tech-clip-issue-{issue_number}/review-result.json ] && cat /tmp/tech-clip-issue-{issue_number}/review-result.json
+```
+
+自分のコミットハッシュと一致する結果が来るまで待つ。
+
+- **PASS**: 終了する
+- **FAIL**: issues の内容を読んで修正 → フェーズ 2 へ戻る（コミット → impl-ready を新しいハッシュで上書き → ポーリング再開）
+
+## ポーリング方針
+
+- `sleep` を含む長い Bash ループは使わない（Bash タイムアウト 2 分のため）
+- `[ -f <file> ]` + 内容確認の短い Bash 呼び出しを繰り返す
 
 ## 出力規約
 
