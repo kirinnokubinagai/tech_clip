@@ -39,7 +39,6 @@ describe("getInitials", () => {
       const result = getInitials(name);
 
       // Assert
-      expect(() => getInitials(name)).not.toThrow();
       expect(result).toBe("?");
     });
 

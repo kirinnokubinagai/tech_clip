@@ -28,6 +28,12 @@ const AVATAR_SIZE = 80;
 /** 設定アイコンのサイズ（px） */
 const SETTINGS_ICON_SIZE = 22;
 
+/** 1万の閾値（万単位表示の境界値） */
+const TEN_THOUSAND = 10000;
+
+/** 1千の閾値（K単位表示の境界値） */
+const ONE_THOUSAND = 1000;
+
 /**
  * 数値を短縮表記にフォーマットする
  *
@@ -38,11 +44,11 @@ function formatCount(count: number | undefined): string {
   if (count === undefined) {
     return "-";
   }
-  if (count >= 10000) {
-    return `${(count / 10000).toFixed(1)}万`;
+  if (count >= TEN_THOUSAND) {
+    return `${(count / TEN_THOUSAND).toFixed(1)}万`;
   }
-  if (count >= 1000) {
-    return `${(count / 1000).toFixed(1)}K`;
+  if (count >= ONE_THOUSAND) {
+    return `${(count / ONE_THOUSAND).toFixed(1)}K`;
   }
   return String(count);
 }
