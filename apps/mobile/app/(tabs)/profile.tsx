@@ -23,6 +23,7 @@ export default function ProfileScreen() {
     followingCount: 0,
   };
 
+  /** 設定画面への遷移を処理する */
   const handleSettingsPress = () => {
     router.push("/(tabs)/settings");
   };

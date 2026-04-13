@@ -7,6 +7,9 @@ import { apiFetch } from "@/lib/api";
 /** 公開プロフィールのクエリキー */
 const USER_PROFILE_QUERY_KEY = "user-profile";
 
+/** 公開プロフィールの stale 判定時間（1分・ミリ秒） */
+const PROFILE_STALE_TIME_MS = 60 * 1000;
+
 /** 公開プロフィールAPIのレスポンス型 */
 type UserPublicProfileResponse =
   | {
@@ -49,6 +52,6 @@ export function useUserProfile(userId: string) {
     queryKey: [USER_PROFILE_QUERY_KEY, userId],
     queryFn: () => fetchUserProfile(userId),
     enabled: !!userId,
-    staleTime: 60 * 1000,
+    staleTime: PROFILE_STALE_TIME_MS,
   });
 }
