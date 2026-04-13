@@ -55,6 +55,7 @@ async function queryFollowList(
       name: users.name,
       bio: users.bio,
       avatarUrl: users.avatarUrl,
+      isProfilePublic: users.isProfilePublic,
     })
     .from(follows)
     .leftJoin(users, eq(idColumn, users.id))
@@ -64,9 +65,9 @@ async function queryFollowList(
 
   return rows.map((row) => ({
     id: row.id,
-    name: row.name ?? null,
-    bio: row.bio ?? null,
-    avatarUrl: row.avatarUrl ?? null,
+    name: row.isProfilePublic ? (row.name ?? null) : null,
+    bio: row.isProfilePublic ? (row.bio ?? null) : null,
+    avatarUrl: row.isProfilePublic ? (row.avatarUrl ?? null) : null,
     createdAt: row.createdAt,
   }));
 }

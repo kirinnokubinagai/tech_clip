@@ -996,3 +996,58 @@ describe("buildCursor", () => {
     expect(result).toBe("2024-01-01T00:00:00Z|");
   });
 });
+
+describe("GET /api/users/:id/followers - 非公開ユーザーのマスク処理", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockFollowFn = vi.fn<FollowFn>();
+    mockUnfollowFn = vi.fn<UnfollowFn>();
+    mockGetFollowersFn = vi.fn<GetFollowListFn>();
+    mockGetFollowingFn = vi.fn<GetFollowListFn>();
+    mockIsFollowingFn = vi.fn<IsFollowingFn>();
+    mockUserExistsFn = vi.fn<UserExistsFn>();
+  });
+
+  it("非公開ユーザーがフォロワーリストに含まれる場合、name/bio/avatarUrlがnullで返ること", async () => {
+    // Arrange
+    mockUserExistsFn.mockResolvedValue(true);
+    mockGetFollowersFn.mockResolvedValue([
+      {
+        id: "user_private_01",
+        name: null,
+        bio: null,
+        avatarUrl: null,
+        createdAt: "2024-01-01T00:00:00Z",
+      },
+      {
+        id: "user_public_01",
+        name: "公開ユーザー",
+        bio: "プロフィール",
+        avatarUrl: "https://example.com/avatar.jpg",
+        createdAt: "2024-01-02T00:00:00Z",
+      },
+    ]);
+    const app = createTestApp();
+
+    // Act
+    const res = await app.request(`/api/users/${MOCK_TARGET_USER.id}/followers`);
+
+    // Assert
+    expect(res.status).toBe(HTTP_OK);
+    const body = (await res.json()) as FollowListResponseBody;
+    expect(body.success).toBe(true);
+    expect(body.data).toHaveLength(2);
+
+    const privateUser = body.data[0] as Record<string, unknown>;
+    expect(privateUser.id).toBe("user_private_01");
+    expect(privateUser.name).toBeNull();
+    expect(privateUser.bio).toBeNull();
+    expect(privateUser.avatarUrl).toBeNull();
+
+    const publicUser = body.data[1] as Record<string, unknown>;
+    expect(publicUser.id).toBe("user_public_01");
+    expect(publicUser.name).toBe("公開ユーザー");
+    expect(publicUser.bio).toBe("プロフィール");
+    expect(publicUser.avatarUrl).toBe("https://example.com/avatar.jpg");
+  });
+});
