@@ -79,10 +79,10 @@ lint エラーがゼロになるまで修正する。
 cd {worktree} && git add -p && git commit -m "feat: ..."
 ```
 
-### フェーズ 5: coder-ready 書き込み
+### フェーズ 5: impl-ready 書き込み
 
 ```bash
-git -C {worktree} rev-parse HEAD > /tmp/tech-clip-issue-{issue_number}/coder-ready
+git -C {worktree} rev-parse HEAD > /tmp/tech-clip-issue-{issue_number}/impl-ready
 ```
 
 ### フェーズ 6: review-result.json ポーリング
@@ -94,7 +94,7 @@ git -C {worktree} rev-parse HEAD > /tmp/tech-clip-issue-{issue_number}/coder-rea
 自分のコミットハッシュと一致する結果が来るまで待つ。
 
 - **PASS**: 終了する
-- **FAIL**: issues の内容を読んで修正 → フェーズ 2 へ戻る（コミット → coder-ready を新しいハッシュで上書き → ポーリング再開）
+- **FAIL**: issues の内容を読んで修正 → フェーズ 2 へ戻る（コミット → impl-ready を新しいハッシュで上書き → ポーリング再開）
 
 ## コーディング規約
 
