@@ -80,10 +80,7 @@ async function fetchFollowList(
   const response = await apiFetch<FollowListResponse>(path);
 
   if (!response.success) {
-    throw new FollowListApiError(
-      response.error.code,
-      response.error.message || errorMessage,
-    );
+    throw new FollowListApiError(response.error.code, response.error.message || errorMessage);
   }
 
   return {
