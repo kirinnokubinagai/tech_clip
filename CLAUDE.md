@@ -208,6 +208,11 @@ poll-pr-review.sh → CONFLICT
 
   【Step C: 解消・レビュー】
   → Agent(coder, mode="acceptEdits") にコンフリクト箇所・両側の意図・方針を伝えて解消させる
+
+  **注意**: Agent(coder) がコンフリクト解消に失敗した場合:
+  1. `git merge --abort` でマージを中断する
+  2. 状態をリセットしてから再試行する
+
   → Agent(code-reviewer, mode="acceptEdits") + Agent(security-reviewer, mode="acceptEdits") で再レビュー
   → 両方 PASS → マーカー再作成 → git push → poll-pr-review.sh を再実行
   → APPROVED になるまで繰り返す
