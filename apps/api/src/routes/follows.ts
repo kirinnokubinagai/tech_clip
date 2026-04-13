@@ -267,7 +267,7 @@ export function createFollowsRoute(options: FollowsRouteOptions) {
 
   route.get("/:id/followers", async (c) => {
     const user = c.get("user");
-    if (!user?.id) {
+    if (!user?.id || typeof user.id !== "string") {
       return c.json(
         {
           success: false,
@@ -350,7 +350,7 @@ export function createFollowsRoute(options: FollowsRouteOptions) {
 
   route.get("/:id/following", async (c) => {
     const user = c.get("user");
-    if (!user?.id) {
+    if (!user?.id || typeof user.id !== "string") {
       return c.json(
         {
           success: false,

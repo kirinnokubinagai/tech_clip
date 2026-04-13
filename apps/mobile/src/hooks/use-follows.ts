@@ -63,8 +63,7 @@ async function fetchFollowList(
   if (cursor) params.set("cursor", cursor);
   params.set("limit", String(DEFAULT_PAGE_LIMIT));
 
-  const queryString = params.toString();
-  const path = `/api/users/${encodeURIComponent(userId)}/${segment}${queryString ? `?${queryString}` : ""}`;
+  const path = `/api/users/${encodeURIComponent(userId)}/${segment}?${params.toString()}`;
 
   const response = await apiFetch<FollowListResponse>(path);
 
@@ -118,7 +117,7 @@ export function useFollowers(userId: string) {
     queryKey: [FOLLOWERS_QUERY_KEY, userId],
     queryFn: ({ pageParam }) => fetchFollowers(userId, pageParam),
     initialPageParam: undefined,
-    getNextPageParam: (lastPage) => (lastPage.hasNext ? lastPage.nextCursor : undefined),
+    getNextPageParam: (lastPage) => lastPage.nextCursor ?? undefined,
     enabled: !!userId,
   });
 }
@@ -140,7 +139,7 @@ export function useFollowing(userId: string) {
     queryKey: [FOLLOWING_QUERY_KEY, userId],
     queryFn: ({ pageParam }) => fetchFollowing(userId, pageParam),
     initialPageParam: undefined,
-    getNextPageParam: (lastPage) => (lastPage.hasNext ? lastPage.nextCursor : undefined),
+    getNextPageParam: (lastPage) => lastPage.nextCursor ?? undefined,
     enabled: !!userId,
   });
 }

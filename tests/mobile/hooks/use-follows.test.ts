@@ -124,6 +124,22 @@ describe("useFollowers", () => {
     });
     expect(mockApiFetch).not.toHaveBeenCalled();
   });
+
+  it("APIがsuccess:falseを返した場合にエラー状態になること", async () => {
+    // Arrange
+    mockApiFetch.mockResolvedValue({
+      success: false,
+      error: { code: "NOT_FOUND", message: "ユーザーが見つかりません" },
+    });
+
+    // Act
+    const wrapper = createWrapper(queryClient);
+    const { result } = await renderHook(() => useFollowers("target-user-id"), { wrapper });
+
+    // Assert
+    await waitFor(() => expect(result.current.isError).toBe(true));
+    expect(result.current.error).toBeInstanceOf(Error);
+  });
 });
 
 describe("useFollowing", () => {
@@ -184,5 +200,21 @@ describe("useFollowing", () => {
       expect(result.current.fetchStatus).toBe("idle");
     });
     expect(mockApiFetch).not.toHaveBeenCalled();
+  });
+
+  it("APIがsuccess:falseを返した場合にエラー状態になること", async () => {
+    // Arrange
+    mockApiFetch.mockResolvedValue({
+      success: false,
+      error: { code: "NOT_FOUND", message: "ユーザーが見つかりません" },
+    });
+
+    // Act
+    const wrapper = createWrapper(queryClient);
+    const { result } = await renderHook(() => useFollowing("target-user-id"), { wrapper });
+
+    // Assert
+    await waitFor(() => expect(result.current.isError).toBe(true));
+    expect(result.current.error).toBeInstanceOf(Error);
   });
 });

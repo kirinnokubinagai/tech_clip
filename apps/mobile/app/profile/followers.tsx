@@ -23,6 +23,16 @@ const AVATAR_SIZE = 48;
 const END_REACHED_THRESHOLD = 0.5;
 
 /**
+ * 文字列の最初の文字（サロゲートペア対応）を取得する
+ *
+ * @param s - 対象文字列
+ * @returns 最初の文字
+ */
+function firstChar(s: string): string {
+  return Array.from(s)[0] ?? "";
+}
+
+/**
  * ユーザー名の頭文字を取得する
  *
  * @param name - ユーザー名
@@ -31,9 +41,9 @@ const END_REACHED_THRESHOLD = 0.5;
 function getInitials(name: string): string {
   const parts = name.trim().split(/\s+/);
   if (parts.length >= 2) {
-    return `${parts[0][0]}${parts[1][0]}`.toUpperCase();
+    return `${firstChar(parts[0])}${firstChar(parts[1])}`.toUpperCase();
   }
-  return name.slice(0, 2).toUpperCase();
+  return Array.from(name).slice(0, 2).join("").toUpperCase();
 }
 
 type UserListItemProps = {
@@ -56,7 +66,8 @@ function UserListItem({ item, onPress, userProfileLabel }: UserListItemProps) {
     onPress(item.id);
   }, [item.id, onPress]);
 
-  const displayName = item.name ?? t("profile.followers.unknownUser");
+  const displayName =
+    item.name && item.name.trim() !== "" ? item.name : t("profile.followers.unknownUser");
 
   return (
     <Pressable
