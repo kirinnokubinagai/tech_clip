@@ -1,7 +1,7 @@
 import { Image } from "expo-image";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { ArrowLeft } from "lucide-react-native";
-import { useCallback, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { ActivityIndicator, FlatList, Pressable, Text, View } from "react-native";
 
@@ -134,7 +134,10 @@ export default function FollowersScreen() {
 
   const activeQuery = activeTab === "followers" ? followersQuery : followingQuery;
 
-  const currentList = activeQuery.data?.pages.flatMap((page) => page.items) ?? [];
+  const currentList = useMemo(
+    () => activeQuery.data?.pages.flatMap((page) => page.items) ?? [],
+    [activeQuery.data],
+  );
 
   const isLoading = activeQuery.isLoading;
   const isError = activeQuery.isError;
@@ -169,6 +172,10 @@ export default function FollowersScreen() {
 
   const { hasNextPage, isFetchingNextPage, fetchNextPage, refetch: activeRefetch } = activeQuery;
 
+  const handleRetry = useCallback(() => {
+    activeRefetch();
+  }, [activeRefetch]);
+
   const handleEndReached = useCallback(() => {
     if (hasNextPage && !isFetchingNextPage) {
       fetchNextPage();
@@ -190,7 +197,7 @@ export default function FollowersScreen() {
     );
   }, [activeTab, isLoading, t]);
 
-  const renderContent = () => {
+  const renderContent = useCallback(() => {
     if (isError) {
       return (
         <View testID="followers-error" className="flex-1 items-center justify-center px-4">
@@ -200,7 +207,7 @@ export default function FollowersScreen() {
               : t("profile.followers.errorFollowing")}
           </Text>
           <Pressable
-            onPress={activeRefetch}
+            onPress={handleRetry}
             className="mt-4 bg-primary rounded-lg px-6 py-3"
             accessibilityRole="button"
             accessibilityLabel={t("profile.followers.retry")}
@@ -230,7 +237,19 @@ export default function FollowersScreen() {
         onEndReachedThreshold={END_REACHED_THRESHOLD}
       />
     );
-  };
+  }, [
+    isError,
+    isLoading,
+    activeTab,
+    t,
+    handleRetry,
+    colors.primary,
+    currentList,
+    renderItem,
+    keyExtractor,
+    renderEmpty,
+    handleEndReached,
+  ]);
 
   return (
     <View testID="followers-screen" className="flex-1 bg-background">

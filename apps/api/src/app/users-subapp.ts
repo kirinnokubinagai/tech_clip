@@ -1,4 +1,4 @@
-import { and, desc, eq, lt, or } from "drizzle-orm";
+import { and, desc, eq, lt, or, type SQL } from "drizzle-orm";
 import type { Auth } from "../auth";
 import type { Database } from "../db";
 import { follows, users } from "../db/schema";
@@ -30,17 +30,18 @@ async function queryFollowList(
   filterColumn: typeof follows.followingId | typeof follows.followerId,
   idColumn: typeof follows.followerId | typeof follows.followingId,
 ): Promise<Array<FollowListItem>> {
-  const conditions = [eq(filterColumn, params.userId)];
+  const conditions: SQL<unknown>[] = [eq(filterColumn, params.userId)];
   if (params.cursor) {
     const parsed = parseCursor(params.cursor);
     if (parsed) {
       const { cursorTime, cursorId } = parsed;
-      conditions.push(
-        or(
-          lt(follows.createdAt, cursorTime),
-          and(eq(follows.createdAt, cursorTime), lt(idColumn, cursorId)),
-        ),
+      const cursorCondition = or(
+        lt(follows.createdAt, cursorTime),
+        and(eq(follows.createdAt, cursorTime), lt(idColumn, cursorId)),
       );
+      if (cursorCondition) {
+        conditions.push(cursorCondition);
+      }
     }
   }
   const rows = await db

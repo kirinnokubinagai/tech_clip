@@ -52,7 +52,7 @@ export type UnfollowFn = (followerId: string, followingId: string) => Promise<vo
 /** フォロー一覧のユーザーアイテム型 */
 export type FollowListItem = {
   id: string;
-  createdAt: Date | string;
+  createdAt: string;
   name: string | null;
   bio: string | null;
   avatarUrl: string | null;
@@ -146,7 +146,7 @@ export function createFollowsRoute(options: FollowsRouteOptions) {
 
   route.post("/:id/follow", async (c) => {
     const user = c.get("user");
-    if (!user?.id) {
+    if (!user?.id || typeof user.id !== "string") {
       return c.json(
         {
           success: false,
@@ -159,7 +159,7 @@ export function createFollowsRoute(options: FollowsRouteOptions) {
       );
     }
 
-    const followerId = user.id as string;
+    const followerId = user.id;
     const followingId = c.req.param("id");
 
     if (followerId === followingId) {
@@ -216,7 +216,7 @@ export function createFollowsRoute(options: FollowsRouteOptions) {
 
   route.delete("/:id/follow", async (c) => {
     const user = c.get("user");
-    if (!user?.id) {
+    if (!user?.id || typeof user.id !== "string") {
       return c.json(
         {
           success: false,
@@ -229,7 +229,7 @@ export function createFollowsRoute(options: FollowsRouteOptions) {
       );
     }
 
-    const followerId = user.id as string;
+    const followerId = user.id;
     const followingId = c.req.param("id");
 
     const targetExists = await userExistsFn(followingId);
@@ -330,14 +330,13 @@ export function createFollowsRoute(options: FollowsRouteOptions) {
     const fetchedFollowers = await getFollowersFn({
       userId: targetUserId,
       limit: limit + 1,
-      cursor: cursorParam || undefined,
+      cursor: cursorParam !== undefined && cursorParam !== "" ? cursorParam : undefined,
     });
 
     const hasNext = fetchedFollowers.length > limit;
     const data = hasNext ? fetchedFollowers.slice(0, limit) : fetchedFollowers;
     const lastItem = data.length > 0 ? data[data.length - 1] : null;
-    const nextCursor =
-      hasNext && lastItem ? buildCursor(String(lastItem.createdAt), String(lastItem.id)) : null;
+    const nextCursor = hasNext && lastItem ? buildCursor(lastItem.createdAt, lastItem.id) : null;
 
     return c.json({
       success: true,
@@ -414,14 +413,13 @@ export function createFollowsRoute(options: FollowsRouteOptions) {
     const fetchedFollowing = await getFollowingFn({
       userId: targetUserId,
       limit: limit + 1,
-      cursor: cursorParam || undefined,
+      cursor: cursorParam !== undefined && cursorParam !== "" ? cursorParam : undefined,
     });
 
     const hasNext = fetchedFollowing.length > limit;
     const data = hasNext ? fetchedFollowing.slice(0, limit) : fetchedFollowing;
     const lastItem = data.length > 0 ? data[data.length - 1] : null;
-    const nextCursor =
-      hasNext && lastItem ? buildCursor(String(lastItem.createdAt), String(lastItem.id)) : null;
+    const nextCursor = hasNext && lastItem ? buildCursor(lastItem.createdAt, lastItem.id) : null;
 
     return c.json({
       success: true,
