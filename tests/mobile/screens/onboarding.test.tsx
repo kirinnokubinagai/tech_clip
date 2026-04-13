@@ -1,6 +1,8 @@
 import OnboardingScreen from "@mobile-app/onboarding";
 import { fireEvent, render, waitFor } from "@testing-library/react-native";
 
+import { setMockLocale } from "../helpers/i18n-test-utils";
+
 /** テスト用ソース数（sources.ts の SUPPORTED_SOURCE_COUNT と一致させる） */
 const MOCK_SOURCE_COUNT = 19;
 
@@ -38,6 +40,7 @@ const { router: mockRouter } = jest.requireMock("expo-router") as {
 beforeEach(() => {
   jest.clearAllMocks();
   mockHasSeenOnboarding.current = false;
+  setMockLocale("ja");
 });
 
 describe("OnboardingScreen", () => {
@@ -47,8 +50,8 @@ describe("OnboardingScreen", () => {
       const { getByTestId } = await render(<OnboardingScreen />);
 
       // Assert
-      expect(getByTestId("onboarding-title")).toBeDefined();
-      expect(getByTestId("page-indicator")).toBeDefined();
+      expect(getByTestId("onboarding-title")).not.toBeNull();
+      expect(getByTestId("page-indicator")).not.toBeNull();
     });
 
     it("スキップボタンが表示されること", async () => {
@@ -56,7 +59,7 @@ describe("OnboardingScreen", () => {
       const { getByTestId } = await render(<OnboardingScreen />);
 
       // Assert
-      expect(getByTestId("skip-button")).toBeDefined();
+      expect(getByTestId("skip-button")).not.toBeNull();
     });
 
     it("次へボタンが表示されること", async () => {
@@ -64,7 +67,7 @@ describe("OnboardingScreen", () => {
       const { getByTestId } = await render(<OnboardingScreen />);
 
       // Assert
-      expect(getByTestId("next-button")).toBeDefined();
+      expect(getByTestId("next-button")).not.toBeNull();
     });
   });
 
@@ -103,7 +106,7 @@ describe("OnboardingScreen", () => {
       await fireEvent.press(getByTestId("next-button"));
 
       // Assert
-      expect(getByTestId("onboarding-title")).toBeDefined();
+      expect(getByTestId("onboarding-title")).not.toBeNull();
     });
 
     it("最終ページで始めるボタンが表示されること", async () => {
@@ -116,7 +119,7 @@ describe("OnboardingScreen", () => {
       await fireEvent.press(getByTestId("next-button"));
 
       // Assert
-      expect(getByTestId("finish-button")).toBeDefined();
+      expect(getByTestId("finish-button")).not.toBeNull();
     });
 
     it("最終ページの始めるボタンを押すとログイン画面に遷移すること", async () => {
@@ -148,7 +151,7 @@ describe("OnboardingScreen", () => {
         getByText(
           `Zenn、Qiita、dev.toなど${MOCK_SOURCE_COUNT}ソースに対応。気になった記事をすぐ保存できます。`,
         ),
-      ).toBeDefined();
+      ).not.toBeNull();
     });
   });
 
@@ -163,6 +166,96 @@ describe("OnboardingScreen", () => {
       // Assert
       expect(queryByTestId("onboarding-title")).toBeNull();
       expect(queryByTestId("skip-button")).toBeNull();
+    });
+  });
+
+  describe("多言語対応", () => {
+    it("日本語ロケールで日本語タイトルとボタン文言が表示されること", async () => {
+      // Arrange
+      setMockLocale("ja");
+
+      // Act
+      const { getByText, getByTestId } = await render(<OnboardingScreen />);
+
+      // Assert
+      expect(getByText("技術記事をワンタップで保存")).not.toBeNull();
+      expect(getByTestId("skip-button")).not.toBeNull();
+      expect(getByText("スキップ")).not.toBeNull();
+      expect(getByText("次へ")).not.toBeNull();
+    });
+
+    it("英語ロケールで英語タイトルとボタン文言が表示されること", async () => {
+      // Arrange
+      setMockLocale("en");
+
+      // Act
+      const { getByText } = await render(<OnboardingScreen />);
+
+      // Assert
+      expect(getByText("Save Tech Articles with One Tap")).not.toBeNull();
+      expect(getByText("Skip")).not.toBeNull();
+      expect(getByText("Next")).not.toBeNull();
+    });
+
+    it("英語ロケールの最終ページでGet Startedボタンが表示されること", async () => {
+      // Arrange
+      setMockLocale("en");
+      const { getByTestId, getByText } = await render(<OnboardingScreen />);
+
+      // Act - 3回次へを押して最終ページへ
+      await fireEvent.press(getByTestId("next-button"));
+      await fireEvent.press(getByTestId("next-button"));
+      await fireEvent.press(getByTestId("next-button"));
+
+      // Assert
+      expect(getByText("Get Started")).not.toBeNull();
+    });
+  });
+
+  describe("a11y 翻訳キー", () => {
+    it("日本語ロケールでスキップボタンの accessibilityLabel が正しく翻訳されること", async () => {
+      // Arrange
+      setMockLocale("ja");
+
+      // Act
+      const { getByLabelText } = await render(<OnboardingScreen />);
+
+      // Assert
+      expect(getByLabelText("スキップ")).not.toBeNull();
+    });
+
+    it("日本語ロケールで次へボタンの accessibilityLabel が正しく翻訳されること", async () => {
+      // Arrange
+      setMockLocale("ja");
+
+      // Act
+      const { getByTestId, getByLabelText } = await render(<OnboardingScreen />);
+
+      // Assert: 最初のページ（currentIndex=0）なので page=2 になる
+      expect(getByLabelText("次へ")).not.toBeNull();
+      expect(getByTestId("next-button")).not.toBeNull();
+    });
+
+    it("英語ロケールでスキップボタンの accessibilityLabel が正しく翻訳されること", async () => {
+      // Arrange
+      setMockLocale("en");
+
+      // Act
+      const { getByLabelText } = await render(<OnboardingScreen />);
+
+      // Assert
+      expect(getByLabelText("Skip")).not.toBeNull();
+    });
+
+    it("英語ロケールで次へボタンの accessibilityLabel が正しく翻訳されること", async () => {
+      // Arrange
+      setMockLocale("en");
+
+      // Act
+      const { getByLabelText } = await render(<OnboardingScreen />);
+
+      // Assert
+      expect(getByLabelText("Next")).not.toBeNull();
     });
   });
 });

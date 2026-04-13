@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import { View } from "react-native";
 
 import { Skeleton } from "../Skeleton";
@@ -24,11 +25,12 @@ type ArticleListSkeletonProps = {
  * @param count - 表示するスケルトン行数
  */
 export function ArticleListSkeleton({ count = DEFAULT_ITEM_COUNT }: ArticleListSkeletonProps) {
+  const { t } = useTranslation();
   return (
     <View
       className="px-4"
-      accessibilityLabel="記事一覧を読み込み中"
-      accessibilityHint="しばらくお待ちください"
+      accessibilityLabel={t("common.accessibility.loadingArticleList")}
+      accessibilityHint={t("common.accessibility.pleaseWait")}
       accessible={true}
     >
       {Array.from({ length: count }, (_, index) => (

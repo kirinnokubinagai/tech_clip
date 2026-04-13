@@ -1,6 +1,6 @@
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { ArrowLeft, ExternalLink, Globe, Heart, Languages, Sparkles } from "lucide-react-native";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { ActivityIndicator, Linking, Pressable, ScrollView, Text, View } from "react-native";
 import Markdown from "react-native-markdown-display";
@@ -14,8 +14,8 @@ import {
   useToggleFavorite,
   useTranslationJobStatus,
 } from "@/hooks/use-articles";
+import { useColors } from "@/hooks/use-colors";
 import { useNetworkStatus } from "@/hooks/use-network-status";
-import { DARK_COLORS } from "@/lib/constants";
 import { formatArticleDate } from "@/lib/date-format";
 import { UI_TO_API_LANGUAGE } from "@/lib/language-code";
 import { getOfflineArticleById } from "@/lib/localDb";
@@ -34,122 +34,8 @@ const HEADER_ICON_SIZE = 20;
 /** セクション内アイコンサイズ */
 const SECTION_ICON_SIZE = 16;
 
-/** お気に入りアクティブカラー */
-const FAVORITE_ACTIVE_COLOR = DARK_COLORS.favorite;
-
-/** お気に入り非アクティブカラー */
-const FAVORITE_INACTIVE_COLOR = DARK_COLORS.textMuted;
-
-/** プライマリカラー */
-const PRIMARY_COLOR = DARK_COLORS.primary;
-
-/** テキストカラー */
-const TEXT_COLOR = DARK_COLORS.text;
-
-/** リンク・アクセントカラー */
-const ACCENT_COLOR = DARK_COLORS.primaryLight;
-
-/** カード背景カラー */
-const CARD_BG_COLOR = DARK_COLORS.card;
-
-/** コードブロック背景カラー */
-const CODE_BG_COLOR = DARK_COLORS.surface;
-
-/** 区切り線カラー */
-const DIVIDER_COLOR = DARK_COLORS.border;
-
-/** 成功カラー */
-const SUCCESS_COLOR = DARK_COLORS.success;
-
-/** 成功時の背景カラー */
-const SUCCESS_BG_COLOR = DARK_COLORS.successSurface;
-
 /** ジョブステータスのポーリング間隔（ミリ秒） */
 const JOB_POLL_INTERVAL_MS = 2500;
-
-/** Markdownのスタイル定義 */
-const markdownStyles = {
-  body: {
-    color: TEXT_COLOR,
-    fontSize: 16,
-    lineHeight: 26,
-  },
-  heading1: {
-    color: TEXT_COLOR,
-    fontSize: 24,
-    fontWeight: "bold" as const,
-    marginTop: 24,
-    marginBottom: 12,
-  },
-  heading2: {
-    color: TEXT_COLOR,
-    fontSize: 20,
-    fontWeight: "bold" as const,
-    marginTop: 20,
-    marginBottom: 10,
-  },
-  heading3: {
-    color: TEXT_COLOR,
-    fontSize: 18,
-    fontWeight: "600" as const,
-    marginTop: 16,
-    marginBottom: 8,
-  },
-  paragraph: {
-    color: TEXT_COLOR,
-    fontSize: 16,
-    lineHeight: 26,
-    marginBottom: 12,
-  },
-  link: {
-    color: ACCENT_COLOR,
-  },
-  blockquote: {
-    backgroundColor: CARD_BG_COLOR,
-    borderLeftColor: PRIMARY_COLOR,
-    borderLeftWidth: 3,
-    paddingLeft: 12,
-    paddingVertical: 8,
-    marginVertical: 8,
-  },
-  code_inline: {
-    backgroundColor: CARD_BG_COLOR,
-    color: ACCENT_COLOR,
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 4,
-    fontSize: 14,
-  },
-  code_block: {
-    backgroundColor: CODE_BG_COLOR,
-    color: TEXT_COLOR,
-    padding: 12,
-    borderRadius: 8,
-    fontSize: 14,
-    lineHeight: 22,
-  },
-  fence: {
-    backgroundColor: CODE_BG_COLOR,
-    color: TEXT_COLOR,
-    padding: 12,
-    borderRadius: 8,
-    fontSize: 14,
-    lineHeight: 22,
-  },
-  list_item: {
-    color: TEXT_COLOR,
-    fontSize: 16,
-    lineHeight: 26,
-  },
-  hr: {
-    backgroundColor: DIVIDER_COLOR,
-    height: 1,
-    marginVertical: 16,
-  },
-  image: {
-    borderRadius: 8,
-  },
-};
 
 /**
  * 記事詳細画面
@@ -161,6 +47,94 @@ export default function ArticleDetailScreen() {
   const { t } = useTranslation();
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
+  const colors = useColors();
+
+  /** Markdownのスタイル定義 */
+  const markdownStyles = useMemo(
+    () => ({
+      body: {
+        color: colors.text,
+        fontSize: 16,
+        lineHeight: 26,
+      },
+      heading1: {
+        color: colors.text,
+        fontSize: 24,
+        fontWeight: "bold" as const,
+        marginTop: 24,
+        marginBottom: 12,
+      },
+      heading2: {
+        color: colors.text,
+        fontSize: 20,
+        fontWeight: "bold" as const,
+        marginTop: 20,
+        marginBottom: 10,
+      },
+      heading3: {
+        color: colors.text,
+        fontSize: 18,
+        fontWeight: "600" as const,
+        marginTop: 16,
+        marginBottom: 8,
+      },
+      paragraph: {
+        color: colors.text,
+        fontSize: 16,
+        lineHeight: 26,
+        marginBottom: 12,
+      },
+      link: {
+        color: colors.primaryLight,
+      },
+      blockquote: {
+        backgroundColor: colors.card,
+        borderLeftColor: colors.primary,
+        borderLeftWidth: 3,
+        paddingLeft: 12,
+        paddingVertical: 8,
+        marginVertical: 8,
+      },
+      code_inline: {
+        backgroundColor: colors.card,
+        color: colors.primaryLight,
+        paddingHorizontal: 6,
+        paddingVertical: 2,
+        borderRadius: 4,
+        fontSize: 14,
+      },
+      code_block: {
+        backgroundColor: colors.surface,
+        color: colors.text,
+        padding: 12,
+        borderRadius: 8,
+        fontSize: 14,
+        lineHeight: 22,
+      },
+      fence: {
+        backgroundColor: colors.surface,
+        color: colors.text,
+        padding: 12,
+        borderRadius: 8,
+        fontSize: 14,
+        lineHeight: 22,
+      },
+      list_item: {
+        color: colors.text,
+        fontSize: 16,
+        lineHeight: 26,
+      },
+      hr: {
+        backgroundColor: colors.border,
+        height: 1,
+        marginVertical: 16,
+      },
+      image: {
+        borderRadius: 8,
+      },
+    }),
+    [colors],
+  );
 
   const language = useSettingsStore((s) => s.language);
   const apiLanguage = UI_TO_API_LANGUAGE[language];
@@ -336,8 +310,8 @@ export default function ArticleDetailScreen() {
   if (isLoading) {
     return (
       <View className="flex-1 bg-background items-center justify-center">
-        <ActivityIndicator size="large" color={PRIMARY_COLOR} />
-        <Text className="text-text-muted mt-3">{t("common.loading")}</Text>
+        <ActivityIndicator size="large" color={colors.primary} />
+        <Text className="text-text-muted mt-3">{t("article.loadingArticle")}</Text>
       </View>
     );
   }
@@ -362,10 +336,10 @@ export default function ArticleDetailScreen() {
         <Pressable
           onPress={handleBack}
           accessibilityRole="button"
-          accessibilityLabel={t("common.back")}
+          accessibilityLabel={t("article.backA11yLabel")}
           hitSlop={8}
         >
-          <ArrowLeft size={BACK_ICON_SIZE} color={TEXT_COLOR} />
+          <ArrowLeft size={BACK_ICON_SIZE} color={colors.text} />
         </Pressable>
         <View className="flex-row items-center gap-4">
           <Pressable
@@ -374,7 +348,7 @@ export default function ArticleDetailScreen() {
             accessibilityLabel={t("article.openInBrowser")}
             hitSlop={8}
           >
-            <ExternalLink size={HEADER_ICON_SIZE} color={FAVORITE_INACTIVE_COLOR} />
+            <ExternalLink size={HEADER_ICON_SIZE} color={colors.textMuted} />
           </Pressable>
           <Pressable
             onPress={handleToggleFavorite}
@@ -386,8 +360,8 @@ export default function ArticleDetailScreen() {
           >
             <Heart
               size={HEADER_ICON_SIZE}
-              color={article.isFavorite ? FAVORITE_ACTIVE_COLOR : FAVORITE_INACTIVE_COLOR}
-              fill={article.isFavorite ? FAVORITE_ACTIVE_COLOR : "transparent"}
+              color={article.isFavorite ? colors.favorite : colors.textMuted}
+              fill={article.isFavorite ? colors.favorite : "transparent"}
             />
           </Pressable>
         </View>
@@ -420,7 +394,7 @@ export default function ArticleDetailScreen() {
             disabled={requestSummary.isPending || !!article.summary || !!summaryJob}
             className="flex-row items-center gap-1.5 rounded-lg px-4 py-2.5"
             style={{
-              backgroundColor: article.summary ? SUCCESS_BG_COLOR : CARD_BG_COLOR,
+              backgroundColor: article.summary ? colors.successSurface : colors.card,
               opacity: requestSummary.isPending || summaryJob ? 0.6 : 1,
             }}
             accessibilityRole="button"
@@ -428,16 +402,16 @@ export default function ArticleDetailScreen() {
             testID="summary-button"
           >
             {requestSummary.isPending || summaryJob ? (
-              <ActivityIndicator size="small" color={PRIMARY_COLOR} />
+              <ActivityIndicator size="small" color={colors.primary} />
             ) : (
               <Sparkles
                 size={ACTION_ICON_SIZE}
-                color={article.summary ? SUCCESS_COLOR : PRIMARY_COLOR}
+                color={article.summary ? colors.success : colors.primary}
               />
             )}
             <Text
               className="text-sm font-medium"
-              style={{ color: article.summary ? SUCCESS_COLOR : ACCENT_COLOR }}
+              style={{ color: article.summary ? colors.success : colors.primaryLight }}
             >
               {article.summary ? t("article.summarized") : t("article.summarize")}
             </Text>
@@ -448,7 +422,7 @@ export default function ArticleDetailScreen() {
             disabled={requestTranslation.isPending || !!article.translation || !!translationJob}
             className="flex-row items-center gap-1.5 rounded-lg px-4 py-2.5"
             style={{
-              backgroundColor: article.translation ? SUCCESS_BG_COLOR : CARD_BG_COLOR,
+              backgroundColor: article.translation ? colors.successSurface : colors.card,
               opacity: requestTranslation.isPending || translationJob ? 0.6 : 1,
             }}
             accessibilityRole="button"
@@ -456,16 +430,16 @@ export default function ArticleDetailScreen() {
             testID="translation-button"
           >
             {requestTranslation.isPending || translationJob ? (
-              <ActivityIndicator size="small" color={PRIMARY_COLOR} />
+              <ActivityIndicator size="small" color={colors.primary} />
             ) : (
               <Languages
                 size={ACTION_ICON_SIZE}
-                color={article.translation ? SUCCESS_COLOR : PRIMARY_COLOR}
+                color={article.translation ? colors.success : colors.primary}
               />
             )}
             <Text
               className="text-sm font-medium"
-              style={{ color: article.translation ? SUCCESS_COLOR : ACCENT_COLOR }}
+              style={{ color: article.translation ? colors.success : colors.primaryLight }}
             >
               {article.translation ? t("article.translated") : t("article.translate")}
             </Text>
@@ -474,15 +448,15 @@ export default function ArticleDetailScreen() {
 
         {summaryJob && (
           <View className="mx-4 mt-2 rounded-xl bg-card border border-border p-4">
-            <Text className="text-sm font-medium text-text mb-2">{t("common.generating")}</Text>
+            <Text className="text-sm font-medium text-text mb-2">{t("article.generating")}</Text>
             <View
               className="h-2 rounded-full overflow-hidden"
-              style={{ backgroundColor: CARD_BG_COLOR }}
+              style={{ backgroundColor: colors.card }}
             >
               <View
                 className="h-full rounded-full"
                 style={{
-                  backgroundColor: ACCENT_COLOR,
+                  backgroundColor: colors.primaryLight,
                   width: `${Math.min(summaryJob.progress, 80)}%`,
                 }}
               />
@@ -492,15 +466,15 @@ export default function ArticleDetailScreen() {
 
         {translationJob && (
           <View className="mx-4 mt-2 rounded-xl bg-card border border-border p-4">
-            <Text className="text-sm font-medium text-text mb-2">{t("common.generating")}</Text>
+            <Text className="text-sm font-medium text-text mb-2">{t("article.generating")}</Text>
             <View
               className="h-2 rounded-full overflow-hidden"
-              style={{ backgroundColor: CARD_BG_COLOR }}
+              style={{ backgroundColor: colors.card }}
             >
               <View
                 className="h-full rounded-full"
                 style={{
-                  backgroundColor: SUCCESS_COLOR,
+                  backgroundColor: colors.success,
                   width: `${Math.min(translationJob.progress, 80)}%`,
                 }}
               />
@@ -511,10 +485,8 @@ export default function ArticleDetailScreen() {
         {article.summary && (
           <View className="mx-4 mt-2 p-4 rounded-xl bg-card border border-border">
             <View className="flex-row items-center gap-2 mb-2">
-              <Sparkles size={SECTION_ICON_SIZE} color={SUCCESS_COLOR} />
-              <Text className="text-sm font-semibold text-success">
-                {t("article.summaryLabel")}
-              </Text>
+              <Sparkles size={SECTION_ICON_SIZE} color={colors.success} />
+              <Text className="text-sm font-semibold text-success">{t("article.summary")}</Text>
             </View>
             <Text className="text-sm text-text leading-relaxed">{article.summary}</Text>
           </View>
@@ -523,9 +495,9 @@ export default function ArticleDetailScreen() {
         {article.translation && (
           <View className="mx-4 mt-3 p-4 rounded-xl bg-card border border-border">
             <View className="flex-row items-center gap-2 mb-2">
-              <Globe size={SECTION_ICON_SIZE} color={ACCENT_COLOR} />
+              <Globe size={SECTION_ICON_SIZE} color={colors.primaryLight} />
               <Text className="text-sm font-semibold text-primary-light">
-                {t("article.translationLabel")}
+                {t("article.translation")}
               </Text>
             </View>
             <Text className="text-sm text-text leading-relaxed">{article.translation}</Text>
@@ -539,7 +511,7 @@ export default function ArticleDetailScreen() {
             <View className="items-center py-8">
               <Text className="text-text-muted text-center">{t("article.noContent")}</Text>
               <Pressable onPress={handleOpenExternal} className="mt-3 flex-row items-center gap-2">
-                <ExternalLink size={SECTION_ICON_SIZE} color={PRIMARY_COLOR} />
+                <ExternalLink size={SECTION_ICON_SIZE} color={colors.primary} />
                 <Text className="text-primary">{t("article.viewOriginal")}</Text>
               </Pressable>
             </View>

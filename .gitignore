@@ -63,6 +63,9 @@ coverage/
 # OMC (oh-my-claudecode state)
 .omc/
 
+# Claude Code ランタイムロックファイル
+.claude/*.lock
+
 # Claude Code ユーザー設定ディレクトリ（認証情報を含むため除外）
 .claude-user/
 
