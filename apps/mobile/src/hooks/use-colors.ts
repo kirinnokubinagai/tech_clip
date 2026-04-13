@@ -2,6 +2,9 @@ import { useColorScheme } from "react-native";
 
 import { DARK_COLORS, LIGHT_COLORS } from "@/lib/constants";
 
+/** ライトモード対応完了まで強制ダーク固定 */
+const FORCE_DARK_MODE = true;
+
 /**
  * 現在のテーマに対応したカラートークンを返すフック
  *
@@ -13,8 +16,6 @@ import { DARK_COLORS, LIGHT_COLORS } from "@/lib/constants";
  */
 export function useColors() {
   const colorScheme = useColorScheme();
-  /** ライトモード対応完了まで強制ダーク固定 */
-  const FORCE_DARK_MODE = true;
   if (FORCE_DARK_MODE) {
     return DARK_COLORS;
   }
