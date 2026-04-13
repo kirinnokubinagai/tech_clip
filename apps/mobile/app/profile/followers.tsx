@@ -6,17 +6,12 @@ import { useTranslation } from "react-i18next";
 import { ActivityIndicator, FlatList, Pressable, Text, View } from "react-native";
 
 import { useColors } from "@/hooks/use-colors";
+import type { FollowUser } from "@/hooks/use-follow";
+import { useFollowers, useFollowing } from "@/hooks/use-follow";
+import { getInitials } from "@/utils/formatters";
 
 /** タブの種類 */
 type TabType = "followers" | "following";
-
-/** ユーザーアイテムの型 */
-type UserItem = {
-  id: string;
-  name: string;
-  bio: string | null;
-  avatarUrl: string | null;
-};
 
 /** 戻るアイコンのサイズ（px） */
 const BACK_ICON_SIZE = 24;
@@ -24,49 +19,8 @@ const BACK_ICON_SIZE = 24;
 /** アバターのサイズ（px） */
 const AVATAR_SIZE = 48;
 
-/**
- * ユーザー名の頭文字を取得する
- *
- * @param name - ユーザー名
- * @returns 頭文字（最大2文字）
- */
-function getInitials(name: string): string {
-  const parts = name.trim().split(/\s+/);
-  if (parts.length >= 2) {
-    return `${parts[0][0]}${parts[1][0]}`.toUpperCase();
-  }
-  return name.slice(0, 2).toUpperCase();
-}
-
-/**
- * プレースホルダーのフォロワーリストを生成する
- * API実装後に置き換え予定
- *
- * @returns ダミーのユーザーリスト
- */
-function createPlaceholderFollowers(): UserItem[] {
-  return [
-    { id: "1", name: "田中太郎", bio: "フロントエンドエンジニア", avatarUrl: null },
-    { id: "2", name: "佐藤花子", bio: "バックエンドエンジニア", avatarUrl: null },
-    { id: "3", name: "鈴木一郎", bio: null, avatarUrl: null },
-  ];
-}
-
-/**
- * プレースホルダーのフォロー中リストを生成する
- * API実装後に置き換え予定
- *
- * @returns ダミーのユーザーリスト
- */
-function createPlaceholderFollowing(): UserItem[] {
-  return [
-    { id: "4", name: "高橋実", bio: "モバイルエンジニア", avatarUrl: null },
-    { id: "5", name: "伊藤めぐみ", bio: "デザイナー", avatarUrl: null },
-  ];
-}
-
 type UserListItemProps = {
-  item: UserItem;
+  item: FollowUser;
   onPress: (userId: string) => void;
   userProfileLabel: string;
 };
@@ -150,12 +104,22 @@ export default function FollowersScreen() {
 
   const initialTab: TabType = tab === "following" ? "following" : "followers";
   const [activeTab, setActiveTab] = useState<TabType>(initialTab);
-  const [isLoading] = useState(false);
 
-  const followers = createPlaceholderFollowers();
-  const following = createPlaceholderFollowing();
+  const {
+    data: followersData,
+    isLoading: isFollowersLoading,
+    isError: isFollowersError,
+  } = useFollowers(undefined, { enabled: activeTab === "followers" });
 
-  const currentList = activeTab === "followers" ? followers : following;
+  const {
+    data: followingData,
+    isLoading: isFollowingLoading,
+    isError: isFollowingError,
+  } = useFollowing(undefined, { enabled: activeTab === "following" });
+
+  const isLoading = activeTab === "followers" ? isFollowersLoading : isFollowingLoading;
+  const isError = activeTab === "followers" ? isFollowersError : isFollowingError;
+  const currentList = activeTab === "followers" ? (followersData ?? []) : (followingData ?? []);
 
   const handleBack = useCallback(() => {
     router.back();
@@ -173,7 +137,7 @@ export default function FollowersScreen() {
   }, []);
 
   const renderItem = useCallback(
-    ({ item }: { item: UserItem }) => (
+    ({ item }: { item: FollowUser }) => (
       <UserListItem
         item={item}
         onPress={handleUserPress}
@@ -183,7 +147,7 @@ export default function FollowersScreen() {
     [handleUserPress, t],
   );
 
-  const keyExtractor = useCallback((item: UserItem) => item.id, []);
+  const keyExtractor = useCallback((item: FollowUser) => item.id, []);
 
   const renderEmpty = useCallback(() => {
     if (isLoading) {
@@ -271,6 +235,12 @@ export default function FollowersScreen() {
         <View testID="followers-loading" className="flex-1 items-center justify-center">
           <ActivityIndicator size="large" color={colors.primary} />
           <Text className="text-text-muted mt-3">{t("profile.followers.loading")}</Text>
+        </View>
+      ) : isError ? (
+        <View testID="followers-error" className="flex-1 items-center justify-center px-4">
+          <Text className="text-text-muted text-base text-center">
+            {t("profile.followers.fetchError")}
+          </Text>
         </View>
       ) : (
         <FlatList

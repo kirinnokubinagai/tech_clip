@@ -223,7 +223,8 @@
       "noFollowers": "No followers yet",
       "noFollowing": "Not following anyone yet",
       "userProfileLabel": "View {{name}}'s profile",
-      "loading": "Loading..."
+      "loading": "Loading...",
+      "fetchError": "Failed to fetch user info"
     }
   },
   "settings": {
