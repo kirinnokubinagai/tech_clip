@@ -4,7 +4,6 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { ActivityIndicator, Linking, Pressable, ScrollView, Text, View } from "react-native";
 import Markdown from "react-native-markdown-display";
-
 import { SourceBadge } from "@/components/ui";
 import {
   useArticleDetail,

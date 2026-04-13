@@ -3,7 +3,6 @@ import { Heart, RefreshCw } from "lucide-react-native";
 import { useCallback, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { ActivityIndicator, FlatList, Pressable, RefreshControl, Text, View } from "react-native";
-
 import { ArticleCard } from "@/components/ArticleCard";
 import { useArticles, useToggleFavorite } from "@/hooks/use-articles";
 import { useColors } from "@/hooks/use-colors";

@@ -1,7 +1,6 @@
 import { Bell, Heart, MessageCircle, Newspaper, UserPlus } from "lucide-react-native";
 import { type ReactNode, useMemo } from "react";
 import { Pressable, Text, View } from "react-native";
-
 import { useColors } from "@/hooks/use-colors";
 import type { NotificationType } from "@/types/notification";
 

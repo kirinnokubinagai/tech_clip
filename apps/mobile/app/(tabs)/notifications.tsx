@@ -1,7 +1,6 @@
 import { BellOff, CheckCheck, RefreshCw } from "lucide-react-native";
 import { useCallback, useMemo } from "react";
 import { ActivityIndicator, FlatList, Pressable, RefreshControl, Text, View } from "react-native";
-
 import { NotificationItem } from "@/components/NotificationItem";
 import { EmptyState } from "@/components/ui";
 import { useColors } from "@/hooks/use-colors";

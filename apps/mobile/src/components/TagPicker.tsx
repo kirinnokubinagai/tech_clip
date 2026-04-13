@@ -2,7 +2,6 @@ import { Plus, X } from "lucide-react-native";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Pressable, Text, TextInput, View } from "react-native";
-
 import { DARK_COLORS } from "@/lib/constants";
 
 type TagPickerProps = {

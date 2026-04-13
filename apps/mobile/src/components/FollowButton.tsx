@@ -2,7 +2,6 @@ import { UserMinus, UserPlus } from "lucide-react-native";
 import { useCallback, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { ActivityIndicator, Pressable, Text } from "react-native";
-
 import { useColors } from "@/hooks/use-colors";
 
 /** フォローボタンのアイコンサイズ（px） */

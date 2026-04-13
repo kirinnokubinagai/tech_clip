@@ -1,7 +1,6 @@
 import { useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
 import { ActivityIndicator, Pressable, ScrollView, Text, View } from "react-native";
-
 import type { ProfileHeaderUser } from "@/components/ProfileHeader";
 import { ProfileHeader } from "@/components/ProfileHeader";
 import { useColors } from "@/hooks/use-colors";

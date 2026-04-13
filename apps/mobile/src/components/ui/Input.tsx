@@ -1,6 +1,5 @@
 import type { TextInputProps } from "react-native";
 import { Text, TextInput, View } from "react-native";
-
 import { DARK_COLORS } from "@/lib/constants";
 
 /** プレースホルダーの色（テーマのtext-dimに対応） */

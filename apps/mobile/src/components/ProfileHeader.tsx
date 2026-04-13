@@ -2,7 +2,6 @@ import { Image } from "expo-image";
 import { Settings } from "lucide-react-native";
 import { useTranslation } from "react-i18next";
 import { Pressable, Text, View } from "react-native";
-
 import { useColors } from "@/hooks/use-colors";
 import { getInitials } from "@/utils/formatters";
 

@@ -1,4 +1,5 @@
 import { index, sqliteTable, text } from "drizzle-orm/sqlite-core";
+
 import { users } from "./users";
 
 /**

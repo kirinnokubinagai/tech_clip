@@ -4,7 +4,6 @@ import { Component } from "react";
 import type { WithTranslation } from "react-i18next";
 import { withTranslation } from "react-i18next";
 import { Pressable, Text, View } from "react-native";
-
 import { DARK_COLORS } from "@/lib/constants";
 
 type ErrorBoundaryOwnProps = {

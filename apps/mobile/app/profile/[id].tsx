@@ -3,7 +3,6 @@ import { ArrowLeft } from "lucide-react-native";
 import { useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import { ActivityIndicator, Pressable, ScrollView, Text, View } from "react-native";
-
 import { FollowButton } from "@/components/FollowButton";
 import { ProfileHeader } from "@/components/ProfileHeader";
 import { useColors } from "@/hooks/use-colors";

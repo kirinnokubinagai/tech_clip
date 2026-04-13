@@ -17,6 +17,7 @@ import { useTranslation } from "react-i18next";
 import { Alert, Pressable, ScrollView, Switch, Text, View } from "react-native";
 import { confirm } from "@/components/ConfirmDialog";
 import { useColors } from "@/hooks/use-colors";
+
 import { useSubscription } from "../../src/hooks/use-subscription";
 import { useAuthStore } from "../../src/stores/auth-store";
 import {

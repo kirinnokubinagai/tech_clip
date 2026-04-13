@@ -12,7 +12,6 @@ import {
   TextInput,
   View,
 } from "react-native";
-
 import { AuthAlert } from "@/components/auth/AuthAlert";
 import { AuthSubmitButton } from "@/components/auth/AuthSubmitButton";
 import { fetchWithTimeout, getBaseUrl } from "@/lib/api";

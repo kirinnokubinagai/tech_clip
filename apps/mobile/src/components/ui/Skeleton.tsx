@@ -1,7 +1,6 @@
 import { useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { Animated, type DimensionValue, View } from "react-native";
-
 import { DARK_COLORS } from "@/lib/constants";
 
 type SkeletonProps = {

@@ -1,4 +1,5 @@
 import { Hono } from "hono";
+
 import type { Auth } from "../auth";
 import type { Database } from "../db";
 import { createAuthRoute } from "../routes/auth";

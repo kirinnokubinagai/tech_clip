@@ -2,7 +2,6 @@ import { Image } from "expo-image";
 import { Heart } from "lucide-react-native";
 import { memo } from "react";
 import { Pressable, Text, View } from "react-native";
-
 import { SourceBadge } from "@/components/ui";
 import { useColors } from "@/hooks/use-colors";
 import { formatArticleDate } from "@/lib/date-format";

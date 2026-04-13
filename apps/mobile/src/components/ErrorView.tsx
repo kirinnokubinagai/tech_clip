@@ -2,7 +2,6 @@ import { AlertCircle, RefreshCw, WifiOff } from "lucide-react-native";
 import { type ReactNode, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { Pressable, Text, View } from "react-native";
-
 import { useColors } from "@/hooks/use-colors";
 
 /** エラー種別 */

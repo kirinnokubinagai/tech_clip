@@ -1,6 +1,5 @@
 import { View } from "react-native";
 import { BannerAd, BannerAdSize, TestIds } from "react-native-google-mobile-ads";
-
 import { useSubscription } from "@/hooks/use-subscription";
 
 /** AdMobバナー広告のユニットID（環境変数未設定時はテスト用IDにフォールバック） */

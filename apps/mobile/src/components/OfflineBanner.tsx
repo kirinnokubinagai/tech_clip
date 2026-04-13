@@ -1,7 +1,6 @@
 import { WifiOff } from "lucide-react-native";
 import { useTranslation } from "react-i18next";
 import { Text, View } from "react-native";
-
 import { useNetworkStatus } from "@/hooks/use-network-status";
 import { DARK_COLORS } from "@/lib/constants";
 
