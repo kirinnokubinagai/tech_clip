@@ -14,6 +14,7 @@ const DEFAULT_PAGE_LIMIT = 20;
 /** フォローリストのユーザーアイテム型 */
 export type FollowUserItem = {
   id: string;
+  createdAt: string;
   name: string | null;
   bio: string | null;
   avatarUrl: string | null;

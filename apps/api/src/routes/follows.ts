@@ -211,7 +211,19 @@ export function createFollowsRoute(options: FollowsRouteOptions) {
         );
       }
 
-      const targetUserId = c.req.param("id") as string;
+      const targetUserId = c.req.param("id");
+      if (!targetUserId) {
+        return c.json(
+          {
+            success: false,
+            error: {
+              code: NOT_FOUND_ERROR_CODE,
+              message: "ユーザーが見つかりません",
+            },
+          },
+          HTTP_NOT_FOUND,
+        );
+      }
 
       const limitResult = parseLimitParam(c.req.query("limit"));
       if (!limitResult.ok) {

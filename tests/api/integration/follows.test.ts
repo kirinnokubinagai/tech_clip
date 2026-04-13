@@ -1,3 +1,11 @@
+import {
+  HTTP_CONFLICT,
+  HTTP_CREATED,
+  HTTP_NO_CONTENT,
+  HTTP_NOT_FOUND,
+  HTTP_OK,
+  HTTP_UNAUTHORIZED,
+} from "@api/lib/http-status";
 import type {
   FollowFn,
   GetFollowListFn,
@@ -8,14 +16,6 @@ import type {
 import { createFollowsRoute } from "@api/routes/follows";
 import { Hono } from "hono";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-
-/** HTTP ステータスコード定数 */
-const HTTP_OK = 200;
-const HTTP_CREATED = 201;
-const HTTP_NO_CONTENT = 204;
-const HTTP_UNAUTHORIZED = 401;
-const HTTP_NOT_FOUND = 404;
-const HTTP_CONFLICT = 409;
 
 /** テスト用モックユーザー */
 const MOCK_USER = {
@@ -62,26 +62,12 @@ type FollowListResponse = {
 };
 
 /**
- * テスト用モックDBを生成する
- *
- * @returns モックDBオブジェクト
- */
-function createMockDb() {
-  return {
-    select: vi.fn().mockReturnThis(),
-    from: vi.fn().mockReturnThis(),
-    where: vi.fn().mockResolvedValue([]),
-  };
-}
-
-/**
  * テスト用アプリを生成する
  *
  * @param options - テスト用オプション
  * @returns テスト用 Hono アプリ
  */
 function createTestApp(options: {
-  mockDb?: ReturnType<typeof createMockDb>;
   followFn?: ReturnType<typeof vi.fn<FollowFn>>;
   unfollowFn?: ReturnType<typeof vi.fn<UnfollowFn>>;
   getFollowersFn?: ReturnType<typeof vi.fn<GetFollowListFn>>;
@@ -91,7 +77,6 @@ function createTestApp(options: {
   authenticated?: boolean;
 }) {
   const {
-    mockDb = createMockDb(),
     followFn = vi.fn<FollowFn>().mockResolvedValue({
       followerId: MOCK_USER.id,
       followingId: TARGET_USER_ID,
@@ -106,7 +91,6 @@ function createTestApp(options: {
   } = options;
 
   const route = createFollowsRoute({
-    db: mockDb as unknown as Parameters<typeof createFollowsRoute>[0]["db"],
     followFn,
     unfollowFn,
     getFollowersFn,
