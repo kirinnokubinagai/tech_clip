@@ -1,11 +1,24 @@
 import ArticleDetailScreen from "@mobile-app/article/[id]";
 import { fireEvent, render, waitFor } from "@testing-library/react-native";
 
+import { setMockLocale } from "../helpers/i18n-test-utils";
+
 /** 要約リクエストのmutate関数 */
 const mockRequestSummaryMutate = jest.fn();
 
 /** 翻訳リクエストのmutate関数 */
 const mockRequestTranslationMutate = jest.fn();
+
+/** useArticleDetail のモック戻り値（テストで切り替え可能にする） */
+const mockArticleDetailState: {
+  data: unknown;
+  isLoading: boolean;
+  isError: boolean;
+} = {
+  data: undefined,
+  isLoading: false,
+  isError: false,
+};
 
 /** 記事詳細データ */
 const MOCK_ARTICLE = {
@@ -44,9 +57,9 @@ jest.mock("@mobile/lib/localDb", () => ({
 
 jest.mock("@mobile/hooks/use-articles", () => ({
   useArticleDetail: () => ({
-    data: MOCK_ARTICLE,
-    isLoading: false,
-    isError: false,
+    data: mockArticleDetailState.data,
+    isLoading: mockArticleDetailState.isLoading,
+    isError: mockArticleDetailState.isError,
     refetch: jest.fn(),
   }),
   useToggleFavorite: () => ({
@@ -86,6 +99,10 @@ jest.mock("react-native/Libraries/Linking/Linking", () => ({
 
 beforeEach(() => {
   jest.clearAllMocks();
+  setMockLocale("ja");
+  mockArticleDetailState.data = MOCK_ARTICLE;
+  mockArticleDetailState.isLoading = false;
+  mockArticleDetailState.isError = false;
   const { useSettingsStore } = require("@mobile/stores/settings-store");
   (useSettingsStore as jest.Mock).mockImplementation(
     (selector: (state: Record<string, unknown>) => unknown) =>
@@ -125,7 +142,7 @@ describe("ArticleDetailScreen", () => {
 
       // Assert
       await waitFor(() => {
-        expect(getByText("テスト記事")).toBeTruthy();
+        expect(getByText("テスト記事")).not.toBeNull();
       });
     });
 
@@ -141,7 +158,7 @@ describe("ArticleDetailScreen", () => {
 
       // Assert
       await waitFor(() => {
-        expect(getByText("記事の取得に失敗しました")).toBeTruthy();
+        expect(getByText("記事の取得に失敗しました")).not.toBeNull();
       });
     });
 
@@ -233,6 +250,111 @@ describe("ArticleDetailScreen", () => {
           articleId: "article-1",
           targetLanguage: "en",
         });
+      });
+    });
+  });
+
+  describe("多言語対応", () => {
+    it("日本語ロケールで読了時間と要約/翻訳ラベルが日本語で表示されること", async () => {
+      // Arrange
+      setMockLocale("ja");
+
+      // Act
+      const { getByText } = await render(<ArticleDetailScreen />);
+
+      // Assert
+      await waitFor(() => {
+        expect(getByText("5分で読めます")).not.toBeNull();
+        expect(getByText("要約")).not.toBeNull();
+        expect(getByText("翻訳")).not.toBeNull();
+      });
+    });
+
+    it("英語ロケールで読了時間と要約/翻訳ラベルが英語で表示されること", async () => {
+      // Arrange
+      setMockLocale("en");
+
+      // Act
+      const { getByText } = await render(<ArticleDetailScreen />);
+
+      // Assert
+      await waitFor(() => {
+        expect(getByText("5 min read")).not.toBeNull();
+        expect(getByText("Summarize")).not.toBeNull();
+        expect(getByText("Translate")).not.toBeNull();
+      });
+    });
+
+    it("英語ロケールでエラー表示時に英語の fetchError とリトライ文言が表示されること", async () => {
+      // Arrange
+      setMockLocale("en");
+      mockArticleDetailState.data = undefined;
+      mockArticleDetailState.isError = true;
+
+      // Act
+      const { getByText } = await render(<ArticleDetailScreen />);
+
+      // Assert
+      await waitFor(() => {
+        expect(getByText("Failed to fetch article")).not.toBeNull();
+        expect(getByText("Retry")).not.toBeNull();
+        expect(getByText("Back")).not.toBeNull();
+      });
+    });
+  });
+
+  describe("a11y 翻訳キー", () => {
+    it("戻るボタンの accessibilityLabel が日本語で表示されること", async () => {
+      // Arrange
+      setMockLocale("ja");
+
+      // Act
+      const { getByLabelText } = await render(<ArticleDetailScreen />);
+
+      // Assert
+      await waitFor(() => {
+        expect(getByLabelText("戻る")).not.toBeNull();
+      });
+    });
+
+    it("戻るボタンの accessibilityLabel が英語で表示されること", async () => {
+      // Arrange
+      setMockLocale("en");
+
+      // Act
+      const { getByLabelText } = await render(<ArticleDetailScreen />);
+
+      // Assert
+      await waitFor(() => {
+        expect(getByLabelText("Back")).not.toBeNull();
+      });
+    });
+
+    it("お気に入り未登録時に addToFavorites の accessibilityLabel が表示されること", async () => {
+      // Arrange
+      setMockLocale("ja");
+      mockArticleDetailState.data = { ...MOCK_ARTICLE, isFavorite: false };
+
+      // Act
+      const { getByLabelText } = await render(<ArticleDetailScreen />);
+
+      // Assert
+      await waitFor(() => {
+        expect(getByLabelText("お気に入り追加")).not.toBeNull();
+      });
+    });
+
+    it("お気に入り登録済み時に removeFromFavorites の accessibilityLabel が表示されること", async () => {
+      // Arrange
+      setMockLocale("ja");
+      mockArticleDetailState.data = { ...MOCK_ARTICLE, isFavorite: true };
+
+      // Act
+      const { getByLabelText } = await render(<ArticleDetailScreen />);
+
+      // Assert
+      await waitFor(() => {
+        expect(getByLabelText("お気に入り解除")).not.toBeNull();
       });
     });
   });

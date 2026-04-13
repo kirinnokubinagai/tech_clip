@@ -38,6 +38,7 @@ export default function UserProfileScreen() {
     router.back();
   }, [router]);
 
+  /** フォロー切り替え処理（フォロー API 実装後に接続予定） */
   const handleFollowToggle = useCallback(
     async (_userId: string, _currentlyFollowing: boolean): Promise<void> => {},
     [],
