@@ -84,48 +84,38 @@ while (( elapsed < TIMEOUT_SECONDS )); do
   fi
 
   # コメント形式のレビュー（Claude bot 等が PR comment で投稿する場合）も検出する
-  # 「🔄 Request Changes」または明示的な CHANGES_REQUESTED マーカーを含むコメントのみ対象
-  # 誤検知防止のため author.login で Claude bot / github-actions bot に限定する
-  # app/claude: GitHub App として動作する Claude bot の login 形式
-  changes_comment_count=$(printf '%s' "${pr_data}" | jq '
+  # 複数ラウンドにわたるレビューで古いコメントが残り続けることを防ぐため、
+  # bot コメントの「最新1件のみ」を見て判定する。
+  # createdAt で昇順ソートし最後の1件（最新）を取得する。
+  latest_bot_comment_body=$(printf '%s' "${pr_data}" | jq -r '
     [.comments[]
-     | select((.author.login // "") | test("^(github-actions\\[bot\\]|claude\\[bot\\]|claude-code\\[bot\\]|app/claude|claude)$"; "i"))
-     | select(.body | test("(?s)🔄.*Request Changes|CHANGES_REQUESTED"; "i"))] | length
-  ' 2>/dev/null || echo "0")
+     | select((.author.login // "") | test("^(github-actions\\[bot\\]|claude\\[bot\\]|claude-code\\[bot\\]|app/claude|claude)$"; "i"))]
+    | sort_by(.createdAt)
+    | last
+    | .body // ""
+  ' 2>/dev/null || true)
 
-  if [[ "${changes_comment_count}" -gt 0 ]]; then
-    comment_content=$(printf '%s' "${pr_data}" | jq -r '
-      [.comments[]
-       | select((.author.login // "") | test("^(github-actions\\[bot\\]|claude\\[bot\\]|claude-code\\[bot\\]|app/claude|claude)$"; "i"))
-       | select(.body | test("(?s)🔄.*Request Changes|CHANGES_REQUESTED"; "i"))]
-      | map("[@" + (.author.login // "unknown") + "]:\n" + .body)
-      | join("\n\n---\n\n")
-    ' 2>/dev/null || true)
-    echo "CHANGES_REQUESTED"
-    echo ""
-    echo "--- Review Content (from comments) ---"
-    printf '%s\n' "${comment_content}"
-    exit 1
-  fi
+  if [[ -n "${latest_bot_comment_body}" ]]; then
+    if printf '%s' "${latest_bot_comment_body}" | jq -e 'test("(?s)🔄.*Request Changes|CHANGES_REQUESTED"; "i")' >/dev/null 2>&1; then
+      echo "CHANGES_REQUESTED"
+      echo ""
+      echo "--- Review Content (from comments) ---"
+      printf '%s\n' "${latest_bot_comment_body}"
+      exit 1
+    fi
 
-  # LGTM / Approve 系コメントも検出する
-  # 誤検知防止のため author.login で Claude bot / github-actions bot に限定し、
-  # 特定のフレーズのみ対象とする:
-  #   "全件 PASS" / "全件PASS": レビュアーエージェントの PASS 宣言
-  #   "✅.*\bPASS\b": CI/レビュー結果の ✅ + PASS（単語境界で "passed" 等の誤検知防止）
-  #   "\bLGTM\b": 標準的な承認表現（単語境界で LGTMFAIL 等の誤検知防止）
-  #   "Approve 相当": Claude bot の承認コメントフレーズ
-  #   "マージ可能(?:です|と判断|。|！|$)": Claude bot の承認判定フレーズ（「マージ可能性がある」等の誤検知防止）
-  #   "指摘[^0-9]?0(?![0-9])": 「指摘0件」のような確定0件表現（10件等との誤検知防止）
-  approve_comment_count=$(printf '%s' "${pr_data}" | jq '
-    [.comments[]
-     | select((.author.login // "") | test("^(github-actions\\[bot\\]|claude\\[bot\\]|claude-code\\[bot\\]|app/claude|claude)$"; "i"))
-     | select(.body | test("(?s)全件 ?PASS(?!\\w)|\\bLGTM\\b|Approve 相当|マージ可能(?:です|と判断|。|！|$)|✅.*\\bPASS\\b|指摘[^0-9]?0(?![0-9])"; "i"))] | length
-  ' 2>/dev/null || echo "0")
-
-  if [[ "${approve_comment_count}" -gt 0 ]] && [[ "${changes_comment_count}" -eq 0 ]]; then
-    echo "APPROVED"
-    exit 0
+    # LGTM / Approve 系コメントも検出する
+    # 誤検知防止のため特定のフレーズのみ対象とする:
+    #   "全件 PASS" / "全件PASS": レビュアーエージェントの PASS 宣言
+    #   "✅.*\bPASS\b": CI/レビュー結果の ✅ + PASS（単語境界で "passed" 等の誤検知防止）
+    #   "\bLGTM\b": 標準的な承認表現（単語境界で LGTMFAIL 等の誤検知防止）
+    #   "Approve 相当": Claude bot の承認コメントフレーズ
+    #   "マージ可能(?:です|と判断|。|！|$)": Claude bot の承認判定フレーズ（「マージ可能性がある」等の誤検知防止）
+    #   "指摘[^0-9]?0(?![0-9])": 「指摘0件」のような確定0件表現（10件等との誤検知防止）
+    if printf '%s' "${latest_bot_comment_body}" | jq -e 'test("(?s)全件 ?PASS(?!\\w)|\\bLGTM\\b|Approve 相当|マージ可能(?:です|と判断|。|！|$)|✅.*\\bPASS\\b|指摘[^0-9]?0(?![0-9])"; "i")' >/dev/null 2>&1; then
+      echo "APPROVED"
+      exit 0
+    fi
   fi
 
   minutes_elapsed=$(( elapsed / 60 ))
