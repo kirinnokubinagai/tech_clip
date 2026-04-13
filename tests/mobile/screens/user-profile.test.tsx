@@ -38,6 +38,7 @@ beforeEach(() => {
   });
   mockUseFollowToggle.mockReturnValue({
     mutate: jest.fn(),
+    mutateAsync: jest.fn().mockResolvedValue(undefined),
     isPending: false,
   });
 });
@@ -141,6 +142,30 @@ describe("UserProfileScreen", () => {
       // Assert
       await waitFor(() => {
         expect(mockRefetch).toHaveBeenCalledTimes(1);
+      });
+    });
+  });
+
+  describe("フォローボタン操作", () => {
+    it("フォローボタンを押すとmutateAsyncが正しい引数で呼ばれること", async () => {
+      // Arrange
+      const mockMutateAsync = jest.fn().mockResolvedValue(undefined);
+      mockUseFollowToggle.mockReturnValue({
+        mutate: jest.fn(),
+        mutateAsync: mockMutateAsync,
+        isPending: false,
+      });
+
+      // Act
+      const { getByTestId } = await render(<UserProfileScreen />);
+      await fireEvent.press(getByTestId("follow-button"));
+
+      // Assert
+      await waitFor(() => {
+        expect(mockMutateAsync).toHaveBeenCalledWith({
+          userId: MOCK_USER_PROFILE.id,
+          isFollowing: MOCK_USER_PROFILE.isFollowing,
+        });
       });
     });
   });

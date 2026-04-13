@@ -3,7 +3,7 @@ import type { ProfileHeaderUser } from "@/components/ProfileHeader";
 import { apiFetch } from "@/lib/api";
 
 /** ユーザープロフィールのクエリキー */
-const USER_PROFILE_QUERY_KEY = "user-profile";
+export const USER_PROFILE_QUERY_KEY = "user-profile";
 
 /** ユーザープロフィールAPIレスポンスの型 */
 type UserProfileResponse = {

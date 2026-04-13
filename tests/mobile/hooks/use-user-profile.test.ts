@@ -1,4 +1,8 @@
-import { useFollowToggle, useUserProfile } from "@mobile/hooks/use-user-profile";
+import {
+  USER_PROFILE_QUERY_KEY,
+  useFollowToggle,
+  useUserProfile,
+} from "@mobile/hooks/use-user-profile";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { act, renderHook, waitFor } from "@testing-library/react-native";
 import React from "react";
@@ -173,7 +177,7 @@ describe("useFollowToggle", () => {
 
       // Assert
       expect(invalidateSpy).toHaveBeenCalledWith(
-        expect.objectContaining({ queryKey: ["user-profile", userId] }),
+        expect.objectContaining({ queryKey: [USER_PROFILE_QUERY_KEY, userId] }),
       );
     });
   });
