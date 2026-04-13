@@ -14,7 +14,7 @@ import type {
   UnfollowFn,
   UserExistsFn,
 } from "@api/routes/follows";
-import { createFollowsRoute } from "@api/routes/follows";
+import { buildCursor, createFollowsRoute, parseCursor } from "@api/routes/follows";
 import { Hono } from "hono";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -798,5 +798,76 @@ describe("GET /api/users/:id/following", () => {
       expect(body.meta).toHaveProperty("nextCursor");
       expect(body.meta).toHaveProperty("hasNext");
     });
+  });
+});
+
+describe("parseCursor", () => {
+  it("有効なカーソル文字列をパースできること", () => {
+    // Arrange
+    const cursor = "2024-01-01T00:00:00Z|user-123";
+
+    // Act
+    const result = parseCursor(cursor);
+
+    // Assert
+    expect(result).toEqual({ cursorTime: "2024-01-01T00:00:00Z", cursorId: "user-123" });
+  });
+
+  it("セパレータがない文字列の場合nullを返すこと", () => {
+    // Arrange
+    const cursor = "invalid";
+
+    // Act
+    const result = parseCursor(cursor);
+
+    // Assert
+    expect(result).toBeNull();
+  });
+
+  it("cursorTimeが空の場合nullを返すこと", () => {
+    // Arrange
+    const cursor = "|user-123";
+
+    // Act
+    const result = parseCursor(cursor);
+
+    // Assert
+    expect(result).toBeNull();
+  });
+
+  it("cursorIdが空の場合nullを返すこと", () => {
+    // Arrange
+    const cursor = "2024-01-01T00:00:00Z|";
+
+    // Act
+    const result = parseCursor(cursor);
+
+    // Assert
+    expect(result).toBeNull();
+  });
+
+  it("空文字の場合nullを返すこと", () => {
+    // Arrange
+    const cursor = "";
+
+    // Act
+    const result = parseCursor(cursor);
+
+    // Assert
+    expect(result).toBeNull();
+  });
+});
+
+describe("buildCursor", () => {
+  it("createdAtとidからカーソル文字列を生成できること", () => {
+    // Arrange
+    const createdAt = "2024-01-01T00:00:00Z";
+    const id = "user-123";
+
+    // Act
+    const result = buildCursor(createdAt, id);
+
+    // Assert
+    expect(result).toBe("2024-01-01T00:00:00Z|user-123");
   });
 });
