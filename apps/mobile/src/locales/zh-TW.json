@@ -223,7 +223,10 @@
       "noFollowers": "尚無追蹤者",
       "noFollowing": "未追蹤任何用戶",
       "userProfileLabel": "查看{{name}}的個人資料",
-      "loading": "載入中..."
+      "loading": "載入中...",
+      "retry": "重試",
+      "errorFollowers": "獲取追蹤者失敗",
+      "errorFollowing": "獲取追蹤中失敗"
     }
   },
   "settings": {

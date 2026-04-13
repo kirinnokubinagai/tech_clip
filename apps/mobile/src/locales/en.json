@@ -223,7 +223,10 @@
       "noFollowers": "No followers yet",
       "noFollowing": "Not following anyone yet",
       "userProfileLabel": "View {{name}}'s profile",
-      "loading": "Loading..."
+      "loading": "Loading...",
+      "retry": "Retry",
+      "errorFollowers": "Failed to load followers",
+      "errorFollowing": "Failed to load following"
     }
   },
   "settings": {
