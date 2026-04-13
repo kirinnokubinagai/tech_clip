@@ -870,4 +870,28 @@ describe("buildCursor", () => {
     // Assert
     expect(result).toBe("2024-01-01T00:00:00Z|user-123");
   });
+
+  it("createdAtが空文字の場合でもセパレータとidを含む文字列を返すこと", () => {
+    // Arrange
+    const createdAt = "";
+    const id = "user-123";
+
+    // Act
+    const result = buildCursor(createdAt, id);
+
+    // Assert
+    expect(result).toBe("|user-123");
+  });
+
+  it("idが空文字の場合でもcreatedAtとセパレータを含む文字列を返すこと", () => {
+    // Arrange
+    const createdAt = "2024-01-01T00:00:00Z";
+    const id = "";
+
+    // Act
+    const result = buildCursor(createdAt, id);
+
+    // Assert
+    expect(result).toBe("2024-01-01T00:00:00Z|");
+  });
 });

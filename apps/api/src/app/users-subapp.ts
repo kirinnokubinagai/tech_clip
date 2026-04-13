@@ -1,4 +1,4 @@
-import { and, desc, eq, lt, or, sql } from "drizzle-orm";
+import { and, desc, eq, lt, or } from "drizzle-orm";
 import type { Auth } from "../auth";
 import type { Database } from "../db";
 import { follows, users } from "../db/schema";
@@ -37,7 +37,7 @@ async function queryFollowList(
       const { cursorTime, cursorId } = parsed;
       const cursorCondition = or(
         lt(follows.createdAt, cursorTime),
-        and(sql`${follows.createdAt} = ${cursorTime}`, lt(idColumn, cursorId)),
+        and(eq(follows.createdAt, cursorTime), lt(idColumn, cursorId)),
       );
       if (cursorCondition) {
         conditions.push(cursorCondition);
@@ -55,7 +55,7 @@ async function queryFollowList(
     .from(follows)
     .leftJoin(users, eq(idColumn, users.id))
     .where(and(...conditions))
-    .orderBy(desc(follows.createdAt))
+    .orderBy(desc(follows.createdAt), desc(idColumn))
     .limit(params.limit);
 
   return toRecordArray(

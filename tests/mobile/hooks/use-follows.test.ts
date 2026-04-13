@@ -155,4 +155,33 @@ describe("useFollowing", () => {
     // Assert
     await waitFor(() => expect(result.current.isError).toBe(true));
   });
+
+  it("hasNextがtrueの場合、次のページを取得できること", async () => {
+    // Arrange
+    mockApiFetch.mockResolvedValue({
+      success: true,
+      data: MOCK_FOLLOWING,
+      meta: { nextCursor: "cursor-xyz", hasNext: true },
+    });
+
+    // Act
+    const wrapper = createWrapper(queryClient);
+    const { result } = await renderHook(() => useFollowing("target-user-id"), { wrapper });
+
+    // Assert
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    expect(result.current.hasNextPage).toBe(true);
+  });
+
+  it("userIdが空の場合はリクエストを送らないこと", async () => {
+    // Arrange & Act
+    const wrapper = createWrapper(queryClient);
+    const { result } = await renderHook(() => useFollowing(""), { wrapper });
+
+    // Assert
+    await waitFor(() => {
+      expect(result.current.fetchStatus).toBe("idle");
+    });
+    expect(mockApiFetch).not.toHaveBeenCalled();
+  });
 });

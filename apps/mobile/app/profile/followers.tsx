@@ -133,7 +133,10 @@ export default function FollowersScreen() {
 
   const activeQuery = activeTab === "followers" ? followersQuery : followingQuery;
 
-  const currentList = activeQuery.data?.pages.flatMap((page) => page.items) ?? [];
+  const currentList = useMemo(
+    () => activeQuery.data?.pages.flatMap((page) => page.items) ?? [],
+    [activeQuery.data],
+  );
 
   const isLoading = activeQuery.isLoading;
   const isError = activeQuery.isError;
