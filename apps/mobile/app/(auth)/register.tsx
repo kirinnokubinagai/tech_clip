@@ -10,6 +10,7 @@ import {
   TextInput,
   View,
 } from "react-native";
+
 import { AuthAlert } from "@/components/auth/AuthAlert";
 import { AuthSubmitButton } from "@/components/auth/AuthSubmitButton";
 import { DARK_COLORS } from "@/lib/constants";

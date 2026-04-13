@@ -1,4 +1,5 @@
 import { Text, View } from "react-native";
+
 import { getSourceDefinition } from "@/lib/sources";
 import type { ArticleSource } from "@/types/article";
 

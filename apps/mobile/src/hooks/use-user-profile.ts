@@ -1,4 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+
 import type { ProfileHeaderUser } from "@/components/ProfileHeader";
 import { followKeys } from "@/hooks/use-follow";
 import { apiFetch } from "@/lib/api";

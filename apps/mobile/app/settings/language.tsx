@@ -2,6 +2,7 @@ import { useRouter } from "expo-router";
 import { Check } from "lucide-react-native";
 import { useTranslation } from "react-i18next";
 import { FlatList, Pressable, Text, View } from "react-native";
+
 import { useColors } from "@/hooks/use-colors";
 
 import type { Language } from "../../src/stores/settings-store";

@@ -1,6 +1,7 @@
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
+
 import { CallbackErrorView, CallbackLoadingView } from "@/components/auth/CallbackViews";
 import { setAuthToken, setRefreshToken } from "@/lib/secure-store";
 import { useAuthStore } from "@/stores/auth-store";

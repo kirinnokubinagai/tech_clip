@@ -2,6 +2,7 @@ import { followKeys, useFollowers, useFollowing } from "@mobile/hooks/use-follow
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { renderHook, waitFor } from "@testing-library/react-native";
 import React from "react";
+
 import { apiFetch } from "@/lib/api";
 
 jest.mock("@/lib/api", () => ({

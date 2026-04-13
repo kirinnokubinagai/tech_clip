@@ -2,6 +2,7 @@ import { Check, X } from "lucide-react-native";
 import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+
 import { useColors } from "@/hooks/use-colors";
 
 /** PremiumGateコンポーネントのprops */

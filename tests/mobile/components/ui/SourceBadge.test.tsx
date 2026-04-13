@@ -1,5 +1,6 @@
 import { SOURCE_CONFIG, SourceBadge } from "@mobile/components/ui/SourceBadge";
 import { render } from "@testing-library/react-native";
+
 import { SOURCE_DEFINITIONS, SUPPORTED_SOURCES } from "@/lib/sources";
 
 describe("SourceBadge", () => {

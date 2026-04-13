@@ -24,9 +24,11 @@
             "groups": [
               [":NODE:"],
               ":BLANK_LINE:",
-              [":PACKAGE:", ":ALIAS:"],
+              [":PACKAGE:"],
               ":BLANK_LINE:",
-              ["@mobile", "@mobile/**", "@mobile-app", "@mobile-app/**"]
+              [":ALIAS:"],
+              ":BLANK_LINE:",
+              [":PATH:"]
             ]
           }
         }

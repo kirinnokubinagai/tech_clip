@@ -2,6 +2,7 @@ import { useRouter } from "expo-router";
 import { Search, X } from "lucide-react-native";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ActivityIndicator, FlatList, Pressable, Text, TextInput, View } from "react-native";
+
 import { ArticleCard } from "@/components/ArticleCard";
 import { SEARCH_DEBOUNCE_MS, useSearchArticles, useToggleFavorite } from "@/hooks/use-articles";
 import { useColors } from "@/hooks/use-colors";

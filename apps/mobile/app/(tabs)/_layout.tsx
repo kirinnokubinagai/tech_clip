@@ -2,6 +2,7 @@ import { Tabs } from "expo-router";
 import { Bell, Home, Search, Settings, User } from "lucide-react-native";
 import { useTranslation } from "react-i18next";
 import { Text, useColorScheme, View } from "react-native";
+
 import { useUnreadNotificationCount } from "@/hooks/use-notifications";
 import { DARK_COLORS, LIGHT_COLORS } from "@/lib/constants";
 
