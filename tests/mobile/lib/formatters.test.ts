@@ -35,8 +35,23 @@ describe("getInitials", () => {
       // Arrange
       const name = "   ";
 
-      // Act & Assert
+      // Act
+      const result = getInitials(name);
+
+      // Assert
       expect(() => getInitials(name)).not.toThrow();
+      expect(result).toBe("?");
+    });
+
+    it("空文字列の場合に疑問符が返ること", () => {
+      // Arrange
+      const name = "";
+
+      // Act
+      const result = getInitials(name);
+
+      // Assert
+      expect(result).toBe("?");
     });
   });
 });

@@ -6,12 +6,13 @@ import {
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { act, renderHook, waitFor } from "@testing-library/react-native";
 import React from "react";
+import { apiFetch } from "@/lib/api";
 
 jest.mock("@/lib/api", () => ({
   apiFetch: jest.fn(),
 }));
 
-const apiFetch = require("@/lib/api").apiFetch as jest.Mock;
+const mockedApiFetch = jest.mocked(apiFetch);
 
 /** テスト用QueryClient */
 let queryClient: QueryClient;
@@ -55,7 +56,7 @@ describe("useUserProfile", () => {
   describe("正常系", () => {
     it("ユーザープロフィールを取得できること", async () => {
       // Arrange
-      apiFetch.mockResolvedValue(mockProfileResponse);
+      mockedApiFetch.mockResolvedValue(mockProfileResponse);
       const userId = "user_01";
 
       // Act
@@ -63,14 +64,14 @@ describe("useUserProfile", () => {
 
       // Assert
       await waitFor(() => expect(result.current.isSuccess).toBe(true));
-      expect(apiFetch).toHaveBeenCalledWith(`/api/users/${userId}/profile`);
+      expect(mockedApiFetch).toHaveBeenCalledWith(`/api/users/${userId}/profile`);
       expect(result.current.data?.name).toBe("テストユーザー");
       expect(result.current.data?.isFollowing).toBe(false);
     });
 
     it("フォロー状態がtrueのプロフィールを取得できること", async () => {
       // Arrange
-      apiFetch.mockResolvedValue({
+      mockedApiFetch.mockResolvedValue({
         ...mockProfileResponse,
         data: { ...mockProfileResponse.data, isFollowing: true },
       });
@@ -87,20 +88,20 @@ describe("useUserProfile", () => {
   describe("異常系", () => {
     it("userIdが空文字の場合はAPIを呼ばないこと", async () => {
       // Arrange
-      apiFetch.mockResolvedValue(mockProfileResponse);
+      mockedApiFetch.mockResolvedValue(mockProfileResponse);
 
       // Act
       await renderHook(() => useUserProfile(""), { wrapper: Wrapper });
 
       // Assert
       await waitFor(() => {
-        expect(apiFetch).not.toHaveBeenCalled();
+        expect(mockedApiFetch).not.toHaveBeenCalled();
       });
     });
 
     it("APIエラー時にエラー状態になること", async () => {
       // Arrange
-      apiFetch.mockRejectedValue(new Error("ユーザーが見つかりません"));
+      mockedApiFetch.mockRejectedValue(new Error("ユーザーが見つかりません"));
 
       // Act
       const { result } = await renderHook(() => useUserProfile("user_01"), { wrapper: Wrapper });
@@ -135,7 +136,7 @@ describe("useFollowToggle", () => {
   describe("正常系", () => {
     it("フォローできること（POSTが呼ばれること）", async () => {
       // Arrange
-      apiFetch.mockResolvedValue({ success: true });
+      mockedApiFetch.mockResolvedValue({ success: true });
       const userId = "user_01";
 
       // Act
@@ -145,12 +146,14 @@ describe("useFollowToggle", () => {
       });
 
       // Assert
-      expect(apiFetch).toHaveBeenCalledWith(`/api/users/${userId}/follow`, { method: "POST" });
+      expect(mockedApiFetch).toHaveBeenCalledWith(`/api/users/${userId}/follow`, {
+        method: "POST",
+      });
     });
 
     it("フォロー解除できること（DELETEが呼ばれること）", async () => {
       // Arrange
-      apiFetch.mockResolvedValue({ success: true });
+      mockedApiFetch.mockResolvedValue({ success: true });
       const userId = "user_01";
 
       // Act
@@ -160,12 +163,14 @@ describe("useFollowToggle", () => {
       });
 
       // Assert
-      expect(apiFetch).toHaveBeenCalledWith(`/api/users/${userId}/follow`, { method: "DELETE" });
+      expect(mockedApiFetch).toHaveBeenCalledWith(`/api/users/${userId}/follow`, {
+        method: "DELETE",
+      });
     });
 
     it("成功後にユーザープロフィールのキャッシュが無効化されること", async () => {
       // Arrange
-      apiFetch.mockResolvedValue({ success: true });
+      mockedApiFetch.mockResolvedValue({ success: true });
       const userId = "user_01";
       const invalidateSpy = jest.spyOn(queryClient, "invalidateQueries");
 
@@ -185,7 +190,7 @@ describe("useFollowToggle", () => {
   describe("異常系", () => {
     it("APIエラー時にエラーがPromiseとして伝播されること", async () => {
       // Arrange
-      apiFetch.mockRejectedValue(new Error("フォロー処理に失敗しました"));
+      mockedApiFetch.mockRejectedValue(new Error("フォロー処理に失敗しました"));
 
       // Act
       const { result } = await renderHook(() => useFollowToggle(), { wrapper: Wrapper });
