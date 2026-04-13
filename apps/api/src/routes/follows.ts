@@ -16,6 +16,7 @@ import {
   HTTP_UNAUTHORIZED,
   HTTP_UNPROCESSABLE_ENTITY,
 } from "../lib/http-status";
+import { createLogger } from "../lib/logger";
 
 /** デフォルトのページサイズ */
 const DEFAULT_LIMIT = 20;
@@ -34,7 +35,7 @@ type FollowResult = {
 };
 
 /** 複合カーソルの区切り文字 */
-export const CURSOR_SEPARATOR = "|";
+const CURSOR_SEPARATOR = "|";
 
 /** フォロワー/フォロー中一覧のクエリパラメータ型 */
 export type FollowListQueryParams = {
@@ -79,7 +80,7 @@ type RouteVariables = { user?: Record<string, unknown> };
 function getAuthenticatedUserId(
   c: Context<{ Variables: RouteVariables }>,
 ): { ok: true; userId: string } | { ok: false } {
-  const user = c.get("user") as Record<string, unknown> | undefined;
+  const user = c.get("user");
   if (!user?.id || typeof user.id !== "string") {
     return { ok: false };
   }
@@ -148,6 +149,11 @@ export function buildCursor(createdAt: string, id: string): string {
   return `${createdAt}${CURSOR_SEPARATOR}${id}`;
 }
 
+const logger = createLogger();
+
+/** SQLite/D1 の UNIQUE constraint エラー文言 */
+const UNIQUE_CONSTRAINT_ERROR_FRAGMENT = "UNIQUE constraint failed";
+
 /**
  * SQLiteのUNIQUE制約違反エラーかどうかを判定する
  *
@@ -155,10 +161,7 @@ export function buildCursor(createdAt: string, id: string): string {
  * @returns UNIQUE制約違反であれば true
  */
 function isUniqueConstraintError(error: unknown): boolean {
-  if (!(error instanceof Error)) {
-    return false;
-  }
-  return error.message.includes("UNIQUE constraint failed");
+  return error instanceof Error && error.message.includes(UNIQUE_CONSTRAINT_ERROR_FRAGMENT);
 }
 
 /**
@@ -199,19 +202,7 @@ export function createFollowsRoute(options: FollowsRouteOptions) {
         );
       }
 
-      const targetUserId = c.req.param("id");
-      if (!targetUserId) {
-        return c.json(
-          {
-            success: false,
-            error: {
-              code: "INVALID_REQUEST",
-              message: "ユーザーIDが指定されていません",
-            },
-          },
-          400,
-        );
-      }
+      const targetUserId = c.req.param("id") as string;
 
       const limitResult = parseLimitParam(c.req.query("limit"));
       if (!limitResult.ok) {
@@ -258,6 +249,7 @@ export function createFollowsRoute(options: FollowsRouteOptions) {
         );
       }
 
+      /** +1件取得して hasNext を判定する */
       const fetched = await getListFn({
         userId: targetUserId,
         limit: limit + 1,
@@ -361,6 +353,7 @@ export function createFollowsRoute(options: FollowsRouteOptions) {
           HTTP_CONFLICT,
         );
       }
+      logger.error("フォロー処理エラー", { followerId, followingId, error });
       throw error;
     }
   });

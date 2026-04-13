@@ -33,6 +33,9 @@ export const NOT_FOUND_ERROR_CODE = "NOT_FOUND";
 /** リソース未発見エラーメッセージ */
 export const NOT_FOUND_ERROR_MESSAGE = "リソースが見つかりません";
 
+/** リクエスト不正エラーコード */
+export const INVALID_REQUEST_ERROR_CODE = "INVALID_REQUEST";
+
 /** バリデーションエラーコード */
 export const VALIDATION_ERROR_CODE = "VALIDATION_FAILED";
 

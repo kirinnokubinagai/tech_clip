@@ -180,7 +180,7 @@ export default function FollowersScreen() {
 
   const renderItem = useCallback(
     ({ item }: { item: FollowUserItem }) => {
-      const accessibilityName = item.name?.trim() ? item.name : item.id;
+      const accessibilityName = item.name?.trim() ? item.name : t("profile.followers.unknownUser");
       return (
         <UserListItem
           item={item}
@@ -202,7 +202,7 @@ export default function FollowersScreen() {
 
   const handleEndReached = useCallback(() => {
     if (hasNextPage && !isFetchingNextPage) {
-      fetchNextPage();
+      void fetchNextPage();
     }
   }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
 

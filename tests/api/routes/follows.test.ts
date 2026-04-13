@@ -1,6 +1,8 @@
+import { INTERNAL_ERROR_CODE } from "@api/lib/error-codes";
 import {
   HTTP_CONFLICT,
   HTTP_CREATED,
+  HTTP_INTERNAL_SERVER_ERROR,
   HTTP_NO_CONTENT,
   HTTP_NOT_FOUND,
   HTTP_OK,
@@ -77,6 +79,19 @@ function createTestApp() {
     session: Record<string, unknown>;
   };
   const app = new Hono<{ Variables: Variables }>();
+
+  app.onError((_err, c) => {
+    return c.json(
+      {
+        success: false,
+        error: {
+          code: INTERNAL_ERROR_CODE,
+          message: "サーバーエラーが発生しました",
+        },
+      },
+      HTTP_INTERNAL_SERVER_ERROR,
+    );
+  });
 
   app.use("*", async (c, next) => {
     c.set("user", MOCK_USER);
@@ -280,7 +295,9 @@ describe("POST /api/users/:id/follow", () => {
       });
 
       // Assert
-      expect(res.status).toBe(500);
+      expect(res.status).toBe(HTTP_INTERNAL_SERVER_ERROR);
+      const body = (await res.json()) as ErrorResponseBody;
+      expect(body.error.code).toBe(INTERNAL_ERROR_CODE);
     });
   });
 
