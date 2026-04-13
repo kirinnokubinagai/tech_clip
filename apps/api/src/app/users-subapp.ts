@@ -57,12 +57,13 @@ async function queryFollowList(
     const parsed = parseCursor(params.cursor);
     if (parsed) {
       const { cursorTime, cursorId } = parsed;
-      conditions.push(
-        or(
-          lt(follows.createdAt, cursorTime),
-          and(sql`${follows.createdAt} = ${cursorTime}`, lt(idColumn, cursorId)),
-        ),
+      const cursorCondition = or(
+        lt(follows.createdAt, cursorTime),
+        and(sql`${follows.createdAt} = ${cursorTime}`, lt(idColumn, cursorId)),
       );
+      if (cursorCondition) {
+        conditions.push(cursorCondition);
+      }
     }
   }
   const rows = await db
