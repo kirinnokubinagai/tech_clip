@@ -82,20 +82,22 @@ type FollowsRouteOptions = {
  * limitクエリパラメータをパースしてバリデーションする
  *
  * @param limitStr - クエリパラメータの文字列値
- * @returns パース結果。エラーの場合はエラーメッセージ文字列
+ * @returns パース結果。成功時は `{ ok: true; value: number }`、失敗時は `{ ok: false; message: string }`
  */
-function parseLimitParam(limitStr: string | undefined): number | string {
+function parseLimitParam(
+  limitStr: string | undefined,
+): { ok: true; value: number } | { ok: false; message: string } {
   if (limitStr === undefined) {
-    return DEFAULT_LIMIT;
+    return { ok: true, value: DEFAULT_LIMIT };
   }
   const parsed = Number(limitStr);
   if (Number.isNaN(parsed) || !Number.isInteger(parsed)) {
-    return "limitは整数で指定してください";
+    return { ok: false, message: "limitは整数で指定してください" };
   }
   if (parsed < MIN_LIMIT || parsed > MAX_LIMIT) {
-    return `limitは${MIN_LIMIT}以上${MAX_LIMIT}以下で指定してください`;
+    return { ok: false, message: `limitは${MIN_LIMIT}以上${MAX_LIMIT}以下で指定してください` };
   }
-  return parsed;
+  return { ok: true, value: parsed };
 }
 
 /**
@@ -282,36 +284,22 @@ export function createFollowsRoute(options: FollowsRouteOptions) {
 
     const targetUserId = c.req.param("id");
 
-    const targetExists = await userExistsFn(targetUserId);
-    if (!targetExists) {
-      return c.json(
-        {
-          success: false,
-          error: {
-            code: NOT_FOUND_ERROR_CODE,
-            message: "ユーザーが見つかりません",
-          },
-        },
-        HTTP_NOT_FOUND,
-      );
-    }
-
     const limitResult = parseLimitParam(c.req.query("limit"));
-    if (typeof limitResult === "string") {
+    if (!limitResult.ok) {
       return c.json(
         {
           success: false,
           error: {
             code: VALIDATION_ERROR_CODE,
             message: "入力内容を確認してください",
-            details: [{ field: "limit", message: limitResult }],
+            details: [{ field: "limit", message: limitResult.message }],
           },
         },
         HTTP_UNPROCESSABLE_ENTITY,
       );
     }
 
-    const limit = limitResult;
+    const limit = limitResult.value;
     const cursorParam = c.req.query("cursor");
 
     if (cursorParam !== undefined && parseCursor(cursorParam) === null) {
@@ -327,10 +315,24 @@ export function createFollowsRoute(options: FollowsRouteOptions) {
       );
     }
 
+    const targetExists = await userExistsFn(targetUserId);
+    if (!targetExists) {
+      return c.json(
+        {
+          success: false,
+          error: {
+            code: NOT_FOUND_ERROR_CODE,
+            message: "ユーザーが見つかりません",
+          },
+        },
+        HTTP_NOT_FOUND,
+      );
+    }
+
     const fetchedFollowers = await getFollowersFn({
       userId: targetUserId,
       limit: limit + 1,
-      cursor: cursorParam !== undefined && cursorParam !== "" ? cursorParam : undefined,
+      cursor: cursorParam,
     });
 
     const hasNext = fetchedFollowers.length > limit;
@@ -365,36 +367,22 @@ export function createFollowsRoute(options: FollowsRouteOptions) {
 
     const targetUserId = c.req.param("id");
 
-    const targetExists = await userExistsFn(targetUserId);
-    if (!targetExists) {
-      return c.json(
-        {
-          success: false,
-          error: {
-            code: NOT_FOUND_ERROR_CODE,
-            message: "ユーザーが見つかりません",
-          },
-        },
-        HTTP_NOT_FOUND,
-      );
-    }
-
     const limitResult = parseLimitParam(c.req.query("limit"));
-    if (typeof limitResult === "string") {
+    if (!limitResult.ok) {
       return c.json(
         {
           success: false,
           error: {
             code: VALIDATION_ERROR_CODE,
             message: "入力内容を確認してください",
-            details: [{ field: "limit", message: limitResult }],
+            details: [{ field: "limit", message: limitResult.message }],
           },
         },
         HTTP_UNPROCESSABLE_ENTITY,
       );
     }
 
-    const limit = limitResult;
+    const limit = limitResult.value;
     const cursorParam = c.req.query("cursor");
 
     if (cursorParam !== undefined && parseCursor(cursorParam) === null) {
@@ -410,10 +398,24 @@ export function createFollowsRoute(options: FollowsRouteOptions) {
       );
     }
 
+    const targetExists = await userExistsFn(targetUserId);
+    if (!targetExists) {
+      return c.json(
+        {
+          success: false,
+          error: {
+            code: NOT_FOUND_ERROR_CODE,
+            message: "ユーザーが見つかりません",
+          },
+        },
+        HTTP_NOT_FOUND,
+      );
+    }
+
     const fetchedFollowing = await getFollowingFn({
       userId: targetUserId,
       limit: limit + 1,
-      cursor: cursorParam !== undefined && cursorParam !== "" ? cursorParam : undefined,
+      cursor: cursorParam,
     });
 
     const hasNext = fetchedFollowing.length > limit;

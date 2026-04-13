@@ -68,7 +68,7 @@ async function fetchFollowList(
   const response = await apiFetch<FollowListResponse>(path);
 
   if (!response.success) {
-    throw new Error(errorMessage);
+    throw new Error(response.error?.message || errorMessage);
   }
 
   return {
@@ -101,12 +101,15 @@ async function fetchFollowing(userId: string, cursor: string | undefined): Promi
 }
 
 /**
- * フォロワー一覧を取得するhook（無限スクロール対応）
+ * フォロワー/フォロー中一覧を取得する共通内部hook（無限スクロール対応）
  *
+ * @param segment - URLセグメント（"followers" または "following"）
  * @param userId - 対象ユーザーID
  * @returns TanStack QueryのuseInfiniteQuery結果
  */
-export function useFollowers(userId: string) {
+function useFollowList(segment: "followers" | "following", userId: string) {
+  const queryKey = segment === "followers" ? FOLLOWERS_QUERY_KEY : FOLLOWING_QUERY_KEY;
+  const fetchFn = segment === "followers" ? fetchFollowers : fetchFollowing;
   return useInfiniteQuery<
     FollowListPage,
     Error,
@@ -114,12 +117,22 @@ export function useFollowers(userId: string) {
     string[],
     string | undefined
   >({
-    queryKey: [FOLLOWERS_QUERY_KEY, userId],
-    queryFn: ({ pageParam }) => fetchFollowers(userId, pageParam),
+    queryKey: [queryKey, userId],
+    queryFn: ({ pageParam }) => fetchFn(userId, pageParam),
     initialPageParam: undefined,
     getNextPageParam: (lastPage) => lastPage.nextCursor ?? undefined,
     enabled: !!userId,
   });
+}
+
+/**
+ * フォロワー一覧を取得するhook（無限スクロール対応）
+ *
+ * @param userId - 対象ユーザーID
+ * @returns TanStack QueryのuseInfiniteQuery結果
+ */
+export function useFollowers(userId: string) {
+  return useFollowList("followers", userId);
 }
 
 /**
@@ -129,17 +142,5 @@ export function useFollowers(userId: string) {
  * @returns TanStack QueryのuseInfiniteQuery結果
  */
 export function useFollowing(userId: string) {
-  return useInfiniteQuery<
-    FollowListPage,
-    Error,
-    { pages: FollowListPage[] },
-    string[],
-    string | undefined
-  >({
-    queryKey: [FOLLOWING_QUERY_KEY, userId],
-    queryFn: ({ pageParam }) => fetchFollowing(userId, pageParam),
-    initialPageParam: undefined,
-    getNextPageParam: (lastPage) => lastPage.nextCursor ?? undefined,
-    enabled: !!userId,
-  });
+  return useFollowList("following", userId);
 }

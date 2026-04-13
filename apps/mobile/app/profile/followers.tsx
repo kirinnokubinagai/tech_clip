@@ -22,6 +22,9 @@ const AVATAR_SIZE = 48;
 /** 無限スクロールの発火閾値（リスト全体に対する割合） */
 const END_REACHED_THRESHOLD = 0.5;
 
+/** アバターイニシャルのフォントサイズ */
+const AVATAR_INITIAL_FONT_SIZE = 16;
+
 /**
  * 文字列の最初の文字（サロゲートペア対応）を取得する
  *
@@ -101,7 +104,7 @@ function UserListItem({ item, onPress, userProfileLabel }: UserListItemProps) {
           <Text
             style={{
               color: colors.text,
-              fontSize: 16,
+              fontSize: AVATAR_INITIAL_FONT_SIZE,
               fontWeight: "bold",
             }}
           >
@@ -137,6 +140,10 @@ export default function FollowersScreen() {
 
   const targetUserId = paramUserId ?? authUser?.id ?? "";
 
+  /**
+   * URLクエリパラメータ `tab` による初期タブ設定。
+   * マウント時の初期値のみ反映される。マウント後のクエリパラメータ変更は無視される。
+   */
   const initialTab: TabType = tab === "following" ? "following" : "followers";
   const [activeTab, setActiveTab] = useState<TabType>(initialTab);
 
@@ -164,18 +171,20 @@ export default function FollowersScreen() {
     [router],
   );
 
-  const handleTabPress = useCallback((newTab: TabType) => {
-    setActiveTab(newTab);
-  }, []);
+  const handleFollowersTabPress = useCallback(() => setActiveTab("followers"), []);
+  const handleFollowingTabPress = useCallback(() => setActiveTab("following"), []);
 
   const renderItem = useCallback(
-    ({ item }: { item: FollowUserItem }) => (
-      <UserListItem
-        item={item}
-        onPress={handleUserPress}
-        userProfileLabel={t("profile.followers.userProfileLabel", { name: item.name ?? item.id })}
-      />
-    ),
+    ({ item }: { item: FollowUserItem }) => {
+      const accessibilityName = item.name?.trim() ? item.name : item.id;
+      return (
+        <UserListItem
+          item={item}
+          onPress={handleUserPress}
+          userProfileLabel={t("profile.followers.userProfileLabel", { name: accessibilityName })}
+        />
+      );
+    },
     [handleUserPress, t],
   );
 
@@ -279,13 +288,14 @@ export default function FollowersScreen() {
             ? t("profile.followers.followersTab")
             : t("profile.followers.followingTab")}
         </Text>
-        <View style={{ width: BACK_ICON_SIZE }} />
+        {/** ヘッダー左の戻るボタンとの対称レイアウト用スペーサー */}
+        <View style={{ width: BACK_ICON_SIZE }} accessible={false} />
       </View>
 
       <View testID="followers-tabs" className="flex-row bg-surface border-b border-border">
         <Pressable
           testID="tab-followers"
-          onPress={() => handleTabPress("followers")}
+          onPress={handleFollowersTabPress}
           accessibilityRole="tab"
           accessibilityState={{ selected: activeTab === "followers" }}
           className="flex-1 items-center py-3"
@@ -307,7 +317,7 @@ export default function FollowersScreen() {
         </Pressable>
         <Pressable
           testID="tab-following"
-          onPress={() => handleTabPress("following")}
+          onPress={handleFollowingTabPress}
           accessibilityRole="tab"
           accessibilityState={{ selected: activeTab === "following" }}
           className="flex-1 items-center py-3"

@@ -81,7 +81,7 @@ describe("FollowersScreen", () => {
       const { getByTestId } = await render(<FollowersScreen />);
 
       // Assert
-      expect(getByTestId("followers-screen")).not.toBeNull();
+      getByTestId("followers-screen");
     });
 
     it("タブが表示されること", async () => {
@@ -89,9 +89,9 @@ describe("FollowersScreen", () => {
       const { getByTestId } = await render(<FollowersScreen />);
 
       // Assert
-      expect(getByTestId("followers-tabs")).not.toBeNull();
-      expect(getByTestId("tab-followers")).not.toBeNull();
-      expect(getByTestId("tab-following")).not.toBeNull();
+      getByTestId("followers-tabs");
+      getByTestId("tab-followers");
+      getByTestId("tab-following");
     });
 
     it("戻るボタンが表示されること", async () => {
@@ -99,7 +99,7 @@ describe("FollowersScreen", () => {
       const { getByTestId } = await render(<FollowersScreen />);
 
       // Assert
-      expect(getByTestId("followers-back-button")).not.toBeNull();
+      getByTestId("followers-back-button");
     });
   });
 
@@ -110,8 +110,8 @@ describe("FollowersScreen", () => {
 
       // Assert
       await waitFor(() => {
-        expect(getByTestId("user-item-user-1")).not.toBeNull();
-        expect(getByTestId("user-item-user-2")).not.toBeNull();
+        getByTestId("user-item-user-1");
+        getByTestId("user-item-user-2");
       });
     });
 
@@ -121,8 +121,8 @@ describe("FollowersScreen", () => {
 
       // Assert
       await waitFor(() => {
-        expect(getByText("田中太郎")).not.toBeNull();
-        expect(getByText("佐藤花子")).not.toBeNull();
+        getByText("田中太郎");
+        getByText("佐藤花子");
       });
     });
 
@@ -132,7 +132,7 @@ describe("FollowersScreen", () => {
 
       // Assert
       await waitFor(() => {
-        expect(getByText("フロントエンドエンジニア")).not.toBeNull();
+        getByText("フロントエンドエンジニア");
       });
     });
   });
@@ -147,7 +147,7 @@ describe("FollowersScreen", () => {
 
       // Assert
       await waitFor(() => {
-        expect(getByText("鈴木一郎")).not.toBeNull();
+        getByText("鈴木一郎");
       });
     });
   });
@@ -162,7 +162,7 @@ describe("FollowersScreen", () => {
       const { getByTestId } = await render(<FollowersScreen />);
 
       // Assert
-      expect(getByTestId("followers-loading")).not.toBeNull();
+      getByTestId("followers-loading");
     });
   });
 
@@ -176,7 +176,7 @@ describe("FollowersScreen", () => {
 
       // Assert
       await waitFor(() => {
-        expect(getByTestId("followers-empty")).not.toBeNull();
+        getByTestId("followers-empty");
       });
     });
   });
@@ -191,7 +191,7 @@ describe("FollowersScreen", () => {
       const { getByTestId } = await render(<FollowersScreen />);
 
       // Assert
-      expect(getByTestId("followers-error")).not.toBeNull();
+      getByTestId("followers-error");
     });
   });
 

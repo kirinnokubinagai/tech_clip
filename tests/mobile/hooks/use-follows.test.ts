@@ -119,9 +119,7 @@ describe("useFollowers", () => {
     const { result } = await renderHook(() => useFollowers(""), { wrapper });
 
     // Assert
-    await waitFor(() => {
-      expect(result.current.fetchStatus).toBe("idle");
-    });
+    expect(result.current.fetchStatus).toBe("idle");
     expect(mockApiFetch).not.toHaveBeenCalled();
   });
 
@@ -196,9 +194,7 @@ describe("useFollowing", () => {
     const { result } = await renderHook(() => useFollowing(""), { wrapper });
 
     // Assert
-    await waitFor(() => {
-      expect(result.current.fetchStatus).toBe("idle");
-    });
+    expect(result.current.fetchStatus).toBe("idle");
     expect(mockApiFetch).not.toHaveBeenCalled();
   });
 
