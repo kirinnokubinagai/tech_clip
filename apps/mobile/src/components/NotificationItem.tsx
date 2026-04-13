@@ -1,8 +1,8 @@
 import { Bell, Heart, MessageCircle, Newspaper, UserPlus } from "lucide-react-native";
-import type { ReactNode } from "react";
+import { type ReactNode, useMemo } from "react";
 import { Pressable, Text, View } from "react-native";
 
-import { DARK_COLORS } from "@/lib/constants";
+import { useColors } from "@/hooks/use-colors";
 import type { NotificationType } from "@/types/notification";
 
 /** NotificationItemに渡す通知データ */
@@ -23,26 +23,18 @@ type NotificationItemProps = {
 /** 通知アイコンのサイズ（px） */
 const NOTIFICATION_ICON_SIZE = 20;
 
-/** 未読インジケーターの色 */
-const UNREAD_INDICATOR_COLOR = DARK_COLORS.primary;
-
-/** 通知種別ごとのアイコン色 */
-const TYPE_ICON_COLORS: Record<NotificationType, string> = {
-  like: DARK_COLORS.favorite,
-  comment: DARK_COLORS.info,
-  follow: DARK_COLORS.success,
-  system: DARK_COLORS.warning,
-  article: DARK_COLORS.primary,
-};
-
 /**
  * 通知種別に対応するアイコンを返す
  *
  * @param type - 通知種別
+ * @param typeIconColors - テーマ連動のアイコン色マップ
  * @returns Lucideアイコンコンポーネント
  */
-function getNotificationIcon(type: NotificationType): ReactNode {
-  const color = TYPE_ICON_COLORS[type];
+function getNotificationIcon(
+  type: NotificationType,
+  typeIconColors: Record<NotificationType, string>,
+): ReactNode {
+  const color = typeIconColors[type];
 
   switch (type) {
     case "like":
@@ -114,6 +106,20 @@ function formatRelativeTime(isoString: string): string {
  * @param onPress - タップ時のコールバック
  */
 export function NotificationItem({ notification, onPress }: NotificationItemProps) {
+  const colors = useColors();
+
+  /** 通知種別ごとのアイコン色 */
+  const typeIconColors = useMemo<Record<NotificationType, string>>(
+    () => ({
+      like: colors.favorite,
+      comment: colors.info,
+      follow: colors.success,
+      system: colors.warning,
+      article: colors.primary,
+    }),
+    [colors],
+  );
+
   return (
     <Pressable
       testID="notification-item"
@@ -122,7 +128,7 @@ export function NotificationItem({ notification, onPress }: NotificationItemProp
       accessibilityRole="button"
       accessibilityLabel={notification.title}
     >
-      <View className="mt-0.5">{getNotificationIcon(notification.type)}</View>
+      <View className="mt-0.5">{getNotificationIcon(notification.type, typeIconColors)}</View>
 
       <View className="flex-1 gap-0.5">
         <View className="flex-row items-center justify-between">
@@ -141,7 +147,7 @@ export function NotificationItem({ notification, onPress }: NotificationItemProp
               <View
                 testID="unread-indicator"
                 className="w-2 h-2 rounded-full"
-                style={{ backgroundColor: UNREAD_INDICATOR_COLOR }}
+                style={{ backgroundColor: colors.primary }}
               />
             )}
           </View>

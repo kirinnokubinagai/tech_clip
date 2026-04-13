@@ -7,15 +7,12 @@ import { Alert, Pressable, ScrollView, Text, View } from "react-native";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Toast } from "@/components/ui/Toast";
+import { useColors } from "@/hooks/use-colors";
 import { useToast } from "@/hooks/use-toast";
-import { DARK_COLORS } from "@/lib/constants";
 import { useAuthStore } from "@/stores/auth-store";
 
 /** 戻るアイコンのサイズ（px） */
 const BACK_ICON_SIZE = 24;
-
-/** テキストカラー */
-const TEXT_COLOR = DARK_COLORS.text;
 
 /** パスワード最小文字数 */
 const PASSWORD_MIN_LENGTH = 8;
@@ -77,6 +74,7 @@ export function validateChangePasswordForm(data: ChangePasswordFormData, t: TFun
  * 現在のパスワード、新しいパスワード、確認用パスワードの入力フォームを提供する
  */
 export default function ChangePasswordScreen() {
+  const colors = useColors();
   const { t } = useTranslation();
   const router = useRouter();
   const changePassword = useAuthStore((s) => s.changePassword);
@@ -149,7 +147,7 @@ export default function ChangePasswordScreen() {
           accessibilityLabel={t("common.back")}
           hitSlop={8}
         >
-          <ArrowLeft size={BACK_ICON_SIZE} color={TEXT_COLOR} />
+          <ArrowLeft size={BACK_ICON_SIZE} color={colors.text} />
         </Pressable>
         <Text className="text-lg font-bold text-text">{t("settings.changePassword.title")}</Text>
         <View style={{ width: BACK_ICON_SIZE }} />
