@@ -6,15 +6,14 @@ import { ActivityIndicator, Pressable, ScrollView, Text, View } from "react-nati
 
 import { FollowButton } from "@/components/FollowButton";
 import { ProfileHeader } from "@/components/ProfileHeader";
-import { useUserProfile } from "@/hooks/use-user-profile";
 import { useColors } from "@/hooks/use-colors";
+import { useUserProfile } from "@/hooks/use-user-profile";
 
 /** 戻るアイコンのサイズ（px） */
 const BACK_ICON_SIZE = 24;
 
 /** スクロール下部のパディング（px） */
 const SCROLL_BOTTOM_PADDING = 40;
-
 
 /**
  * 他ユーザープロフィール画面
