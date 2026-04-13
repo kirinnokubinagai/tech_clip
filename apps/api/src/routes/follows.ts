@@ -34,7 +34,7 @@ type FollowResult = {
 };
 
 /** 複合カーソルの区切り文字 */
-const CURSOR_SEPARATOR = "|";
+export const CURSOR_SEPARATOR = "|";
 
 /** フォロワー/フォロー中一覧のクエリパラメータ型 */
 export type FollowListQueryParams = {
@@ -92,13 +92,32 @@ function parseLimitParam(limitStr: string | undefined): number | string {
 }
 
 /**
+ * 複合カーソル文字列（`createdAt|id` 形式）をパースする
+ *
+ * @param cursor - 複合カーソル文字列
+ * @returns パース結果。不正な形式の場合は null
+ */
+export function parseCursor(cursor: string): { cursorTime: string; cursorId: string } | null {
+  const separatorIndex = cursor.indexOf(CURSOR_SEPARATOR);
+  if (separatorIndex === -1) {
+    return null;
+  }
+  const cursorTime = cursor.slice(0, separatorIndex);
+  const cursorId = cursor.slice(separatorIndex + 1);
+  if (!cursorTime || !cursorId) {
+    return null;
+  }
+  return { cursorTime, cursorId };
+}
+
+/**
  * 複合カーソル文字列（`createdAt|id` 形式）を生成する
  *
  * @param createdAt - フォロー作成日時文字列
  * @param id - フォロワーIDまたはフォロー中ID
  * @returns 複合カーソル文字列
  */
-function buildCursor(createdAt: string, id: string): string {
+export function buildCursor(createdAt: string, id: string): string {
   return `${createdAt}${CURSOR_SEPARATOR}${id}`;
 }
 

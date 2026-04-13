@@ -5,34 +5,12 @@ import { follows, users } from "../db/schema";
 import { toRecord, toRecordArray } from "../lib/db-cast";
 import { fetchWithAuth } from "../lib/route-helpers";
 import type { FollowListQueryParams } from "../routes/follows";
-import { createFollowsRoute } from "../routes/follows";
+import { createFollowsRoute, parseCursor } from "../routes/follows";
 import { createUsersRoute } from "../routes/users";
 import type { Bindings } from "../types";
 
 /** 本番環境のアバター公開 URL */
 const PRODUCTION_AVATAR_URL = "https://avatars.techclip.io";
-
-/** 複合カーソルの区切り文字 */
-const CURSOR_SEPARATOR = "|";
-
-/**
- * 複合カーソル文字列（`createdAt|id` 形式）をパースする
- *
- * @param cursor - 複合カーソル文字列
- * @returns パース結果。不正な形式の場合は null
- */
-function parseCursor(cursor: string): { cursorTime: string; cursorId: string } | null {
-  const separatorIndex = cursor.indexOf(CURSOR_SEPARATOR);
-  if (separatorIndex === -1) {
-    return null;
-  }
-  const cursorTime = cursor.slice(0, separatorIndex);
-  const cursorId = cursor.slice(separatorIndex + 1);
-  if (!cursorTime || !cursorId) {
-    return null;
-  }
-  return { cursorTime, cursorId };
-}
 
 /**
  * フォロー関係のリストをDBから取得する共通クエリビルダー

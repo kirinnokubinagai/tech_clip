@@ -1,7 +1,7 @@
 import { Image } from "expo-image";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { ArrowLeft } from "lucide-react-native";
-import { useCallback, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { ActivityIndicator, FlatList, Pressable, Text, View } from "react-native";
 
@@ -187,10 +187,7 @@ export default function FollowersScreen() {
     );
   }, [activeTab, isLoading, t]);
 
-  /**
-   * コンテンツエリアをレンダリングする
-   */
-  function renderContent() {
+  const content = useMemo(() => {
     if (isError) {
       return (
         <View testID="followers-error" className="flex-1 items-center justify-center px-4">
@@ -230,7 +227,19 @@ export default function FollowersScreen() {
         onEndReachedThreshold={END_REACHED_THRESHOLD}
       />
     );
-  }
+  }, [
+    isError,
+    isLoading,
+    activeTab,
+    activeQuery,
+    colors.primary,
+    currentList,
+    renderItem,
+    keyExtractor,
+    renderEmpty,
+    handleEndReached,
+    t,
+  ]);
 
   return (
     <View testID="followers-screen" className="flex-1 bg-background">
@@ -299,7 +308,7 @@ export default function FollowersScreen() {
         </Pressable>
       </View>
 
-      {renderContent()}
+      {content}
     </View>
   );
 }

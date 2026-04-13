@@ -50,4 +50,18 @@ describe("ProfileScreen", () => {
       expect(mockPush).toHaveBeenCalledWith("/(tabs)/settings");
     });
   });
+
+  describe("境界値", () => {
+    it("フォロワー数とフォロー中数が0の場合でも画面が表示されること", async () => {
+      // Arrange: プレースホルダーユーザーはフォロワー数0・フォロー中数0で初期化される（境界値）
+      // Act
+      const { getByTestId } = await render(<ProfileScreen />);
+
+      // Assert: カウントが0でもクラッシュせず表示される
+      const followersCount = getByTestId("profile-followers-count");
+      const followingCount = getByTestId("profile-following-count");
+      expect(followersCount.props.children).toBe("0");
+      expect(followingCount.props.children).toBe("0");
+    });
+  });
 });

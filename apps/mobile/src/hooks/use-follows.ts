@@ -20,14 +20,22 @@ export type FollowUserItem = {
 };
 
 /** フォロー一覧APIレスポンス型 */
-type FollowListResponse = {
-  success: true;
-  data: FollowUserItem[];
-  meta: {
-    nextCursor: string | null;
-    hasNext: boolean;
-  };
-};
+type FollowListResponse =
+  | {
+      success: true;
+      data: FollowUserItem[];
+      meta: {
+        nextCursor: string | null;
+        hasNext: boolean;
+      };
+    }
+  | {
+      success: false;
+      error: {
+        code: string;
+        message: string;
+      };
+    };
 
 /** フォロー一覧ページ型 */
 type FollowListPage = {
