@@ -33,6 +33,9 @@ type FollowResult = {
   createdAt: string;
 };
 
+/** 複合カーソルの区切り文字 */
+const CURSOR_SEPARATOR = "|";
+
 /** フォロワー/フォロー中一覧のクエリパラメータ型 */
 export type FollowListQueryParams = {
   userId: string;
@@ -86,6 +89,17 @@ function parseLimitParam(limitStr: string | undefined): number | string {
     return `limitは${MIN_LIMIT}以上${MAX_LIMIT}以下で指定してください`;
   }
   return parsed;
+}
+
+/**
+ * 複合カーソル文字列（`createdAt|id` 形式）を生成する
+ *
+ * @param createdAt - フォロー作成日時文字列
+ * @param id - フォロワーIDまたはフォロー中ID
+ * @returns 複合カーソル文字列
+ */
+function buildCursor(createdAt: string, id: string): string {
+  return `${createdAt}${CURSOR_SEPARATOR}${id}`;
 }
 
 /**
@@ -282,7 +296,9 @@ export function createFollowsRoute(options: FollowsRouteOptions) {
 
     const hasNext = fetchedFollowers.length > limit;
     const data = hasNext ? fetchedFollowers.slice(0, limit) : fetchedFollowers;
-    const nextCursor = hasNext ? String(data[data.length - 1].createdAt) : null;
+    const lastItem = data.length > 0 ? data[data.length - 1] : null;
+    const nextCursor =
+      hasNext && lastItem ? buildCursor(String(lastItem.createdAt), String(lastItem.id)) : null;
 
     return c.json({
       success: true,
@@ -351,7 +367,9 @@ export function createFollowsRoute(options: FollowsRouteOptions) {
 
     const hasNext = fetchedFollowing.length > limit;
     const data = hasNext ? fetchedFollowing.slice(0, limit) : fetchedFollowing;
-    const nextCursor = hasNext ? String(data[data.length - 1].createdAt) : null;
+    const lastItem = data.length > 0 ? data[data.length - 1] : null;
+    const nextCursor =
+      hasNext && lastItem ? buildCursor(String(lastItem.createdAt), String(lastItem.id)) : null;
 
     return c.json({
       success: true,

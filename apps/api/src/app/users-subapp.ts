@@ -1,4 +1,4 @@
-import { and, desc, eq, lt } from "drizzle-orm";
+import { and, desc, eq, lt, or, sql } from "drizzle-orm";
 import type { Auth } from "../auth";
 import type { Database } from "../db";
 import { follows, users } from "../db/schema";
@@ -12,8 +12,33 @@ import type { Bindings } from "../types";
 /** 本番環境のアバター公開 URL */
 const PRODUCTION_AVATAR_URL = "https://avatars.techclip.io";
 
+/** 複合カーソルの区切り文字 */
+const CURSOR_SEPARATOR = "|";
+
+/**
+ * 複合カーソル文字列（`createdAt|id` 形式）をパースする
+ *
+ * @param cursor - 複合カーソル文字列
+ * @returns パース結果。不正な形式の場合は null
+ */
+function parseCursor(cursor: string): { cursorTime: string; cursorId: string } | null {
+  const separatorIndex = cursor.indexOf(CURSOR_SEPARATOR);
+  if (separatorIndex === -1) {
+    return null;
+  }
+  const cursorTime = cursor.slice(0, separatorIndex);
+  const cursorId = cursor.slice(separatorIndex + 1);
+  if (!cursorTime || !cursorId) {
+    return null;
+  }
+  return { cursorTime, cursorId };
+}
+
 /**
  * フォロー関係のリストをDBから取得する共通クエリビルダー
+ *
+ * 複合カーソル（`createdAt|id` 形式）を使用し、同一タイムスタンプでのページ欠落を防ぐ。
+ * WHERE条件: (createdAt < cursorTime) OR (createdAt = cursorTime AND id < cursorId)
  *
  * @param db - データベースインスタンス
  * @param params - クエリパラメータ（userId, limit, cursor）
@@ -29,7 +54,16 @@ async function queryFollowList(
 ): Promise<Array<Record<string, unknown>>> {
   const conditions = [eq(filterColumn, params.userId)];
   if (params.cursor) {
-    conditions.push(lt(follows.createdAt, params.cursor));
+    const parsed = parseCursor(params.cursor);
+    if (parsed) {
+      const { cursorTime, cursorId } = parsed;
+      conditions.push(
+        or(
+          lt(follows.createdAt, cursorTime),
+          and(sql`${follows.createdAt} = ${cursorTime}`, lt(idColumn, cursorId)),
+        ),
+      );
+    }
   }
   const rows = await db
     .select({
