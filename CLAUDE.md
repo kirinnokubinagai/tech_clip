@@ -118,7 +118,7 @@ bash scripts/create-worktree.sh <issue-number> <kebab-case-description>
    if code_reviewer == "全件 PASS（0件）" and security_reviewer == "全件 PASS（0件）":
        # ループ脱出 → push へ
        Bash: touch <worktree>/.claude/.review-passed
-       Bash: cd <worktree> && git push origin HEAD
+       Bash: cd <worktree> && bash scripts/push-verified.sh
        Bash: gh pr create → PR URL をユーザーに報告
    else:
        # 全指摘（CRITICAL / HIGH / MEDIUM / LOW すべて）を coder に渡す
@@ -136,7 +136,7 @@ bash scripts/create-worktree.sh <issue-number> <kebab-case-description>
 --- レビューループ ---
 ② [並列 spawn] Agent(infra-reviewer, mode="acceptEdits")
                Agent(security-reviewer, mode="acceptEdits")
-   両方 PASS → ループ脱出 → マーカー作成 → push → PR 作成
+   両方 PASS → ループ脱出 → マーカー作成 → bash scripts/push-verified.sh → PR 作成
    指摘あり  → Agent(infra-engineer) で修正 → ②へ戻る
 ```
 
@@ -148,7 +148,7 @@ bash scripts/create-worktree.sh <issue-number> <kebab-case-description>
 --- レビューループ ---
 ② [並列 spawn] Agent(ui-reviewer, mode="acceptEdits")
                Agent(code-reviewer, mode="acceptEdits")
-   両方 PASS → ループ脱出 → マーカー作成 → push → PR 作成
+   両方 PASS → ループ脱出 → マーカー作成 → bash scripts/push-verified.sh → PR 作成
    指摘あり  → Agent(ui-designer, mode="acceptEdits") で修正 → ②へ戻る
 ```
 
@@ -182,7 +182,7 @@ bash scripts/poll-pr-review.sh <pr-number>
 poll-pr-review.sh → CHANGES_REQUESTED
   → Agent(coder, mode="acceptEdits") で修正依頼（変更内容を渡す）
   → Agent(code-reviewer, mode="acceptEdits") + Agent(security-reviewer, mode="acceptEdits") で再レビュー
-  → 両方 PASS → マーカー再作成 → git push → poll-pr-review.sh を再実行
+  → 両方 PASS → マーカー再作成 → bash scripts/push-verified.sh → poll-pr-review.sh を再実行
   → APPROVED になるまで繰り返す
 ```
 
@@ -298,6 +298,7 @@ oh-my-claudecode やその他のプラグイン由来のエージェントは使
 - Lint / Format は Biome を使う
 - 破壊的な Git コマンドを使わない
 - **レビューが通る前に push しない**（pre-push-review-guard.sh がブロックする）
+- **push は必ず `bash scripts/push-verified.sh` を使う**（`git push origin HEAD` の直接実行は禁止）
 - **code-reviewer と security-reviewer の両方が「全件 PASS（0件）」を返すまで push しない**（CRITICAL / HIGH / MEDIUM / LOW 問わず指摘が 1 件でも残れば修正ループを続ける）
 - **オーケストレーターは main ブランチ上でソースファイルを直接編集しない。worktree 上でもエージェントへの委譲を優先する**
 - **TeamCreate / TaskCreate / SendMessage は使用しない**（Agent ツールで直接 spawn する）

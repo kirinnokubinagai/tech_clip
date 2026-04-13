@@ -11,3 +11,14 @@ export type User = {
   createdAt: string;
   updatedAt: string;
 };
+
+/** 他ユーザーの公開プロフィール型 */
+export type PublicProfile = {
+  id: string;
+  name: string | null;
+  username: string | null;
+  bio: string | null;
+  avatarUrl: string | null;
+  followersCount: number;
+  followingCount: number;
+};

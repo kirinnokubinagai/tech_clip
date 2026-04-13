@@ -203,5 +203,17 @@ describe("ProfileScreen", () => {
       // Assert
       expect(mockPush).toHaveBeenCalledWith("/(tabs)/settings");
     });
+
+    it("設定ボタン押下後に router.push が1度だけ呼ばれること", async () => {
+      // Arrange
+      mockAuthenticatedState();
+      const { getByTestId } = await render(<ProfileScreen />);
+
+      // Act
+      await fireEvent.press(getByTestId("profile-settings-button"));
+
+      // Assert
+      expect(mockPush).toHaveBeenCalledTimes(1);
+    });
   });
 });
