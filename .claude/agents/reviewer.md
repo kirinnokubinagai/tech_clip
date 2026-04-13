@@ -182,8 +182,17 @@ echo "<PR URL>" > /tmp/tech-clip-issue-{issue_number}/pr-url
 
 ## ポーリング方針
 
-- `sleep` を含む長い Bash ループは使わない（Bash タイムアウト 2 分のため）
-- `[ -f <file> ]` + 内容確認の短い Bash 呼び出しを繰り返す
+Bash ツールの `timeout` パラメータを **300000（5分）** に指定してポーリングループを実行する。
+
+```bash
+# impl-ready の例（review-result.json も同様）
+until [ -f /tmp/tech-clip-issue-{issue_number}/impl-ready ]; do sleep 10; done
+cat /tmp/tech-clip-issue-{issue_number}/impl-ready
+```
+
+- Bash ツール呼び出し時に `timeout: 300000` を指定すること（デフォルト 2 分では不足）
+- 1回の Bash 呼び出しで最大5分待機できる
+- ファイルが現れた瞬間にループを抜けるため確実
 
 ## 出力言語
 
