@@ -1,3 +1,4 @@
+import { followKeys } from "@mobile/hooks/use-follow";
 import {
   USER_PROFILE_QUERY_KEY,
   useFollowToggle,
@@ -183,6 +184,9 @@ describe("useFollowToggle", () => {
       // Assert
       expect(invalidateSpy).toHaveBeenCalledWith(
         expect.objectContaining({ queryKey: [USER_PROFILE_QUERY_KEY, userId] }),
+      );
+      expect(invalidateSpy).toHaveBeenCalledWith(
+        expect.objectContaining({ queryKey: followKeys.all }),
       );
     });
   });
