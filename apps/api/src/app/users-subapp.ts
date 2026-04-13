@@ -1,15 +1,55 @@
-import { and, desc, eq, lt } from "drizzle-orm";
+import { and, count, desc, eq, lt } from "drizzle-orm";
+import { Hono } from "hono";
 import type { Auth } from "../auth";
 import type { Database } from "../db";
 import { follows, users } from "../db/schema";
 import { toRecord, toRecordArray } from "../lib/db-cast";
 import { fetchWithAuth } from "../lib/route-helpers";
 import { createFollowsRoute } from "../routes/follows";
+import { createPublicProfileRoute } from "../routes/public-profile";
 import { createUsersRoute } from "../routes/users";
 import type { Bindings } from "../types";
 
 /** 本番環境のアバター公開 URL */
 const PRODUCTION_AVATAR_URL = "https://avatars.techclip.io";
+
+/**
+ * 公開プロフィールサブアプリを構築してリクエストを処理する
+ *
+ * @param db - データベースインスタンス
+ * @param request - 元のリクエスト
+ * @returns fetch レスポンス
+ */
+export async function handlePublicProfile(db: Database, request: Request): Promise<Response> {
+  const publicProfileRoute = createPublicProfileRoute({
+    getProfileFn: async (userId) => {
+      const [found] = await db.select().from(users).where(eq(users.id, userId));
+      if (!found?.isProfilePublic) {
+        return null;
+      }
+
+      const [[followersResult], [followingResult]] = await Promise.all([
+        db.select({ count: count() }).from(follows).where(eq(follows.followingId, userId)),
+        db.select({ count: count() }).from(follows).where(eq(follows.followerId, userId)),
+      ]);
+
+      return {
+        id: found.id,
+        name: found.name ?? null,
+        username: found.username ?? null,
+        bio: found.bio ?? null,
+        avatarUrl: found.avatarUrl ?? null,
+        followersCount: followersResult?.count ?? 0,
+        followingCount: followingResult?.count ?? 0,
+      };
+    },
+  });
+
+  const subApp = new Hono();
+  subApp.route("/api/users", publicProfileRoute);
+
+  return subApp.fetch(request);
+}
 
 /**
  * ユーザー・フォロードメインのサブアプリを構築してリクエストを処理する

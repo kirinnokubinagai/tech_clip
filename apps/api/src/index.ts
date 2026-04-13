@@ -6,7 +6,7 @@ import { handleHealth } from "./app/health-subapp";
 import { handleNotificationSettings, handleNotifications } from "./app/notifications-subapp";
 import { handleSubscription } from "./app/subscription-subapp";
 import { handleTags } from "./app/tags-subapp";
-import { handleUsers } from "./app/users-subapp";
+import { handlePublicProfile, handleUsers } from "./app/users-subapp";
 import { createAuth } from "./auth";
 import { createDatabase } from "./db";
 import { corsMiddleware } from "./middleware/cors";
@@ -86,6 +86,10 @@ app.on(["POST", "GET"], "/api/auth/**", async (c) => {
 
 app.get("/api/users/:id/articles", async (c) => {
   return handlePublicArticles(c.get("db"), c.req.raw);
+});
+
+app.get("/api/users/:id/profile", async (c) => {
+  return handlePublicProfile(c.get("db"), c.req.raw);
 });
 
 app.on(["GET", "POST", "PATCH", "DELETE"], "/api/articles/**", async (c) => {
