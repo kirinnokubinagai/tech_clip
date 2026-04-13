@@ -5,6 +5,7 @@ import { useCallback, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { ActivityIndicator, FlatList, Pressable, Text, View } from "react-native";
 
+import { ErrorView } from "@/components/ErrorView";
 import { useColors } from "@/hooks/use-colors";
 import type { FollowUserItem } from "@/hooks/use-follows";
 import { useFollowers, useFollowing } from "@/hooks/use-follows";
@@ -274,6 +275,10 @@ export default function FollowersScreen() {
     renderEmpty,
     handleEndReached,
   ]);
+
+  if (!targetUserId) {
+    return <ErrorView message={t("profile.followers.unknownUser")} />;
+  }
 
   return (
     <View testID="followers-screen" className="flex-1 bg-background">

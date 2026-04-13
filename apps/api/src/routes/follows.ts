@@ -157,11 +157,24 @@ const UNIQUE_CONSTRAINT_ERROR_FRAGMENT = "UNIQUE constraint failed";
 /**
  * SQLiteのUNIQUE制約違反エラーかどうかを判定する
  *
+ * D1/libsql では error が cause でラップされる場合があるため、cause チェーンも確認する。
+ *
  * @param error - 発生したエラー
  * @returns UNIQUE制約違反であれば true
  */
 function isUniqueConstraintError(error: unknown): boolean {
-  return error instanceof Error && error.message.includes(UNIQUE_CONSTRAINT_ERROR_FRAGMENT);
+  if (error instanceof Error) {
+    if (error.message.includes(UNIQUE_CONSTRAINT_ERROR_FRAGMENT)) {
+      return true;
+    }
+    if (
+      error.cause instanceof Error &&
+      error.cause.message.includes(UNIQUE_CONSTRAINT_ERROR_FRAGMENT)
+    ) {
+      return true;
+    }
+  }
+  return false;
 }
 
 /**
@@ -353,7 +366,12 @@ export function createFollowsRoute(options: FollowsRouteOptions) {
           HTTP_CONFLICT,
         );
       }
-      logger.error("フォロー処理エラー", { followerId, followingId, error });
+      logger.error("フォロー処理エラー", {
+        followerId,
+        followingId,
+        message: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined,
+      });
       throw error;
     }
   });

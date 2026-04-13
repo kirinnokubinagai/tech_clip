@@ -37,15 +37,16 @@ async function queryFollowList(
   const conditions: SQL<unknown>[] = [eq(filterColumn, params.userId)];
   if (params.cursor) {
     const parsed = parseCursor(params.cursor);
-    if (parsed) {
-      const { cursorTime, cursorId } = parsed;
-      const cursorCondition = or(
-        lt(follows.createdAt, cursorTime),
-        and(eq(follows.createdAt, cursorTime), lt(idColumn, cursorId)),
-      );
-      if (cursorCondition) {
-        conditions.push(cursorCondition);
-      }
+    if (!parsed) {
+      throw new Error("カーソル形式が不正です");
+    }
+    const { cursorTime, cursorId } = parsed;
+    const cursorCondition = or(
+      lt(follows.createdAt, cursorTime),
+      and(eq(follows.createdAt, cursorTime), lt(idColumn, cursorId)),
+    );
+    if (cursorCondition) {
+      conditions.push(cursorCondition);
     }
   }
   const rows = await db
@@ -63,6 +64,11 @@ async function queryFollowList(
     .orderBy(desc(follows.createdAt), desc(idColumn))
     .limit(params.limit);
 
+  /**
+   * 非公開ユーザーのプロフィールポリシー:
+   * - id / createdAt はフォロー関係として存在を公開する
+   * - name / bio / avatarUrl は非公開ユーザーの場合 null を返す
+   */
   return rows.map((row) => ({
     id: row.id,
     name: row.isProfilePublic ? (row.name ?? null) : null,
