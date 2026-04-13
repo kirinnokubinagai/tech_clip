@@ -92,7 +92,6 @@ export async function handleUsers(
   });
 
   const followsRoute = createFollowsRoute({
-    db,
     followFn: async (followerId, followingId) => {
       await db.insert(follows).values({ followerId, followingId });
       const [result] = await db

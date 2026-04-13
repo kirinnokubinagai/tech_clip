@@ -58,35 +58,6 @@ type FollowListResponseBody = {
   };
 };
 
-/** モックのDB操作関数 */
-const mockInsertValues = vi.fn();
-const mockInsert = vi.fn().mockReturnValue({
-  values: mockInsertValues,
-});
-
-const mockDeleteWhere = vi.fn();
-const mockDeleteFrom = vi.fn().mockReturnValue({
-  where: mockDeleteWhere,
-});
-const mockDelete = vi.fn().mockReturnValue({
-  from: mockDeleteFrom,
-});
-
-const mockSelectWhere = vi.fn();
-const mockSelectFrom = vi.fn().mockReturnValue({
-  where: mockSelectWhere,
-});
-const mockSelect = vi.fn().mockReturnValue({
-  from: mockSelectFrom,
-});
-
-/** モックのDBインスタンス */
-const mockDb = {
-  insert: mockInsert,
-  select: mockSelect,
-  delete: mockDelete,
-};
-
 /** フォロー関連のモック関数 */
 let mockFollowFn: ReturnType<typeof vi.fn<FollowFn>>;
 let mockUnfollowFn: ReturnType<typeof vi.fn<UnfollowFn>>;
@@ -114,7 +85,6 @@ function createTestApp() {
   });
 
   const followsRoute = createFollowsRoute({
-    db: mockDb as never,
     followFn: mockFollowFn,
     unfollowFn: mockUnfollowFn,
     getFollowersFn: mockGetFollowersFn,
@@ -136,7 +106,6 @@ function createTestAppWithoutAuth() {
   const app = new Hono();
 
   const followsRoute = createFollowsRoute({
-    db: mockDb as never,
     followFn: mockFollowFn,
     unfollowFn: mockUnfollowFn,
     getFollowersFn: mockGetFollowersFn,
