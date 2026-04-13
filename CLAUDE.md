@@ -237,7 +237,7 @@ Agent(reviewer, run_in_background=true, mode="acceptEdits",
   prompt="Issue #<N> のレビュー〜PR作成を担当する。worktree: /path/to/issue-<N>")
 ```
 
-各バックグラウンドエージェントは analyst による設計完了後に spawn する。coder・reviewer は `/tmp/tech-clip-issue-{N}/` 経由で直接通信し、reviewer が push・PR 作成まで完結する。オーケストレーターは `/tmp/pr-url` のポーリングと GitHub レビューループのみを担当する。
+各バックグラウンドエージェントは analyst による設計完了後に spawn する。coder・reviewer は `/tmp/tech-clip-issue-{N}/` 経由で直接通信し、reviewer が push・PR 作成まで完結する。オーケストレーターは `/tmp/tech-clip-issue-{N}/pr-url` のポーリングと GitHub レビューループのみを担当する。
 
 ### バックグラウンドエージェントの制約
 
