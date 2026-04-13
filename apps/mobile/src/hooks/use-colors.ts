@@ -12,7 +12,7 @@ import { DARK_COLORS, LIGHT_COLORS } from "@/lib/constants";
  */
 export function useColors() {
   const colorScheme = useColorScheme();
-  // TODO: ライトモード対応完了後に || true を除去する
+  // TODO(#856): ライトモード対応完了後に || true を除去する
   const isDark = colorScheme === "dark" || true;
   return isDark ? DARK_COLORS : LIGHT_COLORS;
 }
