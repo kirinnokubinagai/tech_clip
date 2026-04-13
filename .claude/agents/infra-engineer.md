@@ -143,7 +143,6 @@ git -C {worktree} rev-parse HEAD > /tmp/tech-clip-issue-{issue_number}/impl-read
 ## 出力規約
 
 - 実装完了時: 変更ファイル名と1行の概要のみ報告（手順・経緯の説明不要）
-- SendMessage の本文は100字以内を目標にする
 
 ## 出力言語
 
