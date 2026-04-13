@@ -244,9 +244,11 @@ describe("フォローAPI 統合テスト", () => {
       // Arrange
       const mockFollowers = [
         {
-          followerId: "follower_001",
-          followingId: TARGET_USER_ID,
+          id: "follower_001",
           createdAt: new Date().toISOString(),
+          name: "フォロワーユーザー",
+          bio: null,
+          avatarUrl: null,
         },
       ];
       const app = createTestApp({
@@ -284,9 +286,11 @@ describe("フォローAPI 統合テスト", () => {
       // Arrange
       const mockFollowing = [
         {
-          followerId: MOCK_USER.id,
-          followingId: TARGET_USER_ID,
+          id: TARGET_USER_ID,
           createdAt: new Date().toISOString(),
+          name: "フォロー中ユーザー",
+          bio: null,
+          avatarUrl: null,
         },
       ];
       const app = createTestApp({

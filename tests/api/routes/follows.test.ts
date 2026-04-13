@@ -999,6 +999,72 @@ describe("buildCursor", () => {
   });
 });
 
+describe("GET /api/users/:id/followers - カーソルページネーション境界値", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockFollowFn = vi.fn<FollowFn>();
+    mockUnfollowFn = vi.fn<UnfollowFn>();
+    mockGetFollowersFn = vi.fn<GetFollowListFn>();
+    mockGetFollowingFn = vi.fn<GetFollowListFn>();
+    mockIsFollowingFn = vi.fn<IsFollowingFn>();
+    mockUserExistsFn = vi.fn<UserExistsFn>();
+  });
+
+  it("同一createdAtを持つ複数ユーザーが存在する場合でも正しいカーソルを返すこと", async () => {
+    // Arrange
+    const SAME_TIMESTAMP = "2024-01-15T00:00:00Z";
+    const followers = Array.from({ length: 21 }, (_, i) => ({
+      id: `user_${String(i + 1).padStart(2, "0")}`,
+      name: `ユーザー${i + 1}`,
+      bio: null,
+      avatarUrl: null,
+      createdAt: SAME_TIMESTAMP,
+    }));
+    mockUserExistsFn.mockResolvedValue(true);
+    mockGetFollowersFn.mockResolvedValue(followers);
+    const app = createTestApp();
+
+    // Act
+    const res = await app.request(`/api/users/${MOCK_TARGET_USER.id}/followers`);
+
+    // Assert
+    expect(res.status).toBe(HTTP_OK);
+    const body = (await res.json()) as FollowListResponseBody;
+    expect(body.data).toHaveLength(20);
+    expect(body.meta.hasNext).toBe(true);
+    expect(body.meta.nextCursor).toBe(buildCursor(SAME_TIMESTAMP, followers[19].id));
+  });
+
+  it("有効なカーソルを渡した場合に200を返すこと", async () => {
+    // Arrange
+    mockUserExistsFn.mockResolvedValue(true);
+    mockGetFollowersFn.mockResolvedValue([
+      {
+        id: "user_follower_01",
+        name: "フォロワー1",
+        bio: null,
+        avatarUrl: null,
+        createdAt: "2024-01-01T00:00:00Z",
+      },
+    ]);
+    const app = createTestApp();
+    const validCursor = buildCursor("2024-01-15T00:00:00Z", "user_cursor_ref");
+
+    // Act
+    const res = await app.request(
+      `/api/users/${MOCK_TARGET_USER.id}/followers?cursor=${encodeURIComponent(validCursor)}`,
+    );
+
+    // Assert
+    expect(res.status).toBe(HTTP_OK);
+    const body = (await res.json()) as FollowListResponseBody;
+    expect(body.success).toBe(true);
+    expect(mockGetFollowersFn).toHaveBeenCalledWith(
+      expect.objectContaining({ cursor: validCursor }),
+    );
+  });
+});
+
 describe("GET /api/users/:id/followers - 非公開ユーザーのマスク処理", () => {
   beforeEach(() => {
     vi.clearAllMocks();

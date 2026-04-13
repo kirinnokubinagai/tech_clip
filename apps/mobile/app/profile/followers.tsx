@@ -37,6 +37,18 @@ function firstChar(s: string): string {
 }
 
 /**
+ * 表示名を解決する
+ *
+ * @param name - ユーザー名（null 許容）
+ * @param fallback - 代替文字列
+ * @returns 有効な名前があればその値、なければ fallback
+ */
+function resolveDisplayName(name: string | null, fallback: string): string {
+  if (name && name.trim() !== "") return name;
+  return fallback;
+}
+
+/**
  * ユーザー名の頭文字を取得する
  *
  * @param name - ユーザー名
@@ -70,8 +82,7 @@ function UserListItem({ item, onPress, userProfileLabel }: UserListItemProps) {
     onPress(item.id);
   }, [item.id, onPress]);
 
-  const displayName =
-    item.name && item.name.trim() !== "" ? item.name : t("profile.followers.unknownUser");
+  const displayName = resolveDisplayName(item.name, t("profile.followers.unknownUser"));
 
   return (
     <Pressable
@@ -176,12 +187,11 @@ export default function FollowersScreen() {
     [router],
   );
 
-  const handleFollowersTabPress = useCallback(() => setActiveTab("followers"), []);
-  const handleFollowingTabPress = useCallback(() => setActiveTab("following"), []);
+  const handleTabPress = useCallback((tab: TabType) => setActiveTab(tab), []);
 
   const renderItem = useCallback(
     ({ item }: { item: FollowUserItem }) => {
-      const accessibilityName = item.name?.trim() ? item.name : t("profile.followers.unknownUser");
+      const accessibilityName = resolveDisplayName(item.name, t("profile.followers.unknownUser"));
       return (
         <UserListItem
           item={item}
@@ -312,7 +322,7 @@ export default function FollowersScreen() {
       <View testID="followers-tabs" className="flex-row bg-surface border-b border-border">
         <Pressable
           testID="tab-followers"
-          onPress={handleFollowersTabPress}
+          onPress={() => handleTabPress("followers")}
           accessibilityRole="tab"
           accessibilityState={{ selected: activeTab === "followers" }}
           className="flex-1 items-center py-3"
@@ -334,7 +344,7 @@ export default function FollowersScreen() {
         </Pressable>
         <Pressable
           testID="tab-following"
-          onPress={handleFollowingTabPress}
+          onPress={() => handleTabPress("following")}
           accessibilityRole="tab"
           accessibilityState={{ selected: activeTab === "following" }}
           className="flex-1 items-center py-3"

@@ -168,7 +168,12 @@ function isUniqueConstraintError(error: unknown): boolean {
   let current: Error | undefined = error;
   while (current) {
     if (current.message.includes(UNIQUE_CONSTRAINT_ERROR_FRAGMENT)) return true;
-    current = current.cause instanceof Error ? current.cause : undefined;
+    const nextCause: unknown = current.cause;
+    if (nextCause instanceof Error) {
+      current = nextCause;
+      continue;
+    }
+    break;
   }
   return false;
 }
