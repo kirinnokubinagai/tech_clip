@@ -1,5 +1,6 @@
 import { ActivityIndicator, Pressable, Text } from "react-native";
 
+import type { ThemeColors } from "@/hooks/use-colors";
 import { useColors } from "@/hooks/use-colors";
 
 /** Buttonコンポーネントで使用可能なバリアント */
@@ -7,9 +8,6 @@ type ButtonVariant = "primary" | "secondary" | "outline" | "ghost" | "danger";
 
 /** Buttonコンポーネントで使用可能なサイズ */
 type ButtonSize = "sm" | "md" | "lg";
-
-/** useColors() の戻り値型 */
-type ThemeColors = ReturnType<typeof useColors>;
 
 type ButtonProps = {
   children: string;
@@ -70,6 +68,10 @@ function getIndicatorColor(variant: ButtonVariant, colors: ThemeColors): string 
       return colors.text;
     case "ghost":
       return colors.textMuted;
+    default: {
+      const _exhaustive: never = variant;
+      return colors.text;
+    }
   }
 }
 

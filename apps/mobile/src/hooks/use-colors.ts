@@ -14,3 +14,6 @@ export function useColors() {
   const colorScheme = useColorScheme();
   return colorScheme === "dark" ? DARK_COLORS : LIGHT_COLORS;
 }
+
+/** useColors() の戻り値型 */
+export type ThemeColors = ReturnType<typeof useColors>;
