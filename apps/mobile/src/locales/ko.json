@@ -185,6 +185,7 @@
     "loginPrompt": "로그인하면 저장한 기사와 즐겨찾기를 볼 수 있습니다",
     "editProfile": "프로필 편집",
     "savedArticles": "저장한 기사",
+    "publicArticles": "공개 기사",
     "noSavedArticles": "아직 저장한 기사가 없습니다",
     "noPublicArticles": "이 사용자의 공개 기사가 아직 없습니다",
     "guestUser": "게스트 사용자",

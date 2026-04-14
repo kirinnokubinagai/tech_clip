@@ -126,7 +126,8 @@ export function ProfileArticlesSection(props: ProfileArticlesSectionProps) {
 
   const query = props.mode === "saved" ? savedQuery : publicQuery;
   const emptyKey = props.mode === "saved" ? "profile.noSavedArticles" : "profile.noPublicArticles";
-  const title = t("profile.savedArticles");
+  const titleKey = props.mode === "saved" ? "profile.savedArticles" : "profile.publicArticles";
+  const title = t(titleKey);
 
   const articles = query.data?.pages.flatMap((p) => p.items) ?? [];
 
