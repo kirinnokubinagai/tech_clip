@@ -3,54 +3,79 @@
 このファイルはプロジェクト全体の開発ルールを定義する。Claude Code・Codex いずれのエージェントもこのファイルのルールに従うこと。
 特に `.claude/rules/` 配下は必要なものを必ず読み、実装とレビューに反映すること。
 
-## 必須の起動手順
+---
 
-コーディング作業を始める前に、必ず以下を実行します。
+## ⚠️ オーケストレーター必須フロー（例外なし・いかなるタスクでも）
 
-```bash
-bash ./.codex/run-session-start.sh
+**この文書を読んでいるオーケストレーターは、以下のフローをいかなるタスクでも省略してはならない。**
+「単純な1行修正」「docs だけの変更」「設定ファイルの追記」であっても例外はない。
+
+### 技術的制約（必読）
+
+**サブエージェントは他のサブエージェントを spawn できない。**
+オーケストレーターが analyst・実装エージェント・レビュワーをすべて直接 spawn しなければならない。
+analyst が内部で coder を spawn する、などのパターンは技術的に不可能であり試みてはならない。
+
+### 必須 spawn 順序（タスク規模・種別を問わず）
+
+```text
+1. mkdir -p /tmp/tech-clip-issue-{N}/
+
+2. Agent(analyst, mode="acceptEdits")          ← foreground・完了を待つ（省略不可）
+   analyst-done ファイル生成を確認してから次へ
+
+3. [同一メッセージで並列 background spawn]
+   Agent(<実装エージェント>, run_in_background=true, mode="acceptEdits")
+   Agent(<レビュワー>,       run_in_background=true, mode="acceptEdits")
+
+4. /tmp/tech-clip-issue-{N}/pr-url をポーリング → PR URL 取得
+
+5. gh pr view {PR番号} --json reviews,state をポーリング
+   - APPROVED         → ユーザーに完了報告 → 終了
+   - CHANGES_REQUESTED → /tmp/ リセット → 新しい実装+レビュワーを background spawn → 4 に戻る
+   - PENDING          → 再ポーリング
 ```
 
-ファイルを編集する前に、必ず以下を実行します。
+**APPROVED を確認するまでユーザーへの完了報告を行ってはならない。**
 
-```bash
-bash ./.codex/run-pre-edit.sh
-```
+### 変更種別ごとのエージェント選択（必須）
 
-リポジトリを変更しうるシェルコマンドを実行する前に、必ず以下を実行します。
-
-```bash
-bash ./.codex/run-pre-command.sh '<command>'
-```
-
-作業終了時には、必要に応じて以下を実行します。
-
-```bash
-bash ./.codex/run-stop.sh
-```
-
-## 参照元
-
-- 全体ルール: [`CLAUDE.md`](./CLAUDE.md)
-- 詳細な実装ルール: [`.claude/rules/`](./.claude/rules)
-- 既存 hook 実装: [`.claude/hooks/`](./.claude/hooks)
+| 変更種別 | 実装エージェント | レビュワーエージェント |
+|---|---|---|
+| 機能実装・バグ修正・docs 変更 | `coder` | `reviewer` |
+| インフラ・CI/CD・設定ファイル変更 | `infra-engineer` | `infra-reviewer` |
+| フロントエンド・UI コンポーネント変更 | `ui-designer` | `ui-reviewer` |
+| 変更種別が不明 | analyst に判断を委ねる | analyst に判断を委ねる |
 
 ---
 
-## オーケストレーター（Claude Code）の役割
+## 絶対ルール
 
-Claude Code はオーケストレーターとして機能する。具体的な仕事は以下のみ:
-
-1. Issue を読む
-2. Worktree を作る
-3. analyst を spawn して設計を行わせる（完了を待つ）
-4. 実装者とレビュワーを background spawn する
-5. `/tmp/tech-clip-issue-{N}/pr-url` をポーリングし PR URL を取得する
-6. `gh pr view --json reviews` をポーリングし、修正ループを回す
+- GitHub Issue がない状態で作業を始めない
+- Issue ごとに専用 worktree を使う（`scripts/create-worktree.sh` を使う）
+- `main` で直接編集しない
+- Git 操作は `cd <worktree>` または `git -C <worktree-path> ...` だけを使う
+- `pnpm` / `node` / `biome` / `turbo` は原則 `cd <worktree> && direnv exec <worktree> ...` で実行する
+- `git --git-dir=...`、`GIT_DIR`、`GIT_WORK_TREE` を使わない
+- `git config core.bare` と `git config core.worktree` を変更しない
+- 可能な限り TDD で進める
+- Lint / Format は Biome を使う
+- 破壊的な Git コマンドを使わない
+- **レビューが通る前に push しない**（pre-push-review-guard.sh がブロックする）
+- **push は必ず `bash scripts/push-verified.sh` を使う**（`git push origin HEAD` の直接実行は禁止）
+- **`reviewer` が「全件 PASS（0件）」を返すまで push しない**（インフラは `infra-reviewer`、UI は `ui-reviewer`）（CRITICAL / HIGH / MEDIUM / LOW 問わず指摘が 1 件でも残れば修正ループを続ける）
+  - **注意**: 「全件 PASS（0件）」とは CRITICAL / HIGH / MEDIUM / LOW のいずれも 0 件であることを意味する。LOW（改善提案）が 1 件でも残っている場合は PASS ではない
+- **オーケストレーターは main ブランチ上でソースファイルを直接編集しない。worktree 上でもエージェントへの委譲を優先する**
+- **TeamCreate / TaskCreate / SendMessage は使用しない**（Agent ツールで直接 spawn する）
+- **再レビューは新しい Agent を spawn する**（同じエージェントを再利用しない）
+- **すべてのエージェントを spawn するときは必ず `mode="acceptEdits"` を指定する**（実装系・レビュー系を問わず）
+- **レビュー PASS 後のマーカー作成・push・PR 作成は各レビュワーエージェントが担当する**（オーケストレーターは行わない）
 
 ---
 
-## Issue 対応の完全フロー
+## Issue 対応の詳細フロー（参照用）
+
+> **注意**: このセクションは詳細な説明を提供する参照用ドキュメントである。実際に従うべき必須フローは文書冒頭の「⚠️ オーケストレーター必須フロー」セクションに記載されている。
 
 ### Step 0: Issue の確認と分割判断
 
@@ -336,28 +361,37 @@ oh-my-claudecode やその他のプラグイン由来のエージェントは使
 
 ---
 
-## 絶対ルール
+## 必須の起動手順
 
-- GitHub Issue がない状態で作業を始めない
-- Issue ごとに専用 worktree を使う（`scripts/create-worktree.sh` を使う）
-- `main` で直接編集しない
-- Git 操作は `cd <worktree>` または `git -C <worktree-path> ...` だけを使う
-- `pnpm` / `node` / `biome` / `turbo` は原則 `cd <worktree> && direnv exec <worktree> ...` で実行する
-- `git --git-dir=...`、`GIT_DIR`、`GIT_WORK_TREE` を使わない
-- `git config core.bare` と `git config core.worktree` を変更しない
-- 可能な限り TDD で進める
-- Lint / Format は Biome を使う
-- 破壊的な Git コマンドを使わない
-- **レビューが通る前に push しない**（pre-push-review-guard.sh がブロックする）
-- **push は必ず `bash scripts/push-verified.sh` を使う**（`git push origin HEAD` の直接実行は禁止）
-- **`reviewer` が「全件 PASS（0件）」を返すまで push しない**（インフラは `infra-reviewer`、UI は `ui-reviewer`）（CRITICAL / HIGH / MEDIUM / LOW 問わず指摘が 1 件でも残れば修正ループを続ける）
-  - **注意**: 「全件 PASS（0件）」とは CRITICAL / HIGH / MEDIUM / LOW のいずれも 0 件であることを意味する。LOW（改善提案）が 1 件でも残っている場合は PASS ではない
-- **オーケストレーターは main ブランチ上でソースファイルを直接編集しない。worktree 上でもエージェントへの委譲を優先する**
-- **TeamCreate / TaskCreate / SendMessage は使用しない**（Agent ツールで直接 spawn する）
-- **再レビューは新しい Agent を spawn する**（同じエージェントを再利用しない）
-- **すべてのエージェントを spawn するときは必ず `mode="acceptEdits"` を指定する**（実装系・レビュー系を問わず）
-- **レビュー PASS 後のマーカー作成・push・PR 作成は各レビュワーエージェントが担当する**（オーケストレーターは行わない）
-- **機能実装では必ず analyst → coder + reviewer の順で spawn する**（analyst の設計完了を待ってから coder/reviewer を background spawn する）
+コーディング作業を始める前に、必ず以下を実行します。
+
+```bash
+bash ./.codex/run-session-start.sh
+```
+
+ファイルを編集する前に、必ず以下を実行します。
+
+```bash
+bash ./.codex/run-pre-edit.sh
+```
+
+リポジトリを変更しうるシェルコマンドを実行する前に、必ず以下を実行します。
+
+```bash
+bash ./.codex/run-pre-command.sh '<command>'
+```
+
+作業終了時には、必要に応じて以下を実行します。
+
+```bash
+bash ./.codex/run-stop.sh
+```
+
+## 参照元
+
+- 全体ルール: [`CLAUDE.md`](./CLAUDE.md)
+- 詳細な実装ルール: [`.claude/rules/`](./.claude/rules)
+- 既存 hook 実装: [`.claude/hooks/`](./.claude/hooks)
 
 ---
 
