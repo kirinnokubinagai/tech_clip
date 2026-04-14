@@ -96,9 +96,18 @@ export const useAuthStore = create<AuthStore>((set) => ({
 
   /**
    * サインアウトする
-   * ローカルのトークンとストア状態をクリアする
+   * サーバー側のセッションを失効させた後、ローカルのトークンとストア状態をクリアする
+   * サーバー到達不能・APIエラー時もローカルは必ずクリアされる
    */
   signOut: async () => {
+    try {
+      await apiFetch<{ success: true; data: null }>("/api/auth/sign-out", {
+        method: "POST",
+      });
+    } catch {
+      // サーバー失効に失敗してもローカルは必ずクリアする
+    }
+
     await clearAuthTokens();
 
     set({
@@ -113,7 +122,7 @@ export const useAuthStore = create<AuthStore>((set) => ({
    * サーバー側のユーザーデータを全削除後、ローカル状態をクリアする
    */
   deleteAccount: async () => {
-    await apiFetch<{ success: boolean }>("/api/users/me", {
+    await apiFetch<{ success: true; data: null }>("/api/users/me", {
       method: "DELETE",
     });
 

@@ -159,6 +159,51 @@ describe("useAuthStore", () => {
   describe("signOut", () => {
     it("サインアウト後にstateがクリアされること", async () => {
       // Arrange
+      mockApiFetch.mockResolvedValue({ success: true, data: null });
+      useAuthStore.setState({ user: TEST_USER, session: TEST_SESSION, isAuthenticated: true });
+
+      // Act
+      await useAuthStore.getState().signOut();
+
+      // Assert
+      const state = useAuthStore.getState();
+      expect(state.isAuthenticated).toBe(false);
+      expect(state.user).toBeNull();
+      expect(state.session).toBeNull();
+      expect(mockClearAuthTokens).toHaveBeenCalledTimes(1);
+    });
+
+    it("/api/auth/sign-out エンドポイントをPOSTで呼ぶこと", async () => {
+      // Arrange
+      mockApiFetch.mockResolvedValue({ success: true, data: null });
+      useAuthStore.setState({ user: TEST_USER, session: TEST_SESSION, isAuthenticated: true });
+
+      // Act
+      await useAuthStore.getState().signOut();
+
+      // Assert
+      expect(mockApiFetch).toHaveBeenCalledWith("/api/auth/sign-out", { method: "POST" });
+    });
+
+    it("API失敗時もローカルのclearAuthTokensが呼ばれてstateがクリアされること", async () => {
+      // Arrange
+      mockApiFetch.mockRejectedValue(new Error("ネットワークエラー"));
+      useAuthStore.setState({ user: TEST_USER, session: TEST_SESSION, isAuthenticated: true });
+
+      // Act
+      await useAuthStore.getState().signOut();
+
+      // Assert
+      const state = useAuthStore.getState();
+      expect(state.isAuthenticated).toBe(false);
+      expect(state.user).toBeNull();
+      expect(state.session).toBeNull();
+      expect(mockClearAuthTokens).toHaveBeenCalledTimes(1);
+    });
+
+    it("SessionExpiredErrorが発生した場合もローカルクリアされること", async () => {
+      // Arrange
+      mockApiFetch.mockRejectedValue(new SessionExpiredError());
       useAuthStore.setState({ user: TEST_USER, session: TEST_SESSION, isAuthenticated: true });
 
       // Act

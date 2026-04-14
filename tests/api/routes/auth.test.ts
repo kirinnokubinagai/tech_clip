@@ -79,6 +79,12 @@ type RefreshSuccessBody = {
   data: { token: string; refreshToken: string };
 };
 
+/** 成功レスポンスの型（サインアウト） */
+type SignOutSuccessBody = {
+  success: true;
+  data: null;
+};
+
 /**
  * テスト用Honoアプリを作成する
  */
@@ -91,6 +97,111 @@ function createTestApp() {
   app.route("/api/auth", authRoute);
   return app;
 }
+
+describe("POST /api/auth/sign-out", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  describe("正常系", () => {
+    it("有効なBearerトークンで200を返しDBからsessions行が削除されること", async () => {
+      // Arrange
+      const deleteChain = {
+        where: vi.fn().mockResolvedValue(undefined),
+      };
+      mockDb.delete.mockReturnValue(deleteChain);
+      const app = createTestApp();
+
+      // Act
+      const res = await app.request("/api/auth/sign-out", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${MOCK_TOKEN}` },
+      });
+
+      // Assert
+      expect(res.status).toBe(HTTP_OK);
+      const body = (await res.json()) as SignOutSuccessBody;
+      expect(body.success).toBe(true);
+      expect(body.data).toBeNull();
+      expect(mockDb.delete).toHaveBeenCalledTimes(1);
+      expect(deleteChain.where).toHaveBeenCalledTimes(1);
+    });
+
+    it("存在しないトークンでも200を返すこと（冪等性）", async () => {
+      // Arrange
+      const deleteChain = {
+        where: vi.fn().mockResolvedValue(undefined),
+      };
+      mockDb.delete.mockReturnValue(deleteChain);
+      const app = createTestApp();
+
+      // Act
+      const res = await app.request("/api/auth/sign-out", {
+        method: "POST",
+        headers: { Authorization: "Bearer non-existent-token" },
+      });
+
+      // Assert
+      expect(res.status).toBe(HTTP_OK);
+      const body = (await res.json()) as SignOutSuccessBody;
+      expect(body.success).toBe(true);
+    });
+  });
+
+  describe("異常系", () => {
+    it("Authorizationヘッダーがない場合401が返ること", async () => {
+      // Arrange
+      const app = createTestApp();
+
+      // Act
+      const res = await app.request("/api/auth/sign-out", { method: "POST" });
+
+      // Assert
+      expect(res.status).toBe(HTTP_UNAUTHORIZED);
+      const body = (await res.json()) as ErrorResponseBody;
+      expect(body.success).toBe(false);
+      expect(body.error.code).toBe("AUTH_REQUIRED");
+    });
+
+    it("BearerではないAuthorizationヘッダーで401が返ること", async () => {
+      // Arrange
+      const app = createTestApp();
+
+      // Act
+      const res = await app.request("/api/auth/sign-out", {
+        method: "POST",
+        headers: { Authorization: "Basic dXNlcjpwYXNz" },
+      });
+
+      // Assert
+      expect(res.status).toBe(HTTP_UNAUTHORIZED);
+      const body = (await res.json()) as ErrorResponseBody;
+      expect(body.success).toBe(false);
+      expect(body.error.code).toBe("AUTH_REQUIRED");
+    });
+
+    it("DB削除でエラーが発生した場合500が返ること", async () => {
+      // Arrange
+      const deleteChain = {
+        where: vi.fn().mockRejectedValue(new Error("DB削除エラー")),
+      };
+      mockDb.delete.mockReturnValue(deleteChain);
+      const app = createTestApp();
+
+      // Act
+      const res = await app.request("/api/auth/sign-out", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${MOCK_TOKEN}` },
+      });
+
+      // Assert
+      expect(res.status).toBe(HTTP_INTERNAL_SERVER_ERROR);
+      const body = (await res.json()) as ErrorResponseBody;
+      expect(body.success).toBe(false);
+      expect(body.error.code).toBe("INTERNAL_ERROR");
+    });
+  });
+});
 
 describe("POST /api/auth/sign-in", () => {
   beforeEach(() => {
