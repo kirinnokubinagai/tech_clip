@@ -1,7 +1,7 @@
 import { ActivityIndicator, Pressable, Text } from "react-native";
 import { twMerge } from "tailwind-merge";
 
-import { DARK_COLORS } from "@/lib/constants";
+import { useColors } from "@/hooks/use-colors";
 
 type AuthSubmitButtonProps = {
   label: string;
@@ -25,7 +25,7 @@ const BASE_TEXT_CLASS_NAME = "text-base font-semibold text-white";
  * @param onPress - 押下時の処理
  * @param disabled - 無効状態
  * @param isLoading - ローディング状態
- * @param indicatorColor - ローディングインジケーターの色
+ * @param indicatorColor - ローディングインジケーターの色（未指定時はテーマの white を使用）
  * @param testID - テストID
  * @param accessibilityHint - 補足説明
  * @param textClassName - ラベルのテキストスタイル（サイズ・ウェイト・色）
@@ -36,12 +36,15 @@ export function AuthSubmitButton({
   onPress,
   disabled = false,
   isLoading = false,
-  indicatorColor = DARK_COLORS.white,
+  indicatorColor,
   testID,
   accessibilityHint,
   textClassName,
   className,
 }: AuthSubmitButtonProps) {
+  const colors = useColors();
+  const resolvedIndicatorColor = indicatorColor ?? colors.white;
+
   return (
     <Pressable
       className={twMerge(BASE_BUTTON_CLASS_NAME, className)}
@@ -57,7 +60,7 @@ export function AuthSubmitButton({
       accessibilityState={{ disabled }}
     >
       {isLoading ? (
-        <ActivityIndicator color={indicatorColor} />
+        <ActivityIndicator color={resolvedIndicatorColor} />
       ) : (
         <Text className={twMerge(BASE_TEXT_CLASS_NAME, textClassName)}>{label}</Text>
       )}

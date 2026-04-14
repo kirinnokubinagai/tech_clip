@@ -1,42 +1,35 @@
 import { Tabs } from "expo-router";
 import { Bell, Home, Search, Settings, User } from "lucide-react-native";
 import { useTranslation } from "react-i18next";
-import { Text, useColorScheme, View } from "react-native";
+import { Text, View } from "react-native";
 
+import { useColors } from "@/hooks/use-colors";
 import { useUnreadNotificationCount } from "@/hooks/use-notifications";
-import { DARK_COLORS, LIGHT_COLORS } from "@/lib/constants";
 
 /** タブアイコンサイズ */
 const TAB_ICON_SIZE = 24;
-
-/** 未読バッジの背景色（テーマ連動） */
-function getBadgeBgColor(isDark: boolean): string {
-  return isDark ? DARK_COLORS.favorite : LIGHT_COLORS.favorite;
-}
 
 /** 未読バッジの最大表示数 */
 const BADGE_MAX_COUNT = 99;
 
 export default function TabLayout() {
   const { t } = useTranslation();
-  const colorScheme = useColorScheme();
-  // TODO: ライトモード対応時に `|| true` を除去
-  const isDark = colorScheme === "dark" || true;
+  const colors = useColors();
   const { data: unreadCount } = useUnreadNotificationCount();
 
   return (
     <Tabs
       screenOptions={{
-        tabBarActiveTintColor: isDark ? DARK_COLORS.primary : LIGHT_COLORS.primary,
-        tabBarInactiveTintColor: isDark ? DARK_COLORS.textDim : LIGHT_COLORS.textDim,
+        tabBarActiveTintColor: colors.primary,
+        tabBarInactiveTintColor: colors.textDim,
         tabBarStyle: {
-          backgroundColor: isDark ? DARK_COLORS.surface : LIGHT_COLORS.card,
-          borderTopColor: isDark ? DARK_COLORS.border : LIGHT_COLORS.border,
+          backgroundColor: colors.surface,
+          borderTopColor: colors.border,
         },
         headerStyle: {
-          backgroundColor: isDark ? DARK_COLORS.surface : LIGHT_COLORS.card,
+          backgroundColor: colors.surface,
         },
-        headerTintColor: isDark ? DARK_COLORS.text : LIGHT_COLORS.text,
+        headerTintColor: colors.text,
         headerShadowVisible: false,
         tabBarLabelStyle: {
           fontSize: 11,
@@ -67,7 +60,7 @@ export default function TabLayout() {
               {unreadCount != null && unreadCount > 0 && (
                 <View
                   testID="tab-badge"
-                  style={{ backgroundColor: getBadgeBgColor(isDark) }}
+                  style={{ backgroundColor: colors.favorite }}
                   className="absolute -top-1 -right-2 rounded-full min-w-[16px] h-4 items-center justify-center px-1"
                   accessibilityLabel={`未読通知${unreadCount > BADGE_MAX_COUNT ? `${BADGE_MAX_COUNT}件以上` : `${unreadCount}件`}`}
                 >

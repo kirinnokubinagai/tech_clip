@@ -15,8 +15,9 @@ import {
 
 import { AuthAlert } from "@/components/auth/AuthAlert";
 import { AuthSubmitButton } from "@/components/auth/AuthSubmitButton";
+import { useColors } from "@/hooks/use-colors";
 import { fetchWithTimeout, getBaseUrl } from "@/lib/api";
-import { APP_SCHEME, DARK_COLORS } from "@/lib/constants";
+import { APP_SCHEME } from "@/lib/constants";
 import { EMAIL_SIMPLE_REGEX, PASSWORD_MIN_LENGTH } from "@/lib/validation";
 import { useAuthStore } from "@/stores/auth-store";
 
@@ -50,6 +51,7 @@ const SOCIAL_PROVIDERS: ReadonlyArray<{ provider: SocialProvider; translationKey
  */
 export default function LoginScreen() {
   const { t } = useTranslation();
+  const colors = useColors();
   const signIn = useAuthStore((s) => s.signIn);
 
   const [email, setEmail] = useState("");
@@ -177,7 +179,7 @@ export default function LoginScreen() {
             <TextInput
               className="rounded-lg border border-border bg-card px-4 py-3 text-base text-text"
               placeholder={t("auth.emailPlaceholder")}
-              placeholderTextColor={DARK_COLORS.textDim}
+              placeholderTextColor={colors.textDim}
               value={email}
               onChangeText={setEmail}
               keyboardType="email-address"
@@ -197,7 +199,7 @@ export default function LoginScreen() {
               <TextInput
                 className="flex-1 px-4 py-3 text-base text-text"
                 placeholder={t("auth.passwordPlaceholder")}
-                placeholderTextColor={DARK_COLORS.textDim}
+                placeholderTextColor={colors.textDim}
                 value={password}
                 onChangeText={setPassword}
                 secureTextEntry={!isPasswordVisible}
@@ -242,7 +244,7 @@ export default function LoginScreen() {
             testID="login-submit-button"
             accessibilityHint={t("auth.loginHint")}
             label={t("auth.login")}
-            indicatorColor={DARK_COLORS.text}
+            indicatorColor={colors.text}
             textClassName="text-base font-semibold text-text"
           />
 
@@ -269,7 +271,7 @@ export default function LoginScreen() {
               >
                 {socialSigningInProvider === provider ? (
                   <ActivityIndicator
-                    color={DARK_COLORS.text}
+                    color={colors.text}
                     size="small"
                     testID={`social-signin-${provider}-loading`}
                   />

@@ -1,10 +1,7 @@
 import type { TextInputProps } from "react-native";
 import { Text, TextInput, View } from "react-native";
 
-import { DARK_COLORS } from "@/lib/constants";
-
-/** プレースホルダーの色（テーマのtext-dimに対応） */
-const PLACEHOLDER_COLOR = DARK_COLORS.textDim;
+import { useColors } from "@/hooks/use-colors";
 
 type InputProps = {
   label?: string;
@@ -42,6 +39,7 @@ export function Input({
   autoCapitalize = "none",
   editable = true,
 }: InputProps) {
+  const colors = useColors();
   const borderStyle = error ? "border-error" : "border-border";
   const inputStyle = `bg-surface ${borderStyle} border rounded-lg px-4 py-3 text-text text-base`;
 
@@ -52,7 +50,7 @@ export function Input({
         testID="input-field"
         className={inputStyle}
         placeholder={placeholder}
-        placeholderTextColor={PLACEHOLDER_COLOR}
+        placeholderTextColor={colors.textDim}
         value={value}
         onChangeText={onChangeText}
         secureTextEntry={secureTextEntry}

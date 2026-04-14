@@ -2,14 +2,11 @@ import { WifiOff } from "lucide-react-native";
 import { useTranslation } from "react-i18next";
 import { Text, View } from "react-native";
 
+import { useColors } from "@/hooks/use-colors";
 import { useNetworkStatus } from "@/hooks/use-network-status";
-import { DARK_COLORS } from "@/lib/constants";
 
 /** オフラインアイコンのサイズ（px） */
 const OFFLINE_ICON_SIZE = 16;
-
-/** オフラインアイコンのカラー */
-const OFFLINE_ICON_COLOR = DARK_COLORS.white;
 
 /**
  * オフライン時に画面上部に表示するバナーコンポーネント
@@ -18,6 +15,7 @@ const OFFLINE_ICON_COLOR = DARK_COLORS.white;
  */
 export function OfflineBanner() {
   const { t } = useTranslation();
+  const colors = useColors();
   const { isOffline } = useNetworkStatus();
 
   if (!isOffline) {
@@ -31,7 +29,7 @@ export function OfflineBanner() {
       accessibilityRole="alert"
       accessibilityLabel={t("common.accessibility.offline")}
     >
-      <WifiOff size={OFFLINE_ICON_SIZE} color={OFFLINE_ICON_COLOR} />
+      <WifiOff size={OFFLINE_ICON_SIZE} color={colors.white} />
       <Text className="text-white text-sm font-medium">{t("common.offline")}</Text>
     </View>
   );

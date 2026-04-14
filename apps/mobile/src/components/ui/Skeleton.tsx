@@ -2,7 +2,7 @@ import { useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { Animated, type DimensionValue, View } from "react-native";
 
-import { DARK_COLORS } from "@/lib/constants";
+import { useColors } from "@/hooks/use-colors";
 
 type SkeletonProps = {
   width?: DimensionValue;
@@ -30,6 +30,7 @@ const MAX_OPACITY = 0.7;
  */
 export function Skeleton({ width, height, borderRadius = 8, className = "" }: SkeletonProps) {
   const { t } = useTranslation();
+  const colors = useColors();
   const opacity = useRef(new Animated.Value(MIN_OPACITY)).current;
 
   useEffect(() => {
@@ -68,8 +69,8 @@ export function Skeleton({ width, height, borderRadius = 8, className = "" }: Sk
           height,
           borderRadius,
           opacity,
-          /** Animated APIはNativeWindクラス（bg-card等）と直接統合できないため、テーマ定数を直接参照 */
-          backgroundColor: DARK_COLORS.card,
+          /** Animated APIはNativeWindクラス（bg-card等）と直接統合できないため、テーマ連動の値を直接指定 */
+          backgroundColor: colors.card,
         }}
       />
     </View>

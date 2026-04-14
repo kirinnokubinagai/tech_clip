@@ -1,6 +1,7 @@
 import { ActivityIndicator, Pressable, Text } from "react-native";
 
-import { DARK_COLORS } from "@/lib/constants";
+import type { ThemeColors } from "@/hooks/use-colors";
+import { useColors } from "@/hooks/use-colors";
 
 /** Buttonコンポーネントで使用可能なバリアント */
 type ButtonVariant = "primary" | "secondary" | "outline" | "ghost" | "danger";
@@ -50,14 +51,29 @@ const TEXT_SIZE_STYLES: Record<ButtonSize, string> = {
   lg: "text-lg",
 };
 
-/** loading時のActivityIndicatorカラー */
-const LOADING_INDICATOR_COLORS: Record<ButtonVariant, string> = {
-  primary: DARK_COLORS.white,
-  secondary: DARK_COLORS.text,
-  outline: DARK_COLORS.text,
-  ghost: DARK_COLORS.textMuted,
-  danger: DARK_COLORS.white,
-};
+/**
+ * バリアントに対応するローディングインジケーターの色を返す
+ *
+ * @param variant - ボタンバリアント
+ * @param colors - 現在のテーマカラートークン
+ * @returns ActivityIndicator に渡す色
+ */
+function getIndicatorColor(variant: ButtonVariant, colors: ThemeColors): string {
+  switch (variant) {
+    case "primary":
+    case "danger":
+      return colors.white;
+    case "secondary":
+    case "outline":
+      return colors.text;
+    case "ghost":
+      return colors.textMuted;
+    default: {
+      const _exhaustive: never = variant;
+      return colors.text;
+    }
+  }
+}
 
 /**
  * 汎用ボタンコンポーネント
@@ -78,9 +94,11 @@ export function Button({
   onPress,
   testID = "button",
 }: ButtonProps) {
+  const colors = useColors();
   const isDisabled = disabled || loading;
   const containerStyle = `rounded-lg items-center justify-center ${SIZE_STYLES[size]} ${VARIANT_STYLES[variant]} ${isDisabled ? "opacity-50" : ""}`;
   const textStyle = `${TEXT_VARIANT_STYLES[variant]} ${TEXT_SIZE_STYLES[size]}`;
+  const indicatorColor = getIndicatorColor(variant, colors);
 
   return (
     <Pressable
@@ -92,7 +110,7 @@ export function Button({
       accessibilityState={{ disabled: isDisabled }}
     >
       {loading ? (
-        <ActivityIndicator color={LOADING_INDICATOR_COLORS[variant]} />
+        <ActivityIndicator color={indicatorColor} />
       ) : (
         <Text className={textStyle}>{children}</Text>
       )}
