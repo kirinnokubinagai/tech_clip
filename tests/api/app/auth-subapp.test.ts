@@ -118,6 +118,9 @@ describe("handleEmailVerification", () => {
 
       // Assert
       expect(auth.api.getSession).toHaveBeenCalledOnce();
+      expect(auth.api.getSession).toHaveBeenCalledWith(
+        expect.objectContaining({ headers: expect.any(Headers) }),
+      );
     });
 
     it("セッションなしリクエストで401を返すこと", async () => {
