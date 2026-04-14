@@ -11,9 +11,6 @@ import { createPublicProfileRoute } from "../routes/public-profile";
 import { createUsersRoute } from "../routes/users";
 import type { Bindings } from "../types";
 
-/** 本番環境のアバター公開 URL */
-const PRODUCTION_AVATAR_URL = "https://avatars.techclip.io";
-
 /**
  * フォロー関係のリストをDBから取得する共通クエリビルダー
  *
@@ -139,7 +136,7 @@ export async function handleUsers(
   const usersRoute = createUsersRoute({
     db,
     r2Bucket: env.AVATARS_BUCKET,
-    r2PublicUrl: env.ENVIRONMENT === "production" ? PRODUCTION_AVATAR_URL : undefined,
+    r2PublicUrl: env.R2_PUBLIC_URL,
   });
 
   const followsRoute = createFollowsRoute({

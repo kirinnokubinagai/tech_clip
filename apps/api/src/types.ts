@@ -23,6 +23,8 @@ export type Bindings = {
   CACHE: KVNamespace;
   /** アバター画像保存用 R2 バケット */
   AVATARS_BUCKET: R2Bucket;
+  /** アバター画像の公開 URL（末尾スラッシュなし） */
+  R2_PUBLIC_URL: string;
   /** アプリのベースURL（パスワードリセットリンク生成用） */
   APP_URL?: string;
   /** カンマ区切りの追加 trustedOrigins（例: "https://staging.example.com,https://dev.example.com"） */

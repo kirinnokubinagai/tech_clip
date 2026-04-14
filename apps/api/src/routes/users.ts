@@ -126,7 +126,7 @@ const UpdateProfileSchema = z.object({
 type UsersRouteOptions = {
   db: Database;
   r2Bucket?: R2Bucket;
-  r2PublicUrl?: string;
+  r2PublicUrl: string;
 };
 
 /**

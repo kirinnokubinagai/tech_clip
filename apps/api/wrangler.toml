@@ -5,6 +5,7 @@ compatibility_flags = ["nodejs_compat"]
 
 [vars]
 ENVIRONMENT = "development"
+R2_PUBLIC_URL = "http://localhost:8787/avatars"
 
 [[kv_namespaces]]
 binding = "RATE_LIMIT"
@@ -36,6 +37,7 @@ name = "tech-clip-api-production"
 [env.production.vars]
 ENVIRONMENT = "production"
 APP_URL = "https://techclip.app"
+R2_PUBLIC_URL = "https://avatars.techclip.io"
 
 [[env.production.kv_namespaces]]
 binding = "RATE_LIMIT"
