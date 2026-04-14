@@ -13,10 +13,13 @@ jest.mock("expo-router", () => ({
   },
 }));
 
-jest.mock("@/lib/constants", () => ({
-  LIGHT_COLORS: { neutral: "#44403c" },
-  SUPPORTED_SOURCE_COUNT: 19,
-}));
+jest.mock("@/lib/constants", () => {
+  const actual = jest.requireActual("@/lib/constants");
+  return {
+    ...actual,
+    SUPPORTED_SOURCE_COUNT: 19,
+  };
+});
 
 const mockSetHasSeenOnboarding = jest.fn().mockResolvedValue(undefined);
 
