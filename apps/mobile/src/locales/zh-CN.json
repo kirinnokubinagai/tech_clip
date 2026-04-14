@@ -143,6 +143,7 @@
     "addToFavorites": "添加到收藏",
     "removeFromFavorites": "取消收藏",
     "noContent": "文章内容不可用",
+    "offlineContentUnavailable": "此文章未保存为离线内容。在线时打开即可保存正文。",
     "viewOriginal": "查看原文",
     "fetchError": "获取文章失败",
     "loadingArticle": "加载中...",

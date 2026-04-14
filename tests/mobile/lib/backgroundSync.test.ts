@@ -1,5 +1,6 @@
 jest.mock("@mobile/lib/syncManager", () => ({
   syncArticles: jest.fn(),
+  syncAllForOffline: jest.fn(),
 }));
 
 jest.mock("expo-task-manager", () => ({
@@ -27,7 +28,7 @@ import {
   startBackgroundSync,
   unregisterNativeBackgroundFetch,
 } from "@mobile/lib/backgroundSync";
-import { syncArticles } from "@mobile/lib/syncManager";
+import { syncAllForOffline, syncArticles } from "@mobile/lib/syncManager";
 import * as BackgroundFetch from "expo-background-fetch";
 import { AppState } from "react-native";
 
@@ -129,9 +130,13 @@ describe("backgroundSync", () => {
   });
 
   describe("createAppStateHandler", () => {
-    it("activeになった場合にsyncArticlesを呼び出すこと", async () => {
+    it("activeになった場合にsyncAllForOfflineを呼び出すこと", async () => {
       // Arrange
-      (syncArticles as jest.Mock).mockResolvedValue({ synced: 5, errors: [] });
+      (syncAllForOffline as jest.Mock).mockResolvedValue({
+        listSynced: 5,
+        contentsPrefetched: 3,
+        errors: [],
+      });
       const handler = createAppStateHandler(DEFAULT_BACKGROUND_SYNC_CONFIG);
 
       // Act
@@ -139,10 +144,10 @@ describe("backgroundSync", () => {
       await Promise.resolve();
 
       // Assert
-      expect(syncArticles).toHaveBeenCalledTimes(1);
+      expect(syncAllForOffline).toHaveBeenCalledTimes(1);
     });
 
-    it("backgroundになった場合はsyncArticlesを呼び出さないこと", async () => {
+    it("backgroundになった場合はsyncAllForOfflineを呼び出さないこと", async () => {
       // Arrange
       const handler = createAppStateHandler(DEFAULT_BACKGROUND_SYNC_CONFIG);
 
@@ -150,10 +155,10 @@ describe("backgroundSync", () => {
       handler("background");
 
       // Assert
-      expect(syncArticles).not.toHaveBeenCalled();
+      expect(syncAllForOffline).not.toHaveBeenCalled();
     });
 
-    it("inactiveになった場合はsyncArticlesを呼び出さないこと", async () => {
+    it("inactiveになった場合はsyncAllForOfflineを呼び出さないこと", async () => {
       // Arrange
       const handler = createAppStateHandler(DEFAULT_BACKGROUND_SYNC_CONFIG);
 
@@ -161,32 +166,36 @@ describe("backgroundSync", () => {
       handler("inactive");
 
       // Assert
-      expect(syncArticles).not.toHaveBeenCalled();
+      expect(syncAllForOffline).not.toHaveBeenCalled();
     });
 
-    it("同期間隔が経過していない場合はsyncArticlesを呼び出さないこと", async () => {
+    it("同期間隔が経過していない場合はsyncAllForOfflineを呼び出さないこと", async () => {
       // Arrange
-      (syncArticles as jest.Mock).mockResolvedValue({ synced: 0, errors: [] });
+      (syncAllForOffline as jest.Mock).mockResolvedValue({
+        listSynced: 0,
+        contentsPrefetched: 0,
+        errors: [],
+      });
       const config = { ...DEFAULT_BACKGROUND_SYNC_CONFIG, intervalMs: 15 * 60 * 1000 };
       const handler = createAppStateHandler(config);
 
       handler("active");
       await Promise.resolve();
-      expect(syncArticles).toHaveBeenCalledTimes(1);
+      expect(syncAllForOffline).toHaveBeenCalledTimes(1);
 
-      (syncArticles as jest.Mock).mockClear();
+      (syncAllForOffline as jest.Mock).mockClear();
 
       // Act
       handler("active");
       await Promise.resolve();
 
       // Assert
-      expect(syncArticles).not.toHaveBeenCalled();
+      expect(syncAllForOffline).not.toHaveBeenCalled();
     });
 
-    it("syncArticlesがエラーを返してもハンドラーがクラッシュしないこと", async () => {
+    it("syncAllForOfflineがエラーを返してもハンドラーがクラッシュしないこと", async () => {
       // Arrange
-      (syncArticles as jest.Mock).mockRejectedValue(new Error("ネットワークエラー"));
+      (syncAllForOffline as jest.Mock).mockRejectedValue(new Error("ネットワークエラー"));
       const handler = createAppStateHandler(DEFAULT_BACKGROUND_SYNC_CONFIG);
 
       // Act & Assert

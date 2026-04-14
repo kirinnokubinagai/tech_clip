@@ -18,7 +18,12 @@ import { useColors } from "@/hooks/use-colors";
 import { useNetworkStatus } from "@/hooks/use-network-status";
 import { formatArticleDate } from "@/lib/date-format";
 import { UI_TO_API_LANGUAGE } from "@/lib/language-code";
-import { getOfflineArticleById } from "@/lib/localDb";
+import {
+  getOfflineArticleById,
+  upsertArticle,
+  upsertSummary,
+  upsertTranslation,
+} from "@/lib/localDb";
 import { useSettingsStore } from "@/stores/settings-store";
 import type { ArticleDetail } from "@/types/article";
 
@@ -174,6 +179,19 @@ export default function ArticleDetailScreen() {
         setIsOfflineLoading(false);
       });
   }, [isOffline, id]);
+
+  useEffect(() => {
+    if (isOffline || !onlineArticle) {
+      return;
+    }
+    void upsertArticle(onlineArticle);
+    if (onlineArticle.summary) {
+      void upsertSummary(onlineArticle.id, onlineArticle.summary);
+    }
+    if (onlineArticle.translation) {
+      void upsertTranslation(onlineArticle.id, onlineArticle.translation);
+    }
+  }, [isOffline, onlineArticle]);
 
   const article = isOffline ? offlineArticle : onlineArticle;
   const isLoading = isOffline ? isOfflineLoading : isOnlineLoading;
@@ -507,6 +525,12 @@ export default function ArticleDetailScreen() {
         <View className="px-4 pt-4">
           {article.content ? (
             <Markdown style={markdownStyles}>{article.content}</Markdown>
+          ) : isOffline ? (
+            <View className="items-center py-8">
+              <Text className="text-text-muted text-center">
+                {t("article.offlineContentUnavailable")}
+              </Text>
+            </View>
           ) : (
             <View className="items-center py-8">
               <Text className="text-text-muted text-center">{t("article.noContent")}</Text>

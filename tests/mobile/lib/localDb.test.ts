@@ -6,6 +6,7 @@ import {
   clearAllOfflineData,
   getOfflineArticleById,
   getOfflineArticles,
+  getOfflineTargetArticleIds,
   initLocalDb,
   upsertArticle,
   upsertSummary,
@@ -254,6 +255,69 @@ describe("localDb", () => {
         expect.stringContaining("INSERT OR REPLACE INTO translations"),
         expect.arrayContaining([articleId, translation]),
       );
+    });
+  });
+
+  describe("getOfflineTargetArticleIds", () => {
+    it("synced_at DESC 順に limit 件を返すこと", async () => {
+      // Arrange
+      mockGetAllAsync.mockResolvedValue([{ id: "article-003" }, { id: "article-001" }]);
+
+      // Act
+      await initLocalDb();
+      const ids = await getOfflineTargetArticleIds(2);
+
+      // Assert
+      expect(mockGetAllAsync).toHaveBeenCalledWith(
+        expect.stringContaining("synced_at"),
+        expect.arrayContaining([2]),
+      );
+      expect(ids).toEqual(["article-003", "article-001"]);
+    });
+
+    it("limit を超える記事でも is_favorite=1 の記事を含めること", async () => {
+      // Arrange
+      mockGetAllAsync.mockResolvedValue([
+        { id: "article-001" },
+        { id: "article-002" },
+        { id: "favorite-article" },
+      ]);
+
+      // Act
+      await initLocalDb();
+      const ids = await getOfflineTargetArticleIds(2);
+
+      // Assert
+      expect(ids).toContain("favorite-article");
+    });
+
+    it("重複を排除すること", async () => {
+      // Arrange
+      mockGetAllAsync.mockResolvedValue([
+        { id: "article-001" },
+        { id: "article-001" },
+        { id: "article-002" },
+      ]);
+
+      // Act
+      await initLocalDb();
+      const ids = await getOfflineTargetArticleIds(20);
+
+      // Assert
+      const uniqueIds = [...new Set(ids)];
+      expect(ids).toHaveLength(uniqueIds.length);
+    });
+
+    it("記事が存在しない場合は空配列を返すこと", async () => {
+      // Arrange
+      mockGetAllAsync.mockResolvedValue([]);
+
+      // Act
+      await initLocalDb();
+      const ids = await getOfflineTargetArticleIds(20);
+
+      // Assert
+      expect(ids).toHaveLength(0);
     });
   });
 
