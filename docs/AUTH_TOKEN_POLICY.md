@@ -160,7 +160,7 @@ SessionExpiredError が伝播する先:
 ```
 クライアント:
   1. POST /api/auth/sign-out を呼び出す（Authorization: Bearer <token>）
-  2. 応答を待たず成功/失敗に関わらず clearAuthTokens() を実行
+  2. 応答を受け取った後（成功/失敗を問わず）clearAuthTokens() を実行
      → SecureStore から token と refreshToken を削除
   3. Zustand ストアをリセット (user: null, session: null, isAuthenticated: false)
   ※ サーバー到達不能・API エラー時もローカルクリアは必ず実行される
