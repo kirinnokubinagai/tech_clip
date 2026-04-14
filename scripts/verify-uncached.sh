@@ -14,7 +14,13 @@ if [ ${#TASKS[@]} -eq 0 ]; then
   TASKS=(typecheck test)
 fi
 
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
 for task in "${TASKS[@]}"; do
   echo "==> uncached: turbo run ${task} --force --no-cache"
-  pnpm turbo run "${task}" --force --no-cache
+  if [ "${task}" = "test" ]; then
+    "${SCRIPT_DIR}/run-and-fail-on-stderr.sh" pnpm turbo run "${task}" --force --no-cache
+  else
+    pnpm turbo run "${task}" --force --no-cache
+  fi
 done
