@@ -58,7 +58,6 @@ cd {worktree}
 git fetch origin main
 MERGE_OUTPUT=$(git merge --no-commit --no-ff origin/main 2>&1)
 git merge --abort 2>/dev/null || true
-
 if echo "$MERGE_OUTPUT" | grep -q "CONFLICT"; then
   # コンフリクトあり → FAIL として記録
 fi
