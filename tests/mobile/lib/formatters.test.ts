@@ -339,7 +339,7 @@ describe("formatRelativeTime", () => {
       expect(result).toBe("2 hours ago");
     });
 
-    it("1日前は1 days agoと表示されること", () => {
+    it("1日前は1 days agoと表示されること（plural未対応, #977で対応）", () => {
       // Arrange
       const now = new Date();
       const oneDayAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
@@ -351,7 +351,7 @@ describe("formatRelativeTime", () => {
       expect(result).toBe("1 days ago");
     });
 
-    it("1週間前は1 weeks agoと表示されること", () => {
+    it("1週間前は1 weeks agoと表示されること（plural未対応, #977で対応）", () => {
       // Arrange
       const now = new Date();
       const oneWeekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
@@ -363,7 +363,7 @@ describe("formatRelativeTime", () => {
       expect(result).toBe("1 weeks ago");
     });
 
-    it("1ヶ月前は1 months agoと表示されること", () => {
+    it("1ヶ月前は1 months agoと表示されること（plural未対応, #977で対応）", () => {
       // Arrange
       const now = new Date();
       const oneMonthAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
@@ -375,7 +375,7 @@ describe("formatRelativeTime", () => {
       expect(result).toBe("1 months ago");
     });
 
-    it("1年前は1 years agoと表示されること", () => {
+    it("1年前は1 years agoと表示されること（plural未対応, #977で対応）", () => {
       // Arrange
       const now = new Date();
       const oneYearAgo = new Date(now.getTime() - 365 * 24 * 60 * 60 * 1000);
