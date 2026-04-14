@@ -356,7 +356,7 @@ export function createUsersRoute(options: UsersRouteOptions) {
       );
     }
 
-    if (!r2Bucket || !r2PublicUrl || r2PublicUrl.length === 0) {
+    if (!r2Bucket || !r2PublicUrl) {
       return c.json(
         {
           success: false,
