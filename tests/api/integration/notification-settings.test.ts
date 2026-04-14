@@ -93,7 +93,7 @@ function createTestApp(mockDb: ReturnType<typeof createMockDb>, authenticated = 
     await next();
   });
 
-  app.route("/", route);
+  app.route("/api/users/me", route);
   return app;
 }
 
@@ -104,11 +104,11 @@ describe("通知設定API 統合テスト", () => {
     mockDb = createMockDb();
   });
 
-  describe("GET /notification-settings", () => {
+  describe("GET /api/users/me/notification-settings", () => {
     it("認証済みユーザーが通知設定を取得できること", async () => {
       // Arrange
       const app = createTestApp(mockDb);
-      const req = new Request("http://localhost/notification-settings");
+      const req = new Request("http://localhost/api/users/me/notification-settings");
 
       // Act
       const res = await app.fetch(req);
@@ -123,7 +123,7 @@ describe("通知設定API 統合テスト", () => {
     it("未認証の場合に401エラーを返すこと", async () => {
       // Arrange
       const app = createTestApp(mockDb, false);
-      const req = new Request("http://localhost/notification-settings");
+      const req = new Request("http://localhost/api/users/me/notification-settings");
 
       // Act
       const res = await app.fetch(req);
@@ -137,7 +137,7 @@ describe("通知設定API 統合テスト", () => {
     it("レスポンスにuserIdが含まれないこと", async () => {
       // Arrange
       const app = createTestApp(mockDb);
-      const req = new Request("http://localhost/notification-settings");
+      const req = new Request("http://localhost/api/users/me/notification-settings");
 
       // Act
       const res = await app.fetch(req);
@@ -149,7 +149,7 @@ describe("通知設定API 統合テスト", () => {
     });
   });
 
-  describe("PATCH /notification-settings", () => {
+  describe("PATCH /api/users/me/notification-settings", () => {
     it("通知設定を更新できること", async () => {
       // Arrange
       const updatedSettings = { ...MOCK_NOTIFICATION_SETTINGS, follow: true };
@@ -161,7 +161,7 @@ describe("通知設定API 統合テスト", () => {
           Promise.resolve([MOCK_NOTIFICATION_SETTINGS]).then(resolve),
       });
       const app = createTestApp(mockDb);
-      const req = new Request("http://localhost/notification-settings", {
+      const req = new Request("http://localhost/api/users/me/notification-settings", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ follow: true }),
@@ -179,7 +179,7 @@ describe("通知設定API 統合テスト", () => {
     it("未認証の場合に401エラーを返すこと", async () => {
       // Arrange
       const app = createTestApp(mockDb, false);
-      const req = new Request("http://localhost/notification-settings", {
+      const req = new Request("http://localhost/api/users/me/notification-settings", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ follow: true }),
@@ -197,7 +197,7 @@ describe("通知設定API 統合テスト", () => {
     it("更新フィールドが空の場合に422エラーを返すこと", async () => {
       // Arrange
       const app = createTestApp(mockDb);
-      const req = new Request("http://localhost/notification-settings", {
+      const req = new Request("http://localhost/api/users/me/notification-settings", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({}),
@@ -215,7 +215,7 @@ describe("通知設定API 統合テスト", () => {
     it("不正なフィールド型の場合に422エラーを返すこと", async () => {
       // Arrange
       const app = createTestApp(mockDb);
-      const req = new Request("http://localhost/notification-settings", {
+      const req = new Request("http://localhost/api/users/me/notification-settings", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ follow: "not-a-boolean" }),
