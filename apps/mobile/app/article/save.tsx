@@ -2,6 +2,7 @@ import * as Haptics from "expo-haptics";
 import { router, useLocalSearchParams } from "expo-router";
 import { AlertCircle, ArrowLeft, ExternalLink, Loader2 } from "lucide-react-native";
 import { useCallback, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Image, Pressable, ScrollView, Text, View } from "react-native";
 
 import { Button, Card, Input, SourceBadge, Toast } from "@/components/ui";
@@ -29,14 +30,14 @@ const ERROR_ICON_SIZE = 16;
  * URL入力のクライアントバリデーション
  *
  * @param url - 検証するURL文字列
- * @returns エラーメッセージ。有効な場合はnull
+ * @returns 翻訳キー。有効な場合はnull
  */
-function validateUrl(url: string): string | null {
+function validateUrl(url: string): "article.urlRequired" | "article.urlInvalid" | null {
   if (!url.trim()) {
-    return "URLを入力してください";
+    return "article.urlRequired";
   }
   if (!URL_PATTERN.test(url.trim())) {
-    return "有効なURLを入力してください";
+    return "article.urlInvalid";
   }
   return null;
 }
@@ -48,6 +49,7 @@ function validateUrl(url: string): string | null {
  * NativeWindダークテーマ、authStore + apiFetch使用。
  */
 export default function SaveScreen() {
+  const { t } = useTranslation();
   const colors = useColors();
   const { url: sharedUrl } = useLocalSearchParams<{ url?: string }>();
   const [url, setUrl] = useState(sharedUrl ?? "");
@@ -65,9 +67,9 @@ export default function SaveScreen() {
     setErrorMessage(null);
     setPreview(null);
 
-    const validationError = validateUrl(url);
-    if (validationError) {
-      setUrlError(validationError);
+    const validationErrorKey = validateUrl(url);
+    if (validationErrorKey) {
+      setUrlError(t(validationErrorKey));
       return;
     }
 
@@ -88,11 +90,11 @@ export default function SaveScreen() {
       setPreview(data.data);
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     } catch {
-      setErrorMessage("記事の取得に失敗しました");
+      setErrorMessage(t("article.fetchFailed"));
     } finally {
       setIsFetching(false);
     }
-  }, [url]);
+  }, [url, t]);
 
   /**
    * プレビュー済みの記事をPOST /api/articlesで保存する
@@ -116,14 +118,14 @@ export default function SaveScreen() {
         return;
       }
 
-      showToast("記事を保存しました", "success");
+      showToast(t("article.savedSuccess"), "success");
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     } catch {
-      setErrorMessage("記事の保存に失敗しました");
+      setErrorMessage(t("article.saveFailed"));
     } finally {
       setIsSaving(false);
     }
-  }, [preview, url, showToast]);
+  }, [preview, url, showToast, t]);
 
   return (
     <View className="flex-1">
@@ -140,20 +142,20 @@ export default function SaveScreen() {
             <Pressable
               onPress={() => router.back()}
               accessibilityRole="button"
-              accessibilityLabel="戻る"
-              accessibilityHint="前の画面に戻ります"
+              accessibilityLabel={t("article.backA11yLabel")}
+              accessibilityHint={t("article.backA11yHint")}
               className="mr-3 p-1"
             >
               <ArrowLeft size={ICON_SIZE_LG} color={colors.text} />
             </Pressable>
-            <Text className="text-xl font-bold text-text">記事を保存</Text>
+            <Text className="text-xl font-bold text-text">{t("article.saveTitle")}</Text>
           </View>
 
           {/* URL入力 */}
           <View className="mb-4">
             <Input
-              label="URL"
-              placeholder="https://"
+              label={t("article.urlLabel")}
+              placeholder={t("article.urlPlaceholder")}
               value={url}
               onChangeText={(text) => {
                 setUrl(text);
@@ -173,7 +175,7 @@ export default function SaveScreen() {
               disabled={isFetching}
               loading={isFetching}
             >
-              取得
+              {t("article.fetchButton")}
             </Button>
           </View>
 
@@ -181,7 +183,7 @@ export default function SaveScreen() {
           {isFetching && (
             <View testID="fetch-loading" className="items-center py-8">
               <Loader2 size={ICON_SIZE_LG} color={colors.primary} />
-              <Text className="mt-2 text-text-muted text-sm">記事を取得中...</Text>
+              <Text className="mt-2 text-text-muted text-sm">{t("article.fetching")}</Text>
             </View>
           )}
 
@@ -205,7 +207,9 @@ export default function SaveScreen() {
           {/* プレビュー */}
           {preview && !isFetching && (
             <View testID="article-preview">
-              <Text className="text-text-muted text-sm font-medium mb-3">プレビュー</Text>
+              <Text className="text-text-muted text-sm font-medium mb-3">
+                {t("article.preview")}
+              </Text>
               <Card>
                 {/* サムネイル */}
                 {preview.thumbnailUrl && (
@@ -214,7 +218,7 @@ export default function SaveScreen() {
                     className="w-full rounded-lg mb-3"
                     style={{ height: THUMBNAIL_HEIGHT }}
                     resizeMode="cover"
-                    accessibilityLabel="記事のサムネイル"
+                    accessibilityLabel={t("article.thumbnailAlt")}
                   />
                 )}
 
@@ -223,7 +227,7 @@ export default function SaveScreen() {
                   <SourceBadge source={preview.source} />
                   {preview.readingTimeMinutes && (
                     <Text className="text-text-dim text-xs">
-                      {preview.readingTimeMinutes}分で読了
+                      {t("article.readingTime", { minutes: preview.readingTimeMinutes })}
                     </Text>
                   )}
                 </View>
@@ -260,7 +264,7 @@ export default function SaveScreen() {
                   disabled={isSaving}
                   loading={isSaving}
                 >
-                  保存する
+                  {t("article.saveButton")}
                 </Button>
               </View>
             </View>

@@ -161,6 +161,7 @@
     "urlInvalid": "유효한 URL을 입력해 주세요",
     "noMatch": "「{{query}}」에 일치하는 기사가 없습니다",
     "backA11yLabel": "뒤로",
+    "backA11yHint": "이전 화면으로 돌아갑니다",
     "generating": "생성 중..."
   },
   "search": {
@@ -177,7 +178,10 @@
     "empty": "알림이 없습니다",
     "emptyDescription": "새 알림이 오면 여기에 표시됩니다",
     "fetchError": "알림을 불러오는데 실패했습니다",
-    "loadingNotifications": "불러오는 중..."
+    "loadingNotifications": "불러오는 중...",
+    "retryHint": "알림 불러오기를 다시 시도합니다",
+    "unreadBadgeLabel": "읽지 않은 알림 {{count}}개",
+    "unreadBadgeLabelOver": "읽지 않은 알림 {{max}}개 이상"
   },
   "profile": {
     "followersLabel": "팔로워",
@@ -362,6 +366,38 @@
       "nextPageHint": "다음 페이지（{{next}}페이지）로 이동합니다",
       "skipHint": "온보딩을 건너뛰고 로그인 화면으로 이동합니다",
       "startHint": "계정 만들기 화면으로 이동합니다"
+    }
+  },
+  "time": {
+    "justNow": "방금 전",
+    "minutesAgo": "{{count}}분 전",
+    "hoursAgo": "{{count}}시간 전",
+    "daysAgo": "{{count}}일 전",
+    "weeksAgo": "{{count}}주 전",
+    "monthsAgo": "{{count}}개월 전",
+    "yearsAgo": "{{count}}년 전"
+  },
+  "api": {
+    "errors": {
+      "timeout": "요청이 시간 초과되었습니다",
+      "network": "네트워크에 연결할 수 없습니다",
+      "httpGeneric": "서버 오류가 발생했습니다",
+      "parse": "응답 파싱에 실패했습니다",
+      "sessionExpired": "세션이 만료되었습니다. 다시 로그인해 주세요.",
+      "status": {
+        "400": "요청이 올바르지 않습니다",
+        "403": "이 작업을 수행할 권한이 없습니다",
+        "404": "리소스를 찾을 수 없습니다",
+        "408": "요청이 시간 초과되었습니다",
+        "409": "충돌이 발생했습니다",
+        "413": "전송 데이터가 너무 큽니다",
+        "422": "입력 내용을 확인해 주세요",
+        "429": "요청이 너무 많습니다. 잠시 후 다시 시도해 주세요.",
+        "500": "서버 오류가 발생했습니다",
+        "502": "서버에 연결할 수 없습니다",
+        "503": "서비스를 일시적으로 사용할 수 없습니다",
+        "504": "서버 응답이 시간 초과되었습니다"
+      }
     }
   },
   "shareIntent": {

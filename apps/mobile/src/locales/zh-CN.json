@@ -161,6 +161,7 @@
     "urlInvalid": "请输入有效的URL",
     "noMatch": "没有匹配「{{query}}」的文章",
     "backA11yLabel": "返回",
+    "backA11yHint": "返回上一个页面",
     "generating": "生成中..."
   },
   "search": {
@@ -177,7 +178,10 @@
     "empty": "没有通知",
     "emptyDescription": "新通知到来时将显示在这里",
     "fetchError": "获取通知失败",
-    "loadingNotifications": "加载中..."
+    "loadingNotifications": "加载中...",
+    "retryHint": "重新获取通知",
+    "unreadBadgeLabel": "{{count}}条未读通知",
+    "unreadBadgeLabelOver": "{{max}}条以上未读通知"
   },
   "profile": {
     "followersLabel": "粉丝",
@@ -362,6 +366,38 @@
       "nextPageHint": "前往第{{next}}页",
       "skipHint": "跳过引导并前往登录界面",
       "startHint": "前往创建账户界面"
+    }
+  },
+  "time": {
+    "justNow": "刚刚",
+    "minutesAgo": "{{count}}分钟前",
+    "hoursAgo": "{{count}}小时前",
+    "daysAgo": "{{count}}天前",
+    "weeksAgo": "{{count}}周前",
+    "monthsAgo": "{{count}}个月前",
+    "yearsAgo": "{{count}}年前"
+  },
+  "api": {
+    "errors": {
+      "timeout": "请求超时",
+      "network": "无法连接到网络",
+      "httpGeneric": "发生服务器错误",
+      "parse": "解析响应失败",
+      "sessionExpired": "会话已过期，请重新登录。",
+      "status": {
+        "400": "请求无效",
+        "403": "您没有权限执行此操作",
+        "404": "资源未找到",
+        "408": "请求超时",
+        "409": "发生冲突",
+        "413": "提交数据过大",
+        "422": "请检查您的输入",
+        "429": "请求过多，请稍后再试。",
+        "500": "发生服务器错误",
+        "502": "无法连接到服务器",
+        "503": "服务暂时不可用",
+        "504": "服务器响应超时"
+      }
     }
   },
   "shareIntent": {

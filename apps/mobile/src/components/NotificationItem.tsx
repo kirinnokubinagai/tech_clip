@@ -4,6 +4,7 @@ import { Pressable, Text, View } from "react-native";
 
 import { useColors } from "@/hooks/use-colors";
 import type { NotificationType } from "@/types/notification";
+import { formatRelativeTime } from "@/utils/formatters";
 
 /** NotificationItemに渡す通知データ */
 export type NotificationItemData = {
@@ -65,36 +66,6 @@ function getNotificationIcon(
         <Newspaper testID="notification-icon-article" size={NOTIFICATION_ICON_SIZE} color={color} />
       );
   }
-}
-
-/**
- * 日時文字列を相対表示にフォーマットする
- *
- * @param isoString - ISO 8601形式の日付文字列
- * @returns 相対表示文字列（例: "3分前", "2時間前", "1日前"）
- */
-function formatRelativeTime(isoString: string): string {
-  const now = Date.now();
-  const date = new Date(isoString).getTime();
-  const diffMs = now - date;
-
-  /** 1分（ミリ秒） */
-  const ONE_MINUTE_MS = 60 * 1000;
-  /** 1時間（ミリ秒） */
-  const ONE_HOUR_MS = 60 * ONE_MINUTE_MS;
-  /** 1日（ミリ秒） */
-  const ONE_DAY_MS = 24 * ONE_HOUR_MS;
-
-  if (diffMs < ONE_MINUTE_MS) {
-    return "たった今";
-  }
-  if (diffMs < ONE_HOUR_MS) {
-    return `${Math.floor(diffMs / ONE_MINUTE_MS)}分前`;
-  }
-  if (diffMs < ONE_DAY_MS) {
-    return `${Math.floor(diffMs / ONE_HOUR_MS)}時間前`;
-  }
-  return `${Math.floor(diffMs / ONE_DAY_MS)}日前`;
 }
 
 /**

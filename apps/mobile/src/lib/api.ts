@@ -1,5 +1,6 @@
 import Constants from "expo-constants";
 
+import i18n from "./i18n";
 import {
   clearAuthTokens,
   getAuthToken,
@@ -32,32 +33,20 @@ const DEFAULT_API_BASE_URL = "http://localhost:8787";
 /** Abortエラーの識別名 */
 const ABORT_ERROR_NAME = "AbortError";
 
-/** タイムアウト時のエラーメッセージ */
-const TIMEOUT_ERROR_MESSAGE = "リクエストがタイムアウトしました";
-
-/** ネットワーク接続不能時のエラーメッセージ */
-const NETWORK_ERROR_MESSAGE = "ネットワークに接続できません";
-
-/** HTTPエラー時のデフォルトメッセージ */
-const HTTP_ERROR_MESSAGE = "サーバーエラーが発生しました";
-
-/** パースエラー時のデフォルトメッセージ */
-const PARSE_ERROR_MESSAGE = "レスポンスの解析に失敗しました";
-
-/** ステータスコード別デフォルトメッセージ（非業務エラー時のフォールバック） */
-const HTTP_ERROR_MESSAGES_BY_STATUS: Readonly<Record<number, string>> = {
-  400: "リクエストが正しくありません",
-  403: "この操作を実行する権限がありません",
-  404: "リソースが見つかりません",
-  408: "リクエストがタイムアウトしました",
-  409: "競合が発生しました",
-  413: "送信データが大きすぎます",
-  422: "入力内容を確認してください",
-  429: "リクエストが多すぎます。しばらく待ってから再度お試しください",
-  500: "サーバーエラーが発生しました",
-  502: "サーバーに接続できません",
-  503: "サービスが一時的に利用できません",
-  504: "サーバー応答がタイムアウトしました",
+/** ステータスコード別翻訳キー（非業務エラー時のフォールバック） */
+const HTTP_ERROR_KEYS_BY_STATUS: Readonly<Record<number, string>> = {
+  400: "api.errors.status.400",
+  403: "api.errors.status.403",
+  404: "api.errors.status.404",
+  408: "api.errors.status.408",
+  409: "api.errors.status.409",
+  413: "api.errors.status.413",
+  422: "api.errors.status.422",
+  429: "api.errors.status.429",
+  500: "api.errors.status.500",
+  502: "api.errors.status.502",
+  503: "api.errors.status.503",
+  504: "api.errors.status.504",
 };
 
 /** bodyText のプレビュー最大長（診断用に残すが機密抑制のため制限） */
@@ -79,7 +68,7 @@ export class ApiError extends Error {
  */
 export class SessionExpiredError extends ApiError {
   constructor() {
-    super("セッションの有効期限が切れました。再度ログインしてください");
+    super(i18n.t("api.errors.sessionExpired"));
     this.name = "SessionExpiredError";
   }
 }
@@ -228,9 +217,9 @@ export async function fetchWithTimeout(url: string, options: RequestInit): Promi
     return await fetch(url, { ...options, signal: controller.signal });
   } catch (error) {
     if (error instanceof Error && error.name === ABORT_ERROR_NAME) {
-      throw new ApiNetworkError(TIMEOUT_ERROR_MESSAGE, error);
+      throw new ApiNetworkError(i18n.t("api.errors.timeout"), error);
     }
-    throw new ApiNetworkError(NETWORK_ERROR_MESSAGE, error);
+    throw new ApiNetworkError(i18n.t("api.errors.network"), error);
   } finally {
     clearTimeout(timeoutId);
   }
@@ -284,11 +273,11 @@ async function tryParseJson(response: Response): Promise<unknown> {
  */
 async function parseSuccessBody<T>(response: Response): Promise<T> {
   if (!shouldParseAsJson(response)) {
-    throw new ApiParseError(response.status, PARSE_ERROR_MESSAGE);
+    throw new ApiParseError(response.status, i18n.t("api.errors.parse"));
   }
   const parsed = await tryParseJson(response);
   if (parsed === PARSE_FAILED) {
-    throw new ApiParseError(response.status, PARSE_ERROR_MESSAGE);
+    throw new ApiParseError(response.status, i18n.t("api.errors.parse"));
   }
   return parsed as T;
 }
@@ -325,13 +314,13 @@ function isBusinessErrorPayload(value: unknown): value is BusinessErrorShape {
 }
 
 /**
- * ステータスコードに対応する日本語メッセージを返す
+ * ステータスコードに対応するエラーメッセージを返す
  *
  * @param status - HTTPステータスコード
- * @returns 対応する日本語メッセージ
+ * @returns 対応するエラーメッセージ
  */
 function defaultHttpErrorMessage(status: number): string {
-  return HTTP_ERROR_MESSAGES_BY_STATUS[status] ?? HTTP_ERROR_MESSAGE;
+  return i18n.t(HTTP_ERROR_KEYS_BY_STATUS[status] ?? "api.errors.httpGeneric");
 }
 
 /**
