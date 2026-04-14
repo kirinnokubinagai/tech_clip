@@ -44,6 +44,25 @@ const HTTP_ERROR_MESSAGE = "サーバーエラーが発生しました";
 /** パースエラー時のデフォルトメッセージ */
 const PARSE_ERROR_MESSAGE = "レスポンスの解析に失敗しました";
 
+/** ステータスコード別デフォルトメッセージ（非業務エラー時のフォールバック） */
+const HTTP_ERROR_MESSAGES_BY_STATUS: Readonly<Record<number, string>> = {
+  400: "リクエストが正しくありません",
+  403: "この操作を実行する権限がありません",
+  404: "リソースが見つかりません",
+  408: "リクエストがタイムアウトしました",
+  409: "競合が発生しました",
+  413: "送信データが大きすぎます",
+  422: "入力内容を確認してください",
+  429: "リクエストが多すぎます。しばらく待ってから再度お試しください",
+  500: "サーバーエラーが発生しました",
+  502: "サーバーに接続できません",
+  503: "サービスが一時的に利用できません",
+  504: "サーバー応答がタイムアウトしました",
+};
+
+/** bodyText のプレビュー最大長（診断用に残すが機密抑制のため制限） */
+const BODY_TEXT_PREVIEW_MAX_LENGTH = 512;
+
 /**
  * APIエラーの基底クラス
  */
@@ -72,11 +91,24 @@ export class SessionExpiredError extends ApiError {
 export class ApiHttpError extends ApiError {
   /** HTTPステータスコード */
   public readonly status: number;
+  /** 業務エラーJSONから取得した code。非業務エラー時は undefined */
+  public readonly code?: string;
+  /** 業務エラーJSONから取得した details。非業務エラー時は undefined */
+  public readonly details?: unknown;
+  /** レスポンス本文の先頭（診断用、最大 BODY_TEXT_PREVIEW_MAX_LENGTH 文字） */
+  public readonly bodyText?: string;
 
-  constructor(status: number, message: string) {
-    super(message);
+  constructor(
+    status: number,
+    message: string,
+    options?: { code?: string; details?: unknown; bodyText?: string; cause?: unknown },
+  ) {
+    super(message, options?.cause !== undefined ? { cause: options.cause } : undefined);
     this.name = "ApiHttpError";
     this.status = status;
+    this.code = options?.code;
+    this.details = options?.details;
+    this.bodyText = options?.bodyText;
   }
 }
 
@@ -262,37 +294,124 @@ async function parseSuccessBody<T>(response: Response): Promise<T> {
 }
 
 /**
+ * 業務エラーの形状を表す型
+ * API 規約に従い `error.code` と `error.message` を必須とする
+ */
+type BusinessErrorShape = {
+  success: false;
+  error: { code: string; message: string; details?: unknown };
+};
+
+/**
  * 業務エラー形式かどうかを判定する
- * `{ success: false, error: { ... } }` の形を許容する
+ * `{ success: false, error: { code: string; message: string } }` の形を要求する
  *
  * @param value - 判定対象
  * @returns 業務エラー形式なら true
  */
-function isBusinessErrorPayload(value: unknown): boolean {
+function isBusinessErrorPayload(value: unknown): value is BusinessErrorShape {
   if (value === null || typeof value !== "object") {
     return false;
   }
-  const maybe = value as { success?: unknown; error?: unknown };
-  return maybe.success === false && typeof maybe.error === "object" && maybe.error !== null;
+  const v = value as { success?: unknown; error?: unknown };
+  if (v.success !== false) {
+    return false;
+  }
+  if (v.error === null || typeof v.error !== "object" || Array.isArray(v.error)) {
+    return false;
+  }
+  const e = v.error as { code?: unknown; message?: unknown };
+  return typeof e.code === "string" && typeof e.message === "string";
+}
+
+/**
+ * ステータスコードに対応する日本語メッセージを返す
+ *
+ * @param status - HTTPステータスコード
+ * @returns 対応する日本語メッセージ
+ */
+function defaultHttpErrorMessage(status: number): string {
+  return HTTP_ERROR_MESSAGES_BY_STATUS[status] ?? HTTP_ERROR_MESSAGE;
+}
+
+/**
+ * レスポンス本文をテキストとして一度だけ読み込む
+ * 読み込みに失敗した場合は null を返す
+ *
+ * @param response - fetchレスポンス
+ * @returns 読み込んだテキスト。失敗時は null
+ */
+async function readBodyOnce(response: Response): Promise<{ text: string } | null> {
+  try {
+    return { text: await response.text() };
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * テキストを JSON としてパースする
+ * パースに失敗した場合は PARSE_FAILED を返す
+ *
+ * @param text - パース対象の文字列
+ * @returns パース結果。失敗時は PARSE_FAILED
+ */
+function tryParseJsonText(text: string): unknown {
+  try {
+    return JSON.parse(text);
+  } catch {
+    return PARSE_FAILED;
+  }
+}
+
+/**
+ * テキストが JSON オブジェクトまたは配列に見えるか判定する
+ *
+ * @param text - 判定対象の文字列
+ * @returns JSON らしければ true
+ */
+function looksLikeJson(text: string): boolean {
+  const trimmed = text.trimStart();
+  return trimmed.startsWith("{") || trimmed.startsWith("[");
+}
+
+/**
+ * テキストを BODY_TEXT_PREVIEW_MAX_LENGTH 文字以内に切り詰める
+ *
+ * @param text - 切り詰め対象の文字列
+ * @returns 切り詰め後の文字列
+ */
+function truncateBodyText(text: string): string {
+  return text.length > BODY_TEXT_PREVIEW_MAX_LENGTH
+    ? text.slice(0, BODY_TEXT_PREVIEW_MAX_LENGTH)
+    : text;
 }
 
 /**
  * 非2xxレスポンスの本文を扱う
  * 業務エラーJSONならそのまま返し、そうでなければ ApiHttpError をスローする
+ * body は text() で一度だけ読み込み、JSON パースは文字列ベースで行う
  *
  * @param response - fetchレスポンス
  * @returns 業務エラー本文
  * @throws ApiHttpError - 非JSONまたは業務エラー形式でない場合
  */
 async function handleErrorResponse<T>(response: Response): Promise<T> {
-  const parsed = await tryParseJson(response);
-  if (parsed === PARSE_FAILED) {
-    throw new ApiHttpError(response.status, HTTP_ERROR_MESSAGE);
+  const body = await readBodyOnce(response);
+  if (body === null) {
+    throw new ApiHttpError(response.status, defaultHttpErrorMessage(response.status));
   }
-  if (!isBusinessErrorPayload(parsed)) {
-    throw new ApiHttpError(response.status, HTTP_ERROR_MESSAGE);
+
+  if (shouldParseAsJson(response) || looksLikeJson(body.text)) {
+    const parsed = tryParseJsonText(body.text);
+    if (parsed !== PARSE_FAILED && isBusinessErrorPayload(parsed)) {
+      return parsed as unknown as T;
+    }
   }
-  return parsed as T;
+
+  throw new ApiHttpError(response.status, defaultHttpErrorMessage(response.status), {
+    bodyText: truncateBodyText(body.text),
+  });
 }
 
 /**
