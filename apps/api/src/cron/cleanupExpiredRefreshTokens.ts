@@ -1,3 +1,7 @@
+import { lt } from "drizzle-orm";
+
+import { refreshTokens } from "../db/schema";
+
 /** 期限切れリフレッシュトークンクリーンアップの依存注入インターフェース */
 export type RefreshTokenCleanupDeps = {
   deleteExpiredRefreshTokens: (currentTimestamp: string) => Promise<number>;
@@ -6,6 +10,7 @@ export type RefreshTokenCleanupDeps = {
 
 /** 期限切れリフレッシュトークンクリーンアップの結果 */
 type RefreshTokenCleanupResult = {
+  /** 常に true を返す（エラー時は例外をスロー）。他の cron ジョブとの一貫性のため success フィールドを保持 */
   success: boolean;
   deletedCount: number;
 };
@@ -27,7 +32,8 @@ export async function cleanupExpiredRefreshTokens(
 /**
  * Drizzle ORM を使った deleteExpiredRefreshTokens の実装を生成する
  *
- * @param db - Drizzle データベースインスタンス
+ * @param db - Drizzle データベースインスタンス。既存の cron ジョブパターンとの一貫性を保つため
+ *   loose な型 `{ delete: (table: unknown) => unknown }` を使用している
  * @returns RefreshTokenCleanupDeps に適合した依存オブジェクト
  */
 export function createRefreshTokenCleanupDeps(db: {
@@ -35,8 +41,6 @@ export function createRefreshTokenCleanupDeps(db: {
 }): RefreshTokenCleanupDeps {
   return {
     deleteExpiredRefreshTokens: async (currentTimestamp) => {
-      const { lt } = await import("drizzle-orm");
-      const { refreshTokens } = await import("../db/schema");
       const result = await (
         db.delete(refreshTokens) as ReturnType<typeof db.delete> & {
           where: (condition: unknown) => { returning: () => Promise<unknown[]> };
