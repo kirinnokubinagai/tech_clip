@@ -11,12 +11,6 @@ on:
       - 'tests/e2e/maestro/**'
   pull_request:
     branches: [main]
-    paths-ignore:
-      - '**/*.md'
-      - 'docs/**'
-      - 'LICENSE'
-      - '.omc/**'
-      - 'tests/e2e/maestro/**'
 
 # デフォルトで全権限を read-only にし、各ジョブで必要な権限のみを上書きする
 permissions: read-all
