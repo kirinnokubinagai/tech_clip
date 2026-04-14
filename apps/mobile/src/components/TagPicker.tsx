@@ -3,7 +3,7 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Pressable, Text, TextInput, View } from "react-native";
 
-import { DARK_COLORS } from "@/lib/constants";
+import { useColors } from "@/hooks/use-colors";
 
 type TagPickerProps = {
   tags: readonly string[];
@@ -16,12 +16,6 @@ type TagPickerProps = {
 /** タグの最大文字数 */
 const TAG_MAX_LENGTH = 30;
 
-/** 新規タグ入力欄のプレースホルダー色 */
-const PLACEHOLDER_COLOR = DARK_COLORS.textDim;
-
-/** アイコンカラー（ミュート） */
-const ICON_COLOR_MUTED = DARK_COLORS.textMuted;
-
 /** アイコンサイズ（px） */
 const ICON_SIZE = 14;
 
@@ -32,7 +26,7 @@ const DEFAULT_MAX_TAGS = 10;
  * タグ選択コンポーネント
  *
  * 既存タグの表示・選択と新規タグ追加機能を提供する。
- * NativeWindダークテーマ対応。
+ * テーマ連動カラー対応。
  *
  * @param tags - 選択可能なタグ一覧
  * @param selectedTags - 現在選択中のタグ一覧
@@ -48,6 +42,7 @@ export function TagPicker({
   maxTags = DEFAULT_MAX_TAGS,
 }: TagPickerProps) {
   const { t } = useTranslation();
+  const colors = useColors();
   const [newTagText, setNewTagText] = useState("");
   const isAtLimit = selectedTags.length >= maxTags;
 
@@ -101,7 +96,7 @@ export function TagPicker({
               <Text className={`text-sm font-medium ${isSelected ? "text-white" : "text-text"}`}>
                 {tag}
               </Text>
-              {isSelected && <X size={ICON_SIZE} color={DARK_COLORS.white} />}
+              {isSelected && <X size={ICON_SIZE} color={colors.white} />}
             </Pressable>
           );
         })}
@@ -113,7 +108,7 @@ export function TagPicker({
             testID="tag-input"
             className="flex-1 bg-surface border border-border rounded-lg px-3 py-2 text-text text-sm"
             placeholder={t("common.tagInputPlaceholder")}
-            placeholderTextColor={PLACEHOLDER_COLOR}
+            placeholderTextColor={colors.textDim}
             value={newTagText}
             onChangeText={setNewTagText}
             onSubmitEditing={handleAddTag}
@@ -135,7 +130,7 @@ export function TagPicker({
           >
             <Plus
               size={ICON_SIZE + 2}
-              color={newTagText.trim() ? DARK_COLORS.white : ICON_COLOR_MUTED}
+              color={newTagText.trim() ? colors.white : colors.textMuted}
             />
           </Pressable>
         </View>

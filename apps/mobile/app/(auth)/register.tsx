@@ -13,12 +13,13 @@ import {
 
 import { AuthAlert } from "@/components/auth/AuthAlert";
 import { AuthSubmitButton } from "@/components/auth/AuthSubmitButton";
-import { DARK_COLORS } from "@/lib/constants";
+import { useColors } from "@/hooks/use-colors";
 import { EMAIL_SIMPLE_REGEX, PASSWORD_MIN_LENGTH } from "@/lib/validation";
 import { useAuthStore } from "@/stores/auth-store";
 
 export default function RegisterScreen() {
   const { t } = useTranslation();
+  const colors = useColors();
   const signUp = useAuthStore((s) => s.signUp);
 
   const [name, setName] = useState("");
@@ -92,7 +93,7 @@ export default function RegisterScreen() {
             <TextInput
               className="rounded-lg border border-border bg-surface px-4 py-3 text-base text-text"
               placeholder={t("auth.namePlaceholder")}
-              placeholderTextColor={DARK_COLORS.textDim}
+              placeholderTextColor={colors.textDim}
               value={name}
               onChangeText={setName}
               autoCapitalize="words"
@@ -109,7 +110,7 @@ export default function RegisterScreen() {
             <TextInput
               className="rounded-lg border border-border bg-surface px-4 py-3 text-base text-text"
               placeholder={t("auth.emailPlaceholder")}
-              placeholderTextColor={DARK_COLORS.textDim}
+              placeholderTextColor={colors.textDim}
               value={email}
               onChangeText={setEmail}
               autoCapitalize="none"
@@ -127,7 +128,7 @@ export default function RegisterScreen() {
             <TextInput
               className="rounded-lg border border-border bg-surface px-4 py-3 text-base text-text"
               placeholder={t("auth.passwordPlaceholder")}
-              placeholderTextColor={DARK_COLORS.textDim}
+              placeholderTextColor={colors.textDim}
               value={password}
               onChangeText={setPassword}
               secureTextEntry

@@ -13,8 +13,8 @@ import {
 
 import { AuthAlert } from "@/components/auth/AuthAlert";
 import { AuthSubmitButton } from "@/components/auth/AuthSubmitButton";
+import { useColors } from "@/hooks/use-colors";
 import { fetchWithTimeout, getBaseUrl } from "@/lib/api";
-import { DARK_COLORS } from "@/lib/constants";
 import { EMAIL_SIMPLE_REGEX } from "@/lib/validation";
 
 function hasForgotPasswordMessageShape(value: unknown): value is { data: { message: string } } {
@@ -77,6 +77,7 @@ function ForgotPasswordFooter({ hasSuccess }: { hasSuccess: boolean }) {
 
 export default function ForgotPasswordScreen() {
   const { t } = useTranslation();
+  const colors = useColors();
 
   const [email, setEmail] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -160,7 +161,7 @@ export default function ForgotPasswordScreen() {
           <TextInput
             className="rounded-lg border border-border bg-card px-4 py-3 text-base text-text"
             placeholder={t("auth.emailPlaceholder")}
-            placeholderTextColor={DARK_COLORS.textDim}
+            placeholderTextColor={colors.textDim}
             value={email}
             onChangeText={setEmail}
             autoCapitalize="none"

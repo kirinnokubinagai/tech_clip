@@ -5,7 +5,7 @@ import type { WithTranslation } from "react-i18next";
 import { withTranslation } from "react-i18next";
 import { Pressable, Text, View } from "react-native";
 
-import { DARK_COLORS } from "@/lib/constants";
+import { useColors } from "@/hooks/use-colors";
 
 type ErrorBoundaryOwnProps = {
   children: ReactNode;
@@ -22,11 +22,53 @@ type ErrorBoundaryState = {
 /** エラーアイコンサイズ（px） */
 const ERROR_ICON_SIZE = 48;
 
-/** エラーアイコン色 */
-const ERROR_ICON_COLOR = DARK_COLORS.error;
-
 /** リトライアイコンサイズ（px） */
 const RETRY_ICON_SIZE = 20;
+
+type ErrorFallbackProps = {
+  error: Error | null;
+  onRetry: () => void;
+  t: WithTranslation["t"];
+};
+
+/**
+ * `ErrorBoundary` のフォールバック UI
+ *
+ * クラスコンポーネントから切り出した関数コンポーネント。
+ * `useColors()` で OS テーマに応じたカラートークンを取得する。
+ *
+ * @param error - キャッチしたエラーオブジェクト
+ * @param onRetry - リトライボタン押下時のコールバック
+ * @param t - i18n の翻訳関数
+ */
+function ErrorFallback({ error, onRetry, t }: ErrorFallbackProps) {
+  const colors = useColors();
+
+  return (
+    <View
+      testID="error-boundary-fallback"
+      className="flex-1 items-center justify-center bg-background px-8"
+    >
+      <AlertTriangle testID="error-boundary-icon" size={ERROR_ICON_SIZE} color={colors.error} />
+      <Text className="text-lg font-semibold text-text mt-4 text-center">
+        {t("errorBoundary.unexpectedError")}
+      </Text>
+      <Text className="text-sm text-text-muted mt-2 text-center">
+        {error?.message ?? t("errorBoundary.appError")}
+      </Text>
+      <Pressable
+        testID="error-boundary-retry"
+        onPress={onRetry}
+        className="flex-row items-center gap-2 mt-6 rounded-lg bg-primary px-5 py-3"
+        accessibilityRole="button"
+        accessibilityLabel={t("errorBoundary.retry")}
+      >
+        <RefreshCw size={RETRY_ICON_SIZE} color={colors.white} />
+        <Text className="text-white font-semibold">{t("errorBoundary.retry")}</Text>
+      </Pressable>
+    </View>
+  );
+}
 
 /**
  * グローバルエラーバウンダリ
@@ -74,34 +116,7 @@ class ErrorBoundaryBase extends Component<ErrorBoundaryProps, ErrorBoundaryState
       return fallback;
     }
 
-    return (
-      <View
-        testID="error-boundary-fallback"
-        className="flex-1 items-center justify-center bg-background px-8"
-      >
-        <AlertTriangle
-          testID="error-boundary-icon"
-          size={ERROR_ICON_SIZE}
-          color={ERROR_ICON_COLOR}
-        />
-        <Text className="text-lg font-semibold text-text mt-4 text-center">
-          {t("errorBoundary.unexpectedError")}
-        </Text>
-        <Text className="text-sm text-text-muted mt-2 text-center">
-          {this.state.error?.message ?? t("errorBoundary.appError")}
-        </Text>
-        <Pressable
-          testID="error-boundary-retry"
-          onPress={this.handleRetry}
-          className="flex-row items-center gap-2 mt-6 rounded-lg bg-primary px-5 py-3"
-          accessibilityRole="button"
-          accessibilityLabel={t("errorBoundary.retry")}
-        >
-          <RefreshCw size={RETRY_ICON_SIZE} color={DARK_COLORS.white} />
-          <Text className="text-white font-semibold">{t("errorBoundary.retry")}</Text>
-        </Pressable>
-      </View>
-    );
+    return <ErrorFallback error={this.state.error} onRetry={this.handleRetry} t={t} />;
   }
 }
 
