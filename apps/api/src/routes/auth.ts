@@ -251,6 +251,55 @@ export function createAuthRoute({ db, getAuth }: AuthRouteOptions) {
   });
 
   /**
+   * サインアウト
+   * Bearer トークンに紐づく sessions 行を削除してセッションを失効させる
+   * refresh_tokens は onDelete: cascade で自動削除される
+   * 該当行が存在しない場合も冪等に 200 を返す
+   */
+  app.post("/sign-out", async (c) => {
+    const authHeader = c.req.header("Authorization");
+
+    if (!authHeader?.startsWith("Bearer ")) {
+      return c.json(
+        {
+          success: false,
+          error: {
+            code: AUTH_REQUIRED_CODE,
+            message: "ログインが必要です",
+          },
+        },
+        HTTP_UNAUTHORIZED,
+      );
+    }
+
+    const token = authHeader.slice("Bearer ".length);
+
+    try {
+      await db.delete(sessions).where(eq(sessions.token, token));
+
+      return c.json(
+        {
+          success: true,
+          data: { success: true },
+        },
+        HTTP_OK,
+      );
+    } catch (error) {
+      logger.error("サインアウト処理に失敗しました", { error });
+      return c.json(
+        {
+          success: false,
+          error: {
+            code: INTERNAL_ERROR_CODE,
+            message: "サーバーエラーが発生しました",
+          },
+        },
+        HTTP_INTERNAL_SERVER_ERROR,
+      );
+    }
+  });
+
+  /**
    * セッション確認
    * Authorization: Bearer <token> ヘッダーからセッションを検証して返す
    */

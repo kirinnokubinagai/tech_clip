@@ -214,6 +214,22 @@ describe("Better Auth", () => {
       expect(body).toMatchObject({ status: "ok" });
     });
 
+    it("sign-outエンドポイントがカスタムルートに到達すること（Bearerなしで401とAUTH_REQUIREDを返す）", async () => {
+      // Arrange
+      const req = new Request("http://localhost/api/auth/sign-out", {
+        method: "POST",
+      });
+
+      // Act
+      const res = await app.fetch(req, TEST_BINDINGS);
+
+      // Assert（カスタムcreateAuthRouteに到達していれば401 + AUTH_REQUIRED が返る）
+      expect(res.status).toBe(401);
+      const body = (await res.json()) as { success: boolean; error: { code: string } };
+      expect(body.success).toBe(false);
+      expect(body.error.code).toBe("AUTH_REQUIRED");
+    });
+
     it("OAuth環境変数がBindings型に含まれていること", async () => {
       // Arrange
       const req = new Request("http://localhost/health");

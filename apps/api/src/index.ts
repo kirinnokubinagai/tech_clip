@@ -65,6 +65,10 @@ app.on(["POST", "GET"], "/api/auth/sign-in", async (c) => {
   return handleAuthRoute(c.get("db"), c.get("auth")(), c.req.raw);
 });
 
+app.post("/api/auth/sign-out", async (c) => {
+  return handleAuthRoute(c.get("db"), c.get("auth")(), c.req.raw);
+});
+
 app.get("/api/auth/session", async (c) => {
   return handleAuthRoute(c.get("db"), c.get("auth")(), c.req.raw);
 });
