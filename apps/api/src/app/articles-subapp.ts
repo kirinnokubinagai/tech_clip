@@ -1,4 +1,4 @@
-import { and, desc, eq, like, lt, or } from "drizzle-orm";
+import { and, desc, eq, lt, sql } from "drizzle-orm";
 import { Hono } from "hono";
 
 import type { Auth } from "../auth";
@@ -16,7 +16,7 @@ import { createAiRoute } from "../routes/ai";
 import { createArticlesRoute } from "../routes/articles";
 import { createFavoriteRoute } from "../routes/favorite";
 import { createPublicArticlesRoute } from "../routes/public-articles";
-import { createSearchRoute, escapeLikeWildcards } from "../routes/search";
+import { buildFtsMatchExpression, createSearchRoute } from "../routes/search";
 import { createSummaryRoute } from "../routes/summary";
 import { parseArticle } from "../services/article-parser";
 import { summarizeArticle } from "../services/summary";
@@ -121,14 +121,13 @@ export async function handleArticles(
 
   const searchRoute = createSearchRoute({
     searchQueryFn: async (params) => {
-      const keyword = `%${escapeLikeWildcards(params.query)}%`;
+      const matchExpr = buildFtsMatchExpression(params.query);
+      if (matchExpr === null) {
+        return [];
+      }
       const conditions = [
         eq(articles.userId, params.userId),
-        or(
-          like(articles.title, keyword),
-          like(articles.content, keyword),
-          like(articles.excerpt, keyword),
-        ),
+        sql`articles.rowid IN (SELECT rowid FROM articles_fts WHERE articles_fts MATCH ${matchExpr})`,
       ];
       if (params.cursor) {
         conditions.push(lt(articles.id, params.cursor));

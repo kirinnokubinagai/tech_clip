@@ -1,6 +1,6 @@
 import { HTTP_UNAUTHORIZED, HTTP_UNPROCESSABLE_ENTITY } from "@api/lib/http-status";
 import type { SearchQueryFn } from "@api/routes/search";
-import { createSearchRoute, escapeLikeWildcards } from "@api/routes/search";
+import { buildFtsMatchExpression, createSearchRoute } from "@api/routes/search";
 import { Hono } from "hono";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -103,71 +103,115 @@ function createTestAppWithoutAuth(mockSearchQueryFn: MockSearchQueryFn) {
   return app;
 }
 
-describe("escapeLikeWildcards", () => {
-  it("通常の文字列はそのまま返すこと", () => {
+describe("buildFtsMatchExpression", () => {
+  it("通常の単語をFTS5 MATCH式に変換できること", () => {
     // Arrange
-    const input = "React hooks";
+    const query = "React";
 
     // Act
-    const result = escapeLikeWildcards(input);
+    const result = buildFtsMatchExpression(query);
 
     // Assert
-    expect(result).toBe("React hooks");
+    expect(result).toBe('"React"*');
   });
 
-  it("%を含む場合エスケープされること", () => {
+  it("複数語をANDで連結したFTS5 MATCH式に変換できること", () => {
     // Arrange
-    const input = "100%完了";
+    const query = "React hooks";
 
     // Act
-    const result = escapeLikeWildcards(input);
+    const result = buildFtsMatchExpression(query);
 
     // Assert
-    expect(result).toBe("100\\%完了");
+    expect(result).toBe('"React"* AND "hooks"*');
   });
 
-  it("_を含む場合エスケープされること", () => {
+  it("ダブルクォートを含む場合二重クォートでエスケープされること", () => {
     // Arrange
-    const input = "foo_bar";
+    const query = 'foo"bar';
 
     // Act
-    const result = escapeLikeWildcards(input);
+    const result = buildFtsMatchExpression(query);
 
     // Assert
-    expect(result).toBe("foo\\_bar");
+    expect(result).toBe('"foo""bar"*');
   });
 
-  it("バックスラッシュを含む場合エスケープされること", () => {
+  it("FTS5記号（ハイフン）を含む場合ダブルクォートで無効化されること", () => {
     // Arrange
-    const input = "C:\\path";
+    const query = "foo-bar";
 
     // Act
-    const result = escapeLikeWildcards(input);
+    const result = buildFtsMatchExpression(query);
 
     // Assert
-    expect(result).toBe("C:\\\\path");
+    expect(result).toBe('"foo-bar"*');
   });
 
-  it("%と_が混在する場合すべてエスケープされること", () => {
+  it("FTS5記号（コロン）を含む場合ダブルクォートで無効化されること", () => {
     // Arrange
-    const input = "50%_off";
+    const query = "foo:bar";
 
     // Act
-    const result = escapeLikeWildcards(input);
+    const result = buildFtsMatchExpression(query);
 
     // Assert
-    expect(result).toBe("50\\%\\_off");
+    expect(result).toBe('"foo:bar"*');
   });
 
-  it("空文字列は空文字列を返すこと", () => {
+  it("FTS5記号（アスタリスク）を含む場合ダブルクォートで無効化されること", () => {
     // Arrange
-    const input = "";
+    const query = "foo*bar";
 
     // Act
-    const result = escapeLikeWildcards(input);
+    const result = buildFtsMatchExpression(query);
 
     // Assert
-    expect(result).toBe("");
+    expect(result).toBe('"foo*bar"*');
+  });
+
+  it("連続空白はトークンとして無視されること", () => {
+    // Arrange
+    const query = "React   hooks";
+
+    // Act
+    const result = buildFtsMatchExpression(query);
+
+    // Assert
+    expect(result).toBe('"React"* AND "hooks"*');
+  });
+
+  it("前後の空白はトリムされること", () => {
+    // Arrange
+    const query = "  TypeScript  ";
+
+    // Act
+    const result = buildFtsMatchExpression(query);
+
+    // Assert
+    expect(result).toBe('"TypeScript"*');
+  });
+
+  it("空文字列の場合nullを返すこと", () => {
+    // Arrange
+    const query = "";
+
+    // Act
+    const result = buildFtsMatchExpression(query);
+
+    // Assert
+    expect(result).toBeNull();
+  });
+
+  it("全スペースの場合nullを返すこと", () => {
+    // Arrange
+    const query = "   ";
+
+    // Act
+    const result = buildFtsMatchExpression(query);
+
+    // Assert
+    expect(result).toBeNull();
   });
 });
 

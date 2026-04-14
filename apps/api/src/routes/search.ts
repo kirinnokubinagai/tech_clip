@@ -10,13 +10,29 @@ import { HTTP_UNAUTHORIZED, HTTP_UNPROCESSABLE_ENTITY } from "../lib/http-status
 import { omitContent } from "../lib/response-utils";
 
 /**
- * LIKE検索のワイルドカード文字をエスケープする
+ * 検索クエリをFTS5のMATCH式に変換する
  *
- * @param input - エスケープ対象の文字列
- * @returns エスケープ済み文字列
+ * 各トークンをダブルクォートで囲み前方一致（*）を付加し、ANDで連結する。
+ * ダブルクォートはダブルクォート2連でエスケープする。
+ * トークンが存在しない場合はnullを返す（呼び出し元で0件として処理する）。
+ *
+ * @param query - 検索キーワード（スペース区切り複数語可）
+ * @returns FTS5 MATCH 式文字列。トークンが空の場合はnull
+ * @note FTS5 の unicode61 tokenizer はスペース・句読点を区切りとするため、
+ *       スペースなしの日本語テキスト（例: 「Reactフレームワーク」）は
+ *       単一トークンとして扱われ、部分一致検索が効かない場合がある。
  */
-export function escapeLikeWildcards(input: string): string {
-  return input.replace(/[%_\\]/g, (char) => `\\${char}`);
+export function buildFtsMatchExpression(query: string): string | null {
+  const tokens = query
+    .trim()
+    .split(/\s+/)
+    .filter((t) => t.length > 0);
+
+  if (tokens.length === 0) {
+    return null;
+  }
+
+  return tokens.map((token) => `"${token.replace(/"/g, '""')}"*`).join(" AND ");
 }
 
 /** デフォルトのページサイズ */
@@ -50,7 +66,7 @@ type SearchRouteOptions = {
 /**
  * 全文検索ルートを生成する
  *
- * GET /search: title/content/excerptをLIKE検索（認証必須、カーソルベースページネーション）
+ * GET /search: title/content/excerptをFTS5 MATCHで全文検索（認証必須、カーソルベースページネーション）
  *
  * @param options - 検索クエリ関数
  * @returns Hono ルーターインスタンス
