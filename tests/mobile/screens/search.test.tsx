@@ -177,6 +177,31 @@ describe("SearchScreen", () => {
     });
   });
 
+  describe("検索結果なし状態（i18n）", () => {
+    it("クエリに一致する記事がない場合にnoMatchテキストがクエリ補間されて表示されること", async () => {
+      // Arrange
+      (useSearchArticles as jest.Mock).mockReturnValue({
+        ...DEFAULT_SEARCH_MOCK,
+        isError: false,
+        data: { pages: [{ items: [] }] },
+      });
+
+      await render(<SearchScreen />);
+      const input = screen.getByPlaceholderText("記事を検索...");
+
+      // Act
+      await fireEvent.changeText(input, "react");
+
+      // Assert
+      await waitFor(
+        () => {
+          expect(screen.getByText("「react」に一致する記事がありません")).toBeDefined();
+        },
+        { timeout: 1500 },
+      );
+    });
+  });
+
   describe("英語ロケール（i18n）", () => {
     beforeEach(() => {
       setMockLocale("en");
