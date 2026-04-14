@@ -81,6 +81,7 @@ export async function handleAuthCatchAll(
       db,
       appUrl: env.APP_URL ?? DEFAULT_APP_URL,
       emailEnv: { RESEND_API_KEY: env.RESEND_API_KEY, FROM_EMAIL: env.FROM_EMAIL },
+      auth,
     });
     const subApp = new Hono();
     subApp.route("/api/auth", passwordResetRoute);

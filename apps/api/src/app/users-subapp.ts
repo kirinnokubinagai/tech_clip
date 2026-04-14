@@ -137,6 +137,7 @@ export async function handleUsers(
     db,
     r2Bucket: env.AVATARS_BUCKET,
     r2PublicUrl: env.R2_PUBLIC_URL,
+    auth,
   });
 
   const followsRoute = createFollowsRoute({

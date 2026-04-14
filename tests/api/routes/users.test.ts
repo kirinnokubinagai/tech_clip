@@ -1,5 +1,6 @@
 import { createUsersRoute } from "@api/routes/users";
 import { processAvatarImage, uploadAvatarToR2, validateImageFile } from "@api/services/imageUpload";
+import { hashPassword, verifyPassword } from "better-auth/crypto";
 import { Hono } from "hono";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -90,6 +91,16 @@ const mockDb = {
   update: mockUpdate,
 };
 
+/** Better Auth の password.hash/verify をそのまま返すモック auth */
+const mockAuth = {
+  $context: Promise.resolve({
+    password: {
+      hash: hashPassword,
+      verify: verifyPassword,
+    },
+  }),
+};
+
 /**
  * GET テスト用Honoアプリを作成する（認証済み）
  *
@@ -108,7 +119,7 @@ function createGetTestApp() {
     return next();
   });
 
-  const usersRoute = createUsersRoute({ db: mockDb as never });
+  const usersRoute = createUsersRoute({ db: mockDb as never, auth: mockAuth as never });
   app.route("/api/users", usersRoute);
 
   return app;
@@ -122,7 +133,7 @@ function createGetTestApp() {
 function createGetTestAppWithoutAuth() {
   const app = new Hono();
 
-  const usersRoute = createUsersRoute({ db: mockDb as never });
+  const usersRoute = createUsersRoute({ db: mockDb as never, auth: mockAuth as never });
   app.route("/api/users", usersRoute);
 
   return app;
@@ -649,13 +660,13 @@ describe("PATCH /api/users/me", () => {
 /** HTTP 200 OK ステータスコード */
 const HTTP_OK_PASSWORD = 200;
 
-/** モックのアカウントデータ */
+/** モックのアカウントデータ（passwordはダミー値; verifyに通らないことが前提のテストで使用） */
 const MOCK_ACCOUNT = {
   id: "account_01HXYZ",
   userId: "user_01HXYZ",
   accountId: "user_01HXYZ",
   providerId: "credential",
-  password: "pbkdf2:100000:aabbccdd:eeff1122",
+  password: "dummy-hash-does-not-verify",
   accessToken: null,
   refreshToken: null,
   accessTokenExpiresAt: null,
@@ -828,11 +839,12 @@ describe("PATCH /api/users/me/password", () => {
     });
 
     it("現在のパスワードが正しくない場合401が返ること", async () => {
-      // Arrange
+      // Arrange: Better Auth の hash で "CorrectPass123" のハッシュを生成し、
+      //          "WrongPassword123" で照合すると false になることを確認する
+      const correctHash = await hashPassword("CorrectPass123");
       const accountWithHash = {
         ...MOCK_ACCOUNT,
-        password:
-          "pbkdf2:100000:000102030405060708090a0b0c0d0e0f:0000000000000000000000000000000000000000000000000000000000000000",
+        password: correctHash,
       };
       mockSelectFrom.mockReturnValue({ where: mockSelectWhere });
       mockSelectWhere.mockResolvedValue([accountWithHash]);
@@ -854,29 +866,9 @@ describe("PATCH /api/users/me/password", () => {
 
   describe("正常系", () => {
     it("正しい現在のパスワードでパスワードを変更できること", async () => {
-      // Arrange
+      // Arrange: Better Auth の hashPassword で現在パスワードのハッシュを生成する
       const plainPassword = "OldPass123";
-      const encoder = new TextEncoder();
-      const keyMaterial = await crypto.subtle.importKey(
-        "raw",
-        encoder.encode(plainPassword),
-        "PBKDF2",
-        false,
-        ["deriveBits"],
-      );
-      const salt = new Uint8Array([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]);
-      const derivedBits = await crypto.subtle.deriveBits(
-        { name: "PBKDF2", salt, iterations: 100000, hash: "SHA-256" },
-        keyMaterial,
-        256,
-      );
-      const saltHex = Array.from(salt)
-        .map((b) => b.toString(16).padStart(2, "0"))
-        .join("");
-      const hashHex = Array.from(new Uint8Array(derivedBits))
-        .map((b) => b.toString(16).padStart(2, "0"))
-        .join("");
-      const storedHash = `pbkdf2:100000:${saltHex}:${hashHex}`;
+      const storedHash = await hashPassword(plainPassword);
 
       mockSelectFrom.mockReturnValue({ where: mockSelectWhere });
       mockSelectWhere.mockResolvedValue([{ ...MOCK_ACCOUNT, password: storedHash }]);
@@ -933,6 +925,7 @@ function createAvatarTestApp() {
     db: mockDb as never,
     r2Bucket: MOCK_R2_BUCKET,
     r2PublicUrl: "https://cdn.example.com",
+    auth: mockAuth as never,
   });
   app.route("/api/users", usersRoute);
 
@@ -968,6 +961,7 @@ describe("POST /api/users/me/avatar", () => {
         db: mockDb as never,
         r2Bucket: MOCK_R2_BUCKET,
         r2PublicUrl: "https://cdn.example.com",
+        auth: mockAuth as never,
       });
       app.route("/api/users", usersRoute);
       const file = new File([new Uint8Array([0xff, 0xd8, 0xff])], "avatar.jpg", {
