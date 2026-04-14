@@ -223,7 +223,12 @@
       "noFollowers": "暂无关注者",
       "noFollowing": "未关注任何用户",
       "userProfileLabel": "查看{{name}}的个人资料",
-      "loading": "加载中..."
+      "loading": "加载中...",
+      "retry": "重试",
+      "errorFollowers": "获取关注者失败",
+      "errorFollowing": "获取关注中失败",
+      "unknownUser": "未设置名称",
+      "userNotSpecified": "未指定用户"
     }
   },
   "settings": {
