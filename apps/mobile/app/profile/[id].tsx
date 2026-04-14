@@ -12,11 +12,14 @@ import { useFollowToggle, useUserProfile } from "@/hooks/use-user-profile";
 /** 戻るアイコンのサイズ（px） */
 const BACK_ICON_SIZE = 24;
 
+/** スクロール下部のパディング（px） */
+const SCROLL_BOTTOM_PADDING = 40;
+
 /**
  * 他ユーザープロフィール画面
  *
- * 他ユーザーのプロフィール情報を表示し、フォローボタンを提供する。
- * ProfileHeaderコンポーネントを再利用。
+ * 他ユーザーのプロフィール情報を公開プロフィール API から取得して表示する。
+ * ProfileHeader コンポーネントを再利用。
  */
 export default function UserProfileScreen() {
   const { t } = useTranslation();
@@ -24,7 +27,7 @@ export default function UserProfileScreen() {
   const router = useRouter();
   const colors = useColors();
 
-  const { data: user, isLoading, isError, refetch } = useUserProfile(id);
+  const { data: profile, isLoading, isError, refetch } = useUserProfile(id);
 
   const { mutateAsync: followToggle } = useFollowToggle();
 
@@ -55,7 +58,7 @@ export default function UserProfileScreen() {
     );
   }
 
-  if (isError || !user) {
+  if (isError || !profile) {
     return (
       <View
         testID="user-profile-error"
@@ -84,6 +87,14 @@ export default function UserProfileScreen() {
     );
   }
 
+  const profileHeaderUser = {
+    name: profile.name ?? profile.username ?? "",
+    bio: profile.bio,
+    avatarUrl: profile.avatarUrl,
+    followersCount: profile.followersCount,
+    followingCount: profile.followingCount,
+  };
+
   return (
     <View testID="user-profile-screen" className="flex-1 bg-background">
       <View className="flex-row items-center justify-between px-4 pt-14 pb-3 bg-surface border-b border-border">
@@ -96,15 +107,18 @@ export default function UserProfileScreen() {
         >
           <ArrowLeft size={BACK_ICON_SIZE} color={colors.text} />
         </Pressable>
-        <Text className="text-lg font-bold text-text">{user.name}</Text>
+        <Text className="text-lg font-bold text-text">{profileHeaderUser.name}</Text>
         <View style={{ width: BACK_ICON_SIZE }} />
       </View>
 
-      <ScrollView className="flex-1" contentContainerStyle={{ paddingBottom: 40 }}>
-        <ProfileHeader user={user} />
+      <ScrollView
+        className="flex-1"
+        contentContainerStyle={{ paddingBottom: SCROLL_BOTTOM_PADDING }}
+      >
+        <ProfileHeader user={profileHeaderUser} />
 
         <View testID="user-profile-follow-section" className="px-4 py-4">
-          <FollowButton userId={id} isFollowing={user.isFollowing} onToggle={handleFollowToggle} />
+          <FollowButton userId={id} isFollowing={profile.isFollowing ?? false} onToggle={handleFollowToggle} />
         </View>
 
         <View className="px-4">

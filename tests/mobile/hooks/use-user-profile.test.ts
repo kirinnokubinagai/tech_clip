@@ -1,12 +1,19 @@
+// External packages
+
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { act, renderHook, waitFor } from "@testing-library/react-native";
+import React from "react";
+
+// Internal modules
+
 import { followKeys } from "@mobile/hooks/use-follow";
 import {
   USER_PROFILE_QUERY_KEY,
   useFollowToggle,
   useUserProfile,
 } from "@mobile/hooks/use-user-profile";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { act, renderHook, waitFor } from "@testing-library/react-native";
-import React from "react";
+
+// Path aliases
 
 import { apiFetch } from "@/lib/api";
 

@@ -1,6 +1,8 @@
+import { INTERNAL_ERROR_CODE } from "@api/lib/error-codes";
 import {
   HTTP_CONFLICT,
   HTTP_CREATED,
+  HTTP_INTERNAL_SERVER_ERROR,
   HTTP_NO_CONTENT,
   HTTP_NOT_FOUND,
   HTTP_OK,
@@ -14,7 +16,7 @@ import type {
   UnfollowFn,
   UserExistsFn,
 } from "@api/routes/follows";
-import { createFollowsRoute } from "@api/routes/follows";
+import { buildCursor, createFollowsRoute, parseCursor } from "@api/routes/follows";
 import { Hono } from "hono";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -58,35 +60,6 @@ type FollowListResponseBody = {
   };
 };
 
-/** モックのDB操作関数 */
-const mockInsertValues = vi.fn();
-const mockInsert = vi.fn().mockReturnValue({
-  values: mockInsertValues,
-});
-
-const mockDeleteWhere = vi.fn();
-const mockDeleteFrom = vi.fn().mockReturnValue({
-  where: mockDeleteWhere,
-});
-const mockDelete = vi.fn().mockReturnValue({
-  from: mockDeleteFrom,
-});
-
-const mockSelectWhere = vi.fn();
-const mockSelectFrom = vi.fn().mockReturnValue({
-  where: mockSelectWhere,
-});
-const mockSelect = vi.fn().mockReturnValue({
-  from: mockSelectFrom,
-});
-
-/** モックのDBインスタンス */
-const mockDb = {
-  insert: mockInsert,
-  select: mockSelect,
-  delete: mockDelete,
-};
-
 /** フォロー関連のモック関数 */
 let mockFollowFn: ReturnType<typeof vi.fn<FollowFn>>;
 let mockUnfollowFn: ReturnType<typeof vi.fn<UnfollowFn>>;
@@ -107,6 +80,19 @@ function createTestApp() {
   };
   const app = new Hono<{ Variables: Variables }>();
 
+  app.onError((_err, c) => {
+    return c.json(
+      {
+        success: false,
+        error: {
+          code: INTERNAL_ERROR_CODE,
+          message: "サーバーエラーが発生しました",
+        },
+      },
+      HTTP_INTERNAL_SERVER_ERROR,
+    );
+  });
+
   app.use("*", async (c, next) => {
     c.set("user", MOCK_USER);
     c.set("session", { id: "session_01" });
@@ -114,7 +100,6 @@ function createTestApp() {
   });
 
   const followsRoute = createFollowsRoute({
-    db: mockDb as never,
     followFn: mockFollowFn,
     unfollowFn: mockUnfollowFn,
     getFollowersFn: mockGetFollowersFn,
@@ -136,7 +121,6 @@ function createTestAppWithoutAuth() {
   const app = new Hono();
 
   const followsRoute = createFollowsRoute({
-    db: mockDb as never,
     followFn: mockFollowFn,
     unfollowFn: mockUnfollowFn,
     getFollowersFn: mockGetFollowersFn,
@@ -272,7 +256,50 @@ describe("POST /api/users/:id/follow", () => {
       expect(res.status).toBe(HTTP_CONFLICT);
       const body = (await res.json()) as ErrorResponseBody;
       expect(body.success).toBe(false);
-      expect(body.error.code).toBe("DUPLICATE");
+      expect(body.error.code).toBe("CONFLICT");
+      expect(body.error.message).toBe("すでにフォローしています");
+    });
+
+    it("フォロー済みの場合にレースコンディションで409を返すこと", async () => {
+      // Arrange
+      mockUserExistsFn.mockResolvedValue(true);
+      mockIsFollowingFn.mockResolvedValue(false);
+      const dbError = new Error("D1_ERROR");
+      dbError.cause = new Error(
+        "UNIQUE constraint failed: follows.follower_id, follows.following_id",
+      );
+      mockFollowFn.mockRejectedValue(dbError);
+      const app = createTestApp();
+
+      // Act
+      const res = await app.request(`/api/users/${MOCK_TARGET_USER.id}/follow`, {
+        method: "POST",
+      });
+
+      // Assert
+      expect(res.status).toBe(HTTP_CONFLICT);
+      const body = (await res.json()) as ErrorResponseBody;
+      expect(body.success).toBe(false);
+      expect(body.error.code).toBe("CONFLICT");
+      expect(body.error.message).toBe("すでにフォローしています");
+    });
+
+    it("followFnがUNIQUE以外のエラーをスローした場合に500を返すこと", async () => {
+      // Arrange
+      mockUserExistsFn.mockResolvedValue(true);
+      mockIsFollowingFn.mockResolvedValue(false);
+      mockFollowFn.mockRejectedValue(new Error("DB connection failed"));
+      const app = createTestApp();
+
+      // Act
+      const res = await app.request(`/api/users/${MOCK_TARGET_USER.id}/follow`, {
+        method: "POST",
+      });
+
+      // Assert
+      expect(res.status).toBe(HTTP_INTERNAL_SERVER_ERROR);
+      const body = (await res.json()) as ErrorResponseBody;
+      expect(body.error.code).toBe(INTERNAL_ERROR_CODE);
     });
   });
 
@@ -456,8 +483,20 @@ describe("GET /api/users/:id/followers", () => {
       // Arrange
       mockUserExistsFn.mockResolvedValue(true);
       mockGetFollowersFn.mockResolvedValue([
-        { id: "user_follower_01", name: "フォロワー1", image: null },
-        { id: "user_follower_02", name: "フォロワー2", image: null },
+        {
+          id: "user_follower_01",
+          name: "フォロワー1",
+          bio: null,
+          avatarUrl: null,
+          createdAt: "2024-01-01T00:00:00Z",
+        },
+        {
+          id: "user_follower_02",
+          name: "フォロワー2",
+          bio: null,
+          avatarUrl: null,
+          createdAt: "2024-01-02T00:00:00Z",
+        },
       ]);
       const app = createTestApp();
 
@@ -476,15 +515,18 @@ describe("GET /api/users/:id/followers", () => {
       mockUserExistsFn.mockResolvedValue(true);
       mockGetFollowersFn.mockResolvedValue([]);
       const app = createTestApp();
+      const validCursor = "2024-01-01T00:00:00Z|user_abc";
 
       // Act
-      await app.request(`/api/users/${MOCK_TARGET_USER.id}/followers?limit=10&cursor=abc`);
+      await app.request(
+        `/api/users/${MOCK_TARGET_USER.id}/followers?limit=10&cursor=${encodeURIComponent(validCursor)}`,
+      );
 
       // Assert
       expect(mockGetFollowersFn).toHaveBeenCalledWith({
         userId: MOCK_TARGET_USER.id,
         limit: 11,
-        cursor: "abc",
+        cursor: validCursor,
       });
     });
 
@@ -494,7 +536,9 @@ describe("GET /api/users/:id/followers", () => {
       const followers = Array.from({ length: 21 }, (_, i) => ({
         id: `user_follower_${String(i + 1).padStart(2, "0")}`,
         name: `フォロワー${i + 1}`,
-        image: null,
+        bio: null,
+        avatarUrl: null,
+        createdAt: `2024-01-${String(i + 1).padStart(2, "0")}T00:00:00Z`,
       }));
       mockGetFollowersFn.mockResolvedValue(followers);
       const app = createTestApp();
@@ -507,14 +551,20 @@ describe("GET /api/users/:id/followers", () => {
       const body = (await res.json()) as FollowListResponseBody;
       expect(body.data).toHaveLength(20);
       expect(body.meta.hasNext).toBe(true);
-      expect(body.meta.nextCursor).not.toBeNull();
+      expect(body.meta.nextCursor).toBe(buildCursor(followers[19].createdAt, followers[19].id));
     });
 
     it("次のページがない場合hasNextがfalseであること", async () => {
       // Arrange
       mockUserExistsFn.mockResolvedValue(true);
       mockGetFollowersFn.mockResolvedValue([
-        { id: "user_follower_01", name: "フォロワー1", image: null },
+        {
+          id: "user_follower_01",
+          name: "フォロワー1",
+          bio: null,
+          avatarUrl: null,
+          createdAt: "2024-01-01T00:00:00Z",
+        },
       ]);
       const app = createTestApp();
 
@@ -606,6 +656,24 @@ describe("GET /api/users/:id/followers", () => {
       expect(body.success).toBe(false);
       expect(body.error.code).toBe("VALIDATION_FAILED");
     });
+
+    it("不正な形式のcursorの場合422が返ること", async () => {
+      // Arrange
+      mockUserExistsFn.mockResolvedValue(true);
+      const app = createTestApp();
+
+      // Act
+      const res = await app.request(
+        `/api/users/${MOCK_TARGET_USER.id}/followers?cursor=invalidcursor`,
+      );
+
+      // Assert
+      expect(res.status).toBe(HTTP_UNPROCESSABLE_ENTITY);
+      const body = (await res.json()) as ErrorResponseBody;
+      expect(body.success).toBe(false);
+      expect(body.error.code).toBe("VALIDATION_FAILED");
+      expect(body.error.message).toBe("cursorの形式が正しくありません");
+    });
   });
 
   describe("レスポンス形式", () => {
@@ -659,8 +727,20 @@ describe("GET /api/users/:id/following", () => {
       // Arrange
       mockUserExistsFn.mockResolvedValue(true);
       mockGetFollowingFn.mockResolvedValue([
-        { id: "user_following_01", name: "フォロー中1", image: null },
-        { id: "user_following_02", name: "フォロー中2", image: null },
+        {
+          id: "user_following_01",
+          name: "フォロー中1",
+          bio: null,
+          avatarUrl: null,
+          createdAt: "2024-01-01T00:00:00Z",
+        },
+        {
+          id: "user_following_02",
+          name: "フォロー中2",
+          bio: null,
+          avatarUrl: null,
+          createdAt: "2024-01-02T00:00:00Z",
+        },
       ]);
       const app = createTestApp();
 
@@ -679,15 +759,18 @@ describe("GET /api/users/:id/following", () => {
       mockUserExistsFn.mockResolvedValue(true);
       mockGetFollowingFn.mockResolvedValue([]);
       const app = createTestApp();
+      const validCursor = "2024-01-01T00:00:00Z|user_abc";
 
       // Act
-      await app.request(`/api/users/${MOCK_TARGET_USER.id}/following?limit=10&cursor=abc`);
+      await app.request(
+        `/api/users/${MOCK_TARGET_USER.id}/following?limit=10&cursor=${encodeURIComponent(validCursor)}`,
+      );
 
       // Assert
       expect(mockGetFollowingFn).toHaveBeenCalledWith({
         userId: MOCK_TARGET_USER.id,
         limit: 11,
-        cursor: "abc",
+        cursor: validCursor,
       });
     });
 
@@ -697,7 +780,9 @@ describe("GET /api/users/:id/following", () => {
       const following = Array.from({ length: 21 }, (_, i) => ({
         id: `user_following_${String(i + 1).padStart(2, "0")}`,
         name: `フォロー中${i + 1}`,
-        image: null,
+        bio: null,
+        avatarUrl: null,
+        createdAt: `2024-01-${String(i + 1).padStart(2, "0")}T00:00:00Z`,
       }));
       mockGetFollowingFn.mockResolvedValue(following);
       const app = createTestApp();
@@ -710,7 +795,7 @@ describe("GET /api/users/:id/following", () => {
       const body = (await res.json()) as FollowListResponseBody;
       expect(body.data).toHaveLength(20);
       expect(body.meta.hasNext).toBe(true);
-      expect(body.meta.nextCursor).not.toBeNull();
+      expect(body.meta.nextCursor).toBe(buildCursor(following[19].createdAt, following[19].id));
     });
 
     it("フォロー中が0人の場合空配列を返すこと", async () => {
@@ -777,6 +862,24 @@ describe("GET /api/users/:id/following", () => {
       expect(body.success).toBe(false);
       expect(body.error.code).toBe("VALIDATION_FAILED");
     });
+
+    it("不正な形式のcursorの場合422が返ること", async () => {
+      // Arrange
+      mockUserExistsFn.mockResolvedValue(true);
+      const app = createTestApp();
+
+      // Act
+      const res = await app.request(
+        `/api/users/${MOCK_TARGET_USER.id}/following?cursor=invalidcursor`,
+      );
+
+      // Assert
+      expect(res.status).toBe(HTTP_UNPROCESSABLE_ENTITY);
+      const body = (await res.json()) as ErrorResponseBody;
+      expect(body.success).toBe(false);
+      expect(body.error.code).toBe("VALIDATION_FAILED");
+      expect(body.error.message).toBe("cursorの形式が正しくありません");
+    });
   });
 
   describe("レスポンス形式", () => {
@@ -798,5 +901,221 @@ describe("GET /api/users/:id/following", () => {
       expect(body.meta).toHaveProperty("nextCursor");
       expect(body.meta).toHaveProperty("hasNext");
     });
+  });
+});
+
+describe("parseCursor", () => {
+  it("有効なカーソル文字列をパースできること", () => {
+    // Arrange
+    const cursor = "2024-01-01T00:00:00Z|user-123";
+
+    // Act
+    const result = parseCursor(cursor);
+
+    // Assert
+    expect(result).toEqual({ cursorTime: "2024-01-01T00:00:00Z", cursorId: "user-123" });
+  });
+
+  it("セパレータがない文字列の場合nullを返すこと", () => {
+    // Arrange
+    const cursor = "invalid";
+
+    // Act
+    const result = parseCursor(cursor);
+
+    // Assert
+    expect(result).toBeNull();
+  });
+
+  it("cursorTimeが空の場合nullを返すこと", () => {
+    // Arrange
+    const cursor = "|user-123";
+
+    // Act
+    const result = parseCursor(cursor);
+
+    // Assert
+    expect(result).toBeNull();
+  });
+
+  it("cursorIdが空の場合nullを返すこと", () => {
+    // Arrange
+    const cursor = "2024-01-01T00:00:00Z|";
+
+    // Act
+    const result = parseCursor(cursor);
+
+    // Assert
+    expect(result).toBeNull();
+  });
+
+  it("空文字の場合nullを返すこと", () => {
+    // Arrange
+    const cursor = "";
+
+    // Act
+    const result = parseCursor(cursor);
+
+    // Assert
+    expect(result).toBeNull();
+  });
+});
+
+describe("buildCursor", () => {
+  it("createdAtとidからカーソル文字列を生成できること", () => {
+    // Arrange
+    const createdAt = "2024-01-01T00:00:00Z";
+    const id = "user-123";
+
+    // Act
+    const result = buildCursor(createdAt, id);
+
+    // Assert
+    expect(result).toBe("2024-01-01T00:00:00Z|user-123");
+  });
+
+  it("createdAtが空文字の場合でもセパレータとidを含む文字列を返すこと", () => {
+    // Arrange
+    const createdAt = "";
+    const id = "user-123";
+
+    // Act
+    const result = buildCursor(createdAt, id);
+
+    // Assert
+    expect(result).toBe("|user-123");
+  });
+
+  it("idが空文字の場合でもcreatedAtとセパレータを含む文字列を返すこと", () => {
+    // Arrange
+    const createdAt = "2024-01-01T00:00:00Z";
+    const id = "";
+
+    // Act
+    const result = buildCursor(createdAt, id);
+
+    // Assert
+    expect(result).toBe("2024-01-01T00:00:00Z|");
+  });
+});
+
+describe("GET /api/users/:id/followers - カーソルページネーション境界値", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockFollowFn = vi.fn<FollowFn>();
+    mockUnfollowFn = vi.fn<UnfollowFn>();
+    mockGetFollowersFn = vi.fn<GetFollowListFn>();
+    mockGetFollowingFn = vi.fn<GetFollowListFn>();
+    mockIsFollowingFn = vi.fn<IsFollowingFn>();
+    mockUserExistsFn = vi.fn<UserExistsFn>();
+  });
+
+  it("同一createdAtを持つ複数ユーザーが存在する場合でも正しいカーソルを返すこと", async () => {
+    // Arrange
+    const SAME_TIMESTAMP = "2024-01-15T00:00:00Z";
+    const followers = Array.from({ length: 21 }, (_, i) => ({
+      id: `user_${String(i + 1).padStart(2, "0")}`,
+      name: `ユーザー${i + 1}`,
+      bio: null,
+      avatarUrl: null,
+      createdAt: SAME_TIMESTAMP,
+    }));
+    mockUserExistsFn.mockResolvedValue(true);
+    mockGetFollowersFn.mockResolvedValue(followers);
+    const app = createTestApp();
+
+    // Act
+    const res = await app.request(`/api/users/${MOCK_TARGET_USER.id}/followers`);
+
+    // Assert
+    expect(res.status).toBe(HTTP_OK);
+    const body = (await res.json()) as FollowListResponseBody;
+    expect(body.data).toHaveLength(20);
+    expect(body.meta.hasNext).toBe(true);
+    expect(body.meta.nextCursor).toBe(buildCursor(SAME_TIMESTAMP, followers[19].id));
+  });
+
+  it("有効なカーソルを渡した場合に200を返すこと", async () => {
+    // Arrange
+    mockUserExistsFn.mockResolvedValue(true);
+    mockGetFollowersFn.mockResolvedValue([
+      {
+        id: "user_follower_01",
+        name: "フォロワー1",
+        bio: null,
+        avatarUrl: null,
+        createdAt: "2024-01-01T00:00:00Z",
+      },
+    ]);
+    const app = createTestApp();
+    const validCursor = buildCursor("2024-01-15T00:00:00Z", "user_cursor_ref");
+
+    // Act
+    const res = await app.request(
+      `/api/users/${MOCK_TARGET_USER.id}/followers?cursor=${encodeURIComponent(validCursor)}`,
+    );
+
+    // Assert
+    expect(res.status).toBe(HTTP_OK);
+    const body = (await res.json()) as FollowListResponseBody;
+    expect(body.success).toBe(true);
+    expect(mockGetFollowersFn).toHaveBeenCalledWith(
+      expect.objectContaining({ cursor: validCursor }),
+    );
+  });
+});
+
+describe("GET /api/users/:id/followers - 非公開ユーザーのマスク処理", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockFollowFn = vi.fn<FollowFn>();
+    mockUnfollowFn = vi.fn<UnfollowFn>();
+    mockGetFollowersFn = vi.fn<GetFollowListFn>();
+    mockGetFollowingFn = vi.fn<GetFollowListFn>();
+    mockIsFollowingFn = vi.fn<IsFollowingFn>();
+    mockUserExistsFn = vi.fn<UserExistsFn>();
+  });
+
+  it("非公開ユーザーがフォロワーリストに含まれる場合、name/bio/avatarUrlがnullで返ること", async () => {
+    // Arrange
+    mockUserExistsFn.mockResolvedValue(true);
+    mockGetFollowersFn.mockResolvedValue([
+      {
+        id: "user_private_01",
+        name: null,
+        bio: null,
+        avatarUrl: null,
+        createdAt: "2024-01-01T00:00:00Z",
+      },
+      {
+        id: "user_public_01",
+        name: "公開ユーザー",
+        bio: "プロフィール",
+        avatarUrl: "https://example.com/avatar.jpg",
+        createdAt: "2024-01-02T00:00:00Z",
+      },
+    ]);
+    const app = createTestApp();
+
+    // Act
+    const res = await app.request(`/api/users/${MOCK_TARGET_USER.id}/followers`);
+
+    // Assert
+    expect(res.status).toBe(HTTP_OK);
+    const body = (await res.json()) as FollowListResponseBody;
+    expect(body.success).toBe(true);
+    expect(body.data).toHaveLength(2);
+
+    const privateUser = body.data[0] as Record<string, unknown>;
+    expect(privateUser.id).toBe("user_private_01");
+    expect(privateUser.name).toBeNull();
+    expect(privateUser.bio).toBeNull();
+    expect(privateUser.avatarUrl).toBeNull();
+
+    const publicUser = body.data[1] as Record<string, unknown>;
+    expect(publicUser.id).toBe("user_public_01");
+    expect(publicUser.name).toBe("公開ユーザー");
+    expect(publicUser.bio).toBe("プロフィール");
+    expect(publicUser.avatarUrl).toBe("https://example.com/avatar.jpg");
   });
 });

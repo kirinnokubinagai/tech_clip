@@ -1,5 +1,10 @@
-import UserProfileScreen from "@mobile-app/profile/[id]";
+// External packages
+
 import { fireEvent, render, waitFor } from "@testing-library/react-native";
+
+// Internal modules
+
+import UserProfileScreen from "@mobile-app/profile/[id]";
 
 /** モックユーザーデータ */
 const MOCK_USER_PROFILE = {

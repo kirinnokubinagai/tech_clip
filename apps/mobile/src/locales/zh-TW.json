@@ -224,7 +224,11 @@
       "noFollowing": "未追蹤任何用戶",
       "userProfileLabel": "查看{{name}}的個人資料",
       "loading": "載入中...",
-      "fetchError": "取得使用者資訊失敗"
+      "retry": "重試",
+      "errorFollowers": "獲取追蹤者失敗",
+      "errorFollowing": "獲取追蹤中失敗",
+      "unknownUser": "未設置名稱",
+      "userNotSpecified": "未指定用戶"
     }
   },
   "settings": {

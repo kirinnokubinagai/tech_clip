@@ -1,7 +1,14 @@
-import { followKeys, useFollowers, useFollowing } from "@mobile/hooks/use-follow";
+// External packages
+
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { renderHook, waitFor } from "@testing-library/react-native";
 import React from "react";
+
+// Internal modules
+
+import { followKeys, useFollowers, useFollowing } from "@mobile/hooks/use-follow";
+
+// Path aliases
 
 import { apiFetch } from "@/lib/api";
 

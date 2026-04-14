@@ -98,3 +98,6 @@ apps/mobile/certs/*.pem
 
 # OMC 分離用の隔離 HOME（Nix シェルが自動生成）
 .claude-isolated/
+
+# Brainstorming / design specs (not for PRs)
+docs/superpowers/

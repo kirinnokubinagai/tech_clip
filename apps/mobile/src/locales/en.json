@@ -224,7 +224,11 @@
       "noFollowing": "Not following anyone yet",
       "userProfileLabel": "View {{name}}'s profile",
       "loading": "Loading...",
-      "fetchError": "Failed to fetch user info"
+      "retry": "Retry",
+      "errorFollowers": "Failed to load followers",
+      "errorFollowing": "Failed to load following",
+      "unknownUser": "Unknown user",
+      "userNotSpecified": "User not specified"
     }
   },
   "settings": {

@@ -224,7 +224,11 @@
       "noFollowing": "フォロー中のユーザーはいません",
       "userProfileLabel": "{{name}}のプロフィールを表示",
       "loading": "読み込み中...",
-      "fetchError": "ユーザー情報の取得に失敗しました"
+      "retry": "再試行",
+      "errorFollowers": "フォロワーの取得に失敗しました",
+      "errorFollowing": "フォロー中の取得に失敗しました",
+      "unknownUser": "名前未設定",
+      "userNotSpecified": "ユーザーが指定されていません"
     }
   },
   "settings": {
