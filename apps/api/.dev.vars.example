@@ -95,3 +95,13 @@ REVENUECAT_WEBHOOK_SECRET=your-revenuecat-webhook-secret
 
 RESEND_API_KEY=your-resend-api-key
 FROM_EMAIL=no-reply@example.com
+
+# -----------------------------------------------------------------------------
+# R2 (アバター画像ストレージ)
+# -----------------------------------------------------------------------------
+# アバター画像の公開 URL（末尾スラッシュなし）。
+# wrangler.toml の [vars] / [env.production.vars] で環境ごとに既定値を設定済み。
+# ローカルで別の URL を使いたい場合のみ .dev.vars で上書きする。
+#   - development 既定値: http://localhost:8787/avatars
+#   - production  既定値: https://avatars.techclip.io
+# R2_PUBLIC_URL=http://localhost:8787/avatars
