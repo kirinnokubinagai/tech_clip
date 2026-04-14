@@ -87,16 +87,32 @@ while (( elapsed < TIMEOUT_SECONDS )); do
   # 複数ラウンドにわたるレビューで古いコメントが残り続けることを防ぐため、
   # bot コメントの「最新1件のみ」を見て判定する。
   # createdAt で昇順ソートし最後の1件（最新）を取得する。
-  latest_bot_comment_body=$(printf '%s' "${pr_data}" | jq -r '
-    [.comments[]
-     | select((.author.login // "") | test("^(github-actions\\[bot\\]|claude\\[bot\\]|claude-code\\[bot\\]|app/claude|claude)$"; "i"))]
-    | sort_by(.createdAt)
-    | last
-    | .body // ""
-  ' 2>/dev/null || true)
+  #
+  # NOTE: jq は JSON 入力を期待するため、pr_data（gh の JSON 出力）を 1 度だけ渡し、
+  #       jq パイプライン内で .body | test(...) を完結させる。
+  #       raw テキストを bash 変数に取り出してから再度 jq に渡すのは
+  #       パースエラーの原因となるため禁止。
+  bot_comment_eval=$(printf '%s' "${pr_data}" | jq -c '
+    ([ (.comments // [])[]
+       | select((.author.login // "") | test("^(github-actions\\[bot\\]|claude\\[bot\\]|claude-code\\[bot\\]|app/claude|claude)$"; "i")) ]
+     | sort_by(.createdAt)
+     | last) as $latest
+    | ($latest.body // "") as $body
+    | {
+        has_comment: ($latest != null),
+        body: $body,
+        changes_requested: ($body | test("(?s)🔄.*Request Changes|CHANGES_REQUESTED"; "i")),
+        approved: ($body | test("(?s)全件 ?PASS(?!\\w)|\\bLGTM\\b|Approve 相当|マージ可能(?:です|と判断|。|！|$)|✅.*\\bPASS\\b|指摘[^0-9]?0(?![0-9])"; "i"))
+      }
+  ' 2>/dev/null || echo '{}')
 
-  if [[ -n "${latest_bot_comment_body}" ]]; then
-    if printf '%s' "${latest_bot_comment_body}" | jq -e 'test("(?s)🔄.*Request Changes|CHANGES_REQUESTED"; "i")' >/dev/null 2>&1; then
+  has_comment=$(printf '%s' "${bot_comment_eval}" | jq -r '.has_comment // false')
+  if [[ "${has_comment}" == "true" ]]; then
+    changes_requested=$(printf '%s' "${bot_comment_eval}" | jq -r '.changes_requested // false')
+    approved=$(printf '%s' "${bot_comment_eval}" | jq -r '.approved // false')
+    latest_bot_comment_body=$(printf '%s' "${bot_comment_eval}" | jq -r '.body // ""')
+
+    if [[ "${changes_requested}" == "true" ]]; then
       echo "CHANGES_REQUESTED"
       echo ""
       echo "--- Review Content (from comments) ---"
@@ -104,15 +120,7 @@ while (( elapsed < TIMEOUT_SECONDS )); do
       exit 1
     fi
 
-    # LGTM / Approve 系コメントも検出する
-    # 誤検知防止のため特定のフレーズのみ対象とする:
-    #   "全件 PASS" / "全件PASS": レビュアーエージェントの PASS 宣言
-    #   "✅.*\bPASS\b": CI/レビュー結果の ✅ + PASS（単語境界で "passed" 等の誤検知防止）
-    #   "\bLGTM\b": 標準的な承認表現（単語境界で LGTMFAIL 等の誤検知防止）
-    #   "Approve 相当": Claude bot の承認コメントフレーズ
-    #   "マージ可能(?:です|と判断|。|！|$)": Claude bot の承認判定フレーズ（「マージ可能性がある」等の誤検知防止）
-    #   "指摘[^0-9]?0(?![0-9])": 「指摘0件」のような確定0件表現（10件等との誤検知防止）
-    if printf '%s' "${latest_bot_comment_body}" | jq -e 'test("(?s)全件 ?PASS(?!\\w)|\\bLGTM\\b|Approve 相当|マージ可能(?:です|と判断|。|！|$)|✅.*\\bPASS\\b|指摘[^0-9]?0(?![0-9])"; "i")' >/dev/null 2>&1; then
+    if [[ "${approved}" == "true" ]]; then
       echo "APPROVED"
       exit 0
     fi
