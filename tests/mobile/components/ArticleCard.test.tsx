@@ -188,4 +188,32 @@ describe("ArticleCard", () => {
       expect(getByText("2025/3/15")).toBeDefined();
     });
   });
+
+  describe("アクセシビリティラベル（i18n）", () => {
+    it("お気に入りでない場合のアクセシビリティラベルにi18nキーが使われること（日本語）", async () => {
+      // Arrange
+      const article = { ...BASE_ARTICLE, isFavorite: false };
+
+      // Act
+      const { getByLabelText } = await render(
+        <ArticleCard article={article} onPress={() => {}} onToggleFavorite={() => {}} />,
+      );
+
+      // Assert
+      expect(getByLabelText("お気に入り追加")).toBeDefined();
+    });
+
+    it("お気に入りの場合のアクセシビリティラベルにi18nキーが使われること（日本語）", async () => {
+      // Arrange
+      const article = { ...BASE_ARTICLE, isFavorite: true };
+
+      // Act
+      const { getByLabelText } = await render(
+        <ArticleCard article={article} onPress={() => {}} onToggleFavorite={() => {}} />,
+      );
+
+      // Assert
+      expect(getByLabelText("お気に入り解除")).toBeDefined();
+    });
+  });
 });
