@@ -235,7 +235,8 @@ poll-pr-review.sh → CONFLICT
      → git -C <worktree> merge --abort でマージを中断し元の状態に戻す
      → 手動で解消方針を再検討してから再試行する
 
-  → 両方 PASS → マーカー再作成 → git push → poll-pr-review.sh を再実行
+  → Agent(reviewer, mode="acceptEdits") で再レビュー
+  → 全件 PASS → マーカー再作成 → git push → poll-pr-review.sh を再実行
   → APPROVED になるまで繰り返す
 ```
 
