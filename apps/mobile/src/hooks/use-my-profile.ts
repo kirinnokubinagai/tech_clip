@@ -43,8 +43,11 @@ export function useMyProfile() {
   return useQuery({
     queryKey: [MY_PROFILE_QUERY_KEY],
     queryFn: async (): Promise<MeProfile> => {
-      const data = await apiFetch<MeProfileResponse>("/api/users/me");
-      return data.data;
+      const data = await apiFetch<MeProfileResponse | ApiErrorPayload>("/api/users/me");
+      if (isApiErrorPayload(data)) {
+        throw data;
+      }
+      return (data as MeProfileResponse).data;
     },
   });
 }

@@ -293,6 +293,7 @@ export default function ProfileEditScreen() {
 
       if (isAvatarChanged && avatarUri) {
         latestProfile = await uploadMyAvatar.mutateAsync(avatarUri);
+        initialAvatarUriRef.current = latestProfile?.avatarUrl ?? avatarUri;
       }
 
       const patch = initialDataRef.current ? buildPatch(formData, initialDataRef.current) : null;
