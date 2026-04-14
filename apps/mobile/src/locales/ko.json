@@ -207,13 +207,27 @@
       "saveSuccess": "프로필이 업데이트되었습니다",
       "saveFailed": "프로필 저장에 실패했습니다",
       "permissionError": "이미지 라이브러리 접근 권한이 없습니다",
+      "twitterUsernameLabel": "X (Twitter) 사용자 이름",
+      "twitterUsernamePlaceholder": "your_handle",
+      "githubUsernameLabel": "GitHub 사용자 이름",
+      "githubUsernamePlaceholder": "your_handle",
+      "websiteUrlLabel": "웹사이트",
+      "websiteUrlPlaceholder": "https://example.com",
+      "loadFailed": "프로필을 불러오지 못했습니다",
+      "retryButton": "다시 시도",
+      "usernameDuplicate": "이미 사용 중인 사용자 이름입니다",
       "validation": {
         "nameRequired": "이름을 입력해 주세요",
         "nameTooLong": "이름은 {{max}}자 이내로 입력해 주세요",
         "usernameTooLong": "사용자 이름은 {{max}}자 이내로 입력해 주세요",
         "usernameInvalid": "사용자 이름은 영숫자와 밑줄만 사용할 수 있습니다",
         "bioTooLong": "자기소개는 {{max}}자 이내로 입력해 주세요",
-        "urlTooLong": "URL은 {{max}}자 이내로 입력해 주세요"
+        "websiteUrlTooLong": "URL은 {{max}}자 이내로 입력해 주세요",
+        "websiteUrlInvalid": "올바른 URL을 입력해 주세요",
+        "twitterUsernameTooLong": "X (Twitter) 사용자 이름은 {{max}}자 이내로 입력해 주세요",
+        "twitterUsernameInvalid": "X (Twitter) 사용자 이름은 영숫자와 밑줄만 사용할 수 있습니다",
+        "githubUsernameTooLong": "GitHub 사용자 이름은 {{max}}자 이내로 입력해 주세요",
+        "githubUsernameInvalid": "GitHub 사용자 이름은 영숫자와 하이픈만 사용할 수 있습니다"
       }
     },
     "followers": {

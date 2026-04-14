@@ -3,6 +3,14 @@ export type User = {
   email: string;
   name: string;
   image: string | null;
+  avatarUrl?: string | null;
+  username?: string | null;
+  bio?: string | null;
+  websiteUrl?: string | null;
+  githubUsername?: string | null;
+  twitterUsername?: string | null;
+  isProfilePublic?: boolean | null;
+  preferredLanguage?: string | null;
   createdAt: string;
   updatedAt: string;
 };

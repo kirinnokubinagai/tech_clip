@@ -208,17 +208,14 @@ export async function fetchWithTimeout(url: string, options: RequestInit): Promi
  * リクエストヘッダーを構築する
  *
  * @param token - 認証トークン。nullの場合はAuthorizationヘッダーを付与しない
- * @param existingHeaders - 既存のヘッダー
+ * @param existingHeaders - 既存のヘッダー（Content-Type 等は呼び出し側が責任を持つ）
  * @returns 構築済みヘッダー
  */
 function buildHeaders(
   token: string | null,
   existingHeaders: Record<string, string>,
 ): Record<string, string> {
-  const headers: Record<string, string> = {
-    "Content-Type": "application/json",
-    ...existingHeaders,
-  };
+  const headers: Record<string, string> = { ...existingHeaders };
 
   if (token) {
     headers.Authorization = `Bearer ${token}`;
@@ -375,8 +372,12 @@ async function refreshAccessToken(baseUrl: string): Promise<string> {
 export async function apiFetch<T>(path: string, options: RequestInit = {}): Promise<T> {
   const baseUrl = getBaseUrl();
   const token = await getAuthToken();
+  const isFormData = options.body instanceof FormData;
   const existingHeaders = (options.headers as Record<string, string>) ?? {};
-  const headers = buildHeaders(token, existingHeaders);
+  const headersWithoutContentType = isFormData
+    ? existingHeaders
+    : { "Content-Type": "application/json", ...existingHeaders };
+  const headers = buildHeaders(token, headersWithoutContentType);
 
   const response = await fetchWithTimeout(`${baseUrl}${path}`, {
     ...options,
@@ -389,7 +390,7 @@ export async function apiFetch<T>(path: string, options: RequestInit = {}): Prom
 
   const newToken = await refreshAccessToken(baseUrl);
 
-  const retryHeaders = buildHeaders(newToken, existingHeaders);
+  const retryHeaders = buildHeaders(newToken, headersWithoutContentType);
   const retryResponse = await fetchWithTimeout(`${baseUrl}${path}`, {
     ...options,
     headers: retryHeaders,

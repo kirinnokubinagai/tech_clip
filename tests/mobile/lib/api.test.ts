@@ -121,6 +121,40 @@ describe("apiFetch", () => {
       const headers = callArgs.headers as Record<string, string>;
       expect(headers.Authorization).toBeUndefined();
     });
+
+    it("FormDataを送信する場合はContent-Typeヘッダーを設定しないこと", async () => {
+      // Arrange
+      mockFetch.mockResolvedValue(createFetchResponse({ success: true, data: { id: "1" } }));
+      const formData = new FormData();
+      formData.append("file", "dummy");
+
+      // Act
+      await apiFetch<{ success: true; data: { id: string } }>("/users/me/profile", {
+        method: "PATCH",
+        body: formData,
+      });
+
+      // Assert
+      const callArgs = mockFetch.mock.calls[0][1] as RequestInit;
+      const headers = callArgs.headers as Record<string, string>;
+      expect(headers["Content-Type"]).toBeUndefined();
+    });
+
+    it("JSON本文を送信する場合はContent-Typeがapplication/jsonであること", async () => {
+      // Arrange
+      mockFetch.mockResolvedValue(createFetchResponse({ success: true, data: { id: "1" } }));
+
+      // Act
+      await apiFetch<{ success: true; data: { id: string } }>("/users/me", {
+        method: "PATCH",
+        body: JSON.stringify({ name: "テスト" }),
+      });
+
+      // Assert
+      const callArgs = mockFetch.mock.calls[0][1] as RequestInit;
+      const headers = callArgs.headers as Record<string, string>;
+      expect(headers["Content-Type"]).toBe("application/json");
+    });
   });
 
   describe("トークンリフレッシュ", () => {

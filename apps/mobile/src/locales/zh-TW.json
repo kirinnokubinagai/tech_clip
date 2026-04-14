@@ -207,13 +207,27 @@
       "saveSuccess": "個人資料已更新",
       "saveFailed": "儲存個人資料失敗",
       "permissionError": "未取得存取圖片庫的權限",
+      "twitterUsernameLabel": "X (Twitter) 使用者名稱",
+      "twitterUsernamePlaceholder": "your_handle",
+      "githubUsernameLabel": "GitHub 使用者名稱",
+      "githubUsernamePlaceholder": "your_handle",
+      "websiteUrlLabel": "個人網站",
+      "websiteUrlPlaceholder": "https://example.com",
+      "loadFailed": "載入個人資料失敗",
+      "retryButton": "重試",
+      "usernameDuplicate": "此使用者名稱已被使用",
       "validation": {
         "nameRequired": "請輸入姓名",
         "nameTooLong": "姓名請輸入{{max}}個字元以內",
         "usernameTooLong": "用戶名請輸入{{max}}個字元以內",
         "usernameInvalid": "用戶名只能使用英數字和底線",
         "bioTooLong": "個人簡介請輸入{{max}}個字元以內",
-        "urlTooLong": "URL請輸入{{max}}個字元以內"
+        "websiteUrlTooLong": "URL請輸入{{max}}個字元以內",
+        "websiteUrlInvalid": "請輸入有效的URL",
+        "twitterUsernameTooLong": "X (Twitter) 使用者名稱請輸入{{max}}個字元以內",
+        "twitterUsernameInvalid": "X (Twitter) 使用者名稱只能使用英數字和底線",
+        "githubUsernameTooLong": "GitHub 使用者名稱請輸入{{max}}個字元以內",
+        "githubUsernameInvalid": "GitHub 使用者名稱只能使用英數字和連字號"
       }
     },
     "followers": {
