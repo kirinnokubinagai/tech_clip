@@ -85,11 +85,11 @@ app.post("/api/auth/refresh", async (c) => {
 });
 
 app.post("/api/auth/send-verification", async (c) => {
-  return handleEmailVerification(c.get("db"), c.env, c.req.raw);
+  return handleEmailVerification(c.get("db"), c.env, c.get("auth")(), c.req.raw);
 });
 
 app.post("/api/auth/verify-email", async (c) => {
-  return handleEmailVerification(c.get("db"), c.env, c.req.raw);
+  return handleEmailVerification(c.get("db"), c.env, c.get("auth")(), c.req.raw);
 });
 
 app.on(["POST", "GET"], "/api/auth/**", async (c) => {

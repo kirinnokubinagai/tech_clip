@@ -2,6 +2,7 @@ import { Hono } from "hono";
 
 import type { Auth } from "../auth";
 import type { Database } from "../db";
+import { fetchWithAuth } from "../lib/route-helpers";
 import { createAuthRoute } from "../routes/auth";
 import { createEmailVerificationRoute } from "../routes/email-verification";
 import { createPasswordResetRoute } from "../routes/password-reset";
@@ -37,12 +38,14 @@ export async function handleAuthRoute(
  *
  * @param db - データベースインスタンス
  * @param env - Cloudflare Workers バインディング
+ * @param auth - Better Auth インスタンス
  * @param request - 元のリクエスト
  * @returns fetch レスポンス
  */
 export async function handleEmailVerification(
   db: Database,
   env: Bindings,
+  auth: Auth,
   request: Request,
 ): Promise<Response> {
   const appUrl = env.APP_URL ?? DEFAULT_APP_URL;
@@ -51,9 +54,14 @@ export async function handleEmailVerification(
     appUrl,
     emailEnv: { RESEND_API_KEY: env.RESEND_API_KEY, FROM_EMAIL: env.FROM_EMAIL },
   });
-  const subApp = new Hono<{ Variables: { user?: Record<string, unknown> } }>();
-  subApp.route("/api/auth", route);
-  return subApp.fetch(request);
+
+  return fetchWithAuth(
+    auth.api.getSession.bind(auth.api),
+    (subApp) => {
+      subApp.route("/api/auth", route);
+    },
+    request,
+  );
 }
 
 /**
