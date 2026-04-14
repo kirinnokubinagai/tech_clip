@@ -113,7 +113,6 @@ tech_clip/
 │   └── mobile/              # モバイルの画面・ロジックテスト
 ├── packages/
 │   └── types/               # モバイル・API 共有型定義
-├── infra/
 ├── scripts/                 # 運用スクリプト
 ├── docs/                    # 設計ドキュメント・法的文書
 ├── .github/workflows/       # CI/CD ワークフロー
@@ -251,11 +250,12 @@ GitHub Actions で以下のワークフローが自動実行される:
 | ワークフロー | トリガー | 内容 |
 |-------------|---------|------|
 | `ci.yml` | PR / push | Lint, Typecheck, Test, Audit |
-| `security.yml` | PR / push | OWASP ZAP セキュリティスキャン |
 | `e2e.yml` | EAS Build 完了後 | Maestro E2E テスト (`tests/e2e/maestro/`) |
 | `eas-build.yml` | main push | EAS iOS / Android ビルド |
+| `eas-submit.yml` | 手動 / workflow_dispatch | EAS で App Store / Google Play へ提出 |
 | `deploy.yml` | main push | API を Cloudflare Workers にデプロイ |
-| `auto-approve.yml` | PR | 自動承認 (条件付き) |
+| `pr-comment-review.yml` | PR コメント | コメントトリガーで追加レビュー実行 |
+| `verify-uncached.yml` | 手動 / 定期実行 | キャッシュを使わず CI を再実行して整合性を検証 |
 
 ## セキュリティ
 
