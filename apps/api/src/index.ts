@@ -9,7 +9,14 @@ import { handleSubscription } from "./app/subscription-subapp";
 import { handleTags } from "./app/tags-subapp";
 import { handlePublicProfile, handleUsers } from "./app/users-subapp";
 import { createAuth } from "./auth";
+import {
+  cleanupExpiredRefreshTokens,
+  createRefreshTokenCleanupDeps,
+} from "./cron/cleanupExpiredRefreshTokens";
+import { createMonthlyResetDeps, resetFreeAiUsesMonthly } from "./cron/monthlyReset";
+import { createSubscriptionCheckDeps, disableExpiredSubscriptions } from "./cron/subscriptionCheck";
 import { createDatabase } from "./db";
+import { createLogger } from "./lib/logger";
 import { corsMiddleware } from "./middleware/cors";
 import { createDbInitMiddleware } from "./middleware/db-init";
 import {
@@ -20,7 +27,7 @@ import {
 import { securityHeadersMiddleware } from "./middleware/security-headers";
 import { createSentryMiddleware } from "./middleware/sentry";
 import { openApiSpec } from "./openapi";
-import type { AppEnv } from "./types";
+import type { AppEnv, Bindings } from "./types";
 
 const app = new Hono<AppEnv>();
 
@@ -121,4 +128,50 @@ app.on(["POST"], "/api/analytics/**", async (c) => {
   return handleAnalytics(c.get("db"), c.get("auth")(), c.req.raw);
 });
 
-export default app;
+/** Cloudflare Workers scheduled イベントハンドラー */
+const scheduled: ExportedHandlerScheduledHandler<Bindings> = async (_event, env, ctx) => {
+  const db = createDatabase(env);
+  const dbForCron = db as unknown as { update: (table: unknown) => unknown } & {
+    delete: (table: unknown) => unknown;
+  };
+  const logger = createLogger();
+  ctx.waitUntil(
+    (async () => {
+      try {
+        const result = await resetFreeAiUsesMonthly(createMonthlyResetDeps(dbForCron));
+        logger.info("cron monthlyReset 完了", { job: "monthlyReset", result });
+      } catch (error) {
+        logger.error("cron monthlyReset 失敗", {
+          job: "monthlyReset",
+          error: error instanceof Error ? error.message : String(error),
+        });
+      }
+      try {
+        const result = await disableExpiredSubscriptions(createSubscriptionCheckDeps(dbForCron));
+        logger.info("cron subscriptionCheck 完了", { job: "subscriptionCheck", result });
+      } catch (error) {
+        logger.error("cron subscriptionCheck 失敗", {
+          job: "subscriptionCheck",
+          error: error instanceof Error ? error.message : String(error),
+        });
+      }
+      try {
+        const result = await cleanupExpiredRefreshTokens(createRefreshTokenCleanupDeps(dbForCron));
+        logger.info("cron refreshTokenCleanup 完了", {
+          job: "refreshTokenCleanup",
+          result,
+        });
+      } catch (error) {
+        logger.error("cron refreshTokenCleanup 失敗", {
+          job: "refreshTokenCleanup",
+          error: error instanceof Error ? error.message : String(error),
+        });
+      }
+    })(),
+  );
+};
+
+export default {
+  fetch: app.fetch,
+  scheduled,
+} satisfies ExportedHandler<Bindings>;
