@@ -1,5 +1,6 @@
 import { ActivityIndicator, Pressable, Text } from "react-native";
 import { twMerge } from "tailwind-merge";
+
 import { DARK_COLORS } from "@/lib/constants";
 
 type AuthSubmitButtonProps = {

@@ -1,13 +1,27 @@
-import { useUserProfile } from "@mobile/hooks/use-user-profile";
+// External packages
+
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { renderHook, waitFor } from "@testing-library/react-native";
+import { act, renderHook, waitFor } from "@testing-library/react-native";
 import React from "react";
+
+// Internal modules
+
+import { followKeys } from "@mobile/hooks/use-follow";
+import {
+  USER_PROFILE_QUERY_KEY,
+  useFollowToggle,
+  useUserProfile,
+} from "@mobile/hooks/use-user-profile";
+
+// Path aliases
+
+import { apiFetch } from "@/lib/api";
 
 jest.mock("@/lib/api", () => ({
   apiFetch: jest.fn(),
 }));
 
-const apiFetch = require("@/lib/api").apiFetch as jest.Mock;
+const mockedApiFetch = jest.mocked(apiFetch);
 
 /** テスト用QueryClient */
 let queryClient: QueryClient;
@@ -17,29 +31,17 @@ function Wrapper({ children }: { children: React.ReactNode }) {
   return React.createElement(QueryClientProvider, { client: queryClient }, children);
 }
 
-/** テスト用ユーザーID */
-const TEST_USER_ID = "user_01HXYZ";
-
-/** 公開プロフィールのモックレスポンス */
+/** ユーザープロフィールのモックレスポンス */
 const mockProfileResponse = {
   success: true,
   data: {
-    id: TEST_USER_ID,
+    id: "user_01",
     name: "テストユーザー",
-    username: "testuser",
-    bio: "技術記事が好きなエンジニアです。",
+    bio: "テストのbioです",
     avatarUrl: null,
-    followersCount: 42,
-    followingCount: 18,
-  },
-};
-
-/** エラーレスポンスのモック */
-const mockNotFoundResponse = {
-  success: false,
-  error: {
-    code: "NOT_FOUND",
-    message: "ユーザーが見つかりません",
+    followersCount: 10,
+    followingCount: 5,
+    isFollowing: false,
   },
 };
 
@@ -60,45 +62,162 @@ describe("useUserProfile", () => {
     queryClient.clear();
   });
 
-  it("ユーザープロフィールを正常に取得できること", async () => {
-    // Arrange
-    apiFetch.mockResolvedValue(mockProfileResponse);
+  describe("正常系", () => {
+    it("ユーザープロフィールを取得できること", async () => {
+      // Arrange
+      mockedApiFetch.mockResolvedValue(mockProfileResponse);
+      const userId = "user_01";
 
-    // Act
-    const { result } = await renderHook(() => useUserProfile(TEST_USER_ID), {
-      wrapper: Wrapper,
+      // Act
+      const { result } = await renderHook(() => useUserProfile(userId), { wrapper: Wrapper });
+
+      // Assert
+      await waitFor(() => expect(result.current.isSuccess).toBe(true));
+      expect(mockedApiFetch).toHaveBeenCalledWith(`/api/users/${userId}/profile`);
+      expect(result.current.data?.name).toBe("テストユーザー");
+      expect(result.current.data?.isFollowing).toBe(false);
     });
 
-    // Assert
-    await waitFor(() => expect(result.current.isSuccess).toBe(true));
-    expect(apiFetch).toHaveBeenCalledWith(`/api/users/${TEST_USER_ID}/profile`);
-    expect(result.current.data).toEqual(mockProfileResponse.data);
+    it("フォロー状態がtrueのプロフィールを取得できること", async () => {
+      // Arrange
+      mockedApiFetch.mockResolvedValue({
+        ...mockProfileResponse,
+        data: { ...mockProfileResponse.data, isFollowing: true },
+      });
+
+      // Act
+      const { result } = await renderHook(() => useUserProfile("user_01"), { wrapper: Wrapper });
+
+      // Assert
+      await waitFor(() => expect(result.current.isSuccess).toBe(true));
+      expect(result.current.data?.isFollowing).toBe(true);
+    });
   });
 
-  it("ユーザーが存在しない場合はエラーになること", async () => {
-    // Arrange
-    apiFetch.mockResolvedValue(mockNotFoundResponse);
+  describe("異常系", () => {
+    it("userIdが空文字の場合はAPIを呼ばないこと", async () => {
+      // Arrange
+      mockedApiFetch.mockResolvedValue(mockProfileResponse);
 
-    // Act
-    const { result } = await renderHook(() => useUserProfile(TEST_USER_ID), {
-      wrapper: Wrapper,
+      // Act
+      await renderHook(() => useUserProfile(""), { wrapper: Wrapper });
+
+      // Assert
+      await waitFor(() => {
+        expect(mockedApiFetch).not.toHaveBeenCalled();
+      });
     });
 
-    // Assert
-    await waitFor(() => expect(result.current.isError).toBe(true));
-    expect(apiFetch).toHaveBeenCalledWith(`/api/users/${TEST_USER_ID}/profile`);
+    it("APIエラー時にエラー状態になること", async () => {
+      // Arrange
+      mockedApiFetch.mockRejectedValue(new Error("ユーザーが見つかりません"));
+
+      // Act
+      const { result } = await renderHook(() => useUserProfile("user_01"), { wrapper: Wrapper });
+
+      // Assert
+      await waitFor(() => expect(result.current.isError).toBe(true));
+      expect(result.current.error?.message).toBe("ユーザーが見つかりません");
+    });
+  });
+});
+
+describe("useFollowToggle", () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    queryClient = new QueryClient({
+      defaultOptions: {
+        queries: {
+          retry: false,
+          gcTime: 0,
+        },
+        mutations: {
+          retry: false,
+        },
+      },
+    });
   });
 
-  it("userId が空の場合はクエリが実行されないこと", async () => {
-    // Arrange
-    apiFetch.mockResolvedValue(mockProfileResponse);
+  afterEach(() => {
+    queryClient.clear();
+  });
 
-    // Act
-    renderHook(() => useUserProfile(""), {
-      wrapper: Wrapper,
+  describe("正常系", () => {
+    it("フォローできること（POSTが呼ばれること）", async () => {
+      // Arrange
+      mockedApiFetch.mockResolvedValue({ success: true });
+      const userId = "user_01";
+
+      // Act
+      const { result } = await renderHook(() => useFollowToggle(), { wrapper: Wrapper });
+      await act(async () => {
+        await result.current.mutateAsync({ userId, isFollowing: false });
+      });
+
+      // Assert
+      expect(mockedApiFetch).toHaveBeenCalledWith(`/api/users/${userId}/follow`, {
+        method: "POST",
+      });
     });
 
-    // Assert
-    expect(apiFetch).not.toHaveBeenCalled();
+    it("フォロー解除できること（DELETEが呼ばれること）", async () => {
+      // Arrange
+      mockedApiFetch.mockResolvedValue({ success: true });
+      const userId = "user_01";
+
+      // Act
+      const { result } = await renderHook(() => useFollowToggle(), { wrapper: Wrapper });
+      await act(async () => {
+        await result.current.mutateAsync({ userId, isFollowing: true });
+      });
+
+      // Assert
+      expect(mockedApiFetch).toHaveBeenCalledWith(`/api/users/${userId}/follow`, {
+        method: "DELETE",
+      });
+    });
+
+    it("成功後にユーザープロフィールのキャッシュが無効化されること", async () => {
+      // Arrange
+      mockedApiFetch.mockResolvedValue({ success: true });
+      const userId = "user_01";
+      const invalidateSpy = jest.spyOn(queryClient, "invalidateQueries");
+
+      // Act
+      const { result } = await renderHook(() => useFollowToggle(), { wrapper: Wrapper });
+      await act(async () => {
+        await result.current.mutateAsync({ userId, isFollowing: false });
+      });
+
+      // Assert
+      expect(invalidateSpy).toHaveBeenCalledWith(
+        expect.objectContaining({ queryKey: [USER_PROFILE_QUERY_KEY, userId] }),
+      );
+      expect(invalidateSpy).toHaveBeenCalledWith(
+        expect.objectContaining({ queryKey: followKeys.all }),
+      );
+    });
+  });
+
+  describe("異常系", () => {
+    it("APIエラー時にエラーがPromiseとして伝播されること", async () => {
+      // Arrange
+      mockedApiFetch.mockRejectedValue(new Error("フォロー処理に失敗しました"));
+
+      // Act
+      const { result } = await renderHook(() => useFollowToggle(), { wrapper: Wrapper });
+
+      let thrownError: Error | undefined;
+      await act(async () => {
+        try {
+          await result.current.mutateAsync({ userId: "user_01", isFollowing: false });
+        } catch (e) {
+          thrownError = e as Error;
+        }
+      });
+
+      // Assert
+      expect(thrownError?.message).toBe("フォロー処理に失敗しました");
+    });
   });
 });

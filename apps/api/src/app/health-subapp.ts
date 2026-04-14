@@ -1,5 +1,6 @@
 import { sql } from "drizzle-orm";
 import { Hono } from "hono";
+
 import type { Database } from "../db";
 import { createHealthRoute } from "../routes/health";
 

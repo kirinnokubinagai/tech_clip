@@ -1,5 +1,7 @@
 import { resolve } from "node:path";
+
 import { defineConfig } from "vitest/config";
+
 import { shouldSuppressTestLog } from "./vitest.utils";
 
 export default defineConfig({

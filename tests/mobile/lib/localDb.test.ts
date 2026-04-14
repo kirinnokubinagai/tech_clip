@@ -12,6 +12,7 @@ import {
   upsertTranslation,
 } from "@mobile/lib/localDb";
 import { openDatabaseAsync } from "expo-sqlite";
+
 import type { ArticleDetail, ArticleListItem } from "@/types/article";
 
 /** モック型キャスト */

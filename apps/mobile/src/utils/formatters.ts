@@ -22,6 +22,24 @@ const YEAR_MS = 365 * DAY_MS;
 /** デフォルト省略記号 */
 const DEFAULT_ELLIPSIS = "...";
 
+/**
+ * ユーザー名の頭文字を取得する
+ *
+ * @param name - ユーザー名
+ * @returns 頭文字（最大2文字）
+ */
+export function getInitials(name: string): string {
+  const trimmed = name.trim();
+  if (trimmed.length === 0) {
+    return "?";
+  }
+  const parts = trimmed.split(/\s+/);
+  if (parts.length >= 2) {
+    return `${parts[0][0]}${parts[1][0]}`.toUpperCase();
+  }
+  return trimmed.slice(0, 2).toUpperCase();
+}
+
 /** コンパクト数値の千の閾値 */
 const THOUSAND = 1000;
 

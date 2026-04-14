@@ -1,4 +1,5 @@
 import { Hono } from "hono";
+
 import { handleAnalytics } from "./app/analytics-subapp";
 import { handleArticles, handlePublicArticles } from "./app/articles-subapp";
 import { handleAuthCatchAll, handleAuthRoute, handleEmailVerification } from "./app/auth-subapp";

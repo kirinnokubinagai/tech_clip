@@ -1,4 +1,59 @@
-import { formatCompactNumber, formatRelativeTime, truncateText } from "@mobile/utils/formatters";
+import {
+  formatCompactNumber,
+  formatRelativeTime,
+  getInitials,
+  truncateText,
+} from "@mobile/utils/formatters";
+
+describe("getInitials", () => {
+  describe("正常系", () => {
+    it("2語の名前で頭文字2文字が返ること", () => {
+      // Arrange
+      const name = "田中 太郎";
+
+      // Act
+      const result = getInitials(name);
+
+      // Assert
+      expect(result).toBe("田太");
+    });
+
+    it("1語の名前で先頭2文字が返ること", () => {
+      // Arrange
+      const name = "Taro";
+
+      // Act
+      const result = getInitials(name);
+
+      // Assert
+      expect(result).toBe("TA");
+    });
+  });
+
+  describe("境界値", () => {
+    it("空白のみの文字列の場合エラーにならないこと", () => {
+      // Arrange
+      const name = "   ";
+
+      // Act
+      const result = getInitials(name);
+
+      // Assert
+      expect(result).toBe("?");
+    });
+
+    it("空文字列の場合に疑問符が返ること", () => {
+      // Arrange
+      const name = "";
+
+      // Act
+      const result = getInitials(name);
+
+      // Assert
+      expect(result).toBe("?");
+    });
+  });
+});
 
 describe("formatRelativeTime", () => {
   describe("秒単位", () => {

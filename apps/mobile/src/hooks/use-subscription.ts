@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import type { PurchasesPackage } from "react-native-purchases";
+
 import type { SubscriptionStatus } from "@/lib/revenueCat";
 import { checkSubscriptionStatus, purchasePackage, restorePurchases } from "@/lib/revenueCat";
 

@@ -7,7 +7,7 @@ import { ActivityIndicator, Pressable, ScrollView, Text, View } from "react-nati
 import { FollowButton } from "@/components/FollowButton";
 import { ProfileHeader } from "@/components/ProfileHeader";
 import { useColors } from "@/hooks/use-colors";
-import { useUserProfile } from "@/hooks/use-user-profile";
+import { useFollowToggle, useUserProfile } from "@/hooks/use-user-profile";
 
 /** 戻るアイコンのサイズ（px） */
 const BACK_ICON_SIZE = 24;
@@ -29,15 +29,22 @@ export default function UserProfileScreen() {
 
   const { data: profile, isLoading, isError, refetch } = useUserProfile(id);
 
+  const { mutateAsync: followToggle } = useFollowToggle();
+
   const handleBack = useCallback(() => {
     router.back();
   }, [router]);
 
-  /** フォロー切り替え処理（フォロー API 実装後に接続予定） */
   const handleFollowToggle = useCallback(
-    async (_userId: string, _currentlyFollowing: boolean): Promise<void> => {},
-    [],
+    async (userId: string, currentlyFollowing: boolean) => {
+      await followToggle({ userId, isFollowing: currentlyFollowing });
+    },
+    [followToggle],
   );
+
+  const handleRetry = useCallback(() => {
+    refetch();
+  }, [refetch]);
 
   if (isLoading) {
     return (
@@ -59,7 +66,7 @@ export default function UserProfileScreen() {
       >
         <Text className="text-text-muted text-base text-center">{t("profile.fetchError")}</Text>
         <Pressable
-          onPress={() => refetch()}
+          onPress={handleRetry}
           className="mt-4 bg-primary rounded-lg px-6 py-3"
           accessibilityRole="button"
           accessibilityLabel={t("common.retry")}
@@ -81,7 +88,7 @@ export default function UserProfileScreen() {
   }
 
   const profileHeaderUser = {
-    name: profile.name ?? profile.username ?? "",
+    name: profile.name ?? "",
     bio: profile.bio,
     avatarUrl: profile.avatarUrl,
     followersCount: profile.followersCount,
@@ -111,7 +118,11 @@ export default function UserProfileScreen() {
         <ProfileHeader user={profileHeaderUser} />
 
         <View testID="user-profile-follow-section" className="px-4 py-4">
-          <FollowButton userId={id} isFollowing={false} onToggle={handleFollowToggle} />
+          <FollowButton
+            userId={id}
+            isFollowing={profile.isFollowing ?? false}
+            onToggle={handleFollowToggle}
+          />
         </View>
 
         <View className="px-4">

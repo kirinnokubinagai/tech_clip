@@ -33,7 +33,7 @@ describe("ProfileHeader", () => {
 
       // Assert
       const bio = getByTestId("profile-bio");
-      expect(bio).toBeDefined();
+      expect(bio.props.children).toBe("フロントエンドエンジニア。React Nativeが好き。");
     });
 
     it("bioがnullの場合は非表示になること", async () => {
@@ -119,6 +119,30 @@ describe("ProfileHeader", () => {
       // Assert
       const count = getByTestId("profile-followers-count");
       expect(count.props.children).toBe("42");
+    });
+
+    it("followersCountがundefinedのとき'-'が表示されること", async () => {
+      // Arrange
+      const user = { ...baseUser, followersCount: undefined };
+
+      // Act
+      const { getByTestId } = await render(<ProfileHeader user={user} />);
+
+      // Assert
+      const count = getByTestId("profile-followers-count");
+      expect(count.props.children).toBe("-");
+    });
+
+    it("followingCountがundefinedのとき'-'が表示されること", async () => {
+      // Arrange
+      const user = { ...baseUser, followingCount: undefined };
+
+      // Act
+      const { getByTestId } = await render(<ProfileHeader user={user} />);
+
+      // Assert
+      const count = getByTestId("profile-following-count");
+      expect(count.props.children).toBe("-");
     });
   });
 

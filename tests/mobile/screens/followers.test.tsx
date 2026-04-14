@@ -1,5 +1,10 @@
-import FollowersScreen from "@mobile-app/profile/followers";
+// External packages
+
 import { fireEvent, render, waitFor } from "@testing-library/react-native";
+
+// Internal modules
+
+import FollowersScreen from "@mobile-app/profile/followers";
 
 /** モックデータ: フォロワー一覧 */
 const MOCK_FOLLOWERS_PAGE = {

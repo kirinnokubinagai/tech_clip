@@ -4,14 +4,17 @@ import { useTranslation } from "react-i18next";
 import { Pressable, Text, View } from "react-native";
 
 import { useColors } from "@/hooks/use-colors";
+import { getInitials } from "@/utils/formatters";
 
 /** プロフィールヘッダーに渡すユーザーデータ */
 export type ProfileHeaderUser = {
   name: string;
   bio: string | null;
   avatarUrl: string | null;
-  followersCount: number;
-  followingCount: number;
+  /** undefined のとき "-" を表示（APIから取得できない場合） */
+  followersCount: number | undefined;
+  /** undefined のとき "-" を表示（APIから取得できない場合） */
+  followingCount: number | undefined;
 };
 
 type ProfileHeaderProps = {
@@ -25,32 +28,27 @@ const AVATAR_SIZE = 80;
 /** 設定アイコンのサイズ（px） */
 const SETTINGS_ICON_SIZE = 22;
 
-/**
- * ユーザー名の頭文字を取得する
- *
- * @param name - ユーザー名
- * @returns 頭文字（最大2文字）
- */
-function getInitials(name: string): string {
-  const parts = name.trim().split(/\s+/);
-  if (parts.length >= 2) {
-    return `${parts[0][0]}${parts[1][0]}`.toUpperCase();
-  }
-  return name.slice(0, 2).toUpperCase();
-}
+/** 1万の閾値（万単位表示の境界値） */
+const TEN_THOUSAND = 10000;
+
+/** 1千の閾値（K単位表示の境界値） */
+const ONE_THOUSAND = 1000;
 
 /**
  * 数値を短縮表記にフォーマットする
  *
- * @param count - フォーマットする数値
+ * @param count - フォーマットする数値。undefinedの場合は"-"を返す
  * @returns フォーマットされた文字列
  */
-function formatCount(count: number): string {
-  if (count >= 10000) {
-    return `${(count / 10000).toFixed(1)}万`;
+function formatCount(count: number | undefined): string {
+  if (count === undefined) {
+    return "-";
   }
-  if (count >= 1000) {
-    return `${(count / 1000).toFixed(1)}K`;
+  if (count >= TEN_THOUSAND) {
+    return `${(count / TEN_THOUSAND).toFixed(1)}万`;
+  }
+  if (count >= ONE_THOUSAND) {
+    return `${(count / ONE_THOUSAND).toFixed(1)}K`;
   }
   return String(count);
 }

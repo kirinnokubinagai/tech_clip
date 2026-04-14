@@ -1,4 +1,5 @@
 import type { MiddlewareHandler } from "hono";
+
 import { createLogger } from "../lib/logger";
 
 /** Hono コンテキストの Variables 型（user は optional） */
