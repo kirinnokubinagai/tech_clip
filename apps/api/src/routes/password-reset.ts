@@ -2,6 +2,7 @@ import { eq } from "drizzle-orm";
 import { Hono } from "hono";
 import { z } from "zod";
 
+import type { Auth } from "../auth";
 import type { Database } from "../db";
 import { accounts, users, verifications } from "../db/schema";
 import { VALIDATION_ERROR_CODE, VALIDATION_ERROR_MESSAGE } from "../lib/error-codes";
@@ -65,6 +66,7 @@ type PasswordResetRouteOptions = {
   db: Database;
   appUrl: string;
   emailEnv: EmailEnv;
+  auth: Auth;
 };
 
 /**
@@ -94,7 +96,7 @@ async function hashToken(token: string): Promise<string> {
  * @returns Hono ルーターインスタンス
  */
 export function createPasswordResetRoute(options: PasswordResetRouteOptions) {
-  const { db, appUrl, emailEnv } = options;
+  const { db, appUrl, emailEnv, auth } = options;
   const route = new Hono();
 
   route.post("/forgot-password", async (c) => {
@@ -244,7 +246,8 @@ export function createPasswordResetRoute(options: PasswordResetRouteOptions) {
       );
     }
 
-    const hashedPassword = await hashPassword(password);
+    const ctx = await auth.$context;
+    const hashedPassword = await ctx.password.hash(password);
 
     await db.update(accounts).set({ password: hashedPassword }).where(eq(accounts.userId, user.id));
 
@@ -260,47 +263,4 @@ export function createPasswordResetRoute(options: PasswordResetRouteOptions) {
   });
 
   return route;
-}
-
-/**
- * パスワードをハッシュ化する
- *
- * Web Crypto API を使用してPBKDF2でハッシュ化する。
- * Cloudflare Workers 環境でも動作する。
- *
- * @param password - ハッシュ化する平文パスワード
- * @returns ハッシュ化されたパスワード文字列
- */
-async function hashPassword(password: string): Promise<string> {
-  const encoder = new TextEncoder();
-  const keyMaterial = await crypto.subtle.importKey(
-    "raw",
-    encoder.encode(password),
-    "PBKDF2",
-    false,
-    ["deriveBits"],
-  );
-
-  const salt = crypto.getRandomValues(new Uint8Array(16));
-  const iterations = 100000;
-
-  const derivedBits = await crypto.subtle.deriveBits(
-    {
-      name: "PBKDF2",
-      salt,
-      iterations,
-      hash: "SHA-256",
-    },
-    keyMaterial,
-    256,
-  );
-
-  const saltHex = Array.from(salt)
-    .map((b) => b.toString(16).padStart(2, "0"))
-    .join("");
-  const hashHex = Array.from(new Uint8Array(derivedBits))
-    .map((b) => b.toString(16).padStart(2, "0"))
-    .join("");
-
-  return `pbkdf2:${iterations}:${saltHex}:${hashHex}`;
 }

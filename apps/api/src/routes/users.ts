@@ -2,6 +2,7 @@ import { and, eq } from "drizzle-orm";
 import { Hono } from "hono";
 import { z } from "zod";
 
+import type { Auth } from "../auth";
 import type { Database } from "../db";
 import { accounts, users } from "../db/schema";
 import {
@@ -50,9 +51,6 @@ const PASSWORD_MIN_LENGTH = 8;
 
 /** パスワード最大文字数 */
 const PASSWORD_MAX_LENGTH = 128;
-
-/** PBKDF2 イテレーション回数 */
-const PBKDF2_ITERATIONS = 100000;
 
 /** パスワード変更成功メッセージ */
 const PASSWORD_CHANGE_SUCCESS_MESSAGE = "パスワードを変更しました。";
@@ -127,6 +125,7 @@ type UsersRouteOptions = {
   db: Database;
   r2Bucket?: R2Bucket;
   r2PublicUrl?: string;
+  auth: Auth;
 };
 
 /**
@@ -154,7 +153,7 @@ function omitSensitiveFields(user: Record<string, unknown>): Record<string, unkn
  * @returns Hono ルーターインスタンス
  */
 export function createUsersRoute(options: UsersRouteOptions) {
-  const { db, r2Bucket, r2PublicUrl } = options;
+  const { db, r2Bucket, r2PublicUrl, auth } = options;
   const route = new Hono<{ Variables: { user?: Record<string, unknown> } }>();
 
   route.get("/me", async (c) => {
@@ -472,7 +471,11 @@ export function createUsersRoute(options: UsersRouteOptions) {
       );
     }
 
-    const isValid = await verifyPassword(currentPassword, account.password);
+    const ctx = await auth.$context;
+    const isValid = await ctx.password.verify({
+      hash: account.password,
+      password: currentPassword,
+    });
 
     if (!isValid) {
       return c.json(
@@ -487,7 +490,7 @@ export function createUsersRoute(options: UsersRouteOptions) {
       );
     }
 
-    const hashedNewPassword = await hashPasswordPbkdf2(newPassword);
+    const hashedNewPassword = await ctx.password.hash(newPassword);
 
     await db
       .update(accounts)
@@ -541,97 +544,4 @@ export function createUsersRoute(options: UsersRouteOptions) {
   });
 
   return route;
-}
-
-/**
- * パスワードをPBKDF2でハッシュ化する
- *
- * Web Crypto API を使用する。Cloudflare Workers 環境でも動作する。
- *
- * @param password - ハッシュ化する平文パスワード
- * @returns ハッシュ化されたパスワード文字列（pbkdf2:iterations:saltHex:hashHex 形式）
- */
-async function hashPasswordPbkdf2(password: string): Promise<string> {
-  const encoder = new TextEncoder();
-  const keyMaterial = await crypto.subtle.importKey(
-    "raw",
-    encoder.encode(password),
-    "PBKDF2",
-    false,
-    ["deriveBits"],
-  );
-
-  const salt = crypto.getRandomValues(new Uint8Array(16));
-
-  const derivedBits = await crypto.subtle.deriveBits(
-    {
-      name: "PBKDF2",
-      salt,
-      iterations: PBKDF2_ITERATIONS,
-      hash: "SHA-256",
-    },
-    keyMaterial,
-    256,
-  );
-
-  const saltHex = Array.from(salt)
-    .map((b) => b.toString(16).padStart(2, "0"))
-    .join("");
-  const hashHex = Array.from(new Uint8Array(derivedBits))
-    .map((b) => b.toString(16).padStart(2, "0"))
-    .join("");
-
-  return `pbkdf2:${PBKDF2_ITERATIONS}:${saltHex}:${hashHex}`;
-}
-
-/**
- * 平文パスワードと保存済みハッシュを照合する
- *
- * @param plainPassword - 照合する平文パスワード
- * @param storedHash - 保存済みハッシュ（pbkdf2:iterations:saltHex:hashHex 形式）
- * @returns 照合成功の場合 true
- */
-async function verifyPassword(plainPassword: string, storedHash: string): Promise<boolean> {
-  const parts = storedHash.split(":");
-  if (parts.length !== 4 || parts[0] !== "pbkdf2") {
-    return false;
-  }
-
-  const iterations = Number(parts[1]);
-  const saltHex = parts[2];
-  const expectedHashHex = parts[3];
-
-  if (!Number.isInteger(iterations) || iterations <= 0 || !saltHex || !expectedHashHex) {
-    return false;
-  }
-
-  const salt = new Uint8Array(
-    saltHex.match(/.{2}/g)?.map((byte) => Number.parseInt(byte, 16)) ?? [],
-  );
-
-  const encoder = new TextEncoder();
-  const keyMaterial = await crypto.subtle.importKey(
-    "raw",
-    encoder.encode(plainPassword),
-    "PBKDF2",
-    false,
-    ["deriveBits"],
-  );
-
-  const derivedBits = await crypto.subtle.deriveBits(
-    {
-      name: "PBKDF2",
-      salt,
-      iterations,
-      hash: "SHA-256",
-    },
-    keyMaterial,
-    256,
-  );
-
-  const hashHex = Array.from(new Uint8Array(derivedBits))
-    .map((b) => b.toString(16).padStart(2, "0"))
-    .join("");
-
-  return hashHex === expectedHashHex;
 }
