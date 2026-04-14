@@ -159,7 +159,7 @@ describe("useAuthStore", () => {
   describe("signOut", () => {
     it("サインアウト後にstateがクリアされること", async () => {
       // Arrange
-      mockApiFetch.mockResolvedValue({ success: true, data: { success: true } });
+      mockApiFetch.mockResolvedValue({ success: true, data: null });
       useAuthStore.setState({ user: TEST_USER, session: TEST_SESSION, isAuthenticated: true });
 
       // Act
@@ -175,7 +175,7 @@ describe("useAuthStore", () => {
 
     it("/api/auth/sign-out エンドポイントをPOSTで呼ぶこと", async () => {
       // Arrange
-      mockApiFetch.mockResolvedValue({ success: true, data: { success: true } });
+      mockApiFetch.mockResolvedValue({ success: true, data: null });
       useAuthStore.setState({ user: TEST_USER, session: TEST_SESSION, isAuthenticated: true });
 
       // Act

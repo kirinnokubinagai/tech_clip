@@ -101,7 +101,7 @@ export const useAuthStore = create<AuthStore>((set) => ({
    */
   signOut: async () => {
     try {
-      await apiFetch<{ success: boolean }>("/api/auth/sign-out", {
+      await apiFetch<{ success: true; data: null }>("/api/auth/sign-out", {
         method: "POST",
       });
     } catch {
@@ -122,7 +122,7 @@ export const useAuthStore = create<AuthStore>((set) => ({
    * サーバー側のユーザーデータを全削除後、ローカル状態をクリアする
    */
   deleteAccount: async () => {
-    await apiFetch<{ success: boolean }>("/api/users/me", {
+    await apiFetch<{ success: true; data: null }>("/api/users/me", {
       method: "DELETE",
     });
 
