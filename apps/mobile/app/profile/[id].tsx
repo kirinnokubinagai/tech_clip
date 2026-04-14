@@ -88,7 +88,7 @@ export default function UserProfileScreen() {
   }
 
   const profileHeaderUser = {
-    name: profile.name ?? profile.username ?? "",
+    name: profile.name ?? "",
     bio: profile.bio,
     avatarUrl: profile.avatarUrl,
     followersCount: profile.followersCount,
@@ -118,7 +118,11 @@ export default function UserProfileScreen() {
         <ProfileHeader user={profileHeaderUser} />
 
         <View testID="user-profile-follow-section" className="px-4 py-4">
-          <FollowButton userId={id} isFollowing={profile.isFollowing ?? false} onToggle={handleFollowToggle} />
+          <FollowButton
+            userId={id}
+            isFollowing={profile.isFollowing ?? false}
+            onToggle={handleFollowToggle}
+          />
         </View>
 
         <View className="px-4">
