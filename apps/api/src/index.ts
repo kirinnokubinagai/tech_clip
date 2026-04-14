@@ -97,6 +97,10 @@ app.on(["GET", "POST", "PATCH", "DELETE"], "/api/articles/**", async (c) => {
   return handleArticles(c.get("db"), c.env, c.get("auth")(), c.req.raw);
 });
 
+app.on(["GET", "PATCH"], "/api/users/me/notification-settings", async (c) => {
+  return handleNotificationSettings(c.get("db"), c.get("auth")(), c.req.raw);
+});
+
 app.on(["GET", "POST", "PATCH", "DELETE"], "/api/users/**", async (c) => {
   return handleUsers(c.get("db"), c.env, c.get("auth")(), c.req.raw);
 });
@@ -107,10 +111,6 @@ app.on(["GET", "POST", "PATCH"], "/api/tags/**", async (c) => {
 
 app.on(["GET", "POST", "PATCH"], "/api/notifications/**", async (c) => {
   return handleNotifications(c.get("db"), c.get("auth")(), c.req.raw);
-});
-
-app.on(["GET", "PATCH"], "/api/notification-settings/**", async (c) => {
-  return handleNotificationSettings(c.get("db"), c.get("auth")(), c.req.raw);
 });
 
 app.on(["GET", "POST"], "/api/subscription/**", async (c) => {
