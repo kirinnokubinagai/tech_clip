@@ -13,6 +13,9 @@
     "lint:fix": "./scripts/run-biome-check.sh --write",
     "deploy:staging": "turbo run deploy:staging --filter=@tech-clip/api",
     "deploy:production": "turbo run deploy:production --filter=@tech-clip/api",
+    "verify:uncached": "./scripts/verify-uncached.sh",
+    "typecheck:uncached": "./scripts/verify-uncached.sh typecheck",
+    "test:uncached": "./scripts/verify-uncached.sh test",
     "prepare": "husky"
   },
   "pnpm": {
