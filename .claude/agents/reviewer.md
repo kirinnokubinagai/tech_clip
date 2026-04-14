@@ -49,6 +49,26 @@ cat /tmp/tech-clip-issue-{issue_number}/impl-ready
 
 新しいコミットハッシュが書かれていたらレビューを開始する。
 
+### フェーズ 2.5: コンフリクトチェック
+
+impl-ready を検出したら、コードレビューの前に origin/main とのコンフリクトを確認する:
+
+```bash
+cd {worktree}
+git fetch origin main
+MERGE_OUTPUT=$(git merge --no-commit --no-ff origin/main 2>&1)
+git merge --abort 2>/dev/null || true
+if echo "$MERGE_OUTPUT" | grep -q "CONFLICT"; then
+  # コンフリクトあり → FAIL として記録
+fi
+```
+
+- **コンフリクトなし**: そのままフェーズ 3 へ進む
+- **コンフリクトあり**: 以下を実行してフェーズ 5（FAIL）へ移行する
+  1. `review-result.json` に FAIL として記録し、コンフリクトファイルの一覧を `issues` に含める（severity: "HIGH"）
+  2. GitHub PR コメントにコンフリクトを報告する（解消フロー: CLAUDE.md の Step 4 CONFLICT ケースを参照）
+  3. フェーズ 5 の FAIL 処理（impl-ready 削除 → フェーズ 2 に戻る）に移行する
+
 ### フェーズ 3: レビュー実行
 
 #### 事前チェック（必須）
