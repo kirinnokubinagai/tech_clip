@@ -30,6 +30,36 @@ binding = "AI"
 [triggers]
 crons = ["0 0 1 * *"]
 
+# --- Staging 環境 ---
+# NOTE: フォローアップ Issue で以下の placeholder を実際の ID に置換すること。
+#   1. wrangler kv namespace create tech-clip-rate-limit-staging --env staging
+#   2. wrangler kv namespace create tech-clip-cache-staging --env staging
+#   3. R2 bucket "tech-clip-avatars-staging" を Cloudflare ダッシュボードまたは wrangler で作成
+#   4. 各 KV の ID を取得して REPLACE_WITH_... を置換する
+# NOTE: staging では cron triggers を定義しない (top-level [triggers] は env に継承されない)。
+# 意図的に省略: staging で月次 cron が重複実行されることを防ぐため。
+# staging でも cron を動かしたい場合は [env.staging.triggers] crons = ["0 0 1 * *"] を追加すること。
+[env.staging]
+name = "tech-clip-api-staging"
+[env.staging.vars]
+ENVIRONMENT = "staging"
+APP_URL = "REPLACE_WITH_STAGING_APP_URL"
+
+[[env.staging.kv_namespaces]]
+binding = "RATE_LIMIT"
+id = "REPLACE_WITH_STAGING_RATE_LIMIT_KV_ID"
+
+[[env.staging.kv_namespaces]]
+binding = "CACHE"
+id = "REPLACE_WITH_STAGING_CACHE_KV_ID"
+
+[[env.staging.r2_buckets]]
+binding = "AVATARS_BUCKET"
+bucket_name = "tech-clip-avatars-staging"
+
+[env.staging.ai]
+binding = "AI"
+
 # --- 本番環境 ---
 [env.production]
 name = "tech-clip-api-production"
