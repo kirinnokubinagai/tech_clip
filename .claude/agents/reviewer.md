@@ -159,21 +159,34 @@ PR は再作成しない。push のみ行う。
 
 ### フェーズ 6: GitHub レビューポーリング
 
+> **絶対に `gh pr view --json statusCheckRollup` の `claude-review: SUCCESS` を APPROVED の根拠にしないこと。**
+> `claude-review: SUCCESS` は CI ジョブが正常終了したという意味にすぎず、レビュー合否（PASS/NEEDS WORK）を表すものではない。
+> **絶対に `gh pr view --json reviews,state` の `state: APPROVED` だけに依存しないこと。**
+> claude-review は GitHub Review を作成せず、label のみでレビュー結果を通知する。
+
 ```bash
-gh pr view {pr_number} --json reviews,state --jq '...'
+LABELS=$(gh pr view {pr_number} --json labels --jq '.labels[].name')
+
+if echo "$LABELS" | grep -Fxq "AI Review: PASS"; then
+  # APPROVED 処理
+elif echo "$LABELS" | grep -Fxq "AI Review: NEEDS WORK"; then
+  # CHANGES_REQUESTED 処理
+else
+  # PENDING: 再ポーリング
+fi
 ```
 
-- **PENDING**: 再ポーリング（適度な間隔で待機）
-- **APPROVED**:
+- **`AI Review: PASS` ラベルが存在する（APPROVED）**:
   1. `SendMessage(to: "issue-{issue_number}-coder", "APPROVED")` → coder 終了
   2. worktree を削除する: `git -C <main-worktree-path> worktree remove {worktree} --force`
   3. `SendMessage(to: orchestrator, "APPROVED: issue-{issue_number}")` → orchestrator がカウント管理
   4. 終了する
-- **CHANGES_REQUESTED**: レビューコメントを取得する:
+- **`AI Review: NEEDS WORK` ラベルが存在する（CHANGES_REQUESTED）**: レビューコメントを取得する:
   ```bash
-  gh pr view {pr_number} --json reviews --jq '.reviews[] | select(.state=="CHANGES_REQUESTED") | .body'
+  gh pr view {pr_number} --json comments --jq '[.comments[] | select(.body | contains("## PRレビュー結果"))] | last | .body'
   ```
   `SendMessage(to: "issue-{issue_number}-coder", "CHANGES_REQUESTED: <レビューコメント内容>")` → フェーズ 0 に戻る（次の impl-ready を待つ）
+- **どちらのラベルも存在しない（PENDING）**: 再ポーリング（適度な間隔で待機）
 
 ## レビュー方針（厳守）
 
