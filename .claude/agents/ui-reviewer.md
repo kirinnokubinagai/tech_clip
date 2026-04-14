@@ -179,26 +179,7 @@ else
 fi
 ```
 
-- **`AI Review: PASS` ラベルが存在する（APPROVED）**:
-  1. ui-designer に APPROVED を送信する
-     ```text
-     SendMessage(
-       to: "issue-{issue_number}-ui-designer",
-       message: "APPROVED"
-     )
-     ```
-  2. worktree を削除する
-     ```bash
-     git -C <main-worktree-path> worktree remove {worktree} --force
-     ```
-  3. orchestrator に完了を通知する
-     ```text
-     SendMessage(
-       to: "orchestrator",
-       message: "APPROVED: issue-{issue_number}"
-     )
-     ```
-  4. 終了する。
+- **`AI Review: PASS` ラベルが存在する**: **フェーズ 7 へ進む**
 - **`AI Review: NEEDS WORK` ラベルが存在する（CHANGES_REQUESTED）**:
   1. レビューコメントを取得する
      ```bash
@@ -213,6 +194,55 @@ fi
      ```
   3. フェーズ 0 に戻り次の impl-ready を待機する。
 - **どちらのラベルも存在しない（PENDING）**: 再ポーリングする（適度な間隔を空けて繰り返す）
+
+### フェーズ 7: PR マージ完了待機
+
+AI Review: PASS が確認できたあと、実際のマージまで 30 秒間隔で最大 60 分ポーリングする。
+
+```bash
+MAX_ATTEMPTS=120  # 30 秒 × 120 = 60 分
+PR_STATE=""
+for i in $(seq 1 $MAX_ATTEMPTS); do
+  PR_STATE=$(gh pr view <PR番号> --json state --jq '.state')
+  case "$PR_STATE" in
+    MERGED)
+      break
+      ;;
+    CLOSED)
+      SendMessage(to: "issue-{issue_number}-ui-designer", "CLOSED_WITHOUT_MERGE: PR がマージされずにクローズされました")
+      exit 0
+      ;;
+    OPEN)
+      sleep 30
+      ;;
+  esac
+done
+
+if [ "$PR_STATE" != "MERGED" ]; then
+  PR_URL=$(gh pr view <PR番号> --json url --jq '.url')
+  SendMessage(to: "orchestrator", "MERGE_PENDING: issue-{issue_number} は AI Review PASS 済みですが 60 分以内にマージされませんでした。手動でマージ・クローズしてください。PR: $PR_URL")
+  exit 0
+fi
+```
+
+`MERGED` を確認したら以下を実行する:
+
+```bash
+# Issue をクローズ
+gh issue close {issue_number} --comment "PR がマージされたため自動クローズしました（reviewer agent）"
+
+# worktree 削除
+git -C <main-worktree-path> worktree remove {worktree} --force
+```
+
+続けて SendMessage を送信する:
+
+```text
+SendMessage(to: "issue-{issue_number}-ui-designer", "APPROVED")
+SendMessage(to: "orchestrator", "APPROVED: issue-{issue_number}")
+```
+
+最後に ui-reviewer 自身が終了する。
 
 ## レビュー方針（厳守）
 
