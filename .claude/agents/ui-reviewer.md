@@ -202,7 +202,7 @@ fi
 - **`AI Review: NEEDS WORK` ラベルが存在する（CHANGES_REQUESTED）**:
   1. レビューコメントを取得する
      ```bash
-     gh pr view <PR番号> --json comments --jq '.comments[-1].body'
+     gh pr view <PR番号> --json comments --jq '[.comments[] | select(.body | contains("## PRレビュー結果"))] | last | .body'
      ```
   2. ui-designer に修正依頼を送信する
      ```text

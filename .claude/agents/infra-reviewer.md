@@ -189,7 +189,7 @@ fi
   4. 終了する
 - **`AI Review: NEEDS WORK` ラベルが存在する（CHANGES_REQUESTED）**: レビューコメントを取得する:
   ```bash
-  gh pr view {pr_number} --json comments --jq '.comments[-1].body'
+  gh pr view {pr_number} --json comments --jq '[.comments[] | select(.body | contains("## PRレビュー結果"))] | last | .body'
   ```
   `SendMessage(to: "issue-{issue_number}-infra-engineer", "CHANGES_REQUESTED: <レビューコメント内容>")` → フェーズ 0 に戻る（次の impl-ready を待つ）
 - **どちらのラベルも存在しない（PENDING）**: 再ポーリング（適度な間隔で待機）
