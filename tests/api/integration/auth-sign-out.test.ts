@@ -77,7 +77,7 @@ describe("POST /api/auth/sign-out（統合テスト: index.ts 経由のルーテ
       expect(res.status).toBe(HTTP_OK);
     });
 
-    it("正常なサインアウト時にレスポンスのsuccess.dataがtrueであること", async () => {
+    it("正常なサインアウト時にsuccess が true で data が null であること", async () => {
       // Arrange
       const app = createTestAppWithIndexRouting(mockDb);
       const req = new Request("http://localhost/api/auth/sign-out", {
