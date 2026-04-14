@@ -65,7 +65,7 @@ export async function handleNotificationSettings(
   return fetchWithAuth(
     auth.api.getSession.bind(auth.api),
     (subApp) => {
-      subApp.route("/api", notificationSettingsRoute);
+      subApp.route("/api/users/me", notificationSettingsRoute);
     },
     request,
   );
