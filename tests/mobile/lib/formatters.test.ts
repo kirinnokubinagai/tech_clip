@@ -315,7 +315,7 @@ describe("formatRelativeTime", () => {
       expect(result).toBe("Just now");
     });
 
-    it("3分前は3 min agoと表示されること", () => {
+    it("3分前は3 minutes agoと表示されること", () => {
       // Arrange
       const now = new Date();
       const threeMinutesAgo = new Date(now.getTime() - 3 * 60 * 1000);
@@ -324,7 +324,7 @@ describe("formatRelativeTime", () => {
       const result = formatRelativeTime(threeMinutesAgo, now);
 
       // Assert
-      expect(result).toBe("3 min ago");
+      expect(result).toBe("3 minutes ago");
     });
 
     it("2時間前は2 hours agoと表示されること", () => {
