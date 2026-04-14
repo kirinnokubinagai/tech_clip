@@ -91,9 +91,9 @@ export class SessionExpiredError extends ApiError {
 export class ApiHttpError extends ApiError {
   /** HTTPステータスコード */
   public readonly status: number;
-  /** 業務エラーJSONから取得した code。非業務エラー時は undefined */
+  /** 将来の拡張用フィールド。現行実装では常に undefined */
   public readonly code?: string;
-  /** 業務エラーJSONから取得した details。非業務エラー時は undefined */
+  /** 将来の拡張用フィールド。現行実装では常に undefined */
   public readonly details?: unknown;
   /** レスポンス本文の先頭（診断用、最大 BODY_TEXT_PREVIEW_MAX_LENGTH 文字） */
   public readonly bodyText?: string;

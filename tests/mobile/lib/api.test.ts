@@ -332,6 +332,46 @@ describe("apiFetch", () => {
     });
   });
 
+  describe("readBodyOnce の境界ケース", () => {
+    it("response.text() が例外をスローした場合はApiHttpErrorをスローすること", async () => {
+      // Arrange
+      mockFetch.mockResolvedValue(
+        createFetchResponse(null, {
+          status: 500,
+          contentType: "application/json",
+          textImpl: () => Promise.reject(new Error("ストリーム読み取りエラー")),
+        }),
+      );
+
+      // Act & Assert
+      await expect(apiFetch("/articles")).rejects.toBeInstanceOf(ApiHttpError);
+    });
+  });
+
+  describe("looksLikeJson のパス", () => {
+    it("Content-Typeが非JSONでも本文が'{' で始まる場合は業務エラーとして返すこと", async () => {
+      // Arrange
+      mockFetch.mockResolvedValue(
+        createFetchResponse(
+          { success: false, error: { code: "NOT_FOUND", message: "見つかりません" } },
+          {
+            status: 404,
+            contentType: "text/plain",
+          },
+        ),
+      );
+
+      // Act
+      const result = await apiFetch("/articles/999");
+
+      // Assert
+      expect(result).toEqual({
+        success: false,
+        error: { code: "NOT_FOUND", message: "見つかりません" },
+      });
+    });
+  });
+
   describe("非JSON応答の耐性", () => {
     it("2xxでJSONパースに失敗した場合はApiParseErrorをスローすること", async () => {
       // Arrange
