@@ -18,6 +18,9 @@ import { omitContent } from "../lib/response-utils";
  *
  * @param query - 検索キーワード（スペース区切り複数語可）
  * @returns FTS5 MATCH 式文字列。トークンが空の場合はnull
+ * @note FTS5 の unicode61 tokenizer はスペース・句読点を区切りとするため、
+ *       スペースなしの日本語テキスト（例: 「Reactフレームワーク」）は
+ *       単一トークンとして扱われ、部分一致検索が効かない場合がある。
  */
 export function buildFtsMatchExpression(query: string): string | null {
   const tokens = query

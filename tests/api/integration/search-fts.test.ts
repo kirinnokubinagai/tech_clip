@@ -1,14 +1,5 @@
 import path from "node:path";
 
-/**
- * Drizzle マイグレーションファイルのフォルダパスを返す
- *
- * @returns apps/api/drizzle ディレクトリの絶対パス
- */
-function getDrizzleMigrationsFolder(): string {
-  return path.resolve(import.meta.dirname, "../../../apps/api/drizzle");
-}
-
 import { articles } from "@api/db/schema/articles";
 import { users } from "@api/db/schema/users";
 import { buildFtsMatchExpression } from "@api/routes/search";
@@ -17,6 +8,15 @@ import { and, desc, eq, lt, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/libsql";
 import { migrate } from "drizzle-orm/libsql/migrator";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
+
+/**
+ * Drizzle マイグレーションファイルのフォルダパスを返す
+ *
+ * @returns apps/api/drizzle ディレクトリの絶対パス
+ */
+function getDrizzleMigrationsFolder(): string {
+  return path.resolve(import.meta.dirname, "../../../apps/api/drizzle");
+}
 
 /** テスト用ユーザー1 */
 const TEST_USER_1 = {
@@ -282,14 +282,25 @@ describe("FTS5 全文検索 統合テスト", () => {
 
   describe("INSERTトリガーによるFTS同期確認", () => {
     it("INSERTトリガーにより挿入した記事がFTSで検索できること", async () => {
-      // Arrange: すでに beforeAll で migrate が実行されており、
-      // テスト開始時にINSERTした article_fts_insert_01 が検索できることで
-      // INSERT トリガーが機能していることを確認する
-      const matchExpr = buildFtsMatchExpression("React");
+      // Arrange
+      const articleId = "article_fts_trigger_insert_01";
+      const uniqueKeyword = "TriggerSyncKeyword";
+      await db.insert(articles).values({
+        ...ARTICLE_BASE,
+        id: articleId,
+        userId: TEST_USER_1.id,
+        url: "https://example.com/trigger-sync-test",
+        title: `${uniqueKeyword} INSERTトリガー確認`,
+        content: "INSERTトリガーによるFTS同期確認用本文",
+        excerpt: "INSERTトリガー確認",
+      });
+
+      // Act
+      const matchExpr = buildFtsMatchExpression(uniqueKeyword);
       const results = await searchArticlesByFts(db, TEST_USER_1.id, matchExpr);
 
       // Assert
-      expect(results.length).toBeGreaterThan(0);
+      expect(results.some((r) => r.id === articleId)).toBe(true);
     });
   });
 
