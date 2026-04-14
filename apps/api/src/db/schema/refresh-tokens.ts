@@ -8,9 +8,8 @@ import { users } from "./users";
  * refresh_tokensテーブル
  * モバイルクライアント向けのリフレッシュトークンを管理する
  *
- * @todo 期限切れトークンの定期クリーンアップ - 将来的にCronジョブで実装する
- *   例: `DELETE FROM refresh_tokens WHERE expires_at < datetime('now')`
- *   を定期的に実行して、DBの肥大化を防ぐ
+ * 期限切れエントリは `cron/cleanupExpiredRefreshTokens` によって
+ * 月次 Cron トリガー (`[triggers] crons` in wrangler.toml) で削除される
  */
 export const refreshTokens = sqliteTable(
   "refresh_tokens",
