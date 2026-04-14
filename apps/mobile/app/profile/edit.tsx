@@ -2,7 +2,7 @@ import { Image } from "expo-image";
 import * as ImagePicker from "expo-image-picker";
 import { useRouter } from "expo-router";
 import { ArrowLeft, Camera } from "lucide-react-native";
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { ActivityIndicator, Alert, Pressable, ScrollView, Text, View } from "react-native";
 
@@ -10,8 +10,10 @@ import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Toast } from "@/components/ui/Toast";
 import { useColors } from "@/hooks/use-colors";
+import { useMyProfile, useUpdateMyProfile, useUploadMyAvatar } from "@/hooks/use-my-profile";
 import { useToast } from "@/hooks/use-toast";
 import { useAuthStore } from "@/stores/auth-store";
+import type { UpdateProfileInput } from "@/types/me";
 
 /** アバター画像のサイズ（px） */
 const AVATAR_SIZE = 96;
@@ -31,19 +33,40 @@ const USERNAME_MAX_LENGTH = 30;
 /** bioの最大文字数 */
 const BIO_MAX_LENGTH = 160;
 
-/** SNSリンクの最大文字数 */
-const SNS_LINK_MAX_LENGTH = 200;
+/** ウェブサイト URL の最大文字数 */
+const WEBSITE_URL_MAX_LENGTH = 2048;
 
-/** ユーザー名の正規表現（英数字とアンダースコアのみ） */
-const USERNAME_REGEX = /^[a-zA-Z0-9_]*$/;
+/** X (Twitter) ユーザー名の最大文字数 */
+const TWITTER_USERNAME_MAX_LENGTH = 15;
+
+/** GitHub ユーザー名の最大文字数 */
+const GITHUB_USERNAME_MAX_LENGTH = 39;
+
+/** ユーザー名の正規表現（半角英数字とアンダースコアとハイフン） */
+const USERNAME_REGEX = /^[a-zA-Z0-9_-]*$/;
+
+/** X (Twitter) ユーザー名の正規表現 */
+const TWITTER_USERNAME_REGEX = /^[A-Za-z0-9_]*$/;
+
+/** GitHub ユーザー名の正規表現 */
+const GITHUB_USERNAME_REGEX = /^[A-Za-z0-9-]*$/;
+
+/** URL の簡易バリデーション正規表現 */
+const URL_REGEX = /^https?:\/\/.+/;
+
+/** DUPLICATE エラーコード */
+const ERROR_CODE_DUPLICATE = "DUPLICATE";
+
+/** VALIDATION_FAILED エラーコード */
+const ERROR_CODE_VALIDATION_FAILED = "VALIDATION_FAILED";
 
 /** プロフィール編集フォームのデータ */
 type ProfileFormData = {
   name: string;
   username: string;
   bio: string;
-  twitterUrl: string;
-  githubUrl: string;
+  twitterUsername: string;
+  githubUsername: string;
   websiteUrl: string;
 };
 
@@ -52,6 +75,30 @@ type FormErrors = Partial<Record<keyof ProfileFormData, string>>;
 
 /** t関数の型 */
 type TFunction = (key: string, opts?: Record<string, unknown>) => string;
+
+/** APIエラーレスポンスの型 */
+type ApiErrorPayload = {
+  success: false;
+  error: {
+    code: string;
+    message: string;
+    details?: Array<{ field: string; message: string }>;
+  };
+};
+
+/**
+ * 値が ApiErrorPayload かどうかを判定する
+ *
+ * @param value - 判定対象
+ * @returns ApiErrorPayload なら true
+ */
+function isApiErrorPayload(value: unknown): value is ApiErrorPayload {
+  if (typeof value !== "object" || value === null) {
+    return false;
+  }
+  const maybe = value as { success?: unknown; error?: unknown };
+  return maybe.success === false && typeof maybe.error === "object" && maybe.error !== null;
+}
 
 /**
  * ユーザー名の頭文字を取得する
@@ -95,19 +142,69 @@ export function validateProfileForm(data: ProfileFormData, t: TFunction): FormEr
     errors.bio = t("profile.edit.validation.bioTooLong", { max: BIO_MAX_LENGTH });
   }
 
-  if (data.twitterUrl && data.twitterUrl.length > SNS_LINK_MAX_LENGTH) {
-    errors.twitterUrl = t("profile.edit.validation.urlTooLong", { max: SNS_LINK_MAX_LENGTH });
+  if (data.websiteUrl && data.websiteUrl.length > WEBSITE_URL_MAX_LENGTH) {
+    errors.websiteUrl = t("profile.edit.validation.websiteUrlTooLong", {
+      max: WEBSITE_URL_MAX_LENGTH,
+    });
+  }
+  if (data.websiteUrl && !URL_REGEX.test(data.websiteUrl)) {
+    errors.websiteUrl = t("profile.edit.validation.websiteUrlInvalid");
   }
 
-  if (data.githubUrl && data.githubUrl.length > SNS_LINK_MAX_LENGTH) {
-    errors.githubUrl = t("profile.edit.validation.urlTooLong", { max: SNS_LINK_MAX_LENGTH });
+  if (data.twitterUsername && data.twitterUsername.length > TWITTER_USERNAME_MAX_LENGTH) {
+    errors.twitterUsername = t("profile.edit.validation.twitterUsernameTooLong", {
+      max: TWITTER_USERNAME_MAX_LENGTH,
+    });
+  }
+  if (data.twitterUsername && !TWITTER_USERNAME_REGEX.test(data.twitterUsername)) {
+    errors.twitterUsername = t("profile.edit.validation.twitterUsernameInvalid");
   }
 
-  if (data.websiteUrl && data.websiteUrl.length > SNS_LINK_MAX_LENGTH) {
-    errors.websiteUrl = t("profile.edit.validation.urlTooLong", { max: SNS_LINK_MAX_LENGTH });
+  if (data.githubUsername && data.githubUsername.length > GITHUB_USERNAME_MAX_LENGTH) {
+    errors.githubUsername = t("profile.edit.validation.githubUsernameTooLong", {
+      max: GITHUB_USERNAME_MAX_LENGTH,
+    });
+  }
+  if (data.githubUsername && !GITHUB_USERNAME_REGEX.test(data.githubUsername)) {
+    errors.githubUsername = t("profile.edit.validation.githubUsernameInvalid");
   }
 
   return errors;
+}
+
+/**
+ * 2つのフォームデータを比較して差分を返す
+ *
+ * @param current - 現在のフォームデータ
+ * @param initial - 初期データ
+ * @returns 変更があったフィールドのみを含む更新リクエストオブジェクト
+ */
+function buildPatch(current: ProfileFormData, initial: ProfileFormData): UpdateProfileInput | null {
+  const patch: UpdateProfileInput = {};
+
+  if (current.name !== initial.name) {
+    patch.name = current.name || null;
+  }
+  if (current.username !== initial.username) {
+    patch.username = current.username || null;
+  }
+  if (current.bio !== initial.bio) {
+    patch.bio = current.bio || null;
+  }
+  if (current.websiteUrl !== initial.websiteUrl) {
+    patch.websiteUrl = current.websiteUrl || null;
+  }
+  if (current.twitterUsername !== initial.twitterUsername) {
+    patch.twitterUsername = current.twitterUsername || null;
+  }
+  if (current.githubUsername !== initial.githubUsername) {
+    patch.githubUsername = current.githubUsername || null;
+  }
+
+  if (Object.keys(patch).length === 0) {
+    return null;
+  }
+  return patch;
 }
 
 /**
@@ -120,21 +217,49 @@ export default function ProfileEditScreen() {
   const colors = useColors();
   const { t } = useTranslation();
   const router = useRouter();
-  const user = useAuthStore((s) => s.user);
+  const updateUserProfile = useAuthStore((s) => s.updateUserProfile);
   const { toast, show: showToast, dismiss: dismissToast } = useToast();
 
+  const { data: me, isLoading, isError, refetch } = useMyProfile();
+  const updateMyProfile = useUpdateMyProfile();
+  const uploadMyAvatar = useUploadMyAvatar();
+
   const [formData, setFormData] = useState<ProfileFormData>({
-    name: user?.name ?? "",
+    name: "",
     username: "",
     bio: "",
-    twitterUrl: "",
-    githubUrl: "",
+    twitterUsername: "",
+    githubUsername: "",
     websiteUrl: "",
   });
 
-  const [avatarUri, setAvatarUri] = useState<string | null>(user?.image ?? null);
+  const [avatarUri, setAvatarUri] = useState<string | null>(null);
   const [errors, setErrors] = useState<FormErrors>({});
   const [isSaving, setIsSaving] = useState(false);
+
+  const initialDataRef = useRef<ProfileFormData | null>(null);
+  const initialAvatarUriRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    if (!me) {
+      return;
+    }
+    const initial: ProfileFormData = {
+      name: me.name ?? "",
+      username: me.username ?? "",
+      bio: me.bio ?? "",
+      twitterUsername: me.twitterUsername ?? "",
+      githubUsername: me.githubUsername ?? "",
+      websiteUrl: me.websiteUrl ?? "",
+    };
+    const uri = me.avatarUrl ?? me.image ?? null;
+    setFormData(initial);
+    setAvatarUri(uri);
+    if (initialDataRef.current === null) {
+      initialDataRef.current = initial;
+      initialAvatarUriRef.current = uri;
+    }
+  }, [me]);
 
   const handleBack = useCallback(() => {
     router.back();
@@ -186,17 +311,83 @@ export default function ProfileEditScreen() {
     setIsSaving(true);
 
     try {
-      await new Promise((resolve) => setTimeout(resolve, 500));
+      const isAvatarChanged = avatarUri !== initialAvatarUriRef.current;
+      let latestProfile = me;
+
+      if (isAvatarChanged && avatarUri) {
+        latestProfile = await uploadMyAvatar.mutateAsync(avatarUri);
+      }
+
+      const patch = initialDataRef.current ? buildPatch(formData, initialDataRef.current) : null;
+      if (patch) {
+        latestProfile = await updateMyProfile.mutateAsync(patch);
+      }
+
+      updateUserProfile({
+        name: latestProfile?.name ?? formData.name,
+        image: latestProfile?.avatarUrl ?? latestProfile?.image ?? null,
+      });
+
       showToast(t("profile.edit.saveSuccess"), "success");
       router.back();
-    } catch {
+    } catch (err: unknown) {
+      if (isApiErrorPayload(err)) {
+        if (err.error.code === ERROR_CODE_DUPLICATE) {
+          setErrors({ username: t("profile.edit.usernameDuplicate") });
+          return;
+        }
+        if (err.error.code === ERROR_CODE_VALIDATION_FAILED && err.error.details) {
+          const fieldErrors: FormErrors = {};
+          for (const detail of err.error.details) {
+            const field = detail.field as keyof ProfileFormData;
+            if (field) {
+              fieldErrors[field] = detail.message;
+            }
+          }
+          setErrors(fieldErrors);
+          return;
+        }
+      }
       Alert.alert(t("common.errorTitle"), t("profile.edit.saveFailed"));
     } finally {
       setIsSaving(false);
     }
-  }, [formData, router, showToast, t]);
+  }, [
+    formData,
+    avatarUri,
+    me,
+    router,
+    showToast,
+    t,
+    updateMyProfile,
+    uploadMyAvatar,
+    updateUserProfile,
+  ]);
 
-  const displayName = formData.name || user?.name || "";
+  const displayName = formData.name || me?.name || "";
+
+  if (isLoading) {
+    return (
+      <View
+        testID="profile-edit-screen"
+        className="flex-1 bg-background items-center justify-center"
+      >
+        <ActivityIndicator />
+      </View>
+    );
+  }
+
+  if (isError) {
+    return (
+      <View
+        testID="profile-edit-screen"
+        className="flex-1 bg-background items-center justify-center px-4"
+      >
+        <Text className="text-text text-center mb-4">{t("profile.edit.loadFailed")}</Text>
+        <Button onPress={() => refetch()}>{t("profile.edit.retryButton")}</Button>
+      </View>
+    );
+  }
 
   return (
     <View testID="profile-edit-screen" className="flex-1 bg-background">
@@ -320,28 +511,26 @@ export default function ProfileEditScreen() {
 
             <View className="gap-4">
               <Input
-                label="X (Twitter)"
-                placeholder="https://x.com/username"
-                value={formData.twitterUrl}
-                onChangeText={(text) => updateField("twitterUrl", text)}
-                error={errors.twitterUrl}
-                keyboardType="url"
+                label={t("profile.edit.twitterUsernameLabel")}
+                placeholder={t("profile.edit.twitterUsernamePlaceholder")}
+                value={formData.twitterUsername}
+                onChangeText={(text) => updateField("twitterUsername", text)}
+                error={errors.twitterUsername}
                 autoCapitalize="none"
               />
 
               <Input
-                label="GitHub"
-                placeholder="https://github.com/username"
-                value={formData.githubUrl}
-                onChangeText={(text) => updateField("githubUrl", text)}
-                error={errors.githubUrl}
-                keyboardType="url"
+                label={t("profile.edit.githubUsernameLabel")}
+                placeholder={t("profile.edit.githubUsernamePlaceholder")}
+                value={formData.githubUsername}
+                onChangeText={(text) => updateField("githubUsername", text)}
+                error={errors.githubUsername}
                 autoCapitalize="none"
               />
 
               <Input
-                label="ウェブサイト"
-                placeholder="https://example.com"
+                label={t("profile.edit.websiteUrlLabel")}
+                placeholder={t("profile.edit.websiteUrlPlaceholder")}
                 value={formData.websiteUrl}
                 onChangeText={(text) => updateField("websiteUrl", text)}
                 error={errors.websiteUrl}

@@ -33,6 +33,8 @@ type AuthStore = {
   deleteAccount: () => Promise<void>;
   /** 現在のパスワードを確認した上で新しいパスワードに変更する */
   changePassword: (currentPassword: string, newPassword: string) => Promise<void>;
+  /** ユーザーのプロフィール情報を部分更新する */
+  updateUserProfile: (patch: Partial<User>) => void;
 };
 
 export const useAuthStore = create<AuthStore>((set) => ({
@@ -222,5 +224,17 @@ export const useAuthStore = create<AuthStore>((set) => ({
    */
   clearSessionExpiredMessage: () => {
     set({ sessionExpiredMessage: null });
+  },
+
+  /**
+   * ユーザーのプロフィール情報を部分更新する
+   * プロフィール保存成功時にストアを最新状態に保つ
+   *
+   * @param patch - 更新するフィールド
+   */
+  updateUserProfile: (patch: Partial<User>) => {
+    set((state) => ({
+      user: state.user ? { ...state.user, ...patch } : state.user,
+    }));
   },
 }));
