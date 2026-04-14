@@ -207,12 +207,27 @@
       "saveSuccess": "个人资料已更新",
       "saveFailed": "保存个人资料失败",
       "permissionError": "未获得访问图片库的权限",
+      "twitterUsernameLabel": "X (Twitter) 用户名",
+      "twitterUsernamePlaceholder": "your_handle",
+      "githubUsernameLabel": "GitHub 用户名",
+      "githubUsernamePlaceholder": "your_handle",
+      "websiteUrlLabel": "个人网站",
+      "websiteUrlPlaceholder": "https://example.com",
+      "loadFailed": "加载个人资料失败",
+      "retryButton": "重试",
+      "usernameDuplicate": "该用户名已被使用",
       "validation": {
         "nameRequired": "请输入姓名",
         "nameTooLong": "姓名请输入{{max}}个字符以内",
         "usernameTooLong": "用户名请输入{{max}}个字符以内",
         "usernameInvalid": "用户名只能使用英数字和下划线",
-        "bioTooLong": "个人简介请输入{{max}}个字符以内"
+        "bioTooLong": "个人简介请输入{{max}}个字符以内",
+        "websiteUrlTooLong": "URL请输入{{max}}个字符以内",
+        "websiteUrlInvalid": "请输入有效的URL",
+        "twitterUsernameTooLong": "X (Twitter) 用户名请输入{{max}}个字符以内",
+        "twitterUsernameInvalid": "X (Twitter) 用户名只能使用英数字和下划线",
+        "githubUsernameTooLong": "GitHub 用户名请输入{{max}}个字符以内",
+        "githubUsernameInvalid": "GitHub 用户名只能使用英数字和连字符"
       }
     },
     "followers": {
