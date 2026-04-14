@@ -45,6 +45,7 @@ name = "tech-clip-api-staging"
 [env.staging.vars]
 ENVIRONMENT = "staging"
 APP_URL = "REPLACE_WITH_STAGING_APP_URL"
+R2_PUBLIC_URL = "REPLACE_WITH_STAGING_R2_PUBLIC_URL"
 
 [[env.staging.kv_namespaces]]
 binding = "RATE_LIMIT"
@@ -88,25 +89,3 @@ binding = "AI"
 pattern = "api.techclip.app"
 custom_domain = true
 
-# --- ステージング環境 ---
-[env.staging]
-name = "tech-clip-api-staging"
-[env.staging.vars]
-ENVIRONMENT = "staging"
-APP_URL = "REPLACE_WITH_STAGING_APP_URL"
-R2_PUBLIC_URL = "REPLACE_WITH_STAGING_R2_PUBLIC_URL"
-
-[[env.staging.kv_namespaces]]
-binding = "RATE_LIMIT"
-id = "REPLACE_WITH_STAGING_RATE_LIMIT_KV_ID"
-
-[[env.staging.kv_namespaces]]
-binding = "CACHE"
-id = "REPLACE_WITH_STAGING_CACHE_KV_ID"
-
-[[env.staging.r2_buckets]]
-binding = "AVATARS_BUCKET"
-bucket_name = "tech-clip-avatars-staging"
-
-[env.staging.ai]
-binding = "AI"
