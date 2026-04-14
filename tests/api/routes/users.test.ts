@@ -1,3 +1,5 @@
+import type { Auth } from "@api/auth";
+import type { Database } from "@api/db";
 import { createUsersRoute } from "@api/routes/users";
 import { processAvatarImage, uploadAvatarToR2, validateImageFile } from "@api/services/imageUpload";
 import { hashPassword, verifyPassword } from "better-auth/crypto";
@@ -119,7 +121,10 @@ function createGetTestApp() {
     return next();
   });
 
-  const usersRoute = createUsersRoute({ db: mockDb as never, auth: mockAuth as never });
+  const usersRoute = createUsersRoute({
+    db: mockDb as unknown as Database,
+    auth: mockAuth as unknown as Auth,
+  });
   app.route("/api/users", usersRoute);
 
   return app;
@@ -133,7 +138,10 @@ function createGetTestApp() {
 function createGetTestAppWithoutAuth() {
   const app = new Hono();
 
-  const usersRoute = createUsersRoute({ db: mockDb as never, auth: mockAuth as never });
+  const usersRoute = createUsersRoute({
+    db: mockDb as unknown as Database,
+    auth: mockAuth as unknown as Auth,
+  });
   app.route("/api/users", usersRoute);
 
   return app;
@@ -922,10 +930,10 @@ function createAvatarTestApp() {
   });
 
   const usersRoute = createUsersRoute({
-    db: mockDb as never,
+    db: mockDb as unknown as Database,
     r2Bucket: MOCK_R2_BUCKET,
     r2PublicUrl: "https://cdn.example.com",
-    auth: mockAuth as never,
+    auth: mockAuth as unknown as Auth,
   });
   app.route("/api/users", usersRoute);
 
@@ -958,10 +966,10 @@ describe("POST /api/users/me/avatar", () => {
       // Arrange
       const app = createGetTestAppWithoutAuth();
       const usersRoute = createUsersRoute({
-        db: mockDb as never,
+        db: mockDb as unknown as Database,
         r2Bucket: MOCK_R2_BUCKET,
         r2PublicUrl: "https://cdn.example.com",
-        auth: mockAuth as never,
+        auth: mockAuth as unknown as Auth,
       });
       app.route("/api/users", usersRoute);
       const file = new File([new Uint8Array([0xff, 0xd8, 0xff])], "avatar.jpg", {
@@ -969,7 +977,7 @@ describe("POST /api/users/me/avatar", () => {
       });
 
       // Act
-      const res = await postAvatar(app as never, file);
+      const res = await postAvatar(app as unknown as { request: Hono["request"] }, file);
 
       // Assert
       expect(res.status).toBe(HTTP_UNAUTHORIZED);

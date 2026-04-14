@@ -62,7 +62,12 @@ function createTestDb() {
   return { db, dbPath, client };
 }
 
-/** テスト用テーブルを作成する */
+/**
+ * テスト用テーブルを作成する
+ *
+ * このSQLは @api/db/schema/index のスキーマと同期が必要。
+ * スキーマ変更時は手動で更新すること。
+ */
 async function createTables(db: ReturnType<typeof drizzle>) {
   await db.run(
     "CREATE TABLE IF NOT EXISTS users (id TEXT PRIMARY KEY, email TEXT NOT NULL UNIQUE, name TEXT, image TEXT, email_verified INTEGER DEFAULT 0, username TEXT UNIQUE, bio TEXT, website_url TEXT, github_username TEXT, twitter_username TEXT, avatar_url TEXT, is_profile_public INTEGER DEFAULT 1, preferred_language TEXT DEFAULT 'ja', is_premium INTEGER DEFAULT 0, premium_expires_at TEXT, free_ai_uses_remaining INTEGER DEFAULT 5, free_ai_reset_at TEXT, push_token TEXT, push_enabled INTEGER DEFAULT 1, created_at TEXT NOT NULL DEFAULT (datetime('now')), updated_at TEXT NOT NULL DEFAULT (datetime('now')))",
@@ -196,10 +201,10 @@ describe("パスワード変更ルートの scrypt 互換性統合テスト", ()
         .from(accounts)
         .where(eq(accounts.userId, TEST_USER_ID));
 
-      const storedHash1 = account?.password ?? "";
-      expect(storedHash1).toBeTruthy();
+      const storedHash = account?.password ?? "";
+      expect(storedHash).toBeTruthy();
       const isNewPasswordValid = await verifyPassword({
-        hash: storedHash1,
+        hash: storedHash,
         password: NEW_PASSWORD,
       });
       expect(isNewPasswordValid).toBe(true);
@@ -225,9 +230,9 @@ describe("パスワード変更ルートの scrypt 互換性統合テスト", ()
         .from(accounts)
         .where(eq(accounts.userId, TEST_USER_ID));
 
-      const storedHash2 = account?.password ?? "";
+      const storedHash = account?.password ?? "";
       const isOldPasswordValid = await verifyPassword({
-        hash: storedHash2,
+        hash: storedHash,
         password: OLD_PASSWORD,
       });
       expect(isOldPasswordValid).toBe(false);
@@ -271,9 +276,9 @@ describe("パスワード変更ルートの scrypt 互換性統合テスト", ()
         .from(accounts)
         .where(eq(accounts.userId, TEST_USER_ID));
 
-      const storedHash3 = account?.password ?? "";
-      expect(storedHash3).toBeTruthy();
-      const hashParts = storedHash3.split(":");
+      const storedHash = account?.password ?? "";
+      expect(storedHash).toBeTruthy();
+      const hashParts = storedHash.split(":");
 
       // scrypt 形式: saltHex:hashHex（2パーツ）
       // PBKDF2 形式: pbkdf2:iterations:saltHex:hashHex（4パーツ）
@@ -316,10 +321,10 @@ describe("パスワード変更ルートの scrypt 互換性統合テスト", ()
         .from(accounts)
         .where(eq(accounts.userId, TEST_USER_ID));
 
-      const storedHash4 = account?.password ?? "";
-      expect(storedHash4).toBeTruthy();
+      const storedHash = account?.password ?? "";
+      expect(storedHash).toBeTruthy();
       const isNewPasswordValid = await verifyPassword({
-        hash: storedHash4,
+        hash: storedHash,
         password: NEW_PASSWORD,
       });
       expect(isNewPasswordValid).toBe(true);
@@ -353,9 +358,9 @@ describe("パスワード変更ルートの scrypt 互換性統合テスト", ()
         .from(accounts)
         .where(eq(accounts.userId, TEST_USER_ID));
 
-      const storedHash5 = account?.password ?? "";
-      expect(storedHash5).toBeTruthy();
-      const hashParts = storedHash5.split(":");
+      const storedHash = account?.password ?? "";
+      expect(storedHash).toBeTruthy();
+      const hashParts = storedHash.split(":");
       expect(hashParts).toHaveLength(2);
       expect(hashParts[0]).not.toBe("pbkdf2");
     });
@@ -388,9 +393,9 @@ describe("パスワード変更ルートの scrypt 互換性統合テスト", ()
         .from(accounts)
         .where(eq(accounts.userId, TEST_USER_ID));
 
-      const storedHash6 = account?.password ?? "";
+      const storedHash = account?.password ?? "";
       const isOldPasswordValid = await verifyPassword({
-        hash: storedHash6,
+        hash: storedHash,
         password: OLD_PASSWORD,
       });
       expect(isOldPasswordValid).toBe(false);
