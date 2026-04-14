@@ -370,7 +370,7 @@
   },
   "time": {
     "justNow": "Just now",
-    "minutesAgo": "{{count}} min ago",
+    "minutesAgo": "{{count}} minutes ago",
     "hoursAgo": "{{count}} hours ago",
     "daysAgo": "{{count}} days ago",
     "weeksAgo": "{{count}} weeks ago",
