@@ -9,14 +9,29 @@ import {
 import { HTTP_UNAUTHORIZED, HTTP_UNPROCESSABLE_ENTITY } from "../lib/http-status";
 import { omitContent } from "../lib/response-utils";
 
+/** マッチしない特殊トークン（防御的フォールバック用） */
+const FTS_NO_MATCH_TOKEN = '"___no_match___"*';
+
 /**
- * LIKE検索のワイルドカード文字をエスケープする
+ * 検索クエリをFTS5のMATCH式に変換する
  *
- * @param input - エスケープ対象の文字列
- * @returns エスケープ済み文字列
+ * 各トークンをダブルクォートで囲み前方一致（*）を付加し、ANDで連結する。
+ * ダブルクォートはダブルクォート2連でエスケープする。
+ *
+ * @param query - 検索キーワード（スペース区切り複数語可）
+ * @returns FTS5 MATCH 式文字列
  */
-export function escapeLikeWildcards(input: string): string {
-  return input.replace(/[%_\\]/g, (char) => `\\${char}`);
+export function buildFtsMatchExpression(query: string): string {
+  const tokens = query
+    .trim()
+    .split(/\s+/)
+    .filter((t) => t.length > 0);
+
+  if (tokens.length === 0) {
+    return FTS_NO_MATCH_TOKEN;
+  }
+
+  return tokens.map((token) => `"${token.replace(/"/g, '""')}"*`).join(" AND ");
 }
 
 /** デフォルトのページサイズ */
