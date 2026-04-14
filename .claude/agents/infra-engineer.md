@@ -24,7 +24,7 @@ tools:
 
 - `worktree`: worktree の絶対パス（例: `/Users/foo/tech_clip/issue-123`）
 - `issue_number`: Issue 番号
-- `feedback`（任意）: GitHub レビューのフィードバック内容（修正ループ時）
+- `agent_name`: チーム内での自分の名前（例: "issue-123-infra-engineer"）
 
 ## プロジェクトコンテキスト
 
@@ -87,13 +87,24 @@ TechClip のインフラは以下の技術で構成されています。
 
 ## ワークフロー
 
+### フェーズ 0: analyst からの SendMessage 待機
+
+analyst から SendMessage が届くまで待機する。メッセージには以下が含まれる:
+
+```
+spec: {spec_file_path}
+方針: {実装方針の1行サマリー}
+```
+
+`spec:` プレフィックスのメッセージのみを処理対象とする（他は無視する）。
+
 ### フェーズ 1: spec 読み込み
+
+SendMessage の内容から spec ファイルパスを取得し、spec ファイルを読み込む:
 
 ```bash
 ls {worktree}/docs/superpowers/specs/*.md | sort | tail -1
 ```
-
-最新の spec ファイルを読む。`feedback` が渡された場合はそちらも参照する。
 
 ### フェーズ 2: インフラ実装
 
@@ -113,43 +124,41 @@ lint エラーがゼロになるまで修正する。
 cd {worktree} && git add . && git commit -m "chore: ..."
 ```
 
-### フェーズ 5: impl-ready 書き込み
+### フェーズ 5: infra-reviewer への通知
+
+コミット後、infra-reviewer に SendMessage を送信する:
+
+- **to**: `"issue-{issue_number}-infra-reviewer"`
+- **message**: `impl-ready: <commit-hash>`
+
+コミットハッシュは以下で取得する:
 
 ```bash
-git -C {worktree} rev-parse HEAD > /tmp/tech-clip-issue-{issue_number}/impl-ready
+git -C {worktree} rev-parse HEAD
 ```
 
-### フェーズ 6: review-result.json ポーリング
+### フェーズ 6: infra-reviewer からの返答待機ループ
 
-Bash ツールの `timeout: 300000` を指定してポーリングする:
+infra-reviewer からの SendMessage を待機する。`APPROVED`、`CHANGES_REQUESTED:`、`CONFLICT:` プレフィックスのメッセージを処理する。
+
+- **`APPROVED`**: 終了する
+- **`CHANGES_REQUESTED: <feedback>`**: feedback の内容を読んで修正 → フェーズ 3 に戻る（lint → commit → impl-ready 送信 → 待機継続）
+- **`CONFLICT: <ファイル一覧>`**: コンフリクト解消フローを実行 → フェーズ 3 に戻る
+
+#### コンフリクト解消フロー
 
 ```bash
-CURRENT_HASH=$(cd {worktree} && git rev-parse HEAD)
-until [ -f /tmp/tech-clip-issue-{issue_number}/review-result.json ] && \
-  [ "$(jq -r '.commit' /tmp/tech-clip-issue-{issue_number}/review-result.json 2>/dev/null)" = "$CURRENT_HASH" ]; do
-  sleep 10
-done
-cat /tmp/tech-clip-issue-{issue_number}/review-result.json
+# 両側の意図を把握する
+gh issue view {issue_number}
+git -C {worktree} log origin/main --oneline -20
+
+# コンフリクト解消
+cd {worktree} && git fetch origin && git merge origin/main
+# コンフリクト箇所を手動で解消する
+cd {worktree} && git add . && git commit -m "fix: コンフリクト解消"
 ```
 
-自分のコミットハッシュと一致する結果が来たら内容を読む。
-
-- **PASS**: 終了する
-- **FAIL**: issues の内容を読んで修正 → `review-result.json` を削除してからフェーズ 2 へ戻る（`find /tmp/tech-clip-issue-{issue_number}/ -maxdepth 1 -name "review-result.json" -delete` → コミット → impl-ready を新しいハッシュで上書き → ポーリング再開）
-
-## ポーリング方針
-
-Bash ツールの `timeout` パラメータを **300000（5分）** に指定してポーリングループを実行する。
-
-```bash
-# impl-ready の例（review-result.json も同様）
-until [ -f /tmp/tech-clip-issue-{issue_number}/impl-ready ]; do sleep 10; done
-cat /tmp/tech-clip-issue-{issue_number}/impl-ready
-```
-
-- Bash ツール呼び出し時に `timeout: 300000` を指定すること（デフォルト 2 分では不足）
-- 1回の Bash 呼び出しで最大5分待機できる
-- ファイルが現れた瞬間にループを抜けるため確実
+解消完了後、フェーズ 3 へ戻る。
 
 ## Biome lint
 

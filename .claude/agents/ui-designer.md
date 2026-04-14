@@ -26,7 +26,7 @@ tools:
 
 - `worktree`: worktree の絶対パス（例: `/Users/foo/tech_clip/issue-123`）
 - `issue_number`: Issue 番号
-- `feedback`（任意）: GitHub レビューのフィードバック内容（修正ループ時）
+- `agent_name`: このエージェントの名前（例: `issue-123-ui-designer`）
 
 ## プロジェクトコンテキスト
 
@@ -106,13 +106,21 @@ import { Check, AlertCircle, Settings, Loader2 } from 'lucide-react-native';
 
 ## ワークフロー
 
-### フェーズ 1: spec 読み込み
+### フェーズ 0: analyst からの SendMessage 待機
 
-```bash
-ls {worktree}/docs/superpowers/specs/*.md | sort | tail -1
+analyst から `spec:` プレフィックスの SendMessage が届くまで待機する。
+
+メッセージ形式:
+```
+spec: <spec ファイルの絶対パス>
+方針: <1行サマリー>
 ```
 
-最新の spec ファイルを読む。`feedback` が渡された場合はそちらも参照する。
+`spec:` で始まるメッセージのみを処理対象とする。他のメッセージは無視する。
+
+### フェーズ 1: spec 読み込み
+
+analyst から受け取った spec ファイルパスを Read ツールで読み込む。
 
 ### フェーズ 2: TDD 実装
 
@@ -138,43 +146,43 @@ lint エラーがゼロになるまで修正する。
 cd {worktree} && git add . && git commit -m "feat: ..."
 ```
 
-### フェーズ 5: impl-ready 書き込み
+### フェーズ 5: reviewer への通知
 
-```bash
-git -C {worktree} rev-parse HEAD > /tmp/tech-clip-issue-{issue_number}/impl-ready
+```text
+SendMessage(
+  to: "issue-{issue_number}-ui-reviewer",
+  message: "impl-ready: <コミットハッシュ>"
+)
 ```
 
-### フェーズ 6: review-result.json ポーリング
+`git -C {worktree} rev-parse HEAD` でコミットハッシュを取得してから送信する。
 
-Bash ツールの `timeout: 300000` を指定してポーリングする:
+### フェーズ 6: reviewer からの返答待機ループ
 
-```bash
-CURRENT_HASH=$(cd {worktree} && git rev-parse HEAD)
-until [ -f /tmp/tech-clip-issue-{issue_number}/review-result.json ] && \
-  [ "$(jq -r '.commit' /tmp/tech-clip-issue-{issue_number}/review-result.json 2>/dev/null)" = "$CURRENT_HASH" ]; do
-  sleep 10
-done
-cat /tmp/tech-clip-issue-{issue_number}/review-result.json
-```
+ui-reviewer から SendMessage が届くまで待機する。
 
-自分のコミットハッシュと一致する結果が来たら内容を読む。
+- **`APPROVED`** (固定文字列): 実装完了。終了する。
+- **`CHANGES_REQUESTED: <フィードバック内容>`**: フィードバックを読んでフェーズ 2 に戻り修正する。修正後フェーズ 4 → 5 → 6 を繰り返す。
+- **`CONFLICT: <詳細>`**: コンフリクト解消フローを実行する。
 
-- **PASS**: 終了する
-- **FAIL**: issues の内容を読んで修正 → `review-result.json` を削除してからフェーズ 2 へ戻る（`find /tmp/tech-clip-issue-{issue_number}/ -maxdepth 1 -name "review-result.json" -delete` → コミット → impl-ready を新しいハッシュで上書き → ポーリング再開）
-
-## ポーリング方針
-
-Bash ツールの `timeout` パラメータを **300000（5分）** に指定してポーリングループを実行する。
+#### コンフリクト解消フロー
 
 ```bash
-# impl-ready の例（review-result.json も同様）
-until [ -f /tmp/tech-clip-issue-{issue_number}/impl-ready ]; do sleep 10; done
-cat /tmp/tech-clip-issue-{issue_number}/impl-ready
+git -C {worktree} fetch origin
+git -C {worktree} merge origin/main
 ```
 
-- Bash ツール呼び出し時に `timeout: 300000` を指定すること（デフォルト 2 分では不足）
-- 1回の Bash 呼び出しで最大5分待機できる
-- ファイルが現れた瞬間にループを抜けるため確実
+コンフリクト箇所を確認し、両側の意図を把握してから解消する。解消後はフェーズ 4 → 5 → 6 を繰り返す。
+
+## コーディング規約
+
+- `any` 型禁止 → `unknown` + 型ガードを使用
+- `else` 文禁止 → 早期リターンを使用
+- 関数内コメント禁止 → JSDoc で説明
+- `console.log` 禁止 → logger を使用
+- ハードコード禁止 → 環境変数または定数化
+- エラーメッセージは日本語で記述する
+- 未使用の import・変数は即削除
 
 ## 出力規約
 
