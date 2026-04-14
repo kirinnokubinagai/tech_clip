@@ -1,7 +1,8 @@
 # モバイル認証トークン保存・失効・再認証方針
 
 親 Issue: #822  
-対象 Issue: #852
+初出: #852（設計文書作成）  
+本改訂: #822（現行実装との同期）
 
 ---
 
@@ -104,6 +105,23 @@ SessionExpiredError が伝播する先:
 - `sessionExpiredMessage` が非 null の場合、ログイン画面でメッセージを表示
 - メッセージ表示後は `clearSessionExpiredMessage()` を呼び出してクリア
 
+### apiFetch のエラー分類
+
+`apiFetch` は非 2xx / 非 JSON / ネットワーク失敗をすべて型付きエラーで表現する。
+上位レイヤ（Zustand ストア、画面）はインスタンスチェックで分岐する。
+
+| エラークラス | 発生条件 | 上位での扱い |
+|---|---|---|
+| `SessionExpiredError` | 401 受信後のリフレッシュが失敗 / リトライ後も 401 | ログアウト + `sessionExpiredMessage` |
+| `ApiHttpError` | 非 2xx かつ業務エラー JSON 形式（`{success:false,error:...}`）でない応答 | 画面でエラートースト表示など |
+| `ApiParseError` | 2xx だが JSON パース失敗（Content-Type 不整合含む） | 同上 |
+| `ApiNetworkError` | fetch 自体の失敗、タイムアウト（15 秒） | 同上 |
+
+業務エラー JSON（`{success:false,error:{code,message}}`）は例外として扱わず、呼び出し側が
+`success === false` を見て分岐する設計。
+
+**実装箇所**: `apps/mobile/src/lib/api.ts`
+
 ---
 
 ## 4. トークンローテーションと再利用検知
@@ -141,13 +159,22 @@ SessionExpiredError が伝播する先:
 
 ```
 クライアント:
-  1. clearAuthTokens() → SecureStore から token と refreshToken を削除
-  2. Zustand ストアをリセット (user: null, session: null, isAuthenticated: false)
+  1. POST /api/auth/sign-out を呼び出す（Authorization: Bearer <token>）
+  2. 応答を受け取った後（成功/失敗を問わず）clearAuthTokens() を実行
+     → SecureStore から token と refreshToken を削除
+  3. Zustand ストアをリセット (user: null, session: null, isAuthenticated: false)
+  ※ サーバー到達不能・API エラー時もローカルクリアは必ず実行される
 
 サーバー:
-  - 現状: クライアントのみでのローカルクリア（サーバー側でセッションを削除していない）
-  → 派生 Issue 候補: **サインアウト時のサーバー側セッション削除**
+  - POST /api/auth/sign-out ハンドラ（apps/api/src/routes/auth.ts）が
+    Bearer トークンに紐づく sessions 行を削除する
+  - refresh_tokens は onDelete: cascade で自動削除される
+  - 該当 sessions 行が存在しない場合も冪等に 200 を返す
 ```
+
+**実装箇所**:
+- クライアント: `apps/mobile/src/stores/auth-store.ts` の `signOut()`
+- サーバー: `apps/api/src/routes/auth.ts` の `POST /sign-out`
 
 ### アカウント削除
 
@@ -211,10 +238,10 @@ React Native はブラウザの DOM を持たないため、従来の XSS は基
 
 ## 8. 現実装のギャップと派生 Issue 候補
 
+現時点で epic #822 のスコープ外として残っている検討事項を参考情報として列挙する。
+
 | 優先度 | 課題 | 詳細 |
 |--------|------|------|
-| 高 | サインアウト時のサーバー側セッション削除 | 現状はクライアントのみでローカルクリアしている。サーバー側のセッション・リフレッシュトークンを明示的に削除する API が必要 |
-| 高 | 期限切れリフレッシュトークンの定期クリーンアップ | `refresh_tokens` テーブルに期限切れレコードが蓄積し続ける（`refresh-tokens.ts` に @todo あり）。Cron ジョブの実装が必要 |
 | 中 | アクセストークン有効期限の明示的な設定 | Better Auth のデフォルト（7日）を明示的に設定し、モバイルユースケースに適した値（例: 1時間）を検討する |
 | 中 | Jailbreak/Root 検知の導入検討 | ハイリスクユーザー向けのセキュリティ強化として検討。ただし UX への影響も考慮が必要 |
 | 低 | リフレッシュトークン有効期限の独立した設定 | 現状はセッションの `expiresAt` をそのまま使用している。リフレッシュトークン専用の有効期限（例: 30日）を別途設けることを検討 |
