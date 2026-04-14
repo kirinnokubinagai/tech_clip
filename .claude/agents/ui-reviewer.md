@@ -129,7 +129,7 @@ EOF
 
 ```bash
 # レビュー通過マーカー作成
-touch {worktree}/.claude/.review-passed
+# Write ツールを使って {worktree}/.claude/.review-passed を作成すること（内容は空でよい）
 
 # push
 cd {worktree} && bash scripts/push-verified.sh

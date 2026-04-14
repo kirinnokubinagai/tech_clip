@@ -255,7 +255,7 @@ worktree-isolation-guard.sh により以下の制限がある（mainブランチ
 `.claude/**` や `scripts/` であっても必ず worktree 経由で変更すること。
 
 なお `.omc/state/**` は worktree 上でも Edit/Write がブロックされる（is_blocked_file による）。
-`.claude/.review-passed` は Write ツールまたは `touch`/`cat >` 等の Bash コマンドで作成・変更可能（例: `touch <worktree>/.claude/.review-passed`）。
+`.claude/.review-passed` は Write ツールで作成すること（例: Write ツールで `{worktree}/.claude/.review-passed` を作成、内容は空でよい）。
 
 | 項目 | 詳細 |
 |---|---|
