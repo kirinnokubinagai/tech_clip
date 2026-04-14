@@ -3,12 +3,24 @@
   "compilerOptions": {
     "strict": true,
     "module": "esnext",
-    "types": ["jest"],
+    "types": [
+      "jest"
+    ],
     "paths": {
-      "@/*": ["./src/*"],
-      "@mobile/*": ["./src/*"],
-      "@mobile-app/*": ["./app/*"]
+      "@/*": [
+        "./src/*"
+      ],
+      "@mobile/*": [
+        "./src/*"
+      ],
+      "@mobile-app/*": [
+        "./app/*"
+      ]
     }
   },
-  "include": ["**/*.ts", "**/*.tsx", ".expo/types/**/*.ts", "expo-env.d.ts"]
+  "include": [
+    "**/*.ts",
+    "**/*.tsx",
+    "nativewind-env.d.ts"
+  ]
 }
