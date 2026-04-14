@@ -212,8 +212,7 @@
         "nameTooLong": "姓名请输入{{max}}个字符以内",
         "usernameTooLong": "用户名请输入{{max}}个字符以内",
         "usernameInvalid": "用户名只能使用英数字和下划线",
-        "bioTooLong": "个人简介请输入{{max}}个字符以内",
-        "urlTooLong": "URL请输入{{max}}个字符以内"
+        "bioTooLong": "个人简介请输入{{max}}个字符以内"
       }
     },
     "followers": {

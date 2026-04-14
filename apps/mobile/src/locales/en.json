@@ -227,8 +227,7 @@
         "twitterUsernameTooLong": "X (Twitter) username must be {{max}} characters or less",
         "twitterUsernameInvalid": "X (Twitter) username can only contain letters, numbers, and underscores",
         "githubUsernameTooLong": "GitHub username must be {{max}} characters or less",
-        "githubUsernameInvalid": "GitHub username can only contain letters, numbers, and hyphens",
-        "urlTooLong": "URL must be {{max}} characters or less"
+        "githubUsernameInvalid": "GitHub username can only contain letters, numbers, and hyphens"
       }
     },
     "followers": {

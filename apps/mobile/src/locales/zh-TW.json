@@ -212,8 +212,7 @@
         "nameTooLong": "姓名請輸入{{max}}個字元以內",
         "usernameTooLong": "用戶名請輸入{{max}}個字元以內",
         "usernameInvalid": "用戶名只能使用英數字和底線",
-        "bioTooLong": "個人簡介請輸入{{max}}個字元以內",
-        "urlTooLong": "URL請輸入{{max}}個字元以內"
+        "bioTooLong": "個人簡介請輸入{{max}}個字元以內"
       }
     },
     "followers": {

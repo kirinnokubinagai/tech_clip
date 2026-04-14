@@ -13,6 +13,7 @@ import { useColors } from "@/hooks/use-colors";
 import { useMyProfile, useUpdateMyProfile, useUploadMyAvatar } from "@/hooks/use-my-profile";
 import { useToast } from "@/hooks/use-toast";
 import { useAuthStore } from "@/stores/auth-store";
+import { isApiErrorPayload } from "@/types/api-error";
 import type { UpdateProfileInput } from "@/types/me";
 
 /** アバター画像のサイズ（px） */
@@ -75,30 +76,6 @@ type FormErrors = Partial<Record<keyof ProfileFormData, string>>;
 
 /** t関数の型 */
 type TFunction = (key: string, opts?: Record<string, unknown>) => string;
-
-/** APIエラーレスポンスの型 */
-type ApiErrorPayload = {
-  success: false;
-  error: {
-    code: string;
-    message: string;
-    details?: Array<{ field: string; message: string }>;
-  };
-};
-
-/**
- * 値が ApiErrorPayload かどうかを判定する
- *
- * @param value - 判定対象
- * @returns ApiErrorPayload なら true
- */
-function isApiErrorPayload(value: unknown): value is ApiErrorPayload {
-  if (typeof value !== "object" || value === null) {
-    return false;
-  }
-  const maybe = value as { success?: unknown; error?: unknown };
-  return maybe.success === false && typeof maybe.error === "object" && maybe.error !== null;
-}
 
 /**
  * ユーザー名の頭文字を取得する

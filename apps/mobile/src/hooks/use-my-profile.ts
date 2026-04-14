@@ -1,36 +1,14 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { apiFetch } from "@/lib/api";
+import type { ApiErrorPayload } from "@/types/api-error";
+import { isApiErrorPayload } from "@/types/api-error";
 import type {
   MeProfile,
   MeProfileResponse,
   UpdateProfileInput,
   UpdateProfileResponse,
 } from "@/types/me";
-
-/** API エラーレスポンスの型 */
-type ApiErrorResponse = {
-  success: false;
-  error: {
-    code: string;
-    message: string;
-    details?: Array<{ field: string; message: string }>;
-  };
-};
-
-/**
- * API レスポンスがエラーペイロードかどうかを判定する
- *
- * @param value - 判定対象
- * @returns エラーペイロードなら true
- */
-function isApiError(value: unknown): value is ApiErrorResponse {
-  if (typeof value !== "object" || value === null) {
-    return false;
-  }
-  const maybe = value as { success?: unknown; error?: unknown };
-  return maybe.success === false && typeof maybe.error === "object" && maybe.error !== null;
-}
 
 /** 自分のプロフィールのクエリキー */
 export const MY_PROFILE_QUERY_KEY = "my-profile";
@@ -40,6 +18,12 @@ const MIME_TYPE_JPEG = "image/jpeg";
 
 /** アバター画像の PNG MIME タイプ */
 const MIME_TYPE_PNG = "image/png";
+
+/** アバター画像の WebP MIME タイプ */
+const MIME_TYPE_WEBP = "image/webp";
+
+/** アバター画像の HEIC MIME タイプ（iOS 撮影画像） */
+const MIME_TYPE_HEIC = "image/heic";
 
 /** アバター画像拡張子が PNG の場合の判定文字列 */
 const EXT_PNG = "png";
@@ -75,11 +59,11 @@ export function useUpdateMyProfile() {
 
   return useMutation({
     mutationFn: async (input: UpdateProfileInput): Promise<MeProfile> => {
-      const data = await apiFetch<UpdateProfileResponse | ApiErrorResponse>("/api/users/me", {
+      const data = await apiFetch<UpdateProfileResponse | ApiErrorPayload>("/api/users/me", {
         method: "PATCH",
         body: JSON.stringify(input),
       });
-      if (isApiError(data)) {
+      if (isApiErrorPayload(data)) {
         throw data;
       }
       return (data as UpdateProfileResponse).data;
@@ -92,13 +76,17 @@ export function useUpdateMyProfile() {
 
 /**
  * アバター画像の MIME タイプを拡張子から判定する
+ * PNG / WebP / HEIC(HEIF) に対応し、その他は JPEG とみなす
  *
  * @param filename - ファイル名
  * @returns MIME タイプ文字列
  */
 function getMimeType(filename: string): string {
   const ext = filename.split(".").pop()?.toLowerCase();
-  return ext === EXT_PNG ? MIME_TYPE_PNG : MIME_TYPE_JPEG;
+  if (ext === EXT_PNG) return MIME_TYPE_PNG;
+  if (ext === "webp") return MIME_TYPE_WEBP;
+  if (ext === "heic" || ext === "heif") return MIME_TYPE_HEIC;
+  return MIME_TYPE_JPEG;
 }
 
 /**
@@ -121,14 +109,11 @@ export function useUploadMyAvatar() {
        */
       form.append(AVATAR_FIELD_NAME, { uri, name: filename, type } as unknown as Blob);
 
-      const data = await apiFetch<UpdateProfileResponse | ApiErrorResponse>(
-        "/api/users/me/avatar",
-        {
-          method: "POST",
-          body: form,
-        },
-      );
-      if (isApiError(data)) {
+      const data = await apiFetch<UpdateProfileResponse | ApiErrorPayload>("/api/users/me/avatar", {
+        method: "POST",
+        body: form,
+      });
+      if (isApiErrorPayload(data)) {
         throw data;
       }
       return (data as UpdateProfileResponse).data;
