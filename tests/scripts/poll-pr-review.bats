@@ -27,7 +27,7 @@ mock_gh_with_json() {
     local json_file="$TMPDIR/mock_response.json"
     mkdir -p "$fake_bin_dir"
     printf '%s' "$json" > "$json_file"
-    printf '#!/usr/bin/env bash\ncat %s\n' "$json_file" > "$fake_bin_dir/gh"
+    printf '#!/usr/bin/env bash\ncat "%s"\n' "$json_file" > "$fake_bin_dir/gh"
     chmod +x "$fake_bin_dir/gh"
     export PATH="$fake_bin_dir:$PATH"
 }
@@ -364,4 +364,31 @@ EOF
     # Assert: bot コメントではないので PENDING → TIMEOUT
     [ "$status" -eq 2 ]
     [[ "$output" == *"TIMEOUT"* ]]
+}
+
+@test "changes_requested と approved が両方マッチする場合は CHANGES_REQUESTED が優先されること" {
+    # Arrange
+    local json
+    json=$(cat <<'EOF'
+{
+  "reviewDecision": null,
+  "reviews": [],
+  "comments": [
+    {
+      "author": {"login": "claude[bot]"},
+      "body": "🔄 Request Changes\n\n## 指摘\n- xxx\n\n全件 PASS",
+      "createdAt": "2024-01-01T00:00:00Z"
+    }
+  ]
+}
+EOF
+)
+    mock_gh_with_json "$json"
+
+    # Act
+    run bash "$SCRIPT" "123"
+
+    # Assert
+    [ "$status" -eq 1 ]
+    [[ "$output" == *"CHANGES_REQUESTED"* ]]
 }
