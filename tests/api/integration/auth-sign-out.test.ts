@@ -12,7 +12,7 @@ const MOCK_TOKEN = "integration-test-session-token-xyz";
 /** 成功レスポンスの型定義 */
 type SignOutSuccessBody = {
   success: true;
-  data: { success: boolean };
+  data: null;
 };
 
 /** エラーレスポンスの型定義 */
@@ -91,7 +91,7 @@ describe("POST /api/auth/sign-out（統合テスト: index.ts 経由のルーテ
 
       // Assert
       expect(body.success).toBe(true);
-      expect(body.data.success).toBe(true);
+      expect(body.data).toBeNull();
     });
 
     it("サインアウト時にDB sessions テーブルの delete が呼ばれること", async () => {

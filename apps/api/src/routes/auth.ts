@@ -280,7 +280,7 @@ export function createAuthRoute({ db, getAuth }: AuthRouteOptions) {
       return c.json(
         {
           success: true,
-          data: { success: true },
+          data: null,
         },
         HTTP_OK,
       );

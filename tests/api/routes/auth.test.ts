@@ -82,7 +82,7 @@ type RefreshSuccessBody = {
 /** 成功レスポンスの型（サインアウト） */
 type SignOutSuccessBody = {
   success: true;
-  data: { success: boolean };
+  data: null;
 };
 
 /**
@@ -122,7 +122,7 @@ describe("POST /api/auth/sign-out", () => {
       expect(res.status).toBe(HTTP_OK);
       const body = (await res.json()) as SignOutSuccessBody;
       expect(body.success).toBe(true);
-      expect(body.data.success).toBe(true);
+      expect(body.data).toBeNull();
       expect(mockDb.delete).toHaveBeenCalledTimes(1);
       expect(deleteChain.where).toHaveBeenCalledTimes(1);
     });
