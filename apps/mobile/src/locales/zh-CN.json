@@ -143,6 +143,7 @@
     "addToFavorites": "添加到收藏",
     "removeFromFavorites": "取消收藏",
     "noContent": "文章内容不可用",
+    "offlineContentUnavailable": "This article has not been saved for offline use. Open it while online to save the content.",
     "viewOriginal": "查看原文",
     "fetchError": "获取文章失败",
     "loadingArticle": "加载中...",

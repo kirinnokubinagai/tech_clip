@@ -144,6 +144,7 @@
     "addToFavorites": "Add to favorites",
     "removeFromFavorites": "Remove from favorites",
     "noContent": "Article content is unavailable",
+    "offlineContentUnavailable": "This article has not been saved for offline use. Open it while online to save the content.",
     "viewOriginal": "View original article",
     "fetchError": "Failed to fetch article",
     "loadingArticle": "Loading...",
