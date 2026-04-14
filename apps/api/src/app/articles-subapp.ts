@@ -122,6 +122,9 @@ export async function handleArticles(
   const searchRoute = createSearchRoute({
     searchQueryFn: async (params) => {
       const matchExpr = buildFtsMatchExpression(params.query);
+      if (matchExpr === null) {
+        return [];
+      }
       const conditions = [
         eq(articles.userId, params.userId),
         sql`articles.rowid IN (SELECT rowid FROM articles_fts WHERE articles_fts MATCH ${matchExpr})`,

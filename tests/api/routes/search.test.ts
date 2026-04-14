@@ -192,7 +192,7 @@ describe("buildFtsMatchExpression", () => {
     expect(result).toBe('"TypeScript"*');
   });
 
-  it("空文字列の場合マッチしない特殊トークンを返すこと", () => {
+  it("空文字列の場合nullを返すこと", () => {
     // Arrange
     const query = "";
 
@@ -200,10 +200,10 @@ describe("buildFtsMatchExpression", () => {
     const result = buildFtsMatchExpression(query);
 
     // Assert
-    expect(result).toBe('"___no_match___"*');
+    expect(result).toBeNull();
   });
 
-  it("全スペースの場合マッチしない特殊トークンを返すこと", () => {
+  it("全スペースの場合nullを返すこと", () => {
     // Arrange
     const query = "   ";
 
@@ -211,7 +211,7 @@ describe("buildFtsMatchExpression", () => {
     const result = buildFtsMatchExpression(query);
 
     // Assert
-    expect(result).toBe('"___no_match___"*');
+    expect(result).toBeNull();
   });
 });
 

@@ -1,5 +1,14 @@
 import path from "node:path";
 
+/**
+ * Drizzle マイグレーションファイルのフォルダパスを返す
+ *
+ * @returns apps/api/drizzle ディレクトリの絶対パス
+ */
+function getDrizzleMigrationsFolder(): string {
+  return path.resolve(import.meta.dirname, "../../../apps/api/drizzle");
+}
+
 import { articles } from "@api/db/schema/articles";
 import { users } from "@api/db/schema/users";
 import { buildFtsMatchExpression } from "@api/routes/search";
@@ -49,14 +58,17 @@ const ARTICLE_BASE = {
  *
  * @param db - Drizzle DBインスタンス
  * @param userId - 検索対象ユーザーID
- * @param matchExpr - FTS5 MATCH 式
+ * @param matchExpr - FTS5 MATCH 式。nullの場合は空配列を返す
  * @returns 記事一覧
  */
 async function searchArticlesByFts(
   db: ReturnType<typeof drizzle>,
   userId: string,
-  matchExpr: string,
+  matchExpr: string | null,
 ) {
+  if (matchExpr === null) {
+    return [];
+  }
   return await db
     .select()
     .from(articles)
@@ -78,7 +90,7 @@ describe("FTS5 全文検索 統合テスト", () => {
     db = drizzle(client);
 
     await migrate(db, {
-      migrationsFolder: path.resolve(import.meta.dirname, "../../../apps/api/drizzle"),
+      migrationsFolder: getDrizzleMigrationsFolder(),
     });
 
     await db.insert(users).values([TEST_USER_1, TEST_USER_2]);
@@ -268,14 +280,11 @@ describe("FTS5 全文検索 統合テスト", () => {
     });
   });
 
-  describe("rebuild動作", () => {
-    it("マイグレーション時点で既存データがFTSに取り込まれていること", async () => {
+  describe("INSERTトリガーによるFTS同期確認", () => {
+    it("INSERTトリガーにより挿入した記事がFTSで検索できること", async () => {
       // Arrange: すでに beforeAll で migrate が実行されており、
-      // migrate 後に insert した記事は rebuild の対象外だが、
-      // この検証は INSERT トリガーが正しく動いていることを確認する
-
       // テスト開始時にINSERTした article_fts_insert_01 が検索できることで
-      // トリガーが機能していることを確認
+      // INSERT トリガーが機能していることを確認する
       const matchExpr = buildFtsMatchExpression("React");
       const results = await searchArticlesByFts(db, TEST_USER_1.id, matchExpr);
 

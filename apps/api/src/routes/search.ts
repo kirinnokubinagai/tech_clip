@@ -9,26 +9,24 @@ import {
 import { HTTP_UNAUTHORIZED, HTTP_UNPROCESSABLE_ENTITY } from "../lib/http-status";
 import { omitContent } from "../lib/response-utils";
 
-/** マッチしない特殊トークン（防御的フォールバック用） */
-const FTS_NO_MATCH_TOKEN = '"___no_match___"*';
-
 /**
  * 検索クエリをFTS5のMATCH式に変換する
  *
  * 各トークンをダブルクォートで囲み前方一致（*）を付加し、ANDで連結する。
  * ダブルクォートはダブルクォート2連でエスケープする。
+ * トークンが存在しない場合はnullを返す（呼び出し元で0件として処理する）。
  *
  * @param query - 検索キーワード（スペース区切り複数語可）
- * @returns FTS5 MATCH 式文字列
+ * @returns FTS5 MATCH 式文字列。トークンが空の場合はnull
  */
-export function buildFtsMatchExpression(query: string): string {
+export function buildFtsMatchExpression(query: string): string | null {
   const tokens = query
     .trim()
     .split(/\s+/)
     .filter((t) => t.length > 0);
 
   if (tokens.length === 0) {
-    return FTS_NO_MATCH_TOKEN;
+    return null;
   }
 
   return tokens.map((token) => `"${token.replace(/"/g, '""')}"*`).join(" AND ");
@@ -65,7 +63,7 @@ type SearchRouteOptions = {
 /**
  * 全文検索ルートを生成する
  *
- * GET /search: title/content/excerptをLIKE検索（認証必須、カーソルベースページネーション）
+ * GET /search: title/content/excerptをFTS5 MATCHで全文検索（認証必須、カーソルベースページネーション）
  *
  * @param options - 検索クエリ関数
  * @returns Hono ルーターインスタンス

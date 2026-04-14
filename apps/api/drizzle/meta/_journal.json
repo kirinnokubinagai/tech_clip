@@ -26,20 +26,6 @@
     {
       "idx": 3,
       "version": "6",
-      "when": 1775100000000,
-      "tag": "0003_add_refresh_tokens_table",
-      "breakpoints": true
-    },
-    {
-      "idx": 4,
-      "version": "6",
-      "when": 1775200000000,
-      "tag": "0004_add_refresh_token_reuse_detection",
-      "breakpoints": true
-    },
-    {
-      "idx": 5,
-      "version": "6",
       "when": 1775300000000,
       "tag": "0005_add_articles_fts",
       "breakpoints": true

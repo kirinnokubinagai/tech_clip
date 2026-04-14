@@ -11,6 +11,8 @@ CREATE VIRTUAL TABLE `articles_fts` USING fts5(
 --> statement-breakpoint
 
 -- 既存データを FTS に取り込む（初回ビルド）
+-- NOTE: rebuild はテーブル全件スキャンを伴うため処理が重い。
+-- 大量データが存在する場合はメンテナンスウィンドウ内での実行を検討すること。
 INSERT INTO `articles_fts`(`articles_fts`) VALUES('rebuild');
 --> statement-breakpoint
 
