@@ -12,7 +12,6 @@ const mockCheckSession = jest.fn().mockResolvedValue(undefined);
 jest.mock("@mobile/stores/auth-store", () => ({
   useAuthStore: jest.fn((selector: (state: Record<string, unknown>) => unknown) =>
     selector({
-      user: null,
       isAuthenticated: false,
       isLoading: false,
       checkSession: mockCheckSession,
@@ -24,14 +23,25 @@ const { useAuthStore } = jest.requireMock("@mobile/stores/auth-store") as {
   useAuthStore: jest.Mock;
 };
 
-/** テスト用ユーザーオブジェクト */
-const MOCK_USER = {
+const mockUseMyProfile = jest.fn();
+
+jest.mock("@mobile/hooks/use-my-profile", () => ({
+  useMyProfile: () => mockUseMyProfile(),
+}));
+
+jest.mock("@mobile/components/ProfileArticlesSection", () => ({
+  ProfileArticlesSection: () => null,
+}));
+
+/** テスト用プロフィールデータ */
+const MOCK_ME_PROFILE = {
   id: "user_01",
   name: "テストユーザー",
-  email: "test@example.com",
-  image: null,
-  createdAt: "2024-01-01T00:00:00Z",
-  updatedAt: "2024-01-01T00:00:00Z",
+  username: null,
+  bio: null,
+  avatarUrl: null,
+  followersCount: 0,
+  followingCount: 0,
 };
 
 /**
@@ -40,7 +50,6 @@ const MOCK_USER = {
 function mockGuestState() {
   useAuthStore.mockImplementation((selector: (state: Record<string, unknown>) => unknown) =>
     selector({
-      user: null,
       isAuthenticated: false,
       isLoading: false,
       checkSession: mockCheckSession,
@@ -51,10 +60,9 @@ function mockGuestState() {
 /**
  * ログイン済み状態をモックする
  */
-function mockAuthenticatedState(overrides: Partial<typeof MOCK_USER> = {}) {
+function mockAuthenticatedState() {
   useAuthStore.mockImplementation((selector: (state: Record<string, unknown>) => unknown) =>
     selector({
-      user: { ...MOCK_USER, ...overrides },
       isAuthenticated: true,
       isLoading: false,
       checkSession: mockCheckSession,
@@ -63,12 +71,11 @@ function mockAuthenticatedState(overrides: Partial<typeof MOCK_USER> = {}) {
 }
 
 /**
- * ローディング状態をモックする
+ * 認証ローディング状態をモックする
  */
 function mockLoadingState() {
   useAuthStore.mockImplementation((selector: (state: Record<string, unknown>) => unknown) =>
     selector({
-      user: null,
       isAuthenticated: false,
       isLoading: true,
       checkSession: mockCheckSession,
@@ -82,7 +89,13 @@ describe("ProfileScreen", () => {
     jest.clearAllMocks();
     mockPush.mockReset();
     mockCheckSession.mockResolvedValue(undefined);
+    mockUseMyProfile.mockReturnValue({
+      data: undefined,
+      isLoading: false,
+      isError: false,
+    });
   });
+
   describe("未ログイン時", () => {
     it("ログイン誘導メッセージが表示されること", async () => {
       // Arrange
@@ -156,6 +169,11 @@ describe("ProfileScreen", () => {
     it("ProfileHeaderにユーザー名が表示されること", async () => {
       // Arrange
       mockAuthenticatedState();
+      mockUseMyProfile.mockReturnValue({
+        data: MOCK_ME_PROFILE,
+        isLoading: false,
+        isError: false,
+      });
 
       // Act
       const { getByTestId } = await render(<ProfileScreen />);
@@ -169,7 +187,12 @@ describe("ProfileScreen", () => {
 
     it("ProfileHeaderにアバターが表示されること（avatarUrl がある場合）", async () => {
       // Arrange
-      mockAuthenticatedState({ image: "https://example.com/avatar.png" });
+      mockAuthenticatedState();
+      mockUseMyProfile.mockReturnValue({
+        data: { ...MOCK_ME_PROFILE, avatarUrl: "https://example.com/avatar.png" },
+        isLoading: false,
+        isError: false,
+      });
 
       // Act
       const { queryByTestId } = await render(<ProfileScreen />);
@@ -183,6 +206,11 @@ describe("ProfileScreen", () => {
     it("avatarUrl がない場合はフォールバックアバターが表示されること", async () => {
       // Arrange
       mockAuthenticatedState();
+      mockUseMyProfile.mockReturnValue({
+        data: MOCK_ME_PROFILE,
+        isLoading: false,
+        isError: false,
+      });
 
       // Act
       const { queryByTestId } = await render(<ProfileScreen />);
@@ -196,6 +224,11 @@ describe("ProfileScreen", () => {
     it("設定ボタンを押すと設定画面に遷移すること", async () => {
       // Arrange
       mockAuthenticatedState();
+      mockUseMyProfile.mockReturnValue({
+        data: MOCK_ME_PROFILE,
+        isLoading: false,
+        isError: false,
+      });
       const { getByTestId } = await render(<ProfileScreen />);
 
       // Act
@@ -208,6 +241,11 @@ describe("ProfileScreen", () => {
     it("設定ボタン押下後に router.push が1度だけ呼ばれること", async () => {
       // Arrange
       mockAuthenticatedState();
+      mockUseMyProfile.mockReturnValue({
+        data: MOCK_ME_PROFILE,
+        isLoading: false,
+        isError: false,
+      });
       const { getByTestId } = await render(<ProfileScreen />);
 
       // Act

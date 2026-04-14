@@ -185,6 +185,7 @@
     "loginPrompt": "Log in to see your saved articles and favorites",
     "editProfile": "Edit Profile",
     "savedArticles": "Saved Articles",
+    "noSavedArticles": "No saved articles yet",
     "noPublicArticles": "This user has no public articles yet",
     "guestUser": "Guest",
     "loadingUser": "Loading...",

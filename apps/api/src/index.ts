@@ -101,7 +101,7 @@ app.get("/api/users/:id/articles", async (c) => {
 });
 
 app.get("/api/users/:id/profile", async (c) => {
-  return handlePublicProfile(c.get("db"), c.req.raw);
+  return handlePublicProfile(c.get("db"), c.get("auth")(), c.req.raw);
 });
 
 app.on(["GET", "POST", "PATCH", "DELETE"], "/api/articles/**", async (c) => {

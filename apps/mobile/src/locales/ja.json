@@ -185,6 +185,7 @@
     "loginPrompt": "ログインすると保存した記事やお気に入りが表示されます",
     "editProfile": "プロフィール編集",
     "savedArticles": "保存した記事",
+    "noSavedArticles": "保存した記事はまだありません",
     "noPublicArticles": "このユーザーの公開記事はまだありません",
     "guestUser": "ゲストユーザー",
     "loadingUser": "読み込み中...",

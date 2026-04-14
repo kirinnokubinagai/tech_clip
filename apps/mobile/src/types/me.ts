@@ -15,6 +15,8 @@ export type MeProfile = {
   twitterUsername: string | null;
   isProfilePublic: boolean | null;
   preferredLanguage: string | null;
+  followersCount: number;
+  followingCount: number;
   createdAt: string;
   updatedAt: string;
 };

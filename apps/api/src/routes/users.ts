@@ -1,9 +1,9 @@
-import { and, eq } from "drizzle-orm";
+import { and, count, eq } from "drizzle-orm";
 import { Hono } from "hono";
 import { z } from "zod";
 
 import type { Database } from "../db";
-import { accounts, users } from "../db/schema";
+import { accounts, follows, users } from "../db/schema";
 import {
   AUTH_ERROR_CODE,
   AUTH_ERROR_MESSAGE,
@@ -172,10 +172,13 @@ export function createUsersRoute(options: UsersRouteOptions) {
       );
     }
 
-    const [found] = await db
-      .select()
-      .from(users)
-      .where(eq(users.id, user.id as string));
+    const userId = user.id as string;
+
+    const [[found], [followersResult], [followingResult]] = await Promise.all([
+      db.select().from(users).where(eq(users.id, userId)),
+      db.select({ count: count() }).from(follows).where(eq(follows.followingId, userId)),
+      db.select({ count: count() }).from(follows).where(eq(follows.followerId, userId)),
+    ]);
 
     if (!found) {
       return c.json(
@@ -192,7 +195,11 @@ export function createUsersRoute(options: UsersRouteOptions) {
 
     return c.json({
       success: true,
-      data: omitSensitiveFields(found as unknown as Record<string, unknown>),
+      data: {
+        ...omitSensitiveFields(found as unknown as Record<string, unknown>),
+        followersCount: followersResult?.count ?? 0,
+        followingCount: followingResult?.count ?? 0,
+      },
     });
   });
 

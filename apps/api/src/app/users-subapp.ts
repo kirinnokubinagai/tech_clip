@@ -1,5 +1,4 @@
 import { and, count, desc, eq, lt, or, type SQL } from "drizzle-orm";
-import { Hono } from "hono";
 
 import type { Auth } from "../auth";
 import type { Database } from "../db";
@@ -83,21 +82,38 @@ async function queryFollowList(
 /**
  * 公開プロフィールサブアプリを構築してリクエストを処理する
  *
+ * optional auth 方式: ログイン時のみ isFollowing を返す。
+ * 未ログイン時は isFollowing: false を返す。
+ *
  * @param db - データベースインスタンス
+ * @param auth - Better Auth インスタンス
  * @param request - 元のリクエスト
  * @returns fetch レスポンス
  */
-export async function handlePublicProfile(db: Database, request: Request): Promise<Response> {
+export async function handlePublicProfile(
+  db: Database,
+  auth: Auth,
+  request: Request,
+): Promise<Response> {
   const publicProfileRoute = createPublicProfileRoute({
-    getProfileFn: async (userId) => {
-      const [found] = await db.select().from(users).where(eq(users.id, userId));
+    getProfileFn: async (targetUserId, viewerUserId) => {
+      const [found] = await db.select().from(users).where(eq(users.id, targetUserId));
       if (!found?.isProfilePublic) {
         return null;
       }
 
-      const [[followersResult], [followingResult]] = await Promise.all([
-        db.select({ count: count() }).from(follows).where(eq(follows.followingId, userId)),
-        db.select({ count: count() }).from(follows).where(eq(follows.followerId, userId)),
+      const [[followersResult], [followingResult], followRow] = await Promise.all([
+        db.select({ count: count() }).from(follows).where(eq(follows.followingId, targetUserId)),
+        db.select({ count: count() }).from(follows).where(eq(follows.followerId, targetUserId)),
+        viewerUserId
+          ? db
+              .select({ id: follows.followerId })
+              .from(follows)
+              .where(
+                and(eq(follows.followerId, viewerUserId), eq(follows.followingId, targetUserId)),
+              )
+              .then((rows) => rows[0] ?? null)
+          : Promise.resolve(null),
       ]);
 
       return {
@@ -108,14 +124,18 @@ export async function handlePublicProfile(db: Database, request: Request): Promi
         avatarUrl: found.avatarUrl ?? null,
         followersCount: followersResult?.count ?? 0,
         followingCount: followingResult?.count ?? 0,
+        isFollowing: !!followRow,
       };
     },
   });
 
-  const subApp = new Hono();
-  subApp.route("/api/users", publicProfileRoute);
-
-  return subApp.fetch(request);
+  return fetchWithAuth(
+    auth.api.getSession.bind(auth.api),
+    (subApp) => {
+      subApp.route("/api/users", publicProfileRoute);
+    },
+    request,
+  );
 }
 
 /**

@@ -33,6 +33,14 @@ jest.mock("@mobile/hooks/use-user-profile", () => ({
   useFollowToggle: () => mockUseFollowToggle(),
 }));
 
+jest.mock("@mobile/components/ProfileArticlesSection", () => ({
+  ProfileArticlesSection: ({ mode, userId }: { mode: string; userId: string }) => {
+    const React = jest.requireActual("react") as typeof import("react");
+    const { View } = jest.requireActual("react-native") as typeof import("react-native");
+    return React.createElement(View, { testID: `profile-articles-section-${mode}-${userId}` });
+  },
+}));
+
 beforeEach(() => {
   jest.clearAllMocks();
   mockUseUserProfile.mockReturnValue({
@@ -183,6 +191,18 @@ describe("UserProfileScreen", () => {
 
       // Assert
       expect(mockBack).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  describe("公開記事セクション", () => {
+    it("ProfileArticlesSection が public モードで表示されること", async () => {
+      // Arrange & Act
+      const { queryByTestId } = await render(<UserProfileScreen />);
+
+      // Assert
+      await waitFor(() => {
+        expect(queryByTestId("profile-articles-section-public-user-abc")).not.toBeNull();
+      });
     });
   });
 });

@@ -5,6 +5,7 @@ import { useTranslation } from "react-i18next";
 import { ActivityIndicator, Pressable, ScrollView, Text, View } from "react-native";
 
 import { FollowButton } from "@/components/FollowButton";
+import { ProfileArticlesSection } from "@/components/ProfileArticlesSection";
 import { ProfileHeader } from "@/components/ProfileHeader";
 import { useColors } from "@/hooks/use-colors";
 import { useFollowToggle, useUserProfile } from "@/hooks/use-user-profile";
@@ -120,23 +121,12 @@ export default function UserProfileScreen() {
         <View testID="user-profile-follow-section" className="px-4 py-4">
           <FollowButton
             userId={id}
-            isFollowing={profile.isFollowing ?? false}
+            isFollowing={profile.isFollowing}
             onToggle={handleFollowToggle}
           />
         </View>
 
-        <View className="px-4">
-          <View className="border-t border-border pt-4">
-            <Text className="text-base font-semibold text-text mb-3">
-              {t("profile.savedArticles")}
-            </Text>
-            <View className="items-center py-8">
-              <Text className="text-text-muted text-sm text-center">
-                {t("profile.noPublicArticles")}
-              </Text>
-            </View>
-          </View>
-        </View>
+        <ProfileArticlesSection mode="public" userId={id} />
       </ScrollView>
     </View>
   );

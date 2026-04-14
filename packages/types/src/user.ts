@@ -21,4 +21,6 @@ export type PublicProfile = {
   avatarUrl: string | null;
   followersCount: number;
   followingCount: number;
+  /** 現在ログイン中のユーザーがこのユーザーをフォローしているか。未ログイン時は false。 */
+  isFollowing: boolean;
 };

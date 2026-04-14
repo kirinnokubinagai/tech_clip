@@ -185,6 +185,7 @@
     "loginPrompt": "登入後可查看已儲存的文章和收藏",
     "editProfile": "編輯個人資料",
     "savedArticles": "已儲存文章",
+    "noSavedArticles": "還沒有儲存的文章",
     "noPublicArticles": "該用戶尚無公開文章",
     "guestUser": "訪客用戶",
     "loadingUser": "載入中...",

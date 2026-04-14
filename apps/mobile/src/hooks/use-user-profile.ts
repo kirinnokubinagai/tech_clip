@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import type { PublicProfile } from "@tech-clip/types";
 
-import type { ProfileHeaderUser } from "@/components/ProfileHeader";
 import { followKeys } from "@/hooks/use-follow";
 import { apiFetch } from "@/lib/api";
 
@@ -10,7 +10,7 @@ export const USER_PROFILE_QUERY_KEY = "user-profile";
 /** ユーザープロフィールAPIレスポンスの型 */
 type UserProfileResponse = {
   success: true;
-  data: ProfileHeaderUser & { id: string; isFollowing: boolean };
+  data: PublicProfile;
 };
 
 /** フォロートグルAPIレスポンスの型 */

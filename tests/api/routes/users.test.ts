@@ -139,6 +139,28 @@ function patchUser(app: { request: Hono["request"] }, body: Record<string, unkno
   });
 }
 
+/**
+ * GET /me 用モックセットアップ
+ *
+ * Promise.all で users + followersCount + followingCount の 3 クエリが並列実行されるため、
+ * mockSelectWhere を3回 mockReturnValueOnce で設定する。
+ *
+ * @param userResult - users テーブルのクエリ結果（存在しない場合は空配列）
+ * @param followersCount - フォロワー数
+ * @param followingCount - フォロー中数
+ */
+function setupGetMeMocks(
+  userResult: (typeof MOCK_USER)[] | [],
+  followersCount = 0,
+  followingCount = 0,
+) {
+  mockSelectFrom.mockReturnValue({ where: mockSelectWhere });
+  mockSelectWhere
+    .mockResolvedValueOnce(userResult)
+    .mockResolvedValueOnce([{ count: followersCount }])
+    .mockResolvedValueOnce([{ count: followingCount }]);
+}
+
 describe("GET /api/users/me", () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -147,8 +169,7 @@ describe("GET /api/users/me", () => {
   describe("認証", () => {
     it("認証済みユーザーが自分のプロフィールを取得できること", async () => {
       // Arrange
-      mockSelectFrom.mockReturnValue({ where: mockSelectWhere });
-      mockSelectWhere.mockResolvedValue([MOCK_USER]);
+      setupGetMeMocks([MOCK_USER]);
       const app = createGetTestApp();
 
       // Act
@@ -183,8 +204,7 @@ describe("GET /api/users/me", () => {
   describe("レスポンス形式", () => {
     it("統一レスポンス形式に従っていること", async () => {
       // Arrange
-      mockSelectFrom.mockReturnValue({ where: mockSelectWhere });
-      mockSelectWhere.mockResolvedValue([MOCK_USER]);
+      setupGetMeMocks([MOCK_USER]);
       const app = createGetTestApp();
 
       // Act
@@ -199,8 +219,7 @@ describe("GET /api/users/me", () => {
 
     it("Content-Typeがapplication/jsonであること", async () => {
       // Arrange
-      mockSelectFrom.mockReturnValue({ where: mockSelectWhere });
-      mockSelectWhere.mockResolvedValue([MOCK_USER]);
+      setupGetMeMocks([MOCK_USER]);
       const app = createGetTestApp();
 
       // Act
@@ -212,8 +231,7 @@ describe("GET /api/users/me", () => {
 
     it("機密情報がレスポンスに含まれないこと", async () => {
       // Arrange
-      mockSelectFrom.mockReturnValue({ where: mockSelectWhere });
-      mockSelectWhere.mockResolvedValue([MOCK_USER]);
+      setupGetMeMocks([MOCK_USER]);
       const app = createGetTestApp();
 
       // Act
@@ -227,8 +245,7 @@ describe("GET /api/users/me", () => {
 
     it("プロフィールフィールドがレスポンスに含まれること", async () => {
       // Arrange
-      mockSelectFrom.mockReturnValue({ where: mockSelectWhere });
-      mockSelectWhere.mockResolvedValue([MOCK_USER]);
+      setupGetMeMocks([MOCK_USER]);
       const app = createGetTestApp();
 
       // Act
@@ -242,13 +259,40 @@ describe("GET /api/users/me", () => {
       expect(body.data).toHaveProperty("githubUsername");
       expect(body.data).toHaveProperty("twitterUsername");
     });
+
+    it("followersCount と followingCount がレスポンスに含まれること", async () => {
+      // Arrange
+      setupGetMeMocks([MOCK_USER], 5, 3);
+      const app = createGetTestApp();
+
+      // Act
+      const res = await app.request("/api/users/me");
+
+      // Assert
+      const body = (await res.json()) as UserResponseBody;
+      expect(body.data).toHaveProperty("followersCount", 5);
+      expect(body.data).toHaveProperty("followingCount", 3);
+    });
+
+    it("フォロワー/フォロー中が 0 人のとき counts が 0 を返すこと", async () => {
+      // Arrange
+      setupGetMeMocks([MOCK_USER], 0, 0);
+      const app = createGetTestApp();
+
+      // Act
+      const res = await app.request("/api/users/me");
+
+      // Assert
+      const body = (await res.json()) as UserResponseBody;
+      expect(body.data).toHaveProperty("followersCount", 0);
+      expect(body.data).toHaveProperty("followingCount", 0);
+    });
   });
 
   describe("ユーザー未存在", () => {
     it("DBにユーザーが存在しない場合404が返ること", async () => {
       // Arrange
-      mockSelectFrom.mockReturnValue({ where: mockSelectWhere });
-      mockSelectWhere.mockResolvedValue([]);
+      setupGetMeMocks([]);
       const app = createGetTestApp();
 
       // Act
