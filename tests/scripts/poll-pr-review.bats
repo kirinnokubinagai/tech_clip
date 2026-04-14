@@ -19,14 +19,15 @@ teardown() {
 
 # gh コマンドをモックする共通ヘルパー
 # $1: gh が返す JSON
+# JSON ファイルに書き出し、mock gh スクリプトから cat するため
+# バッククォートや変数展開などの特殊文字を安全に扱える
 mock_gh_with_json() {
     local json="$1"
     local fake_bin_dir="$TMPDIR/fake_bin"
+    local json_file="$TMPDIR/mock_response.json"
     mkdir -p "$fake_bin_dir"
-    cat > "$fake_bin_dir/gh" <<GHEOF
-#!/usr/bin/env bash
-printf '%s' '${json//\'/\'\\\'\'}'
-GHEOF
+    printf '%s' "$json" > "$json_file"
+    printf '#!/usr/bin/env bash\ncat %s\n' "$json_file" > "$fake_bin_dir/gh"
     chmod +x "$fake_bin_dir/gh"
     export PATH="$fake_bin_dir:$PATH"
 }
