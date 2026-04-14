@@ -162,12 +162,24 @@ EOF
 
 ### フェーズ 6: GitHub レビューポーリング
 
+> **絶対に `gh pr view --json statusCheckRollup` の `claude-review: SUCCESS` を APPROVED の根拠にしないこと。**
+> `claude-review: SUCCESS` は CI ジョブが正常終了したという意味にすぎず、レビュー合否（PASS/NEEDS WORK）を表すものではない。
+> **絶対に `gh pr view --json reviews,state` の `state: APPROVED` だけに依存しないこと。**
+> claude-review は GitHub Review を作成せず、label のみでレビュー結果を通知する。
+
 ```bash
-gh pr view <PR番号> --json reviews,state
+LABELS=$(gh pr view <PR番号> --json labels --jq '.labels[].name')
+
+if echo "$LABELS" | grep -Fxq "AI Review: PASS"; then
+  # APPROVED 処理
+elif echo "$LABELS" | grep -Fxq "AI Review: NEEDS WORK"; then
+  # CHANGES_REQUESTED 処理
+else
+  # PENDING: 再ポーリング
+fi
 ```
 
-- **PENDING**: 再ポーリングする（適度な間隔を空けて繰り返す）
-- **APPROVED**:
+- **`AI Review: PASS` ラベルが存在する（APPROVED）**:
   1. ui-designer に APPROVED を送信する
      ```text
      SendMessage(
@@ -177,7 +189,7 @@ gh pr view <PR番号> --json reviews,state
      ```
   2. worktree を削除する
      ```bash
-     git worktree remove {worktree} --force
+     git -C <main-worktree-path> worktree remove {worktree} --force
      ```
   3. orchestrator に完了を通知する
      ```text
@@ -187,10 +199,10 @@ gh pr view <PR番号> --json reviews,state
      )
      ```
   4. 終了する。
-- **CHANGES_REQUESTED**:
+- **`AI Review: NEEDS WORK` ラベルが存在する（CHANGES_REQUESTED）**:
   1. レビューコメントを取得する
      ```bash
-     gh pr view <PR番号> --json reviews --jq '.reviews[-1].body'
+     gh pr view <PR番号> --json comments --jq '.comments[-1].body'
      ```
   2. ui-designer に修正依頼を送信する
      ```text
@@ -200,6 +212,7 @@ gh pr view <PR番号> --json reviews,state
      )
      ```
   3. フェーズ 0 に戻り次の impl-ready を待機する。
+- **どちらのラベルも存在しない（PENDING）**: 再ポーリングする（適度な間隔を空けて繰り返す）
 
 ## レビュー方針（厳守）
 
