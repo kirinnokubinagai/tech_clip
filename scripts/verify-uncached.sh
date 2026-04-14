@@ -9,6 +9,9 @@
 
 set -euo pipefail
 
+# 任意の turbo タスクを uncached で実行できる汎用スクリプト。
+# package.json の *:uncached スクリプトから呼ばれるほか、手動実行にも使える。
+# タスク名バリデーションは意図的に省略しており、呼び出し元で制御する設計。
 TASKS=("$@")
 if [ ${#TASKS[@]} -eq 0 ]; then
   TASKS=(typecheck test)
