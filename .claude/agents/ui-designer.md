@@ -22,6 +22,12 @@ tools:
 3. `.claude/rules/testing.md` - テスト規約
 4. `.claude/rules/frontend-design.md` - フロントエンドデザイン規約
 
+## 受け取るパラメータ
+
+- `worktree`: worktree の絶対パス（例: `/Users/foo/tech_clip/issue-123`）
+- `issue_number`: Issue 番号
+- `feedback`（任意）: GitHub レビューのフィードバック内容（修正ループ時）
+
 ## プロジェクトコンテキスト
 
 TechClip は React Native + Expo SDK 55 で構築されたモバイルアプリです。スタイリングには NativeWind v4 を使用します。
@@ -98,23 +104,81 @@ import { Check, AlertCircle, Settings, Loader2 } from 'lucide-react-native';
 - `prefers-reduced-motion` 対応必須
 - バウンス、パルスなど過度なアニメーションは禁止
 
-## TDD ワークフロー
+## ワークフロー
 
-UI コンポーネントも TDD サイクルに従う。コンポーネントのテストは `tests/mobile/components/` に配置する。
+### フェーズ 1: spec 読み込み
 
-## 実装後のレビューループ（必須）
+```bash
+ls {worktree}/docs/superpowers/specs/*.md | sort | tail -1
+```
 
-TDD実装が完了したら、コミットの前に以下を実行すること:
+最新の spec ファイルを読む。`feedback` が渡された場合はそちらも参照する。
 
-1. `pnpm lint` でモノレポ全体の lint エラーを解消する
-2. `code-reviewer` エージェントをサブエージェントとして呼び出してレビューを受ける
-3. 指摘が1件でもある場合は **すべて修正** してから再レビューを依頼する
-4. 全件PASS（CRITICAL/HIGH/MEDIUM/LOW すべて0件）になったらコミットしてよい
+### フェーズ 2: TDD 実装
+
+すべての実装は TDD サイクルに従うこと:
+
+1. **RED**: 失敗するテストを先に書く
+2. **GREEN**: テストを通す最小限のコードを書く
+3. **REFACTOR**: テストが通る状態を維持しつつリファクタリングする
+
+テストは `tests/mobile/` 配下の適切なサブディレクトリ（`components/`・`screens/`・`hooks/` 等）に配置する。
+
+### フェーズ 3: lint チェック
+
+```bash
+cd {worktree} && direnv exec {worktree} pnpm lint
+```
+
+lint エラーがゼロになるまで修正する。
+
+### フェーズ 4: コミット
+
+```bash
+cd {worktree} && git add . && git commit -m "feat: ..."
+```
+
+### フェーズ 5: impl-ready 書き込み
+
+```bash
+git -C {worktree} rev-parse HEAD > /tmp/tech-clip-issue-{issue_number}/impl-ready
+```
+
+### フェーズ 6: review-result.json ポーリング
+
+Bash ツールの `timeout: 300000` を指定してポーリングする:
+
+```bash
+CURRENT_HASH=$(cd {worktree} && git rev-parse HEAD)
+until [ -f /tmp/tech-clip-issue-{issue_number}/review-result.json ] && \
+  [ "$(jq -r '.commit' /tmp/tech-clip-issue-{issue_number}/review-result.json 2>/dev/null)" = "$CURRENT_HASH" ]; do
+  sleep 10
+done
+cat /tmp/tech-clip-issue-{issue_number}/review-result.json
+```
+
+自分のコミットハッシュと一致する結果が来たら内容を読む。
+
+- **PASS**: 終了する
+- **FAIL**: issues の内容を読んで修正 → `review-result.json` を削除してからフェーズ 2 へ戻る（`find /tmp/tech-clip-issue-{issue_number}/ -maxdepth 1 -name "review-result.json" -delete` → コミット → impl-ready を新しいハッシュで上書き → ポーリング再開）
+
+## ポーリング方針
+
+Bash ツールの `timeout` パラメータを **300000（5分）** に指定してポーリングループを実行する。
+
+```bash
+# impl-ready の例（review-result.json も同様）
+until [ -f /tmp/tech-clip-issue-{issue_number}/impl-ready ]; do sleep 10; done
+cat /tmp/tech-clip-issue-{issue_number}/impl-ready
+```
+
+- Bash ツール呼び出し時に `timeout: 300000` を指定すること（デフォルト 2 分では不足）
+- 1回の Bash 呼び出しで最大5分待機できる
+- ファイルが現れた瞬間にループを抜けるため確実
 
 ## 出力規約
 
 - 実装完了時: 変更ファイル名と1行の概要のみ報告（手順・経緯の説明不要）
-- SendMessage の本文は100字以内を目標にする
 
 ## 出力言語
 

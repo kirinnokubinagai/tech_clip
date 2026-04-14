@@ -1,10 +1,10 @@
+import type { Context } from "hono";
 import { Hono } from "hono";
 
-import type { Database } from "../db";
 import {
   AUTH_ERROR_CODE,
   AUTH_ERROR_MESSAGE,
-  DUPLICATE_ERROR_CODE,
+  CONFLICT_ERROR_CODE,
   NOT_FOUND_ERROR_CODE,
   VALIDATION_ERROR_CODE,
 } from "../lib/error-codes";
@@ -16,6 +16,7 @@ import {
   HTTP_UNAUTHORIZED,
   HTTP_UNPROCESSABLE_ENTITY,
 } from "../lib/http-status";
+import { createLogger } from "../lib/logger";
 
 /** デフォルトのページサイズ */
 const DEFAULT_LIMIT = 20;
@@ -33,6 +34,9 @@ type FollowResult = {
   createdAt: string;
 };
 
+/** 複合カーソルの区切り文字 */
+const CURSOR_SEPARATOR = "|";
+
 /** フォロワー/フォロー中一覧のクエリパラメータ型 */
 export type FollowListQueryParams = {
   userId: string;
@@ -46,10 +50,17 @@ export type FollowFn = (followerId: string, followingId: string) => Promise<Foll
 /** アンフォロー関数の型 */
 export type UnfollowFn = (followerId: string, followingId: string) => Promise<void>;
 
+/** フォロー一覧のユーザーアイテム型 */
+export type FollowListItem = {
+  id: string;
+  createdAt: string;
+  name: string | null;
+  bio: string | null;
+  avatarUrl: string | null;
+};
+
 /** フォロワー/フォロー中一覧取得関数の型 */
-export type GetFollowListFn = (
-  params: FollowListQueryParams,
-) => Promise<Array<Record<string, unknown>>>;
+export type GetFollowListFn = (params: FollowListQueryParams) => Promise<Array<FollowListItem>>;
 
 /** フォロー状態確認関数の型 */
 export type IsFollowingFn = (followerId: string, followingId: string) => Promise<boolean>;
@@ -57,9 +68,27 @@ export type IsFollowingFn = (followerId: string, followingId: string) => Promise
 /** ユーザー存在確認関数の型 */
 export type UserExistsFn = (userId: string) => Promise<boolean>;
 
+/** ルートの変数型 */
+type RouteVariables = { user?: Record<string, unknown> };
+
+/**
+ * 認証済みユーザーIDを取得する
+ *
+ * @param c - Honoコンテキスト
+ * @returns 認証済みの場合は `{ ok: true; userId: string }`、未認証の場合は `{ ok: false }`
+ */
+function getAuthenticatedUserId(
+  c: Context<{ Variables: RouteVariables }>,
+): { ok: true; userId: string } | { ok: false } {
+  const user = c.get("user");
+  if (!user?.id || typeof user.id !== "string") {
+    return { ok: false };
+  }
+  return { ok: true, userId: user.id };
+}
+
 /** createFollowsRouteのオプション */
 type FollowsRouteOptions = {
-  db: Database;
   followFn: FollowFn;
   unfollowFn: UnfollowFn;
   getFollowersFn: GetFollowListFn;
@@ -72,20 +101,81 @@ type FollowsRouteOptions = {
  * limitクエリパラメータをパースしてバリデーションする
  *
  * @param limitStr - クエリパラメータの文字列値
- * @returns パース結果。エラーの場合はエラーメッセージ文字列
+ * @returns パース結果。成功時は `{ ok: true; value: number }`、失敗時は `{ ok: false; message: string }`
  */
-function parseLimitParam(limitStr: string | undefined): number | string {
+function parseLimitParam(
+  limitStr: string | undefined,
+): { ok: true; value: number } | { ok: false; message: string } {
   if (limitStr === undefined) {
-    return DEFAULT_LIMIT;
+    return { ok: true, value: DEFAULT_LIMIT };
   }
   const parsed = Number(limitStr);
   if (Number.isNaN(parsed) || !Number.isInteger(parsed)) {
-    return "limitは整数で指定してください";
+    return { ok: false, message: "limitは整数で指定してください" };
   }
   if (parsed < MIN_LIMIT || parsed > MAX_LIMIT) {
-    return `limitは${MIN_LIMIT}以上${MAX_LIMIT}以下で指定してください`;
+    return { ok: false, message: `limitは${MIN_LIMIT}以上${MAX_LIMIT}以下で指定してください` };
   }
-  return parsed;
+  return { ok: true, value: parsed };
+}
+
+/**
+ * 複合カーソル文字列（`createdAt|id` 形式）をパースする
+ *
+ * @param cursor - 複合カーソル文字列
+ * @returns パース結果。不正な形式の場合は null
+ */
+export function parseCursor(cursor: string): { cursorTime: string; cursorId: string } | null {
+  const separatorIndex = cursor.indexOf(CURSOR_SEPARATOR);
+  if (separatorIndex === -1) {
+    return null;
+  }
+  const cursorTime = cursor.slice(0, separatorIndex);
+  const cursorId = cursor.slice(separatorIndex + 1);
+  if (!cursorTime || !cursorId) {
+    return null;
+  }
+  return { cursorTime, cursorId };
+}
+
+/**
+ * 複合カーソル文字列（`createdAt|id` 形式）を生成する
+ *
+ * @param createdAt - フォロー作成日時文字列
+ * @param id - フォロワーIDまたはフォロー中ID
+ * @returns 複合カーソル文字列
+ */
+export function buildCursor(createdAt: string, id: string): string {
+  return `${createdAt}${CURSOR_SEPARATOR}${id}`;
+}
+
+const logger = createLogger();
+
+/** SQLite/D1 の UNIQUE constraint エラー文言 */
+const UNIQUE_CONSTRAINT_ERROR_FRAGMENT = "UNIQUE constraint failed";
+
+/**
+ * SQLiteのUNIQUE制約違反エラーかどうかを判定する
+ *
+ * D1/libsql では LibsqlError→cause→cause と複数段ネストする場合があるため、
+ * while ループで cause チェーンを再帰的に辿る。
+ *
+ * @param error - 発生したエラー
+ * @returns UNIQUE制約違反であれば true
+ */
+function isUniqueConstraintError(error: unknown): boolean {
+  if (!(error instanceof Error)) return false;
+  let current: Error | undefined = error;
+  while (current) {
+    if (current.message.includes(UNIQUE_CONSTRAINT_ERROR_FRAGMENT)) return true;
+    const nextCause: unknown = current.cause;
+    if (nextCause instanceof Error) {
+      current = nextCause;
+      continue;
+    }
+    break;
+  }
+  return false;
 }
 
 /**
@@ -102,11 +192,116 @@ function parseLimitParam(limitStr: string | undefined): number | string {
 export function createFollowsRoute(options: FollowsRouteOptions) {
   const { followFn, unfollowFn, getFollowersFn, getFollowingFn, isFollowingFn, userExistsFn } =
     options;
-  const route = new Hono<{ Variables: { user?: Record<string, unknown> } }>();
+  const route = new Hono<{ Variables: RouteVariables }>();
+
+  /**
+   * フォロワー/フォロー中一覧の共通GETハンドラーを生成する
+   *
+   * @param getListFn - 一覧取得関数（getFollowersFn または getFollowingFn）
+   * @returns Honoルートハンドラー
+   */
+  function createFollowListHandler(getListFn: GetFollowListFn) {
+    return async (c: Context<{ Variables: RouteVariables }>) => {
+      const authResult = getAuthenticatedUserId(c);
+      if (!authResult.ok) {
+        return c.json(
+          {
+            success: false,
+            error: {
+              code: AUTH_ERROR_CODE,
+              message: AUTH_ERROR_MESSAGE,
+            },
+          },
+          HTTP_UNAUTHORIZED,
+        );
+      }
+
+      const targetUserId = c.req.param("id");
+      if (!targetUserId) {
+        return c.json(
+          {
+            success: false,
+            error: {
+              code: NOT_FOUND_ERROR_CODE,
+              message: "ユーザーが見つかりません",
+            },
+          },
+          HTTP_NOT_FOUND,
+        );
+      }
+
+      const limitResult = parseLimitParam(c.req.query("limit"));
+      if (!limitResult.ok) {
+        return c.json(
+          {
+            success: false,
+            error: {
+              code: VALIDATION_ERROR_CODE,
+              message: "入力内容を確認してください",
+              details: [{ field: "limit", message: limitResult.message }],
+            },
+          },
+          HTTP_UNPROCESSABLE_ENTITY,
+        );
+      }
+
+      const limit = limitResult.value;
+      const cursorParam = c.req.query("cursor");
+
+      if (cursorParam !== undefined && parseCursor(cursorParam) === null) {
+        return c.json(
+          {
+            success: false,
+            error: {
+              code: VALIDATION_ERROR_CODE,
+              message: "cursorの形式が正しくありません",
+            },
+          },
+          HTTP_UNPROCESSABLE_ENTITY,
+        );
+      }
+
+      const targetExists = await userExistsFn(targetUserId);
+      if (!targetExists) {
+        return c.json(
+          {
+            success: false,
+            error: {
+              code: NOT_FOUND_ERROR_CODE,
+              message: "ユーザーが見つかりません",
+            },
+          },
+          HTTP_NOT_FOUND,
+        );
+      }
+
+      /** +1件取得して hasNext を判定する */
+      const fetched = await getListFn({
+        userId: targetUserId,
+        limit: limit + 1,
+        cursor: cursorParam,
+      });
+
+      const hasNext = fetched.length > limit;
+      const data = hasNext ? fetched.slice(0, limit) : fetched;
+      const nextCursor = hasNext
+        ? buildCursor(data[data.length - 1].createdAt, data[data.length - 1].id)
+        : null;
+
+      return c.json({
+        success: true,
+        data,
+        meta: {
+          nextCursor,
+          hasNext,
+        },
+      });
+    };
+  }
 
   route.post("/:id/follow", async (c) => {
-    const user = c.get("user");
-    if (!user?.id) {
+    const authResult = getAuthenticatedUserId(c);
+    if (!authResult.ok) {
       return c.json(
         {
           success: false,
@@ -119,7 +314,7 @@ export function createFollowsRoute(options: FollowsRouteOptions) {
       );
     }
 
-    const followerId = user.id as string;
+    const followerId = authResult.userId;
     const followingId = c.req.param("id");
 
     if (followerId === followingId) {
@@ -155,7 +350,7 @@ export function createFollowsRoute(options: FollowsRouteOptions) {
         {
           success: false,
           error: {
-            code: DUPLICATE_ERROR_CODE,
+            code: CONFLICT_ERROR_CODE,
             message: "すでにフォローしています",
           },
         },
@@ -163,20 +358,41 @@ export function createFollowsRoute(options: FollowsRouteOptions) {
       );
     }
 
-    const result = await followFn(followerId, followingId);
-
-    return c.json(
-      {
-        success: true,
-        data: result,
-      },
-      HTTP_CREATED,
-    );
+    try {
+      const result = await followFn(followerId, followingId);
+      return c.json(
+        {
+          success: true,
+          data: result,
+        },
+        HTTP_CREATED,
+      );
+    } catch (error) {
+      if (isUniqueConstraintError(error)) {
+        return c.json(
+          {
+            success: false,
+            error: {
+              code: CONFLICT_ERROR_CODE,
+              message: "すでにフォローしています",
+            },
+          },
+          HTTP_CONFLICT,
+        );
+      }
+      logger.error("フォロー処理エラー", {
+        followerId,
+        followingId,
+        message: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined,
+      });
+      throw error;
+    }
   });
 
   route.delete("/:id/follow", async (c) => {
-    const user = c.get("user");
-    if (!user?.id) {
+    const authResult = getAuthenticatedUserId(c);
+    if (!authResult.ok) {
       return c.json(
         {
           success: false,
@@ -189,7 +405,7 @@ export function createFollowsRoute(options: FollowsRouteOptions) {
       );
     }
 
-    const followerId = user.id as string;
+    const followerId = authResult.userId;
     const followingId = c.req.param("id");
 
     const targetExists = await userExistsFn(followingId);
@@ -225,143 +441,8 @@ export function createFollowsRoute(options: FollowsRouteOptions) {
     return c.body(null, HTTP_NO_CONTENT);
   });
 
-  route.get("/:id/followers", async (c) => {
-    const user = c.get("user");
-    if (!user?.id) {
-      return c.json(
-        {
-          success: false,
-          error: {
-            code: AUTH_ERROR_CODE,
-            message: AUTH_ERROR_MESSAGE,
-          },
-        },
-        HTTP_UNAUTHORIZED,
-      );
-    }
-
-    const targetUserId = c.req.param("id");
-
-    const targetExists = await userExistsFn(targetUserId);
-    if (!targetExists) {
-      return c.json(
-        {
-          success: false,
-          error: {
-            code: NOT_FOUND_ERROR_CODE,
-            message: "ユーザーが見つかりません",
-          },
-        },
-        HTTP_NOT_FOUND,
-      );
-    }
-
-    const limitResult = parseLimitParam(c.req.query("limit"));
-    if (typeof limitResult === "string") {
-      return c.json(
-        {
-          success: false,
-          error: {
-            code: VALIDATION_ERROR_CODE,
-            message: "入力内容を確認してください",
-            details: [{ field: "limit", message: limitResult }],
-          },
-        },
-        HTTP_UNPROCESSABLE_ENTITY,
-      );
-    }
-
-    const limit = limitResult;
-    const cursor = c.req.query("cursor");
-
-    const fetchedFollowers = await getFollowersFn({
-      userId: targetUserId,
-      limit: limit + 1,
-      cursor: cursor || undefined,
-    });
-
-    const hasNext = fetchedFollowers.length > limit;
-    const data = hasNext ? fetchedFollowers.slice(0, limit) : fetchedFollowers;
-    const nextCursor = hasNext ? (data[data.length - 1].id as string) : null;
-
-    return c.json({
-      success: true,
-      data,
-      meta: {
-        nextCursor,
-        hasNext,
-      },
-    });
-  });
-
-  route.get("/:id/following", async (c) => {
-    const user = c.get("user");
-    if (!user?.id) {
-      return c.json(
-        {
-          success: false,
-          error: {
-            code: AUTH_ERROR_CODE,
-            message: AUTH_ERROR_MESSAGE,
-          },
-        },
-        HTTP_UNAUTHORIZED,
-      );
-    }
-
-    const targetUserId = c.req.param("id");
-
-    const targetExists = await userExistsFn(targetUserId);
-    if (!targetExists) {
-      return c.json(
-        {
-          success: false,
-          error: {
-            code: NOT_FOUND_ERROR_CODE,
-            message: "ユーザーが見つかりません",
-          },
-        },
-        HTTP_NOT_FOUND,
-      );
-    }
-
-    const limitResult = parseLimitParam(c.req.query("limit"));
-    if (typeof limitResult === "string") {
-      return c.json(
-        {
-          success: false,
-          error: {
-            code: VALIDATION_ERROR_CODE,
-            message: "入力内容を確認してください",
-            details: [{ field: "limit", message: limitResult }],
-          },
-        },
-        HTTP_UNPROCESSABLE_ENTITY,
-      );
-    }
-
-    const limit = limitResult;
-    const cursor = c.req.query("cursor");
-
-    const fetchedFollowing = await getFollowingFn({
-      userId: targetUserId,
-      limit: limit + 1,
-      cursor: cursor || undefined,
-    });
-
-    const hasNext = fetchedFollowing.length > limit;
-    const data = hasNext ? fetchedFollowing.slice(0, limit) : fetchedFollowing;
-    const nextCursor = hasNext ? (data[data.length - 1].id as string) : null;
-
-    return c.json({
-      success: true,
-      data,
-      meta: {
-        nextCursor,
-        hasNext,
-      },
-    });
-  });
+  route.get("/:id/followers", createFollowListHandler(getFollowersFn));
+  route.get("/:id/following", createFollowListHandler(getFollowingFn));
 
   return route;
 }
