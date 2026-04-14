@@ -42,10 +42,12 @@ export const DEFAULT_BACKGROUND_SYNC_CONFIG: BackgroundSyncConfig = {
 TaskManager.defineTask(DEFAULT_BACKGROUND_SYNC_CONFIG.taskName, async () => {
   try {
     const result = await syncAllForOffline();
-    if (result.errors.length > 0) {
+    const hasNewData = result.contentsPrefetched + result.listSynced > 0;
+    const allFailed = !hasNewData && result.errors.length > 0;
+    if (allFailed) {
       return BackgroundFetch.BackgroundFetchResult.Failed;
     }
-    if (result.contentsPrefetched + result.listSynced === 0) {
+    if (!hasNewData) {
       return BackgroundFetch.BackgroundFetchResult.NoData;
     }
     return BackgroundFetch.BackgroundFetchResult.NewData;
