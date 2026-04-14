@@ -1,6 +1,7 @@
 import { Image } from "expo-image";
 import { Heart } from "lucide-react-native";
 import { memo } from "react";
+import { useTranslation } from "react-i18next";
 import { Pressable, Text, View } from "react-native";
 
 import { SourceBadge } from "@/components/ui";
@@ -43,6 +44,7 @@ export const ArticleCard = memo(function ArticleCard({
   onPress,
   onToggleFavorite,
 }: ArticleCardProps) {
+  const { t } = useTranslation();
   const language = useSettingsStore((s) => s.language);
   const colors = useColors();
 
@@ -96,7 +98,9 @@ export const ArticleCard = memo(function ArticleCard({
                 onToggleFavorite();
               }}
               accessibilityRole="button"
-              accessibilityLabel={article.isFavorite ? "お気に入り解除" : "お気に入り追加"}
+              accessibilityLabel={
+                article.isFavorite ? t("article.removeFromFavorites") : t("article.addToFavorites")
+              }
               hitSlop={8}
             >
               {article.isFavorite ? (

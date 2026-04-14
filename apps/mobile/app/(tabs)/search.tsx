@@ -1,6 +1,7 @@
 import { useRouter } from "expo-router";
 import { Search, X } from "lucide-react-native";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { ActivityIndicator, FlatList, Pressable, Text, TextInput, View } from "react-native";
 
 import { ArticleCard } from "@/components/ArticleCard";
@@ -21,6 +22,7 @@ const CLEAR_ICON_SIZE = 18;
  * 検索結果はArticleCardで表示し、無限スクロールに対応。
  */
 export default function SearchScreen() {
+  const { t } = useTranslation();
   const router = useRouter();
   const colors = useColors();
   const [inputValue, setInputValue] = useState("");
@@ -96,24 +98,24 @@ export default function SearchScreen() {
       return (
         <View className="flex-1 items-center justify-center py-20">
           <Search size={48} color={colors.border} />
-          <Text className="text-text-muted text-base mt-4">キーワードで記事を検索</Text>
-          <Text className="text-text-dim text-sm mt-1">タイトルや内容から検索できます</Text>
+          <Text className="text-text-muted text-base mt-4">{t("search.hint")}</Text>
+          <Text className="text-text-dim text-sm mt-1">{t("search.hintSub")}</Text>
         </View>
       );
     }
     return (
       <View className="flex-1 items-center justify-center py-20">
         <Text className="text-text-muted text-base">
-          {isError ? "検索に失敗しました" : `「${debouncedQuery}」に一致する記事がありません`}
+          {isError ? t("search.error") : t("article.noMatch", { query: debouncedQuery })}
         </Text>
         {isError && (
           <Pressable onPress={() => refetch()} className="mt-4">
-            <Text className="text-primary">再試行</Text>
+            <Text className="text-primary">{t("common.retry")}</Text>
           </Pressable>
         )}
       </View>
     );
-  }, [isLoading, debouncedQuery, isError, refetch, colors.border]);
+  }, [isLoading, debouncedQuery, isError, refetch, colors.border, t]);
 
   return (
     <View className="flex-1 bg-background">
@@ -123,7 +125,7 @@ export default function SearchScreen() {
           <TextInput
             ref={inputRef}
             className="flex-1 text-text text-base py-1"
-            placeholder="記事を検索..."
+            placeholder={t("search.placeholder")}
             placeholderTextColor={colors.textDim}
             value={inputValue}
             onChangeText={setInputValue}
@@ -135,7 +137,7 @@ export default function SearchScreen() {
             <Pressable
               onPress={handleClear}
               accessibilityRole="button"
-              accessibilityLabel="検索をクリア"
+              accessibilityLabel={t("search.clearLabel")}
               hitSlop={8}
             >
               <X size={CLEAR_ICON_SIZE} color={colors.textDim} />
@@ -147,7 +149,7 @@ export default function SearchScreen() {
       {isLoading && debouncedQuery ? (
         <View className="flex-1 items-center justify-center">
           <ActivityIndicator size="large" color={colors.primary} />
-          <Text className="text-text-muted mt-3">検索中...</Text>
+          <Text className="text-text-muted mt-3">{t("search.searching")}</Text>
         </View>
       ) : (
         <FlatList

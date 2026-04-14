@@ -1,6 +1,7 @@
 import { router } from "expo-router";
 import { useShareIntent } from "expo-share-intent";
 import { useEffect, useRef } from "react";
+import { useTranslation } from "react-i18next";
 import { ActivityIndicator, Pressable, Text, View } from "react-native";
 
 /**
@@ -22,6 +23,7 @@ function isValidHttpUrl(urlString: string): boolean {
  * 受け取ったURLをバリデーションしてSave画面にプリセットする。
  */
 export default function ShareIntentScreen() {
+  const { t } = useTranslation();
   const { shareIntent, isReady, error, resetShareIntent } = useShareIntent();
   /** 二重遷移を防ぐガード */
   const hasNavigated = useRef(false);
@@ -48,8 +50,8 @@ export default function ShareIntentScreen() {
         className="flex-1 items-center justify-center bg-background"
         accessibilityLabel="share-intent-loading"
       >
-        <ActivityIndicator size="large" accessibilityLabel="読み込み中" />
-        <Text className="sr-only">読み込み中</Text>
+        <ActivityIndicator size="large" accessibilityLabel={t("shareIntent.loading")} />
+        <Text className="sr-only">{t("shareIntent.loading")}</Text>
       </View>
     );
   }
@@ -64,15 +66,15 @@ export default function ShareIntentScreen() {
           className="text-text text-base text-center mb-6"
           accessibilityLabel="share-intent-error-message"
         >
-          共有データの読み取りに失敗しました
+          {t("shareIntent.error")}
         </Text>
         <Pressable
           onPress={() => router.back()}
           className="rounded-lg bg-primary px-6 py-3"
           accessibilityRole="button"
-          accessibilityLabel="閉じる"
+          accessibilityLabel={t("shareIntent.close")}
         >
-          <Text className="text-white font-medium">閉じる</Text>
+          <Text className="text-white font-medium">{t("shareIntent.close")}</Text>
         </Pressable>
       </View>
     );
@@ -87,15 +89,15 @@ export default function ShareIntentScreen() {
         className="text-text text-base text-center mb-6"
         accessibilityLabel="share-intent-not-found-message"
       >
-        URLが見つかりません
+        {t("shareIntent.notFound")}
       </Text>
       <Pressable
         onPress={() => router.back()}
         className="rounded-lg bg-primary px-6 py-3"
         accessibilityRole="button"
-        accessibilityLabel="閉じる"
+        accessibilityLabel={t("shareIntent.close")}
       >
-        <Text className="text-white font-medium">閉じる</Text>
+        <Text className="text-white font-medium">{t("shareIntent.close")}</Text>
       </Pressable>
     </View>
   );
