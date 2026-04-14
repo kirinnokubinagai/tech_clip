@@ -157,6 +157,34 @@ chore(deps): pnpm を 10.x に更新する
 
 ---
 
+## テスト / 検証
+
+### Turbo cache と uncached 検証
+
+通常の `pnpm typecheck` / `pnpm test` は Turbo キャッシュを使うため、
+過去の実行結果が replay されて「FULL TURBO」になることがある。
+開発サイクル中はこれで問題ないが、次のケースでは cache replay に依存しない
+uncached 検証を使うこと。
+
+- リリース前の最終確認
+- セキュリティ監査・インシデント調査
+- 原因切り分け中に「この作業木で本当に通るか」を裏付けたいとき
+- 複数 worktree を並行運用していて cache 整合が疑わしいとき
+
+コマンド:
+
+| 目的 | 高速経路 (cache あり) | uncached 経路 |
+|---|---|---|
+| typecheck + test | `pnpm typecheck && pnpm test` | `pnpm verify:uncached` |
+| typecheck のみ | `pnpm typecheck` | `pnpm typecheck:uncached` |
+| test のみ | `pnpm test` | `pnpm test:uncached` |
+
+CI では通常 PR の `checks` ジョブは引き続きキャッシュ経路で動作する。
+`.github/workflows/verify-uncached.yml` が nightly と手動トリガーで
+uncached 検証を担保する。
+
+---
+
 ## PR 作成のルール
 
 - タイトルはコミットメッセージと同じ形式にする
