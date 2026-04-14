@@ -76,6 +76,7 @@ function mockLoadingState() {
   );
 }
 
+// NOTE: @testing-library/react-native v13+ では render() が Promise を返す
 describe("ProfileScreen", () => {
   beforeEach(() => {
     jest.clearAllMocks();

@@ -46,6 +46,7 @@ const DEFAULT_USE_TOGGLE_FAVORITE_MOCK = {
   mutate: jest.fn(),
 };
 
+// NOTE: @testing-library/react-native v13+ では render() が Promise を返す
 describe("HomeScreen（英語ロケール）", () => {
   beforeEach(() => {
     setMockLocale("en");

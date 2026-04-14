@@ -9,6 +9,7 @@
 #   0: APPROVED
 #   1: CHANGES_REQUESTED
 #   2: TIMEOUT
+#   3: CONFLICT
 
 set -uo pipefail
 
@@ -50,7 +51,7 @@ trap 'echo "INTERRUPTED" >&2; exit 130' INT TERM
 elapsed=0
 
 while (( elapsed < TIMEOUT_SECONDS )); do
-  pr_data=$(gh pr view "${PR_NUMBER}" --json reviewDecision,reviews,comments 2>/dev/null || true)
+  pr_data=$(gh pr view "${PR_NUMBER}" --json reviewDecision,reviews,comments,mergeable 2>/dev/null || true)
   if [[ -z "${pr_data}" ]]; then
     echo "WARN: gh pr view 失敗（認証失効・ネットワーク断の可能性）" >&2
     remaining=$(( TIMEOUT_SECONDS - elapsed ))
@@ -58,6 +59,21 @@ while (( elapsed < TIMEOUT_SECONDS )); do
     sleep "${sleep_time}"
     elapsed=$(( elapsed + sleep_time ))
     continue
+  fi
+
+  # コンフリクト検出（mergeable が CONFLICTING のとき）
+  mergeable=$(printf '%s' "${pr_data}" | jq -r '.mergeable // ""' 2>/dev/null || true)
+  if [[ "${mergeable}" == "CONFLICTING" ]]; then
+    echo "CONFLICT"
+    echo ""
+    echo "--- Conflict Info ---"
+    echo "PR #${PR_NUMBER} のブランチが origin/main とコンフリクトしています。"
+    echo "CLAUDE.md の「コンフリクト解消フロー」に従って解消してください。"
+    echo "  1. gh issue view <N> で現在の Issue の意図を確認する"
+    echo "  2. git -C <worktree> log origin/main --oneline -20 で main の変更を確認する"
+    echo "  3. Agent(coder) にコンフリクト箇所・両側の意図・方針を伝えて解消させる"
+    echo "  ※ 解消後、code-reviewer / security-reviewer の再レビューとマーカー再作成が必要です"
+    exit 3
   fi
 
   review_decision=$(printf '%s' "${pr_data}" | jq -r '.reviewDecision // ""')

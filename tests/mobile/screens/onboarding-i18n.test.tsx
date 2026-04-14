@@ -13,10 +13,13 @@ jest.mock("expo-router", () => ({
   },
 }));
 
-jest.mock("@/lib/constants", () => ({
-  LIGHT_COLORS: { neutral: "#44403c" },
-  SUPPORTED_SOURCE_COUNT: 19,
-}));
+jest.mock("@/lib/constants", () => {
+  const actual = jest.requireActual("@/lib/constants");
+  return {
+    ...actual,
+    SUPPORTED_SOURCE_COUNT: 19,
+  };
+});
 
 const mockSetHasSeenOnboarding = jest.fn().mockResolvedValue(undefined);
 
@@ -33,6 +36,7 @@ jest.mock("@mobile/stores/ui-store", () => ({
     }),
 }));
 
+// NOTE: @testing-library/react-native v13+ では render() が Promise を返す
 describe("OnboardingScreen（i18n 対応状況の記録）", () => {
   describe("現在の状態（日本語ロケールでの表示確認）", () => {
     it("最初のページタイトルが日本語で表示されること", async () => {

@@ -33,6 +33,7 @@ afterEach(() => {
   setMockLocale("ja");
 });
 
+// NOTE: @testing-library/react-native v13+ では render() が Promise を返す
 describe("LoginScreen（英語ロケール）", () => {
   describe("ページタイトル・タグライン", () => {
     it("アプリタグラインが英語で表示されること", async () => {
