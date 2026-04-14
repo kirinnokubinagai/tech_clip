@@ -325,6 +325,11 @@ oh-my-claudecode やその他のプラグイン由来のエージェントは使
 - **すべてのエージェントを spawn するときは必ず `mode="acceptEdits"` を指定する**（実装系・レビュー系を問わず）
 - **レビュー PASS 後のマーカー作成・push・PR 作成は各レビュワーエージェントが担当する**（オーケストレーターは行わない）
 - **機能実装では必ず analyst → coder + reviewer の順で spawn する**（analyst の設計完了を待ってから coder/reviewer を background spawn する）
+- **【技術的制約】サブエージェントは他のサブエージェントを spawn できない**（analyst が coder を spawn する等は技術的に不可能）。オーケストレーターが analyst・実装エージェント・レビュワーをすべて直接 spawn しなければならない
+- **analyst はタスクの規模・複雑さに関わらず必ず最初に spawn しなければならない**。「単純な docs 変更」「設定ファイルの 1 行修正」であっても analyst を省略してはならない。オーケストレーター自身が要件分析・設計を行うことを禁止する
+- **変更種別に対応した正しいエージェントを選択しなければならない**: 機能実装・docs 変更は `coder`+`reviewer`、インフラ・CI/CD は `infra-engineer`+`infra-reviewer`、UI 変更は `ui-designer`+`ui-reviewer`。変更種別が不明な場合は analyst に判断を委ねる
+- **実装エージェントとレビュワーエージェントは必ず `run_in_background=true` で spawn しなければならない**。foreground spawn は analyst のみ許可される。実装エージェントとレビュワーは同一メッセージで並列 background spawn しなければならない
+- **PR 作成後は必ず `/tmp/tech-clip-issue-{N}/pr-url` ポーリング → GitHub レビューループを維持しなければならない**。APPROVED を確認するまでユーザーへの完了報告を行ってはならない。CHANGES_REQUESTED の場合は必ず新しい実装・レビューエージェントを spawn してループを継続しなければならない
 
 ---
 
