@@ -183,7 +183,7 @@ function buildPatch(current: ProfileFormData, initial: ProfileFormData): UpdateP
   const patch: UpdateProfileInput = {};
 
   if (current.name !== initial.name) {
-    patch.name = current.name || null;
+    patch.name = current.name;
   }
   if (current.username !== initial.username) {
     patch.username = current.username || null;
@@ -255,8 +255,8 @@ export default function ProfileEditScreen() {
     const uri = me.avatarUrl ?? me.image ?? null;
     setFormData(initial);
     setAvatarUri(uri);
-    if (initialDataRef.current === null) {
-      initialDataRef.current = initial;
+    initialDataRef.current = initial;
+    if (initialAvatarUriRef.current === null) {
       initialAvatarUriRef.current = uri;
     }
   }, [me]);
@@ -330,7 +330,7 @@ export default function ProfileEditScreen() {
 
       showToast(t("profile.edit.saveSuccess"), "success");
       router.back();
-    } catch (err: unknown) {
+    } catch (err) {
       if (isApiErrorPayload(err)) {
         if (err.error.code === ERROR_CODE_DUPLICATE) {
           setErrors({ username: t("profile.edit.usernameDuplicate") });

@@ -304,13 +304,14 @@ describe("ProfileEditScreen", () => {
 
       // Assert
       await waitFor(() => {
-        expect(mockBack).toHaveBeenCalled();
+        expect(mockBack).toHaveBeenCalledTimes(1);
       });
 
       const patchCalls = apiFetch.mock.calls
         .slice(initialCallCount)
         .filter((c: unknown[]) => c[1] !== undefined);
       expect(patchCalls).toHaveLength(0);
+      expect(apiFetch).toHaveBeenCalledTimes(initialCallCount);
     });
   });
 });

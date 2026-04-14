@@ -114,6 +114,11 @@ export function useUploadMyAvatar() {
       const form = new FormData();
       const filename = uri.split("/").pop() ?? DEFAULT_AVATAR_FILENAME;
       const type = getMimeType(filename);
+      /**
+       * React Native の fetch は FormData を渡すと Content-Type を自動で
+       * multipart/form-data; boundary=... に設定するため、
+       * { uri, name, type } オブジェクトを Blob として渡す必要がある。
+       */
       form.append(AVATAR_FIELD_NAME, { uri, name: filename, type } as unknown as Blob);
 
       const data = await apiFetch<UpdateProfileResponse | ApiErrorResponse>(
@@ -121,7 +126,6 @@ export function useUploadMyAvatar() {
         {
           method: "POST",
           body: form,
-          headers: { "Content-Type": undefined as unknown as string },
         },
       );
       if (isApiError(data)) {
