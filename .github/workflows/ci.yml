@@ -39,7 +39,7 @@ jobs:
       id-token: write  # claude-code-action が OIDC トークンを取得する際に必要
     outputs:
       result: ${{ steps.review.outcome }}
-      needs_work: ${{ steps.check-label.outputs.needs_work }}
+      review_passed: ${{ steps.check-label.outputs.review_passed }}
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v4.2.2
       - id: review
@@ -65,30 +65,35 @@ jobs:
               gh pr edit ${{ github.event.pull_request.number }} --add-label "AI Review: NEEDS WORK" --remove-label "AI Review: PASS"
 
             重要: gh pr review --approve は絶対に実行しないでください。
-      # claude-review が API エラー等で失敗しても check-label は always() で実行される。
-      # ラベルなし（レビュー未実施 or トークン制限失敗）は PASS 扱いとする設計。
-      # - push イベントでは claude-review ジョブ自体が skipped になるため needs_work は空文字になる。
-      #   空文字 != 'true' は true となり PASS 扱いになる（意図した動作）。
-      # - PR イベントで claude-review が continue-on-error により失敗した場合も、
-      #   "AI Review: NEEDS WORK" ラベルが付いていなければ PASS 扱いになる（意図した動作）。
-      # NG の場合は claude-review ステップがラベル "AI Review: NEEDS WORK" を付ける。
+      # 判定方式: 「今回の review ステップが success で終わり、かつ PASS ラベルが付いている」場合のみ PASS。
+      # - review.outcome != 'success' の場合（API エラー・タイムアウト等で continue-on-error 発動）:
+      #     過去の PASS ラベルが残っていても review_passed=false。
+      # - フォーク PR で claude-review ジョブ自体が skipped の場合:
+      #     このステップも実行されない → outputs.review_passed は空文字 → auto-merge の条件で false 扱い。
       - id: check-label
         if: always()
         env:
           GH_TOKEN: ${{ github.token }}
+          REVIEW_OUTCOME: ${{ steps.review.outcome }}
         run: |
-          # push イベント時（PR でない）は PASS 扱い
+          # push イベント時（PR でない）は auto-merge 対象外のため判定不要
           if [ "${{ github.event_name }}" != "pull_request" ]; then
-            echo "needs_work=false" >> "$GITHUB_OUTPUT"
+            echo "review_passed=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          # 今回の review ステップが success でない場合は過去ラベルに関わらず不合格
+          if [ "${REVIEW_OUTCOME}" != "success" ]; then
+            echo "::notice::claude-review step outcome=${REVIEW_OUTCOME}; treating as review_passed=false"
+            echo "review_passed=false" >> "$GITHUB_OUTPUT"
             exit 0
           fi
           # gh pr view 形式で取得する（gh api より安全）
           LABELS=$(gh pr view "${{ github.event.pull_request.number }}" --repo "${{ github.repository }}" --json labels --jq '.labels[].name' 2>/dev/null || echo "")
-          # ラベルなし = レビュー未実施または PASS → PASS 扱い（continue-on-error による失敗時も同様）
-          if echo "$LABELS" | grep -q "AI Review: NEEDS WORK"; then
-            echo "needs_work=true" >> "$GITHUB_OUTPUT"
+          # PASS ラベルが明示的に付いている場合のみ review_passed=true
+          if echo "$LABELS" | grep -qx "AI Review: PASS"; then
+            echo "review_passed=true" >> "$GITHUB_OUTPUT"
           else
-            echo "needs_work=false" >> "$GITHUB_OUTPUT"
+            echo "review_passed=false" >> "$GITHUB_OUTPUT"
           fi
 
   # ── Step 2: 変更ファイル検出（claude-review に依存しない）─────────────────
@@ -113,22 +118,35 @@ jobs:
           # コードチェックの対象外とする。これらはドキュメントやエージェント定義・プロジェクトルールであり
           # lint/typecheck/test には関係しないためスキップすることで不要な CI 実行を避ける。
           # hooks/ のみ別途 hooks-test ジョブで検証する（下記 HOOKS_CHANGED 参照）。
-          CHANGED=$(git diff --name-only "origin/${{ github.base_ref }}...HEAD" 2>/dev/null \
-            | grep -cvE '^(\.claude/|docs/|.*\.md$)' || echo 0)
-          echo "code=$([ "${CHANGED:-0}" -gt 0 ] && echo 'true' || echo 'false')" >> "$GITHUB_OUTPUT"
-          HOOKS_CHANGED=$(git diff --name-only "origin/${{ github.base_ref }}...HEAD" 2>/dev/null \
-            | grep -cE '^\.claude/hooks/' || echo 0)
-          echo "hooks=$([ "${HOOKS_CHANGED:-0}" -gt 0 ] && echo 'true' || echo 'false')" >> "$GITHUB_OUTPUT"
+          # git diff 失敗時は「コード変更あり」側に倒す fail-safe フォールバック。
+          DIFF_OUTPUT=$(git diff --name-only "origin/${{ github.base_ref }}...HEAD" 2>/dev/null) || {
+            echo "::warning::git diff failed; assuming code changes exist (fail-safe)"
+            echo "code=true" >> "$GITHUB_OUTPUT"
+            echo "hooks=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          }
+          # grep -c は該当なしの場合 exit 1 を返すため set -e 有効時に落ちる可能性がある。
+          # pipefail を明示しない環境でも安全に数を取るため if/then で分岐する。
+          if [ -z "$DIFF_OUTPUT" ]; then
+            CHANGED=0
+            HOOKS_CHANGED=0
+          else
+            CHANGED=$(echo "$DIFF_OUTPUT" | grep -cvE '^(\.claude/|docs/|.*\.md$)') || CHANGED=0
+            HOOKS_CHANGED=$(echo "$DIFF_OUTPUT" | grep -cE '^\.claude/hooks/') || HOOKS_CHANGED=0
+          fi
+          echo "code=$([ "$CHANGED" -gt 0 ] && echo 'true' || echo 'false')" >> "$GITHUB_OUTPUT"
+          echo "hooks=$([ "$HOOKS_CHANGED" -gt 0 ] && echo 'true' || echo 'false')" >> "$GITHUB_OUTPUT"
 
   # ── Step 3: コードチェック（Nix 1回 → lint/typecheck/test/audit 順次）──────
-  # lint/typecheck/test/audit はコード変更がない場合（changes.outputs.code == 'false'）
-  # このジョブごとスキップされる。スキップは合格扱いで auto-merge を許可する（設計上の意図）。
+  # コード変更がない場合は job 全体を skip し auto-merge 側で「skipped かつ code=false」を許可する。
+  # これにより「noticeだけ出して実質何もしない」曖昧なステップを排除し、成功条件を明示化する。
   checks:
     needs: [claude-review, changes]
     if: |
       always() &&
+      needs.changes.result == 'success' &&
       needs.changes.outputs.code == 'true' &&
-      needs.claude-review.outputs.needs_work != 'true'
+      needs.claude-review.outputs.review_passed == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -150,8 +168,9 @@ jobs:
     needs: [claude-review, changes]
     if: |
       always() &&
+      needs.changes.result == 'success' &&
       needs.changes.outputs.hooks == 'true' &&
-      needs.claude-review.outputs.needs_work != 'true'
+      needs.claude-review.outputs.review_passed == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -168,8 +187,10 @@ jobs:
     if: |
       always() &&
       github.event_name == 'pull_request' &&
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      needs.changes.result == 'success' &&
       needs.changes.outputs.code == 'true' &&
-      needs.claude-review.outputs.needs_work != 'true'
+      needs.claude-review.outputs.review_passed == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 45
     steps:
@@ -200,18 +221,36 @@ jobs:
             /tmp/zap-daemon.log
 
   # ── Step 6: 全チェック通過後に自動マージ ────────────────────────────────
+  #
+  # auto-merge 許可条件一覧
+  # ┌────────────────────────┬────────────────────────────┬──────────────────────────────────────────┐
+  # │ ジョブ/条件            │ 必須状態                   │ 備考                                     │
+  # ├────────────────────────┼────────────────────────────┼──────────────────────────────────────────┤
+  # │ event_name             │ pull_request のみ          │ push イベントは auto-merge 対象外        │
+  # │ head.repo              │ 同一リポジトリ             │ フォーク PR は id-token 悪用防止で除外   │
+  # │ actor                  │ != dependabot[bot]         │ Dependabot PR は手動マージ運用           │
+  # │ changes.result         │ success                    │ 変更検出ジョブ自体が成功している必要     │
+  # │ claude-review.result   │ success                    │ ジョブが success で完了（skipped不可）   │
+  # │ review_passed          │ 'true'                     │ review step success + PASS ラベル付与    │
+  # │ checks.result          │ success または skipped     │ skipped は「コード変更なし」時のみ許可   │
+  # │ hooks-test.result      │ success または skipped     │ skipped は hooks 変更なし時のみ許可      │
+  # │ zap.result             │ success または skipped     │ skipped は code=false 時のみ許可         │
+  # └────────────────────────┴────────────────────────────┴──────────────────────────────────────────┘
+  #
+  # 重要: 各 skipped 許可条件は必ず changes.outputs と組み合わせて「本来不要」であることを確認する。
+  #       単なる result == 'skipped' の許可は review ジョブ未実行時の暗黙 PASS を招くため禁止。
   auto-merge:
     if: |
       always() &&
       github.event_name == 'pull_request' &&
+      github.event.pull_request.head.repo.full_name == github.repository &&
       github.actor != 'dependabot[bot]' &&
       needs.changes.result == 'success' &&
-      needs.claude-review.outputs.needs_work != 'true' &&
-      (needs.checks.result == 'success' || needs.checks.result == 'skipped') &&
-      (needs.hooks-test.result == 'success' || needs.hooks-test.result == 'skipped') &&
-      (needs.zap.result == 'success' || needs.zap.result == 'skipped')
-    # needs.changes.result == 'success' は changes ジョブが正常完了した場合のみ自動マージを行う。
-    # changes ジョブが予期しない理由で失敗した場合は auto-merge がスキップされ、手動マージが必要になる。
+      needs.claude-review.result == 'success' &&
+      needs.claude-review.outputs.review_passed == 'true' &&
+      (needs.checks.result == 'success' || (needs.checks.result == 'skipped' && needs.changes.outputs.code == 'false')) &&
+      (needs.hooks-test.result == 'success' || (needs.hooks-test.result == 'skipped' && needs.changes.outputs.hooks == 'false')) &&
+      (needs.zap.result == 'success' || (needs.zap.result == 'skipped' && needs.changes.outputs.code == 'false'))
     needs: [claude-review, changes, checks, hooks-test, zap]
     runs-on: ubuntu-latest
     timeout-minutes: 5
