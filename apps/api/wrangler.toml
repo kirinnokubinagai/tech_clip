@@ -31,7 +31,7 @@ binding = "AI"
 crons = ["0 0 1 * *"]
 
 # --- Staging 環境 ---
-# NOTE: マージ前に以下の placeholder を実際の Cloudflare リソース ID に置換すること。
+# NOTE: フォローアップ Issue で以下の placeholder を実際の ID に置換すること。
 #   1. wrangler kv namespace create tech-clip-rate-limit-staging --env staging
 #   2. wrangler kv namespace create tech-clip-cache-staging --env staging
 #   3. R2 bucket "tech-clip-avatars-staging" を Cloudflare ダッシュボードまたは wrangler で作成
@@ -43,7 +43,7 @@ crons = ["0 0 1 * *"]
 name = "tech-clip-api-staging"
 [env.staging.vars]
 ENVIRONMENT = "staging"
-APP_URL = "https://tech-clip-api-staging.workers.dev"
+APP_URL = "REPLACE_WITH_STAGING_APP_URL"
 
 [[env.staging.kv_namespaces]]
 binding = "RATE_LIMIT"
