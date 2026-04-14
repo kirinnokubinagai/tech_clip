@@ -126,7 +126,7 @@ const UpdateProfileSchema = z.object({
 type UsersRouteOptions = {
   db: Database;
   r2Bucket?: R2Bucket;
-  r2PublicUrl: string;
+  r2PublicUrl?: string;
 };
 
 /**
@@ -356,7 +356,7 @@ export function createUsersRoute(options: UsersRouteOptions) {
       );
     }
 
-    if (!r2Bucket || !r2PublicUrl) {
+    if (!r2Bucket || !r2PublicUrl || r2PublicUrl.length === 0) {
       return c.json(
         {
           success: false,
