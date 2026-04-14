@@ -91,23 +91,13 @@ export class SessionExpiredError extends ApiError {
 export class ApiHttpError extends ApiError {
   /** HTTPステータスコード */
   public readonly status: number;
-  /** 将来の拡張用フィールド。現行実装では常に undefined */
-  public readonly code?: string;
-  /** 将来の拡張用フィールド。現行実装では常に undefined */
-  public readonly details?: unknown;
   /** レスポンス本文の先頭（診断用、最大 BODY_TEXT_PREVIEW_MAX_LENGTH 文字） */
   public readonly bodyText?: string;
 
-  constructor(
-    status: number,
-    message: string,
-    options?: { code?: string; details?: unknown; bodyText?: string; cause?: unknown },
-  ) {
+  constructor(status: number, message: string, options?: { bodyText?: string; cause?: unknown }) {
     super(message, options?.cause !== undefined ? { cause: options.cause } : undefined);
     this.name = "ApiHttpError";
     this.status = status;
-    this.code = options?.code;
-    this.details = options?.details;
     this.bodyText = options?.bodyText;
   }
 }
