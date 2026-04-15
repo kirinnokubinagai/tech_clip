@@ -276,7 +276,12 @@ PR_URL=$(echo "$PR_JSON" | jq -r '.url')
 ```
 
 
-> **Note**: ポーリングで CLEAN + `AI Review: PASS` ラベル確認後はフェーズ 6.5 へ進む（上記判定マトリクス参照）。
+> **判定マトリクスで `CLEAN|HAS_HOOKS + 必須 check OK + bot Approve` になった場合はフェーズ 6.5 へ進む。**
+> `AI Review: NEEDS WORK` ラベルまたは bot Request Changes の場合:
+> ```bash
+> gh pr view {pr_number} --json comments --jq '[.comments[] | select(.body | contains("## PRレビュー結果"))] | last | .body'
+> ```
+> `SendMessage(to: "issue-{issue_number}-infra-engineer", "CHANGES_REQUESTED: <レビューコメント内容>")` → フェーズ 0 に戻る。
 
 ### フェーズ 6.5: PR E2E (Android) 出力の視覚レビュー
 
