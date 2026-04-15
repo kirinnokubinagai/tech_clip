@@ -150,6 +150,7 @@ jq が使えない環境では `gh issue list --state open --limit 100 --json nu
 - **すべてのエージェントを spawn するときは必ず `mode="acceptEdits"` を指定する**（実装系・レビュー系を問わず）
 - **`.claude/.review-passed` マーカーの作成は reviewer 系エージェント（`reviewer` / `infra-reviewer` / `ui-reviewer`）のみに許可される。`coder` / `infra-engineer` / `ui-designer` / オーケストレーターがこのマーカーを作成することは禁止する**（このマーカーはレビュー PASS の証憑として `pre-push-review-guard.sh` がチェックするため、レビュワー以外が作成すると「レビューを通らずに push できる抜け道」になる）
 - **レビュー PASS 後のマーカー作成・push・PR 作成は各レビュワーエージェントが担当する**（オーケストレーターは行わない）
+- **AI エージェントの挙動について指摘を受けた場合、memory への記録だけで終わらせず、Issue を立てて skills / CLAUDE.md / rules / サブエージェント定義を直接編集する恒久的な対策を即座に行う**
 
 ---
 
@@ -367,6 +368,18 @@ reviewer → 再レビューループへ（フェーズ 2 に戻る）
 2. reviewer → worktree を削除する (`git -C /main-worktree-path worktree remove {worktree} --force`)
 3. reviewer → orchestrator に `SendMessage("APPROVED: issue-{N}")` → reviewer 終了
 4. orchestrator → 全 Issue 完了を確認 → `TeamDelete("active-issues")`
+
+### マージ済み Issue のエージェント削除
+
+PR がマージされて Issue がクローズされたことを検知したら、その Issue に紐づく全エージェントに shutdown_request を送って終了させる。
+
+```text
+orchestrator → SendMessage(to: "issue-{N}-analyst",  { type: "shutdown_request" })
+orchestrator → SendMessage(to: "issue-{N}-coder",    { type: "shutdown_request" })
+orchestrator → SendMessage(to: "issue-{N}-reviewer", { type: "shutdown_request" })
+```
+
+**なぜ必要か**: PR マージ後もエージェントが残存すると不要なリソースを占有し、二重 spawn の誤検知を引き起こす可能性がある。reviewer の APPROVED 通知フローが正常に機能しなかった場合のセーフティネットとして機能する。
 
 ---
 
