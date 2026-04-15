@@ -13,15 +13,13 @@ LINUX_CLAUDE_TMP="/tmp/claude-${CURRENT_UID}"
 AVAIL_KB=$(df -k /tmp 2>/dev/null | awk 'NR==2 {print $4}' || echo 0)
 AVAIL_GB=$(( (AVAIL_KB / 1024 / 1024) ))
 
+MTIME_OPT=(-mtime +1)   # デフォルト（24時間）
+WARN_MSG=""
 if [ "$AVAIL_GB" -lt 1 ]; then
   MTIME_OPT=(-mmin +60)
   WARN_MSG="ERROR: disk 空き容量が ${AVAIL_KB}KB (< 1GB) です。強制 cleanup を実行します。"
 elif [ "$AVAIL_GB" -lt 5 ]; then
-  MTIME_OPT=(-mtime +1)
   WARN_MSG="WARN: disk 空き容量が ${AVAIL_GB}GB (< 5GB) です。"
-else
-  MTIME_OPT=(-mtime +1)
-  WARN_MSG=""
 fi
 
 DELETED_SESSIONS=0
@@ -49,7 +47,7 @@ cleanup_claude_sessions "$LINUX_CLAUDE_TMP"
 # agent temp file の削除: /tmp/issue-*-*.md
 while IFS= read -r f; do
   rm -f "$f" 2>/dev/null && DELETED_AGENT_FILES=$((DELETED_AGENT_FILES + 1))
-done < <(find /tmp -maxdepth 1 -name "issue-*-*.md" "${MTIME_OPT[@]}" 2>/dev/null)
+done < <(find /tmp -maxdepth 1 -type f -name "issue-*-*.md" "${MTIME_OPT[@]}" 2>/dev/null)
 
 # 結果 df を再取得
 AVAIL_AFTER_KB=$(df -k /tmp 2>/dev/null | awk 'NR==2 {print $4}' || echo 0)
