@@ -16,14 +16,16 @@
 #      - .claude/**, CLAUDE.md, AGENTS.md, flake.nix 等
 #   6. それ以外 ALLOW（worktree 内バックグラウンドエージェントの動作を許可）
 
-TOOL_INPUT="${CLAUDE_TOOL_INPUT:-}"
+TOOL_INPUT=$(cat)
 
 if [ -z "$TOOL_INPUT" ]; then
+  # stdin が空のとき(= hook 呼び出し経路が想定外)は安全側で exit 0 のままにする
+  # → そうしないと通常操作が全部ブロックされ使い物にならなくなる
   exit 0
 fi
 
 if command -v jq &> /dev/null; then
-  FILE_PATH=$(echo "$TOOL_INPUT" | jq -r '.file_path // empty' 2>/dev/null)
+  FILE_PATH=$(echo "$TOOL_INPUT" | jq -r '.tool_input.file_path // empty' 2>/dev/null)
 else
   echo "DENY: jq コマンドが必要です。nix develop で環境に入ってから実行してください。" >&2
   exit 2  # jq がない環境ではブロック方向に倒す
