@@ -1,6 +1,18 @@
 import { describe, expect, it } from "@jest/globals";
 import { render } from "@testing-library/react-native";
 
+jest.mock("@react-native-community/netinfo", () => ({
+  __esModule: true,
+  default: {
+    addEventListener: jest.fn().mockReturnValue(() => {}),
+    fetch: jest.fn().mockResolvedValue({ isConnected: true, isInternetReachable: true }),
+    configure: jest.fn(),
+  },
+  addEventListener: jest.fn().mockReturnValue(() => {}),
+  fetch: jest.fn().mockResolvedValue({ isConnected: true, isInternetReachable: true }),
+  useNetInfo: () => ({ isConnected: true, isInternetReachable: true }),
+}));
+
 jest.mock("expo-secure-store", () => ({
   getItemAsync: jest.fn().mockResolvedValue(null),
   setItemAsync: jest.fn().mockResolvedValue(undefined),
