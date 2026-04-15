@@ -14,15 +14,12 @@ AVAIL_KB=$(df -k / 2>/dev/null | awk 'NR==2 {print $4}' || echo 0)
 AVAIL_GB=$(( (AVAIL_KB / 1024 / 1024) ))
 
 if [ "$AVAIL_GB" -lt 1 ]; then
-  MODE="force"
   MTIME_OPT="-mmin +60"
   WARN_MSG="ERROR: disk 空き容量が ${AVAIL_KB}KB (< 1GB) です。強制 cleanup を実行します。"
 elif [ "$AVAIL_GB" -lt 5 ]; then
-  MODE="warn"
   MTIME_OPT="-mtime +1"
   WARN_MSG="WARN: disk 空き容量が ${AVAIL_GB}GB (< 5GB) です。"
 else
-  MODE="normal"
   MTIME_OPT="-mtime +1"
   WARN_MSG=""
 fi
