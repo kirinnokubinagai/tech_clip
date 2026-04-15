@@ -66,3 +66,29 @@ echo "  Test..."
 }
 
 echo "全チェック通過"
+
+# Maestro smoke test（conditional）
+# emulator が起動していて maestro が使える時だけ実行
+if command -v adb >/dev/null 2>&1 && adb devices 2>/dev/null | grep -q "emulator"; then
+  if command -v maestro >/dev/null 2>&1; then
+    echo "[pre-push] maestro smoke test を実行中..."
+    # 複数 worktree 並列 push 時のポート衝突回避:
+    # worktree パスのハッシュから ANDROID_SERIAL を決定する
+    _WORKTREE_HASH="$(echo "${REPO_ROOT}" | shasum -a 256 | cut -c1-8)"
+    _EMULATOR_SERIAL="$(adb devices 2>/dev/null | grep "emulator" | head -1 | awk '{print $1}')"
+    export ANDROID_SERIAL="${_EMULATOR_SERIAL:-emulator-${_WORKTREE_HASH}}"
+    if ! timeout 180 maestro test \
+         --include-tags smoke \
+         "${REPO_ROOT}/tests/e2e/maestro/01-onboarding.yaml"; then
+      echo ""
+      echo "❌ maestro smoke test 失敗"
+      echo "修正するか、どうしても push したい場合は git push --no-verify"
+      exit 1
+    fi
+    echo "✅ maestro smoke test OK"
+  else
+    echo "[pre-push] maestro 未インストール。smoke test をスキップ"
+  fi
+else
+  echo "[pre-push] emulator 未起動。maestro smoke test をスキップ"
+fi
