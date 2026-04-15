@@ -243,12 +243,17 @@ if ! git -C "$MAIN_WT" worktree remove {worktree} --force 2>/dev/null; then
             rm -rf {worktree} 2>/dev/null || true
             git -C "$MAIN_WT" worktree prune 2>/dev/null || true
         fi
-        SendMessage(to: "orchestrator", "WORKTREE_REMOVE_FAILED: issue-{issue_number} の worktree 削除に失敗しました。手動削除してください: {worktree}")
     fi
 fi
 
 # /tmp の spec ファイルを削除
 rm -f /tmp/issue-{issue_number}-*.md 2>/dev/null || true
+```
+
+worktree 削除に失敗した場合は orchestrator に通知する:
+
+```text
+SendMessage(to: "orchestrator", "WORKTREE_REMOVE_FAILED: issue-{issue_number} の worktree 削除に失敗しました。手動削除してください: {worktree}")
 ```
 
 続けて SendMessage を送信する:

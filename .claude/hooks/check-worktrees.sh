@@ -154,6 +154,9 @@ fi  # REPO_SLUG
 # Pass 2: 残りのworktreeの健全性チェック（削除後に再取得）
 WORKTREE_PATHS=$(git worktree list --porcelain 2>/dev/null | grep '^worktree ' | sed 's/^worktree //' | tail -n +2)
 
+HAS_GH=false
+[ -n "$REPO_SLUG" ] && HAS_GH=true
+
 while IFS= read -r wt_path; do
     [ -z "$wt_path" ] && continue
     [ -d "$wt_path" ] || continue
@@ -231,7 +234,7 @@ while IFS= read -r wt_path; do
 
     # PRが存在しないorphanブランチで未コミット変更なし → 警告（放置されたworktreeの可能性）
     branch=$(git -C "$wt_path" rev-parse --abbrev-ref HEAD 2>/dev/null)
-    if [ -n "$REPO_SLUG" ] && [ -n "$branch" ] && [ "$branch" != "HEAD" ] && [[ "$branch" =~ ^[a-zA-Z0-9/_.-]+$ ]]; then
+    if $HAS_GH && [ -n "$branch" ] && [ "$branch" != "HEAD" ] && [[ "$branch" =~ ^[a-zA-Z0-9/_.-]+$ ]]; then
         PR_COUNT=$(gh pr list --repo "$REPO_SLUG" --head "$branch" --state all --json number --jq 'length' 2>/dev/null || echo "0")
         if [ "$PR_COUNT" = "0" ] && [ -z "$DIRTY" ]; then
             PROBLEMS="${PROBLEMS}[PR未作成] ${wt_name}: PRが存在せず変更もなし -> 不要なら削除: git worktree remove ${wt_path} | "
