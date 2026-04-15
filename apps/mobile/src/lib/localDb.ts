@@ -202,6 +202,35 @@ export async function upsertTranslation(articleId: string, translation: string):
 }
 
 /**
+ * 本文をオフライン保存すべき記事 ID を取得する
+ * - synced_at DESC の先頭 limit 件
+ * - + is_favorite = 1 の全記事（重複除外）
+ *
+ * @param limit - 最新記事の取得件数
+ * @returns 対象記事 ID の配列（重複なし）
+ */
+export async function getOfflineTargetArticleIds(limit: number): Promise<string[]> {
+  const database = await getDb();
+
+  const rows = await database.getAllAsync<{ id: string }>(
+    `SELECT id FROM articles
+     WHERE id IN (SELECT id FROM articles ORDER BY synced_at DESC LIMIT ?)
+     OR is_favorite = 1`,
+    [limit],
+  );
+
+  const seen = new Set<string>();
+  const ids: string[] = [];
+  for (const row of rows) {
+    if (!seen.has(row.id)) {
+      seen.add(row.id);
+      ids.push(row.id);
+    }
+  }
+  return ids;
+}
+
+/**
  * 全オフラインデータを削除する
  * 外部キー制約の順序に従い translations → summaries → articles の順で削除する
  */

@@ -134,6 +134,7 @@
     "noArticles": "No articles",
     "readingTime": "{{minutes}} min read",
     "backA11yLabel": "Back",
+    "backA11yHint": "Go back to the previous screen",
     "summary": "Summary",
     "summarized": "Summarized",
     "summarize": "Summarize",
@@ -144,6 +145,7 @@
     "addToFavorites": "Add to favorites",
     "removeFromFavorites": "Remove from favorites",
     "noContent": "Article content is unavailable",
+    "offlineContentUnavailable": "This article has not been saved for offline use. Open it while online to save the content.",
     "viewOriginal": "View original article",
     "fetchError": "Failed to fetch article",
     "loadingArticle": "Loading...",
@@ -177,7 +179,10 @@
     "empty": "No notifications",
     "emptyDescription": "New notifications will appear here",
     "fetchError": "Failed to fetch notifications",
-    "loadingNotifications": "Loading..."
+    "loadingNotifications": "Loading...",
+    "retryHint": "Retry fetching notifications",
+    "unreadBadgeLabel": "{{count}} unread notifications",
+    "unreadBadgeLabelOver": "{{max}}+ unread notifications"
   },
   "profile": {
     "followersLabel": "Followers",
@@ -364,6 +369,38 @@
       "nextPageHint": "Go to page {{next}}",
       "skipHint": "Skip onboarding and go to login",
       "startHint": "Go to account creation"
+    }
+  },
+  "time": {
+    "justNow": "Just now",
+    "minutesAgo": "{{count}} minutes ago",
+    "hoursAgo": "{{count}} hours ago",
+    "daysAgo": "{{count}} days ago",
+    "weeksAgo": "{{count}} weeks ago",
+    "monthsAgo": "{{count}} months ago",
+    "yearsAgo": "{{count}} years ago"
+  },
+  "api": {
+    "errors": {
+      "timeout": "Request timed out",
+      "network": "No network connection",
+      "httpGeneric": "A server error occurred",
+      "parse": "Failed to parse response",
+      "sessionExpired": "Your session has expired. Please log in again.",
+      "status": {
+        "400": "Invalid request",
+        "403": "You do not have permission to perform this action",
+        "404": "Resource not found",
+        "408": "Request timed out",
+        "409": "A conflict occurred",
+        "413": "The submitted data is too large",
+        "422": "Please check your input",
+        "429": "Too many requests. Please wait a moment and try again.",
+        "500": "A server error occurred",
+        "502": "Unable to connect to the server",
+        "503": "The service is temporarily unavailable",
+        "504": "Server response timed out"
+      }
     }
   },
   "shareIntent": {

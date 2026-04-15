@@ -8,6 +8,7 @@ jest.mock("@mobile/lib/localDb", () => ({
   upsertSummary: jest.fn().mockResolvedValue(undefined),
   upsertTranslation: jest.fn().mockResolvedValue(undefined),
   getOfflineArticles: jest.fn().mockResolvedValue([]),
+  getOfflineTargetArticleIds: jest.fn().mockResolvedValue([]),
 }));
 
 jest.mock("@mobile/lib/api", () => ({
@@ -15,8 +16,19 @@ jest.mock("@mobile/lib/api", () => ({
 }));
 
 import { apiFetch } from "@mobile/lib/api";
-import { initLocalDb, upsertArticle, upsertSummary, upsertTranslation } from "@mobile/lib/localDb";
-import { syncArticleDetail, syncArticles } from "@mobile/lib/syncManager";
+import {
+  getOfflineTargetArticleIds,
+  initLocalDb,
+  upsertArticle,
+  upsertSummary,
+  upsertTranslation,
+} from "@mobile/lib/localDb";
+import {
+  prefetchOfflineArticleContents,
+  syncAllForOffline,
+  syncArticleDetail,
+  syncArticles,
+} from "@mobile/lib/syncManager";
 
 import type { ArticleDetail, ArticleListItem } from "@/types/article";
 
@@ -26,6 +38,7 @@ const mockInitLocalDb = jest.mocked(initLocalDb);
 const mockUpsertArticle = jest.mocked(upsertArticle);
 const mockUpsertSummary = jest.mocked(upsertSummary);
 const mockUpsertTranslation = jest.mocked(upsertTranslation);
+const mockGetOfflineTargetArticleIds = jest.mocked(getOfflineTargetArticleIds);
 
 /** apiFetch の戻り値を unknown 経由でキャストするヘルパー */
 function asApiFetchResult<T>(value: T): Awaited<ReturnType<typeof apiFetch>> {
@@ -89,6 +102,7 @@ describe("syncManager", () => {
     mockUpsertArticle.mockResolvedValue(undefined);
     mockUpsertSummary.mockResolvedValue(undefined);
     mockUpsertTranslation.mockResolvedValue(undefined);
+    mockGetOfflineTargetArticleIds.mockResolvedValue([]);
   });
 
   afterEach(() => {
@@ -316,6 +330,128 @@ describe("syncManager", () => {
       if (!result.success) {
         expect(result.error).toBeDefined();
       }
+    });
+  });
+
+  describe("prefetchOfflineArticleContents", () => {
+    it("対象記事の詳細を順次取得してローカルDBに保存できること", async () => {
+      // Arrange
+      mockGetOfflineTargetArticleIds.mockResolvedValue(["article-001", "article-002"]);
+      mockApiFetch
+        .mockResolvedValueOnce(
+          asApiFetchResult({
+            success: true,
+            data: { ...mockArticleDetailData, id: "article-001" },
+          }),
+        )
+        .mockResolvedValueOnce(
+          asApiFetchResult({
+            success: true,
+            data: { ...mockArticleDetailData, id: "article-002" },
+          }),
+        );
+
+      // Act
+      const result = await prefetchOfflineArticleContents(20);
+
+      // Assert
+      expect(mockUpsertArticle).toHaveBeenCalledTimes(2);
+      expect(result.prefetched).toBe(2);
+      expect(result.errors).toHaveLength(0);
+    });
+
+    it("個別記事の取得失敗時は errors に記録して処理を継続すること", async () => {
+      // Arrange
+      mockGetOfflineTargetArticleIds.mockResolvedValue(["article-001", "article-002"]);
+      mockApiFetch
+        .mockResolvedValueOnce(
+          asApiFetchResult({
+            success: false,
+            error: { code: "NOT_FOUND", message: "記事が見つかりません" },
+          }),
+        )
+        .mockResolvedValueOnce(
+          asApiFetchResult({
+            success: true,
+            data: { ...mockArticleDetailData, id: "article-002" },
+          }),
+        );
+
+      // Act
+      const result = await prefetchOfflineArticleContents(20);
+
+      // Assert
+      expect(result.errors).toHaveLength(1);
+      expect(result.prefetched).toBe(1);
+    });
+
+    it("対象 ID が空の場合はプレフェッチをスキップすること", async () => {
+      // Arrange
+      mockGetOfflineTargetArticleIds.mockResolvedValue([]);
+
+      // Act
+      const result = await prefetchOfflineArticleContents(20);
+
+      // Assert
+      expect(mockApiFetch).not.toHaveBeenCalled();
+      expect(result.prefetched).toBe(0);
+      expect(result.errors).toHaveLength(0);
+    });
+
+    it("個別記事の取得で例外が発生した場合は errors に記録して処理を継続すること", async () => {
+      // Arrange
+      mockGetOfflineTargetArticleIds.mockResolvedValue(["article-001", "article-002"]);
+      mockApiFetch.mockRejectedValueOnce(new Error("ネットワークエラー")).mockResolvedValueOnce(
+        asApiFetchResult({
+          success: true,
+          data: { ...mockArticleDetailData, id: "article-002" },
+        }),
+      );
+
+      // Act
+      const result = await prefetchOfflineArticleContents(20);
+
+      // Assert
+      expect(result.errors).toHaveLength(1);
+      expect(result.prefetched).toBe(1);
+    });
+  });
+
+  describe("syncAllForOffline", () => {
+    it("一覧同期後に本文プレフェッチを呼び出すこと", async () => {
+      // Arrange
+      mockApiFetch
+        .mockResolvedValueOnce(asApiFetchResult(mockArticleListResponse))
+        .mockResolvedValueOnce(asApiFetchResult({ success: true, data: mockArticleDetailData }));
+      mockGetOfflineTargetArticleIds.mockResolvedValue(["article-001"]);
+
+      // Act
+      const result = await syncAllForOffline();
+
+      // Assert
+      expect(result.listSynced).toBe(2);
+      expect(result.contentsPrefetched).toBe(1);
+      expect(result.errors).toHaveLength(0);
+    });
+
+    it("一覧同期失敗時でも本文プレフェッチを実行すること", async () => {
+      // Arrange
+      mockApiFetch
+        .mockResolvedValueOnce(
+          asApiFetchResult({
+            success: false,
+            error: { code: "INTERNAL_ERROR", message: "サーバーエラー" },
+          }),
+        )
+        .mockResolvedValueOnce(asApiFetchResult({ success: true, data: mockArticleDetailData }));
+      mockGetOfflineTargetArticleIds.mockResolvedValue(["article-001"]);
+
+      // Act
+      const result = await syncAllForOffline();
+
+      // Assert
+      expect(result.errors.length).toBeGreaterThan(0);
+      expect(result.contentsPrefetched).toBe(1);
     });
   });
 });

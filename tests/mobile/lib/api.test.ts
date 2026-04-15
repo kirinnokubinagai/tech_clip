@@ -25,6 +25,7 @@ import {
   apiFetch,
   SessionExpiredError,
 } from "@mobile/lib/api";
+import i18n from "@mobile/lib/i18n";
 import {
   clearAuthTokens,
   getAuthToken,
@@ -79,8 +80,9 @@ function createFetchResponse(body: unknown, options: CreateFetchResponseOptions 
 }
 
 describe("apiFetch", () => {
-  beforeEach(() => {
+  beforeEach(async () => {
     jest.clearAllMocks();
+    await i18n.changeLanguage("ja");
     mockGetAuthToken.mockResolvedValue("valid-access-token");
     mockGetRefreshToken.mockResolvedValue("valid-refresh-token");
     mockSetAuthToken.mockResolvedValue(undefined);
@@ -332,6 +334,46 @@ describe("apiFetch", () => {
     });
   });
 
+  describe("readBodyOnce の境界ケース", () => {
+    it("response.text() が例外をスローした場合はApiHttpErrorをスローすること", async () => {
+      // Arrange
+      mockFetch.mockResolvedValue(
+        createFetchResponse(null, {
+          status: 500,
+          contentType: "application/json",
+          textImpl: () => Promise.reject(new Error("ストリーム読み取りエラー")),
+        }),
+      );
+
+      // Act & Assert
+      await expect(apiFetch("/articles")).rejects.toBeInstanceOf(ApiHttpError);
+    });
+  });
+
+  describe("looksLikeJson のパス", () => {
+    it("Content-Typeが非JSONでも本文が'{' で始まる場合は業務エラーとして返すこと", async () => {
+      // Arrange
+      mockFetch.mockResolvedValue(
+        createFetchResponse(
+          { success: false, error: { code: "NOT_FOUND", message: "見つかりません" } },
+          {
+            status: 404,
+            contentType: "text/plain",
+          },
+        ),
+      );
+
+      // Act
+      const result = await apiFetch("/articles/999");
+
+      // Assert
+      expect(result).toEqual({
+        success: false,
+        error: { code: "NOT_FOUND", message: "見つかりません" },
+      });
+    });
+  });
+
   describe("非JSON応答の耐性", () => {
     it("2xxでJSONパースに失敗した場合はApiParseErrorをスローすること", async () => {
       // Arrange
@@ -543,6 +585,192 @@ describe("apiFetch", () => {
 
       // Act & Assert
       await expect(apiFetch("/articles")).rejects.toBeInstanceOf(ApiParseError);
+    });
+  });
+
+  describe("isBusinessErrorPayloadの型ガード厳格化", () => {
+    it("{success: false, error: '文字列'} のときApiHttpErrorがスローされること", async () => {
+      // Arrange
+      mockFetch.mockResolvedValue(
+        createFetchResponse({ success: false, error: "エラー文字列" }, { status: 400 }),
+      );
+
+      // Act & Assert
+      await expect(apiFetch("/articles")).rejects.toBeInstanceOf(ApiHttpError);
+    });
+
+    it("{success: false, error: {}} （code/message欠落）のときApiHttpErrorがスローされること", async () => {
+      // Arrange
+      mockFetch.mockResolvedValue(
+        createFetchResponse({ success: false, error: {} }, { status: 400 }),
+      );
+
+      // Act & Assert
+      await expect(apiFetch("/articles")).rejects.toBeInstanceOf(ApiHttpError);
+    });
+  });
+
+  describe("英語ロケールでのエラーメッセージ", () => {
+    beforeEach(async () => {
+      await i18n.changeLanguage("en");
+    });
+
+    afterEach(async () => {
+      await i18n.changeLanguage("ja");
+    });
+
+    it("タイムアウト時はApiNetworkErrorのmessageが英語になること", async () => {
+      // Arrange
+      const abortError = new Error("The operation was aborted");
+      abortError.name = "AbortError";
+      mockFetch.mockRejectedValue(abortError);
+
+      // Act
+      let caughtError: unknown;
+      try {
+        await apiFetch("/articles");
+      } catch (e) {
+        caughtError = e;
+      }
+
+      // Assert
+      expect(caughtError).toBeInstanceOf(ApiNetworkError);
+      expect((caughtError as ApiNetworkError).message).toBe("Request timed out");
+    });
+
+    it("ネットワークエラー時はApiNetworkErrorのmessageが英語になること", async () => {
+      // Arrange
+      mockFetch.mockRejectedValue(new TypeError("Network request failed"));
+
+      // Act
+      let caughtError: unknown;
+      try {
+        await apiFetch("/articles");
+      } catch (e) {
+        caughtError = e;
+      }
+
+      // Assert
+      expect(caughtError).toBeInstanceOf(ApiNetworkError);
+      expect((caughtError as ApiNetworkError).message).toBe("No network connection");
+    });
+  });
+
+  describe("ステータス別エラーメッセージとbodyText診断情報", () => {
+    it("404の非業務エラー応答でApiHttpError.messageが'リソースが見つかりません'になること", async () => {
+      // Arrange
+      mockFetch.mockResolvedValue(
+        createFetchResponse("Not Found", {
+          status: 404,
+          contentType: "text/plain",
+        }),
+      );
+
+      // Act
+      let caughtError: unknown;
+      try {
+        await apiFetch("/articles/999");
+      } catch (e) {
+        caughtError = e;
+      }
+
+      // Assert
+      expect(caughtError).toBeInstanceOf(ApiHttpError);
+      expect((caughtError as ApiHttpError).message).toBe("リソースが見つかりません");
+    });
+
+    it("429の非業務エラー応答でApiHttpError.messageが'リクエストが多すぎます...'になること", async () => {
+      // Arrange
+      mockFetch.mockResolvedValue(
+        createFetchResponse("Too Many Requests", {
+          status: 429,
+          contentType: "text/plain",
+        }),
+      );
+
+      // Act
+      let caughtError: unknown;
+      try {
+        await apiFetch("/articles");
+      } catch (e) {
+        caughtError = e;
+      }
+
+      // Assert
+      expect(caughtError).toBeInstanceOf(ApiHttpError);
+      expect((caughtError as ApiHttpError).message).toBe(
+        "リクエストが多すぎます。しばらく待ってから再度お試しください",
+      );
+    });
+
+    it("500の非業務エラーJSONでApiHttpError.bodyTextに本文先頭が格納されること", async () => {
+      // Arrange
+      mockFetch.mockResolvedValue(
+        createFetchResponse({ unexpected: "structure", error: null }, { status: 500 }),
+      );
+
+      // Act
+      let caughtError: unknown;
+      try {
+        await apiFetch("/articles");
+      } catch (e) {
+        caughtError = e;
+      }
+
+      // Assert
+      expect(caughtError).toBeInstanceOf(ApiHttpError);
+      const err = caughtError as ApiHttpError;
+      expect(err.bodyText).toBeDefined();
+      expect(err.bodyText?.length).toBeLessThanOrEqual(512);
+    });
+
+    it("500のHTML応答でApiHttpError.bodyTextにHTML先頭が格納されること", async () => {
+      // Arrange
+      mockFetch.mockResolvedValue(
+        createFetchResponse("<html><body>Internal Server Error</body></html>", {
+          status: 500,
+          contentType: "text/html; charset=utf-8",
+        }),
+      );
+
+      // Act
+      let caughtError: unknown;
+      try {
+        await apiFetch("/articles");
+      } catch (e) {
+        caughtError = e;
+      }
+
+      // Assert
+      expect(caughtError).toBeInstanceOf(ApiHttpError);
+      const err = caughtError as ApiHttpError;
+      expect(err.bodyText).toBeDefined();
+      expect(err.bodyText).toContain("<html>");
+    });
+
+    it("bodyTextがBODY_TEXT_PREVIEW_MAX_LENGTHを超える場合に512文字に切り詰められること", async () => {
+      // Arrange
+      const longBody = "x".repeat(1000);
+      mockFetch.mockResolvedValue(
+        createFetchResponse(longBody, {
+          status: 503,
+          contentType: "text/plain",
+        }),
+      );
+
+      // Act
+      let caughtError: unknown;
+      try {
+        await apiFetch("/articles");
+      } catch (e) {
+        caughtError = e;
+      }
+
+      // Assert
+      expect(caughtError).toBeInstanceOf(ApiHttpError);
+      const err = caughtError as ApiHttpError;
+      expect(err.bodyText).toBeDefined();
+      expect(err.bodyText?.length).toBe(512);
     });
   });
 

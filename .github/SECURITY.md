@@ -70,7 +70,7 @@
 
 - Dependency vulnerability scanning (`pnpm audit`)
 - Pre-commit hooks for secret detection (`secret-guard.sh`)
-- Automated security workflow (`.github/workflows/security.yml`)
+- Dependency audit runs on every PR / push via `ci.yml`
 
 ## Development Security Practices
 

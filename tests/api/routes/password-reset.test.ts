@@ -1,6 +1,7 @@
 import { HTTP_BAD_REQUEST, HTTP_OK, HTTP_UNPROCESSABLE_ENTITY } from "@api/lib/http-status";
 import { createPasswordResetRoute } from "@api/routes/password-reset";
 import { sendPasswordReset } from "@api/services/emailService";
+import { hashPassword, verifyPassword } from "better-auth/crypto";
 import { Hono } from "hono";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -67,6 +68,16 @@ const mockDb = {
   delete: mockDelete,
 };
 
+/** Better Auth の password.hash/verify をそのまま返すモック auth */
+const mockAuth = {
+  $context: Promise.resolve({
+    password: {
+      hash: hashPassword,
+      verify: verifyPassword,
+    },
+  }),
+};
+
 /**
  * テスト用Honoアプリを作成する
  *
@@ -78,6 +89,7 @@ function createTestApp() {
     db: mockDb as never,
     appUrl: "https://app.example.com",
     emailEnv: { RESEND_API_KEY: "test-key", FROM_EMAIL: "test@example.com" },
+    auth: mockAuth as never,
   });
   app.route("/api/auth", passwordResetRoute);
   return app;

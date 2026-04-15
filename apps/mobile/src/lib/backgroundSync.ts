@@ -3,7 +3,7 @@ import * as TaskManager from "expo-task-manager";
 import type { AppStateStatus, NativeEventSubscription } from "react-native";
 import { AppState } from "react-native";
 
-import { syncArticles } from "./syncManager";
+import { syncAllForOffline } from "./syncManager";
 
 /**
  * バックグラウンド同期の最小間隔（ミリ秒）
@@ -41,11 +41,13 @@ export const DEFAULT_BACKGROUND_SYNC_CONFIG: BackgroundSyncConfig = {
  */
 TaskManager.defineTask(DEFAULT_BACKGROUND_SYNC_CONFIG.taskName, async () => {
   try {
-    const result = await syncArticles();
-    if (result.errors.length > 0) {
+    const result = await syncAllForOffline();
+    const hasNewData = result.contentsPrefetched + result.listSynced > 0;
+    const allFailed = !hasNewData && result.errors.length > 0;
+    if (allFailed) {
       return BackgroundFetch.BackgroundFetchResult.Failed;
     }
-    if (result.synced === 0) {
+    if (!hasNewData) {
       return BackgroundFetch.BackgroundFetchResult.NoData;
     }
     return BackgroundFetch.BackgroundFetchResult.NewData;
@@ -111,7 +113,7 @@ export function createAppStateHandler(config: BackgroundSyncConfig): AppStateCha
       return;
     }
     state.lastSyncedAt = Date.now();
-    syncArticles().catch(() => {
+    syncAllForOffline().catch(() => {
       /* バックグラウンド同期エラーは無視（次回復帰時に再試行） */
     });
   };

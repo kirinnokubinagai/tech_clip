@@ -53,6 +53,9 @@ jest.mock("@mobile/hooks/use-network-status", () => ({
 
 jest.mock("@mobile/lib/localDb", () => ({
   getOfflineArticleById: jest.fn(),
+  upsertArticle: jest.fn().mockResolvedValue(undefined),
+  upsertSummary: jest.fn().mockResolvedValue(undefined),
+  upsertTranslation: jest.fn().mockResolvedValue(undefined),
 }));
 
 jest.mock("@mobile/hooks/use-articles", () => ({
@@ -355,6 +358,65 @@ describe("ArticleDetailScreen", () => {
       // Assert
       await waitFor(() => {
         expect(getByLabelText("お気に入り解除")).not.toBeNull();
+      });
+    });
+  });
+
+  describe("オフライン本文あり/なし分岐", () => {
+    it("オフラインでも本文がローカルDBにあれば表示されること", async () => {
+      // Arrange
+      const { useNetworkStatus } = require("@mobile/hooks/use-network-status");
+      (useNetworkStatus as jest.Mock).mockReturnValue({ isOnline: false, isOffline: true });
+      const { getOfflineArticleById } = require("@mobile/lib/localDb");
+      (getOfflineArticleById as jest.Mock).mockResolvedValue({
+        ...MOCK_ARTICLE,
+        content: "# オフライン本文\nローカルに保存済みのコンテンツ",
+      });
+
+      // Act
+      const { getByText } = await render(<ArticleDetailScreen />);
+
+      // Assert
+      await waitFor(() => {
+        expect(getByText("テスト記事")).not.toBeNull();
+      });
+    });
+
+    it("オフライン + 本文なしの場合は offlineContentUnavailable メッセージを表示すること", async () => {
+      // Arrange
+      setMockLocale("ja");
+      const { useNetworkStatus } = require("@mobile/hooks/use-network-status");
+      (useNetworkStatus as jest.Mock).mockReturnValue({ isOnline: false, isOffline: true });
+      const { getOfflineArticleById } = require("@mobile/lib/localDb");
+      (getOfflineArticleById as jest.Mock).mockResolvedValue({
+        ...MOCK_ARTICLE,
+        content: null,
+      });
+
+      // Act
+      const { getByText } = await render(<ArticleDetailScreen />);
+
+      // Assert
+      await waitFor(() => {
+        expect(
+          getByText(
+            "この記事はオフライン保存されていません。オンライン時に開くと本文が保存されます。",
+          ),
+        ).not.toBeNull();
+      });
+    });
+
+    it("オンラインで取得した記事はローカルDBにも保存されること（write-through）", async () => {
+      // Arrange
+      const { upsertArticle } = require("@mobile/lib/localDb");
+      mockArticleDetailState.data = MOCK_ARTICLE;
+
+      // Act
+      await render(<ArticleDetailScreen />);
+
+      // Assert
+      await waitFor(() => {
+        expect(upsertArticle).toHaveBeenCalledWith(expect.objectContaining({ id: "article-1" }));
       });
     });
   });
