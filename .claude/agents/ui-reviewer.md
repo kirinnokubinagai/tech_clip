@@ -232,21 +232,23 @@ fi
 gh issue close {issue_number} --comment "PR がマージされたため自動クローズしました（reviewer agent）"
 
 # worktree 削除（fallback 付き）
-# 1. 通常削除を試みる
-# 2. 失敗した場合は --force で再試行
-# 3. それでも失敗した場合は git worktree prune を実行して orchestrator に通知
-MAIN_WT=$(git worktree list --porcelain 2>/dev/null | grep '^worktree ' | head -1 | sed 's/^worktree //')
-if git -C "$MAIN_WT" worktree remove {worktree} 2>/dev/null; then
-    echo "worktree 削除完了"
-elif git -C "$MAIN_WT" worktree remove --force {worktree} 2>/dev/null; then
-    echo "worktree 強制削除完了"
-else
+MAIN_WT=$(git -C {worktree} worktree list --porcelain | head -1 | awk '{print $2}')
+if ! git -C "$MAIN_WT" worktree remove {worktree} --force 2>/dev/null; then
+    # fallback 1: prune してリトライ
     git -C "$MAIN_WT" worktree prune 2>/dev/null || true
-    SendMessage(to: "orchestrator", "WORKTREE_DELETE_FAILED: issue-{issue_number} の worktree ({worktree}) 削除に失敗しました。手動で削除してください: git worktree remove --force {worktree}")
+    if ! git -C "$MAIN_WT" worktree remove {worktree} --force 2>/dev/null; then
+        # fallback 2: ディレクトリ直接削除 + prune（issue-N パターンか事前確認）
+        WT_BASENAME=$(basename {worktree})
+        if [[ "$WT_BASENAME" =~ ^issue-[0-9]+ ]] && [[ "{worktree}" == /* ]] && [[ "{worktree}" != "/" ]]; then
+            rm -rf {worktree} 2>/dev/null || true
+            git -C "$MAIN_WT" worktree prune 2>/dev/null || true
+        fi
+        SendMessage(to: "orchestrator", "WORKTREE_REMOVE_FAILED: issue-{issue_number} の worktree 削除に失敗しました。手動削除してください: {worktree}")
+    fi
 fi
 
-# /tmp/issue-{issue_number}-* ファイルを削除
-find /tmp -maxdepth 1 -name "issue-{issue_number}-*" -delete 2>/dev/null || true
+# /tmp の spec ファイルを削除
+rm -f /tmp/issue-{issue_number}-*.md 2>/dev/null || true
 ```
 
 続けて SendMessage を送信する:
