@@ -23,6 +23,7 @@ env:
 
 # --- 検索画面 ---
 - assertVisible: "検索"
+- takeScreenshot: screenshots/08-search/01-search-screen
 
 # 検索フィールドをタップ
 - tapOn:
@@ -56,3 +57,4 @@ env:
 - tapOn:
     accessibilityLabel: "戻る"
 - assertVisible: "検索"
+- takeScreenshot: screenshots/08-search/02-results
