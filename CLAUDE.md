@@ -411,9 +411,35 @@ worktree-isolation-guard.sh により以下の制限がある（mainブランチ
 
 ## Worktree の自動管理
 
-- `check-worktrees.sh`（SessionStart hook）がマージ済み worktree を自動削除する
-- reviewer が APPROVED 受信後に即時削除するため残骸が残らない
-- クローズされた（マージなし）Issue の worktree は手動で削除する:
+### 自動削除（SessionStart hook）
+
+`check-worktrees.sh`（SessionStart hook）が以下を自動処理する:
+
+- **マージ済み worktree**: 自動削除
+- **PR がクローズ済み（マージなし）で未コミット変更なし**: 自動削除
+- **PR がクローズ済みで未コミット変更あり**: 警告表示（手動削除が必要）
+- **PR が存在しないブランチで未コミット変更なし**: 警告表示
+- **14 日以上コミットなし**: 警告表示
+- **`/tmp/issue-*` ファイルが 24 時間以上前**: 自動削除
+
+### reviewer agent の worktree 削除
+
+reviewer が APPROVED 受信後に即時削除する（fallback 付き）:
+
+1. `git worktree remove --force {worktree}` で強制削除
+2. 失敗した場合は `git worktree prune` を実行後、再度 `git worktree remove --force` を試みる
+3. それでも失敗した場合は `rm -rf` でディレクトリを強制削除し `worktree prune` を実行する（`issue-<N>` 形式の絶対パスのみ対象）
+4. worktree ディレクトリが残存している場合は orchestrator に `WORKTREE_REMOVE_FAILED` を通知
+
+### 手動クリーンアップ
+
+古い worktree をインタラクティブに削除したい場合:
+
+```bash
+bash scripts/cleanup-worktrees.sh
+```
+
+クローズされた（マージなし）Issue の worktree を個別に削除する場合:
 
 ```bash
 git worktree remove ../issue-<N>
