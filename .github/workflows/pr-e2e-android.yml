@@ -54,7 +54,7 @@ jobs:
           arch: x86_64
           force-avd-creation: false
           emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
-          disable-animations: false
+          disable-animations: true
           script: echo "AVD snapshot generated"
 
       - name: Android Emulator + Maestro
@@ -67,7 +67,7 @@ jobs:
           emulator-options: -no-snapshot-save -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
           disable-animations: true
           script: |
-            set -euo pipefail
+            set -eu
             mkdir -p screenshots test-results
 
             # Build and install development build
@@ -82,6 +82,12 @@ jobs:
               fi
               sleep 5
             done
+
+            if ! adb shell pidof com.techclip.app > /dev/null 2>&1; then
+              echo "ERROR: App failed to start within 5 minutes"
+              echo "1" > test-results/maestro-exit-code.txt
+              exit 1
+            fi
 
             # Run Maestro tests (continue on failure to upload artifacts)
             set +e

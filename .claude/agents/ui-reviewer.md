@@ -209,6 +209,10 @@ fi
      --limit 1 \
      --json status,conclusion,databaseId)
    RUN_ID=$(echo "$RUN_JSON" | jq -r '.[0].databaseId')
+   if [ -z "$RUN_ID" ] || [ "$RUN_ID" = "null" ]; then
+     echo "No PR E2E run found for this branch. Skipping phase 6.5."
+     # フェーズ 7 へ進む
+   fi
    RUN_STATUS=$(echo "$RUN_JSON" | jq -r '.[0].status')
    RUN_CONCLUSION=$(echo "$RUN_JSON" | jq -r '.[0].conclusion')
    ```
