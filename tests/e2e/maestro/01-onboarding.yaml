@@ -12,11 +12,13 @@ tags:
 # アプリ起動
 - launchApp:
     clearState: true
+- takeScreenshot: screenshots/01-onboarding/01-launch
 
 # --- ページ1: 技術記事をワンタップで保存 ---
 - assertVisible: "技術記事をワンタップで保存"
 - assertVisible: "Zenn、Qiita"
 - tapOn: "次へ"
+- takeScreenshot: screenshots/01-onboarding/02-page2
 
 # --- ページ2: AIが要約・翻訳 ---
 - assertVisible: "AIが要約・翻訳"
@@ -33,6 +35,7 @@ tags:
 - assertVisible: "アカウントを作成して"
 - assertVisible: "はじめる"
 - tapOn: "はじめる"
+- takeScreenshot: screenshots/01-onboarding/03-done
 
 # ログイン画面またはホーム画面に遷移することを確認
 - assertVisible: "TechClip"

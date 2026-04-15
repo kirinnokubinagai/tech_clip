@@ -1,0 +1,144 @@
+name: Upload PR E2E Comment
+description: Upload Maestro screenshots to GitHub Release and post PR comment with inline images
+
+inputs:
+  github-token:
+    description: GitHub token
+    required: true
+  pr-number:
+    description: Pull request number
+    required: true
+  run-id:
+    description: GitHub Actions run ID
+    required: true
+  screenshots-dir:
+    description: Directory containing screenshots
+    required: false
+    default: screenshots
+  junit-path:
+    description: Path to JUnit XML file
+    required: false
+    default: test-results/junit.xml
+
+runs:
+  using: composite
+  steps:
+    - name: Upload screenshots to Release and post PR comment
+      shell: bash
+      env:
+        GH_TOKEN: ${{ inputs.github-token }}
+        PR_NUMBER: ${{ inputs.pr-number }}
+        RUN_ID: ${{ inputs.run-id }}
+        SCREENSHOTS_DIR: ${{ inputs.screenshots-dir }}
+        JUNIT_PATH: ${{ inputs.junit-path }}
+      run: |
+        set -euo pipefail
+
+        REPO="${GITHUB_REPOSITORY}"
+        TAG="pr-${PR_NUMBER}-e2e"
+
+        # --- Release upsert ---
+        RELEASE_ID=$(gh api "repos/${REPO}/releases/tags/${TAG}" --jq '.id' 2>/dev/null || true)
+        if [ -z "$RELEASE_ID" ]; then
+          RELEASE_ID=$(gh api "repos/${REPO}/releases" \
+            --method POST \
+            --field tag_name="${TAG}" \
+            --field name="PR #${PR_NUMBER} E2E Screenshots" \
+            --field body="Auto-generated screenshots from PR E2E tests." \
+            --field draft=false \
+            --field prerelease=true \
+            --jq '.id')
+        else
+          # Delete existing assets to avoid accumulation on re-run
+          gh api "repos/${REPO}/releases/${RELEASE_ID}/assets" --jq '.[].id' | \
+            xargs -I{} gh api "repos/${REPO}/releases/assets/{}" --method DELETE || true
+        fi
+
+        # --- Upload screenshots ---
+        declare -A URL_MAP
+        if [ -d "$SCREENSHOTS_DIR" ]; then
+          while IFS= read -r -d '' FILE; do
+            LABEL="${FILE#${SCREENSHOTS_DIR}/}"
+            LABEL="${LABEL%.*}"
+            ASSET_NAME="${LABEL//\//__}.png"
+            UPLOAD_URL=$(gh api "repos/${REPO}/releases/${RELEASE_ID}/assets?name=${ASSET_NAME}" \
+              --method POST \
+              --header "Content-Type: image/png" \
+              --input "$FILE" \
+              --jq '.browser_download_url' 2>/dev/null || echo "")
+            if [ -n "$UPLOAD_URL" ]; then
+              URL_MAP["$LABEL"]="$UPLOAD_URL"
+            fi
+          done < <(find "$SCREENSHOTS_DIR" -name "*.png" -print0 | sort -z)
+        fi
+
+        # --- Parse JUnit XML ---
+        PASS_COUNT=0
+        FAIL_COUNT=0
+        FAILED_FLOWS=""
+        if [ -f "$JUNIT_PATH" ]; then
+          PASS_COUNT=$(grep -oP 'tests="\K[0-9]+' "$JUNIT_PATH" | head -1 || echo 0)
+          FAIL_COUNT=$(grep -oP 'failures="\K[0-9]+' "$JUNIT_PATH" | head -1 || echo 0)
+          if [ "$FAIL_COUNT" -gt 0 ]; then
+            FAILED_FLOWS=$(grep -oP 'classname="\K[^"]+' "$JUNIT_PATH" | sort -u | head -5 | tr '\n' ', ' | sed 's/,$//')
+          fi
+        fi
+
+        # --- Maestro exit code ---
+        EXIT_CODE=$(cat test-results/maestro-exit-code.txt 2>/dev/null || echo "1")
+        if [ "$EXIT_CODE" -eq 0 ]; then
+          RESULT_ICON="✅"
+          RESULT_TEXT="PASS"
+        else
+          RESULT_ICON="❌"
+          RESULT_TEXT="FAIL"
+        fi
+
+        # --- Build comment body ---
+        BODY="<!-- pr-e2e-marker -->
+        ## PR E2E (Android) 結果
+
+        **Run ID**: \`${RUN_ID}\` / **結果**: ${RESULT_ICON} ${RESULT_TEXT}"
+
+        if [ -n "$FAILED_FLOWS" ]; then
+          BODY="${BODY}
+
+        ### 失敗フロー
+        ${FAILED_FLOWS}"
+        fi
+
+        # Group screenshots by flow
+        declare -A FLOW_SECTIONS
+        for LABEL in "${!URL_MAP[@]}"; do
+          FLOW=$(echo "$LABEL" | cut -d'/' -f1)
+          STEP=$(echo "$LABEL" | cut -d'/' -f2-)
+          URL="${URL_MAP[$LABEL]}"
+          FLOW_SECTIONS["$FLOW"]+="<img src=\"${URL}\" alt=\"${STEP}\" width=\"300\">
+        "
+        done
+
+        BODY="${BODY}
+
+        ### 全フロー
+        "
+        for FLOW in $(echo "${!FLOW_SECTIONS[@]}" | tr ' ' '\n' | sort); do
+          BODY="${BODY}
+
+        #### ${FLOW}
+        ${FLOW_SECTIONS[$FLOW]}"
+        done
+
+        # --- Upsert PR comment ---
+        EXISTING_COMMENT_ID=$(gh api "repos/${REPO}/issues/${PR_NUMBER}/comments" \
+          --jq '[.[] | select(.user.login == "github-actions[bot]" and (.body | startswith("<!-- pr-e2e-marker -->")))] | first | .id // empty' \
+          2>/dev/null || true)
+
+        if [ -n "$EXISTING_COMMENT_ID" ]; then
+          gh api "repos/${REPO}/issues/comments/${EXISTING_COMMENT_ID}" \
+            --method PATCH \
+            --field body="$BODY"
+        else
+          gh api "repos/${REPO}/issues/${PR_NUMBER}/comments" \
+            --method POST \
+            --field body="$BODY"
+        fi

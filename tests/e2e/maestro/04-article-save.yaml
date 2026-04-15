@@ -27,6 +27,7 @@ env:
 # --- 記事保存画面 ---
 - assertVisible: "記事を保存"
 - assertVisible: "URL"
+- takeScreenshot: screenshots/04-article-save/01-save-screen
 
 # --- バリデーション: 空URL送信 ---
 - tapOn: "取得"
@@ -65,6 +66,7 @@ env:
 
 # 保存成功トースト確認
 - assertVisible: "記事を保存しました"
+- takeScreenshot: screenshots/04-article-save/02-saved
 
 # --- 戻るボタン ---
 - launchApp:
