@@ -17,9 +17,9 @@
           },
           {
             "type": "command",
-            "command": "bash \"$(git rev-parse --show-toplevel 2>/dev/null || echo .)/.claude/hooks/cleanup-tmp-files.sh\"",
-            "timeout": 10,
-            "statusMessage": "Cleaning up old spec files..."
+            "command": "bash \"$(git rev-parse --show-toplevel 2>/dev/null || echo .)/.claude/hooks/cleanup-temp-files.sh\"",
+            "timeout": 15,
+            "statusMessage": "Cleaning old temp files..."
           },
           {
             "type": "command",
