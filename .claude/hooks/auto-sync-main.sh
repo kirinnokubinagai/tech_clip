@@ -21,16 +21,19 @@ COMMON_GIT_DIR=$(git rev-parse --path-format=absolute --git-common-dir 2>/dev/nu
 if [ -n "$COMMON_GIT_DIR" ]; then
   MAIN_WT_ROOT=$(cd "${COMMON_GIT_DIR}/.." 2>/dev/null && pwd -P || echo "")
   if [ -n "$MAIN_WT_ROOT" ] && [ -d "$MAIN_WT_ROOT" ] && [ "$MAIN_WT_ROOT" != "$REPO_ROOT" ]; then
-    git -C "$MAIN_WT_ROOT" fetch origin main --quiet 2>/dev/null || true
-    MAIN_LOCAL=$(git -C "$MAIN_WT_ROOT" rev-parse HEAD 2>/dev/null || echo "")
-    MAIN_REMOTE=$(git -C "$MAIN_WT_ROOT" rev-parse origin/main 2>/dev/null || echo "")
-    if [ -n "$MAIN_LOCAL" ] && [ -n "$MAIN_REMOTE" ] && [ "$MAIN_LOCAL" != "$MAIN_REMOTE" ]; then
-      MAIN_DIRTY=$(git -C "$MAIN_WT_ROOT" status --porcelain 2>/dev/null | grep -v '^??' | head -1 || echo "")
-      if [ -z "$MAIN_DIRTY" ]; then
-        if git -C "$MAIN_WT_ROOT" merge --ff-only origin/main --quiet 2>/dev/null; then
-          MESSAGES="${MESSAGES}[auto-sync] main worktree を origin/main へ FF merge しました。"
-        else
-          MESSAGES="${MESSAGES}[auto-sync] ⚠️ main worktree の FF merge 失敗（non-FF 状態）。"
+    MAIN_WT_BRANCH=$(git -C "$MAIN_WT_ROOT" branch --show-current 2>/dev/null || echo "")
+    if [ "$MAIN_WT_BRANCH" = "main" ]; then
+      git -C "$MAIN_WT_ROOT" fetch origin main --quiet 2>/dev/null || true
+      MAIN_LOCAL=$(git -C "$MAIN_WT_ROOT" rev-parse HEAD 2>/dev/null || echo "")
+      MAIN_REMOTE=$(git -C "$MAIN_WT_ROOT" rev-parse origin/main 2>/dev/null || echo "")
+      if [ -n "$MAIN_LOCAL" ] && [ -n "$MAIN_REMOTE" ] && [ "$MAIN_LOCAL" != "$MAIN_REMOTE" ]; then
+        MAIN_DIRTY=$(git -C "$MAIN_WT_ROOT" status --porcelain 2>/dev/null | head -1 || echo "")
+        if [ -z "$MAIN_DIRTY" ]; then
+          if git -C "$MAIN_WT_ROOT" merge --ff-only origin/main --quiet 2>/dev/null; then
+            MESSAGES="${MESSAGES}[auto-sync] main worktree を origin/main へ FF merge しました。"
+          else
+            MESSAGES="${MESSAGES}[auto-sync] ⚠️ main worktree の FF merge 失敗（non-FF 状態）。"
+          fi
         fi
       fi
     fi
