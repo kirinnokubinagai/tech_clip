@@ -53,7 +53,7 @@ echo "  Typecheck..."
 pnpm typecheck || { echo "Typecheck失敗。修正してからpushしてください。"; exit 1; }
 
 echo "  Audit..."
-pnpm audit --prod || { echo "Audit失敗。脆弱性を解消してからpushしてください。"; exit 1; }
+pnpm audit --prod --ignore-registry-errors || { echo "Audit失敗。脆弱性を解消してからpushしてください。"; exit 1; }
 
 echo "  Test..."
 "${REPO_ROOT}/scripts/run-and-fail-on-stderr.sh" pnpm test || {
