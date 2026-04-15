@@ -1,325 +1,331 @@
 {
-  "hooks": {
-    "SessionStart": [
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "bash \"$(git rev-parse --show-toplevel 2>/dev/null || echo .)/.claude/hooks/session-start.sh\"",
-            "timeout": 15,
-            "statusMessage": "Syncing with remote..."
-          },
-          {
-            "type": "command",
-            "command": "bash \"$(git rev-parse --show-toplevel 2>/dev/null || echo .)/.claude/hooks/check-worktrees.sh\"",
-            "timeout": 10,
-            "statusMessage": "Checking worktree health..."
-          },
-          {
-            "type": "command",
-            "command": "bash \"$(git rev-parse --show-toplevel 2>/dev/null || echo .)/.claude/hooks/cleanup-tmp-files.sh\"",
-            "timeout": 10,
-            "statusMessage": "Cleaning up old spec files..."
-          },
-          {
-            "type": "command",
-            "command": "bash \"$(git rev-parse --show-toplevel 2>/dev/null || echo .)/.claude/hooks/implementation-order-guard.sh\"",
-            "timeout": 10,
-            "statusMessage": "Checking implementation order..."
-          },
-          {
-            "type": "command",
-            "command": "bash \"$(git rev-parse --show-toplevel 2>/dev/null || echo .)/.claude/hooks/read-claude-md.sh\"",
-            "timeout": 10,
-            "statusMessage": "Loading CLAUDE.md..."
-          }
+    "hooks": {
+        "SessionStart": [
+            {
+                "hooks": [
+                    {
+                        "type": "command",
+                        "command": "bash \"$(git rev-parse --show-toplevel 2>/dev/null || echo .)/.claude/hooks/session-start.sh\"",
+                        "timeout": 15,
+                        "statusMessage": "Syncing with remote..."
+                    },
+                    {
+                        "type": "command",
+                        "command": "bash \"$(git rev-parse --show-toplevel 2>/dev/null || echo .)/.claude/hooks/check-worktrees.sh\"",
+                        "timeout": 10,
+                        "statusMessage": "Checking worktree health..."
+                    },
+                    {
+                        "type": "command",
+                        "command": "bash \"$(git rev-parse --show-toplevel 2>/dev/null || echo .)/.claude/hooks/cleanup-tmp-files.sh\"",
+                        "timeout": 10,
+                        "statusMessage": "Cleaning up old spec files..."
+                    },
+                    {
+                        "type": "command",
+                        "command": "bash \"$(git rev-parse --show-toplevel 2>/dev/null || echo .)/.claude/hooks/implementation-order-guard.sh\"",
+                        "timeout": 10,
+                        "statusMessage": "Checking implementation order..."
+                    },
+                    {
+                        "type": "command",
+                        "command": "bash \"$(git rev-parse --show-toplevel 2>/dev/null || echo .)/.claude/hooks/read-claude-md.sh\"",
+                        "timeout": 10,
+                        "statusMessage": "Loading CLAUDE.md..."
+                    },
+                    {
+                        "type": "command",
+                        "command": "bash \"$(git rev-parse --show-toplevel 2>/dev/null || echo .)/.claude/hooks/clean-stale-team-members.sh\"",
+                        "timeout": 30,
+                        "statusMessage": "Cleaning stale team members..."
+                    }
+                ]
+            }
+        ],
+        "PreToolUse": [
+            {
+                "matcher": "Bash",
+                "hooks": [
+                    {
+                        "type": "command",
+                        "command": "bash \"$(git rev-parse --show-toplevel 2>/dev/null || echo .)/.claude/hooks/secret-guard.sh\"",
+                        "timeout": 10,
+                        "statusMessage": "Checking for secrets..."
+                    },
+                    {
+                        "type": "command",
+                        "command": "bash \"$(git rev-parse --show-toplevel 2>/dev/null || echo .)/.claude/hooks/dangerous-command-guard.sh\"",
+                        "timeout": 5,
+                        "statusMessage": "Checking for dangerous commands..."
+                    },
+                    {
+                        "type": "command",
+                        "command": "bash \"$(git rev-parse --show-toplevel 2>/dev/null || echo .)/.claude/hooks/direnv-allow-guard.sh\"",
+                        "timeout": 5,
+                        "statusMessage": "Checking direnv allow state..."
+                    },
+                    {
+                        "type": "command",
+                        "command": "bash \"$(git rev-parse --show-toplevel 2>/dev/null || echo .)/.claude/hooks/pre-push-review-guard.sh\"",
+                        "timeout": 5,
+                        "statusMessage": "Checking review status..."
+                    },
+                    {
+                        "type": "command",
+                        "command": "bash \"$(git rev-parse --show-toplevel 2>/dev/null || echo .)/.claude/hooks/main-commit-guard.sh\"",
+                        "timeout": 5,
+                        "statusMessage": "Checking branch for commit..."
+                    }
+                ]
+            },
+            {
+                "matcher": "Read",
+                "hooks": [
+                    {
+                        "type": "command",
+                        "command": "bash \"$(git rev-parse --show-toplevel 2>/dev/null || echo .)/.claude/hooks/worktree-isolation-guard.sh\"",
+                        "timeout": 5,
+                        "statusMessage": "Checking worktree isolation..."
+                    }
+                ]
+            },
+            {
+                "matcher": "Glob",
+                "hooks": [
+                    {
+                        "type": "command",
+                        "command": "bash \"$(git rev-parse --show-toplevel 2>/dev/null || echo .)/.claude/hooks/worktree-isolation-guard.sh\"",
+                        "timeout": 5,
+                        "statusMessage": "Checking worktree isolation..."
+                    }
+                ]
+            },
+            {
+                "matcher": "Edit",
+                "hooks": [
+                    {
+                        "type": "command",
+                        "command": "bash \"$(git rev-parse --show-toplevel 2>/dev/null || echo .)/.claude/hooks/orchestrator-direct-edit-guard.sh\"",
+                        "timeout": 5,
+                        "statusMessage": "Checking orchestrator direct edit..."
+                    },
+                    {
+                        "type": "command",
+                        "command": "bash \"$(git rev-parse --show-toplevel 2>/dev/null || echo .)/.claude/hooks/worktree-isolation-guard.sh\"",
+                        "timeout": 5,
+                        "statusMessage": "Checking worktree isolation..."
+                    },
+                    {
+                        "type": "command",
+                        "command": "bash \"$(git rev-parse --show-toplevel 2>/dev/null || echo .)/.claude/hooks/diagnosis-first-guard.sh\"",
+                        "timeout": 5,
+                        "statusMessage": "Diagnosis-first check..."
+                    }
+                ]
+            },
+            {
+                "matcher": "Write",
+                "hooks": [
+                    {
+                        "type": "command",
+                        "command": "bash \"$(git rev-parse --show-toplevel 2>/dev/null || echo .)/.claude/hooks/orchestrator-direct-edit-guard.sh\"",
+                        "timeout": 5,
+                        "statusMessage": "Checking orchestrator direct edit..."
+                    },
+                    {
+                        "type": "command",
+                        "command": "bash \"$(git rev-parse --show-toplevel 2>/dev/null || echo .)/.claude/hooks/worktree-isolation-guard.sh\"",
+                        "timeout": 5,
+                        "statusMessage": "Checking worktree isolation..."
+                    },
+                    {
+                        "type": "command",
+                        "command": "bash \"$(git rev-parse --show-toplevel 2>/dev/null || echo .)/.claude/hooks/diagnosis-first-guard.sh\"",
+                        "timeout": 5,
+                        "statusMessage": "Diagnosis-first check..."
+                    }
+                ]
+            },
+            {
+                "matcher": "MultiEdit",
+                "hooks": [
+                    {
+                        "type": "command",
+                        "command": "bash \"$(git rev-parse --show-toplevel 2>/dev/null || echo .)/.claude/hooks/orchestrator-direct-edit-guard.sh\"",
+                        "timeout": 5,
+                        "statusMessage": "Checking orchestrator direct edit..."
+                    },
+                    {
+                        "type": "command",
+                        "command": "bash \"$(git rev-parse --show-toplevel 2>/dev/null || echo .)/.claude/hooks/worktree-isolation-guard.sh\"",
+                        "timeout": 5,
+                        "statusMessage": "Checking worktree isolation..."
+                    },
+                    {
+                        "type": "command",
+                        "command": "bash \"$(git rev-parse --show-toplevel 2>/dev/null || echo .)/.claude/hooks/diagnosis-first-guard.sh\"",
+                        "timeout": 5,
+                        "statusMessage": "Diagnosis-first check..."
+                    }
+                ]
+            },
+            {
+                "matcher": "NotebookEdit",
+                "hooks": [
+                    {
+                        "type": "command",
+                        "command": "bash \"$(git rev-parse --show-toplevel 2>/dev/null || echo .)/.claude/hooks/orchestrator-direct-edit-guard.sh\"",
+                        "timeout": 5,
+                        "statusMessage": "Checking orchestrator direct edit..."
+                    },
+                    {
+                        "type": "command",
+                        "command": "bash \"$(git rev-parse --show-toplevel 2>/dev/null || echo .)/.claude/hooks/worktree-isolation-guard.sh\"",
+                        "timeout": 5,
+                        "statusMessage": "Checking worktree isolation..."
+                    },
+                    {
+                        "type": "command",
+                        "command": "bash \"$(git rev-parse --show-toplevel 2>/dev/null || echo .)/.claude/hooks/diagnosis-first-guard.sh\"",
+                        "timeout": 5,
+                        "statusMessage": "Diagnosis-first check..."
+                    }
+                ]
+            }
+        ],
+        "PostToolUse": [
+            {
+                "matcher": "Bash",
+                "hooks": [
+                    {
+                        "type": "command",
+                        "command": "bash \"$(git rev-parse --show-toplevel 2>/dev/null || echo .)/.claude/hooks/worktree-deps-guard.sh\"",
+                        "timeout": 5,
+                        "statusMessage": "Checking worktree deps..."
+                    },
+                    {
+                        "type": "command",
+                        "command": "bash \"$(git rev-parse --show-toplevel 2>/dev/null || echo .)/.claude/hooks/post-push-cleanup.sh\"",
+                        "timeout": 5,
+                        "statusMessage": "Cleaning up review marker..."
+                    },
+                    {
+                        "type": "command",
+                        "command": "bash \"$(git rev-parse --show-toplevel 2>/dev/null || echo .)/.claude/hooks/post-pr-create-poll.sh\"",
+                        "timeout": 15,
+                        "statusMessage": "Starting PR review polling..."
+                    }
+                ]
+            }
+        ],
+        "Stop": [
+            {
+                "hooks": [
+                    {
+                        "type": "command",
+                        "command": "bash \"$(git rev-parse --show-toplevel 2>/dev/null || echo .)/.claude/hooks/uncommitted-warn.sh\"",
+                        "timeout": 5
+                    }
+                ]
+            }
         ]
-      }
-    ],
-    "PreToolUse": [
-      {
-        "matcher": "Bash",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "bash \"$(git rev-parse --show-toplevel 2>/dev/null || echo .)/.claude/hooks/secret-guard.sh\"",
-            "timeout": 10,
-            "statusMessage": "Checking for secrets..."
-          },
-          {
-            "type": "command",
-            "command": "bash \"$(git rev-parse --show-toplevel 2>/dev/null || echo .)/.claude/hooks/dangerous-command-guard.sh\"",
-            "timeout": 5,
-            "statusMessage": "Checking for dangerous commands..."
-          },
-          {
-            "type": "command",
-            "command": "bash \"$(git rev-parse --show-toplevel 2>/dev/null || echo .)/.claude/hooks/direnv-allow-guard.sh\"",
-            "timeout": 5,
-            "statusMessage": "Checking direnv allow state..."
-          },
-          {
-            "type": "command",
-            "command": "bash \"$(git rev-parse --show-toplevel 2>/dev/null || echo .)/.claude/hooks/pre-push-review-guard.sh\"",
-            "timeout": 5,
-            "statusMessage": "Checking review status..."
-          },
-          {
-            "type": "command",
-            "command": "bash \"$(git rev-parse --show-toplevel 2>/dev/null || echo .)/.claude/hooks/main-commit-guard.sh\"",
-            "timeout": 5,
-            "statusMessage": "Checking branch for commit..."
-          }
+    },
+    "permissions": {
+        "defaultMode": "auto",
+        "allow": [
+            "Bash(*)",
+            "Read",
+            "Write",
+            "Edit",
+            "MultiEdit",
+            "Grep",
+            "Glob",
+            "Agent(coder)",
+            "Agent(ui-designer)",
+            "Agent(security-engineer)",
+            "Agent(requirements-analyst)",
+            "Agent(infra-engineer)",
+            "Agent(code-reviewer)",
+            "Agent(ui-reviewer)",
+            "Agent(security-reviewer)",
+            "Agent(requirements-reviewer)",
+            "Agent(infra-reviewer)",
+            "Agent(Explore)",
+            "Agent(Plan)",
+            "Agent(general-purpose)",
+            "WebFetch",
+            "WebSearch",
+            "NotebookEdit",
+            "Skill(sync:*)",
+            "Skill(finish:*)",
+            "Skill(new-feature:*)",
+            "Skill(update-config:*)",
+            "mcp__context7__*",
+            "mcp__claude-in-chrome__*",
+            "mcp__serena__*",
+            "mcp__sequential-thinking__*",
+            "TeamCreate",
+            "TaskCreate",
+            "TaskUpdate",
+            "TaskGet",
+            "TaskList",
+            "SendMessage",
+            "Edit(.claude/**)",
+            "Write(.claude/**)",
+            "Edit(CLAUDE.md)",
+            "Write(CLAUDE.md)"
+        ],
+        "deny": [
+            "Bash(drizzle-kit push:*)",
+            "Bash(*push*--force*)",
+            "Bash(*push*-f *)",
+            "Bash(*push*--force-with-lease*)",
+            "Bash(*reset --hard*)",
+            "Bash(*checkout -- *)",
+            "Bash(*git restore*)",
+            "Bash(*git rebase*)",
+            "Bash(*clean -f*)",
+            "Bash(*-X theirs*)",
+            "Bash(*-X ours*)",
+            "Bash(*--strategy-option*theirs*)",
+            "Bash(*--strategy-option*ours*)",
+            "Bash(*gh api*protection* --method POST*)",
+            "Bash(*gh api*protection* --method PUT*)",
+            "Bash(*gh api*protection* --method DELETE*)",
+            "Bash(*gh api*protection* --method PATCH*)",
+            "Bash(*gh api*protection* -X POST*)",
+            "Bash(*gh api*protection* -X PUT*)",
+            "Bash(*gh api*protection* -X DELETE*)",
+            "Bash(*gh api*protection* -X PATCH*)",
+            "Bash(*gh pr merge*)",
+            "Bash(*enforce_admins*)",
+            "Bash(*git push origin main)",
+            "Bash(*git push origin main:*)",
+            "Bash(*git push*:main*)",
+            "Bash(*git push*refs/heads/main*)",
+            "Bash(*--git-dir*)",
+            "Bash(GIT_DIR=*)",
+            "Bash(* GIT_DIR=*)",
+            "Bash(GIT_WORK_TREE=*)",
+            "Bash(* GIT_WORK_TREE=*)",
+            "Bash(*git config*core.bare*)",
+            "Bash(*git config*core.worktree*)"
         ]
-      },
-      {
-        "matcher": "Read",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "bash \"$(git rev-parse --show-toplevel 2>/dev/null || echo .)/.claude/hooks/worktree-isolation-guard.sh\"",
-            "timeout": 5,
-            "statusMessage": "Checking worktree isolation..."
-          }
-        ]
-      },
-      {
-        "matcher": "Glob",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "bash \"$(git rev-parse --show-toplevel 2>/dev/null || echo .)/.claude/hooks/worktree-isolation-guard.sh\"",
-            "timeout": 5,
-            "statusMessage": "Checking worktree isolation..."
-          }
-        ]
-      },
-      {
-        "matcher": "Edit",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "bash \"$(git rev-parse --show-toplevel 2>/dev/null || echo .)/.claude/hooks/orchestrator-direct-edit-guard.sh\"",
-            "timeout": 5,
-            "statusMessage": "Checking orchestrator direct edit..."
-          },
-          {
-            "type": "command",
-            "command": "bash \"$(git rev-parse --show-toplevel 2>/dev/null || echo .)/.claude/hooks/worktree-isolation-guard.sh\"",
-            "timeout": 5,
-            "statusMessage": "Checking worktree isolation..."
-          },
-          {
-            "type": "command",
-            "command": "bash \"$(git rev-parse --show-toplevel 2>/dev/null || echo .)/.claude/hooks/diagnosis-first-guard.sh\"",
-            "timeout": 5,
-            "statusMessage": "Diagnosis-first check..."
-          }
-        ]
-      },
-      {
-        "matcher": "Write",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "bash \"$(git rev-parse --show-toplevel 2>/dev/null || echo .)/.claude/hooks/orchestrator-direct-edit-guard.sh\"",
-            "timeout": 5,
-            "statusMessage": "Checking orchestrator direct edit..."
-          },
-          {
-            "type": "command",
-            "command": "bash \"$(git rev-parse --show-toplevel 2>/dev/null || echo .)/.claude/hooks/worktree-isolation-guard.sh\"",
-            "timeout": 5,
-            "statusMessage": "Checking worktree isolation..."
-          },
-          {
-            "type": "command",
-            "command": "bash \"$(git rev-parse --show-toplevel 2>/dev/null || echo .)/.claude/hooks/diagnosis-first-guard.sh\"",
-            "timeout": 5,
-            "statusMessage": "Diagnosis-first check..."
-          }
-        ]
-      },
-      {
-        "matcher": "MultiEdit",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "bash \"$(git rev-parse --show-toplevel 2>/dev/null || echo .)/.claude/hooks/orchestrator-direct-edit-guard.sh\"",
-            "timeout": 5,
-            "statusMessage": "Checking orchestrator direct edit..."
-          },
-          {
-            "type": "command",
-            "command": "bash \"$(git rev-parse --show-toplevel 2>/dev/null || echo .)/.claude/hooks/worktree-isolation-guard.sh\"",
-            "timeout": 5,
-            "statusMessage": "Checking worktree isolation..."
-          },
-          {
-            "type": "command",
-            "command": "bash \"$(git rev-parse --show-toplevel 2>/dev/null || echo .)/.claude/hooks/diagnosis-first-guard.sh\"",
-            "timeout": 5,
-            "statusMessage": "Diagnosis-first check..."
-          }
-        ]
-      },
-      {
-        "matcher": "NotebookEdit",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "bash \"$(git rev-parse --show-toplevel 2>/dev/null || echo .)/.claude/hooks/orchestrator-direct-edit-guard.sh\"",
-            "timeout": 5,
-            "statusMessage": "Checking orchestrator direct edit..."
-          },
-          {
-            "type": "command",
-            "command": "bash \"$(git rev-parse --show-toplevel 2>/dev/null || echo .)/.claude/hooks/worktree-isolation-guard.sh\"",
-            "timeout": 5,
-            "statusMessage": "Checking worktree isolation..."
-          },
-          {
-            "type": "command",
-            "command": "bash \"$(git rev-parse --show-toplevel 2>/dev/null || echo .)/.claude/hooks/diagnosis-first-guard.sh\"",
-            "timeout": 5,
-            "statusMessage": "Diagnosis-first check..."
-          }
-        ]
-      }
-    ],
-    "PostToolUse": [
-      {
-        "matcher": "Bash",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "bash \"$(git rev-parse --show-toplevel 2>/dev/null || echo .)/.claude/hooks/worktree-deps-guard.sh\"",
-            "timeout": 5,
-            "statusMessage": "Checking worktree deps..."
-          },
-          {
-            "type": "command",
-            "command": "bash \"$(git rev-parse --show-toplevel 2>/dev/null || echo .)/.claude/hooks/post-push-cleanup.sh\"",
-            "timeout": 5,
-            "statusMessage": "Cleaning up review marker..."
-          },
-          {
-            "type": "command",
-            "command": "bash \"$(git rev-parse --show-toplevel 2>/dev/null || echo .)/.claude/hooks/post-pr-create-poll.sh\"",
-            "timeout": 15,
-            "statusMessage": "Starting PR review polling..."
-          }
-        ]
-      }
-    ],
-    "Stop": [
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "bash \"$(git rev-parse --show-toplevel 2>/dev/null || echo .)/.claude/hooks/uncommitted-warn.sh\"",
-            "timeout": 5
-          }
-        ]
-      }
-    ]
-  },
-  "permissions": {
-    "defaultMode": "auto",
-    "allow": [
-      "Bash(*)",
-      "Read",
-      "Write",
-      "Edit",
-      "MultiEdit",
-      "Grep",
-      "Glob",
-      "Agent(coder)",
-      "Agent(ui-designer)",
-      "Agent(security-engineer)",
-      "Agent(requirements-analyst)",
-      "Agent(infra-engineer)",
-      "Agent(code-reviewer)",
-      "Agent(ui-reviewer)",
-      "Agent(security-reviewer)",
-      "Agent(requirements-reviewer)",
-      "Agent(infra-reviewer)",
-      "Agent(Explore)",
-      "Agent(Plan)",
-      "Agent(general-purpose)",
-      "WebFetch",
-      "WebSearch",
-      "NotebookEdit",
-      "Skill(sync:*)",
-      "Skill(finish:*)",
-      "Skill(new-feature:*)",
-      "Skill(update-config:*)",
-      "mcp__context7__*",
-      "mcp__claude-in-chrome__*",
-      "mcp__serena__*",
-      "mcp__sequential-thinking__*",
-      "TeamCreate",
-      "TaskCreate",
-      "TaskUpdate",
-      "TaskGet",
-      "TaskList",
-      "SendMessage",
-      "Edit(.claude/**)",
-      "Write(.claude/**)",
-      "Edit(CLAUDE.md)",
-      "Write(CLAUDE.md)"
-    ],
-    "deny": [
-      "Bash(drizzle-kit push:*)",
-      "Bash(*push*--force*)",
-      "Bash(*push*-f *)",
-      "Bash(*push*--force-with-lease*)",
-      "Bash(*reset --hard*)",
-      "Bash(*checkout -- *)",
-      "Bash(*git restore*)",
-      "Bash(*git rebase*)",
-      "Bash(*clean -f*)",
-      "Bash(*-X theirs*)",
-      "Bash(*-X ours*)",
-      "Bash(*--strategy-option*theirs*)",
-      "Bash(*--strategy-option*ours*)",
-      "Bash(*gh api*protection* --method POST*)",
-      "Bash(*gh api*protection* --method PUT*)",
-      "Bash(*gh api*protection* --method DELETE*)",
-      "Bash(*gh api*protection* --method PATCH*)",
-      "Bash(*gh api*protection* -X POST*)",
-      "Bash(*gh api*protection* -X PUT*)",
-      "Bash(*gh api*protection* -X DELETE*)",
-      "Bash(*gh api*protection* -X PATCH*)",
-      "Bash(*gh pr merge*)",
-      "Bash(*enforce_admins*)",
-      "Bash(*git push origin main)",
-      "Bash(*git push origin main:*)",
-      "Bash(*git push*:main*)",
-      "Bash(*git push*refs/heads/main*)",
-      "Bash(*--git-dir*)",
-      "Bash(GIT_DIR=*)",
-      "Bash(* GIT_DIR=*)",
-      "Bash(GIT_WORK_TREE=*)",
-      "Bash(* GIT_WORK_TREE=*)",
-      "Bash(*git config*core.bare*)",
-      "Bash(*git config*core.worktree*)"
-    ]
-  },
-  "worktree": {},
-  "plansDirectory": ".claude/plans",
-  "attribution": {
-    "commit": "Co-Authored-By: Claude <noreply@anthropic.com>",
-    "pr": "🤖 Generated with [Claude Code](https://claude.ai/code)"
-  },
-  "model": "opusplan",
-  "voiceEnabled": true,
-  "defaultView": "chat",
-  "showThinkingSummaries": true,
-  "alwaysThinkingEnabled": true,
-  "effortLevel": "high",
-  "env": {
-    "NODE_ENV": "development",
-    "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1"
-  }
+    },
+    "worktree": {},
+    "plansDirectory": ".claude/plans",
+    "attribution": {
+        "commit": "Co-Authored-By: Claude <noreply@anthropic.com>",
+        "pr": "🤖 Generated with [Claude Code](https://claude.ai/code)"
+    },
+    "model": "opusplan",
+    "voiceEnabled": true,
+    "defaultView": "chat",
+    "showThinkingSummaries": true,
+    "alwaysThinkingEnabled": true,
+    "effortLevel": "high",
+    "env": {
+        "NODE_ENV": "development",
+        "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1"
+    }
 }

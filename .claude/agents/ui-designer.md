@@ -162,6 +162,7 @@ SendMessage(
 ui-reviewer から SendMessage が届くまで待機する。
 
 - **`APPROVED`** (固定文字列): 実装完了。終了する。
+- **`shutdown_request` 受信**: 即 `shutdown_response` (`approve: true`) を返してから終了する。
 - **`CHANGES_REQUESTED: <フィードバック内容>`**: フィードバックを読んでフェーズ 2 に戻り修正する。修正後フェーズ 4 → 5 → 6 を繰り返す。
 - **`CONFLICT: <詳細>`**: コンフリクト解消フローを実行する。
 

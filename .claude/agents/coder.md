@@ -108,6 +108,7 @@ git -C {worktree} rev-parse HEAD
 reviewer からの SendMessage を待機する。`APPROVED`、`CHANGES_REQUESTED:`、`CONFLICT:` プレフィックスのメッセージを処理する。
 
 - **`APPROVED`**: 終了する
+- **`shutdown_request` 受信**: 即 `shutdown_response` (`approve: true`) を返してから終了する
 - **`CHANGES_REQUESTED: <feedback>`**: feedback の内容を読んで修正 → フェーズ 3 に戻る（lint → commit → impl-ready 送信 → 待機継続）
 - **`CONFLICT: <ファイル一覧>`**: コンフリクト解消フローを実行 → フェーズ 3 に戻る
 
