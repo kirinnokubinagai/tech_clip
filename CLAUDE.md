@@ -312,8 +312,20 @@ TeamDelete("active-issues")
 
 ### SessionStart 時の確認
 
-1. 前回セッションで `active-issues` チームが残っている場合は **TeamDelete / 再作成は不要**。`Agent(team_name="active-issues", ...)` で新メンバーを追加するだけでよい。`TeamCreate` は `active-issues` チームが存在しない場合のみ実行する。
+1. **`active-issues` チームの存在確認と既存メンバーの生存確認**
+   - 前回セッションで `active-issues` チームが残っている場合は **TeamDelete / 再作成は不要**。`TeamCreate` は `active-issues` チームが存在しない場合のみ実行する。
+   - チームが既に存在する場合は、以下の手順で既存メンバーを再利用するか判定する:
+     1. `~/.claude/teams/active-issues/config.json` を読み、既存メンバー一覧（`issue-{N}-{role}` 形式のエージェント名）を取得する
+     2. 各既存メンバーに `SendMessage(to: "issue-{N}-{role}", "ping: session restart — alive?")` を送り生存確認する
+     3. **応答あり**（数分以内に pong / 作業中報告が返る）→ そのエージェントはそのまま継続稼働させる。同名で再 spawn してはならない
+     4. **応答なし**（タイムアウトまたはプロセス不在）→ そのエージェントは本当に死亡しているので、同名で再 spawn してよい
+   - 新規 Issue を追加する場合は、既存メンバーの再利用判定とは独立して `Agent(team_name="active-issues", ...)` で追加する
+
 2. `gh issue list --state open` を実行し、「プロアクティブ Issue 自律処理」セクションの判定に従って未対応 Issue をユーザーに提示する（提示のみ。自動着手はしない）。
+
+3. **既存メンバーの継続稼働をユーザーに報告する**
+   - 生存確認の結果、継続稼働中の `issue-{N}-{role}` が存在する場合は「前回セッションから継続稼働中のエージェント: issue-N-analyst / issue-N-coder / issue-N-reviewer（計 X 体）」とユーザーに一覧提示する
+   - 応答がなく再 spawn したエージェントがある場合は「死亡確認により再 spawn: issue-N-coder」と併せて報告する
 
 ---
 
