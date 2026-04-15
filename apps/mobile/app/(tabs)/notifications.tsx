@@ -1,5 +1,6 @@
 import { BellOff, CheckCheck, RefreshCw } from "lucide-react-native";
 import { useCallback, useMemo } from "react";
+import { useTranslation } from "react-i18next";
 import { ActivityIndicator, FlatList, Pressable, RefreshControl, Text, View } from "react-native";
 
 import { NotificationItem } from "@/components/NotificationItem";
@@ -21,6 +22,7 @@ const EMPTY_ICON_SIZE = 48;
  * 全既読、個別既読に対応。
  */
 export default function NotificationsScreen() {
+  const { t } = useTranslation();
   const colors = useColors();
   const {
     data,
@@ -78,17 +80,17 @@ export default function NotificationsScreen() {
     if (isError) {
       return (
         <View className="flex-1 items-center justify-center py-20">
-          <Text className="text-text-muted text-base">通知の取得に失敗しました</Text>
+          <Text className="text-text-muted text-base">{t("notifications.fetchError")}</Text>
           <Pressable
             testID="retry-button"
             onPress={() => refetch()}
             className="mt-4 flex-row items-center gap-2"
             accessibilityRole="button"
-            accessibilityLabel="再試行"
-            accessibilityHint="通知の取得を再試行します"
+            accessibilityLabel={t("common.retry")}
+            accessibilityHint={t("notifications.retryHint")}
           >
             <RefreshCw size={HEADER_ICON_SIZE} color={colors.primary} />
-            <Text className="text-primary">再試行</Text>
+            <Text className="text-primary">{t("common.retry")}</Text>
           </Pressable>
         </View>
       );
@@ -96,11 +98,11 @@ export default function NotificationsScreen() {
     return (
       <EmptyState
         icon={<BellOff size={EMPTY_ICON_SIZE} color={colors.textDim} />}
-        title="通知はありません"
-        description="新しい通知が届くとここに表示されます"
+        title={t("notifications.empty")}
+        description={t("notifications.emptyDescription")}
       />
     );
-  }, [isLoading, isError, refetch, colors.primary, colors.textDim]);
+  }, [isLoading, isError, refetch, colors.primary, colors.textDim, t]);
 
   return (
     <View className="flex-1 bg-background">
@@ -111,10 +113,10 @@ export default function NotificationsScreen() {
             onPress={handleMarkAllAsRead}
             className="flex-row items-center gap-1.5"
             accessibilityRole="button"
-            accessibilityLabel="すべて既読にする"
+            accessibilityLabel={t("notifications.markAllReadLabel")}
           >
             <CheckCheck size={HEADER_ICON_SIZE} color={colors.primary} />
-            <Text className="text-sm text-primary">すべて既読</Text>
+            <Text className="text-sm text-primary">{t("notifications.markAllRead")}</Text>
           </Pressable>
         </View>
       )}
@@ -122,7 +124,7 @@ export default function NotificationsScreen() {
       {isLoading ? (
         <View className="flex-1 items-center justify-center">
           <ActivityIndicator testID="loading-indicator" size="large" color={colors.primary} />
-          <Text className="text-text-muted mt-3">読み込み中...</Text>
+          <Text className="text-text-muted mt-3">{t("notifications.loadingNotifications")}</Text>
         </View>
       ) : (
         <FlatList

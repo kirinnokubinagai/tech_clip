@@ -1,3 +1,5 @@
+import i18n from "../lib/i18n";
+
 /** 1秒のミリ秒数 */
 const SECOND_MS = 1000;
 
@@ -58,36 +60,36 @@ export function formatRelativeTime(date: Date | string, now: Date = new Date()):
   const diffMs = now.getTime() - targetDate.getTime();
 
   if (diffMs < MINUTE_MS) {
-    return "たった今";
+    return i18n.t("time.justNow");
   }
 
   if (diffMs < HOUR_MS) {
     const minutes = Math.floor(diffMs / MINUTE_MS);
-    return `${minutes}分前`;
+    return i18n.t("time.minutesAgo", { count: minutes });
   }
 
   if (diffMs < DAY_MS) {
     const hours = Math.floor(diffMs / HOUR_MS);
-    return `${hours}時間前`;
+    return i18n.t("time.hoursAgo", { count: hours });
   }
 
   if (diffMs < WEEK_MS) {
     const days = Math.floor(diffMs / DAY_MS);
-    return `${days}日前`;
+    return i18n.t("time.daysAgo", { count: days });
   }
 
   if (diffMs < MONTH_MS) {
     const weeks = Math.floor(diffMs / WEEK_MS);
-    return `${weeks}週間前`;
+    return i18n.t("time.weeksAgo", { count: weeks });
   }
 
   if (diffMs < YEAR_MS) {
     const months = Math.floor(diffMs / MONTH_MS);
-    return `${months}ヶ月前`;
+    return i18n.t("time.monthsAgo", { count: months });
   }
 
   const years = Math.floor(diffMs / YEAR_MS);
-  return `${years}年前`;
+  return i18n.t("time.yearsAgo", { count: years });
 }
 
 /**

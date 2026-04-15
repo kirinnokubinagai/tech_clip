@@ -1,6 +1,8 @@
 import SaveScreen from "@mobile-app/article/save";
 import { fireEvent, render, waitFor } from "@testing-library/react-native";
 
+import { setMockLocale } from "../helpers/i18n-test-utils";
+
 /** apiFetchのモック */
 const mockApiFetch = jest.fn();
 
@@ -74,6 +76,7 @@ const MOCK_SAVE_RESPONSE = {
 
 describe("SaveScreen", () => {
   beforeEach(() => {
+    setMockLocale("ja");
     jest.clearAllMocks();
     mockShowToast.mockClear();
   });
@@ -364,6 +367,79 @@ describe("SaveScreen", () => {
       // Assert
       await waitFor(() => {
         expect(getByText("この記事はすでに保存されています")).toBeDefined();
+      });
+    });
+  });
+
+  describe("英語ロケール", () => {
+    beforeEach(() => {
+      setMockLocale("en");
+    });
+
+    afterEach(() => {
+      setMockLocale("ja");
+    });
+
+    it("取得ボタンが英語で表示されること", async () => {
+      // Arrange & Act
+      const { getByText } = await render(<SaveScreen />);
+
+      // Assert
+      await waitFor(() => {
+        expect(getByText("Fetch")).toBeDefined();
+      });
+    });
+
+    it("URLバリデーションエラーが英語で表示されること", async () => {
+      // Arrange
+      const { getByTestId, getByText } = await render(<SaveScreen />);
+
+      // Act
+      await fireEvent.press(getByTestId("fetch-button"));
+
+      // Assert
+      await waitFor(() => {
+        expect(getByText("Please enter a URL")).toBeDefined();
+      });
+    });
+
+    it("不正なURLのバリデーションエラーが英語で表示されること", async () => {
+      // Arrange
+      const { getByPlaceholderText, getByTestId, getByText } = await render(<SaveScreen />);
+
+      // Act
+      await fireEvent.changeText(getByPlaceholderText("https://"), "not-a-url");
+      await fireEvent.press(getByTestId("fetch-button"));
+
+      // Assert
+      await waitFor(() => {
+        expect(getByText("Please enter a valid URL")).toBeDefined();
+      });
+    });
+
+    it("保存成功時のトーストメッセージが英語になること", async () => {
+      // Arrange
+      mockApiFetch
+        .mockResolvedValueOnce(MOCK_PREVIEW_RESPONSE)
+        .mockResolvedValueOnce(MOCK_SAVE_RESPONSE);
+      const { getByPlaceholderText, getByTestId, getByText } = await render(<SaveScreen />);
+
+      await fireEvent.changeText(
+        getByPlaceholderText("https://"),
+        "https://zenn.dev/test/articles/test-article",
+      );
+      await fireEvent.press(getByTestId("fetch-button"));
+
+      await waitFor(() => {
+        expect(getByText("Save")).toBeDefined();
+      });
+
+      // Act
+      await fireEvent.press(getByTestId("save-button"));
+
+      // Assert
+      await waitFor(() => {
+        expect(mockShowToast).toHaveBeenCalledWith("Article saved", "success");
       });
     });
   });
