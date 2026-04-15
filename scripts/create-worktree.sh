@@ -37,6 +37,7 @@ fi
 
 echo "📥 origin/main を更新..."
 git fetch origin main
+git -C "${REPO_ROOT}" merge --ff-only origin/main --quiet 2>/dev/null || true
 
 echo "🌳 worktree を作成..."
 git worktree add "${WORKTREE_PATH}" -b "${BRANCH_NAME}" origin/main
