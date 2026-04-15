@@ -30,6 +30,7 @@ env:
 
 # --- 新規登録画面 ---
 - assertVisible: "アカウントを作成"
+- takeScreenshot: screenshots/03-auth-register/01-register-screen
 - assertVisible: "名前"
 - assertVisible: "メールアドレス"
 - assertVisible: "パスワード"
@@ -76,3 +77,4 @@ env:
 - assertVisible: "すでにアカウントをお持ちですか？"
 - tapOn: "ログイン"
 - assertVisible: "ログイン"
+- takeScreenshot: screenshots/03-auth-register/02-back-to-login

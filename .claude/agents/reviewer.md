@@ -234,7 +234,9 @@ git fetch origin main
 LOCAL_UPSTREAM_BEFORE=$(git rev-parse @{u})
 
 if git merge origin/main --no-edit; then
-  direnv exec {worktree} pnpm lint &&   direnv exec {worktree} pnpm typecheck &&   direnv exec {worktree} pnpm test || {
+  direnv exec {worktree} pnpm lint && \
+  direnv exec {worktree} pnpm typecheck && \
+  direnv exec {worktree} pnpm test || {
     git reset --hard HEAD~1
     # SendMessage(to: "issue-{issue_number}-coder", "CHANGES_REQUESTED: main マージ後 lint/typecheck/test 失敗")
     # フェーズ 0 に戻る
@@ -267,6 +269,66 @@ PR_URL=$(echo "$PR_JSON" | jq -r '.url')
 # reviewer 自身 shutdown
 ```
 
+> **判定マトリクスで `CLEAN|HAS_HOOKS + 必須 check OK + bot Approve` になった場合はフェーズ 6.5 へ進む。**
+> `AI Review: NEEDS WORK` ラベルまたは bot Request Changes の場合:
+> ```bash
+> gh pr view {pr_number} --json comments --jq '[.comments[] | select(.body | contains("## PRレビュー結果"))] | last | .body'
+> ```
+> `SendMessage(to: "issue-{issue_number}-coder", "CHANGES_REQUESTED: <レビューコメント内容>")` → フェーズ 0 に戻る。
+
+### フェーズ 6.5: PR E2E (Android) 出力の視覚レビュー
+
+フェーズ 6 で `AI Review: PASS` ラベルを確認した後、さらに PR E2E workflow の出力を取得して視覚レビューを行う。**このフェーズは省略してはならない。**
+
+1. PR E2E workflow の最新 run を特定する:
+
+   ```bash
+   BRANCH=$(gh pr view {pr_number} --json headRefName --jq '.headRefName')
+   RUN_JSON=$(gh run list \
+     --workflow=pr-e2e-android.yml \
+     --branch="$BRANCH" \
+     --limit 1 \
+     --json status,conclusion,databaseId)
+   RUN_ID=$(echo "$RUN_JSON" | jq -r '.[0].databaseId')
+   if [ -z "$RUN_ID" ] || [ "$RUN_ID" = "null" ]; then
+     echo "No PR E2E run found for this branch. Skipping phase 6.5."
+     exit 0
+   fi
+   RUN_STATUS=$(echo "$RUN_JSON" | jq -r '.[0].status')
+   RUN_CONCLUSION=$(echo "$RUN_JSON" | jq -r '.[0].conclusion')
+   ```
+
+2. workflow が in_progress ならポーリング待機（30 秒間隔、最大 45 分）。
+
+3. conclusion が `failure` の場合:
+   - 原因特定のため JUnit XML を DL する（下記 step 4 と同じ）
+   - 失敗した flow 名と step を抽出して SendMessage:
+     `CHANGES_REQUESTED: PR E2E (Android) が失敗しました: <失敗詳細>`
+   - フェーズ 0 に戻る
+
+4. conclusion が `success` の場合、artifact を DL:
+
+   ```bash
+   mkdir -p .claude/tmp/screenshots .claude/tmp/junit
+   gh run download "$RUN_ID" -n pr-e2e-screenshots -D .claude/tmp/screenshots/ || true
+   gh run download "$RUN_ID" -n pr-e2e-junit -D .claude/tmp/junit/ || true
+   ```
+
+5. `.claude/tmp/screenshots/**/*.png` を Read ツールで **1 枚ずつ読み込み**、以下を検証:
+   - 画面が意図通り表示されているか
+   - エラーメッセージや赤文字が画面に出ていないか
+   - UI が崩れていない（要素が重なっていない、はみ出していない）か
+   - 日本語文字化けが無いか
+
+6. `.claude/tmp/junit/junit.xml` を Read ツールで読み、pass/fail 件数と失敗ステップを把握する。
+
+7. 視覚レビューで問題を発見した場合:
+   - `SendMessage(to: "issue-{issue_number}-coder", "CHANGES_REQUESTED: PR E2E 視覚レビューで以下を検出: <具体的な指摘>")`
+   - フェーズ 0 に戻る
+
+8. 問題なしの場合:
+   - `.claude/tmp/` を削除（次回汚染防止）: `rm -rf .claude/tmp/`
+   - フェーズ 7 へ進む
 
 ### フェーズ 7: PR マージ完了待機
 
