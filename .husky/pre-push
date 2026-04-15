@@ -53,6 +53,10 @@ echo "  Typecheck..."
 pnpm typecheck || { echo "Typecheck失敗。修正してからpushしてください。"; exit 1; }
 
 echo "  Audit..."
+# --ignore-registry-errors: pnpm@10.33.0 の既知バグ (https://github.com/pnpm/pnpm/issues/11265) への暫定対応
+# npm registry の audit エンドポイント廃止に pnpm がまだ追随していないため、
+# registry エラー時は audit を green 扱いにする。pnpm が新 bulk advisory 対応版を
+# リリースしたらこのフラグは削除すること。
 pnpm audit --prod --ignore-registry-errors || { echo "Audit失敗。脆弱性を解消してからpushしてください。"; exit 1; }
 
 echo "  Test..."
