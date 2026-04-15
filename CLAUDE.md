@@ -425,9 +425,10 @@ worktree-isolation-guard.sh により以下の制限がある（mainブランチ
 
 reviewer が APPROVED 受信後に即時削除する（fallback 付き）:
 
-1. `git worktree remove {worktree}` で通常削除
-2. 失敗した場合は `git worktree remove --force {worktree}` で強制削除
-3. それでも失敗した場合は `git worktree prune` を実行し、orchestrator に `WORKTREE_REMOVE_FAILED` を通知
+1. `git worktree remove --force {worktree}` で強制削除
+2. 失敗した場合は `git worktree prune` を実行後、再度 `git worktree remove --force` を試みる
+3. それでも失敗した場合は `rm -rf` でディレクトリを強制削除し `worktree prune` を実行する（`issue-<N>` 形式の絶対パスのみ対象）
+4. worktree ディレクトリが残存している場合は orchestrator に `WORKTREE_REMOVE_FAILED` を通知
 
 ### 手動クリーンアップ
 
