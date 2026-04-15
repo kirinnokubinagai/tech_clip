@@ -12,11 +12,12 @@ fi
 REPO_ROOT=$(cd "$(git rev-parse --git-common-dir 2>/dev/null)/.." && pwd 2>/dev/null) || exit 0
 WORKTREE_BASE=$(dirname "$REPO_ROOT")
 
-TOOL_INPUT="${CLAUDE_TOOL_INPUT:-}"
+TOOL_INPUT=$(cat)
 
 if command -v jq &>/dev/null; then
-  FILE_PATH=$(echo "$TOOL_INPUT" | jq -r '.file_path // .path // empty' 2>/dev/null)
+  FILE_PATH=$(echo "$TOOL_INPUT" | jq -r '.tool_input.file_path // .tool_input.path // empty' 2>/dev/null)
 else
+  # 注意: 新しい tool_input.file_path 構造でも grep がネストを無視して "file_path" にマッチするため動作する。将来のフォーマット変更で壊れる可能性あり
   FILE_PATH=$(echo "$TOOL_INPUT" | grep -o '"file_path"[[:space:]]*:[[:space:]]*"[^"]*"' | head -1 | sed 's/.*"file_path"[[:space:]]*:[[:space:]]*"//' | sed 's/"$//')
   if [ -z "$FILE_PATH" ]; then
     FILE_PATH=$(echo "$TOOL_INPUT" | grep -o '"path"[[:space:]]*:[[:space:]]*"[^"]*"' | head -1 | sed 's/.*"path"[[:space:]]*:[[:space:]]*"//' | sed 's/"$//')
