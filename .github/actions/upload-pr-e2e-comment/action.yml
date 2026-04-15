@@ -126,12 +126,15 @@ runs:
           --jq '[.[] | select(.user.login == "github-actions[bot]" and (.body | startswith("<!-- pr-e2e-marker -->")))] | first | .id // empty' \
           2>/dev/null || true)
 
+        JSON_FILE="$(mktemp --suffix=.json)"
+        jq -n --rawfile body "$BODY_FILE" '{"body": $body}' > "$JSON_FILE"
+
         if [ -n "$EXISTING_COMMENT_ID" ]; then
           gh api "repos/${REPO}/issues/comments/${EXISTING_COMMENT_ID}" \
             --method PATCH \
-            --raw-field "body=@${BODY_FILE}"
+            --input "$JSON_FILE"
         else
           gh api "repos/${REPO}/issues/${PR_NUMBER}/comments" \
             --method POST \
-            --raw-field "body=@${BODY_FILE}"
+            --input "$JSON_FILE"
         fi

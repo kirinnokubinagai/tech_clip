@@ -85,6 +85,7 @@ jobs:
 
             if ! adb shell pidof com.techclip.app > /dev/null 2>&1; then
               echo "ERROR: App failed to start within 5 minutes"
+              pkill -P $EXPO_PID 2>/dev/null || true
               echo "1" > test-results/maestro-exit-code.txt
               exit 1
             fi
