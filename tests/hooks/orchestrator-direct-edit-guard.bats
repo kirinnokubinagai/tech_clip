@@ -24,11 +24,14 @@ teardown() {
 }
 
 # stdin に tool_input.file_path 形式の JSON を渡してスクリプトを実行するヘルパー
+# 注意: このヘルパーは内部で `run bash -c ...` を呼ぶため、
+#       テストケースから呼ぶときは `run run_script_with_file ...` ではなく
+#       `run_script_with_file ...` と直接呼ぶこと（run の二重呼び出し禁止）。
 run_script_with_file() {
     local file_path="$1"
     local input
     input=$(jq -n --arg p "$file_path" '{"tool_input":{"file_path":$p}}')
-    run bash -c "cd '$REPO_DIR' && echo '$input' | bash '$SCRIPT'"
+    run bash -c "cd '$REPO_DIR' && printf '%s' '$input' | bash '$SCRIPT'"
 }
 
 # --- mainブランチ上では orchestration/config ファイルもブロックされる ---
@@ -262,7 +265,7 @@ run_script_with_file() {
     local run_dir="$REPO_DIR"
 
     # Act
-    run bash -c "cd '$run_dir' && echo '$tool_input' | bash '$SCRIPT'"
+    run bash -c "cd '$run_dir' && printf '%s' '$tool_input' | bash '$SCRIPT'"
 
     # Assert
     [ "$status" -eq 0 ]
