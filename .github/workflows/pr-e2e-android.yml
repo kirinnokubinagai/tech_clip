@@ -1,0 +1,157 @@
+name: PR E2E (Android)
+
+on:
+  pull_request:
+    paths:
+      - "apps/mobile/**"
+      - "tests/e2e/maestro/**"
+      - "package.json"
+      - "pnpm-lock.yaml"
+      - "flake.nix"
+      - "flake.lock"
+      - ".github/workflows/pr-e2e-android.yml"
+      - ".github/actions/upload-pr-e2e-comment/**"
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: pr-e2e-android-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  android-e2e:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v4.2.2
+
+      - name: Generate dummy OTA code signing cert for CI
+        run: |
+          if [ ! -f apps/mobile/certs/certificate.pem ]; then
+            mkdir -p apps/mobile/certs
+            openssl req -x509 -newkey rsa:2048 -nodes \
+              -keyout /tmp/ci-key.pem -out apps/mobile/certs/certificate.pem \
+              -days 1 -subj "/CN=ci-dummy"
+            echo "Generated dummy certificate for CI"
+          fi
+
+      - name: Enable KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' \
+            | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+
+      - uses: ./.github/actions/nix-setup
+
+      - name: AVD cache
+        uses: actions/cache@d4323d4df104b026a6aa633fdb11d772146be0bf  # v4.2.2
+        id: avd-cache
+        with:
+          path: |
+            ~/.android/avd/*
+            ~/.android/adb*
+          key: avd-api34-x86_64-google_apis-v1
+
+      - name: Generate AVD snapshot (cache miss)
+        if: steps.avd-cache.outputs.cache-hit != 'true'
+        uses: reactivecircus/android-emulator-runner@324029e2f414c084d8b15ba075288885e74aef9c  # v2.13.0
+        with:
+          api-level: 34
+          target: google_apis
+          arch: x86_64
+          force-avd-creation: false
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
+          disable-animations: true
+          script: echo "AVD snapshot generated"
+
+      - name: Android Emulator + Maestro
+        uses: reactivecircus/android-emulator-runner@324029e2f414c084d8b15ba075288885e74aef9c  # v2.13.0
+        with:
+          api-level: 34
+          target: google_apis
+          arch: x86_64
+          force-avd-creation: false
+          emulator-options: -no-snapshot-save -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
+          disable-animations: true
+          script: |
+            set -eu
+            mkdir -p screenshots test-results
+
+            # Build and install development build
+            nix develop --command bash -c "cd apps/mobile && pnpm expo run:android --variant debug" &
+            EXPO_PID=$!
+
+            # Wait for app to be installed and running
+            for i in $(seq 1 60); do
+              if adb shell pidof com.techclip.app > /dev/null 2>&1; then
+                echo "App is running"
+                break
+              fi
+              sleep 5
+            done
+
+            if ! adb shell pidof com.techclip.app > /dev/null 2>&1; then
+              echo "ERROR: App failed to start within 5 minutes"
+              pkill -P $EXPO_PID 2>/dev/null || true
+              kill $EXPO_PID 2>/dev/null || true
+              echo "1" > test-results/maestro-exit-code.txt
+              exit 1
+            fi
+
+            # Run Maestro tests (continue on failure to upload artifacts)
+            set +e
+            nix develop --command maestro test tests/e2e/maestro/ \
+              --format junit \
+              --output test-results/junit.xml \
+              --debug-output screenshots/debug
+            MAESTRO_EXIT=$?
+            set -e
+
+            pkill -P $EXPO_PID 2>/dev/null || true
+            kill $EXPO_PID 2>/dev/null || true
+
+            echo "$MAESTRO_EXIT" > test-results/maestro-exit-code.txt
+            exit 0
+
+      - name: Upload screenshots artifact
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v4.6.2
+        with:
+          name: pr-e2e-screenshots
+          path: screenshots/**/*.png
+          retention-days: 7
+          if-no-files-found: warn
+
+      - name: Upload JUnit artifact
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v4.6.2
+        with:
+          name: pr-e2e-junit
+          path: |
+            test-results/junit.xml
+            test-results/maestro-exit-code.txt
+          retention-days: 7
+          if-no-files-found: warn
+
+      - name: Upload screenshots to Release and comment on PR
+        if: always()
+        uses: ./.github/actions/upload-pr-e2e-comment
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          pr-number: ${{ github.event.pull_request.number }}
+          run-id: ${{ github.run_id }}
+          screenshots-dir: screenshots
+          junit-path: test-results/junit.xml
+
+      - name: Fail if Maestro failed
+        if: always()
+        run: |
+          set -eo pipefail
+          EXIT_CODE=$(cat test-results/maestro-exit-code.txt 2>/dev/null || echo 1)
+          if [ "$EXIT_CODE" -ne 0 ]; then
+            echo "Maestro tests failed with exit code $EXIT_CODE"
+            exit 1
+          fi

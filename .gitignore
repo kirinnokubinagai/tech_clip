@@ -101,3 +101,6 @@ apps/mobile/certs/*.pem
 
 # Brainstorming / design specs (not for PRs)
 docs/superpowers/
+
+# reviewer agent CI download temp
+.claude/tmp/
