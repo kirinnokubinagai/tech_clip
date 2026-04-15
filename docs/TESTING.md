@@ -44,6 +44,10 @@
   nix develop --command maestro test tests/e2e/maestro/
   ```
 
+### iOS E2E テスト
+
+現状 CI では実行していない。PR 時の Android E2E（`pr-e2e-android.yml`）で実機動作を検証しており、iOS 固有の動作確認は手動テストで対応する。将来必要になった場合は別 Issue で EAS Build + Maestro Cloud または macOS runner + Simulator 経路を検討する。
+
 ---
 
 ## PR CI ワークフロー
