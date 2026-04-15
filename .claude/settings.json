@@ -17,6 +17,12 @@
           },
           {
             "type": "command",
+            "command": "bash \"$(git rev-parse --show-toplevel 2>/dev/null || echo .)/.claude/hooks/cleanup-tmp-files.sh\"",
+            "timeout": 10,
+            "statusMessage": "Cleaning up old spec files..."
+          },
+          {
+            "type": "command",
             "command": "bash \"$(git rev-parse --show-toplevel 2>/dev/null || echo .)/.claude/hooks/implementation-order-guard.sh\"",
             "timeout": 10,
             "statusMessage": "Checking implementation order..."
@@ -257,7 +263,11 @@
       "TaskUpdate",
       "TaskGet",
       "TaskList",
-      "SendMessage"
+      "SendMessage",
+      "Edit(.claude/**)",
+      "Write(.claude/**)",
+      "Edit(CLAUDE.md)",
+      "Write(CLAUDE.md)"
     ],
     "deny": [
       "Bash(drizzle-kit push:*)",
