@@ -15,6 +15,7 @@
     "e2e": "maestro test ../../tests/e2e/maestro/"
   },
   "dependencies": {
+    "@expo/metro-runtime": "~55.0.9",
     "@react-native-community/netinfo": "^11.5.2",
     "@sentry/react-native": "6.22.0",
     "@shopify/flash-list": "^2.0.2",

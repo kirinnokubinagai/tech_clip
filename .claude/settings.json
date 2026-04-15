@@ -263,7 +263,11 @@
       "TaskUpdate",
       "TaskGet",
       "TaskList",
-      "SendMessage"
+      "SendMessage",
+      "Edit(.claude/**)",
+      "Write(.claude/**)",
+      "Edit(CLAUDE.md)",
+      "Write(CLAUDE.md)"
     ],
     "deny": [
       "Bash(drizzle-kit push:*)",
