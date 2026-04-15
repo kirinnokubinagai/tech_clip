@@ -27,6 +27,16 @@ jobs:
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v4.2.2
 
+      - name: Generate dummy OTA code signing cert for CI
+        run: |
+          if [ ! -f apps/mobile/certs/certificate.pem ]; then
+            mkdir -p apps/mobile/certs
+            openssl req -x509 -newkey rsa:2048 -nodes \
+              -keyout /tmp/ci-key.pem -out apps/mobile/certs/certificate.pem \
+              -days 1 -subj "/CN=ci-dummy"
+            echo "Generated dummy certificate for CI"
+          fi
+
       - name: Enable KVM
         run: |
           echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' \
@@ -86,6 +96,7 @@ jobs:
             if ! adb shell pidof com.techclip.app > /dev/null 2>&1; then
               echo "ERROR: App failed to start within 5 minutes"
               pkill -P $EXPO_PID 2>/dev/null || true
+              kill $EXPO_PID 2>/dev/null || true
               echo "1" > test-results/maestro-exit-code.txt
               exit 1
             fi
