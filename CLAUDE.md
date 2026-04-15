@@ -144,6 +144,9 @@ jq が使えない環境では `gh issue list --state open --limit 100 --json nu
 - **`.claude/settings.json` の `permissions.allow` でエージェントの `.claude/**` / `CLAUDE.md` / `.claude/.review-passed` への Write/Edit を許可している。permission 層の許可は orchestrator 直接編集ガードや review-passed マーカー作成ルールを無効化しない（hook 層と責務分離）**
   - 理由: `permissions.allow` に無修飾の `"Write"` / `"Edit"` が存在しても、`defaultMode: "auto"` のもとでは `.claude/**` のような管理系パスへの書き込みは ask にフォールバックする場合がある。明示的なパスルール（`Edit(.claude/**)` / `Write(.claude/**)` 等）を追加することで auto allow を成立させ、並列エージェントの permission prompt 詰まりを解消している。
 - **作業開始前に必ず関連スキルを Skill ツールで呼ぶ**（機能実装・バグ修正開始時は `brainstorming`、Issue 作成時は `create-issue` 等、`.claude/skills/` 配下に該当するスキルがある場合は必ず呼ぶ。スキル定義が存在するのに呼ばずに作業を開始することは禁止する）
+- **エージェントは標準ワークフローから外れる判断を独断で行わない。必ず `AskUserQuestion` ツールで orchestrator または人間ユーザーに確認する**
+- **判断の分類**: 通常フロー内 = 自律実行 / ワークフロー逸脱 = `AskUserQuestion` 必須
+  - 逸脱例: 必須フローのスキップ、CHANGES_REQUESTED の軽微判断による省略、worktree/PR の通常外 close/削除、conflict の自己判断解消、CI bypass、別 branch への pivot、「resolved」と独断判定して終了
 
 ---
 
