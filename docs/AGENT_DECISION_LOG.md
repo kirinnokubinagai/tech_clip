@@ -55,6 +55,18 @@
 
 ---
 
+## 追記の運用ルール
+
+違反事例の追記は以下のタイミングで行う:
+
+- reviewer / infra-reviewer / ui-reviewer が CHANGES_REQUESTED を出したタイミング
+- orchestrator が AskUserQuestion を呼んで人間判断を仰いだタイミング
+- 標準ワークフロー逸脱が事後に発覚したタイミング
+
+追記は発見した担当エージェントが行う。追記後は orchestrator に SendMessage で通知する。
+
+---
+
 ## 記録フォーマット
 
 新しい違反事例が発生した場合、以下の形式で追記すること:

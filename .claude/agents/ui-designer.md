@@ -192,7 +192,6 @@ git -C {worktree} merge origin/main
 
 すべての出力は日本語で行う。
 
-
 ## 標準ワークフローから外れる判断の禁止
 
 以下のような判断は agent 単独で行わず、必ず `AskUserQuestion` ツールで orchestrator / 人間ユーザーに確認すること:
