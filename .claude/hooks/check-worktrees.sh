@@ -229,12 +229,54 @@ while IFS= read -r wt_path; do
         PROBLEMS="${PROBLEMS}[遅れ] ${wt_name}: ${BEHIND} commits behind main -> git -C ${wt_path} merge origin/main | "
         PROBLEM_COUNT=$((PROBLEM_COUNT + 1))
     fi
+
+    # PRが存在しないブランチで未コミット変更なし → 警告（放置されたworktreeの可能性）
+    branch=$(git -C "$wt_path" rev-parse --abbrev-ref HEAD 2>/dev/null)
+    if [ -n "$branch" ] && [ "$branch" != "HEAD" ] && [[ "$branch" =~ ^[a-zA-Z0-9/_.-]+$ ]]; then
+        if command -v gh >/dev/null 2>&1 && gh auth token >/dev/null 2>&1; then
+            REPO_SLUG_P2=$(gh repo view --json nameWithOwner --jq '.nameWithOwner' 2>/dev/null || echo "")
+            if [ -n "$REPO_SLUG_P2" ]; then
+                pr_count=$(gh pr list --repo "$REPO_SLUG_P2" --head "$branch" --state all --json number --jq 'length' 2>/dev/null || echo "")
+                if [ "$pr_count" = "0" ]; then
+                    DIRTY_CHECK=$(git -C "$wt_path" status --porcelain 2>/dev/null | grep -v '^??' | head -1)
+                    if [ -z "$DIRTY_CHECK" ]; then
+                        PROBLEMS="${PROBLEMS}[PR無し] ${wt_name}: PRが存在しないブランチ -> 不要なら git worktree remove ${wt_path} で削除 | "
+                        PROBLEM_COUNT=$((PROBLEM_COUNT + 1))
+                    fi
+                fi
+            fi
+        fi
+    fi
+
+    # 14日以上コミットされていないworktree → 警告
+    LAST_COMMIT_DATE=$(git -C "$wt_path" log -1 --format="%ct" 2>/dev/null || echo "")
+    if [ -n "$LAST_COMMIT_DATE" ]; then
+        NOW=$(date +%s)
+        STALE_THRESHOLD=1209600
+        AGE=$((NOW - LAST_COMMIT_DATE))
+        if [ "$AGE" -gt "$STALE_THRESHOLD" ]; then
+            DAYS=$((AGE / 86400))
+            PROBLEMS="${PROBLEMS}[古い] ${wt_name}: ${DAYS}日間コミットなし -> 不要なら scripts/cleanup-worktrees.sh で削除 | "
+            PROBLEM_COUNT=$((PROBLEM_COUNT + 1))
+        fi
+    fi
 done <<< "$WORKTREE_PATHS"
+
+# /tmp/issue-* 古いファイルを削除（24時間以上前）
+TMP_DELETED=0
+if [ -d /tmp ]; then
+    while IFS= read -r -d '' tmp_file; do
+        rm -f "$tmp_file" 2>/dev/null && TMP_DELETED=$((TMP_DELETED + 1))
+    done < <(find /tmp -maxdepth 1 -name 'issue-*' -mmin +1440 -print0 2>/dev/null)
+fi
 
 # 結果を出力（削除情報 + 健全性チェック）
 SUMMARY=""
 if [ "$REMOVED_COUNT" -gt 0 ]; then
     SUMMARY="worktree ${REMOVED_COUNT}件を自動削除（マージ済みまたはクローズ済み）: ${REMOVED_NAMES} | "
+fi
+if [ "$TMP_DELETED" -gt 0 ]; then
+    SUMMARY="${SUMMARY}/tmp/issue-* ファイル ${TMP_DELETED}件を削除（24時間以上前） | "
 fi
 if [ "$PROBLEM_COUNT" -gt 0 ]; then
     SUMMARY="${SUMMARY}Worktree health: ${PROBLEM_COUNT} issues found. ${PROBLEMS}Fix before starting new issues."
