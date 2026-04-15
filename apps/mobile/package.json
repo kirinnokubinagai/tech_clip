@@ -15,12 +15,12 @@
     "e2e": "maestro test ../../tests/e2e/maestro/"
   },
   "dependencies": {
+    "@expo/metro-runtime": "~55.0.9",
     "@react-native-community/netinfo": "^11.5.2",
     "@sentry/react-native": "6.22.0",
     "@shopify/flash-list": "^2.0.2",
     "@tanstack/react-query": "^5.0.0",
     "@tech-clip/types": "workspace:*",
-    "@expo/metro-runtime": "~55.0.9",
     "expo": "~55.0.9",
     "expo-background-fetch": "^55.0.10",
     "expo-constants": "~55.0.9",
