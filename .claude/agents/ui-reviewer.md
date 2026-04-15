@@ -61,7 +61,15 @@ orchestrator から `ABORT:` を受信した場合:
    ```text
    SendMessage(to: "issue-{issue_number}-ui-designer", message: {"type": "shutdown_request"})
    ```
-3. orchestrator に完了を通知して終了する:
+3. worktree を削除する:
+   ```bash
+   MAIN_WT=$(git -C {worktree} worktree list --porcelain | head -1 | sed 's/^worktree //')
+   git -C "$MAIN_WT" worktree remove {worktree} --force 2>/dev/null || {
+     git -C "$MAIN_WT" worktree prune 2>/dev/null || true
+     rm -rf {worktree} 2>/dev/null || true
+   }
+   ```
+4. orchestrator に完了を通知して終了する:
    ```text
    SendMessage(to: "orchestrator", "ABORTED: issue-{issue_number} ui-reviewer が abort しました")
    ```
@@ -200,10 +208,10 @@ EOF
 POLLING_START=$(date +%s)
 LAST_REPORT=$(date +%s)
 LAST_STATUS=""
-LAST_STATUS_COUNT=0
 MAX_POLLING_SECONDS=1800   # 30 分
 REPORT_INTERVAL_SECONDS=300  # 5 分
 QUEUED_STUCK_SECONDS=600   # 10 分 QUEUED のまま → stuck
+QUEUED_SINCE=0
 ```
 
 ポーリングループの各イテレーションで以下を確認する:
@@ -221,7 +229,7 @@ fi
 # 5 分ごとの進捗報告
 if [ $((NOW - LAST_REPORT)) -ge "$REPORT_INTERVAL_SECONDS" ]; then
   ELAPSED_MIN=$((ELAPSED / 60))
-  CURRENT_LABELS=$(gh pr view <PR番号> --json labels --jq '[.labels[].name] | join(", ")')
+  CURRENT_LABELS=$(gh pr view {pr_number} --json labels --jq '[.labels[].name] | join(", ")')
   SendMessage(to: "orchestrator", "POLLING: issue-{issue_number} レビュー待機中 ${ELAPSED_MIN}分経過 / ラベル: ${CURRENT_LABELS}")
   LAST_REPORT=$NOW
 fi
@@ -230,13 +238,11 @@ fi
 stuck 自動検知（CI check の QUEUED 固着）:
 
 ```bash
-CI_STATUS=$(gh pr view <PR番号> --json statusCheckRollup --jq '[.statusCheckRollup[] | select(.status == "QUEUED")] | length')
+CI_STATUS=$(gh pr view {pr_number} --json statusCheckRollup --jq '[.statusCheckRollup[] | select(.status == "QUEUED")] | length')
 if [ "$CI_STATUS" -gt 0 ]; then
   if [ "$LAST_STATUS" = "QUEUED_${CI_STATUS}" ]; then
-    LAST_STATUS_COUNT=$((LAST_STATUS_COUNT + 1))
   else
     LAST_STATUS="QUEUED_${CI_STATUS}"
-    LAST_STATUS_COUNT=1
     QUEUED_SINCE=$(date +%s)
   fi
   QUEUED_ELAPSED=$((NOW - QUEUED_SINCE))
@@ -246,14 +252,13 @@ if [ "$CI_STATUS" -gt 0 ]; then
   fi
 else
   LAST_STATUS=""
-  LAST_STATUS_COUNT=0
 fi
 ```
 
 ラベル判定:
 
 ```bash
-LABELS=$(gh pr view <PR番号> --json labels --jq '.labels[].name')
+LABELS=$(gh pr view {pr_number} --json labels --jq '.labels[].name')
 
 if echo "$LABELS" | grep -Fxq "AI Review: PASS"; then
   # APPROVED 処理
@@ -269,7 +274,7 @@ fi
 - **`AI Review: NEEDS WORK` ラベルが存在する（CHANGES_REQUESTED）**:
   1. レビューコメントを取得する
      ```bash
-     gh pr view <PR番号> --json comments --jq '[.comments[] | select(.body | contains("## PRレビュー結果"))] | last | .body'
+     gh pr view {pr_number} --json comments --jq '[.comments[] | select(.body | contains("## PRレビュー結果"))] | last | .body'
      ```
   2. ui-designer に修正依頼を送信する
      ```text
@@ -343,7 +348,7 @@ AI Review: PASS が確認できたあと、実際のマージまで 30 秒間隔
 MAX_ATTEMPTS=120  # 30 秒 × 120 = 60 分
 PR_STATE=""
 for i in $(seq 1 $MAX_ATTEMPTS); do
-  PR_STATE=$(gh pr view <PR番号> --json state --jq '.state')
+  PR_STATE=$(gh pr view {pr_number} --json state --jq '.state')
   case "$PR_STATE" in
     MERGED)
       break
@@ -359,7 +364,7 @@ for i in $(seq 1 $MAX_ATTEMPTS); do
 done
 
 if [ "$PR_STATE" != "MERGED" ]; then
-  PR_URL=$(gh pr view <PR番号> --json url --jq '.url')
+  PR_URL=$(gh pr view {pr_number} --json url --jq '.url')
   SendMessage(to: "orchestrator", "MERGE_PENDING: issue-{issue_number} は AI Review PASS 済みですが 60 分以内にマージされませんでした。手動でマージ・クローズしてください。PR: $PR_URL")
   exit 0
 fi

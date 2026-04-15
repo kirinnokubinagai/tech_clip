@@ -60,7 +60,15 @@ orchestrator から `ABORT:` を受信した場合:
    ```text
    SendMessage(to: "issue-{issue_number}-coder", message: {"type": "shutdown_request"})
    ```
-3. orchestrator に完了を通知して終了する:
+3. worktree を削除する:
+   ```bash
+   MAIN_WT=$(git -C {worktree} worktree list --porcelain | head -1 | sed 's/^worktree //')
+   git -C "$MAIN_WT" worktree remove {worktree} --force 2>/dev/null || {
+     git -C "$MAIN_WT" worktree prune 2>/dev/null || true
+     rm -rf {worktree} 2>/dev/null || true
+   }
+   ```
+4. orchestrator に完了を通知して終了する:
    ```text
    SendMessage(to: "orchestrator", "ABORTED: issue-{issue_number} reviewer が abort しました")
    ```
@@ -197,10 +205,10 @@ PR は再作成しない。push のみ行う。
 POLLING_START=$(date +%s)
 LAST_REPORT=$(date +%s)
 LAST_STATUS=""
-LAST_STATUS_COUNT=0
 MAX_POLLING_SECONDS=1800   # 30 分
 REPORT_INTERVAL_SECONDS=300  # 5 分
 QUEUED_STUCK_SECONDS=600   # 10 分 QUEUED のまま → stuck
+QUEUED_SINCE=0
 ```
 
 ポーリングループの各イテレーションで以下を確認する:
@@ -230,10 +238,8 @@ stuck 自動検知（CI check の QUEUED 固着）:
 CI_STATUS=$(gh pr view {pr_number} --json statusCheckRollup --jq '[.statusCheckRollup[] | select(.status == "QUEUED")] | length')
 if [ "$CI_STATUS" -gt 0 ]; then
   if [ "$LAST_STATUS" = "QUEUED_${CI_STATUS}" ]; then
-    LAST_STATUS_COUNT=$((LAST_STATUS_COUNT + 1))
   else
     LAST_STATUS="QUEUED_${CI_STATUS}"
-    LAST_STATUS_COUNT=1
     QUEUED_SINCE=$(date +%s)
   fi
   QUEUED_ELAPSED=$((NOW - QUEUED_SINCE))
@@ -243,7 +249,6 @@ if [ "$CI_STATUS" -gt 0 ]; then
   fi
 else
   LAST_STATUS=""
-  LAST_STATUS_COUNT=0
 fi
 ```
 
