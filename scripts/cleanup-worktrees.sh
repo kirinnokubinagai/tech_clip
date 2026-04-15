@@ -76,16 +76,15 @@ while IFS= read -r wt_path; do
     if [ -n "$wt_head" ] && git -C "$REPO_ROOT" merge-base --is-ancestor "$wt_head" "$MAIN_REF" 2>/dev/null; then
         CATEGORY="merged"
     elif [ -n "$REPO_SLUG" ] && [ -n "$branch" ] && [ "$branch" != "HEAD" ] && [ "$branch" != "detached" ]; then
-        pr_state=$(gh pr list --repo "$REPO_SLUG" --head "$branch" --state closed --json state,mergedAt --jq '.[0] | select(.mergedAt == null) | .state' 2>/dev/null || echo "")
+        pr_json=$(gh pr list --repo "$REPO_SLUG" --head "$branch" --state all --json state,mergedAt --jq '.' 2>/dev/null || echo "[]")
+        pr_count=$(echo "$pr_json" | jq 'length' 2>/dev/null || echo "0")
+        pr_state=$(echo "$pr_json" | jq -r '.[] | select(.state == "CLOSED" and .mergedAt == null) | .state' 2>/dev/null | head -1)
         if [ "$pr_state" = "CLOSED" ]; then
             CATEGORY="closed"
-        else
-            pr_count=$(gh pr list --repo "$REPO_SLUG" --head "$branch" --state all --json number --jq 'length' 2>/dev/null || echo "1")
-            if [ "$pr_count" = "0" ] && [ "$AGE_DAYS" -ge 14 ]; then
-                CATEGORY="orphan"
-            elif [ "$AGE_DAYS" -ge 14 ]; then
-                CATEGORY="stale"
-            fi
+        elif [ "$pr_count" = "0" ] && [ "$AGE_DAYS" -ge 14 ]; then
+            CATEGORY="orphan"
+        elif [ "$AGE_DAYS" -ge 14 ]; then
+            CATEGORY="stale"
         fi
     elif [ "$AGE_DAYS" -ge 14 ]; then
         CATEGORY="stale"

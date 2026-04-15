@@ -427,7 +427,7 @@ reviewer が APPROVED 受信後に即時削除する（fallback 付き）:
 
 1. `git worktree remove {worktree}` で通常削除
 2. 失敗した場合は `git worktree remove --force {worktree}` で強制削除
-3. それでも失敗した場合は `git worktree prune` を実行し、orchestrator に `WORKTREE_DELETE_FAILED` を通知
+3. それでも失敗した場合は `git worktree prune` を実行し、orchestrator に `WORKTREE_REMOVE_FAILED` を通知
 
 ### 手動クリーンアップ
 

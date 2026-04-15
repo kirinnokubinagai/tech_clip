@@ -221,7 +221,7 @@ fi
 gh issue close {issue_number} --comment "PR がマージされたため自動クローズしました（reviewer agent）"
 
 # worktree 削除（fallback 付き）
-MAIN_WT=$(git -C {worktree} worktree list --porcelain | head -1 | awk '{print $2}')
+MAIN_WT=$(git -C {worktree} worktree list --porcelain | head -1 | sed 's/^worktree //')
 WORKTREE_REMOVE_OK=1
 if ! git -C "$MAIN_WT" worktree remove {worktree} --force 2>/dev/null; then
     git -C "$MAIN_WT" worktree prune 2>/dev/null || true
