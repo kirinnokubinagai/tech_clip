@@ -413,6 +413,16 @@ worktree-isolation-guard.sh により以下の制限がある（mainブランチ
 
 ## Worktree の自動管理
 
+### 自動 sync（SessionStart hook）
+
+`auto-sync-main.sh`（SessionStart hook）が SessionStart 時に以下を自動実行する:
+
+- **main worktree**: `origin/main` を fetch して FF merge（uncommitted 変更がある場合はスキップ）
+- **issue/* branch の worktree**: `origin/main` が進んでいれば 3-way merge を試みる。conflict 発生時は `merge --abort` して元の状態に戻す（安全側）
+- **uncommitted 変更がある worktree**: merge をスキップ（誤操作防止）
+
+この仕組みにより、並列 Issue 開発中に `origin/main` が進んでも各 worktree の engineer に手動指示を送る必要がない。
+
 ### 自動削除（SessionStart hook）
 
 `check-worktrees.sh`（SessionStart hook）が以下を自動処理する:

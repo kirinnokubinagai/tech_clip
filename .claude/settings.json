@@ -11,6 +11,12 @@
           },
           {
             "type": "command",
+            "command": "bash \"$(git rev-parse --show-toplevel 2>/dev/null || echo .)/.claude/hooks/auto-sync-main.sh\"",
+            "timeout": 10,
+            "statusMessage": "Auto-syncing with origin/main..."
+          },
+          {
+            "type": "command",
             "command": "bash \"$(git rev-parse --show-toplevel 2>/dev/null || echo .)/.claude/hooks/check-worktrees.sh\"",
             "timeout": 10,
             "statusMessage": "Checking worktree health..."
