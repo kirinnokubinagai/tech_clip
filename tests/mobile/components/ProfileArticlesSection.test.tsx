@@ -27,7 +27,7 @@ jest.mock("react-i18next", () => ({
         "profile.savedArticles": "保存した記事",
         "profile.publicArticles": "公開記事",
         "profile.noSavedArticles": "まだ保存した記事がありません",
-        "profile.noPublicArticles": "この用户の公開記事はまだありません",
+        "profile.noPublicArticles": "このユーザーの公開記事はまだありません",
         "profile.fetchError": "記事の取得に失敗しました",
       };
       return translations[key] ?? key;
