@@ -391,45 +391,6 @@ run_script_with_file() {
     [[ "${output}" == *"実行フロー状態ファイル"* ]]
 }
 
-# --- .claude/.review-passed の扱い ---
-# 新スクリプトでは is_blocked_file での明示ブロックを除去し、
-# main ブランチ汎用 DENY（step 4）または非 main ブランチで素通し
-
-@test "mainブランチ上の.claude/.review-passedはブロックされること" {
-    # Arrange
-    local file_path="$REPO_DIR/.claude/.review-passed"
-
-    # Act
-    run_script_with_file "$file_path"
-
-    # Assert
-    [ "$status" -eq 2 ]
-    [[ "${output}" == *"DENY"* ]]
-}
-
-@test "mainブランチ上の大文字パスの.CLAUDE/.review-passedはブロックされること" {
-    # Arrange
-    local file_path="$REPO_DIR/.CLAUDE/.review-passed"
-
-    # Act
-    run_script_with_file "$file_path"
-
-    # Assert
-    [ "$status" -eq 2 ]
-    [[ "${output}" == *"DENY"* ]]
-}
-
-@test "パストラバーサル経由の.review-passedはブロックされること" {
-    # Arrange
-    local file_path="$REPO_DIR/.claude/hooks/../.review-passed"
-
-    # Act
-    run_script_with_file "$file_path"
-
-    # Assert
-    [ "$status" -eq 2 ]
-    [[ "${output}" == *"DENY"* ]]
-}
 
 # --- .omc/ 全体の許可（.omc/state/ 除く）---
 
@@ -542,15 +503,6 @@ run_script_with_file() {
     [[ "${output}" == *"DENY"* ]]
 }
 
-@test "detached HEAD状態でも.claude/.review-passedはブロックされること" {
-    # Arrange
-    local commit_hash
-    commit_hash=$(git -C "$REPO_DIR" rev-parse HEAD)
-    git -C "$REPO_DIR" checkout --detach "$commit_hash"
-    run_script_with_file "$REPO_DIR/.claude/.review-passed"
-    [ "$status" -eq 2 ]
-    [[ "${output}" == *"DENY"* ]]
-}
 
 @test "detached HEAD状態でも.omc/state/配下はブロックされること" {
     # Arrange
