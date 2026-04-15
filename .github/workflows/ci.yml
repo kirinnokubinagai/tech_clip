@@ -143,8 +143,13 @@ jobs:
         run: nix develop .#ci --command pnpm typecheck
       - name: Test
         run: nix develop .#ci --command ./scripts/run-and-fail-on-stderr.sh pnpm test
-      - name: Audit
-        run: nix develop .#ci --command pnpm audit --prod
+      # Audit ステップは npm が audit エンドポイント (quick / bulk) を 410 Gone に
+      # したため pnpm audit が CI 上で常に失敗するようになった。pnpm 側が新 bulk
+      # advisory API に追従するまで一時無効化する。
+      # 参考: https://api-docs.npmjs.com/#tag/Audit
+      # TODO: pnpm が bulk advisory API に対応したら復活させる
+      # - name: Audit
+      #   run: nix develop .#ci --command pnpm audit --prod
 
   # ── Step 4（並列）: hooks テスト（hooks 変更時のみ）──────────────────────
   hooks-test:
