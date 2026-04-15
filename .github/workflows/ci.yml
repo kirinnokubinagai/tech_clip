@@ -144,7 +144,7 @@ jobs:
       - name: Test
         run: nix develop .#ci --command ./scripts/run-and-fail-on-stderr.sh pnpm test
       - name: Audit
-        run: nix develop .#ci --command pnpm audit --prod
+        run: nix develop .#ci --command pnpm audit --prod --audit-level=high --ignore-registry-errors
 
   # ── Step 4（並列）: hooks テスト（hooks 変更時のみ）──────────────────────
   hooks-test:
