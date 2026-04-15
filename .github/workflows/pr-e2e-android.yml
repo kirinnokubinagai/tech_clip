@@ -92,6 +92,7 @@ jobs:
             MAESTRO_EXIT=$?
             set -e
 
+            pkill -P $EXPO_PID 2>/dev/null || true
             kill $EXPO_PID 2>/dev/null || true
 
             echo "$MAESTRO_EXIT" > test-results/maestro-exit-code.txt
@@ -130,6 +131,7 @@ jobs:
       - name: Fail if Maestro failed
         if: always()
         run: |
+          set -eo pipefail
           EXIT_CODE=$(cat test-results/maestro-exit-code.txt 2>/dev/null || echo 1)
           if [ "$EXIT_CODE" -ne 0 ]; then
             echo "Maestro tests failed with exit code $EXIT_CODE"

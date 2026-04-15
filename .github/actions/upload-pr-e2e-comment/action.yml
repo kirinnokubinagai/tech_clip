@@ -73,11 +73,8 @@ runs:
         fi
 
         # --- Parse JUnit XML ---
-        PASS_COUNT=0
-        FAIL_COUNT=0
         FAILED_FLOWS=""
         if [ -f "$JUNIT_PATH" ]; then
-          PASS_COUNT=$(grep -oP 'tests="\K[0-9]+' "$JUNIT_PATH" | head -1 || echo 0)
           FAIL_COUNT=$(grep -oP 'failures="\K[0-9]+' "$JUNIT_PATH" | head -1 || echo 0)
           if [ "$FAIL_COUNT" -gt 0 ]; then
             FAILED_FLOWS=$(grep -oP 'classname="\K[^"]+' "$JUNIT_PATH" | sort -u | head -5 | tr '\n' ', ' | sed 's/,$//')
@@ -95,38 +92,41 @@ runs:
         fi
 
         # --- Build comment body ---
-        BODY="<!-- pr-e2e-marker -->
-        ## PR E2E (Android) 結果
-
-        **Run ID**: \`${RUN_ID}\` / **結果**: ${RESULT_ICON} ${RESULT_TEXT}"
-
-        if [ -n "$FAILED_FLOWS" ]; then
-          BODY="${BODY}
-
-        ### 失敗フロー
-        ${FAILED_FLOWS}"
-        fi
-
         # Group screenshots by flow
         declare -A FLOW_SECTIONS
         for LABEL in "${!URL_MAP[@]}"; do
           FLOW=$(echo "$LABEL" | cut -d'/' -f1)
           STEP=$(echo "$LABEL" | cut -d'/' -f2-)
           URL="${URL_MAP[$LABEL]}"
-          FLOW_SECTIONS["$FLOW"]+="<img src=\"${URL}\" alt=\"${STEP}\" width=\"300\">
-        "
+          FLOW_SECTIONS["$FLOW"]+="<img src=\"${URL}\" alt=\"${STEP}\" width=\"300\">"$'\n'
         done
 
-        BODY="${BODY}
-
-        ### 全フロー
-        "
+        FLOW_BODY=""
         for FLOW in $(echo "${!FLOW_SECTIONS[@]}" | tr ' ' '\n' | sort); do
-          BODY="${BODY}
+          FLOW_BODY="${FLOW_BODY}
 
-        #### ${FLOW}
-        ${FLOW_SECTIONS[$FLOW]}"
+#### ${FLOW}
+${FLOW_SECTIONS[$FLOW]}"
         done
+
+        FAILED_SECTION=""
+        if [ -n "$FAILED_FLOWS" ]; then
+          FAILED_SECTION="
+
+### 失敗フロー
+${FAILED_FLOWS}"
+        fi
+
+        BODY=$(cat <<EOF
+<!-- pr-e2e-marker -->
+## PR E2E (Android) 結果
+
+**Run ID**: \`${RUN_ID}\` / **結果**: ${RESULT_ICON} ${RESULT_TEXT}${FAILED_SECTION}
+
+### 全フロー
+${FLOW_BODY}
+EOF
+)
 
         # --- Upsert PR comment ---
         EXISTING_COMMENT_ID=$(gh api "repos/${REPO}/issues/${PR_NUMBER}/comments" \
