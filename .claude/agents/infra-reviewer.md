@@ -228,15 +228,17 @@ gh issue close {issue_number} --comment "PR がマージされたため自動ク
 
 # worktree 削除（fallback 付き）
 MAIN_WT=$(git -C {worktree} worktree list --porcelain | head -1 | awk '{print $2}')
+WORKTREE_REMOVE_OK=1
 if ! git -C "$MAIN_WT" worktree remove {worktree} --force 2>/dev/null; then
-    # fallback 1: prune してリトライ
     git -C "$MAIN_WT" worktree prune 2>/dev/null || true
     if ! git -C "$MAIN_WT" worktree remove {worktree} --force 2>/dev/null; then
-        # fallback 2: ディレクトリ直接削除 + prune（issue-N パターンか事前確認）
         WT_BASENAME=$(basename {worktree})
         if [[ "$WT_BASENAME" =~ ^issue-[0-9]+ ]] && [[ "{worktree}" == /* ]] && [[ "{worktree}" != "/" ]]; then
             rm -rf {worktree} 2>/dev/null || true
             git -C "$MAIN_WT" worktree prune 2>/dev/null || true
+        fi
+        if [ -d "{worktree}" ]; then
+            WORKTREE_REMOVE_OK=0
         fi
     fi
 fi
@@ -245,7 +247,7 @@ fi
 rm -f /tmp/issue-{issue_number}-*.md 2>/dev/null || true
 ```
 
-worktree 削除に失敗した場合は orchestrator に通知する:
+削除に失敗した場合（`WORKTREE_REMOVE_OK=0`）は orchestrator に通知する:
 
 ```text
 SendMessage(to: "orchestrator", "WORKTREE_REMOVE_FAILED: issue-{issue_number} の worktree 削除に失敗しました。手動削除してください: {worktree}")
