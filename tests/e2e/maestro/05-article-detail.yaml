@@ -19,6 +19,7 @@ env:
 
 # --- ホーム画面: 記事一覧表示 ---
 - assertVisible: "すべて"
+- takeScreenshot: screenshots/05-article-detail/01-home
 
 # ソースフィルター確認
 - assertVisible: "Zenn"
@@ -41,6 +42,7 @@ env:
 # --- 記事詳細画面 ---
 - assertVisible:
     accessibilityLabel: "戻る"
+- takeScreenshot: screenshots/05-article-detail/02-detail
 
 # お気に入り追加
 - tapOn:

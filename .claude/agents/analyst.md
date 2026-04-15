@@ -74,6 +74,17 @@ spec ドキュメントを `{worktree}/docs/superpowers/specs/YYYY-MM-DD-<topic>
 
 その後終了する。
 
+### spec ファイルのクリーンアップ
+
+Issue の完了通知（reviewer から `APPROVED` メッセージを受け取った場合、または一定期間後）に自分が作成した一時ファイルを削除する:
+
+```bash
+# 自分が作成した spec ファイルを削除
+find /tmp -maxdepth 1 -name "issue-{issue_number}-*" -delete 2>/dev/null || true
+```
+
+なお、`check-worktrees.sh` の SessionStart hook が 24 時間以上前の `/tmp/issue-*` ファイルを自動削除するため、手動削除が間に合わない場合でも次回セッション開始時にクリーンアップされる。
+
 ## 出力規約
 
 - 設計完了時: SendMessage 送信後に `spec: {spec_file_path}` の形式でパスを返し、1 行の実装方針サマリーを添える
