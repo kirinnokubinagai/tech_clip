@@ -137,6 +137,7 @@ jq が使えない環境では `gh issue list --state open --limit 100 --json nu
 - **TeamDelete は自動で行わない。ユーザーが明示的に指示したときのみ実行する**
 - **active-issues チームが既に存在する場合は TeamDelete / 再作成は不要**（`Agent(team_name="active-issues", ...)` で新メンバーをそのまま追加できる。`TeamCreate` は存在しない場合のみ実行する）
 - **すべてのエージェントを spawn するときは必ず `mode="acceptEdits"` を指定する**（実装系・レビュー系を問わず）
+- **`.claude/.review-passed` マーカーの作成は reviewer 系エージェント（`reviewer` / `infra-reviewer` / `ui-reviewer`）のみに許可される。`coder` / `infra-engineer` / `ui-designer` / オーケストレーターがこのマーカーを作成することは禁止する**（このマーカーはレビュー PASS の証憑として `pre-push-review-guard.sh` がチェックするため、レビュワー以外が作成すると「レビューを通らずに push できる抜け道」になる）
 - **レビュー PASS 後のマーカー作成・push・PR 作成は各レビュワーエージェントが担当する**（オーケストレーターは行わない）
 
 ---
@@ -343,7 +344,7 @@ coder がコンフリクト解消を担当:
 reviewer → 再レビューループへ（フェーズ 2 に戻る）
 ```
 
-> **注意**: `pre-push-review-guard.sh` により、`.claude/.review-passed` マーカーがない状態での push はブロックされる。各レビュワーエージェントがマーカー作成・push・PR 作成を担当する。
+> **注意**: `pre-push-review-guard.sh` により、`.claude/.review-passed` マーカーがない状態での push はブロックされる。このマーカーの作成は reviewer 系エージェント（`reviewer` / `infra-reviewer` / `ui-reviewer`）のみに許可され、coder 系エージェント（`coder` / `infra-engineer` / `ui-designer`）およびオーケストレーターは作成してはならない。各レビュワーエージェントがマーカー作成・push・PR 作成を担当する。
 
 ---
 
@@ -398,7 +399,7 @@ worktree-isolation-guard.sh により以下の制限がある（mainブランチ
 `.claude/**` や `scripts/` であっても必ず worktree 経由で変更すること。
 
 なお `.omc/state/**` は worktree 上でも Edit/Write がブロックされる（is_blocked_file による）。
-`.claude/.review-passed` は Write ツールで作成すること（例: Write ツールで `{worktree}/.claude/.review-passed` を作成、内容は空でよい）。
+`.claude/.review-passed` は **reviewer 系エージェントのみが** Write ツールで作成すること（例: Write ツールで `{worktree}/.claude/.review-passed` を作成、内容は空でよい）。coder 系エージェントおよびオーケストレーターはこのマーカーを作成してはならない。
 
 | 項目 | 詳細 |
 |---|---|
