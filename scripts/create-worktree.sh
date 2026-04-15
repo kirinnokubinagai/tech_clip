@@ -37,6 +37,9 @@ fi
 
 echo "📥 origin/main を更新..."
 git fetch origin main
+# main worktree のローカル main を origin/main に FF merge する。
+# 非 FF（未 push コミットがある等）の場合は失敗するが、worktree 作成自体は続行したいため || true で握り潰す。
+git -C "${REPO_ROOT}" merge --ff-only origin/main --quiet 2>/dev/null || true
 
 echo "🌳 worktree を作成..."
 git worktree add "${WORKTREE_PATH}" -b "${BRANCH_NAME}" origin/main
