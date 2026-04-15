@@ -240,8 +240,7 @@ stuck 自動検知（CI check の QUEUED 固着）:
 ```bash
 CI_STATUS=$(gh pr view {pr_number} --json statusCheckRollup --jq '[.statusCheckRollup[] | select(.status == "QUEUED")] | length')
 if [ "$CI_STATUS" -gt 0 ]; then
-  if [ "$LAST_STATUS" = "QUEUED_${CI_STATUS}" ]; then
-  else
+  if [ "$LAST_STATUS" != "QUEUED_${CI_STATUS}" ]; then
     LAST_STATUS="QUEUED_${CI_STATUS}"
     QUEUED_SINCE=$(date +%s)
   fi
