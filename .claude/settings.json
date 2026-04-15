@@ -257,7 +257,16 @@
       "TaskUpdate",
       "TaskGet",
       "TaskList",
-      "SendMessage"
+      "SendMessage",
+      "Write(.claude/.review-passed)",
+      "Edit(.claude/**)",
+      "Write(.claude/**)",
+      "Edit(.claude/agents/**)",
+      "Write(.claude/agents/**)",
+      "Edit(.claude/hooks/**)",
+      "Write(.claude/hooks/**)",
+      "Edit(CLAUDE.md)",
+      "Write(CLAUDE.md)"
     ],
     "deny": [
       "Bash(drizzle-kit push:*)",
