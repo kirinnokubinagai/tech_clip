@@ -363,7 +363,7 @@ reviewer → 再レビューループへ（フェーズ 2 に戻る）
 
 ### ルール 1: POLLING メッセージは quiet log として扱う
 
-reviewer 系エージェントからは定期的に以下の形式のメッセージが届く:
+reviewer 系エージェントからは定期的に以下の形式のメッセージが届く（フォーマット定義は `.claude/agents/reviewer.md` を参照）:
 
 ```
 POLLING: issue-N レビュー待機中 X分経過 / ラベル: ...
@@ -379,7 +379,9 @@ POLLING: issue-N レビュー待機中 X分経過 / ラベル: ...
 
 ### ルール 2: 10 分無音時の生存確認 ping
 
-reviewer 系エージェントから **10 分以上** `POLLING:` メッセージを含む任意のメッセージが届かない場合、orchestrator は生存確認 ping を送る:
+reviewer 系エージェントから **10 分以上** 任意のメッセージが届かない場合、orchestrator は生存確認 ping を送る。
+
+**タイマー実装方針（pull 型）**: orchestrator はイベント駆動のため常時監視は行えない。他 Issue の `APPROVED:` / `POLLING:` 受信や別の SendMessage など、orchestrator のターンが回ってきたタイミングで「最後のメッセージ受信時刻」と現在時刻を比較し、10 分超過していれば ping を送る（pull 型チェック）。
 
 ```
 SendMessage(to: "issue-{N}-reviewer",
