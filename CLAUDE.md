@@ -593,6 +593,7 @@ ruleset の `rules[].parameters.required_status_checks` を見て、どの check
 すべての情報を総合して以下をすべて満たす場合のみ「APPROVED 相当」と判定してよい:
 
 - `mergeStateStatus == CLEAN` かつ
+  （CLEAN は required status checks・required reviews 両方の通過を含む。`reviewDecision` は補足確認として参照してよい）
 - claude-review bot コメントに改善提案なし かつ
 - required check がすべて `SUCCESS`（`SKIPPED` は含まない）
 
