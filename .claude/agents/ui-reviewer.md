@@ -129,15 +129,17 @@ orchestrator から `ABORT:` を受信した場合:
 ### フェーズ 1: コンフリクトチェック
 
 ```bash
-git -C {worktree} fetch origin
-git -C {worktree} merge --no-commit --no-ff origin/main 2>&1
+cd {worktree}
+git fetch origin main
+MERGE_OUTPUT=$(git merge --no-commit --no-ff origin/main 2>&1)
+git merge --abort 2>/dev/null || true
+if echo "$MERGE_OUTPUT" | grep -q "CONFLICT"; then
+  CONFLICT_FILES=$(git diff --name-only --diff-filter=U 2>/dev/null || echo "（ファイル一覧取得失敗。git status で確認してください）")
+  # SendMessage を送信してフェーズ 0 に戻る
+fi
 ```
 
 コンフリクトが検出された場合:
-```bash
-CONFLICT_FILES=$(git -C {worktree} diff --name-only --diff-filter=U)
-git -C {worktree} merge --abort
-```
 ```text
 SendMessage(
   to: "issue-{issue_number}-analyst",
