@@ -103,6 +103,8 @@ grep -rE "sk_live|sk_test|password\s*=|secret\s*=" apps/ packages/ --include="*.
 
 結果: 出力なし（テスト・スペック・モック・.d.ts を除外）。ハードコードシークレットは検出されなかった。PASS
 
+> **備考**: 今回の grep は `.ts` ファイルのみを対象とした。`.tsx` / `.json` / `.yaml` / `.env` 等の設定ファイルに含まれるシークレットは別途確認が必要。次回リリース監査では grep 範囲を拡大することを推奨。
+
 ### pnpm audit --audit-level=high 結果
 
 ```
