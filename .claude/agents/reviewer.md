@@ -65,7 +65,10 @@ orchestrator から `ABORT:` を受信した場合:
    MAIN_WT=$(git -C {worktree} worktree list --porcelain | head -1 | sed 's/^worktree //')
    git -C "$MAIN_WT" worktree remove {worktree} --force 2>/dev/null || {
      git -C "$MAIN_WT" worktree prune 2>/dev/null || true
-     rm -rf {worktree} 2>/dev/null || true
+     WT_BASENAME=$(basename {worktree})
+     if [[ "$WT_BASENAME" =~ ^issue-[0-9]+ ]] && [[ "{worktree}" == /* ]] && [[ "{worktree}" != "/" ]]; then
+       rm -rf {worktree} 2>/dev/null || true
+     fi
    }
    ```
 4. orchestrator に完了を通知して終了する:
@@ -243,6 +246,13 @@ if [ $((NOW - LAST_REPORT)) -ge "$REPORT_INTERVAL_SECONDS" ]; then
   CURRENT_LABELS=$(echo "$PR_JSON" | jq -r '[.labels[].name] | join(", ")')
   SendMessage(to: "orchestrator", "POLLING: issue-{issue_number} レビュー待機中 ${ELAPSED_MIN}分経過 / ラベル: ${CURRENT_LABELS}")
   LAST_REPORT=$NOW
+fi
+
+# 30 分タイムアウト
+if [ "$ELAPSED" -ge 1800 ]; then
+  PR_URL=$(echo "$PR_JSON" | jq -r '.url')
+  SendMessage(to: "orchestrator", "STUCK: issue-{issue_number} レビューポーリングが 30 分経過しました。PR: $PR_URL")
+  exit 0
 fi
 
 # QUEUED stuck 検知（CI check の QUEUED 固着）
