@@ -62,3 +62,27 @@ CI / ci-gate
 ## スクリプト
 
 - `scripts/update-main-ruleset.sh` — ruleset required check を `CI / ci-gate` に差し替える冪等スクリプト。環境変数 `REPO` / `RULESET_ID` / `REQUIRED_CHECK` で上書き可能。
+
+## stacked PR（base != main）対応
+
+### 背景
+
+`.github/workflows/ci.yml` は `pull_request.branches: [main, 'issue/**']` を trigger としている。
+これは「base branch が `main` もしくは `issue/**` にマッチする PR でのみ CI を発火させる」という指定。
+
+従来は `branches: [main]` のみだったため、base=`issue/<N>` の stacked PR では CI ワークフローが発火せず、
+reviewer エージェントが claude-review 結果を待ち続けて 30 分 timeout で STUCK するインシデントが発生した（Issue #1040）。
+
+### 挙動
+
+| PR の base | CI 発火 | 備考 |
+|---|---|---|
+| `main` | ✅ | 従来通り |
+| `issue/<N>` / `issue/<N>/<desc>` | ✅ | stacked PR 対応（本改修） |
+| その他（例: `release/**`） | ❌ | 必要になった時点で branches パターンを追加 |
+
+### 将来の拡張
+
+`release/**` / `hotfix/**` 等の新 prefix を導入する場合は `branches:` にパターンを追加する。
+`branches:` を省略して全 PR を対象にする案もあるが、想定外の base branch への PR で
+claude-review の OAuth トークンが消費されるリスクがあるため採用しない。
