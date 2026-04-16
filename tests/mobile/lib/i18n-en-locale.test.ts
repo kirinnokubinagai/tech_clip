@@ -8,7 +8,7 @@ import enTranslations from "../../../apps/mobile/src/locales/en.json";
 import jaTranslations from "../../../apps/mobile/src/locales/ja.json";
 
 /**
- * i18next plural サフィックス（compatibilityJSON v4 形式 / CLDR 準拠）
+ * i18next plural format v4（compatibilityJSON: 'v4'）の _one / _other サフィックスで plural 解決
  *
  * i18next v25 以降のデフォルト plural ルール。`_one` / `_other` などの
  * サフィックスが `count` の値に応じて自動解決される。
