@@ -103,7 +103,7 @@ grep -rE "sk_live|sk_test|password\s*=|secret\s*=" apps/ packages/ --include="*.
 
 結果: 出力なし（テスト・スペック・モック・.d.ts を除外）。ハードコードシークレットは検出されなかった。PASS
 
-> **備考**: 今回の grep は `.ts` ファイルのみを対象とした。`.tsx` / `.json` / `.yaml` / `.env` 等の設定ファイルに含まれるシークレットは別途確認が必要。次回リリース監査では grep 範囲を拡大することを推奨。
+> **検査範囲の制限（重要）**: 今回の grep は `--include="*.ts"` オプションにより `.ts` ファイルのみを対象としている。**`.tsx` / `.json` / `.yaml` / `.env` 等の設定ファイルは本 grep の対象外**であり、これらのファイルに含まれるシークレットは確認されていない。別途手動確認または追加 grep が必要。次回リリース監査では `--include="*.{ts,tsx,json,yaml,yml}"` 等に拡大することを推奨。
 
 ### pnpm audit --audit-level=high 結果
 
@@ -121,7 +121,7 @@ Severity: 1 low | 2 moderate | 1 high
 | moderate | nodemailer | SMTP コマンドインジェクション | apps__api>nodemailer |
 | low | nodemailer | SMTP コマンドインジェクション（別経路） | apps__api>nodemailer |
 
-対応方針: nodemailer のパッチバージョン（>=7.0.11）へのアップデートで解消可能。本リリースでは accepted risk とし、#905 後続でアップデート Issue を起票する（§ 5 参照）。nodemailer は開発・テスト用メール送信（Mailpit 連携）にのみ使用されており、本番環境での直接的な影響は限定的。
+対応方針: nodemailer のパッチバージョン（>=7.0.11）へのアップデートで解消可能。本リリースでは accepted risk とし、#905 後続でアップデート Issue を起票する（§ 5 参照）。nodemailer は `apps/api/package.json` の **`devDependencies`** に分類されており、`wrangler deploy` による Workers バンドルには含まれない。開発・テスト用メール送信（Mailpit 連携）にのみ使用されているため、本番環境への直接的な影響はない。
 
 ---
 
@@ -160,7 +160,7 @@ Severity: 1 low | 2 moderate | 1 high
 | リスク | 根拠 |
 |-------|------|
 | nodemailer 脆弱性（high 1件 / moderate 2件 / low 1件） | nodemailer は開発・テスト用途（Mailpit連携）のみで使用。本番 API ではメール送信に使用していない。DoS リスクは開発環境限定と判断 |
-| Expo export ローカル失敗 | EAS Build（クラウドビルド）では再現しない可能性が高い。#902/#903 のストアビルドにて確認する |
+| Expo export ローカル失敗 | **現時点では未確認**。EAS Build（クラウドビルド）では再現しない可能性が高いが、実際の再現有無は未確認。#902/#903 のストアビルド実行後に本レポート § 7 条件 1 のステータスを更新すること |
 | i18n 英語 plural 形未対応（#977） | UI 表示のみの問題で機能に影響なし。次リリースで対応 |
 | 残存ハードコード文言・相対時間表記（#958） | 画面表示のみの問題。次リリースで対応 |
 
@@ -217,7 +217,7 @@ Severity: 1 low | 2 moderate | 1 high
 
 - 全テスト（API 1486件 / Mobile 940件）が PASS であり、機能回帰は自動テストレベルで検出されない
 - blocker PR・Issue はすべて解消済み
-- Expo export の失敗はローカル環境固有の pnpm ホイスト問題であり、EAS Build では再現しない可能性が高い
+- Expo export の失敗はローカル環境固有の pnpm ホイスト問題と推測されるが、EAS Build での再現有無は**現時点で未確認**。#902/#903 完了後に確認が必要
 - nodemailer 脆弱性は本番 API での使用なし（開発・テスト用途のみ）
 
 ---
