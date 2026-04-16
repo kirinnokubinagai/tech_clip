@@ -51,7 +51,7 @@ CI / ci-gate (pull_request)
 >
 > 実観測: PR #1026〜#1036 において、`CI / ci-gate`（サフィックスなし）を required に設定したことで
 > PR が BLOCKED になり続けた。`CI / ci-gate (pull_request)` に修正後に解消した。
-
+```
 変更手順（順序厳守）:
 1. この PR をマージ（`CI / ci-gate` が CI 上に存在する状態にする）
 2. `bash scripts/update-main-ruleset.sh` を手動実行
@@ -70,7 +70,7 @@ CI / ci-gate (pull_request)
 
 ## スクリプト
 
-- `scripts/update-main-ruleset.sh` — ruleset required check を `CI / ci-gate` に差し替える冪等スクリプト。環境変数 `REPO` / `RULESET_ID` / `REQUIRED_CHECK` で上書き可能。
+- `scripts/update-main-ruleset.sh` — ruleset required check を `CI / ci-gate (pull_request)` に差し替える冪等スクリプト。環境変数 `REPO` / `RULESET_ID` / `REQUIRED_CHECK` で上書き可能。
 
 ## stacked PR の CI 発火制限
 
