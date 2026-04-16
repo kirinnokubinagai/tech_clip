@@ -143,8 +143,13 @@ jobs:
         run: nix develop .#ci --command pnpm typecheck
       - name: Test
         run: nix develop .#ci --command ./scripts/run-and-fail-on-stderr.sh pnpm test
-      - name: Audit
-        run: nix develop .#ci --command pnpm audit --prod
+      # Audit ステップは npm が audit エンドポイント (quick / bulk) を 410 Gone に
+      # したため pnpm audit が CI 上で常に失敗するようになった。pnpm 側が新 bulk
+      # advisory API に追従するまで一時無効化する。
+      # 参考: https://api-docs.npmjs.com/#tag/Audit
+      # TODO: pnpm が bulk advisory API に対応したら復活させる
+      # - name: Audit
+      #   run: nix develop .#ci --command pnpm audit --prod
 
   # ── Step 4（並列）: hooks テスト（hooks 変更時のみ）──────────────────────
   hooks-test:
@@ -200,20 +205,50 @@ jobs:
             /tmp/api.log
             /tmp/zap-daemon.log
 
-  # ── Step 6: 全チェック通過後に自動マージ ────────────────────────────────
+  # ── Step 6: CI ゲート（全チェックの合否を集約する required status check）──
+  # `if: always()` で前段 job が fail/skip されても必ず実行される。
+  # 自分自身が SUCCESS/FAILURE を明示するため SKIPPED にならず、
+  # ruleset の required check として安定して機能する。
+  ci-gate:
+    if: always()
+    needs: [claude-review, changes, checks, hooks-test, zap]
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Evaluate CI gate
+        env:
+          CHANGES_RESULT: ${{ needs.changes.result }}
+          REVIEW_RESULT: ${{ needs.claude-review.result }}
+          REVIEW_NEEDS_WORK: ${{ needs.claude-review.outputs.needs_work }}
+          CHECKS_RESULT: ${{ needs.checks.result }}
+          HOOKS_RESULT: ${{ needs.hooks-test.result }}
+          ZAP_RESULT: ${{ needs.zap.result }}
+        run: |
+          set -euo pipefail
+          fail=0
+          [ "${CHANGES_RESULT}" = "success" ] || { echo "::error::changes=${CHANGES_RESULT}"; fail=1; }
+          if [ "${REVIEW_RESULT}" != "success" ] && [ "${REVIEW_RESULT}" != "skipped" ]; then
+            echo "::error::claude-review=${REVIEW_RESULT}"; fail=1
+          fi
+          [ "${REVIEW_NEEDS_WORK}" != "true" ] || { echo "::error::needs_work=true"; fail=1; }
+          for name in CHECKS HOOKS ZAP; do
+            r="$(eval echo \$${name}_RESULT)"
+            if [ "$r" != "success" ] && [ "$r" != "skipped" ]; then
+              echo "::error::${name}=${r}"; fail=1
+            fi
+          done
+          [ "$fail" -eq 0 ] && echo "CI gate passed" || exit 1
+
+  # ── Step 7: 全チェック通過後に自動マージ ────────────────────────────────
+  # ci-gate が required status check を担うため、auto-merge は純粋なマージ操作のみを行う。
+  # required check ではないため SKIPPED になっても他 PR の merge 可否に影響しない。
   auto-merge:
     if: |
       always() &&
+      needs.ci-gate.result == 'success' &&
       github.event_name == 'pull_request' &&
-      github.actor != 'dependabot[bot]' &&
-      needs.changes.result == 'success' &&
-      needs.claude-review.outputs.needs_work != 'true' &&
-      (needs.checks.result == 'success' || needs.checks.result == 'skipped') &&
-      (needs.hooks-test.result == 'success' || needs.hooks-test.result == 'skipped') &&
-      (needs.zap.result == 'success' || needs.zap.result == 'skipped')
-    # needs.changes.result == 'success' は changes ジョブが正常完了した場合のみ自動マージを行う。
-    # changes ジョブが予期しない理由で失敗した場合は auto-merge がスキップされ、手動マージが必要になる。
-    needs: [claude-review, changes, checks, hooks-test, zap]
+      github.actor != 'dependabot[bot]'
+    needs: [ci-gate]
     runs-on: ubuntu-latest
     timeout-minutes: 5
     permissions:
