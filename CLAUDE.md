@@ -379,6 +379,47 @@ reviewer → 再レビューループへ（フェーズ 2 に戻る）
 
 ---
 
+## POLLING メッセージの扱いと生存確認 ping
+
+### ルール 1: POLLING メッセージは quiet log として扱う
+
+reviewer 系エージェントからは定期的に以下の形式のメッセージが届く（フォーマット定義は `.claude/agents/reviewer.md` を参照）:
+
+```
+POLLING: issue-N レビュー待機中 X分経過 / ラベル: ...
+```
+
+このメッセージは **quiet log** として扱い、orchestrator はユーザーへの直接通知を行わない（teammate-message の idle_notification と同じ扱い）。
+
+異常・完了・要対応を示す以下のメッセージはこれまで通りユーザーに報告する:
+- `APPROVED: issue-{N}` → 完了通知
+- `STUCK: issue-{N} ...` → 障害通知
+- `CHANGES_REQUESTED: ...` → 要対応通知
+- `WORKTREE_REMOVE_FAILED` → worktree 削除失敗通知
+
+### ルール 2: 10 分無音時の生存確認 ping
+
+reviewer 系エージェントから **10 分以上** 任意のメッセージが届かない場合、orchestrator は生存確認 ping を送る。
+
+**タイマー実装方針（pull 型）**: orchestrator はイベント駆動のため常時監視は行えない。他 Issue の `APPROVED:` / `POLLING:` 受信や別の SendMessage など、orchestrator のターンが回ってきたタイミングで「最後のメッセージ受信時刻」と現在時刻を比較し、10 分超過していれば ping を送る（pull 型チェック）。
+
+```
+SendMessage(to: "issue-{N}-reviewer",
+  "PING: 10分以上メッセージがないため生存確認します。現状を1行で報告してください")
+```
+
+- **応答あり**: 通常通りレビューループ継続
+- **5 分以内に応答なし**（計 15 分無音）: STUCK 判定としてユーザーに以下を報告する
+
+```
+issue-{N}-reviewer から 15 分以上応答がありません。reviewer が停止している可能性があります。
+手動確認または再 spawn を検討してください。
+```
+
+各 reviewer エージェントごとに独立してタイマー管理する（複数 Issue 並列処理時に他 Issue のタイマーと混同しない）。
+
+---
+
 ## Issue ごとのエージェント終了順序
 
 1. reviewer → PR MERGED を検知する
