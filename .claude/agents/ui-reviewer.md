@@ -61,7 +61,7 @@ LAST_REVIEW_TS="<push 直前の timestamp>"
 
 # Bash call with timeout: 600000
 for i in $(seq 1 20); do
-  NEW_TS=$(gh pr view {pr_number} --json comments --jq '[.comments[] | select(.author.login == "claude")] | last | .createdAt' 2>/dev/null)
+  NEW_TS=$(gh pr view {pr_number} --json comments --jq '[.comments[] | select(.body | contains("## PRレビュー結果"))] | last | .createdAt' 2>/dev/null)
   if [ -n "$NEW_TS" ] && [ "$NEW_TS" != "$LAST_REVIEW_TS" ]; then
     echo "NEW_REVIEW_AVAILABLE: $NEW_TS"
     exit 0
