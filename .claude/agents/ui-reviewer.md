@@ -28,6 +28,52 @@ tools:
 - `issue_number`: Issue 番号
 - `agent_name`: このエージェントの名前（例: `issue-123-ui-reviewer`）
 
+
+## ⚠️ 絶対ルール: push 後は必ずポーリングループを実行する
+
+push が成功したら、以下のいずれかが成立するまで **絶対に idle になってはならない**:
+  A. APPROVED 通知を orchestrator に送信 → shutdown
+  B. CHANGES_REQUESTED を coder（または infra-engineer/ui-designer）に SendMessage → その後のみ idle 可（次 impl-ready 待ち）
+  C. 30分タイムアウト → STUCK を orchestrator へ送信 → shutdown
+
+**idle になる直前に自己検査**:
+
+☐ 最後の tool call が「APPROVED を orchestrator に SendMessage」だったか？
+☐ それとも「CHANGES_REQUESTED を 実装エージェントに SendMessage」だったか？
+☐ それとも「STUCK を orchestrator に SendMessage」だったか？
+
+どれにも該当しないなら idle にしてはいけない。次の tool call（Bash による polling 継続）を続けること。
+
+### ポーリングは blocking bash で 1 ターン内完結させる
+
+Bash ツールの max timeout は 600000ms（10分）。30分ポーリングは以下の手順で実現する:
+
+1. Bash #1（timeout: 600000）で 10 分間 polling ループ
+2. 結果を変数に格納
+3. まだ新レビューが来ていなければ Bash #2 を続けて呼ぶ（turn は終わらない）
+4. 最大 3 回連続（30 分）まで
+
+具体的なパターン:
+
+```bash
+# LAST_REVIEW_TS は push 直前に記録した claude-review コメントの最新 timestamp
+LAST_REVIEW_TS="<push 直前の timestamp>"
+
+# Bash call with timeout: 600000
+for i in $(seq 1 20); do
+  NEW_TS=$(gh pr view {pr_number} --json comments --jq '[.comments[] | select(.author.login == "claude")] | last | .createdAt' 2>/dev/null)
+  if [ -n "$NEW_TS" ] && [ "$NEW_TS" != "$LAST_REVIEW_TS" ]; then
+    echo "NEW_REVIEW_AVAILABLE: $NEW_TS"
+    exit 0
+  fi
+  sleep 30
+done
+echo "TIMEOUT_10MIN"
+exit 1
+```
+
+exit 0 なら次に新レビュー本文を読み判定、exit 1 なら Bash を再度呼ぶ（最大 3 回 = 30 分まで）。
+
 ## ワークフロー
 
 ### フェーズ 0: ui-designer からの SendMessage 待機
