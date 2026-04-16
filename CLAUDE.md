@@ -147,6 +147,7 @@ jq が使えない環境では `gh issue list --state open --limit 100 --json nu
 - **エージェントは標準ワークフローから外れる判断を独断で行わない。必ず `AskUserQuestion` ツールで orchestrator または人間ユーザーに確認する**
 - **判断の分類**: 通常フロー内 = 自律実行 / ワークフロー逸脱 = `AskUserQuestion` 必須
   - 逸脱例: 必須フローのスキップ、CHANGES_REQUESTED の軽微判断による省略、worktree/PR の通常外 close/削除、conflict の自己判断解消、CI bypass、別 branch への pivot、「resolved」と独断判定して終了
+- **PR の状態を調査・判断する際は「オーケストレーター PR 状態調査ルール」を必ず参照する**（mergeable のみ / conclusion のみ / protection のみを見る調査は禁止）
 
 ---
 
@@ -535,3 +536,78 @@ bash ./.codex/run-stop.sh
 ## 目的
 
 [`.codex/`](./.codex) 配下のファイルは、Claude 用に既に存在する hook とルールを Codex からも同じように使えるようにするための薄いラッパーです。ルール本体を二重管理しないことを優先します。
+
+---
+
+## オーケストレーター PR 状態調査ルール（必須）
+
+PR のマージ可否・レビュー完了を判断する際は、以下を**すべて**確認する。
+1 つでも省略したら誤判定する可能性があるため例外はない。
+
+### Step 1: PR 基本状態
+
+```bash
+gh pr view <N> --json state,mergeable,mergeStateStatus,reviewDecision,reviews,statusCheckRollup
+```
+
+**重要な理解:**
+- `mergeable` は **diff コンフリクト有無** だけを見る
+- マージ可否の真の指標は `mergeStateStatus`:
+  - `CLEAN`: マージ可能
+  - `BLOCKED`: ルール or 必須 check 不成立でブロック
+  - `BEHIND`: base ブランチが進んでいる
+  - `DIRTY`: コンフリクト
+  - `HAS_HOOKS`: pre-receive hook 付き
+  - `UNSTABLE`: 非必須 check が fail
+
+### Step 2: PR コメント（bot comment 含む）
+
+```bash
+gh pr view <N> --comments
+```
+
+- claude-review bot のコメント本文を**全文読む**
+- 以下は CI job の `conclusion` とは**別**の情報:
+  - 「Request Changes」「🔄」「❌」「要修正」等の判定
+  - 改善提案の数（「💡」「🟡」「🔴」）
+- 1 件でも改善提案があれば修正対象（軽微でも後追いにしない）
+
+### Step 3: CI checks
+
+```bash
+gh pr checks <N>
+```
+
+**SKIPPED の扱いに注意:**
+- required status check の `SKIPPED` は **未実行扱い** で fail とみなされる
+- path filter 等で skip された check も required なら merge をブロックする
+- `SUCCESS` が唯一の「通過」状態
+
+### Step 4: Rulesets
+
+```bash
+gh api repos/<owner>/<repo>/rulesets
+gh api repos/<owner>/<repo>/rulesets/<id>
+```
+
+**重要**: `branches/<base>/protection` エンドポイントだけでは ruleset を検出できない。
+新しい GitHub の branch protection は Rulesets として実装されており、別 API で確認する必要がある。
+
+ruleset の `rules[].parameters.required_status_checks` を見て、どの check が必須か確認する。
+
+### Step 5: 判定
+
+すべての情報を総合して以下をすべて満たす場合のみ「APPROVED 相当」と判定してよい:
+
+- `mergeStateStatus == CLEAN` かつ
+  （CLEAN は required status checks・required reviews 両方の通過を含む。`reviewDecision` は補足確認として参照してよい）
+- claude-review bot コメントに改善提案なし かつ
+- required check がすべて `SUCCESS`（`SKIPPED` は含まない）
+
+### 禁止事項
+
+- `SKIPPED = 問題なし` と決めつける
+- `conclusion: SUCCESS` だけを見て判定する
+- bot コメント本文を読まない
+- `branches/.../protection` だけ見て ruleset を無視する
+- 「軽微な改善提案だから無視」と自己判断する
