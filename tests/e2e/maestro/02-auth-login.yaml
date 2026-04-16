@@ -27,6 +27,7 @@ env:
 # --- ログイン画面 ---
 - assertVisible: "ログイン"
 - assertVisible: "メールアドレス"
+- takeScreenshot: screenshots/02-auth-login/01-login-screen
 
 # メールアドレス入力
 - tapOn:
@@ -55,6 +56,7 @@ env:
 
 # ホーム画面に遷移することを確認
 - assertVisible: "すべて"
+- takeScreenshot: screenshots/02-auth-login/02-home-after-login
 
 # --- バリデーションエラーのテスト ---
 - launchApp:

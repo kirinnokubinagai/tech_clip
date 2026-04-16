@@ -108,6 +108,7 @@ git -C {worktree} rev-parse HEAD
 reviewer からの SendMessage を待機する。`APPROVED`、`CHANGES_REQUESTED:`、`CONFLICT:` プレフィックスのメッセージを処理する。
 
 - **`APPROVED`**: 終了する
+- **`shutdown_request` 受信**: 即 `shutdown_response` (`approve: true`) を返してから終了する
 - **`CHANGES_REQUESTED: <feedback>`**: feedback の内容を読んで修正 → フェーズ 3 に戻る（lint → commit → impl-ready 送信 → 待機継続）
 - **`CONFLICT: <ファイル一覧>`**: コンフリクト解消フローを実行 → フェーズ 3 に戻る
 
@@ -167,3 +168,28 @@ cd {worktree} && git add . && git commit -m "fix: コンフリクト解消"
 ## 出力言語
 
 すべての出力（コミットメッセージを除く）は日本語で行う。
+
+## 標準ワークフローから外れる判断の禁止
+
+以下のような判断は agent 単独で行わず、必ず `AskUserQuestion` ツールで orchestrator / 人間ユーザーに確認すること:
+
+- CLAUDE.md に記載された必須フローをスキップしたい
+- 改善提案や CHANGES_REQUESTED を「軽微だから後追い」と判断したい
+- worktree や PR を close / 削除したい（通常フロー以外で）
+- conflict 解消を自分の判断で進めたい（自力で解消せず、両側の意図を確認してから）
+- ruleset や CI 設定を bypass したい
+- 別 branch / 別 PR に pivot したい
+- 「resolved」「already fixed」と判定して作業を終了したい
+- 別 PR のコミットと自ブランチのコミットを混同しそうな状況
+
+禁止事項:
+
+- 上記を独断で実行する
+- 「軽微だから省略する」と自己判断する
+- 「文脈的に明らか」と決めつける
+- ユーザーへの確認を省略する
+
+例外:
+
+- 通常フローの範囲内の作業（コード修正、テスト、lint チェック、SendMessage 等）
+- CLAUDE.md に明記された自動化処理
