@@ -62,7 +62,11 @@ export default function TabLayout() {
                   testID="tab-badge"
                   style={{ backgroundColor: colors.favorite }}
                   className="absolute -top-1 -right-2 rounded-full min-w-[16px] h-4 items-center justify-center px-1"
-                  accessibilityLabel={`未読通知${unreadCount > BADGE_MAX_COUNT ? `${BADGE_MAX_COUNT}件以上` : `${unreadCount}件`}`}
+                  accessibilityLabel={
+                    unreadCount > BADGE_MAX_COUNT
+                      ? t("notifications.unreadBadgeLabelOver", { max: BADGE_MAX_COUNT })
+                      : t("notifications.unreadBadgeLabel", { count: unreadCount })
+                  }
                 >
                   <Text className="text-white text-[10px] font-bold">
                     {unreadCount > BADGE_MAX_COUNT ? `${BADGE_MAX_COUNT}+` : String(unreadCount)}

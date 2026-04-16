@@ -74,6 +74,17 @@ spec ドキュメントを `{worktree}/docs/superpowers/specs/YYYY-MM-DD-<topic>
 
 その後終了する。
 
+### spec ファイルのクリーンアップ
+
+Issue の完了通知（reviewer から `APPROVED` メッセージを受け取った場合、または一定期間後）に自分が作成した一時ファイルを削除する:
+
+```bash
+# 自分が作成した spec ファイルを削除
+find /tmp -maxdepth 1 -name "issue-{issue_number}-*" -delete 2>/dev/null || true
+```
+
+なお、`check-worktrees.sh` の SessionStart hook が 24 時間以上前の `/tmp/issue-*` ファイルを自動削除するため、手動削除が間に合わない場合でも次回セッション開始時にクリーンアップされる。
+
 ## 出力規約
 
 - 設計完了時: SendMessage 送信後に `spec: {spec_file_path}` の形式でパスを返し、1 行の実装方針サマリーを添える
@@ -82,3 +93,42 @@ spec ドキュメントを `{worktree}/docs/superpowers/specs/YYYY-MM-DD-<topic>
 ## 出力言語
 
 すべての出力は日本語で行う。
+
+## shutdown 条件
+
+spec を実装エージェントに SendMessage 送信した後、以下のいずれかで自発 shutdown する:
+
+1. **ack 受信 + 10 分アイドル**: 実装エージェントから任意のメッセージ (spec-received / 質問 / impl-ready など) を受信後、10 分間新しいメッセージがなければ shutdown する
+2. **ack なし + 15 分アイドル**: spec 送信から 15 分経過しても ack がない場合 → shutdown する (ack 機能がない既存実装への fallback)
+3. **reviewer からの APPROVED 受信**: 即 shutdown する
+4. **orchestrator / reviewer からの shutdown_request 受信**: 即 shutdown_response (approve: true) を返してから shutdown する
+
+shutdown 前に必ず以下を実行する:
+
+```bash
+find /tmp -maxdepth 1 -name "issue-{issue_number}-*" -delete 2>/dev/null || true
+```
+
+## 標準ワークフローから外れる判断の禁止
+
+以下のような判断は agent 単独で行わず、必ず `AskUserQuestion` ツールで orchestrator / 人間ユーザーに確認すること:
+
+- CLAUDE.md に記載された必須フローをスキップしたい
+- 改善提案や CHANGES_REQUESTED を「軽微だから後追い」と判断したい
+- worktree や PR を close / 削除したい（通常フロー以外で）
+- conflict 解消を自分の判断で進めたい
+- ruleset や CI 設定を bypass したい
+- 別 branch / 別 PR に pivot したい
+- 「resolved」「already fixed」と判定して作業を終了したい
+
+禁止事項:
+
+- 上記を独断で実行する
+- 「軽微だから省略する」と自己判断する
+- 「文脈的に明らか」と決めつける
+- ユーザーへの確認を省略する
+
+例外:
+
+- 通常フローの範囲内の作業（要件整理、spec 作成、SendMessage 等）
+- CLAUDE.md に明記された自動化処理

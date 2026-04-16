@@ -1,4 +1,5 @@
 import { NotificationItem } from "@mobile/components/NotificationItem";
+import i18n from "@mobile/lib/i18n";
 import { fireEvent, render } from "@testing-library/react-native";
 
 /** テスト用の通知データ（未読） */
@@ -152,6 +153,48 @@ describe("NotificationItem", () => {
 
       // Assert
       expect(onPress).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  describe("英語ロケールでの相対時間表示", () => {
+    beforeEach(async () => {
+      await i18n.changeLanguage("en");
+    });
+
+    afterEach(async () => {
+      await i18n.changeLanguage("ja");
+    });
+
+    it("英語ロケールで3時間前がhours agoと表示されること", async () => {
+      // Arrange
+      const threeHoursAgoNotification = {
+        ...UNREAD_NOTIFICATION,
+        createdAt: new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString(),
+      };
+
+      // Act
+      const { getByTestId } = await render(
+        <NotificationItem notification={threeHoursAgoNotification} onPress={() => {}} />,
+      );
+
+      // Assert
+      expect(getByTestId("notification-time").props.children).toBe("3 hours ago");
+    });
+
+    it("英語ロケールで数秒前がJust nowと表示されること", async () => {
+      // Arrange
+      const justNowNotification = {
+        ...UNREAD_NOTIFICATION,
+        createdAt: new Date(Date.now() - 5 * 1000).toISOString(),
+      };
+
+      // Act
+      const { getByTestId } = await render(
+        <NotificationItem notification={justNowNotification} onPress={() => {}} />,
+      );
+
+      // Assert
+      expect(getByTestId("notification-time").props.children).toBe("Just now");
     });
   });
 });

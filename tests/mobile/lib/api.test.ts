@@ -25,6 +25,7 @@ import {
   apiFetch,
   SessionExpiredError,
 } from "@mobile/lib/api";
+import i18n from "@mobile/lib/i18n";
 import {
   clearAuthTokens,
   getAuthToken,
@@ -79,8 +80,9 @@ function createFetchResponse(body: unknown, options: CreateFetchResponseOptions 
 }
 
 describe("apiFetch", () => {
-  beforeEach(() => {
+  beforeEach(async () => {
     jest.clearAllMocks();
+    await i18n.changeLanguage("ja");
     mockGetAuthToken.mockResolvedValue("valid-access-token");
     mockGetRefreshToken.mockResolvedValue("valid-refresh-token");
     mockSetAuthToken.mockResolvedValue(undefined);
@@ -605,6 +607,52 @@ describe("apiFetch", () => {
 
       // Act & Assert
       await expect(apiFetch("/articles")).rejects.toBeInstanceOf(ApiHttpError);
+    });
+  });
+
+  describe("英語ロケールでのエラーメッセージ", () => {
+    beforeEach(async () => {
+      await i18n.changeLanguage("en");
+    });
+
+    afterEach(async () => {
+      await i18n.changeLanguage("ja");
+    });
+
+    it("タイムアウト時はApiNetworkErrorのmessageが英語になること", async () => {
+      // Arrange
+      const abortError = new Error("The operation was aborted");
+      abortError.name = "AbortError";
+      mockFetch.mockRejectedValue(abortError);
+
+      // Act
+      let caughtError: unknown;
+      try {
+        await apiFetch("/articles");
+      } catch (e) {
+        caughtError = e;
+      }
+
+      // Assert
+      expect(caughtError).toBeInstanceOf(ApiNetworkError);
+      expect((caughtError as ApiNetworkError).message).toBe("Request timed out");
+    });
+
+    it("ネットワークエラー時はApiNetworkErrorのmessageが英語になること", async () => {
+      // Arrange
+      mockFetch.mockRejectedValue(new TypeError("Network request failed"));
+
+      // Act
+      let caughtError: unknown;
+      try {
+        await apiFetch("/articles");
+      } catch (e) {
+        caughtError = e;
+      }
+
+      // Assert
+      expect(caughtError).toBeInstanceOf(ApiNetworkError);
+      expect((caughtError as ApiNetworkError).message).toBe("No network connection");
     });
   });
 

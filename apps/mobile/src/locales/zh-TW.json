@@ -162,6 +162,7 @@
     "urlInvalid": "請輸入有效的URL",
     "noMatch": "沒有符合「{{query}}」的文章",
     "backA11yLabel": "返回",
+    "backA11yHint": "返回上一個頁面",
     "generating": "生成中..."
   },
   "search": {
@@ -178,7 +179,10 @@
     "empty": "沒有通知",
     "emptyDescription": "有新通知時將顯示在這裡",
     "fetchError": "取得通知失敗",
-    "loadingNotifications": "載入中..."
+    "loadingNotifications": "載入中...",
+    "retryHint": "重新取得通知",
+    "unreadBadgeLabel": "{{count}}則未讀通知",
+    "unreadBadgeLabelOver": "{{max}}則以上未讀通知"
   },
   "profile": {
     "followersLabel": "追蹤者",
@@ -363,6 +367,38 @@
       "nextPageHint": "前往第{{next}}頁",
       "skipHint": "跳過引導並前往登入畫面",
       "startHint": "前往建立帳號畫面"
+    }
+  },
+  "time": {
+    "justNow": "剛剛",
+    "minutesAgo": "{{count}}分鐘前",
+    "hoursAgo": "{{count}}小時前",
+    "daysAgo": "{{count}}天前",
+    "weeksAgo": "{{count}}週前",
+    "monthsAgo": "{{count}}個月前",
+    "yearsAgo": "{{count}}年前"
+  },
+  "api": {
+    "errors": {
+      "timeout": "請求逾時",
+      "network": "無法連線至網路",
+      "httpGeneric": "發生伺服器錯誤",
+      "parse": "解析回應失敗",
+      "sessionExpired": "工作階段已過期，請重新登入。",
+      "status": {
+        "400": "請求無效",
+        "403": "您沒有權限執行此操作",
+        "404": "找不到資源",
+        "408": "請求逾時",
+        "409": "發生衝突",
+        "413": "提交資料過大",
+        "422": "請確認您的輸入",
+        "429": "請求過多，請稍後再試。",
+        "500": "發生伺服器錯誤",
+        "502": "無法連線至伺服器",
+        "503": "服務暫時無法使用",
+        "504": "伺服器回應逾時"
+      }
     }
   },
   "shareIntent": {

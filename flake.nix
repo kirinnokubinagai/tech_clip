@@ -92,7 +92,6 @@
           buildInputs = with pkgs; [
             nodejs_22
             pnpm
-            nodePackages.wrangler
             turbo
             biome
             gh
@@ -122,6 +121,9 @@
             if [ -x "$HOME/.local/bin/claude" ]; then
               export PATH="$HOME/.local/bin:$PATH"
             fi
+
+            # wrangler は nixpkgs の nodePackages から削除されたため npx ラッパーで提供
+            wrangler() { npx --yes wrangler@latest "$@"; }
 
             # eas-cli は nixpkgs にないため npx ラッパーで提供
             # fish/zsh 互換のため export -f は使用しない（bash 専用構文）

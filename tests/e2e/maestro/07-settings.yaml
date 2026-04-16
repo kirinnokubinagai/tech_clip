@@ -23,6 +23,7 @@ env:
 
 # --- 設定画面 ---
 - assertVisible: "アカウント"
+- takeScreenshot: screenshots/07-settings/01-settings-screen
 - assertVisible: "サブスクリプション"
 - assertVisible: "一般"
 - assertVisible: "アカウント管理"
@@ -86,3 +87,4 @@ env:
 - waitForAnimationToEnd
 # ログイン画面に遷移することを確認
 - assertVisible: "ログイン"
+- takeScreenshot: screenshots/07-settings/02-after-logout
