@@ -34,13 +34,13 @@ tools:
 push が成功したら、以下のいずれかが成立するまで **絶対に idle になってはならない**:
   A. APPROVED 通知を orchestrator に送信 → shutdown
   B. CHANGES_REQUESTED を coder（または infra-engineer/ui-designer）に SendMessage → その後のみ idle 可（次 impl-ready 待ち）
-  C. 30分タイムアウト → STUCK を orchestrator へ送信 → shutdown
+  C. 30分タイムアウト → POLLING_TIMEOUT を orchestrator へ送信 → shutdown
 
 **idle になる直前に自己検査**:
 
 ☐ 最後の tool call が「APPROVED を orchestrator に SendMessage」だったか？
 ☐ それとも「CHANGES_REQUESTED を 実装エージェントに SendMessage」だったか？
-☐ それとも「STUCK を orchestrator に SendMessage」だったか？
+☐ それとも「POLLING_TIMEOUT を orchestrator に SendMessage」だったか？
 
 どれにも該当しないなら idle にしてはいけない。次の tool call（Bash による polling 継続）を続けること。
 
