@@ -271,6 +271,22 @@ if [ "$QUEUED_COUNT" -gt 0 ]; then
 else
   LAST_STATUS=""
 fi
+
+# 外部マージ検知（フェーズ 6 内での早期検知）
+if [ "$STATE" = "MERGED" ]; then
+  SendMessage(to: "orchestrator", "APPROVED: issue-{issue_number} (外部マージ検知)")
+  exit 0
+fi
+
+# origin/main との conflict 予測（polling 中に定期チェック）
+if [ "$STATE" = "OPEN" ] && [ "$MERGE_STATE" != "BEHIND" ] && [ "$MERGE_STATE" != "DIRTY" ] && [ "$MERGE_STATE" != "CONFLICTING" ]; then
+  git -C {worktree} fetch origin main --quiet 2>/dev/null || true
+  if ! git -C {worktree} merge-tree --write-tree --no-messages origin/main HEAD > /dev/null 2>&1; then
+    CONFLICT_FILES=$(git -C {worktree} merge-tree --name-only origin/main HEAD 2>/dev/null | head -20 || echo "（ファイル一覧取得失敗）")
+    SendMessage(to: "issue-{issue_number}-analyst", "CONFLICT_INVESTIGATE: origin/main との間に conflict が発生しました。ファイル: ${CONFLICT_FILES}")
+    exit 0
+  fi
+fi
 ```
 
 #### 判定マトリクス（上から順に else-if で評価）
@@ -303,8 +319,8 @@ git fetch origin main
 if git merge --no-commit --no-ff origin/main 2>&1 | grep -q "CONFLICT"; then
   CONFLICT_FILES=$(git diff --name-only --diff-filter=U)
   git merge --abort
-  # SendMessage(to: "issue-{issue_number}-coder", "CONFLICT: 以下を解消してください: $CONFLICT_FILES")
-  # フェーズ 0 に戻る
+  SendMessage(to: "issue-{issue_number}-analyst", "CONFLICT_INVESTIGATE: origin/main との間に conflict が発生しました。ファイル: ${CONFLICT_FILES}")
+  # フェーズ 0 に戻り、analyst → coder → impl-ready を待つ
 else
   git merge --abort 2>/dev/null || true
   # clean merge 可能 → BRANCH B にフォールスルー
@@ -339,8 +355,8 @@ if git merge origin/main --no-edit; then
 else
   CONFLICT_FILES=$(git diff --name-only --diff-filter=U)
   git merge --abort
-  # SendMessage(to: "issue-{issue_number}-coder", "CONFLICT: $CONFLICT_FILES")
-  # フェーズ 0 に戻る
+  SendMessage(to: "issue-{issue_number}-analyst", "CONFLICT_INVESTIGATE: merge origin/main 中に conflict が発生しました。ファイル: ${CONFLICT_FILES}")
+  # フェーズ 0 に戻り、analyst → coder → impl-ready を待つ
 fi
 ```
 
