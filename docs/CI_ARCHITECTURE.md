@@ -9,6 +9,9 @@ changes ────────┼──> checks ────┐
                 └──> zap ───────┘
 ```
 
+`checks` / `hooks-test` / `zap` はいずれも `needs: [claude-review, changes]` を持つため、
+`claude-review` → `checks` の依存関係が図に反映されています。
+
 | Job | トリガー | 役割 |
 |---|---|---|
 | `claude-review` | PR のみ | AI コードレビュー・ラベル付与 |
@@ -49,6 +52,32 @@ CI / ci-gate
 
 ⚠️ 逆順で実行すると `CI / ci-gate` が存在しない状態で required になり全 PR が BLOCKED になる。
 
+## ロールバック / 緊急復旧
+
+`CI / ci-gate` が存在しない、または誤った context が required になって全 PR が BLOCKED になった場合の手順:
+
+### required status check を旧 context に戻す
+
+```bash
+REQUIRED_CHECK="CI / auto-merge" bash scripts/update-main-ruleset.sh
+```
+
+### required status check を一時的に無効化する
+
+```bash
+RULESET_ID=14698666
+REPO=kirinnokubinagai/tech_clip
+current=$(gh api "repos/${REPO}/rulesets/${RULESET_ID}")
+payload=$(echo "$current" | jq '
+  . + {
+    rules: [.rules[] | select(.type != "required_status_checks")]
+  }
+')
+echo "$payload" | gh api --method PUT "repos/${REPO}/rulesets/${RULESET_ID}" --input -
+```
+
+無効化後に正しい context で `scripts/update-main-ruleset.sh` を再実行すること。
+
 ## イベント別動作
 
 | イベント | claude-review | ci-gate | auto-merge |
@@ -61,4 +90,4 @@ CI / ci-gate
 
 ## スクリプト
 
-- `scripts/update-main-ruleset.sh` — ruleset required check を `CI / ci-gate` に差し替える冪等スクリプト。環境変数 `REPO` / `RULESET_ID` / `REQUIRED_CHECK` で上書き可能。
+- `scripts/update-main-ruleset.sh` — ruleset の `required_status_checks` タイプのみを `CI / ci-gate` に差し替える冪等スクリプト。他の rule type (pull_request / non_fast_forward / deletion 等) は保持する。環境変数 `REPO` / `RULESET_ID` / `REQUIRED_CHECK` で上書き可能。
