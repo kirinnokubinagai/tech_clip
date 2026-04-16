@@ -100,8 +100,9 @@ fi
 
 - **コンフリクトなし**: そのままフェーズ 3 へ進む
 - **コンフリクトあり**: 以下を実行してフェーズ 0 に戻る
-  1. `SendMessage(to: "issue-{issue_number}-coder", "CONFLICT: origin/main とコンフリクトが発生しています。以下のファイルを解消してください: <ファイル一覧>")`
-  2. フェーズ 0 に戻り、次の impl-ready を待つ
+  1. コンフリクトファイル一覧を取得: `CONFLICT_FILES=$(git -C {worktree} diff --name-only --diff-filter=U)`
+  2. `SendMessage(to: "issue-{issue_number}-analyst", "CONFLICT_INVESTIGATE: origin/main との間に conflict が発生しました。両側の変更意図を調査して coder に両立方針を渡してください。ファイル: ${CONFLICT_FILES}")`
+  3. フェーズ 0 に戻り、analyst → coder → impl-ready を待つ
 
 ### フェーズ 3: レビュー実行
 
@@ -282,9 +283,10 @@ fi
 if [ "$STATE" = "OPEN" ] && [ "$MERGE_STATE" != "BEHIND" ] && [ "$MERGE_STATE" != "DIRTY" ] && [ "$MERGE_STATE" != "CONFLICTING" ]; then
   git -C {worktree} fetch origin main --quiet 2>/dev/null || true
   if ! git -C {worktree} merge-tree --write-tree --no-messages origin/main HEAD > /dev/null 2>&1; then
-    CONFLICT_FILES=$(git -C {worktree} merge-tree --name-only origin/main HEAD 2>/dev/null | head -20 || echo "（ファイル一覧取得失敗）")
+    CONFLICT_FILES=$(git -C {worktree} merge-tree --name-only origin/main HEAD 2>/dev/null | head -20 || git -C {worktree} status --porcelain | grep "^UU" | awk '{print $2}' | head -20 || echo "（ファイル一覧取得失敗。git status で確認してください）")
     SendMessage(to: "issue-{issue_number}-analyst", "CONFLICT_INVESTIGATE: origin/main との間に conflict が発生しました。ファイル: ${CONFLICT_FILES}")
-    exit 0
+    # フェーズ 0 に戻り、analyst → coder → impl-ready を待つ（reviewer は終了せず待機継続）
+    break
   fi
 fi
 ```

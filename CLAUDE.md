@@ -549,7 +549,8 @@ oh-my-claudecode やその他のプラグイン由来のエージェントは使
 
 - analyst → 実装エージェントへ SendMessage（`spec: <パス>\n方針: <サマリー>`）
 - 実装エージェント → レビュワーへ SendMessage（`impl-ready: <commit-hash>`）
-- レビュワー → 実装エージェントへ SendMessage（`APPROVED` / `CHANGES_REQUESTED: <内容>` / `CONFLICT: <内容>`）
+- レビュワー → 実装エージェントへ SendMessage（`APPROVED` / `CHANGES_REQUESTED: <内容>`）
+- レビュワー → analyst へ SendMessage（`CONFLICT_INVESTIGATE: <ファイル一覧>`）→ analyst が spec 作成後、実装エージェントへ `CONFLICT_RESOLVE: spec=<path>`
 - レビュワー → orchestrator へ SendMessage（`APPROVED: issue-{N}`）
 - 各エージェントは Issue に紐づく worktree 内で動作させる
 - 複数 Issue の場合は「複数 Issue の並列処理」セクションを参照

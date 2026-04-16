@@ -85,17 +85,17 @@ git -C {worktree} merge --no-commit --no-ff origin/main 2>&1
 ```
 
 コンフリクトが検出された場合:
-```text
-SendMessage(
-  to: "issue-{issue_number}-ui-designer",
-  message: "CONFLICT: コンフリクトが発生しています。解消してから再度 impl-ready を送信してください。
-詳細: <コンフリクトファイル一覧>"
-)
-```
-送信後、マージを中断してフェーズ 0 に戻る:
 ```bash
+CONFLICT_FILES=$(git -C {worktree} diff --name-only --diff-filter=U)
 git -C {worktree} merge --abort
 ```
+```text
+SendMessage(
+  to: "issue-{issue_number}-analyst",
+  message: "CONFLICT_INVESTIGATE: origin/main との間に conflict が発生しました。両側の変更意図を調査して ui-designer に両立方針を渡してください。ファイル: ${CONFLICT_FILES}"
+)
+```
+送信後、フェーズ 0 に戻り analyst → ui-designer → impl-ready を待つ。
 
 ### フェーズ 2: 事前チェック（必須）
 
@@ -285,9 +285,10 @@ fi
 if [ "$STATE" = "OPEN" ] && [ "$MERGE_STATE" != "BEHIND" ] && [ "$MERGE_STATE" != "DIRTY" ] && [ "$MERGE_STATE" != "CONFLICTING" ]; then
   git -C {worktree} fetch origin main --quiet 2>/dev/null || true
   if ! git -C {worktree} merge-tree --write-tree --no-messages origin/main HEAD > /dev/null 2>&1; then
-    CONFLICT_FILES=$(git -C {worktree} merge-tree --name-only origin/main HEAD 2>/dev/null | head -20 || echo "（ファイル一覧取得失敗）")
+    CONFLICT_FILES=$(git -C {worktree} merge-tree --name-only origin/main HEAD 2>/dev/null | head -20 || git -C {worktree} status --porcelain | grep "^UU" | awk '{print $2}' | head -20 || echo "（ファイル一覧取得失敗。git status で確認してください）")
     SendMessage(to: "issue-{issue_number}-analyst", "CONFLICT_INVESTIGATE: origin/main との間に conflict が発生しました。ファイル: ${CONFLICT_FILES}")
-    exit 0
+    # フェーズ 0 に戻り、analyst → ui-designer → impl-ready を待つ（reviewer は終了せず待機継続）
+    break
   fi
 fi
 ```
@@ -322,8 +323,8 @@ git fetch origin main
 if git merge --no-commit --no-ff origin/main 2>&1 | grep -q "CONFLICT"; then
   CONFLICT_FILES=$(git diff --name-only --diff-filter=U)
   git merge --abort
-  # SendMessage(to: "issue-{issue_number}-analyst", "CONFLICT_INVESTIGATE: origin/main とコンフリクトが発生しています。両側の変更意図を調査して coder に両立方針を渡してください。コンフリクトファイル: $CONFLICT_FILES")
-  # フェーズ 0 に戻る
+  SendMessage(to: "issue-{issue_number}-analyst", "CONFLICT_INVESTIGATE: origin/main とコンフリクトが発生しています。両側の変更意図を調査して ui-designer に両立方針を渡してください。コンフリクトファイル: $CONFLICT_FILES")
+  # フェーズ 0 に戻り、analyst → ui-designer → impl-ready を待つ
 else
   git merge --abort 2>/dev/null || true
   # clean merge 可能 → BRANCH B にフォールスルー

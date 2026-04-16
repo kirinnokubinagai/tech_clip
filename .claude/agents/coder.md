@@ -105,7 +105,7 @@ git -C {worktree} rev-parse HEAD
 
 ### フェーズ 6: reviewer からの返答待機ループ
 
-reviewer からの SendMessage を待機する。`APPROVED`、`CHANGES_REQUESTED:`、`CONFLICT:` プレフィックスのメッセージを処理する。
+reviewer からの SendMessage を待機する。`APPROVED`、`CHANGES_REQUESTED:`、`CONFLICT_RESOLVE:` プレフィックスのメッセージを処理する。
 
 - **`APPROVED`**: 終了する
 - **`shutdown_request` 受信**: 即 `shutdown_response` (`approve: true`) を返してから終了する
