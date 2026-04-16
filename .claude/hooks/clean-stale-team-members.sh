@@ -37,6 +37,12 @@ while IFS= read -r name; do
     --state all --json state,mergedAt --jq '.[0] // empty' 2>/dev/null || echo "")
 
   if [ -z "$PR_STATE" ]; then
+    PR_STATE=$(gh pr list --repo "$REPO_SLUG" \
+      --search "head:issue/${ISSUE_NUM}/" \
+      --state all --json state,mergedAt --jq '.[0] // empty' 2>/dev/null || echo "")
+  fi
+
+  if [ -z "$PR_STATE" ]; then
     BRANCH_EXISTS=$(git -C "$REPO_ROOT" branch -a 2>/dev/null | grep -c "issue/${ISSUE_NUM}/" || echo "0")
     if [ "$BRANCH_EXISTS" = "0" ]; then
       STALE_NAMES="${STALE_NAMES} ${name}"
