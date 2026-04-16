@@ -9,7 +9,7 @@ cd "$REPO_ROOT"
 CURRENT_BRANCH=$(git branch --show-current 2>/dev/null || echo "")
 
 # uncommitted changes があるときは安全のためスキップ
-if ! git diff --quiet 2>/dev/null || ! git diff --cached --quiet 2>/dev/null; then
+if [ -n "$(git status --porcelain 2>/dev/null)" ]; then
   echo '{"hookSpecificOutput":{"hookEventName":"SessionStart","additionalContext":"[auto-sync] uncommitted changes あり。sync をスキップ"}}'
   exit 0
 fi
@@ -30,9 +30,9 @@ if [ -n "$COMMON_GIT_DIR" ]; then
         MAIN_DIRTY=$(git -C "$MAIN_WT_ROOT" status --porcelain 2>/dev/null | head -1 || echo "")
         if [ -z "$MAIN_DIRTY" ]; then
           if git -C "$MAIN_WT_ROOT" merge --ff-only origin/main --quiet 2>/dev/null; then
-            MESSAGES="${MESSAGES}[auto-sync] main worktree を origin/main へ FF merge しました。"
+            MESSAGES="${MESSAGES}${MESSAGES:+$'\n'}[auto-sync] main worktree を origin/main へ FF merge しました。"
           else
-            MESSAGES="${MESSAGES}[auto-sync] ⚠️ main worktree の FF merge 失敗（non-FF 状態）。"
+            MESSAGES="${MESSAGES}${MESSAGES:+$'\n'}[auto-sync] ⚠️ main worktree の FF merge 失敗（non-FF 状態）。"
           fi
         fi
       fi
@@ -45,9 +45,9 @@ if [ -n "$COMMON_GIT_DIR" ]; then
       REMOTE=$(git rev-parse origin/main 2>/dev/null || echo "")
       if [ -n "$LOCAL" ] && [ -n "$REMOTE" ] && [ "$LOCAL" != "$REMOTE" ]; then
         if git merge --ff-only origin/main --quiet 2>/dev/null; then
-          MESSAGES="${MESSAGES}[auto-sync] main を origin/main へ FF merge しました。"
+          MESSAGES="${MESSAGES}${MESSAGES:+$'\n'}[auto-sync] main を origin/main へ FF merge しました。"
         else
-          MESSAGES="${MESSAGES}[auto-sync] ⚠️ main の FF merge 失敗。"
+          MESSAGES="${MESSAGES}${MESSAGES:+$'\n'}[auto-sync] ⚠️ main の FF merge 失敗。"
         fi
       fi
     fi
@@ -59,8 +59,8 @@ if [[ "$CURRENT_BRANCH" =~ ^issue/ ]]; then
   git fetch origin main --quiet 2>/dev/null || true
   BEHIND=$(git rev-list --count HEAD..origin/main 2>/dev/null || echo "0")
   if [ "$BEHIND" -gt 0 ]; then
-    MESSAGES="${MESSAGES}[auto-sync] origin/main が ${BEHIND} commit 進んでいます。merge を試行..."
-    if git merge origin/main --no-edit --no-ff --quiet 2>/dev/null; then
+    MESSAGES="${MESSAGES}${MESSAGES:+$'\n'}[auto-sync] origin/main が ${BEHIND} commit 進んでいます。merge を試行..."
+    if git merge origin/main --no-edit --quiet 2>/dev/null; then
       MESSAGES="${MESSAGES} merge 成功。"
     else
       git merge --abort 2>/dev/null || true

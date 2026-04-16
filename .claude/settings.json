@@ -12,7 +12,7 @@
           {
             "type": "command",
             "command": "bash \"$(git rev-parse --show-toplevel 2>/dev/null || echo .)/.claude/hooks/auto-sync-main.sh\"",
-            "timeout": 10,
+            "timeout": 15,
             "statusMessage": "Auto-syncing with origin/main..."
           },
           {
