@@ -94,6 +94,21 @@ find /tmp -maxdepth 1 -name "issue-{issue_number}-*" -delete 2>/dev/null || true
 
 すべての出力は日本語で行う。
 
+## shutdown 条件
+
+spec を実装エージェントに SendMessage 送信した後、以下のいずれかで自発 shutdown する:
+
+1. **ack 受信 + 10 分アイドル**: 実装エージェントから任意のメッセージ (spec-received / 質問 / impl-ready など) を受信後、10 分間新しいメッセージがなければ shutdown する
+2. **ack なし + 15 分アイドル**: spec 送信から 15 分経過しても ack がない場合 → shutdown する (ack 機能がない既存実装への fallback)
+3. **reviewer からの APPROVED 受信**: 即 shutdown する
+4. **orchestrator / reviewer からの shutdown_request 受信**: 即 shutdown_response (approve: true) を返してから shutdown する
+
+shutdown 前に必ず以下を実行する:
+
+```bash
+find /tmp -maxdepth 1 -name "issue-{issue_number}-*" -delete 2>/dev/null || true
+```
+
 ## 標準ワークフローから外れる判断の禁止
 
 以下のような判断は agent 単独で行わず、必ず `AskUserQuestion` ツールで orchestrator / 人間ユーザーに確認すること:
