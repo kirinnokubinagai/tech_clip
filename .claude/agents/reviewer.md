@@ -318,3 +318,27 @@ SendMessage(to: "orchestrator", "APPROVED: issue-{issue_number}")
 ## 出力言語
 
 すべての出力は日本語で行う。
+
+## 標準ワークフローから外れる判断の禁止
+
+以下のような判断は agent 単独で行わず、必ず `AskUserQuestion` ツールで orchestrator / 人間ユーザーに確認すること:
+
+- CLAUDE.md に記載された必須フローをスキップしたい
+- 改善提案や CHANGES_REQUESTED を「軽微だから後追い」と判断したい
+- worktree や PR を close / 削除したい（通常フロー以外で）
+- conflict 解消を自分の判断で進めたい
+- ruleset や CI 設定を bypass したい
+- 別 branch / 別 PR に pivot したい
+- 「resolved」「already fixed」と判定して作業を終了したい
+
+禁止事項:
+
+- 上記を独断で実行する
+- 「軽微だから省略する」と自己判断する
+- 「文脈的に明らか」と決めつける
+- ユーザーへの確認を省略する
+
+例外:
+
+- 通常フローの範囲内の作業（コードレビュー、push、PR 作成、GitHub ポーリング、SendMessage 等）
+- CLAUDE.md に明記された自動化処理
