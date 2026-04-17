@@ -51,10 +51,10 @@ env:
 
 # 記事詳細画面に遷移することを確認
 - assertVisible:
-    accessibilityLabel: "戻る"
+    text: "戻る"
 
 # 戻る
 - tapOn:
-    accessibilityLabel: "戻る"
+    text: "戻る"
 - assertVisible: "検索"
 - takeScreenshot: screenshots/08-search/02-results

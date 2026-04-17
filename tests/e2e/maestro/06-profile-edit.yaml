@@ -27,14 +27,14 @@ env:
 
 # プロフィール編集画面へ遷移（設定ボタン or 編集ボタン）
 - tapOn:
-    accessibilityLabel: "設定"
+    text: "設定"
 
 # 設定画面経由でプロフィール確認
 - assertVisible: "アカウント"
 
 # 戻ってプロフィール編集へ
 - tapOn:
-    accessibilityLabel: "戻る"
+    text: "戻る"
 
 # --- プロフィール編集画面への直接遷移 ---
 - openLink: techclip://profile/edit

@@ -74,4 +74,4 @@ env:
 - openLink: techclip://article/save
 - assertVisible: "記事を保存"
 - tapOn:
-    accessibilityLabel: "戻る"
+    text: "戻る"

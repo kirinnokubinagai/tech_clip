@@ -62,7 +62,7 @@ env:
 - tapOn: "パスワード変更"
 - assertVisible: "パスワード変更"
 - tapOn:
-    accessibilityLabel: "戻る"
+    text: "戻る"
 
 # --- ログアウト確認ダイアログ ---
 - tapOn: "ログアウト"
