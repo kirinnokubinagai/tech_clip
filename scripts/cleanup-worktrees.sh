@@ -175,3 +175,26 @@ if [ "$DRY_RUN" -eq 1 ]; then
 else
     echo "完了: ${DELETED_COUNT}件の worktree を削除しました。"
 fi
+
+# 古い polling state file の自動削除
+POLLING_DIR="${REPO_ROOT}/.claude/polling"
+if [ -d "$POLLING_DIR" ]; then
+    STALE_COUNT=0
+    for state_file in "$POLLING_DIR"/*.json; do
+        [ -f "$state_file" ] || continue
+        PR=$(jq -r .pr_number "$state_file" 2>/dev/null || echo "")
+        [ -z "$PR" ] && continue
+        PR_STATE=$(gh pr view "$PR" --json state --jq .state 2>/dev/null || echo "UNKNOWN")
+        if [ "$PR_STATE" = "MERGED" ] || [ "$PR_STATE" = "CLOSED" ]; then
+            if [ "$DRY_RUN" -eq 1 ]; then
+                echo "[dry-run] polling state 削除対象: $state_file (PR #$PR は $PR_STATE)"
+            else
+                rm "$state_file"
+                STALE_COUNT=$((STALE_COUNT + 1))
+            fi
+        fi
+    done
+    if [ "$DRY_RUN" -eq 0 ] && [ "$STALE_COUNT" -gt 0 ]; then
+        echo "polling state: ${STALE_COUNT}件の古い state を削除しました。"
+    fi
+fi

@@ -10,7 +10,13 @@ set -euo pipefail
 
 REPO="${REPO:-kirinnokubinagai/tech_clip}"
 RULESET_ID="${RULESET_ID:-14698666}"
-REQUIRED_CHECK="${REQUIRED_CHECK:-CI / ci-gate (pull_request)}"
+
+CONFIG_FILE="$(git rev-parse --show-toplevel 2>/dev/null)/.claude/config.json"
+CONFIG_CHECK=""
+if [ -f "$CONFIG_FILE" ] && command -v jq >/dev/null 2>&1; then
+  CONFIG_CHECK=$(jq -r '.required_status_check_context // ""' "$CONFIG_FILE" 2>/dev/null || echo "")
+fi
+REQUIRED_CHECK="${REQUIRED_CHECK:-${CONFIG_CHECK:-CI / ci-gate (pull_request)}}"
 
 command -v gh >/dev/null 2>&1 || { echo "gh が必要です" >&2; exit 1; }
 command -v jq >/dev/null 2>&1 || { echo "jq が必要です" >&2; exit 1; }

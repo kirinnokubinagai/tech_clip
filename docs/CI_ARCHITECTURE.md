@@ -95,3 +95,33 @@ reviewer エージェントが claude-review 結果を待ち続けて 30 分 tim
 `release/**` / `hotfix/**` 等の新 prefix を導入する場合は `branches:` にパターンを追加する。
 `branches:` を省略して全 PR を対象にする案もあるが、想定外の base branch への PR で
 claude-review の OAuth トークンが消費されるリスクがあるため採用しない。
+
+## polling-watcher による verdict 判定（Issue #1052）
+
+### 変更内容
+
+reviewer エージェントが直接 CI をポーリングするのではなく、`scripts/polling-watcher.sh` が
+CronCreate で 2 分毎に実行されて判定する新アーキテクチャに移行した（Issue #1052）。
+
+詳細は `docs/POLLING_ARCHITECTURE.md` を参照。
+
+### 適用外 PR の手動レビューモード（Part A）
+
+以下の PR は claude-review が動かないため、reviewer が「手動レビューモード」に自動遷移する：
+
+| PR の種類 | 理由 | 検知方法 |
+|---|---|---|
+| `.github/workflows/` 変更 PR | GitHub Actions の workflow validation で bot レビューがスキップされる | `gh pr diff --name-only` でパス検知 |
+| stacked PR（base != main） | `.claude/config.json` の `stacked_pr_base_excludes` で定義 | PR の base branch チェック |
+
+手動モードでは reviewer は人間レビュアーの判定を直接確認して処理を続行する。
+
+### verdict 判定の 3 条件 AND ロジック
+
+| 条件 | 内容 |
+|---|---|
+| 条件1 | CI workflow run が completed（cancelled 除く） |
+| 条件2 | claude-review job が terminated（success または failure） |
+| 条件3 | AI Review ラベル付与 AND claude-review 完了後の判定コメント存在 |
+
+全条件が揃った時点で `approve` または `request_changes` を verdict として確定する。

@@ -27,6 +27,8 @@ binding = "AI"
 # TURSO_AUTH_TOKEN
 # TRUSTED_ORIGINS     # カンマ区切りの追加 trustedOrigins（例: "https://staging.example.com,https://dev.example.com"）
 # SENTRY_DSN          # Sentry エラー監視用 DSN（例: https://<key>@oXXXXXX.ingest.sentry.io/<project_id>）
+# GITHUB_WEBHOOK_SECRET  # GitHub Webhook HMAC-SHA256 シークレット（wrangler secret put GITHUB_WEBHOOK_SECRET）
+# GITHUB_TOKEN        # GitHub API アクセストークン（verdict 判定用、wrangler secret put GITHUB_TOKEN）
 
 [triggers]
 crons = ["0 0 1 * *"]

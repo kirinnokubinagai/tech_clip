@@ -33,6 +33,10 @@ export type Bindings = {
   SENTRY_DSN?: string;
   /** RevenueCat Webhook シークレット */
   REVENUECAT_WEBHOOK_SECRET?: string;
+  /** GitHub Webhook HMAC-SHA256 シークレット */
+  GITHUB_WEBHOOK_SECRET?: string;
+  /** GitHub API アクセストークン（verdict 判定用） */
+  GITHUB_TOKEN?: string;
   /** データベース保存用Gemmaモデルタグ（省略時は DEFAULT_GEMMA_MODEL_TAG を使用） */
   GEMMA_MODEL_NAME?: string;
 };
