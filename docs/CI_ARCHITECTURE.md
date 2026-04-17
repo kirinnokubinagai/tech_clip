@@ -51,7 +51,7 @@ CI / ci-gate (pull_request)
 >
 > 実観測: PR #1026〜#1036 において、`CI / ci-gate`（サフィックスなし）を required に設定したことで
 > PR が BLOCKED になり続けた。`CI / ci-gate (pull_request)` に修正後に解消した。
-```
+
 変更手順（順序厳守）:
 1. この PR をマージ（`CI / ci-gate` が CI 上に存在する状態にする）
 2. `bash scripts/update-main-ruleset.sh` を手動実行

@@ -143,6 +143,8 @@ fi
   1. `SendMessage(to: "issue-{issue_number}-analyst", "CONFLICT_INVESTIGATE: origin/main との間に conflict が発生しました。両側の変更意図を調査して infra-engineer に両立方針を渡してください。ファイル: ${CONFLICT_FILES}")`
   2. フェーズ 0 に戻り、analyst → infra-engineer → impl-ready を待つ
 
+> **⚠️ analyst デッドロック対策**: analyst が `APPROVED` / `shutdown_request` で既に終了している場合、`CONFLICT_INVESTIGATE:` を送っても受信者がいない。この場合、SendMessage が `no agent found` 等のエラーになるので、orchestrator に `STUCK: issue-{issue_number} analyst が終了済みのため conflict 解消できません。analyst 再 spawn または手動解消をお願いします。PR: {PR_URL}` を送信してフェーズ 0 で待機する。
+
 ### フェーズ 2: 事前チェック（必須）
 
 ```bash
@@ -341,8 +343,9 @@ if [ "$STATE" = "OPEN" ] && [ "$MERGE_STATE" != "BEHIND" ] && [ "$MERGE_STATE" !
   if ! git -C {worktree} merge-tree --write-tree --no-messages origin/main HEAD > /dev/null 2>&1; then
     CONFLICT_FILES=$(git -C {worktree} merge-tree --write-tree origin/main HEAD 2>/dev/null | grep "^CONFLICT" | awk '{print $NF}' | head -20 || git -C {worktree} status --porcelain | grep "^UU" | awk '{print $2}' | head -20 || echo "（ファイル一覧取得失敗。git status で確認してください）")
     SendMessage(to: "issue-{issue_number}-analyst", "CONFLICT_INVESTIGATE: origin/main との間に conflict が発生しました。ファイル: ${CONFLICT_FILES}")
-    # フェーズ 0 に戻り、analyst → infra-engineer → impl-ready を待つ（reviewer は終了せず待機継続）
-    break
+    # conflict 検知 → analyst に通知して polling ループを抜け、フェーズ 0 に戻る
+    # （reviewer は終了しない。フェーズ 0 の while ループが次の impl-ready を待機する）
+    break  # polling while ループを抜ける
   fi
 fi
 ```
