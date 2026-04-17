@@ -378,8 +378,7 @@ coder (conflict-resolver として動作):
 
   【Step B: 解消方針を決める】
   - 両者の意図を両立できる場合 → 両方の変更を活かした形にマージする
-  - 両立できない箇所がある場合 → analyst に CONFLICT_INVESTIGATE を送って設計判断を仰ぐ
-  - 片方が明らかに優先されるべき場合 → 理由をコミットメッセージに残す
+  - 両立できない箇所がある場合 → analyst に CONFLICT_INVESTIGATE を送って設計判断を仰ぐ（片側採用禁止）
 
   【Step C: 解消・commit（push しない）】
   → git fetch origin && git merge origin/main（コンフリクト解消）

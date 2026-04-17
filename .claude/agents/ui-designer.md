@@ -176,6 +176,10 @@ ui-reviewer から SendMessage が届くまで待機する。
   1. 両側の意図を把握する（`gh issue view {issue_number}`、`git log origin/main --oneline -20`、コンフリクト箇所の読解）
   2. `git fetch origin && git merge origin/main` で解消を試みる
   3. **片側採用禁止**。両立できない箇所があれば `SendMessage(to: "issue-{issue_number}-analyst", "CONFLICT_INVESTIGATE: <状況説明>")` で analyst に設計判断を仰ぐ
+     - analyst から `CONFLICT_RESOLVE_DESIGN:` 応答が届くまで待機する
+     - 応答内容に「不要」が含まれる場合（Issue の変更が main で不要と判定された場合）:
+       `SendMessage(to: "issue-{issue_number}-ui-reviewer", "ABORT: CONFLICT_INVESTIGATE の結果、本 Issue の変更は不要と判断されました。<analyst からの理由>")` を送信してフェーズ 6 待機に戻る
+     - 応答に方針が含まれる場合: その方針を適用して解消を完了し、ステップ 4 へ進む
   4. 解消 commit を作る（**push しない**）
   5. `SendMessage(to: "issue-{issue_number}-ui-reviewer", "CONFLICT_RESOLVED: <commit-hash>")`
   6. フェーズ 6 の待機ループに戻る
