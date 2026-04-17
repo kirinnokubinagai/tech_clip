@@ -333,11 +333,42 @@ JSON_EOF
 
 | メッセージ | アクション |
 |---|---|
-| `VERDICT: approve PR #N passed` | フェーズ 6.5 へ進む |
+| `VERDICT: approve PR #N passed` | mergeStateStatus チェック → フェーズ 6.5 へ進む |
 | `VERDICT: request_changes PR #N` | bot コメントを取得して coder に CHANGES_REQUESTED 転送 → フェーズ 0 |
 | `VERDICT: external_merged PR #N` | そのままフェーズ 7（MERGED 状態で後片付け）へ |
 | `VERDICT: closed PR #N` | coder に CLOSED_WITHOUT_MERGE 通知 → フェーズ 0 |
 | `POLLING_TIMEOUT: PR #N` | orchestrator に POLLING_TIMEOUT 通知 → 終了 |
+
+**`approve` 受信後の `mergeStateStatus` チェック（BEHIND 自動追従）**:
+
+```bash
+MERGE_STATE=$(gh pr view "$PR_NUMBER" --json mergeStateStatus --jq '.mergeStateStatus' 2>/dev/null || echo "")
+if [ "$MERGE_STATE" = "BEHIND" ]; then
+  # base ブランチが進んでいる → 自動追従
+  git -C {worktree} fetch origin
+  git -C {worktree} merge origin/main
+  bash scripts/push-verified.sh {worktree}
+  # push_sha を更新して polling state を書き直す
+  NEW_SHA=$(git -C {worktree} rev-parse HEAD)
+  cat > "$POLLING_DIR/pr-${PR_NUMBER}.json" << JSON_EOF
+{
+  "pr_number": ${PR_NUMBER},
+  "push_sha": "${NEW_SHA}",
+  "issue_number": "${ISSUE_NUMBER}",
+  "agent_name": "${AGENT_NAME}",
+  "started_at": "$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+}
+JSON_EOF
+  # VERDICT 再待機（フェーズ 6 先頭に戻る）
+elif [ "$MERGE_STATE" = "DIRTY" ] || [ "$MERGE_STATE" = "CONFLICTING" ]; then
+  # コンフリクトあり → coder に差し戻し
+  SendMessage(to: "issue-{issue_number}-analyst", "CONFLICT_INVESTIGATE: origin/main とのコンフリクト予測。PR: $PR_NUMBER")
+  rm -f "$POLLING_DIR/pr-${PR_NUMBER}.json"
+  # フェーズ 0 に戻る
+else
+  # CLEAN / BLOCKED / UNKNOWN → そのままフェーズ 6.5 へ進む
+fi
+```
 
 **`request_changes` 受信時の処理**:
 

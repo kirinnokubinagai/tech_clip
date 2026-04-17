@@ -78,6 +78,8 @@ else
   )
 fi
 
+mkdir -p "${WORKTREE_PATH}/.claude/polling"
+
 cat <<EOF
 ✅ worktree 作成完了
   path:   ${WORKTREE_PATH}

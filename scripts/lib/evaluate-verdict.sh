@@ -9,7 +9,7 @@
 # 戻り値:
 #   "approve"          - 全条件クリア、Approve 相当
 #   "request_changes"  - Changes Requested 相当
-#   ""                 - 未確定（再試行が必要）
+#   "pending"          - 未確定（再試行が必要）
 
 set -euo pipefail
 
@@ -44,7 +44,7 @@ evaluate_verdict() {
   REPO=$(gh repo view --json name --jq .name 2>/dev/null || echo "")
 
   if [ -z "$OWNER" ] || [ -z "$REPO" ]; then
-    echo ""
+    echo "pending"
     return 0
   fi
 
@@ -54,7 +54,7 @@ evaluate_verdict() {
   RUN=$(echo "$RUN_JSON" | jq -r "[.workflow_runs[] | select(.name == \"$CI_NAME\") | select(.event == \"pull_request\")] | .[0]" 2>/dev/null || echo "null")
 
   if [ "$RUN" = "null" ] || [ -z "$RUN" ]; then
-    echo ""
+    echo "pending"
     return 0
   fi
 
@@ -63,17 +63,17 @@ evaluate_verdict() {
   RUN_CONCLUSION=$(echo "$RUN" | jq -r '.conclusion // empty' 2>/dev/null || echo "")
 
   if [ "$RUN_STATUS" != "completed" ]; then
-    echo ""
+    echo "pending"
     return 0
   fi
 
   if [ "$RUN_CONCLUSION" = "cancelled" ]; then
-    echo ""
+    echo "pending"
     return 0
   fi
 
   if [ -z "$RUN_ID" ]; then
-    echo ""
+    echo "pending"
     return 0
   fi
 
@@ -83,7 +83,7 @@ evaluate_verdict() {
   CR_JOB=$(echo "$JOBS_JSON" | jq -r "[.jobs[] | select(.name == \"$JOB_NAME\")] | .[0]" 2>/dev/null || echo "null")
 
   if [ "$CR_JOB" = "null" ] || [ -z "$CR_JOB" ]; then
-    echo ""
+    echo "pending"
     return 0
   fi
 
@@ -91,7 +91,7 @@ evaluate_verdict() {
   case "$CR_CONCLUSION" in
     success|failure) ;;
     *)
-      echo ""
+      echo "pending"
       return 0
       ;;
   esac
@@ -107,7 +107,7 @@ evaluate_verdict() {
     'map(. == $p or . == $n) | any' 2>/dev/null || echo "false")
 
   if [ "$HAS_REVIEW_LABEL" != "true" ]; then
-    echo ""
+    echo "pending"
     return 0
   fi
 
@@ -121,7 +121,7 @@ evaluate_verdict() {
     2>/dev/null || echo "null")
 
   if [ "$COMMENT" = "null" ] || [ -z "$COMMENT" ]; then
-    echo ""
+    echo "pending"
     return 0
   fi
 
@@ -137,6 +137,6 @@ evaluate_verdict() {
     return 0
   fi
 
-  echo ""
+  echo "pending"
   return 0
 }

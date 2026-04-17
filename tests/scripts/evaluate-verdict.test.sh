@@ -219,24 +219,24 @@ echo "=== evaluate-verdict.sh unit tests ==="
 echo ""
 
 echo "--- 条件1: CI run ---"
-assert_eq "CI run なし → pending" "" "$(run_test pending_no_run)"
-assert_eq "CI run in_progress → pending" "" "$(run_test pending_run_in_progress)"
-assert_eq "CI run cancelled → pending" "" "$(run_test cancelled_run)"
+assert_eq "CI run なし → pending" "pending" "$(run_test pending_no_run)"
+assert_eq "CI run in_progress → pending" "pending" "$(run_test pending_run_in_progress)"
+assert_eq "CI run cancelled → pending" "pending" "$(run_test cancelled_run)"
 
 echo ""
 echo "--- 条件2: claude-review job ---"
-assert_eq "claude-review job なし → pending" "" "$(run_test pending_no_cr_job)"
-assert_eq "claude-review job in_progress → pending" "" "$(run_test cr_job_in_progress)"
-assert_eq "claude-review job skipped → pending" "" "$(run_test cr_job_skipped)"
+assert_eq "claude-review job なし → pending" "pending" "$(run_test pending_no_cr_job)"
+assert_eq "claude-review job in_progress → pending" "pending" "$(run_test cr_job_in_progress)"
+assert_eq "claude-review job skipped → pending" "pending" "$(run_test cr_job_skipped)"
 
 echo ""
 echo "--- 条件3: ラベル ---"
-assert_eq "AI Review ラベルなし → pending" "" "$(run_test pending_no_label)"
+assert_eq "AI Review ラベルなし → pending" "pending" "$(run_test pending_no_label)"
 
 echo ""
 echo "--- 条件3: コメント ---"
-assert_eq "判定コメントなし → pending" "" "$(run_test pending_no_comment)"
-assert_eq "claude 以外のコメント → pending" "" "$(run_test non_claude_comment)"
+assert_eq "判定コメントなし → pending" "pending" "$(run_test pending_no_comment)"
+assert_eq "claude 以外のコメント → pending" "pending" "$(run_test non_claude_comment)"
 
 echo ""
 echo "--- approve 判定 ---"
@@ -251,7 +251,7 @@ assert_eq "💬 Comment → request_changes" "request_changes" "$(run_test comme
 
 echo ""
 echo "--- gh コマンド失敗 ---"
-assert_eq "gh api 失敗 → pending" "" "$(run_test gh_fail)"
+assert_eq "gh api 失敗 → pending" "pending" "$(run_test gh_fail)"
 
 echo ""
 echo "--- config なし（デフォルト値）---"
@@ -259,7 +259,7 @@ assert_eq "config なし → デフォルト値で approve" "approve" "$(run_tes
 
 echo ""
 echo "--- 引数バリデーション ---"
-assert_eq "PR番号なし → 空文字" "" "$(run_test pending_no_run '' '')"
+assert_eq "PR番号なし → pending" "pending" "$(run_test pending_no_run '' '')"
 
 echo ""
 echo "--- NEEDS WORK ラベル + request_changes ---"
@@ -271,11 +271,11 @@ ALT_CONFIG="$TMP_DIR/alt-config.json"
 cat > "$ALT_CONFIG" << 'JSON'
 {"ci_workflow_name":"CustomCI","claude_review_job_name":"claude-review","ai_review_pass_label":"AI Review: PASS","ai_review_needs_work_label":"AI Review: NEEDS WORK"}
 JSON
-assert_eq "異なる CI workflow name → pending" "" "$(run_test pending_no_run 123 sha1 $ALT_CONFIG)"
+assert_eq "異なる CI workflow name → pending" "pending" "$(run_test pending_no_run 123 sha1 $ALT_CONFIG)"
 
 echo ""
 echo "--- edge case: workflow_runs 空 ---"
-assert_eq "workflow_runs 空配列 → pending" "" "$(run_test pending_no_run 456 sha2)"
+assert_eq "workflow_runs 空配列 → pending" "pending" "$(run_test pending_no_run 456 sha2)"
 
 echo ""
 echo "--- edge case: 複数 jobs のうち claude-review のみ確認 ---"
@@ -283,7 +283,7 @@ assert_eq "複数 jobs → approve" "approve" "$(run_test multi_jobs_approve 123
 
 echo ""
 echo "--- edge case: PR番号に文字を含む ---"
-assert_eq "PR番号異常値 → 空文字" "" "$(run_test pending_no_run abc sha1)"
+assert_eq "PR番号異常値 → pending" "pending" "$(run_test pending_no_run abc sha1)"
 
 echo ""
 echo "=== 結果 ==="

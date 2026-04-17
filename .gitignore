@@ -104,3 +104,6 @@ docs/superpowers/
 
 # reviewer agent CI download temp
 .claude/tmp/
+
+# polling state files (runtime, not for PRs)
+.claude/polling/
