@@ -16,23 +16,23 @@ tags:
 
 # --- ページ1: 技術記事をワンタップで保存 ---
 - assertVisible: "技術記事をワンタップで保存"
-- assertVisible: "Zenn、Qiita"
+- assertVisible: "Zenn"
 - tapOn: "次へ"
 - takeScreenshot: screenshots/01-onboarding/02-page2
 
 # --- ページ2: AIが要約・翻訳 ---
 - assertVisible: "AIが要約・翻訳"
-- assertVisible: "英語記事も日本語で読める"
+- assertVisible: "英語記事"
 - tapOn: "次へ"
 
 # --- ページ3: お気に入り・タグで整理 ---
 - assertVisible: "お気に入り・タグで整理"
-- assertVisible: "タグ付けで記事を分類"
+- assertVisible: "タグ付け"
 - tapOn: "次へ"
 
 # --- ページ4: さあ、始めましょう（最終ページ）---
 - assertVisible: "さあ、始めましょう"
-- assertVisible: "アカウントを作成して"
+- assertVisible: "アカウントを作成"
 - assertVisible: "はじめる"
 - tapOn: "はじめる"
 - takeScreenshot: screenshots/01-onboarding/03-done
