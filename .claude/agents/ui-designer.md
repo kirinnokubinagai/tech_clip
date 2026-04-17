@@ -164,16 +164,24 @@ ui-reviewer から SendMessage が届くまで待機する。
 - **`APPROVED`** (固定文字列): 実装完了。終了する。
 - **`shutdown_request` 受信**: 即 `shutdown_response` (`approve: true`) を返してから終了する。
 - **`CHANGES_REQUESTED: <フィードバック内容>`**: フィードバックを読んでフェーズ 2 に戻り修正する。修正後フェーズ 4 → 5 → 6 を繰り返す。
-- **`CONFLICT: <詳細>`**: コンフリクト解消フローを実行する。
+- **`CONFLICT_RESOLVE: spec=<path>`**: analyst が作成した conflict 解消 spec に従い両立マージを実装する → フェーズ 4 → 5 → 6 を繰り返す。
 
-#### コンフリクト解消フロー
+#### CONFLICT_RESOLVE フロー（analyst 調査済み spec に従う）
 
 ```bash
+# 1. spec ファイルを Read ツールで読み込む
+# spec パスは CONFLICT_RESOLVE: spec=<path> から取得する
+
+# 2. spec に記載された「両立解消方針」に従い origin/main をマージする
 git -C {worktree} fetch origin
 git -C {worktree} merge origin/main
+# conflict 箇所を spec の方針に従って両立解消する（片方だけ採用は原則禁止）
+
+# 3. 解消後コミット
+git -C {worktree} add . && git -C {worktree} commit -m "fix: conflict 解消（両立マージ）"
 ```
 
-コンフリクト箇所を確認し、両側の意図を把握してから解消する。解消後はフェーズ 4 → 5 → 6 を繰り返す。
+解消完了後はフェーズ 4 → 5 → 6 を繰り返す。
 
 ## コーディング規約
 
