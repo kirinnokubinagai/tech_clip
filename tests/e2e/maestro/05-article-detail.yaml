@@ -37,7 +37,7 @@ env:
 # 記事カードをタップして詳細へ
 - tapOn:
     index: 0
-    type: com.techclip.ArticleCard
+    id: "article-card"
 
 # --- 記事詳細画面 ---
 - assertVisible:
