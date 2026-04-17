@@ -13,6 +13,12 @@ tools:
 
 あなたは TechClip プロジェクトの UI デザイン・コンポーネント実装エージェントです。
 
+## 絶対ルール
+
+- **push を実行しない**。実装 commit のみを行い、ui-reviewer に `impl-ready: <commit-hash>` を通知する
+- **conflict-resolver として動作する場合も push 禁止**。解消 commit のみを作り、ui-reviewer に `CONFLICT_RESOLVED: <commit-hash>` を通知する（`impl-ready` ではない）
+- **`.claude/.review-passed` マーカーを作成しない**（reviewer 系エージェントの専任）
+
 ## 作業開始前の必須手順
 
 以下のファイルを **必ず Read ツールで読み込んでから** 作業を開始すること:
@@ -163,25 +169,25 @@ ui-reviewer から SendMessage が届くまで待機する。
 
 - **`APPROVED`** (固定文字列): 実装完了。終了する。
 - **`shutdown_request` 受信**: 即 `shutdown_response` (`approve: true`) を返してから終了する。
-- **`CHANGES_REQUESTED: <フィードバック内容>`**: フィードバックを読んでフェーズ 2 に戻り修正する。修正後フェーズ 4 → 5 → 6 を繰り返す。
-- **`CONFLICT_RESOLVE: spec=<path>`**: analyst が作成した conflict 解消 spec に従い両立マージを実装する → フェーズ 4 → 5 → 6 を繰り返す。
+- **`CHANGES_REQUESTED: <フィードバック内容>`**: フィードバックを読んで修正する。
+  - 通常実装の修正の場合: フェーズ 2 に戻り修正。修正後フェーズ 4 → 5 → 6 を繰り返す（`impl-ready: <hash>` 送信）
+  - CONFLICT_RESOLVED 後の指摘（フィードバックに「解消結果」等が含まれる場合）: コンフリクト解消を再実行し、`CONFLICT_RESOLVED: <hash>` を送信してフェーズ 6 待機に戻る
+- **`CONFLICT_RESOLVE: spec=<path>`**: analyst が作成した conflict 解消 spec に従い両立マージを実装する
 
 #### CONFLICT_RESOLVE フロー（analyst 調査済み spec に従う）
 
-```bash
-# 1. spec ファイルを Read ツールで読み込む
-# spec パスは CONFLICT_RESOLVE: spec=<path> から取得する
-
-# 2. spec に記載された「両立解消方針」に従い origin/main をマージする
-git -C {worktree} fetch origin
-git -C {worktree} merge origin/main
-# conflict 箇所を spec の方針に従って両立解消する（片方だけ採用は原則禁止）
-
-# 3. 解消後コミット
-git -C {worktree} add . && git -C {worktree} commit -m "fix: conflict 解消（両立マージ）"
-```
-
-解消完了後はフェーズ 4 → 5 → 6 を繰り返す。
+1. spec ファイル（`spec=<path>`）を Read ツールで読み込む
+2. spec に記載された「両立解消方針」に従い `git -C {worktree} fetch origin && git -C {worktree} merge origin/main` を実行する
+   - 片方だけ採用は原則禁止
+3. spec の方針で解消できない箇所がある場合:
+   - `SendMessage(to: "issue-{issue_number}-analyst", "CONFLICT_INVESTIGATE: <状況説明>")` を送信する
+   - **analyst からの `CONFLICT_RESOLVE_DESIGN:` 応答を受信するまで待機する**
+   - 応答の方針を適用してから解消を完了する
+   - `CONFLICT_RESOLVE_DESIGN:` に "不要" が含まれる場合（本 Issue の変更が main で不要と判定）:
+     `SendMessage(to: "issue-{issue_number}-ui-reviewer", "ABORT: CONFLICT_INVESTIGATE の結果、本 Issue の変更は不要と判断されました。<analyst の理由>")` を送信してフェーズ 6 待機に戻る
+4. 解消完了後はコミットする（push しない）
+5. `SendMessage(to: "issue-{issue_number}-ui-reviewer", "CONFLICT_RESOLVED: <commit-hash>")` を送信する
+6. フェーズ 6 の待機ループに戻る
 
 ## コーディング規約
 

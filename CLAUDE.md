@@ -167,8 +167,11 @@ jq が使えない環境では `gh issue list --state open --limit 100 --json nu
 - **作業開始前に必ず関連スキルを Skill ツールで呼ぶ**（機能実装・バグ修正開始時は `brainstorming`、Issue 作成時は `create-issue` 等、`.claude/skills/` 配下に該当するスキルがある場合は必ず呼ぶ。スキル定義が存在するのに呼ばずに作業を開始することは禁止する）
 - **エージェントは標準ワークフローから外れる判断を独断で行わない。必ず `AskUserQuestion` ツールで orchestrator または人間ユーザーに確認する**
 - **判断の分類**: 通常フロー内 = 自律実行 / ワークフロー逸脱 = `AskUserQuestion` 必須
-  - 逸脱例: 必須フローのスキップ、CHANGES_REQUESTED の軽微判断による省略、worktree/PR の通常外 close/削除、conflict の自己判断解消、CI bypass、別 branch への pivot、「resolved」と独断判定して終了
+  - 逸脱例: 必須フローのスキップ、CHANGES_REQUESTED の軽微判断による省略、worktree/PR の通常外 close/削除、conflict の自己判断解消、CI bypass、別 branch への pivot、「resolved」と独断判定して終了、**analyst の spawn 省略**、**bot レビュー（claude-review など）を analyst の代わりとして扱う判断**、**空コミットでの CI 強制発火**、**複数 Issue を単一 PR に統合する判断**、**stacked PR の採用判断**、**Issue / PR / worktree の独断 close / 削除（通常フロー以外）**、**push 順序の逆転（reviewer より先に coder が push する等）**
 - **PR の状態を調査・判断する際は「オーケストレーター PR 状態調査ルール」を必ず参照する**（mergeable のみ / conclusion のみ / protection のみを見る調査は禁止）
+- **push は reviewer 系エージェント（`reviewer` / `infra-reviewer` / `ui-reviewer`）のみが実行する**。`coder` / `infra-engineer` / `ui-designer` は実装 commit および conflict 解消 commit のみを行い、push はしない。conflict-resolver として spawn された場合も同様に push 禁止で、`CONFLICT_RESOLVED: <commit-hash>` を reviewer に通知する。
+- **orchestrator は analyst の spawn を省略してはならない**（いかなるタスクでも）。「bot レビューが既にある」「scope が明確」「小 fix だ」などの自己判断で省略してはならない。analyst を省略したい正当な理由があると判断した場合は、必ず `AskUserQuestion` で人間ユーザーに確認する。
+- **orchestrator は spawn 前に以下を自己監査する**: 対象 Issue に analyst を含めているか？ analyst 省略の判断を独断でしていないか？ 省略したい場合 AskUserQuestion で確認したか？ 変更種別（機能・インフラ・UI）に応じて正しい実装 / レビュワーのペアを選んでいるか？
 
 ---
 
@@ -341,6 +344,17 @@ TeamDelete("active-issues")
 
 ---
 
+### orchestrator 行動前セルフ監査
+
+いかなる spawn / SendMessage / Bash 実行の前に以下を自問する:
+
+☐ この行動は絶対ルール / 必須フローと矛盾しないか？
+☐ 矛盾するなら AskUserQuestion で確認したか？
+☐ 「効率のため」「bot review 済みだから」「軽微だから」などの自己解釈で省略していないか？
+☐ 今から取る行動が「逸脱例リスト」のどれかに該当していないか？
+
+いずれかが不安定なら必ず AskUserQuestion する。判断を独断で下すことは禁止。
+
 ### SessionStart 時の確認
 
 1. **`active-issues` チームの存在確認と既存メンバーの生存確認**
@@ -381,7 +395,7 @@ reviewer → SendMessage(to: "issue-{N}-analyst",
 
   【Step B: 両立解消方針を決める】
   - 両者の意図を両立できる場合 → 両方の変更を活かした実装方針を作る（片方のみ採用は原則禁止）
-  - 判断が難しい場合 → データ損失しない安全側を選び、理由を spec に明記する
+  - 両立できない箇所がある場合 → `AskUserQuestion` で人間ユーザーに設計判断を仰ぐ
 
   【Step C: conflict 解消 spec を作成する】
   → /tmp/issue-{N}-conflict-spec.md を作成（両側の意図・両立解消方針・コード例を記述）
@@ -394,10 +408,19 @@ reviewer → SendMessage(to: "issue-{N}-analyst",
   → spec を Read ツールで読み込む
   → git fetch origin && git merge origin/main（conflict 箇所を spec の方針で両立解消）
   → git commit する
-  → SendMessage(to: "issue-{N}-reviewer", "impl-ready: <commit-hash>")
+  → SendMessage(to: "issue-{N}-reviewer", "CONFLICT_RESOLVED: <commit-hash>")
 
-reviewer → 再レビューループへ（フェーズ 2 に戻る）
+reviewer (解消結果監査モード):
+  ↓ 解消 commit の diff を読む（git show <commit-hash>）
+  ↓ 【監査ポイント】片側採用になっていないか、両側の意図が両立されているか
+  ↓ 問題あり → SendMessage(to: "issue-{N}-coder", "CHANGES_REQUESTED: <理由>") → coder がやり直し
+  ↓ 問題なし → フェーズ 3（通常レビュー）へ（lint / test / 観点チェック → push → 再 polling）
 ```
+
+**「両側意図両立」の判定基準:**
+- 片方の変更が他方を完全に上書きしている → NG（両立できる方法を再検討）
+- Issue A の仕様と main の変更がロジック層で矛盾する → 設計レベルで analyst に CONFLICT_INVESTIGATE を投げる
+- 純粋な文言・インデント・import 順の衝突 → 両方取り込みで OK
 
 **フロー図:**
 
@@ -412,9 +435,9 @@ reviewer → analyst: CONFLICT_INVESTIGATE
   coder:
     5. spec に従って両立マージ実装
     6. commit
-    7. reviewer に impl-ready
+    7. reviewer に CONFLICT_RESOLVED
   reviewer:
-    8. 再レビュー（通常フロー復帰）
+    8. 解消結果監査 → 問題なし → 通常フロー復帰
 ```
 
 > **注意**: `pre-push-review-guard.sh` により、`.claude/.review-passed` マーカーがない状態での push はブロックされる。このマーカーの作成は reviewer 系エージェント（`reviewer` / `infra-reviewer` / `ui-reviewer`）のみに許可され、coder 系エージェント（`coder` / `infra-engineer` / `ui-designer`）およびオーケストレーターは作成してはならない。各レビュワーエージェントがマーカー作成・push・PR 作成を担当する。
