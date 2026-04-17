@@ -16,6 +16,13 @@ env:
 # ログイン済み状態でアプリ起動
 - launchApp:
     clearState: false
+- runFlow:
+    when:
+      visible: "Open debugger to view warnings."
+    commands:
+      - tapOn: "DISMISS"
+      - waitForAnimationToEnd:
+          timeout: 1000
 
 # --- ホーム画面: 記事一覧表示 ---
 - assertVisible: "すべて"

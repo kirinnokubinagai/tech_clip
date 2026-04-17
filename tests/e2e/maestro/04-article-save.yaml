@@ -18,6 +18,13 @@ env:
 # ログイン済み状態でアプリ起動
 - launchApp:
     clearState: false
+- runFlow:
+    when:
+      visible: "Open debugger to view warnings."
+    commands:
+      - tapOn: "DISMISS"
+      - waitForAnimationToEnd:
+          timeout: 1000
 
 # --- 記事保存画面への遷移 ---
 - openLink: techclip://article/save

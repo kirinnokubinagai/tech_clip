@@ -12,12 +12,27 @@ tags:
 # アプリ起動
 - launchApp:
     clearState: true
+# JS バンドル読み込み完了まで待機
+- extendedWaitUntil:
+    visible: "技術記事をワンタップで保存"
+    timeout: 30000
+# デバッガーバナーを閉じる（表示されている場合のみ）
+- runFlow:
+    when:
+      visible: "Open debugger to view warnings."
+    commands:
+      - tapOn: "DISMISS"
+      - waitForAnimationToEnd:
+          timeout: 1000
 - takeScreenshot: screenshots/01-onboarding/01-launch
 
 # --- ページ1: 技術記事をワンタップで保存 ---
 - assertVisible: "技術記事をワンタップで保存"
 - assertVisible: "Zenn、Qiita、dev.toなど19ソースに対応。気になった記事をすぐ保存できます。"
+# 「次へ」ボタンをタップ
 - tapOn: "次へ"
+- waitForAnimationToEnd:
+    timeout: 3000
 - takeScreenshot: screenshots/01-onboarding/02-page2
 
 # --- ページ2: AIが要約・翻訳 ---
@@ -26,6 +41,8 @@ tags:
     timeout: 5000
 - assertVisible: "英語記事も日本語で読める。要点だけ把握したいときはAI要約で時短。"
 - tapOn: "次へ"
+- waitForAnimationToEnd:
+    timeout: 3000
 
 # --- ページ3: お気に入り・タグで整理 ---
 - assertVisible:
@@ -33,6 +50,8 @@ tags:
     timeout: 5000
 - assertVisible: "タグ付けで記事を分類。お気に入り登録でいつでも素早くアクセス。"
 - tapOn: "次へ"
+- waitForAnimationToEnd:
+    timeout: 3000
 
 # --- ページ4: さあ、始めましょう（最終ページ）---
 - assertVisible:
@@ -41,6 +60,8 @@ tags:
 - assertVisible: "アカウントを作成して、技術知識を効率よく管理しましょう。"
 - assertVisible: "始める"
 - tapOn: "始める"
+- waitForAnimationToEnd:
+    timeout: 5000
 - takeScreenshot: screenshots/01-onboarding/03-done
 
 # ログイン画面またはホーム画面に遷移することを確認
