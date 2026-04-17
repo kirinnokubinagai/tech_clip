@@ -73,13 +73,14 @@ if command -v adb >/dev/null 2>&1 && adb devices 2>/dev/null | grep -q "emulator
   if command -v maestro >/dev/null 2>&1; then
     echo "[pre-push] maestro smoke test を実行中..."
     # 複数 worktree 並列 push 時のポート衝突回避:
-    # worktree パスのハッシュから ANDROID_SERIAL を決定する
+    # worktree パスのハッシュから ANDROID_SERIAL を決定する（起動中エミュレーター一覧からインデックス選択）
     _WORKTREE_HASH="$(echo "${REPO_ROOT}" | shasum -a 256 | cut -c1-8)"
-    _EMULATOR_SERIAL="$(adb devices 2>/dev/null | grep "emulator" | head -1 | awk '{print $1}')"
-    export ANDROID_SERIAL="${_EMULATOR_SERIAL:-emulator-${_WORKTREE_HASH}}"
+    mapfile -t _EMULATORS < <(adb devices 2>/dev/null | grep "emulator" | awk '{print $1}')
+    _IDX=$(( 16#${_WORKTREE_HASH} % ${#_EMULATORS[@]} ))
+    export ANDROID_SERIAL="${_EMULATORS[${_IDX}]}"
     if ! timeout 180 maestro test \
          --include-tags smoke \
-         "${REPO_ROOT}/tests/e2e/maestro/01-onboarding.yaml"; then
+         "${REPO_ROOT}/tests/e2e/maestro/"; then
       echo ""
       echo "❌ maestro smoke test 失敗"
       echo "修正するか、どうしても push したい場合は git push --no-verify"
