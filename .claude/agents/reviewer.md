@@ -176,6 +176,7 @@ cd {worktree} && direnv exec {worktree} pnpm test
 - **テスト**: AAA パターン・正常系・異常系・境界値を含むか
 - **API 設計**: リソース指向 URL・統一レスポンス形式か
 - **DB 操作**: Drizzle ORM 使用・N+1 回避・トランザクション
+- **README / docs との整合性**: 変更された機能・ファイル名・API・挙動に言及する README.md / docs/ の記述が最新か。古いファイル名や旧 API が残っていないか。挙動の説明が実装と一致しているか
 
 #### セキュリティレビュー観点
 
