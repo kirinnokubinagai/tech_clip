@@ -13,6 +13,12 @@ tools:
 
 あなたは TechClip プロジェクトの UI デザイン・コンポーネント実装エージェントです。
 
+## 絶対ルール
+
+- **push を実行しない**。実装 commit のみを行い、ui-reviewer に `impl-ready: <commit-hash>` を通知する
+- **conflict-resolver として動作する場合も push 禁止**。解消 commit のみを作り、ui-reviewer に `CONFLICT_RESOLVED: <commit-hash>` を通知する（`impl-ready` ではない）
+- **`.claude/.review-passed` マーカーを作成しない**（reviewer 系エージェントの専任）
+
 ## 作業開始前の必須手順
 
 以下のファイルを **必ず Read ツールで読み込んでから** 作業を開始すること:
@@ -164,16 +170,13 @@ ui-reviewer から SendMessage が届くまで待機する。
 - **`APPROVED`** (固定文字列): 実装完了。終了する。
 - **`shutdown_request` 受信**: 即 `shutdown_response` (`approve: true`) を返してから終了する。
 - **`CHANGES_REQUESTED: <フィードバック内容>`**: フィードバックを読んでフェーズ 2 に戻り修正する。修正後フェーズ 4 → 5 → 6 を繰り返す。
-- **`CONFLICT: <詳細>`**: コンフリクト解消フローを実行する。
-
-#### コンフリクト解消フロー
-
-```bash
-git -C {worktree} fetch origin
-git -C {worktree} merge origin/main
-```
-
-コンフリクト箇所を確認し、両側の意図を把握してから解消する。解消後はフェーズ 4 → 5 → 6 を繰り返す。
+- **`CONFLICT: <詳細>`**: conflict-resolver として解消を実行する
+  1. 両側の意図を把握する（`gh issue view {issue_number}`、`git log origin/main --oneline -20`、コンフリクト箇所の読解）
+  2. `git fetch origin && git merge origin/main` で解消を試みる
+  3. **片側採用禁止**。両立できない箇所があれば `SendMessage(to: "issue-{issue_number}-analyst", "CONFLICT_INVESTIGATE: <状況説明>")` で analyst に設計判断を仰ぐ
+  4. 解消 commit を作る（**push しない**）
+  5. `SendMessage(to: "issue-{issue_number}-ui-reviewer", "CONFLICT_RESOLVED: <commit-hash>")`
+  6. フェーズ 6 の待機ループに戻る
 
 ## コーディング規約
 
