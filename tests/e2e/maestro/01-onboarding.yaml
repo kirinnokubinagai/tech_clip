@@ -16,27 +16,23 @@ tags:
 
 # --- ページ1: 技術記事をワンタップで保存 ---
 - assertVisible: "技術記事をワンタップで保存"
-- assertVisible:
-    id: "onboarding-description"
+- assertVisible: "Zenn、Qiita、dev.toなど19ソースに対応。気になった記事をすぐ保存できます。"
 - tapOn: "次へ"
 - takeScreenshot: screenshots/01-onboarding/02-page2
 
 # --- ページ2: AIが要約・翻訳 ---
 - assertVisible: "AIが要約・翻訳"
-- assertVisible:
-    id: "onboarding-description"
+- assertVisible: "英語記事も日本語で読める。要点だけ把握したいときはAI要約で時短。"
 - tapOn: "次へ"
 
 # --- ページ3: お気に入り・タグで整理 ---
 - assertVisible: "お気に入り・タグで整理"
-- assertVisible:
-    id: "onboarding-description"
+- assertVisible: "タグ付けで記事を分類。お気に入り登録でいつでも素早くアクセス。"
 - tapOn: "次へ"
 
 # --- ページ4: さあ、始めましょう（最終ページ）---
 - assertVisible: "さあ、始めましょう"
-- assertVisible:
-    id: "onboarding-description"
+- assertVisible: "アカウントを作成して、技術知識を効率よく管理しましょう。"
 - assertVisible: "始める"
 - tapOn: "始める"
 - takeScreenshot: screenshots/01-onboarding/03-done
