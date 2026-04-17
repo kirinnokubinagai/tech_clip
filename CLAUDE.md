@@ -179,7 +179,7 @@ jq が使えない環境では `gh issue list --state open --limit 100 --json nu
 - 破壊的な Git コマンドを使わない
 - **レビューが通る前に push しない**（pre-push-review-guard.sh がブロックする）
 - **push は必ず `bash scripts/push-verified.sh` を使う**（`git push origin HEAD` の直接実行は禁止）
-- **reviewer は impl-ready 受信後、必ず「Phase 0.5: push 状態検証」を実行する**（impl-ready hash と local HEAD の一致確認 → push → remote HEAD との一致確認の順序を守る）
+- **reviewer は impl-ready 受信後、必ず「Phase 0.5: push 状態検証」を実行する**（impl-ready hash と local HEAD の一致確認 → PUSH_REQUIRED フラグ設定 → push（フェーズ 5 で実行）→ remote HEAD 再検証の順序を守る）
 - **`reviewer` が「全件 PASS（0件）」を返すまで push しない**（インフラは `infra-reviewer`、UI は `ui-reviewer`）（CRITICAL / HIGH / MEDIUM / LOW 問わず指摘が 1 件でも残れば修正ループを続ける）
   - **注意**: 「全件 PASS（0件）」とは CRITICAL / HIGH / MEDIUM / LOW のいずれも 0 件であることを意味する。LOW（改善提案）が 1 件でも残っている場合は PASS ではない
 - **オーケストレーターは main ブランチ上でソースファイルを直接編集しない。worktree 上でもエージェントへの委譲を優先する**
