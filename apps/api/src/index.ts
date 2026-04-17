@@ -27,6 +27,7 @@ import {
 import { securityHeadersMiddleware } from "./middleware/security-headers";
 import { createSentryMiddleware } from "./middleware/sentry";
 import { openApiSpec } from "./openapi";
+import { createGitHubWebhookRoute } from "./routes/webhooks/github";
 import type { AppEnv, Bindings } from "./types";
 
 const app = new Hono<AppEnv>();
@@ -130,6 +131,13 @@ app.on(["GET", "POST"], "/api/subscription/**", async (c) => {
 
 app.on(["POST"], "/api/analytics/**", async (c) => {
   return handleAnalytics(c.get("db"), c.get("auth")(), c.req.raw);
+});
+
+/** GitHub Webhook エンドポイント（認証不要 - HMAC 検証済み） */
+app.on(["POST"], "/webhooks/github", async (c) => {
+  const webhookSecret = c.env.GITHUB_WEBHOOK_SECRET ?? "";
+  const route = createGitHubWebhookRoute({ webhookSecret });
+  return route.fetch(c.req.raw, c.env, c.executionCtx);
 });
 
 /** Cloudflare Workers scheduled イベントハンドラー */
