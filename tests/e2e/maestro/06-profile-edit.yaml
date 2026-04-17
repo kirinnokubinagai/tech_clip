@@ -69,7 +69,7 @@ env:
 - inputText: "E2Eテスト用のプロフィールです"
 
 # SNSリンク
-- scrollDown
+- scroll
 - tapOn:
     text: "https://x.com/username"
 - inputText: "https://x.com/testuser_e2e"
