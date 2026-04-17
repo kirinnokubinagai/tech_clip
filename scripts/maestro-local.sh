@@ -159,7 +159,7 @@ cd "${REPO_ROOT}"
 
 # --- アプリ起動待機 ---
 APP_ID="${MAESTRO_APP_ID:-com.techclip.app}"
-APP_WAIT_MAX_SEC=300
+APP_WAIT_MAX_SEC="${MAESTRO_APP_WAIT_MAX_SEC:-300}"
 APP_WAIT_INTERVAL=5
 APP_WAITED=0
 
@@ -170,13 +170,16 @@ while true; do
     SIMULATOR_UDID="$(xcrun simctl list devices booted 2>/dev/null | grep -E '\(Booted\)' | head -1 | grep -oE '[0-9A-F-]{36}')"
     if [ -n "${SIMULATOR_UDID}" ]; then
       _LAUNCHED=0
+      _INNER_WAITED=0
       for _i in $(seq 1 10); do
         if xcrun simctl spawn "${SIMULATOR_UDID}" launchctl list 2>/dev/null | grep -q "${APP_ID}"; then
           _LAUNCHED=1
           break
         fi
         sleep 1
+        _INNER_WAITED=$(( _INNER_WAITED + 1 ))
       done
+      APP_WAITED=$(( APP_WAITED + _INNER_WAITED ))
       if [ "${_LAUNCHED}" -eq 1 ]; then
         echo "${COLOR_GREEN}[maestro-local] iOS アプリが起動しました${COLOR_RESET}"
         break
@@ -206,7 +209,11 @@ done
 
 # --- Android シャーディング（複数 emulator 対応）---
 if [ "${PLATFORM}" = "android" ]; then
-  _WORKTREE_HASH="$(echo "${REPO_ROOT}" | shasum -a 256 | cut -c1-8)"
+  if command -v sha256sum > /dev/null 2>&1; then
+    _WORKTREE_HASH="$(echo "${REPO_ROOT}" | sha256sum | cut -c1-8)"
+  else
+    _WORKTREE_HASH="$(echo "${REPO_ROOT}" | shasum -a 256 | cut -c1-8)"
+  fi
   _EMULATORS=()
   while IFS= read -r _e; do
     _EMULATORS+=("$_e")
