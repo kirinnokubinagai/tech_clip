@@ -21,12 +21,28 @@ env:
 # オンボーディングをスキップ
 - tapOn:
     id: "next-button"
+- extendedWaitUntil:
+    visible:
+      id: "next-button"
+    timeout: 3000
 - tapOn:
     id: "next-button"
+- extendedWaitUntil:
+    visible:
+      id: "next-button"
+    timeout: 3000
 - tapOn:
     id: "next-button"
+- extendedWaitUntil:
+    visible:
+      id: "finish-button"
+    timeout: 3000
 - tapOn:
     id: "finish-button"
+- extendedWaitUntil:
+    visible:
+      text: "ログイン"
+    timeout: 5000
 
 # ログイン画面から新規登録へ
 - assertVisible: "ログイン"
@@ -75,12 +91,28 @@ env:
     clearState: true
 - tapOn:
     id: "next-button"
+- extendedWaitUntil:
+    visible:
+      id: "next-button"
+    timeout: 3000
 - tapOn:
     id: "next-button"
+- extendedWaitUntil:
+    visible:
+      id: "next-button"
+    timeout: 3000
 - tapOn:
     id: "next-button"
+- extendedWaitUntil:
+    visible:
+      id: "finish-button"
+    timeout: 3000
 - tapOn:
     id: "finish-button"
+- extendedWaitUntil:
+    visible:
+      text: "ログイン"
+    timeout: 5000
 - tapOn: "新規登録"
 - assertVisible: "すでにアカウントをお持ちですか？"
 - tapOn: "ログイン"

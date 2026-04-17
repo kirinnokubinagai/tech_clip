@@ -23,6 +23,10 @@ env:
 # ホーム画面から記事保存画面へ（シェアボタン等経由）
 # Expo Router の /article/save へ直接遷移
 - openLink: techclip://article/save
+- extendedWaitUntil:
+    visible:
+      id: "save-screen-title"
+    timeout: 5000
 
 # --- 記事保存画面 ---
 - assertVisible:
@@ -77,6 +81,10 @@ env:
 - launchApp:
     clearState: false
 - openLink: techclip://article/save
+- extendedWaitUntil:
+    visible:
+      id: "save-screen-title"
+    timeout: 5000
 - assertVisible:
     id: "save-screen-title"
 - tapOn:

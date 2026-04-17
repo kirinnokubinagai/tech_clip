@@ -20,6 +20,10 @@ env:
 # 設定タブへ移動
 - tapOn:
     text: "設定"
+- extendedWaitUntil:
+    visible:
+      text: "アカウント"
+    timeout: 5000
 
 # --- 設定画面 ---
 - assertVisible: "アカウント"
@@ -52,6 +56,10 @@ env:
 
 # --- 言語設定 ---
 - tapOn: "言語"
+- extendedWaitUntil:
+    visible:
+      text: "言語設定"
+    timeout: 5000
 - assertVisible: "言語設定"
 - assertVisible: "日本語"
 - assertVisible: "English"
@@ -60,12 +68,20 @@ env:
 
 # --- パスワード変更画面への遷移 ---
 - tapOn: "パスワード変更"
+- extendedWaitUntil:
+    visible:
+      text: "パスワード変更"
+    timeout: 5000
 - assertVisible: "パスワード変更"
 - tapOn:
     text: "戻る"
 
 # --- ログアウト確認ダイアログ ---
 - tapOn: "ログアウト"
+- extendedWaitUntil:
+    visible:
+      text: "ログアウトしますか？"
+    timeout: 3000
 - assertVisible: "ログアウトしますか？"
 # キャンセル
 - tapOn: "キャンセル"
@@ -74,6 +90,10 @@ env:
 
 # --- アカウント削除確認ダイアログ ---
 - tapOn: "アカウントを削除する"
+- extendedWaitUntil:
+    visible:
+      text: "アカウントを削除する"
+    timeout: 3000
 - assertVisible: "アカウントを削除する"
 - assertVisible: "この操作は取り消せません"
 # キャンセル
@@ -82,9 +102,17 @@ env:
 
 # --- ログアウト実行 ---
 - tapOn: "ログアウト"
+- extendedWaitUntil:
+    visible:
+      text: "ログアウトしますか？"
+    timeout: 3000
 - assertVisible: "ログアウトしますか？"
 - tapOn: "ログアウト"
 - waitForAnimationToEnd
 # ログイン画面に遷移することを確認
+- extendedWaitUntil:
+    visible:
+      text: "ログイン"
+    timeout: 5000
 - assertVisible: "ログイン"
 - takeScreenshot: screenshots/07-settings/02-after-logout

@@ -29,15 +29,27 @@ env:
 # お気に入りフィルター
 - tapOn:
     text: "お気に入りのみ表示"
+- extendedWaitUntil:
+    visible:
+      text: "お気に入りフィルター解除"
+    timeout: 3000
 - assertVisible:
     text: "お気に入りフィルター解除"
 - tapOn:
     text: "お気に入りフィルター解除"
+- extendedWaitUntil:
+    visible:
+      text: "すべて"
+    timeout: 3000
 
 # 記事カードをタップして詳細へ
 - tapOn:
     index: 0
     id: "article-card"
+- extendedWaitUntil:
+    visible:
+      text: "戻る"
+    timeout: 5000
 
 # --- 記事詳細画面 ---
 - assertVisible:
@@ -77,6 +89,10 @@ env:
 # 戻るボタンでホームへ
 - tapOn:
     text: "戻る"
+- extendedWaitUntil:
+    visible:
+      text: "すべて"
+    timeout: 5000
 - assertVisible: "すべて"
 
 # --- ソースフィルター: Zenn ---

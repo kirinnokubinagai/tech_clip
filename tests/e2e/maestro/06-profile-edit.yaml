@@ -20,6 +20,10 @@ env:
 # プロフィールタブへ移動
 - tapOn:
     text: "プロフィール"
+- extendedWaitUntil:
+    visible:
+      text: "プロフィール"
+    timeout: 5000
 
 # --- プロフィール画面 ---
 - assertVisible: "プロフィール"
@@ -28,6 +32,10 @@ env:
 # プロフィール編集画面へ遷移（設定ボタン or 編集ボタン）
 - tapOn:
     text: "設定"
+- extendedWaitUntil:
+    visible:
+      text: "アカウント"
+    timeout: 5000
 
 # 設定画面経由でプロフィール確認
 - assertVisible: "アカウント"
@@ -38,6 +46,10 @@ env:
 
 # --- プロフィール編集画面への直接遷移 ---
 - openLink: techclip://profile/edit
+- extendedWaitUntil:
+    visible:
+      id: "profile-edit-screen"
+    timeout: 5000
 
 # --- プロフィール編集画面 ---
 - assertVisible:
