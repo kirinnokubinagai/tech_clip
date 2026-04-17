@@ -21,31 +21,26 @@ env:
 # オンボーディングをスキップしてログイン画面へ
 - tapOn:
     id: "next-button"
-- extendedWaitUntil:
-    visible:
-      id: "next-button"
+- assertVisible:
+    id: "next-button"
     timeout: 3000
 - tapOn:
     id: "next-button"
-- extendedWaitUntil:
-    visible:
-      id: "next-button"
+- assertVisible:
+    id: "next-button"
     timeout: 3000
 - tapOn:
     id: "next-button"
-- extendedWaitUntil:
-    visible:
-      id: "finish-button"
+- assertVisible:
+    id: "finish-button"
     timeout: 3000
 - tapOn:
     id: "finish-button"
-- extendedWaitUntil:
-    visible:
-      text: "ログイン"
-    timeout: 5000
 
 # --- ログイン画面 ---
-- assertVisible: "ログイン"
+- assertVisible:
+    text: "ログイン"
+    timeout: 5000
 - assertVisible: "メールアドレス"
 - takeScreenshot: screenshots/02-auth-login/01-login-screen
 
@@ -71,11 +66,10 @@ env:
 - tapOn:
     id: "login-submit-button"
 
-# ローディング中の表示確認（任意）
-- waitForAnimationToEnd
-
 # ホーム画面に遷移することを確認
-- assertVisible: "すべて"
+- assertVisible:
+    text: "すべて"
+    timeout: 5000
 - takeScreenshot: screenshots/02-auth-login/02-home-after-login
 
 # --- バリデーションエラーのテスト ---
@@ -85,27 +79,23 @@ env:
 # オンボーディングスキップ
 - tapOn:
     id: "next-button"
-- extendedWaitUntil:
-    visible:
-      id: "next-button"
+- assertVisible:
+    id: "next-button"
     timeout: 3000
 - tapOn:
     id: "next-button"
-- extendedWaitUntil:
-    visible:
-      id: "next-button"
+- assertVisible:
+    id: "next-button"
     timeout: 3000
 - tapOn:
     id: "next-button"
-- extendedWaitUntil:
-    visible:
-      id: "finish-button"
+- assertVisible:
+    id: "finish-button"
     timeout: 3000
 - tapOn:
     id: "finish-button"
-- extendedWaitUntil:
-    visible:
-      text: "ログイン"
+- assertVisible:
+    text: "ログイン"
     timeout: 5000
 
 # 空のまま送信 → エラー表示
@@ -127,4 +117,6 @@ env:
 # 新規登録リンクへの遷移確認
 - tapOn:
     id: "login-register-link"
-- assertVisible: "アカウントを作成"
+- assertVisible:
+    text: "アカウントを作成"
+    timeout: 5000

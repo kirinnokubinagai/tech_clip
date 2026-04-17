@@ -20,13 +20,11 @@ env:
 # 検索タブへ移動
 - tapOn:
     text: "検索"
-- extendedWaitUntil:
-    visible:
-      text: "検索"
-    timeout: 5000
 
 # --- 検索画面 ---
-- assertVisible: "検索"
+- assertVisible:
+    text: "検索"
+    timeout: 5000
 - takeScreenshot: screenshots/08-search/01-search-screen
 
 # 検索フィールドをタップ
@@ -52,21 +50,16 @@ env:
 - tapOn:
     index: 0
     text: "React"
-- extendedWaitUntil:
-    visible:
-      text: "戻る"
-    timeout: 5000
 
 # 記事詳細画面に遷移することを確認
 - assertVisible:
     text: "戻る"
+    timeout: 5000
 
 # 戻る
 - tapOn:
     text: "戻る"
-- extendedWaitUntil:
-    visible:
-      text: "検索"
+- assertVisible:
+    text: "検索"
     timeout: 5000
-- assertVisible: "検索"
 - takeScreenshot: screenshots/08-search/02-results

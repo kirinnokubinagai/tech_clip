@@ -20,25 +20,21 @@ env:
 # プロフィールタブへ移動
 - tapOn:
     text: "プロフィール"
-- extendedWaitUntil:
-    visible:
-      text: "プロフィール"
-    timeout: 5000
 
 # --- プロフィール画面 ---
-- assertVisible: "プロフィール"
+- assertVisible:
+    text: "プロフィール"
+    timeout: 5000
 - takeScreenshot: screenshots/06-profile-edit/01-profile-screen
 
 # プロフィール編集画面へ遷移（設定ボタン or 編集ボタン）
 - tapOn:
     text: "設定"
-- extendedWaitUntil:
-    visible:
-      text: "アカウント"
-    timeout: 5000
 
 # 設定画面経由でプロフィール確認
-- assertVisible: "アカウント"
+- assertVisible:
+    text: "アカウント"
+    timeout: 5000
 
 # 戻ってプロフィール編集へ
 - tapOn:
@@ -46,14 +42,11 @@ env:
 
 # --- プロフィール編集画面への直接遷移 ---
 - openLink: techclip://profile/edit
-- extendedWaitUntil:
-    visible:
-      id: "profile-edit-screen"
-    timeout: 5000
 
 # --- プロフィール編集画面 ---
 - assertVisible:
     id: "profile-edit-screen"
+    timeout: 5000
 - assertVisible: "プロフィール編集"
 
 # アバター変更ボタンの確認
@@ -95,7 +88,9 @@ env:
 - waitForAnimationToEnd
 
 # 保存成功トーストまたは前画面への遷移を確認
-- assertVisible: "プロフィールを更新しました"
+- assertVisible:
+    text: "プロフィールを更新しました"
+    timeout: 5000
 - takeScreenshot: screenshots/06-profile-edit/02-saved
 
 # 戻るボタン
