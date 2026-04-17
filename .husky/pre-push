@@ -75,18 +75,24 @@ if command -v adb >/dev/null 2>&1 && adb devices 2>/dev/null | grep -q "emulator
     # 複数 worktree 並列 push 時のポート衝突回避:
     # worktree パスのハッシュから ANDROID_SERIAL を決定する（起動中エミュレーター一覧からインデックス選択）
     _WORKTREE_HASH="$(echo "${REPO_ROOT}" | shasum -a 256 | cut -c1-8)"
-    mapfile -t _EMULATORS < <(adb devices 2>/dev/null | grep "emulator" | awk '{print $1}')
-    _IDX=$(( 16#${_WORKTREE_HASH} % ${#_EMULATORS[@]} ))
-    export ANDROID_SERIAL="${_EMULATORS[${_IDX}]}"
-    if ! timeout 180 maestro test \
-         --include-tags smoke \
-         "${REPO_ROOT}/tests/e2e/maestro/"; then
-      echo ""
-      echo "❌ maestro smoke test 失敗"
-      echo "修正するか、どうしても push したい場合は git push --no-verify"
-      exit 1
+    # bash 3.2 互換の配列構築（macOS デフォルト bash は 3.2 のため mapfile 不可）
+    _EMULATORS=()
+    while IFS= read -r _e; do
+      _EMULATORS+=("$_e")
+    done < <(adb devices 2>/dev/null | grep "emulator" | awk '{print $1}')
+    if (( ${#_EMULATORS[@]} == 0 )); then
+      echo "[pre-push] emulator が切断されました。smoke test をスキップ"
+    else
+      _IDX=$(( 16#${_WORKTREE_HASH} % ${#_EMULATORS[@]} ))
+      export ANDROID_SERIAL="${_EMULATORS[${_IDX}]}"
+      if ! timeout 180 maestro test            --include-tags smoke            "${REPO_ROOT}/tests/e2e/maestro/"; then
+        echo ""
+        echo "❌ maestro smoke test 失敗"
+        echo "修正するか、どうしても push したい場合は git push --no-verify"
+        exit 1
+      fi
+      echo "✅ maestro smoke test OK"
     fi
-    echo "✅ maestro smoke test OK"
   else
     echo "[pre-push] maestro 未インストール。smoke test をスキップ"
   fi
