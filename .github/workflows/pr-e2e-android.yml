@@ -76,45 +76,7 @@ jobs:
           force-avd-creation: false
           emulator-options: -no-snapshot-save -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
           disable-animations: true
-          script: |
-            set -eu
-            mkdir -p screenshots test-results
-
-            # Build and install development build
-            nix develop --command bash -c "cd apps/mobile && pnpm expo run:android --variant debug" &
-            EXPO_PID=$!
-
-            # Wait for app to be installed and running
-            for i in $(seq 1 60); do
-              if adb shell pidof com.techclip.app > /dev/null 2>&1; then
-                echo "App is running"
-                break
-              fi
-              sleep 5
-            done
-
-            if ! adb shell pidof com.techclip.app > /dev/null 2>&1; then
-              echo "ERROR: App failed to start within 5 minutes"
-              pkill -P $EXPO_PID 2>/dev/null || true
-              kill $EXPO_PID 2>/dev/null || true
-              echo "1" > test-results/maestro-exit-code.txt
-              exit 1
-            fi
-
-            # Run Maestro tests (continue on failure to upload artifacts)
-            set +e
-            nix develop --command maestro test tests/e2e/maestro/ \
-              --format junit \
-              --output test-results/junit.xml \
-              --debug-output screenshots/debug
-            MAESTRO_EXIT=$?
-            set -e
-
-            pkill -P $EXPO_PID 2>/dev/null || true
-            kill $EXPO_PID 2>/dev/null || true
-
-            echo "$MAESTRO_EXIT" > test-results/maestro-exit-code.txt
-            exit 0
+          script: bash scripts/ci/run-android-e2e.sh
 
       - name: Upload screenshots artifact
         if: always()
