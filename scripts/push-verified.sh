@@ -49,23 +49,19 @@ fi
 if [ "$CREATE_POLLING" = "true" ]; then
   POLLING_DIR="$(git rev-parse --show-toplevel)/.claude/polling"
   mkdir -p "$POLLING_DIR"
-  STATE_FILE="${POLLING_DIR}/${POLLING_PR_NUMBER}.json"
+  STATE_FILE="${POLLING_DIR}/pr-${POLLING_PR_NUMBER}.json"
   jq -n \
     --argjson pr "$POLLING_PR_NUMBER" \
     --arg sha "$LOCAL_SHA" \
     --arg now "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
-    --arg reviewer "$POLLING_REVIEWER_AGENT" \
+    --arg agent "$POLLING_REVIEWER_AGENT" \
     --argjson issue "$POLLING_ISSUE_NUMBER" \
     '{
       pr_number: $pr,
       push_sha: $sha,
-      push_at: $now,
-      reviewer_agent: $reviewer,
       issue_number: $issue,
-      mode: "auto",
-      attempts: 0,
-      last_check: null,
-      last_verdict: null
+      agent_name: $agent,
+      started_at: $now
     }' > "$STATE_FILE"
   echo "polling state 作成: $STATE_FILE"
 fi

@@ -33,12 +33,19 @@ evaluate_verdict() {
     JOB_NAME=$(jq -r '.claude_review_job_name // "claude-review"' "$CONFIG")
     PASS_LABEL=$(jq -r '.ai_review_pass_label // "AI Review: PASS"' "$CONFIG")
     NEEDS_LABEL=$(jq -r '.ai_review_needs_work_label // "AI Review: NEEDS WORK"' "$CONFIG")
+    APPROVE_PATTERN=$(jq -r '.verdict_patterns.approve // [] | join("|")' "$CONFIG" 2>/dev/null || echo "")
+    CHANGES_PATTERN=$(jq -r '.verdict_patterns.request_changes // [] | join("|")' "$CONFIG" 2>/dev/null || echo "")
   else
     CI_NAME="CI"
     JOB_NAME="claude-review"
     PASS_LABEL="AI Review: PASS"
     NEEDS_LABEL="AI Review: NEEDS WORK"
+    APPROVE_PATTERN=""
+    CHANGES_PATTERN=""
   fi
+  # フォールバック: config にパターンがない場合はデフォルト値を使用
+  APPROVE_PATTERN="${APPROVE_PATTERN:-(\*\*)?✅ Approve(\*\*)?|全件 PASS（0件）}"
+  CHANGES_PATTERN="${CHANGES_PATTERN:-(\*\*)?🔄 Request Changes(\*\*)?|(\*\*)?💬 Comment(\*\*)?}"
 
   OWNER=$(gh repo view --json owner --jq .owner.login 2>/dev/null || echo "")
   REPO=$(gh repo view --json name --jq .name 2>/dev/null || echo "")
@@ -127,12 +134,12 @@ evaluate_verdict() {
 
   BODY=$(echo "$COMMENT" | jq -r '.body // ""' 2>/dev/null || echo "")
 
-  if echo "$BODY" | grep -qE '(\*\*)?✅ Approve(\*\*)?|全件 PASS（0件）'; then
+  if echo "$BODY" | grep -qE "$APPROVE_PATTERN"; then
     echo "approve"
     return 0
   fi
 
-  if echo "$BODY" | grep -qE '(\*\*)?🔄 Request Changes(\*\*)?|(\*\*)?💬 Comment(\*\*)?'; then
+  if echo "$BODY" | grep -qE "$CHANGES_PATTERN"; then
     echo "request_changes"
     return 0
   fi
