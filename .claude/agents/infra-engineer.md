@@ -132,7 +132,22 @@ cd {worktree} && git add . && git commit -m "chore: ..."
 
 ### フェーズ 5: infra-reviewer への通知
 
-コミット後、infra-reviewer に SendMessage を送信する:
+コミット後、SendMessage を送信する前に以下の self-check を実施する:
+
+```bash
+# self-check: uncommitted changes がないか確認
+UNCOMMITTED=$(git -C {worktree} status --porcelain)
+if [ -n "$UNCOMMITTED" ]; then
+  echo "ERROR: uncommitted changes が存在します。git add && git commit を先に実行してください。"
+  exit 1
+fi
+
+# self-check: 送信する hash が local HEAD と一致するか確認
+COMMIT_HASH=$(git -C {worktree} rev-parse HEAD)
+echo "self-check OK: local HEAD = $COMMIT_HASH"
+```
+
+self-check が通過したら、infra-reviewer に SendMessage を送信する:
 
 - **to**: `"issue-{issue_number}-infra-reviewer"`
 - **message**: `impl-ready: <commit-hash>`
