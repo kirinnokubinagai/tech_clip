@@ -189,6 +189,11 @@ while true; do
     fi
   fi
 
+  if ! kill -0 "${BUILD_PID}" 2>/dev/null; then
+    echo "${COLOR_RED}エラー: ビルドが失敗しました。ログを確認してください: ${BUILD_LOG}${COLOR_RESET}" >&2
+    exit 5
+  fi
+
   if [ "${APP_WAITED}" -ge "${APP_WAIT_MAX_SEC}" ]; then
     echo "${COLOR_RED}エラー: アプリの起動待機がタイムアウトしました（${APP_WAIT_MAX_SEC}秒）${COLOR_RESET}" >&2
     echo "  ビルドログを確認してください: ${BUILD_LOG}" >&2
