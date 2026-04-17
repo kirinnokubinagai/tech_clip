@@ -180,6 +180,7 @@ cd {worktree} && direnv exec {worktree} pnpm test
 - **テスト**: AAA パターン・正常系・異常系・境界値を含むか
 - **API 設計**: リソース指向 URL・統一レスポンス形式か
 - **DB 操作**: Drizzle ORM 使用・N+1 回避・トランザクション
+- **README / docs との整合性**: 変更された機能・ファイル名・API・挙動に言及する README.md / docs/ の記述が最新か。古いファイル名や旧 API が残っていないか。挙動の説明が実装と一致しているか
 
 #### セキュリティレビュー観点
 
@@ -245,6 +246,30 @@ EOF
 #### 既存 PR への追加 push の場合
 
 PR は再作成しない。push のみ行う。
+
+
+### フェーズ 5.5: CI 発火確認 fallback
+
+```bash
+REPO=$(gh repo view --json nameWithOwner --jq '.nameWithOwner')
+BRANCH=$(git -C {worktree} rev-parse --abbrev-ref HEAD)
+PR_NUMBER=<フェーズ 5 で作成 or 既存 PR>
+
+RUNS=0
+for i in $(seq 1 12); do
+  RUNS=$(gh api "repos/${REPO}/actions/runs?branch=${BRANCH}&per_page=1" \
+         --jq '.workflow_runs | length' 2>/dev/null || echo 0)
+  [ "$RUNS" -gt 0 ] && break
+  sleep 5
+done
+
+if [ "$RUNS" = "0" ]; then
+  cd {worktree}
+  git commit --allow-empty -m "chore: trigger CI for PR #${PR_NUMBER}"
+  bash scripts/push-verified.sh
+  SendMessage(to: "orchestrator", "CI_TRIGGER_FALLBACK: issue-{issue_number} PR #${PR_NUMBER} で空コミット push を実施しました")
+fi
+```
 
 ### フェーズ 6: 統合ポーリング
 

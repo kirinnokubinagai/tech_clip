@@ -252,6 +252,30 @@ EOF
 
 PR は再作成しない。push のみ行う。
 
+
+### フェーズ 5.5: CI 発火確認 fallback
+
+```bash
+REPO=$(gh repo view --json nameWithOwner --jq '.nameWithOwner')
+BRANCH=$(git -C {worktree} rev-parse --abbrev-ref HEAD)
+PR_NUMBER=<フェーズ 5 で作成 or 既存 PR>
+
+RUNS=0
+for i in $(seq 1 12); do
+  RUNS=$(gh api "repos/${REPO}/actions/runs?branch=${BRANCH}&per_page=1" \
+         --jq '.workflow_runs | length' 2>/dev/null || echo 0)
+  [ "$RUNS" -gt 0 ] && break
+  sleep 5
+done
+
+if [ "$RUNS" = "0" ]; then
+  cd {worktree}
+  git commit --allow-empty -m "chore: trigger CI for PR #${PR_NUMBER}"
+  bash scripts/push-verified.sh
+  SendMessage(to: "orchestrator", "CI_TRIGGER_FALLBACK: issue-{issue_number} PR #${PR_NUMBER} で空コミット push を実施しました")
+fi
+```
+
 ### フェーズ 6: 統合ポーリング
 
 > **絶対に `gh pr view --json statusCheckRollup` の `claude-review: SUCCESS` を APPROVED の根拠にしないこと。**

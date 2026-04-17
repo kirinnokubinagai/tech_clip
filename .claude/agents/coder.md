@@ -76,6 +76,14 @@ ls {worktree}/docs/superpowers/specs/*.md | sort | tail -1
 
 テストは `tests/` ディレクトリの対応サブディレクトリに配置する（例: `tests/api/routes/`, `tests/mobile/components/`）。
 
+### フェーズ 2b: README/docs 整合性チェック
+
+変更内容に関連する README.md / docs/ の記述と整合しているか確認し、乖離があれば同じコミットで更新する:
+
+- ファイル名が変わった場合: README.md / docs/ 内のファイル名参照を更新する
+- API 仕様が変わった場合: API 仕様を説明している箇所を更新する
+- 挙動が変わった場合: 使い方・挙動を説明している箇所を更新する
+
 ### フェーズ 3: lint チェック
 
 ```bash
