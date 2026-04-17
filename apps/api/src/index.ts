@@ -133,10 +133,8 @@ app.on(["POST"], "/api/analytics/**", async (c) => {
   return handleAnalytics(c.get("db"), c.get("auth")(), c.req.raw);
 });
 
-/** GitHub Webhook エンドポイント（認証不要 - HMAC 検証済み） */
 app.on(["POST"], "/webhooks/github", async (c) => {
-  const webhookSecret = c.env.GITHUB_WEBHOOK_SECRET ?? "";
-  const route = createGitHubWebhookRoute({ webhookSecret });
+  const route = createGitHubWebhookRoute({ webhookSecret: c.env.GITHUB_WEBHOOK_SECRET ?? "" });
   return route.fetch(c.req.raw, c.env, c.executionCtx);
 });
 
