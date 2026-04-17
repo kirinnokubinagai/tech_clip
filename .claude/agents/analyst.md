@@ -200,11 +200,15 @@ find /tmp -maxdepth 1 -name "issue-{issue_number}-*" -delete 2>/dev/null || true
 coder / infra-engineer / ui-designer からコンフリクト解消の設計判断を求める `CONFLICT_INVESTIGATE: <状況説明>` メッセージを受信した場合:
 
 1. 状況説明を読み、Issue の仕様意図と main の変更内容を把握する
-2. 以下の判断を行う:
-   - 両立できる設計がある → `SendMessage(to: "issue-{issue_number}-coder", "CONFLICT_RESOLVE_DESIGN: <両立方針の説明>")` で方針を返す
+2. 送信元エージェント名（`coder` / `infra-engineer` / `ui-designer`）を確認する
+   - 変更種別: コーディング → `issue-{issue_number}-coder`
+   - 変更種別: インフラ → `issue-{issue_number}-infra-engineer`
+   - 変更種別: UI → `issue-{issue_number}-ui-designer`
+3. 以下の判断を行い、**送信元エージェントに** 返信する:
+   - 両立できる設計がある → `SendMessage(to: "issue-{issue_number}-{sender_agent}", "CONFLICT_RESOLVE_DESIGN: <両立方針の説明>")` で方針を返す
    - 両立できず Issue 仕様の変更が必要 → `AskUserQuestion` で人間ユーザーに設計判断を仰ぐ
-   - main の変更が Issue 仕様を完全に包含している → `SendMessage(to: "issue-{issue_number}-coder", "CONFLICT_RESOLVE_DESIGN: main の変更を採用し、本 Issue の変更は不要です。<理由>")` を返す
-3. 回答後は spec 送信後の通常 shutdown 条件（下記）に従う
+   - main の変更が Issue 仕様を完全に包含している → `SendMessage(to: "issue-{issue_number}-{sender_agent}", "CONFLICT_RESOLVE_DESIGN: main の変更を採用し、本 Issue の変更は不要です。<理由>")` を返す
+4. 回答後は spec 送信後の通常 shutdown 条件（下記）に従う
 
 ## shutdown 条件
 

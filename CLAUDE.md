@@ -395,7 +395,7 @@ reviewer → SendMessage(to: "issue-{N}-analyst",
 
   【Step B: 両立解消方針を決める】
   - 両者の意図を両立できる場合 → 両方の変更を活かした実装方針を作る（片方のみ採用は原則禁止）
-  - 両立できない箇所がある場合 → `CONFLICT_INVESTIGATE` を analyst に送って設計判断を仰ぐ
+  - 両立できない箇所がある場合 → `AskUserQuestion` で人間ユーザーに設計判断を仰ぐ
 
   【Step C: conflict 解消 spec を作成する】
   → /tmp/issue-{N}-conflict-spec.md を作成（両側の意図・両立解消方針・コード例を記述）
