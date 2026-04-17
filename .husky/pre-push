@@ -85,7 +85,9 @@ if command -v adb >/dev/null 2>&1 && adb devices 2>/dev/null | grep -q "emulator
     else
       _IDX=$(( 16#${_WORKTREE_HASH} % ${#_EMULATORS[@]} ))
       export ANDROID_SERIAL="${_EMULATORS[${_IDX}]}"
-      if ! timeout 180 maestro test            --include-tags smoke            "${REPO_ROOT}/tests/e2e/maestro/"; then
+      if ! timeout 180 maestro test \
+           --include-tags smoke \
+           "${REPO_ROOT}/tests/e2e/maestro/"; then
         echo ""
         echo "❌ maestro smoke test 失敗"
         echo "修正するか、どうしても push したい場合は git push --no-verify"
