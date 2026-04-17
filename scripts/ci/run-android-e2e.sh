@@ -2,6 +2,8 @@
 # shellcheck shell=bash
 set -euo pipefail
 
+export NODE_OPTIONS="${NODE_OPTIONS:---no-experimental-strip-types}"
+
 mkdir -p screenshots test-results
 
 # Build and install development build

@@ -108,6 +108,7 @@
           ];
 
           shellHook = ''
+            export NODE_OPTIONS="--no-experimental-strip-types"
             # CLAUDE_CONFIG_DIR: auth・settings を .claude-user/ に隔離
             CLAUDE_USER_DIR="$PWD/.claude-user"
             export CLAUDE_CONFIG_DIR="$CLAUDE_USER_DIR"
