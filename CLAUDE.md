@@ -364,31 +364,57 @@ TeamDelete("active-issues")
 
 ## コンフリクト解消フロー（SendMessage ベース）
 
-reviewer が origin/main とのコンフリクトを検知した場合、SendMessage で実装エージェントに返送する。
+reviewer が origin/main とのコンフリクトを検知した場合、**直接 coder に差し戻すのではなく analyst に調査を依頼する**。analyst が両側の変更意図を調査して両立方針の spec を作成し、coder に渡す。
 
 > **BEHIND の自動追従**: reviewer は `mergeStateStatus == BEHIND` を検知した場合、coder への差し戻しを行わず、自動で `git fetch && git merge origin/main` → re-push を行う。race 回避のため re-push 前に upstream 一致を確認する。
 
 ```text
-reviewer → SendMessage(to: "issue-{N}-coder",
-  "CONFLICT: origin/main とコンフリクトが発生しています。以下のファイルを解消してください: <ファイル一覧>")
+[polling 中に conflict 検知]
+reviewer → SendMessage(to: "issue-{N}-analyst",
+  "CONFLICT_INVESTIGATE: origin/main との間に conflict が発生しました。ファイル: <ファイル一覧>")
 
-coder がコンフリクト解消を担当:
-  【Step A: 両側の意図を把握する】
-  1. 現在の Issue（gh issue view <N>）を読み、このブランチが何をしようとしているか確認する
-  2. git log origin/main --oneline -20 で main に入ったコミットを確認する
-  3. コンフリクト箇所を読み、それぞれの変更が何を意図しているかを理解する
+  analyst の調査プロトコル:
+  【Step A: 両側の変更意図を把握する】
+  1. git log --oneline HEAD ^origin/main で自分側の commit 履歴を取得する
+  2. git log --oneline origin/main ^HEAD で main 側に入った commit 履歴を取得する
+  3. 各 conflict ファイルの両側の差分を読む（show HEAD:{file} と show origin/main:{file}）
 
-  【Step B: 解消方針を決める】
-  - 両者の意図を両立できる場合 → 両方の変更を活かした形にマージする
-  - 片方が明らかに優先されるべき場合 → 理由をコミットメッセージに残す
-  - 判断が難しい場合 → より安全側（データ損失しない側）を選ぶ
+  【Step B: 両立解消方針を決める】
+  - 両者の意図を両立できる場合 → 両方の変更を活かした実装方針を作る（片方のみ採用は原則禁止）
+  - 判断が難しい場合 → データ損失しない安全側を選び、理由を spec に明記する
 
-  【Step C: 解消・再コミット】
-  → git fetch origin && git merge origin/main（コンフリクト解消）
+  【Step C: conflict 解消 spec を作成する】
+  → /tmp/issue-{N}-conflict-spec.md を作成（両側の意図・両立解消方針・コード例を記述）
+
+  【Step D: coder に CONFLICT_RESOLVE を送信する】
+  → SendMessage(to: "issue-{N}-coder", "CONFLICT_RESOLVE: spec=/tmp/issue-{N}-conflict-spec.md")
+
+  coder の実装:
+  【Step E: spec に従って両立マージを実装する】
+  → spec を Read ツールで読み込む
+  → git fetch origin && git merge origin/main（conflict 箇所を spec の方針で両立解消）
   → git commit する
   → SendMessage(to: "issue-{N}-reviewer", "impl-ready: <commit-hash>")
 
 reviewer → 再レビューループへ（フェーズ 2 に戻る）
+```
+
+**フロー図:**
+
+```
+[polling 中に conflict 検知]
+reviewer → analyst: CONFLICT_INVESTIGATE
+  analyst:
+    1. 両側の commit 履歴読む
+    2. 変更意図を要約
+    3. 両立解消 spec 作成
+    4. coder に CONFLICT_RESOLVE
+  coder:
+    5. spec に従って両立マージ実装
+    6. commit
+    7. reviewer に impl-ready
+  reviewer:
+    8. 再レビュー（通常フロー復帰）
 ```
 
 > **注意**: `pre-push-review-guard.sh` により、`.claude/.review-passed` マーカーがない状態での push はブロックされる。このマーカーの作成は reviewer 系エージェント（`reviewer` / `infra-reviewer` / `ui-reviewer`）のみに許可され、coder 系エージェント（`coder` / `infra-engineer` / `ui-designer`）およびオーケストレーターは作成してはならない。各レビュワーエージェントがマーカー作成・push・PR 作成を担当する。
@@ -585,7 +611,8 @@ oh-my-claudecode やその他のプラグイン由来のエージェントは使
 
 - analyst → 実装エージェントへ SendMessage（`spec: <パス>\n方針: <サマリー>`）
 - 実装エージェント → レビュワーへ SendMessage（`impl-ready: <commit-hash>`）
-- レビュワー → 実装エージェントへ SendMessage（`APPROVED` / `CHANGES_REQUESTED: <内容>` / `CONFLICT: <内容>`）
+- レビュワー → 実装エージェントへ SendMessage（`APPROVED` / `CHANGES_REQUESTED: <内容>`）
+- レビュワー → analyst へ SendMessage（`CONFLICT_INVESTIGATE: <ファイル一覧>`）→ analyst が spec 作成後、実装エージェントへ `CONFLICT_RESOLVE: spec=<path>`
 - レビュワー → orchestrator へ SendMessage（`APPROVED: issue-{N}`）
 - 各エージェントは Issue に紐づく worktree 内で動作させる
 - 複数 Issue の場合は「複数 Issue の並列処理」セクションを参照

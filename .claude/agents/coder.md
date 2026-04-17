@@ -113,24 +113,25 @@ git -C {worktree} rev-parse HEAD
 
 ### フェーズ 6: reviewer からの返答待機ループ
 
-reviewer からの SendMessage を待機する。`APPROVED`、`CHANGES_REQUESTED:`、`CONFLICT:` プレフィックスのメッセージを処理する。
+reviewer からの SendMessage を待機する。`APPROVED`、`CHANGES_REQUESTED:`、`CONFLICT_RESOLVE:` プレフィックスのメッセージを処理する。
 
 - **`APPROVED`**: 終了する
 - **`shutdown_request` 受信**: 即 `shutdown_response` (`approve: true`) を返してから終了する
 - **`CHANGES_REQUESTED: <feedback>`**: feedback の内容を読んで修正 → フェーズ 3 に戻る（lint → commit → impl-ready 送信 → 待機継続）
-- **`CONFLICT: <ファイル一覧>`**: コンフリクト解消フローを実行 → フェーズ 3 に戻る
+- **`CONFLICT_RESOLVE: spec=<path>`**: analyst が作成した conflict 解消 spec に従い両立マージを実装する → フェーズ 3 に戻る
 
-#### コンフリクト解消フロー
+#### CONFLICT_RESOLVE フロー（analyst 調査済み spec に従う）
 
 ```bash
-# 両側の意図を把握する
-gh issue view {issue_number}
-git -C {worktree} log origin/main --oneline -20
+# 1. spec ファイルを Read ツールで読み込む
+# spec パスは CONFLICT_RESOLVE: spec=<path> から取得する
 
-# コンフリクト解消
+# 2. spec に記載された「両立解消方針」に従い origin/main をマージする
 cd {worktree} && git fetch origin && git merge origin/main
-# コンフリクト箇所を手動で解消する
-cd {worktree} && git add . && git commit -m "fix: コンフリクト解消"
+# conflict 箇所を spec の方針に従って両立解消する（片方だけ採用は原則禁止）
+
+# 3. 解消後コミット
+cd {worktree} && git add . && git commit -m "fix: conflict 解消（両立マージ）"
 ```
 
 解消完了後、フェーズ 3 へ戻る。
