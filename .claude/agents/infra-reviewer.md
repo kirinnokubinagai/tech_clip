@@ -125,7 +125,7 @@ orchestrator から `ABORT:` を受信した場合:
 
 ### フェーズ 1: コンフリクトチェック
 
-impl-ready または CONFLICT_RESOLVED を受信したら、まず analyst 存在チェックを実行する:
+impl-ready を受信したら、まず analyst 存在チェックを実行する（CONFLICT_RESOLVED 受信時はフェーズ 1.5 に直接進むためスキップ）:
 
 ```bash
 MAIN_WT=$(git -C {worktree} worktree list --porcelain | head -1 | sed 's/^worktree //')

@@ -149,7 +149,9 @@ infra-reviewer からの SendMessage を待機する。`APPROVED`、`CHANGES_REQ
 
 - **`APPROVED`**: 終了する
 - **`shutdown_request` 受信**: 即 `shutdown_response` (`approve: true`) を返してから終了する
-- **`CHANGES_REQUESTED: <feedback>`**: feedback の内容を読んで修正 → フェーズ 3 に戻る（lint → commit → impl-ready 送信 → 待機継続）
+- **`CHANGES_REQUESTED: <feedback>`**: feedback の内容を読んで修正する
+  - 通常実装の修正の場合: フェーズ 3 に戻る（lint → commit → `impl-ready: <hash>` 送信 → 待機継続）
+  - CONFLICT_RESOLVED 後の指摘（feedback に「解消結果」等が含まれる場合）: コンフリクト解消を再実行し、`CONFLICT_RESOLVED: <hash>` を送信してフェーズ 6 待機に戻る
 - **`CONFLICT: <ファイル一覧>`**: conflict-resolver として解消を実行する
   1. 両側の意図を把握する（`gh issue view {issue_number}`、`git log origin/main --oneline -20`、コンフリクト箇所の読解）
   2. `git fetch origin && git merge origin/main` で解消を試みる

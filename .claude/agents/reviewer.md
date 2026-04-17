@@ -136,7 +136,7 @@ ls {worktree}/docs/superpowers/specs/*.md | sort | tail -1
 
 ### フェーズ 2: コンフリクトチェック
 
-impl-ready または CONFLICT_RESOLVED を受信したら、まず analyst 存在チェックを実行する:
+impl-ready を受信したら、まず analyst 存在チェックを実行する（CONFLICT_RESOLVED 受信時はフェーズ 2.5 に直接進むためスキップ）:
 
 ```bash
 MAIN_WT=$(git -C {worktree} worktree list --porcelain | head -1 | sed 's/^worktree //')
