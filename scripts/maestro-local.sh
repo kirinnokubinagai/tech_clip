@@ -66,6 +66,11 @@ if [ "${PLATFORM}" = "ios" ] && [ "$(uname)" != "Darwin" ]; then
   exit 2
 fi
 
+if [ ! -e "${FLOW_PATH}" ]; then
+  echo "${COLOR_RED}エラー: flow パスが見つかりません: ${FLOW_PATH}${COLOR_RESET}" >&2
+  exit 2
+fi
+
 # --- prereq チェック ---
 PREREQ_FAILED=0
 
@@ -153,7 +158,7 @@ BUILD_PID="$!"
 cd "${REPO_ROOT}"
 
 # --- アプリ起動待機 ---
-APP_ID="com.techclip.app"
+APP_ID="${MAESTRO_APP_ID:-com.techclip.app}"
 APP_WAIT_MAX_SEC=300
 APP_WAIT_INTERVAL=5
 APP_WAITED=0
@@ -162,9 +167,20 @@ echo "[maestro-local] アプリの起動を待機中..."
 
 while true; do
   if [ "${PLATFORM}" = "ios" ]; then
-    if xcrun simctl listapps booted 2>/dev/null | grep -q "${APP_ID}"; then
-      echo "${COLOR_GREEN}[maestro-local] iOS アプリが起動しました${COLOR_RESET}"
-      break
+    SIMULATOR_UDID="$(xcrun simctl list devices booted 2>/dev/null | grep -E '\(Booted\)' | head -1 | grep -oE '[0-9A-F-]{36}')"
+    if [ -n "${SIMULATOR_UDID}" ]; then
+      _LAUNCHED=0
+      for _i in $(seq 1 10); do
+        if xcrun simctl spawn "${SIMULATOR_UDID}" launchctl list 2>/dev/null | grep -q "${APP_ID}"; then
+          _LAUNCHED=1
+          break
+        fi
+        sleep 1
+      done
+      if [ "${_LAUNCHED}" -eq 1 ]; then
+        echo "${COLOR_GREEN}[maestro-local] iOS アプリが起動しました${COLOR_RESET}"
+        break
+      fi
     fi
   elif [ "${PLATFORM}" = "android" ]; then
     if adb shell pidof "${APP_ID}" 2>/dev/null | grep -qE '[0-9]+'; then
