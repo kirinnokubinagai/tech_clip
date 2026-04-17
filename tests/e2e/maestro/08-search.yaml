@@ -27,7 +27,7 @@ env:
 
 # 検索フィールドをタップ
 - tapOn:
-    text: "記事を検索"
+    text: "記事を検索..."
 
 # キーワードを入力
 - inputText: "TypeScript"

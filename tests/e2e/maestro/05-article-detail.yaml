@@ -58,16 +58,16 @@ env:
 
 # 要約ボタン
 - assertVisible:
-    text: "要約を生成"
+    text: "要約"
 - tapOn:
-    text: "要約を生成"
+    text: "要約"
 - waitForAnimationToEnd
 
 # 翻訳ボタン
 - assertVisible:
-    text: "翻訳する"
+    text: "翻訳"
 - tapOn:
-    text: "翻訳する"
+    text: "翻訳"
 - waitForAnimationToEnd
 
 # ブラウザで開くボタン確認

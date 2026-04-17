@@ -71,12 +71,12 @@ env:
 # SNSリンク
 - scroll
 - tapOn:
-    text: "https://x.com/username"
-- inputText: "https://x.com/testuser_e2e"
+    text: "your_handle"
+- inputText: "testuser_e2e"
 
 - tapOn:
-    text: "https://github.com/username"
-- inputText: "https://github.com/testuser_e2e"
+    text: "your_handle"
+- inputText: "testuser_e2e"
 
 # 保存
 - tapOn: "保存する"

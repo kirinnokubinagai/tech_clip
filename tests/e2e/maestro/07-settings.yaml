@@ -34,10 +34,10 @@ env:
 
 # サブスクリプションセクション
 - assertVisible: "プラン"
-- assertVisible: "Free"
+- assertVisible: "無料"
 
 # バージョン表示
-- assertVisible: "TechClip v"
+- assertVisible: "バージョン"
 
 # --- 通知スイッチ ---
 - assertVisible: "通知"
