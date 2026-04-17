@@ -92,7 +92,7 @@ impl-ready: <コミットハッシュ>
 
 受信したメッセージのプレフィックスに応じて処理を分岐する:
 
-- `impl-ready:` → フェーズ 1 へ進む
+- `impl-ready:` → フェーズ 0.5 へ進む
 - `CONFLICT_RESOLVED: <commit-hash>` → フェーズ 1.5「解消結果監査」へ進む
 - `ABORT: <理由>` → 以下の abort フローを実行して終了する
 
@@ -126,6 +126,33 @@ orchestrator から `ABORT:` を受信した場合:
    ```text
    SendMessage(to: "orchestrator", "ABORTED: issue-{issue_number} ui-reviewer が abort しました")
    ```
+
+### フェーズ 0.5: push 状態検証
+
+impl-ready を受信したら、フェーズ 1 に進む前に以下の検証を行う。
+
+```bash
+IMPL_READY_HASH=<受信したhash>  # impl-ready: <hash> から取得
+LOCAL_HASH=$(git -C {worktree} rev-parse HEAD)
+
+if [ "$LOCAL_HASH" != "$IMPL_READY_HASH" ]; then
+  SendMessage(to: "issue-{issue_number}-ui-designer", "ERROR: impl-ready hash mismatch (local=$LOCAL_HASH, got=$IMPL_READY_HASH). コミットを確認してください。")
+  # フェーズ 0 に戻る
+fi
+
+# 既存 PR がある場合はリモートとの一致も確認する
+PR_NUMBER=$(gh pr list --head "$(git -C {worktree} rev-parse --abbrev-ref HEAD)" --json number --jq '.[0].number' 2>/dev/null || echo "")
+PUSH_REQUIRED=false
+if [ -n "$PR_NUMBER" ]; then
+  REMOTE_HASH=$(gh pr view "$PR_NUMBER" --json headRefOid --jq '.headRefOid' 2>/dev/null || echo "")
+  if [ -n "$REMOTE_HASH" ] && [ "$LOCAL_HASH" != "$REMOTE_HASH" ]; then
+    PUSH_REQUIRED=true
+  fi
+fi
+```
+
+- `PUSH_REQUIRED=true` の場合: フェーズ 1 のコンフリクトチェック後、push が必要なことを記録してフェーズ 5 で push を行う
+- `PUSH_REQUIRED=false` の場合: 通常通りフェーズ 1 へ進む
 
 ### フェーズ 1: コンフリクトチェック
 
@@ -302,6 +329,17 @@ EOF
 ```
 
 
+#### push 後の remote 反映確認
+
+```bash
+LOCAL_HASH_AFTER=$(git -C {worktree} rev-parse HEAD)
+AFTER_REMOTE=$(gh pr view {pr_number} --json headRefOid --jq '.headRefOid' 2>/dev/null || echo "")
+if [ -n "$AFTER_REMOTE" ] && [ "$LOCAL_HASH_AFTER" != "$AFTER_REMOTE" ]; then
+  SendMessage(to: "orchestrator", "STUCK: issue-{issue_number} push が remote に反映されませんでした (local=$LOCAL_HASH_AFTER, remote=$AFTER_REMOTE)。手動確認をお願いします。PR: {pr_number}")
+  exit 0
+fi
+```
+
 ### フェーズ 5.5: CI 発火確認 fallback
 
 ```bash
@@ -360,6 +398,16 @@ LABELS=$(echo "$PR_JSON" | jq -r '.labels[].name' 2>/dev/null || echo "")
 
 # bot comment 判定: "## PRレビュー結果" を含む最新コメント
 BOT_COMMENT=$(echo "$PR_JSON" | jq -r '[.comments[] | select(.body | contains("## PRレビュー結果"))] | last | .body // ""')
+
+# SHA マッチング: 古いコミット宛の bot comment を無視する
+CURRENT_HEAD_SHORT=$(git -C {worktree} rev-parse --short HEAD 2>/dev/null || echo "")
+if [ -n "$BOT_COMMENT" ] && [ -n "$CURRENT_HEAD_SHORT" ]; then
+  TARGET_SHA=$(echo "$BOT_COMMENT" | grep -oE '[a-f0-9]{7,40}' | head -1 || echo "")
+  if [ -n "$TARGET_SHA" ] && [ "${TARGET_SHA:0:${#CURRENT_HEAD_SHORT}}" != "$CURRENT_HEAD_SHORT" ]; then
+    BOT_COMMENT=""  # 古いコミット宛のコメントは無視
+  fi
+fi
+
 BOT_VERDICT=""
 if echo "$BOT_COMMENT" | grep -qE '(\*\*)?✅ Approve(\*\*)?|全件 PASS（0件）'; then
   BOT_VERDICT="approve"

@@ -106,7 +106,21 @@ cd {worktree} && git add . && git commit -m "feat: ..."
 
 ### フェーズ 5: reviewer への通知
 
-コミット後、reviewer に SendMessage を送信する:
+コミット後、送信前に self-check を行う:
+
+```bash
+# 1. 未コミット変更がないことを確認
+if git -C {worktree} status --porcelain | grep -q .; then
+  echo "ERROR: uncommitted changes exist. git add && git commit してから送信してください。"
+  git -C {worktree} status --short
+  # フェーズ 4 に戻る
+fi
+
+# 2. HEAD ハッシュを取得
+COMMIT_HASH=$(git -C {worktree} rev-parse HEAD)
+```
+
+self-check が通ったら reviewer に SendMessage を送信する:
 
 - **to**: `"issue-{issue_number}-reviewer"`
 - **message**: `impl-ready: <commit-hash>`

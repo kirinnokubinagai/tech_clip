@@ -640,6 +640,30 @@ oh-my-claudecode やその他のプラグイン由来のエージェントは使
 - 各エージェントは Issue に紐づく worktree 内で動作させる
 - 複数 Issue の場合は「複数 Issue の並列処理」セクションを参照
 
+### レビュワーの処理フェーズ順序（絶対ルール）
+
+`impl-ready: <commit-hash>` を受信したレビュワーは、以下のフェーズ順序を**必ず守る**こと。順序の変更・省略は禁止する。
+
+```
+フェーズ 0   : 実装エージェントからの impl-ready 待機
+フェーズ 0.5 : push 状態検証
+               ├─ ① impl-ready hash と local HEAD が一致するか確認
+               └─ ② 既存 PR がある場合 remote HEAD との一致を確認（不一致 → PUSH_REQUIRED=true）
+フェーズ 1   : origin/main とのコンフリクトチェック
+フェーズ 1.5 : 解消結果監査（CONFLICT_RESOLVED 受信時のみ）
+フェーズ 2   : lint / typecheck / test（事前チェック）
+フェーズ 3   : コードレビュー実行
+フェーズ 4   : 結果処理（PASS → フェーズ 5 / 指摘あり → 実装エージェントへ CHANGES_REQUESTED）
+フェーズ 5   : .review-passed マーカー作成 → push → PR 作成（または既存 PR への追加 push）
+               └─ push 後に remote 反映を確認（不一致 → orchestrator に STUCK 通知して終了）
+フェーズ 5.5 : CI 発火確認 fallback
+フェーズ 6   : GitHub レビューポーリング（30 秒間隔・最大 60 分）
+               └─ polling 内で claude-review bot comment の SHA マッチングを行う
+                  （現在の HEAD と一致しない bot comment は古いコミット宛として無視する）
+フェーズ 6.5 : PR E2E (Android) 視覚レビュー（ui-reviewer のみ）
+フェーズ 7   : PR マージ完了待機 → 後片付け → APPROVED 通知
+```
+
 ---
 
 ## 必須の起動手順

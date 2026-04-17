@@ -91,7 +91,7 @@ impl-ready: <commit-hash>
 
 受信したメッセージのプレフィックスに応じて処理を分岐する:
 
-- `impl-ready:` → フェーズ 1 へ進む
+- `impl-ready:` → フェーズ 0.5 へ進む
 - `CONFLICT_RESOLVED: <commit-hash>` → フェーズ 2.5「解消結果監査」へ進む
 - `ABORT: <理由>` → 以下の abort フローを実行して終了する
 
@@ -125,6 +125,33 @@ orchestrator から `ABORT:` を受信した場合:
    ```text
    SendMessage(to: "orchestrator", "ABORTED: issue-{issue_number} reviewer が abort しました")
    ```
+
+### フェーズ 0.5: push 状態検証
+
+`impl-ready:` 受信後、フェーズ 1 に進む前に local HEAD と受信ハッシュの一致を確認する。
+
+```bash
+IMPL_READY_HASH=<受信したhash>  # impl-ready: <hash> から取得
+LOCAL_HASH=$(git -C {worktree} rev-parse HEAD)
+
+# local HEAD と impl-ready hash の一致確認
+if [ "$LOCAL_HASH" != "$IMPL_READY_HASH" ]; then
+  SendMessage(to: "issue-{issue_number}-coder", "ERROR: impl-ready hash mismatch (local=$LOCAL_HASH, got=$IMPL_READY_HASH). コミットを確認してください。")
+  # フェーズ 0 に戻る
+fi
+
+# remote HEAD との差分確認（push 済みかどうか）
+PR_NUMBER=<PR番号>  # フェーズ 5 以降は既知。初回は空でよい
+if [ -n "$PR_NUMBER" ]; then
+  REMOTE_HASH=$(gh pr view "$PR_NUMBER" --json headRefOid --jq '.headRefOid' 2>/dev/null || echo "")
+  if [ -n "$REMOTE_HASH" ] && [ "$LOCAL_HASH" != "$REMOTE_HASH" ]; then
+    # local が remote より進んでいる → フェーズ 5 で必ず push が必要（フラグを立てる）
+    PUSH_REQUIRED=true
+  fi
+fi
+```
+
+検証が通ったらフェーズ 1 へ進む。
 
 ### フェーズ 1: spec 読み込み
 
@@ -265,6 +292,14 @@ cd {worktree} && direnv exec {worktree} pnpm test
 
 # push
 cd {worktree} && bash scripts/push-verified.sh
+
+# push 後の remote HEAD 検証
+LOCAL_HASH_AFTER=$(git -C {worktree} rev-parse HEAD)
+AFTER_REMOTE=$(gh pr view {pr_number} --json headRefOid --jq '.headRefOid' 2>/dev/null || echo "")
+if [ -n "$AFTER_REMOTE" ] && [ "$LOCAL_HASH_AFTER" != "$AFTER_REMOTE" ]; then
+  SendMessage(to: "orchestrator", "STUCK: issue-{issue_number} push が remote に反映されませんでした (local=$LOCAL_HASH_AFTER, remote=$AFTER_REMOTE)")
+  exit 0
+fi
 ```
 
 #### PR 作成（新規 PR の場合）
@@ -357,6 +392,16 @@ LABELS=$(echo "$PR_JSON" | jq -r '.labels[].name' 2>/dev/null || echo "")
 
 # bot comment 判定: "## PRレビュー結果" を含む最新コメント
 BOT_COMMENT=$(echo "$PR_JSON" | jq -r '[.comments[] | select(.body | contains("## PRレビュー結果"))] | last | .body // ""')
+# claude-review 対象 SHA マッチング: 古いコミットへのレビューは無視する
+CURRENT_HEAD_SHORT=$(git -C {worktree} rev-parse --short HEAD 2>/dev/null || echo "")
+if [ -n "$BOT_COMMENT" ] && [ -n "$CURRENT_HEAD_SHORT" ]; then
+  TARGET_SHA=$(echo "$BOT_COMMENT" | grep -oE '[a-f0-9]{7,40}' | head -1 || echo "")
+  if [ -n "$TARGET_SHA" ] && [ "${TARGET_SHA:0:${#CURRENT_HEAD_SHORT}}" != "$CURRENT_HEAD_SHORT" ]; then
+    # 古いコミットを対象としたレビューコメントなので無視して polling 継続
+    BOT_COMMENT=""
+  fi
+fi
+
 BOT_VERDICT=""
 if echo "$BOT_COMMENT" | grep -qE '(\*\*)?✅ Approve(\*\*)?|全件 PASS（0件）'; then
   BOT_VERDICT="approve"
