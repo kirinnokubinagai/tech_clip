@@ -103,7 +103,7 @@ fi
 
 # --- simulator / emulator 起動確認 ---
 if [ "${PLATFORM}" = "ios" ]; then
-  if ! xcrun simctl list devices booted 2>/dev/null | grep -q "Booted"; then
+  if ! xcrun simctl list devices booted 2>/dev/null | grep -qE '\(Booted\)'; then
     echo "${COLOR_YELLOW}警告: 起動中の iOS Simulator が見つかりません。expo run:ios が自動起動を試みます${COLOR_RESET}"
   fi
 elif [ "${PLATFORM}" = "android" ]; then
