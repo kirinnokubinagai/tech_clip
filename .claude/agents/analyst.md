@@ -89,7 +89,7 @@ spec ドキュメントを `{worktree}/docs/superpowers/specs/YYYY-MM-DD-<topic>
   方針: {実装方針の1行サマリー}
   ```
 
-その後終了する。
+spec を送信後、フェーズ 0.5（CONFLICT_INVESTIGATE 受信待機）へ進む。`APPROVED` または `shutdown_request` を受信するまで終了しない。
 
 ### CONFLICT_INVESTIGATE 受信時の conflict 調査プロトコル
 
@@ -104,7 +104,7 @@ CONFLICT_INVESTIGATE: <説明>。ファイル: <conflict ファイル一覧>
 > reviewer 側での `git merge-tree` 実行が失敗したことを示す。この場合は自分で以下を実行してファイル一覧を特定する:
 > ```bash
 > git -C {worktree} fetch origin main --quiet
-> git -C {worktree} merge-tree origin/main HEAD 2>&1 | grep "^CONFLICT" || > git -C {worktree} diff --name-only --diff-filter=U
+git -C {worktree} merge-tree origin/main HEAD 2>&1 | grep "^CONFLICT" || git -C {worktree} diff --name-only --diff-filter=U
 > ```
 
 **調査フロー:**

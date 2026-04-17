@@ -132,10 +132,11 @@ orchestrator から `ABORT:` を受信した場合:
 cd {worktree}
 git fetch origin main
 MERGE_OUTPUT=$(git merge --no-commit --no-ff origin/main 2>&1)
-git merge --abort 2>/dev/null || true
 if echo "$MERGE_OUTPUT" | grep -q "CONFLICT"; then
   CONFLICT_FILES=$(git diff --name-only --diff-filter=U 2>/dev/null || echo "（ファイル一覧取得失敗。git status で確認してください）")
-  # SendMessage を送信してフェーズ 0 に戻る
+  git merge --abort 2>/dev/null || true
+else
+  git merge --abort 2>/dev/null || true
 fi
 ```
 
@@ -336,7 +337,7 @@ fi
 if [ "$STATE" = "OPEN" ] && [ "$MERGE_STATE" != "BEHIND" ] && [ "$MERGE_STATE" != "DIRTY" ] && [ "$MERGE_STATE" != "CONFLICTING" ]; then
   git -C {worktree} fetch origin main --quiet 2>/dev/null || true
   if ! git -C {worktree} merge-tree --write-tree --no-messages origin/main HEAD > /dev/null 2>&1; then
-    CONFLICT_FILES=$(git -C {worktree} merge-tree --name-only origin/main HEAD 2>/dev/null | head -20 || git -C {worktree} status --porcelain | grep "^UU" | awk '{print $2}' | head -20 || echo "（ファイル一覧取得失敗。git status で確認してください）")
+    CONFLICT_FILES=$(git -C {worktree} merge-tree --write-tree origin/main HEAD 2>/dev/null | grep "^CONFLICT" | awk '{print $NF}' | head -20 || git -C {worktree} status --porcelain | grep "^UU" | awk '{print $2}' | head -20 || echo "（ファイル一覧取得失敗。git status で確認してください）")
     SendMessage(to: "issue-{issue_number}-analyst", "CONFLICT_INVESTIGATE: origin/main との間に conflict が発生しました。ファイル: ${CONFLICT_FILES}")
     # フェーズ 0 に戻り、analyst → ui-designer → impl-ready を待つ（reviewer は終了せず待機継続）
     break
