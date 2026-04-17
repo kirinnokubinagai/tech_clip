@@ -45,10 +45,25 @@ fi
 if [ "$TOOL_NAME" = "Bash" ]; then
   COMMAND=$(echo "$TOOL_INPUT" | jq -r '.command // ""')
 
-  # gh issue close は AskUserQuestion 事前確認が必要
+  # gh issue close は AskUserQuestion 事前確認が必要（5分以内のフラグが必要）
   if echo "$COMMAND" | grep -qE '^\s*gh\s+issue\s+close\s'; then
-    if ! ls "${HOME}"/.claude-user/projects/*/memory/tmp-last-askuserquestion.flag 2>/dev/null | head -1 | grep -q .; then
-      deny "DENY: 'gh issue close' は AskUserQuestion で事前確認してから実行してください。CLAUDE.md 絶対ルール (ワークフロー逸脱)。"
+    FLAG_FILE=$(ls "${HOME}"/.claude-user/projects/*/memory/tmp-last-askuserquestion.flag 2>/dev/null | head -1)
+    FLAG_VALID=false
+    if [ -n "$FLAG_FILE" ] && [ -f "$FLAG_FILE" ]; then
+      FLAG_TIME=$(cat "$FLAG_FILE" 2>/dev/null || echo "")
+      if [ -n "$FLAG_TIME" ]; then
+        FLAG_EPOCH=$(date -j -f "%Y-%m-%dT%H:%M:%SZ" "$FLAG_TIME" +%s 2>/dev/null \
+          || date -d "$FLAG_TIME" +%s 2>/dev/null \
+          || echo 0)
+        NOW_EPOCH=$(date +%s)
+        ELAPSED=$((NOW_EPOCH - FLAG_EPOCH))
+        if [ "$ELAPSED" -le 300 ]; then
+          FLAG_VALID=true
+        fi
+      fi
+    fi
+    if [ "$FLAG_VALID" != "true" ]; then
+      deny "DENY: 'gh issue close' は AskUserQuestion で事前確認してから 5 分以内に実行してください。CLAUDE.md 絶対ルール (ワークフロー逸脱)。"
     fi
   fi
 
