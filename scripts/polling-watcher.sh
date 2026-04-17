@@ -109,7 +109,7 @@ for STATE_FILE in "$POLLING_DIR"/pr-*.json; do
 
   VERDICT=$(evaluate_verdict "$PR_NUMBER" "$PUSH_SHA" "$CONFIG")
 
-  if [ -z "$VERDICT" ]; then
+  if [ "$VERDICT" = "pending" ]; then
     echo "PENDING: PR #$PR_NUMBER ($AGENT_NAME) verdict 未確定"
     continue
   fi
