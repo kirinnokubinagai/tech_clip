@@ -180,7 +180,7 @@ ui-reviewer から SendMessage が届くまで待機する。
 2. spec に記載された「両立解消方針」に従い `git -C {worktree} fetch origin && git -C {worktree} merge origin/main` を実行する
    - 片方だけ採用は原則禁止
 3. spec の方針で解消できない箇所がある場合:
-   - `SendMessage(to: "issue-{issue_number}-analyst", "CONFLICT_INVESTIGATE: <状況説明>")` を送信する
+   - `SendMessage(to: "issue-{issue_number}-analyst", "CONFLICT_INVESTIGATE: sender=ui-designer\n<状況説明>")` を送信する
    - **analyst からの `CONFLICT_RESOLVE_DESIGN:` 応答を受信するまで待機する**
    - 応答の方針を適用してから解消を完了する
    - `CONFLICT_RESOLVE_DESIGN:` に "不要" が含まれる場合（本 Issue の変更が main で不要と判定）:
