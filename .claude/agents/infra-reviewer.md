@@ -123,6 +123,53 @@ orchestrator から `ABORT:` を受信した場合:
    SendMessage(to: "orchestrator", "ABORTED: issue-{issue_number} infra-reviewer が abort しました")
    ```
 
+
+### フェーズ 0.5: push 状態検証（impl-ready 受信時のみ）
+
+`impl-ready:` を受信した場合のみ実行する（`CONFLICT_RESOLVED:` 受信時はスキップ）。
+
+```bash
+PUSH_REQUIRED=false
+IMPL_READY_HASH=<impl-ready で受信した hash>
+LOCAL_HASH=$(git -C {worktree} rev-parse HEAD)
+
+# local HEAD が impl-ready と一致しているか確認
+if [ "$LOCAL_HASH" != "$IMPL_READY_HASH" ]; then
+  SendMessage(to: "issue-{issue_number}-infra-engineer", "ERROR: impl-ready hash ($IMPL_READY_HASH) が local HEAD ($LOCAL_HASH) と一致しません。正しい commit hash を送信してください。")
+  exit 0
+fi
+
+# uncommitted changes がないか確認
+UNCOMMITTED=$(git -C {worktree} status --porcelain)
+if [ -n "$UNCOMMITTED" ]; then
+  SendMessage(to: "issue-{issue_number}-infra-engineer", "ERROR: uncommitted changes が存在します。すべての変更を commit してから impl-ready を送信してください。")
+  exit 0
+fi
+
+# PR が存在する場合、remote HEAD と比較
+PR_BRANCH=$(git -C {worktree} rev-parse --abbrev-ref HEAD)
+PR_EXISTS=$(gh pr list --head "$PR_BRANCH" --json number --jq 'length' 2>/dev/null || echo 0)
+if [ "$PR_EXISTS" -gt 0 ]; then
+  PR_NUMBER=$(gh pr list --head "$PR_BRANCH" --json number --jq '.[0].number' 2>/dev/null)
+  REMOTE_HASH=$(gh pr view "$PR_NUMBER" --json headRefOid --jq '.headRefOid' 2>/dev/null || echo "")
+  if [ -n "$REMOTE_HASH" ] && [ "$LOCAL_HASH" != "$REMOTE_HASH" ]; then
+    echo "INFO: local ($LOCAL_HASH) != remote ($REMOTE_HASH)。フェーズ 5 で push が必要です。"
+    PUSH_REQUIRED=true
+  fi
+fi
+```
+
+> **PUSH_REQUIRED=true の場合**: フェーズ 1〜4 のレビュー・事前チェックを通過後、フェーズ 5 の push を必ず実行する。push 後に remote HEAD を再検証する:
+>
+> ```bash
+> bash scripts/push-verified.sh
+> REMOTE_HASH_AFTER=$(gh pr view "$PR_NUMBER" --json headRefOid --jq '.headRefOid' 2>/dev/null || echo "")
+> if [ -n "$REMOTE_HASH_AFTER" ] && [ "$LOCAL_HASH" != "$REMOTE_HASH_AFTER" ]; then
+>   SendMessage(to: "orchestrator", "STUCK: issue-{issue_number} push が反映されていません (local $LOCAL_HASH != remote $REMOTE_HASH_AFTER)")
+>   exit 0
+> fi
+> ```
+
 ### フェーズ 1: コンフリクトチェック
 
 impl-ready を受信したら、まず analyst 存在チェックを実行する（CONFLICT_RESOLVED 受信時はフェーズ 1.5 に直接進むためスキップ）:
