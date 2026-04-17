@@ -104,7 +104,7 @@ CONFLICT_INVESTIGATE: <説明>。ファイル: <conflict ファイル一覧>
 > reviewer 側での `git merge-tree` 実行が失敗したことを示す。この場合は自分で以下を実行してファイル一覧を特定する:
 > ```bash
 > git -C {worktree} fetch origin main --quiet
-git -C {worktree} merge-tree origin/main HEAD 2>&1 | grep "^CONFLICT" || git -C {worktree} diff --name-only --diff-filter=U
+> git -C {worktree} merge-tree origin/main HEAD 2>&1 | grep "^CONFLICT" || git -C {worktree} diff --name-only --diff-filter=U
 > ```
 
 **調査フロー:**
