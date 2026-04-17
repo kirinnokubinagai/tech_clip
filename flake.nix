@@ -72,7 +72,7 @@
         devShells.ci = pkgs.mkShell {
           buildInputs = with pkgs; [
             nodejs_22
-            pnpm
+            pnpm_10
             turbo
             biome
             gh
@@ -91,7 +91,7 @@
         devShells.default = pkgs.mkShell {
           buildInputs = with pkgs; [
             nodejs_22
-            pnpm
+            pnpm_10
             turbo
             biome
             gh
