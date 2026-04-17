@@ -16,7 +16,8 @@
     "verify:uncached": "./scripts/verify-uncached.sh",
     "typecheck:uncached": "./scripts/verify-uncached.sh typecheck",
     "test:uncached": "./scripts/verify-uncached.sh test",
-    "prepare": "husky"
+    "prepare": "husky",
+    "polling-watcher": "bash scripts/polling-watcher.sh"
   },
   "pnpm": {
     "overrides": {
