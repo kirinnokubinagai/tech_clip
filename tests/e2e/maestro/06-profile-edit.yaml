@@ -51,8 +51,7 @@ env:
     id: "profile-edit-camera-badge"
 
 # --- バリデーション: 名前を空にして保存 ---
-- clearText:
-    text: "名前を入力"
+- eraseText
 - tapOn: "保存する"
 - assertVisible: "名前を入力してください"
 

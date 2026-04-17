@@ -41,7 +41,7 @@ env:
 - assertVisible: "有効なURLを入力してください"
 
 # URLフィールドをクリア
-- clearText
+- eraseText
 
 # --- 正常系: 有効なURLで記事を取得 ---
 - tapOn:

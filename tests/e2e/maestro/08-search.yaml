@@ -37,7 +37,7 @@ env:
 - assertVisible: "TypeScript"
 
 # --- 検索結果をクリア ---
-- clearText
+- eraseText
 - waitForAnimationToEnd
 
 # 別キーワードで検索
