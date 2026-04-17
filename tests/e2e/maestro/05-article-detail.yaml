@@ -91,4 +91,3 @@ env:
 - swipe:
     start: "50%, 40%"
     end: "50%, 80%"
-    direction: DOWN
