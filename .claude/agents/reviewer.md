@@ -126,20 +126,13 @@ orchestrator から `ABORT:` を受信した場合:
    SendMessage(to: "orchestrator", "ABORTED: issue-{issue_number} reviewer が abort しました")
    ```
 
-### フェーズ 1: spec 読み込み
 
-```bash
-ls {worktree}/docs/superpowers/specs/*.md | sort | tail -1
-```
-
-最新の spec ファイルを読む。存在しない場合はオーケストレーターから渡された指示のみで進める。
-
-
-### フェーズ 1.5: push 状態検証（impl-ready 受信時のみ）
+### フェーズ 0.5: push 状態検証（impl-ready 受信時のみ）
 
 `impl-ready:` を受信した場合のみ実行する（`CONFLICT_RESOLVED:` 受信時はスキップ）。
 
 ```bash
+PUSH_REQUIRED=false
 IMPL_READY_HASH=<impl-ready で受信した hash>
 LOCAL_HASH=$(git -C {worktree} rev-parse HEAD)
 
@@ -179,6 +172,15 @@ fi
 >   exit 0
 > fi
 > ```
+
+### フェーズ 1: spec 読み込み
+
+```bash
+ls {worktree}/docs/superpowers/specs/*.md | sort | tail -1
+```
+
+最新の spec ファイルを読む。存在しない場合はオーケストレーターから渡された指示のみで進める。
+
 
 ### フェーズ 2: コンフリクトチェック
 

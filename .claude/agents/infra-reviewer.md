@@ -129,6 +129,7 @@ orchestrator から `ABORT:` を受信した場合:
 `impl-ready:` を受信した場合のみ実行する（`CONFLICT_RESOLVED:` 受信時はスキップ）。
 
 ```bash
+PUSH_REQUIRED=false
 IMPL_READY_HASH=<impl-ready で受信した hash>
 LOCAL_HASH=$(git -C {worktree} rev-parse HEAD)
 
