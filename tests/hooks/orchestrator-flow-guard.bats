@@ -112,10 +112,19 @@ run_hook() {
 
 @test "AskUserQuestion フラグがある場合は gh issue close が許可されること" {
     mkdir -p "$HOME/.claude-user/projects/test-project/memory"
-    touch "$HOME/.claude-user/projects/test-project/memory/tmp-last-askuserquestion.flag"
+    date -u +%Y-%m-%dT%H:%M:%SZ > "$HOME/.claude-user/projects/test-project/memory/tmp-last-askuserquestion.flag"
     local json='{"tool_name":"Bash","tool_input":{"command":"gh issue close 123"}}'
     run run_hook "$json"
     [ "$status" -eq 0 ]
+}
+
+@test "期限切れの AskUserQuestion フラグは gh issue close をブロックすること" {
+    mkdir -p "$HOME/.claude-user/projects/test-project/memory"
+    echo "2000-01-01T00:00:00Z" > "$HOME/.claude-user/projects/test-project/memory/tmp-last-askuserquestion.flag"
+    local json='{"tool_name":"Bash","tool_input":{"command":"gh issue close 123"}}'
+    run run_hook "$json"
+    [ "$status" -eq 2 ]
+    [[ "$output" == *"DENY"* ]]
 }
 
 @test "gh issue list はブロックされないこと" {
