@@ -145,24 +145,35 @@ git -C {worktree} rev-parse HEAD
 
 ### フェーズ 6: infra-reviewer からの返答待機ループ
 
-infra-reviewer からの SendMessage を待機する。`APPROVED`、`CHANGES_REQUESTED:`、`CONFLICT:` プレフィックスのメッセージを処理する。
+infra-reviewer からの SendMessage を待機する。`APPROVED`、`CHANGES_REQUESTED:`、`CONFLICT_RESOLVE:` プレフィックスのメッセージを処理する。
 
 - **`APPROVED`**: 終了する
 - **`shutdown_request` 受信**: 即 `shutdown_response` (`approve: true`) を返してから終了する
 - **`CHANGES_REQUESTED: <feedback>`**: feedback の内容を読んで修正する
   - 通常実装の修正の場合: フェーズ 3 に戻る（lint → commit → `impl-ready: <hash>` 送信 → 待機継続）
   - CONFLICT_RESOLVED 後の指摘（feedback に「解消結果」等が含まれる場合）: コンフリクト解消を再実行し、`CONFLICT_RESOLVED: <hash>` を送信してフェーズ 6 待機に戻る
-- **`CONFLICT: <ファイル一覧>`**: conflict-resolver として解消を実行する
-  1. 両側の意図を把握する（`gh issue view {issue_number}`、`git log origin/main --oneline -20`、コンフリクト箇所の読解）
-  2. `git fetch origin && git merge origin/main` で解消を試みる
-  3. **片側採用禁止**。両立できない箇所があれば `SendMessage(to: "issue-{issue_number}-analyst", "CONFLICT_INVESTIGATE: <状況説明>")` で analyst に設計判断を仰ぐ
-     - analyst から `CONFLICT_RESOLVE_DESIGN:` 応答が届くまで待機する
-     - 応答内容に「不要」が含まれる場合（Issue の変更が main で不要と判定された場合）:
-       `SendMessage(to: "issue-{issue_number}-infra-reviewer", "ABORT: CONFLICT_INVESTIGATE の結果、本 Issue の変更は不要と判断されました。<analyst からの理由>")` を送信してフェーズ 6 待機に戻る
-     - 応答に方針が含まれる場合: その方針を適用して解消を完了し、ステップ 4 へ進む
-  4. 解消 commit を作る（**push しない**）
-  5. `SendMessage(to: "issue-{issue_number}-infra-reviewer", "CONFLICT_RESOLVED: <commit-hash>")`
-  6. フェーズ 6 の待機ループに戻る
+- **`CONFLICT_RESOLVE: spec=<path>`**: analyst が作成した conflict 解消 spec に従い両立マージを実装する
+
+#### CONFLICT_RESOLVE フロー（analyst 調査済み spec に従う）
+
+```bash
+# 1. spec ファイルを Read ツールで読み込む
+# spec パスは CONFLICT_RESOLVE: spec=<path> から取得する
+
+# 2. spec に記載された「両立解消方針」に従い origin/main をマージする
+cd {worktree} && git fetch origin && git merge origin/main
+# conflict 箇所を spec の方針に従って両立解消する（片方だけ採用は原則禁止）
+# 両立できない箇所は SendMessage(to: "issue-{issue_number}-analyst", "CONFLICT_INVESTIGATE: <状況説明>") で追加調査を依頼する
+# analyst から CONFLICT_RESOLVE_DESIGN: 応答が届くまで待機する
+# CONFLICT_RESOLVE_DESIGN に "不要" が含まれる場合は SendMessage(to: "issue-{issue_number}-infra-reviewer", "ABORT: <理由>") を送信してフェーズ 6 待機に戻る
+
+# 3. 解消後コミット
+cd {worktree} && git add . && git commit -m "fix: conflict 解消（両立マージ）"
+```
+
+解消完了後:
+- `SendMessage(to: "issue-{issue_number}-infra-reviewer", "CONFLICT_RESOLVED: <commit-hash>")`
+- フェーズ 6 の待機ループに戻る
 
 ## Biome lint
 

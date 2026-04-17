@@ -158,22 +158,27 @@ fi
 **重要**: この警告を送っても作業を止めない。orchestrator への指摘のみで、レビューは通常通り進める。
 
 ```bash
-git -C {worktree} fetch origin
-git -C {worktree} merge --no-commit --no-ff origin/main 2>&1
+cd {worktree}
+git fetch origin main
+MERGE_OUTPUT=$(git merge --no-commit --no-ff origin/main 2>&1)
+if echo "$MERGE_OUTPUT" | grep -q "CONFLICT"; then
+  CONFLICT_FILES=$(git diff --name-only --diff-filter=U 2>/dev/null || echo "（ファイル一覧取得失敗。git status で確認してください）")
+  git merge --abort 2>/dev/null || true
+else
+  git merge --abort 2>/dev/null || true
+fi
 ```
 
 コンフリクトが検出された場合:
 ```text
 SendMessage(
-  to: "issue-{issue_number}-ui-designer",
-  message: "CONFLICT: コンフリクトが発生しています。解消してから再度 impl-ready を送信してください。
-詳細: <コンフリクトファイル一覧>"
+  to: "issue-{issue_number}-analyst",
+  message: "CONFLICT_INVESTIGATE: origin/main との間に conflict が発生しました。両側の変更意図を調査して ui-designer に両立方針を渡してください。ファイル: ${CONFLICT_FILES}"
 )
 ```
-送信後、マージを中断してフェーズ 0 に戻る:
-```bash
-git -C {worktree} merge --abort
-```
+送信後、フェーズ 0 に戻り analyst → ui-designer → impl-ready を待つ。
+
+> **⚠️ analyst デッドロック対策**: analyst が `APPROVED` / `shutdown_request` で既に終了している場合、`CONFLICT_INVESTIGATE:` を送っても受信者がいない。この場合、SendMessage が `no agent found` 等のエラーになるので、orchestrator に `STUCK: issue-{issue_number} analyst が終了済みのため conflict 解消できません。analyst 再 spawn または手動解消をお願いします。PR: {PR_URL}` を送信してフェーズ 0 で待機する。
 
 ### フェーズ 1.5: 解消結果監査（CONFLICT_RESOLVED 受信時のみ）
 
@@ -296,6 +301,30 @@ EOF
 )"
 ```
 
+
+### フェーズ 5.5: CI 発火確認 fallback
+
+```bash
+REPO=$(gh repo view --json nameWithOwner --jq '.nameWithOwner')
+BRANCH=$(git -C {worktree} rev-parse --abbrev-ref HEAD)
+PR_NUMBER=<フェーズ 5 で作成 or 既存 PR>
+
+RUNS=0
+for i in $(seq 1 12); do
+  RUNS=$(gh api "repos/${REPO}/actions/runs?branch=${BRANCH}&per_page=1" \
+         --jq '.workflow_runs | length' 2>/dev/null || echo 0)
+  [ "$RUNS" -gt 0 ] && break
+  sleep 5
+done
+
+if [ "$RUNS" = "0" ]; then
+  cd {worktree}
+  git commit --allow-empty -m "chore: trigger CI for PR #${PR_NUMBER}"
+  bash scripts/push-verified.sh
+  SendMessage(to: "orchestrator", "CI_TRIGGER_FALLBACK: issue-{issue_number} PR #${PR_NUMBER} で空コミット push を実施しました")
+fi
+```
+
 ### フェーズ 6: 統合ポーリング
 
 > **絶対に `gh pr view --json statusCheckRollup` の `claude-review: SUCCESS` を APPROVED の根拠にしないこと。**
@@ -374,6 +403,24 @@ if [ "$QUEUED_COUNT" -gt 0 ]; then
 else
   LAST_STATUS=""
 fi
+
+# 外部マージ検知（フェーズ 6 内での早期検知）
+if [ "$STATE" = "MERGED" ]; then
+  SendMessage(to: "orchestrator", "APPROVED: issue-{issue_number} (外部マージ検知)")
+  exit 0
+fi
+
+# origin/main との conflict 予測（polling 中に定期チェック）
+if [ "$STATE" = "OPEN" ] && [ "$MERGE_STATE" != "BEHIND" ] && [ "$MERGE_STATE" != "DIRTY" ] && [ "$MERGE_STATE" != "CONFLICTING" ]; then
+  git -C {worktree} fetch origin main --quiet 2>/dev/null || true
+  if ! git -C {worktree} merge-tree --write-tree --no-messages origin/main HEAD > /dev/null 2>&1; then
+    CONFLICT_FILES=$(git -C {worktree} merge-tree --write-tree origin/main HEAD 2>/dev/null | grep "^CONFLICT" | awk '{print $NF}' | head -20 || git -C {worktree} status --porcelain | grep "^UU" | awk '{print $2}' | head -20 || echo "（ファイル一覧取得失敗。git status で確認してください）")
+    SendMessage(to: "issue-{issue_number}-analyst", "CONFLICT_INVESTIGATE: origin/main との間に conflict が発生しました。ファイル: ${CONFLICT_FILES}")
+    # conflict 検知 → analyst に通知して polling ループを抜け、フェーズ 0 に戻る
+    # （reviewer は終了しない。フェーズ 0 の while ループが次の impl-ready を待機する）
+    break  # polling while ループを抜ける
+  fi
+fi
 ```
 
 #### 判定マトリクス（上から順に else-if で評価）
@@ -406,8 +453,8 @@ git fetch origin main
 if git merge --no-commit --no-ff origin/main 2>&1 | grep -q "CONFLICT"; then
   CONFLICT_FILES=$(git diff --name-only --diff-filter=U)
   git merge --abort
-  # SendMessage(to: "issue-{issue_number}-ui-designer", "CONFLICT: 以下を解消してください: $CONFLICT_FILES")
-  # フェーズ 0 に戻る
+  SendMessage(to: "issue-{issue_number}-analyst", "CONFLICT_INVESTIGATE: origin/main とコンフリクトが発生しています。両側の変更意図を調査して ui-designer に両立方針を渡してください。コンフリクトファイル: $CONFLICT_FILES")
+  # フェーズ 0 に戻り、analyst → ui-designer → impl-ready を待つ
 else
   git merge --abort 2>/dev/null || true
   # clean merge 可能 → BRANCH B にフォールスルー
@@ -442,8 +489,8 @@ if git merge origin/main --no-edit; then
 else
   CONFLICT_FILES=$(git diff --name-only --diff-filter=U)
   git merge --abort
-  # SendMessage(to: "issue-{issue_number}-ui-designer", "CONFLICT: $CONFLICT_FILES")
-  # フェーズ 0 に戻る
+  SendMessage(to: "issue-{issue_number}-analyst", "CONFLICT_INVESTIGATE: merge origin/main 中に conflict が発生しました。ファイル: ${CONFLICT_FILES}")
+  # フェーズ 0 に戻り、analyst → ui-designer → impl-ready を待つ
 fi
 ```
 

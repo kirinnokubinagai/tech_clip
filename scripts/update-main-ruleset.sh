@@ -1,11 +1,16 @@
 #!/usr/bin/env bash
-# main 保護 ruleset の required status check を CI / ci-gate に差し替える冪等スクリプト。
+# main 保護 ruleset の required status check を CI / ci-gate (pull_request) に差し替える冪等スクリプト。
 # PR マージ後に手動で実行すること（逆順実行は全 PR BLOCKED になるため厳禁）。
+#
+# NOTE: required_status_checks の context は GitHub の check 表示名と完全一致が必要。
+# 同一 workflow が複数 event (push + pull_request 等) で trigger する場合、
+# PR trigger の check 名には "(pull_request)" サフィックスが付く。
+# main ブランチ保護として PR merge 時の check を必須にするなら、このサフィックス付きを指定すること。
 set -euo pipefail
 
 REPO="${REPO:-kirinnokubinagai/tech_clip}"
 RULESET_ID="${RULESET_ID:-14698666}"
-REQUIRED_CHECK="${REQUIRED_CHECK:-CI / ci-gate}"
+REQUIRED_CHECK="${REQUIRED_CHECK:-CI / ci-gate (pull_request)}"
 
 command -v gh >/dev/null 2>&1 || { echo "gh が必要です" >&2; exit 1; }
 command -v jq >/dev/null 2>&1 || { echo "jq が必要です" >&2; exit 1; }
