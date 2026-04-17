@@ -130,24 +130,18 @@ reviewer からの SendMessage を待機する。`APPROVED`、`CHANGES_REQUESTED
 
 #### CONFLICT_RESOLVE フロー（analyst 調査済み spec に従う）
 
-```bash
-# 1. spec ファイルを Read ツールで読み込む
-# spec パスは CONFLICT_RESOLVE: spec=<path> から取得する
-
-# 2. spec に記載された「両立解消方針」に従い origin/main をマージする
-cd {worktree} && git fetch origin && git merge origin/main
-# conflict 箇所を spec の方針に従って両立解消する（片方だけ採用は原則禁止）
-# 両立できない箇所は SendMessage(to: "issue-{issue_number}-analyst", "CONFLICT_INVESTIGATE: <状況説明>") で追加調査を依頼する
-# analyst から CONFLICT_RESOLVE_DESIGN: 応答が届くまで待機する
-# CONFLICT_RESOLVE_DESIGN に "不要" が含まれる場合は SendMessage(to: "issue-{issue_number}-reviewer", "ABORT: <理由>") を送信してフェーズ 6 待機に戻る
-
-# 3. 解消後コミット
-cd {worktree} && git add . && git commit -m "fix: conflict 解消（両立マージ）"
-```
-
-解消完了後:
-- `SendMessage(to: "issue-{issue_number}-reviewer", "CONFLICT_RESOLVED: <commit-hash>")`
-- フェーズ 6 の待機ループに戻る
+1. spec ファイル（`spec=<path>`）を Read ツールで読み込む
+2. spec に記載された「両立解消方針」に従い `git fetch origin && git merge origin/main` を実行する
+   - 片方だけ採用は原則禁止
+3. spec の方針で解消できない箇所がある場合:
+   - `SendMessage(to: "issue-{issue_number}-analyst", "CONFLICT_INVESTIGATE: <状況説明>")` を送信する
+   - **analyst からの `CONFLICT_RESOLVE_DESIGN:` 応答を受信するまで待機する**
+   - 応答の方針を適用してから解消を完了する
+   - `CONFLICT_RESOLVE_DESIGN:` に "不要" が含まれる場合（本 Issue の変更が main で不要と判定）:
+     `SendMessage(to: "issue-{issue_number}-reviewer", "ABORT: CONFLICT_INVESTIGATE の結果、本 Issue の変更は不要と判断されました。<analyst の理由>")` を送信してフェーズ 6 待機に戻る
+4. 解消完了後はコミットする（push しない）
+5. `SendMessage(to: "issue-{issue_number}-reviewer", "CONFLICT_RESOLVED: <commit-hash>")` を送信する
+6. フェーズ 6 の待機ループに戻る
 
 ## コーディング規約
 
