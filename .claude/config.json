@@ -1,0 +1,15 @@
+{
+  "claude_review_job_name": "claude-review",
+  "ci_workflow_name": "CI",
+  "ai_review_pass_label": "AI Review: PASS",
+  "ai_review_needs_work_label": "AI Review: NEEDS WORK",
+  "verdict_patterns": {
+    "approve": ["(\\*\\*)?✅ Approve(\\*\\*)?", "全件 PASS（0件）"],
+    "request_changes": ["(\\*\\*)?🔄 Request Changes(\\*\\*)?", "(\\*\\*)?💬 Comment(\\*\\*)?"]
+  },
+  "polling_timeout_minutes": 60,
+  "manual_review_triggers": {
+    "workflow_file_paths": ["^\\.github/workflows/"],
+    "stacked_pr_base_excludes": ["main"]
+  }
+}
