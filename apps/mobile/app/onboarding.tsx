@@ -77,7 +77,10 @@ export default function OnboardingScreen() {
           >
             {pageTitle}
           </Text>
-          <Text className="text-center text-base leading-relaxed text-stone-500">
+          <Text
+            testID="onboarding-description"
+            className="text-center text-base leading-relaxed text-stone-500"
+          >
             {pageDescription}
           </Text>
         </View>

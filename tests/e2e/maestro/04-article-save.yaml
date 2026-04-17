@@ -25,19 +25,22 @@ env:
 - openLink: techclip://article/save
 
 # --- 記事保存画面 ---
-- assertVisible: "記事を保存"
+- assertVisible:
+    id: "save-screen-title"
 - assertVisible: "URL"
 - takeScreenshot: screenshots/04-article-save/01-save-screen
 
 # --- バリデーション: 空URL送信 ---
-- tapOn: "取得"
+- tapOn:
+    id: "fetch-button"
 - assertVisible: "URLを入力してください"
 
 # --- バリデーション: 不正URL ---
 - tapOn:
     text: "https://"
 - inputText: "not-a-valid-url"
-- tapOn: "取得"
+- tapOn:
+    id: "fetch-button"
 - assertVisible: "有効なURLを入力してください"
 
 # URLフィールドをクリア
@@ -47,7 +50,8 @@ env:
 - tapOn:
     text: "https://"
 - inputText: ${TEST_ARTICLE_URL}
-- tapOn: "取得"
+- tapOn:
+    id: "fetch-button"
 
 # ローディング表示を確認
 - assertVisible:
@@ -61,7 +65,8 @@ env:
 - assertVisible: "プレビュー"
 
 # 保存ボタンをタップ
-- tapOn: "保存する"
+- tapOn:
+    id: "save-button"
 - waitForAnimationToEnd
 
 # 保存成功トースト確認
@@ -72,6 +77,7 @@ env:
 - launchApp:
     clearState: false
 - openLink: techclip://article/save
-- assertVisible: "記事を保存"
+- assertVisible:
+    id: "save-screen-title"
 - tapOn:
     text: "戻る"

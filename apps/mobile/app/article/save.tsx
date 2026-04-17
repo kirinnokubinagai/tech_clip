@@ -148,7 +148,9 @@ export default function SaveScreen() {
             >
               <ArrowLeft size={ICON_SIZE_LG} color={colors.text} />
             </Pressable>
-            <Text className="text-xl font-bold text-text">{t("article.saveTitle")}</Text>
+            <Text testID="save-screen-title" className="text-xl font-bold text-text">
+              {t("article.saveTitle")}
+            </Text>
           </View>
 
           {/* URL入力 */}

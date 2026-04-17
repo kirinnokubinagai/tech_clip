@@ -19,10 +19,14 @@ env:
     clearState: true
 
 # オンボーディングをスキップしてログイン画面へ
-- tapOn: "次へ"
-- tapOn: "次へ"
-- tapOn: "次へ"
-- tapOn: "はじめる"
+- tapOn:
+    id: "next-button"
+- tapOn:
+    id: "next-button"
+- tapOn:
+    id: "next-button"
+- tapOn:
+    id: "finish-button"
 
 # --- ログイン画面 ---
 - assertVisible: "ログイン"

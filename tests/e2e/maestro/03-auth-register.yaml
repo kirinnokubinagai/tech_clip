@@ -19,10 +19,14 @@ env:
     clearState: true
 
 # オンボーディングをスキップ
-- tapOn: "次へ"
-- tapOn: "次へ"
-- tapOn: "次へ"
-- tapOn: "はじめる"
+- tapOn:
+    id: "next-button"
+- tapOn:
+    id: "next-button"
+- tapOn:
+    id: "next-button"
+- tapOn:
+    id: "finish-button"
 
 # ログイン画面から新規登録へ
 - assertVisible: "ログイン"
@@ -69,10 +73,14 @@ env:
 # ログイン画面へのリンク確認
 - launchApp:
     clearState: true
-- tapOn: "次へ"
-- tapOn: "次へ"
-- tapOn: "次へ"
-- tapOn: "はじめる"
+- tapOn:
+    id: "next-button"
+- tapOn:
+    id: "next-button"
+- tapOn:
+    id: "next-button"
+- tapOn:
+    id: "finish-button"
 - tapOn: "新規登録"
 - assertVisible: "すでにアカウントをお持ちですか？"
 - tapOn: "ログイン"

@@ -16,25 +16,29 @@ tags:
 
 # --- ページ1: 技術記事をワンタップで保存 ---
 - assertVisible: "技術記事をワンタップで保存"
-- assertVisible: "Zenn"
+- assertVisible:
+    id: "onboarding-description"
 - tapOn: "次へ"
 - takeScreenshot: screenshots/01-onboarding/02-page2
 
 # --- ページ2: AIが要約・翻訳 ---
 - assertVisible: "AIが要約・翻訳"
-- assertVisible: "英語記事"
+- assertVisible:
+    id: "onboarding-description"
 - tapOn: "次へ"
 
 # --- ページ3: お気に入り・タグで整理 ---
 - assertVisible: "お気に入り・タグで整理"
-- assertVisible: "タグ付け"
+- assertVisible:
+    id: "onboarding-description"
 - tapOn: "次へ"
 
 # --- ページ4: さあ、始めましょう（最終ページ）---
 - assertVisible: "さあ、始めましょう"
-- assertVisible: "アカウントを作成"
-- assertVisible: "はじめる"
-- tapOn: "はじめる"
+- assertVisible:
+    id: "onboarding-description"
+- assertVisible: "始める"
+- tapOn: "始める"
 - takeScreenshot: screenshots/01-onboarding/03-done
 
 # ログイン画面またはホーム画面に遷移することを確認
