@@ -444,29 +444,51 @@ reviewer → analyst: CONFLICT_INVESTIGATE
 
 ---
 
-## POLLING メッセージの扱いと生存確認 ping
+## polling-watcher と CronCreate 登録規約
 
-### ルール 1: POLLING メッセージは quiet log として扱う
+### polling-watcher の役割
 
-reviewer 系エージェントからは定期的に以下の形式のメッセージが届く（フォーマット定義は `.claude/agents/reviewer.md` を参照）:
+reviewer は push 後に `.claude/polling/pr-<PR_NUMBER>.json` を作成して待機する。
+`scripts/polling-watcher.sh` が CronCreate（`*/2 * * * *`）で 2 分毎に実行され、
+3 条件 AND 判定（CI 完了 + claude-review job 完了 + AI Review ラベル + 判定コメント）を評価し、
+結果を reviewer agent の inbox に SendMessage する。
+
+### CronCreate 登録（SessionStart 必須）
+
+orchestrator は SessionStart 時に必ず以下を実行する:
 
 ```
-POLLING: issue-N レビュー待機中 X分経過 / ラベル: ...
+CronCreate(cron='*/2 * * * *', durable=true, prompt='bash scripts/polling-watcher.sh')
 ```
 
-このメッセージは **quiet log** として扱い、orchestrator はユーザーへの直接通知を行わない（teammate-message の idle_notification と同じ扱い）。
+`durable=true` は 7 日で自動削除されるため、**毎回 SessionStart で再登録**する。
+SessionStart hook の `session-start-cron-register.sh` が `CRON_REGISTER:` メッセージを出力するので、
+orchestrator はそれを検知して CronCreate を実行すること。
 
-異常・完了・要対応を示す以下のメッセージはこれまで通りユーザーに報告する:
-- `APPROVED: issue-{N}` → 完了通知
-- `STUCK: issue-{N} ...` → 障害通知
-- `CHANGES_REQUESTED: ...` → 要対応通知
-- `WORKTREE_REMOVE_FAILED` → worktree 削除失敗通知
+### APPROVED 受信後の next-issue-auto-spawn.sh 実行
 
-### ルール 2: 10 分無音時の生存確認 ping
+`APPROVED: issue-{N}` を受信したら、以下を必ず実行する:
+
+1. `pending_count--`
+2. `bash scripts/next-issue-auto-spawn.sh` を実行して候補 Issue を確認
+3. 自動割り当て可能 Issue があれば MAX_PARALLEL（`config.json` の `max_parallel_issues`）を超えない範囲で即座に spawn
+4. 要人間確認 Issue のみ一覧提示
+
+### orchestrator が受け取るメッセージ
+
+| メッセージ | 送信者 | アクション |
+|---|---|---|
+| `APPROVED: issue-{N}` | reviewer | 完了通知、next-issue-auto-spawn 実行 |
+| `POLLING_TIMEOUT: issue-{N}` | polling-watcher / reviewer | タイムアウト通知、ユーザーに報告 |
+| `STUCK: issue-{N}` | reviewer | 障害通知、ユーザーに報告 |
+| `WORKTREE_REMOVE_FAILED` | reviewer | worktree 削除失敗通知 |
+| `PING` | orchestrator → agent | 生存確認 |
+
+### 10 分無音時の生存確認 ping
 
 reviewer 系エージェントから **10 分以上** 任意のメッセージが届かない場合、orchestrator は生存確認 ping を送る。
 
-**タイマー実装方針（pull 型）**: orchestrator はイベント駆動のため常時監視は行えない。他 Issue の `APPROVED:` / `POLLING:` 受信や別の SendMessage など、orchestrator のターンが回ってきたタイミングで「最後のメッセージ受信時刻」と現在時刻を比較し、10 分超過していれば ping を送る（pull 型チェック）。
+**タイマー実装方針（pull 型）**: orchestrator はイベント駆動のため常時監視は行えない。他 Issue の `APPROVED:` 受信や別の SendMessage など、orchestrator のターンが回ってきたタイミングで「最後のメッセージ受信時刻」と現在時刻を比較し、10 分超過していれば ping を送る（pull 型チェック）。
 
 ```
 SendMessage(to: "issue-{N}-reviewer",

@@ -1,0 +1,94 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Claude Config",
+  "description": "TechClip orchestrator 設定",
+  "type": "object",
+  "required": [
+    "claude_review_job_name",
+    "ci_workflow_name",
+    "ai_review_pass_label",
+    "ai_review_needs_work_label"
+  ],
+  "properties": {
+    "$schema": { "type": "string" },
+    "claude_review_job_name": {
+      "type": "string",
+      "description": "CI workflow 内の claude-review job 名"
+    },
+    "ci_workflow_name": {
+      "type": "string",
+      "description": "PR に対して発火する CI workflow の名前"
+    },
+    "ai_review_pass_label": {
+      "type": "string",
+      "description": "claude-review が PASS 時に付与する GitHub label 名"
+    },
+    "ai_review_needs_work_label": {
+      "type": "string",
+      "description": "claude-review が NEEDS WORK 時に付与する GitHub label 名"
+    },
+    "required_status_check_context": {
+      "type": "string",
+      "description": "branch protection の required status check context 名"
+    },
+    "verdict_patterns": {
+      "type": "object",
+      "description": "claude-review コメント本文の判定正規表現パターン",
+      "properties": {
+        "approve": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "request_changes": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      }
+    },
+    "polling_interval_minutes": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "polling-watcher の実行間隔（分）"
+    },
+    "polling_timeout_minutes": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "polling タイムアウト（分）"
+    },
+    "polling_dir": {
+      "type": "string",
+      "description": "polling state ファイルディレクトリ（リポジトリ相対パス）"
+    },
+    "manual_review_triggers": {
+      "type": "object",
+      "description": "手動レビューモードに遷移するトリガー条件",
+      "properties": {
+        "workflow_file_paths": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "変更ファイルがこの正規表現にマッチしたら手動モード"
+        },
+        "stacked_pr_base_excludes": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "PR の base branch がこのリストに含まれない場合は手動モード"
+        }
+      }
+    },
+    "max_parallel_issues": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "同時に処理する最大 Issue 数"
+    },
+    "human_review_labels": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "これらのラベルが付いた Issue は要人間確認"
+    },
+    "human_review_title_patterns": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "タイトルにこれらのパターンを含む Issue は要人間確認（大文字小文字無視）"
+    }
+  }
+}

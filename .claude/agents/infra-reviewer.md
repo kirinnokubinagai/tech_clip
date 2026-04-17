@@ -309,166 +309,58 @@ EOF
 PR は再作成しない。push のみ行う。
 
 
-### フェーズ 5.5: CI 発火確認 fallback
-
-push が成功したら 60 秒以内に CI が発火しているか確認し、発火していなければ空コミットで再 push する:
-
-```bash
-REPO=$(gh repo view --json nameWithOwner --jq '.nameWithOwner')
-BRANCH=$(git -C {worktree} rev-parse --abbrev-ref HEAD)
-PR_NUMBER=<フェーズ 5 で作成 or 既存 PR>
-PUSH_SHA=$(git -C {worktree} rev-parse HEAD)
-
-RUNS=0
-for i in $(seq 1 12); do
-  RUNS=$(gh api "repos/${REPO}/actions/runs?head_sha=${PUSH_SHA}&per_page=5" \
-         --jq '.workflow_runs | length' 2>/dev/null || echo 0)
-  [ "$RUNS" -gt 0 ] && break
-  sleep 5
-done
-
-if [ "$RUNS" = "0" ]; then
-  cd {worktree}
-  git commit --allow-empty -m "chore: trigger CI for PR #${PR_NUMBER}"
-  bash scripts/push-verified.sh
-  PUSH_SHA=$(git -C {worktree} rev-parse HEAD)
-  SendMessage(to: "orchestrator", "CI_TRIGGER_FALLBACK: issue-{issue_number} PR #${PR_NUMBER} で空コミット push を実施しました")
-fi
-```
-
-### フェーズ 6: 統合ポーリング（3 条件 AND 判定）
-
-> **判定の正確性について**: 以下の 3 条件がすべて成立したとき初めて verdict を確定する。
-> **絶対に `statusCheckRollup` の `claude-review: SUCCESS` だけを APPROVED の根拠にしないこと。**
-
-ポーリング間隔 30 秒、最大 60 分（120 回）。
+### フェーズ 6: polling state ファイル作成と VERDICT 待機
 
 **自動モード（MODE=auto）のみ実行。手動モード（MODE=manual）はフェーズ 3.5 で完結しているためスキップ。**
 
-```bash
-# config.json から設定を読み込む
-CONFIG="{worktree}/.claude/config.json"
-CI_NAME=$(jq -r .ci_workflow_name "$CONFIG" 2>/dev/null || echo "CI")
-JOB_NAME=$(jq -r .claude_review_job_name "$CONFIG" 2>/dev/null || echo "claude-review")
-PASS_LABEL=$(jq -r .ai_review_pass_label "$CONFIG" 2>/dev/null || echo "AI Review: PASS")
-NEEDS_LABEL=$(jq -r .ai_review_needs_work_label "$CONFIG" 2>/dev/null || echo "AI Review: NEEDS WORK")
+push 完了後、polling state ファイルを作成して `polling-watcher`（CronCreate で 2 分毎起動）に判定を委ねる。
 
-OWNER=$(gh repo view --json owner --jq .owner.login)
-REPO=$(gh repo view --json name --jq .name)
+```bash
 PR_NUMBER=<フェーズ 5 で確定した PR 番号>
 PUSH_SHA=$(git -C {worktree} rev-parse HEAD)
+ISSUE_NUMBER={issue_number}
+AGENT_NAME="issue-${ISSUE_NUMBER}-reviewer"
+POLLING_DIR="{worktree}/.claude/polling"
 
-POLLING_START=$(date +%s)
-LAST_REPORT=$(date +%s)
-LAST_STATUS=""
-QUEUED_SINCE=0
-REPORT_INTERVAL_SECONDS=300
-QUEUED_STUCK_SECONDS=600
-MAX_ELAPSED=3600  # 60 分
-
-evaluate_verdict() {
-  local PUSH_SHA="$1"
-
-  # 条件 1: 対象 commit の CI workflow run が completed
-  local RUN
-  RUN=$(gh api "repos/$OWNER/$REPO/actions/runs?head_sha=$PUSH_SHA&per_page=20" \
-    --jq "[.workflow_runs[] | select(.name == \"$CI_NAME\") | select(.event == \"pull_request\")] | .[0]" 2>/dev/null)
-  [ -z "$RUN" ] || [ "$RUN" = "null" ] && return 1
-  local RUN_ID RUN_STATUS RUN_CONCLUSION
-  RUN_ID=$(echo "$RUN" | jq -r .id)
-  RUN_STATUS=$(echo "$RUN" | jq -r .status)
-  RUN_CONCLUSION=$(echo "$RUN" | jq -r .conclusion)
-  [ "$RUN_STATUS" = "completed" ] || return 1
-  [ "$RUN_CONCLUSION" != "cancelled" ] || return 1
-
-  # 条件 2: claude-review job が終了
-  local CR_JOB CR_CONCLUSION CR_COMPLETED
-  CR_JOB=$(gh api "repos/$OWNER/$REPO/actions/runs/$RUN_ID/jobs" \
-    --jq "[.jobs[] | select(.name == \"$JOB_NAME\")] | .[0]" 2>/dev/null)
-  [ -z "$CR_JOB" ] || [ "$CR_JOB" = "null" ] && return 1
-  CR_CONCLUSION=$(echo "$CR_JOB" | jq -r .conclusion)
-  case "$CR_CONCLUSION" in success|failure) ;; *) return 1 ;; esac
-  CR_COMPLETED=$(echo "$CR_JOB" | jq -r .completed_at)
-
-  # 条件 3-a: AI Review ラベル付与
-  local LABELS
-  LABELS=$(gh pr view "$PR_NUMBER" --json labels --jq '[.labels[].name]' 2>/dev/null || echo "[]")
-  echo "$LABELS" | jq -e --arg p "$PASS_LABEL" --arg n "$NEEDS_LABEL" 'map(. == $p or . == $n) | any' >/dev/null 2>&1 || return 1
-
-  # 条件 3-b: claude-review 判定コメント（CR 完了後かつ判定マーカーあり）
-  local NEW BODY
-  NEW=$(gh pr view "$PR_NUMBER" --json comments --jq --arg t "$CR_COMPLETED" '[
-    .comments[] | select(.author.login == "claude") | select(.createdAt >= $t) | select(.body | contains("## PRレビュー結果"))
-  ] | last' 2>/dev/null)
-  [ -z "$NEW" ] || [ "$NEW" = "null" ] && return 1
-  BODY=$(echo "$NEW" | jq -r .body)
-
-  if echo "$BODY" | grep -qE '(\*\*)?✅ Approve(\*\*)?|全件 PASS（0件）'; then
-    echo "approve"
-    return 0
-  fi
-  if echo "$BODY" | grep -qE '(\*\*)?🔄 Request Changes(\*\*)?|(\*\*)?💬 Comment(\*\*)?'; then
-    echo "request_changes"
-    return 0
-  fi
-  return 1
+mkdir -p "$POLLING_DIR"
+cat > "$POLLING_DIR/pr-${PR_NUMBER}.json" << JSON_EOF
+{
+  "pr_number": ${PR_NUMBER},
+  "push_sha": "${PUSH_SHA}",
+  "issue_number": "${ISSUE_NUMBER}",
+  "agent_name": "${AGENT_NAME}",
+  "started_at": "$(date -u +%Y-%m-%dT%H:%M:%SZ)"
 }
-
-while true; do
-  NOW=$(date +%s)
-  ELAPSED=$((NOW - POLLING_START))
-
-  # 60 分タイムアウト
-  if [ "$ELAPSED" -ge "$MAX_ELAPSED" ]; then
-    PR_URL=$(gh pr view "$PR_NUMBER" --json url --jq '.url')
-    SendMessage(to: "orchestrator", "POLLING_TIMEOUT: issue-{issue_number} は 60 分以内に解決しませんでした。PR: $PR_URL")
-    exit 0
-  fi
-
-  # 5 分ごとの進捗報告
-  if [ $((NOW - LAST_REPORT)) -ge "$REPORT_INTERVAL_SECONDS" ]; then
-    ELAPSED_MIN=$((ELAPSED / 60))
-    CURRENT_LABELS=$(gh pr view "$PR_NUMBER" --json labels --jq '[.labels[].name] | join(", ")' 2>/dev/null || echo "")
-    SendMessage(to: "orchestrator", "POLLING: issue-{issue_number} レビュー待機中 ${ELAPSED_MIN}分経過 / ラベル: ${CURRENT_LABELS}")
-    LAST_REPORT=$NOW
-  fi
-
-  # 外部マージ検知
-  PR_STATE=$(gh pr view "$PR_NUMBER" --json state --jq '.state' 2>/dev/null || echo "OPEN")
-  if [ "$PR_STATE" = "MERGED" ]; then
-    SendMessage(to: "orchestrator", "APPROVED: issue-{issue_number} (外部マージ検知)")
-    exit 0
-  fi
-  if [ "$PR_STATE" = "CLOSED" ]; then
-    SendMessage(to: "issue-{issue_number}-infra-engineer", "CLOSED_WITHOUT_MERGE: PR がマージされずにクローズされました")
-    exit 0
-  fi
-
-  # 3 条件 AND 判定を評価
-  VERDICT=$(evaluate_verdict "$PUSH_SHA" 2>/dev/null)
-  if [ $? -eq 0 ] && [ -n "$VERDICT" ]; then
-    if [ "$VERDICT" = "approve" ]; then
-      # フェーズ 6.5 へ進む
-      break
-    fi
-    if [ "$VERDICT" = "request_changes" ]; then
-      BOT_BODY=$(gh pr view "$PR_NUMBER" --json comments --jq '[.comments[] | select(.body | contains("## PRレビュー結果"))] | last | .body' 2>/dev/null || echo "")
-      SendMessage(to: "issue-{issue_number}-infra-engineer", "CHANGES_REQUESTED: $BOT_BODY")
-      exit 0
-    fi
-  fi
-
-  # CI failure 検知（早期終了）
-  CHECK_FAILURE=$(gh pr view "$PR_NUMBER" --json statusCheckRollup --jq '[.statusCheckRollup[] | select(.conclusion == "FAILURE" or .conclusion == "CANCELLED" or .conclusion == "TIMED_OUT")] | length' 2>/dev/null || echo 0)
-  if [ "$CHECK_FAILURE" -gt "0" ]; then
-    SendMessage(to: "issue-{issue_number}-infra-engineer", "CHANGES_REQUESTED: CI チェックが FAILURE になりました。修正して再 push してください。")
-    exit 0
-  fi
-
-  sleep 30
-done
+JSON_EOF
 ```
 
+その後、`polling-watcher` から以下のいずれかの SendMessage を待機する:
+
+| メッセージ | アクション |
+|---|---|
+| `VERDICT: approve PR #N passed` | フェーズ 6.5 へ進む |
+| `VERDICT: request_changes PR #N` | bot コメントを取得して実装 agent に CHANGES_REQUESTED 転送 → フェーズ 0 |
+| `VERDICT: external_merged PR #N` | そのままフェーズ 7（MERGED 状態で後片付け）へ |
+| `VERDICT: closed PR #N` | 実装 agent に CLOSED_WITHOUT_MERGE 通知 → フェーズ 0 |
+| `POLLING_TIMEOUT: PR #N` | orchestrator に POLLING_TIMEOUT 通知 → 終了 |
+
+**`request_changes` 受信時の処理**:
+
+```bash
+BOT_BODY=$(gh pr view "$PR_NUMBER" --json comments --jq \
+  '[.comments[] | select(.body | contains("## PRレビュー結果"))] | last | .body' 2>/dev/null || echo "")
+SendMessage(to: "issue-{issue_number}-infra-engineer", "CHANGES_REQUESTED: $BOT_BODY")
+rm -f "$POLLING_DIR/pr-${PR_NUMBER}.json"
+# フェーズ 0 に戻る
+```
+
+**`POLLING_TIMEOUT` 受信時の処理**:
+
+```bash
+PR_URL=$(gh pr view "$PR_NUMBER" --json url --jq '.url')
+SendMessage(to: "orchestrator", "POLLING_TIMEOUT: issue-{issue_number} は 60 分以内に解決しませんでした。PR: $PR_URL")
+exit 0
+```
 
 ### フェーズ 6.5: PR E2E (Android) 出力の視覚レビュー
 
@@ -524,37 +416,34 @@ done
    - `.claude/tmp/` を削除（次回汚染防止）: `rm -rf .claude/tmp/`
    - フェーズ 7 へ進む
 
-### フェーズ 7: PR マージ完了待機
+### フェーズ 7: MERGED 確認と後片付け
 
-AI Review: PASS が確認できたあと、実際のマージまで 30 秒間隔で最大 60 分ポーリングする。
+フェーズ 6.5 完了後（または `VERDICT: external_merged` 受信後）に実行する。
+
+GitHub 上で PR が MERGED になっていることを確認してから後片付けを行う。
 
 ```bash
-MAX_ATTEMPTS=120  # 30 秒 × 120 = 60 分
-PR_STATE=""
-for i in $(seq 1 $MAX_ATTEMPTS); do
-  PR_STATE=$(gh pr view {pr_number} --json state --jq '.state')
-  case "$PR_STATE" in
-    MERGED)
-      break
-      ;;
-    CLOSED)
+PR_STATE=$(gh pr view {pr_number} --json state --jq '.state')
+if [ "$PR_STATE" != "MERGED" ]; then
+  MAX_ATTEMPTS=60  # 30 秒 × 60 = 30 分
+  for i in $(seq 1 $MAX_ATTEMPTS); do
+    PR_STATE=$(gh pr view {pr_number} --json state --jq '.state')
+    [ "$PR_STATE" = "MERGED" ] && break
+    if [ "$PR_STATE" = "CLOSED" ]; then
       SendMessage(to: "issue-{issue_number}-infra-engineer", "CLOSED_WITHOUT_MERGE: PR がマージされずにクローズされました")
       exit 0
-      ;;
-    OPEN)
-      sleep 30
-      ;;
-  esac
-done
-
-if [ "$PR_STATE" != "MERGED" ]; then
-  PR_URL=$(gh pr view {pr_number} --json url --jq '.url')
-  SendMessage(to: "orchestrator", "MERGE_PENDING: issue-{issue_number} は AI Review PASS 済みですが 60 分以内にマージされませんでした。手動でマージ・クローズしてください。PR: $PR_URL")
-  exit 0
+    fi
+    sleep 30
+  done
+  if [ "$PR_STATE" != "MERGED" ]; then
+    PR_URL=$(gh pr view {pr_number} --json url --jq '.url')
+    SendMessage(to: "orchestrator", "MERGE_PENDING: issue-{issue_number} は AI Review PASS 済みですが 30 分以内にマージされませんでした。手動でマージ・クローズしてください。PR: $PR_URL")
+    exit 0
+  fi
 fi
 ```
 
-`MERGED` を確認したら以下を実行する（フェーズ 7 後片付け）:
+`MERGED` を確認したら以下を実行する（後片付け）:
 
 ```bash
 # 1. Issue をクローズ
