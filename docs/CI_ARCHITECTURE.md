@@ -72,30 +72,26 @@ CI / ci-gate (pull_request)
 
 - `scripts/update-main-ruleset.sh` — ruleset required check を `CI / ci-gate (pull_request)` に差し替える冪等スクリプト。環境変数 `REPO` / `RULESET_ID` / `REQUIRED_CHECK` で上書き可能。
 
-## stacked PR の CI 発火制限
+## stacked PR（base != main）対応
 
-`ci.yml` の `on.pull_request.branches: [main]` 設定により、**base が `main` 以外の stacked PR では `claude-review` および `ci-gate` が発火しない**。
+### 背景
 
-### 具体的な制限
+`.github/workflows/ci.yml` は `pull_request.branches: [main, 'issue/**']` を trigger としている。
+これは「base branch が `main` もしくは `issue/**` にマッチする PR でのみ CI を発火させる」という指定。
+
+従来は `branches: [main]` のみだったため、base=`issue/<N>` の stacked PR では CI ワークフローが発火せず、
+reviewer エージェントが claude-review 結果を待ち続けて 30 分 timeout で STUCK するインシデントが発生した（Issue #1040）。
+
+### 挙動
 
 | PR の base | CI 発火 | claude-review | 備考 |
 |---|---|---|---|
-| `main` | ✅ 発火 | ✅ 実行 | 通常フロー |
-| 別ブランチ（stacked PR） | ❌ 発火しない | ❌ スキップ | required status check が存在しない状態 |
+| `main` | ✅ 発火 | ✅ 実行 | 従来通り |
+| `issue/<N>` / `issue/<N>/<desc>` | ✅ 発火 | ✅ 実行 | stacked PR 対応（Issue #1040） |
+| その他（例: `release/**`） | ❌ 発火しない | ❌ スキップ | 必要になった時点で branches パターンを追加 |
 
-### reviewer エージェントへの影響
+### 将来の拡張
 
-stacked PR を使用する場合、`gh pr view --json statusCheckRollup` に `ci-gate` が含まれない可能性がある。reviewer の判定マトリクスで `statusCheckRollup` が空の場合は「CI 未実行」として再ポーリングを続けるため、実質的に APPROVED が取れない状態になりうる。
-
-### 回避策
-
-1. **stacked PR 使用時は base を `main` に設定する**（推奨）
-2. `ci.yml` の `branches` に stacked PR で使うブランチパターンを追加する:
-   ```yaml
-   on:
-     pull_request:
-       branches:
-         - main
-         - "issue/**"  # stacked PR 用
-   ```
-3. 手動で CI を trigger する（`gh workflow run ci.yml --ref <branch>`）
+`release/**` / `hotfix/**` 等の新 prefix を導入する場合は `branches:` にパターンを追加する。
+`branches:` を省略して全 PR を対象にする案もあるが、想定外の base branch への PR で
+claude-review の OAuth トークンが消費されるリスクがあるため採用しない。

@@ -10,7 +10,7 @@ on:
       - '.omc/**'
       - 'tests/e2e/maestro/**'
   pull_request:
-    branches: [main]
+    branches: [main, 'issue/**']
 
 # デフォルトで全権限を read-only にし、各ジョブで必要な権限のみを上書きする
 permissions: read-all
