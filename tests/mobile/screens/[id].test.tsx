@@ -189,10 +189,10 @@ describe("ArticleDetailScreen", () => {
 
       // Assert
       await waitFor(() => {
-        expect(mockRequestSummaryMutate).toHaveBeenCalledWith({
-          articleId: "article-1",
-          language: "ja",
-        });
+        expect(mockRequestSummaryMutate).toHaveBeenCalledWith(
+          { articleId: "article-1", language: "ja" },
+          expect.objectContaining({ onSuccess: expect.any(Function) }),
+        );
       });
     });
 
@@ -210,10 +210,10 @@ describe("ArticleDetailScreen", () => {
 
       // Assert
       await waitFor(() => {
-        expect(mockRequestSummaryMutate).toHaveBeenCalledWith({
-          articleId: "article-1",
-          language: "en",
-        });
+        expect(mockRequestSummaryMutate).toHaveBeenCalledWith(
+          { articleId: "article-1", language: "en" },
+          expect.objectContaining({ onSuccess: expect.any(Function) }),
+        );
       });
     });
   });
