@@ -18,6 +18,13 @@ env:
     clearState: false
 - runFlow:
     when:
+      visible: "Try out your stylus"
+    commands:
+      - tapOn: "Cancel"
+      - waitForAnimationToEnd:
+          timeout: 1000
+- runFlow:
+    when:
       visible: "Process system isn't responding"
     commands:
       - tapOn: "Wait"

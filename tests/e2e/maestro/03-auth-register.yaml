@@ -17,6 +17,13 @@ env:
 # アプリ起動（オンボーディング済み状態から）
 - launchApp:
     clearState: true
+- runFlow:
+    when:
+      visible: "Try out your stylus"
+    commands:
+      - tapOn: "Cancel"
+      - waitForAnimationToEnd:
+          timeout: 1000
 
 # オンボーディングをスキップ
 - waitForAnimationToEnd:
@@ -120,6 +127,13 @@ env:
 # ログイン画面へのリンク確認
 - launchApp:
     clearState: true
+- runFlow:
+    when:
+      visible: "Try out your stylus"
+    commands:
+      - tapOn: "Cancel"
+      - waitForAnimationToEnd:
+          timeout: 1000
 - waitForAnimationToEnd:
     timeout: 15000
 - runFlow:
