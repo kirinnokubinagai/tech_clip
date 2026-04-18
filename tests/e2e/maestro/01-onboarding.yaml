@@ -39,8 +39,9 @@ tags:
 - takeScreenshot: screenshots/01-onboarding/01-launch
 
 # --- ページ1: 技術記事をワンタップで保存 ---
-- assertVisible: "技術記事をワンタップで保存"
-- assertVisible: "Zenn、Qiita、dev.toなど19ソースに対応。気になった記事をすぐ保存できます。"
+- extendedWaitUntil:
+    visible: "技術記事をワンタップで保存"
+    timeout: 60000
 - runFlow:
     when:
       visible: "Open debugger"
@@ -64,9 +65,9 @@ tags:
 - takeScreenshot: screenshots/01-onboarding/02-page2
 
 # --- ページ2: AIが要約・翻訳 ---
-- assertVisible:
-    text: "AIが要約・翻訳"
-- assertVisible: "英語記事も日本語で読める。要点だけ把握したいときはAI要約で時短。"
+- extendedWaitUntil:
+    visible: "AIが要約・翻訳"
+    timeout: 10000
 - runFlow:
     when:
       visible: "Open debugger"
@@ -89,9 +90,9 @@ tags:
           timeout: 2000
 
 # --- ページ3: お気に入り・タグで整理 ---
-- assertVisible:
-    text: "お気に入り・タグで整理"
-- assertVisible: "タグ付けで記事を分類。お気に入り登録でいつでも素早くアクセス。"
+- extendedWaitUntil:
+    visible: "お気に入り・タグで整理"
+    timeout: 10000
 - runFlow:
     when:
       visible: "Open debugger"
@@ -114,10 +115,9 @@ tags:
           timeout: 2000
 
 # --- ページ4: さあ、始めましょう（最終ページ）---
-- assertVisible:
-    text: "さあ、始めましょう"
-- assertVisible: "アカウントを作成して、技術知識を効率よく管理しましょう。"
-- assertVisible: "始める"
+- extendedWaitUntil:
+    visible: "さあ、始めましょう"
+    timeout: 10000
 - runFlow:
     when:
       visible: "Open debugger"

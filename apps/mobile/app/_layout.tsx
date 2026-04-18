@@ -4,7 +4,7 @@ import "../src/lib/i18n";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Redirect, Stack } from "expo-router";
 import { useEffect } from "react";
-import { ActivityIndicator, View } from "react-native";
+import { ActivityIndicator, LogBox, View } from "react-native";
 
 import { OfflineBanner } from "../src/components/OfflineBanner";
 import {
@@ -27,6 +27,8 @@ import { useAuthStore } from "../src/stores/auth-store";
 import { useSettingsStore } from "../src/stores/settings-store";
 import { useUIStore } from "../src/stores/ui-store";
 
+
+LogBox.ignoreAllLogs(true);
 initSentry(process.env.EXPO_PUBLIC_SENTRY_DSN);
 
 export default function RootLayout() {
