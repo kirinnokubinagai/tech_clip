@@ -13,8 +13,7 @@ env:
 # ホーム画面にいなければログインフローを実行
 - runFlow:
     when:
-      NOT:
-        visible: "すべて"
+      notVisible: "すべて"
     commands:
       # onboarding が表示されている場合は 4 ページ通過
       - runFlow:
