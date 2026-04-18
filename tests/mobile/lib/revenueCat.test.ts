@@ -225,3 +225,48 @@ describe("restorePurchases", () => {
     await expect(restorePurchases()).rejects.toThrow("購入の復元に失敗しました");
   });
 });
+
+describe("getOfferings", () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  it("利用可能なパッケージ一覧を返せること", async () => {
+    // Arrange
+    const mockPackage = { identifier: "monthly_premium", packageType: "MONTHLY" };
+    Purchases.getOfferings = jest.fn().mockResolvedValue({
+      current: {
+        availablePackages: [mockPackage],
+      },
+    });
+
+    // Act
+    const { getOfferings } = require("@mobile/lib/revenueCat");
+    const result = await getOfferings();
+
+    // Assert
+    expect(result).toEqual([mockPackage]);
+    expect(Purchases.getOfferings).toHaveBeenCalledTimes(1);
+  });
+
+  it("current offering がない場合に空配列を返せること", async () => {
+    // Arrange
+    Purchases.getOfferings = jest.fn().mockResolvedValue({ current: null });
+
+    // Act
+    const { getOfferings } = require("@mobile/lib/revenueCat");
+    const result = await getOfferings();
+
+    // Assert
+    expect(result).toEqual([]);
+  });
+
+  it("offerings 取得が失敗した場合にエラーをスローすること", async () => {
+    // Arrange
+    Purchases.getOfferings = jest.fn().mockRejectedValue(new Error("ネットワークエラー"));
+
+    // Act & Assert
+    const { getOfferings } = require("@mobile/lib/revenueCat");
+    await expect(getOfferings()).rejects.toThrow("オファリングの取得に失敗しました");
+  });
+});

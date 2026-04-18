@@ -27,6 +27,7 @@ import {
   upsertSummary,
   upsertTranslation,
 } from "@/lib/localDb";
+import { getOfferings } from "@/lib/revenueCat";
 import { useSettingsStore } from "@/stores/settings-store";
 import type { ArticleDetail } from "@/types/article";
 
@@ -69,7 +70,7 @@ export default function ArticleDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const colors = useColors();
-  const { isSubscribed } = useSubscription();
+  const { isSubscribed, purchase } = useSubscription();
 
   /** Markdownのスタイル定義 */
   const markdownStyles = useMemo(
@@ -585,7 +586,17 @@ export default function ArticleDetailScreen() {
           currentUsage={aiUsageCount}
           maxUsage={FREE_AI_USES_PER_MONTH}
           features={PREMIUM_FEATURES.map((key) => t(key))}
-          onPurchase={() => setShowPremiumGate(false)}
+          onPurchase={async () => {
+            try {
+              const packages = await getOfferings();
+              if (packages.length > 0) {
+                await purchase(packages[0]);
+                setShowPremiumGate(false);
+              }
+            } catch {
+              setShowPremiumGate(false);
+            }
+          }}
           onClose={() => setShowPremiumGate(false)}
         />
       </Modal>

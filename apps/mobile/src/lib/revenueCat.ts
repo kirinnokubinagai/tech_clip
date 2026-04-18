@@ -127,3 +127,18 @@ export async function restorePurchases(): Promise<SubscriptionStatus> {
     throw new Error("購入の復元に失敗しました");
   }
 }
+
+/**
+ * 利用可能なオファリングのパッケージ一覧を取得する
+ *
+ * @returns 現在のオファリングのパッケージ一覧。current がない場合は空配列
+ * @throws オファリング取得に失敗した場合
+ */
+export async function getOfferings(): Promise<PurchasesPackage[]> {
+  try {
+    const offerings = await Purchases.getOfferings();
+    return offerings.current?.availablePackages ?? [];
+  } catch {
+    throw new Error("オファリングの取得に失敗しました");
+  }
+}
