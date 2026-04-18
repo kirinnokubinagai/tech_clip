@@ -60,10 +60,10 @@ env:
 - waitForAnimationToEnd:
     timeout: 1000
 - tapOn:
-    id: "email-input"
+    id: "login-email-input"
 - inputText: ${TEST_EMAIL}
 - tapOn:
-    id: "password-input"
+    id: "login-password-input"
 - inputText: ${TEST_PASSWORD}
 - tapOn:
     text: "ログイン"
