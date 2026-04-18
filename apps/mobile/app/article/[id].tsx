@@ -16,7 +16,9 @@ import {
 } from "@/hooks/use-articles";
 import { useColors } from "@/hooks/use-colors";
 import { useNetworkStatus } from "@/hooks/use-network-status";
+import { useSubscription } from "@/hooks/use-subscription";
 import { formatArticleDate } from "@/lib/date-format";
+import { incrementArticleView } from "@/lib/interstitial-manager";
 import { UI_TO_API_LANGUAGE } from "@/lib/language-code";
 import {
   getOfflineArticleById,
@@ -53,6 +55,7 @@ export default function ArticleDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const colors = useColors();
+  const { isSubscribed } = useSubscription();
 
   /** Markdownのスタイル定義 */
   const markdownStyles = useMemo(
@@ -153,6 +156,10 @@ export default function ArticleDetailScreen() {
   const [offlineArticle, setOfflineArticle] = useState<ArticleDetail | null>(null);
   const [isOfflineLoading, setIsOfflineLoading] = useState(false);
   const [isOfflineError, setIsOfflineError] = useState(false);
+
+  useEffect(() => {
+    incrementArticleView(isSubscribed);
+  }, [isSubscribed]);
 
   useEffect(() => {
     if (!isOffline) {
