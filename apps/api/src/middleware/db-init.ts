@@ -15,6 +15,8 @@ type DbInitBindings = {
   TURSO_AUTH_TOKEN: string;
   BETTER_AUTH_SECRET: string;
   APP_URL?: string;
+  /** API 自身のベース URL（Better Auth baseURL に渡す。省略時は auth/index.ts の DEFAULT_API_BASE_URL を使用） */
+  API_BASE_URL?: string;
   /** カンマ区切りの追加 trustedOrigins（例: "https://staging.example.com,https://dev.example.com"） */
   TRUSTED_ORIGINS?: string;
   GOOGLE_CLIENT_ID?: string;
@@ -92,7 +94,7 @@ export function createDbInitMiddleware(
         db,
         c.env.BETTER_AUTH_SECRET,
         oauthProviders,
-        c.env.APP_URL,
+        c.env.API_BASE_URL,
         additionalTrustedOrigins,
       );
       return authInstance;

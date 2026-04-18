@@ -20,6 +20,7 @@ type TestBindings = {
   TURSO_AUTH_TOKEN: string;
   BETTER_AUTH_SECRET: string;
   APP_URL?: string;
+  API_BASE_URL?: string;
   TRUSTED_ORIGINS?: string;
   GOOGLE_CLIENT_ID?: string;
   GOOGLE_CLIENT_SECRET?: string;
@@ -243,7 +244,7 @@ describe("createDbInitMiddleware", () => {
       );
     });
 
-    it("APP_URL が設定されている場合 createAuth に baseURL として渡されること", async () => {
+    it("API_BASE_URL が設定されている場合 createAuth に baseURL として渡されること", async () => {
       // Arrange
       const capturedGetAuth: Array<() => typeof mockAuth> = [];
       const app = new Hono<{ Bindings: TestBindings; Variables: TestVariables }>();
@@ -260,15 +261,15 @@ describe("createDbInitMiddleware", () => {
         return c.json({ ok: true });
       });
 
-      const envWithAppUrl: TestBindings = {
+      const envWithApiBaseUrl: TestBindings = {
         TURSO_DATABASE_URL: "libsql://test.turso.io",
         TURSO_AUTH_TOKEN: "test-token",
         BETTER_AUTH_SECRET: "test-secret-min-32-chars-long-enough!!",
-        APP_URL: "https://app.techclip.io",
+        API_BASE_URL: "https://api.techclip.app",
       };
 
       // Act
-      await app.request("/api/test", {}, envWithAppUrl);
+      await app.request("/api/test", {}, envWithApiBaseUrl);
       capturedGetAuth[0]();
 
       // Assert
@@ -276,7 +277,7 @@ describe("createDbInitMiddleware", () => {
         mockDb,
         "test-secret-min-32-chars-long-enough!!",
         {},
-        "https://app.techclip.io",
+        "https://api.techclip.app",
         [],
       );
     });

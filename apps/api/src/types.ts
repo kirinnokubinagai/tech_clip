@@ -25,8 +25,10 @@ export type Bindings = {
   AVATARS_BUCKET: R2Bucket;
   /** アバター画像の公開 URL（末尾スラッシュなし） */
   R2_PUBLIC_URL: string;
-  /** アプリのベースURL（パスワードリセットリンク生成用） */
+  /** アプリのベースURL（パスワードリセット・OAuth deep link 用） */
   APP_URL?: string;
+  /** API 自身のベース URL（Better Auth baseURL 用） */
+  API_BASE_URL?: string;
   /** カンマ区切りの追加 trustedOrigins（例: "https://staging.example.com,https://dev.example.com"） */
   TRUSTED_ORIGINS?: string;
   /** Sentry DSN（エラー監視用） */

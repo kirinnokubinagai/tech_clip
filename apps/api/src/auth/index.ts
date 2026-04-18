@@ -28,6 +28,9 @@ const PRODUCTION_API_URL = "https://api.techclip.app";
 /** ローカル開発用のアプリURL */
 const LOCAL_APP_URL = "http://localhost:8081";
 
+/** ローカル開発用のAPI URL（Better Auth baseURL のデフォルト） */
+const DEFAULT_API_BASE_URL = "http://localhost:18787";
+
 /** モバイルアプリのカスタムスキーム */
 const MOBILE_APP_SCHEME = "techclip://";
 
@@ -40,7 +43,7 @@ export type Auth = ReturnType<typeof createAuth>;
  * @param db - Drizzle ORM データベースインスタンス
  * @param secret - Better Auth 暗号化用シークレットキー
  * @param oauthProviders - OAuthプロバイダー設定（省略可）
- * @param baseURL - Better Auth のベースURL（省略時はLOCAL_APP_URLを使用）
+ * @param baseURL - Better Auth のベースURL（API 自身の URL を渡す。省略時は DEFAULT_API_BASE_URL を使用）
  * @param additionalTrustedOrigins - 環境変数から追加するtrustedOrigins（省略可）
  * @returns Better Auth インスタンス
  */
@@ -67,7 +70,7 @@ export function createAuth(
       experimental: { joins: true },
     } as Parameters<typeof drizzleAdapter>[1]),
     secret,
-    baseURL: baseURL ?? LOCAL_APP_URL,
+    baseURL: baseURL ?? DEFAULT_API_BASE_URL,
     emailAndPassword: {
       enabled: true,
     },
