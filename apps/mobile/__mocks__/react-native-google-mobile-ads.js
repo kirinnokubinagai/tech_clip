@@ -1,4 +1,4 @@
-const React = require("react");
+const _React = require("react");
 
 module.exports = {
   BannerAd: () => null,
