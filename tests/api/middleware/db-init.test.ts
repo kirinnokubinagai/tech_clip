@@ -197,6 +197,11 @@ describe("createDbInitMiddleware", () => {
         {},
         undefined,
         [],
+        {
+          RESEND_API_KEY: "",
+          FROM_EMAIL: "",
+          MAILPIT_URL: undefined,
+        },
       );
     });
 
@@ -241,6 +246,11 @@ describe("createDbInitMiddleware", () => {
         },
         undefined,
         [],
+        {
+          RESEND_API_KEY: "",
+          FROM_EMAIL: "",
+          MAILPIT_URL: undefined,
+        },
       );
     });
 
@@ -279,6 +289,11 @@ describe("createDbInitMiddleware", () => {
         {},
         "https://api.techclip.app",
         [],
+        {
+          RESEND_API_KEY: "",
+          FROM_EMAIL: "",
+          MAILPIT_URL: undefined,
+        },
       );
     });
 
@@ -317,6 +332,11 @@ describe("createDbInitMiddleware", () => {
         {},
         undefined,
         ["https://staging.techclip.app", "https://dev.techclip.app"],
+        {
+          RESEND_API_KEY: "",
+          FROM_EMAIL: "",
+          MAILPIT_URL: undefined,
+        },
       );
     });
 
@@ -354,6 +374,11 @@ describe("createDbInitMiddleware", () => {
         {},
         undefined,
         [],
+        {
+          RESEND_API_KEY: "",
+          FROM_EMAIL: "",
+          MAILPIT_URL: undefined,
+        },
       );
     });
 
