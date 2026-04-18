@@ -299,7 +299,7 @@ eas build:view <build-id>
 
 ```bash
 # apps/mobile/.env.local
-EXPO_PUBLIC_API_URL=http://localhost:8787
+EXPO_PUBLIC_API_URL=http://localhost:18787
 ```
 
 ---

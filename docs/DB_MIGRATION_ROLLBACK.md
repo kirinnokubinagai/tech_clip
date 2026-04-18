@@ -107,7 +107,7 @@ turso db shell <DB_NAME> \
 pnpm dev
 
 # ヘルスチェック
-curl http://localhost:8787/health
+curl http://localhost:18787/health
 ```
 
 ### ステップ 5: 原因調査と修正
