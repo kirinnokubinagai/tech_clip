@@ -376,3 +376,77 @@ describe("hasAccount フラグ", () => {
     expect(useAuthStore.getState().hasAccount).toBe(true);
   });
 });
+
+describe("signUp - メール確認必須時の自動サインイン", () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    useAuthStore.setState({
+      user: null,
+      session: null,
+      isAuthenticated: false,
+      isLoading: true,
+      sessionExpiredMessage: null,
+      hasAccount: false,
+    });
+    mockSetAuthToken.mockResolvedValue(undefined);
+    mockSetRefreshToken.mockResolvedValue(undefined);
+    mockClearAuthTokens.mockResolvedValue(undefined);
+  });
+
+  it("sign-up でtoken=nullの場合、自動的にsignInを呼び出して認証状態になること", async () => {
+    // Arrange
+    mockApiFetch
+      .mockResolvedValueOnce({
+        success: true,
+        data: { user: TEST_USER, session: null },
+      })
+      .mockResolvedValueOnce({
+        success: true,
+        data: { user: TEST_USER, session: TEST_SESSION },
+      });
+
+    // Act
+    await useAuthStore.getState().signUp({
+      name: "テストユーザー",
+      email: "test+maestro@techclip.app",
+      password: "Password123",
+    });
+
+    // Assert
+    const state = useAuthStore.getState();
+    expect(state.isAuthenticated).toBe(true);
+    expect(state.user).toEqual(TEST_USER);
+    expect(mockApiFetch).toHaveBeenCalledTimes(2);
+    expect(mockApiFetch).toHaveBeenNthCalledWith(
+      2,
+      "/api/auth/sign-in",
+      expect.objectContaining({ method: "POST" }),
+    );
+    expect(mockSetAuthToken).toHaveBeenCalledWith(TEST_SESSION.token);
+    expect(mockSetRefreshToken).toHaveBeenCalledWith(TEST_SESSION.refreshToken);
+  });
+
+  it("sign-up でtoken=nullかつsignInも失敗した場合、エラーをスローすること", async () => {
+    // Arrange
+    mockApiFetch
+      .mockResolvedValueOnce({
+        success: true,
+        data: { user: TEST_USER, session: null },
+      })
+      .mockResolvedValueOnce({
+        success: false,
+        error: { code: "EMAIL_NOT_VERIFIED", message: "メールアドレスが確認されていません" },
+      });
+
+    // Act & Assert
+    await expect(
+      useAuthStore.getState().signUp({
+        name: "テストユーザー",
+        email: "test@example.com",
+        password: "Password123",
+      }),
+    ).rejects.toThrow("メールアドレスが確認されていません");
+
+    expect(useAuthStore.getState().isAuthenticated).toBe(false);
+  });
+});

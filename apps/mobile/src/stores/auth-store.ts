@@ -45,7 +45,7 @@ type AuthStore = {
   updateUserProfile: (patch: Partial<User>) => void;
 };
 
-export const useAuthStore = create<AuthStore>((set) => ({
+export const useAuthStore = create<AuthStore>((set, get) => ({
   user: null,
   session: null,
   isAuthenticated: false,
@@ -95,6 +95,11 @@ export const useAuthStore = create<AuthStore>((set) => ({
 
     if (!data.success) {
       throw new Error(data.error.message);
+    }
+
+    if (!data.data.session) {
+      await get().signIn({ email: params.email, password: params.password });
+      return;
     }
 
     await setAuthToken(data.data.session.token);

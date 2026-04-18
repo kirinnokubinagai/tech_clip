@@ -51,7 +51,7 @@ export type SignUpResponse = {
   success: true;
   data: {
     user: User;
-    session: Session;
+    session: Session | null;
   };
 };
 
