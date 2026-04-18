@@ -114,3 +114,4 @@ screenshots/
 
 local.db-shm
 local.db-wal
+.claude/tmp-*
