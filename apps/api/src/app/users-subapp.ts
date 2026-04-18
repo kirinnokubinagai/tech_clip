@@ -157,7 +157,7 @@ export async function handleUsers(
         db,
         followerId,
         followingId,
-        followerName: follower?.name ?? undefined,
+        followerName: follower?.name,
       });
 
       return {
