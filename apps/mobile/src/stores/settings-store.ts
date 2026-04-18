@@ -292,7 +292,7 @@ export const useSettingsStore = create<SettingsStore>((set, get) => ({
       set({ notificationSettings: data.data });
     } catch {
       set({ notificationSettings: previous });
-      throw new Error("通知設定の更新に失敗しました");
+      throw new Error("通知設定の更新に失敗しました。");
     }
   },
 }));

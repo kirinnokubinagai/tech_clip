@@ -8,7 +8,7 @@ describe("ErrorView", () => {
       const { getByTestId } = await render(<ErrorView />);
 
       // Assert
-      expect(getByTestId("error-view-title").props.children).toBe("エラーが発生しました");
+      expect(getByTestId("error-view-title").props.children).toBe("エラーが発生しました。");
     });
 
     it("デフォルトのgenericエラーメッセージが表示されること", async () => {
@@ -17,7 +17,7 @@ describe("ErrorView", () => {
 
       // Assert
       expect(getByTestId("error-view-message").props.children).toBe(
-        "問題が発生しました。再度お試しください",
+        "問題が発生しました。再度お試しください。",
       );
     });
 

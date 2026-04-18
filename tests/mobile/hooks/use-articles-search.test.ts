@@ -159,7 +159,7 @@ describe("useSearchArticles", () => {
         success: false,
         error: {
           code: "INTERNAL_ERROR",
-          message: "サーバーエラーが発生しました",
+          message: "サーバーエラーが発生しました。",
         },
       });
 
@@ -171,7 +171,7 @@ describe("useSearchArticles", () => {
       // Assert
       await waitFor(() => {
         expect(result.current.isError).toBe(true);
-        expect(result.current.error?.message).toBe("サーバーエラーが発生しました");
+        expect(result.current.error?.message).toBe("サーバーエラーが発生しました。");
       });
     });
   });

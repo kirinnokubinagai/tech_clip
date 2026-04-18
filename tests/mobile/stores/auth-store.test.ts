@@ -2,7 +2,7 @@ jest.mock("@/lib/api", () => ({
   apiFetch: jest.fn(),
   SessionExpiredError: class SessionExpiredError extends Error {
     constructor() {
-      super("セッションの有効期限が切れました。再度ログインしてください");
+      super("セッションの有効期限が切れました。再度ログインしてください。");
       this.name = "SessionExpiredError";
     }
   },
@@ -101,13 +101,13 @@ describe("useAuthStore", () => {
       // Arrange
       mockApiFetch.mockResolvedValue({
         success: false,
-        error: { code: "AUTH_INVALID", message: "認証情報が正しくありません" },
+        error: { code: "AUTH_INVALID", message: "認証情報が正しくありません。" },
       });
 
       // Act & Assert
       await expect(
         useAuthStore.getState().signIn({ email: "wrong@example.com", password: "wrong" }),
-      ).rejects.toThrow("認証情報が正しくありません");
+      ).rejects.toThrow("認証情報が正しくありません。");
 
       expect(useAuthStore.getState().isAuthenticated).toBe(false);
     });
@@ -274,7 +274,7 @@ describe("useAuthStore", () => {
       expect(state.user).toBeNull();
       expect(state.session).toBeNull();
       expect(state.sessionExpiredMessage).toBe(
-        "セッションの有効期限が切れました。再度ログインしてください",
+        "セッションの有効期限が切れました。再度ログインしてください。",
       );
       expect(mockClearAuthTokens).toHaveBeenCalledTimes(1);
     });
@@ -282,7 +282,7 @@ describe("useAuthStore", () => {
     it("clearSessionExpiredMessageを呼ぶとsessionExpiredMessageがnullになること", async () => {
       // Arrange
       useAuthStore.setState({
-        sessionExpiredMessage: "セッションの有効期限が切れました。再度ログインしてください",
+        sessionExpiredMessage: "セッションの有効期限が切れました。再度ログインしてください。",
       });
 
       // Act
@@ -304,7 +304,7 @@ describe("useAuthStore", () => {
       const state = useAuthStore.getState();
       expect(state.isAuthenticated).toBe(false);
       expect(state.sessionExpiredMessage).toBe(
-        "セッションの有効期限が切れました。再度ログインしてください",
+        "セッションの有効期限が切れました。再度ログインしてください。",
       );
     });
   });

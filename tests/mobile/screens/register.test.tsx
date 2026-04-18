@@ -87,7 +87,7 @@ describe("RegisterScreen", () => {
       await waitFor(() => {
         expect(mockSignUp).not.toHaveBeenCalled();
       });
-      expect(getByLabelText("メールアドレスの形式が正しくありません")).toBeDefined();
+      expect(getByLabelText("メールアドレスの形式が正しくありません。")).toBeDefined();
     });
 
     it("パスワードが空の場合signUpが呼ばれないこと", async () => {
@@ -121,7 +121,7 @@ describe("RegisterScreen", () => {
       await waitFor(() => {
         expect(mockSignUp).not.toHaveBeenCalled();
       });
-      expect(getByLabelText("パスワードは8文字以上で入力してください")).toBeDefined();
+      expect(getByLabelText("パスワードは8文字以上で入力してください。")).toBeDefined();
     });
 
     it("signUpが失敗した場合エラーメッセージが表示されること", async () => {

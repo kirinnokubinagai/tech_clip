@@ -22,7 +22,7 @@ describe("ForgotPasswordScreen", () => {
     await fireEvent.press(getByLabelText("リセットメールを送信"));
 
     // Assert
-    expect(await findByLabelText("メールアドレスの形式が正しくありません")).toBeDefined();
+    expect(await findByLabelText("メールアドレスの形式が正しくありません。")).toBeDefined();
   });
 
   it("メールアドレス未入力時にバリデーションエラーを表示すること", async () => {
@@ -33,7 +33,7 @@ describe("ForgotPasswordScreen", () => {
     await fireEvent.press(getByLabelText("リセットメールを送信"));
 
     // Assert
-    expect(await findByLabelText("メールアドレスを入力してください")).toBeDefined();
+    expect(await findByLabelText("メールアドレスを入力してください。")).toBeDefined();
   });
 
   it("送信成功時に成功メッセージを表示すること", async () => {
@@ -148,6 +148,6 @@ describe("ForgotPasswordScreen", () => {
     await fireEvent.press(getByLabelText("リセットメールを送信"));
 
     // Assert
-    expect(await findByLabelText("エラーが発生しました")).toBeDefined();
+    expect(await findByLabelText("エラーが発生しました。")).toBeDefined();
   });
 });

@@ -412,7 +412,7 @@ describe("useSettingsStore", () => {
 
         // Act & Assert
         await expect(useSettingsStore.getState().updateNotificationEnabled(false)).rejects.toThrow(
-          "通知設定の更新に失敗しました",
+          "通知設定の更新に失敗しました。",
         );
         expect(useSettingsStore.getState().notificationSettings?.newArticle).toBe(true);
       });

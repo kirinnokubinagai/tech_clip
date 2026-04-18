@@ -195,7 +195,7 @@ describe("HomeScreen（英語ロケール）", () => {
 
       // Assert
       await waitFor(() => {
-        expect(queryByText("記事の取得に失敗しました")).toBeNull();
+        expect(queryByText("記事の取得に失敗しました。")).toBeNull();
       });
     });
   });

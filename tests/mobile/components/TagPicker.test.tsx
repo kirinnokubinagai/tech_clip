@@ -102,7 +102,7 @@ describe("TagPicker", () => {
 
       // Assert
       expect(getByTestId("tag-limit-message")).toBeDefined();
-      expect(getByText("タグは最大2個まで選択できます")).toBeDefined();
+      expect(getByText("タグは最大2個まで選択できます。")).toBeDefined();
     });
 
     it("上限に達しても選択済みタグは解除可能であること", async () => {

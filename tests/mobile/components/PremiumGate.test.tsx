@@ -99,7 +99,7 @@ describe("PremiumGate", () => {
       const { getByText } = await render(<PremiumGate {...BASE_PROPS} />);
 
       // Assert
-      expect(getByText("無料プランの上限に達しました")).toBeDefined();
+      expect(getByText("無料プランの上限に達しました。")).toBeDefined();
     });
   });
 

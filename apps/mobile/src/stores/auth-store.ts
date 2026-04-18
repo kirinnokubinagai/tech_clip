@@ -17,7 +17,7 @@ import type {
 const HAS_ACCOUNT_KEY = "hasAccount";
 
 /** セッション期限切れメッセージ */
-const SESSION_EXPIRED_MESSAGE = "セッションの有効期限が切れました。再度ログインしてください";
+const SESSION_EXPIRED_MESSAGE = "セッションの有効期限が切れました。再度ログインしてください。";
 
 type AuthStore = {
   user: User | null;

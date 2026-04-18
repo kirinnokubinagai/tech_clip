@@ -161,7 +161,7 @@ describe("ArticleDetailScreen", () => {
 
       // Assert
       await waitFor(() => {
-        expect(getByText("記事の取得に失敗しました")).not.toBeNull();
+        expect(getByText("記事の取得に失敗しました。")).not.toBeNull();
       });
     });
 
@@ -267,7 +267,7 @@ describe("ArticleDetailScreen", () => {
 
       // Assert
       await waitFor(() => {
-        expect(getByText("5分で読めます")).not.toBeNull();
+        expect(getByText("5分で読めます。")).not.toBeNull();
         expect(getByText("要約")).not.toBeNull();
         expect(getByText("翻訳")).not.toBeNull();
       });

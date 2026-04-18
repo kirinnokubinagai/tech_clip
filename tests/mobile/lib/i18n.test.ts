@@ -57,7 +57,7 @@ describe("i18n", () => {
       const result = i18n.t("auth.validation.passwordMinLength", { min: 8 });
 
       // Assert
-      expect(result).toBe("パスワードは8文字以上で入力してください");
+      expect(result).toBe("パスワードは8文字以上で入力してください。");
     });
   });
 
@@ -99,7 +99,7 @@ describe("i18n", () => {
       const result = i18n.t("auth.validation.passwordMinLength", { min: 8 });
 
       // Assert
-      expect(result).toBe("Password must be at least 8 characters");
+      expect(result).toBe("Password must be at least 8 characters.");
     });
   });
 

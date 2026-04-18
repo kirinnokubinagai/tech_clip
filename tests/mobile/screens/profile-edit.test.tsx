@@ -116,7 +116,7 @@ describe("ProfileEditScreen", () => {
 
       // Assert
       await waitFor(() => {
-        expect(getByText("プロフィールの取得に失敗しました")).toBeDefined();
+        expect(getByText("プロフィールの取得に失敗しました。")).toBeDefined();
       });
     });
   });
@@ -161,7 +161,7 @@ describe("ProfileEditScreen", () => {
       // Assert
       await waitFor(() => {
         expect(Toast).toHaveBeenLastCalledWith(
-          expect.objectContaining({ visible: true, message: "プロフィールを更新しました" }),
+          expect.objectContaining({ visible: true, message: "プロフィールを更新しました。" }),
           undefined,
         );
       });
@@ -208,7 +208,7 @@ describe("ProfileEditScreen", () => {
 
       // Assert
       await waitFor(() => {
-        expect(getByText("名前を入力してください")).toBeDefined();
+        expect(getByText("名前を入力してください。")).toBeDefined();
       });
     });
   });
@@ -221,7 +221,7 @@ describe("ProfileEditScreen", () => {
         .mockResolvedValueOnce({ success: true, data: profileWithDifferentUsername })
         .mockResolvedValueOnce({
           success: false,
-          error: { code: "DUPLICATE", message: "このユーザー名はすでに使用されています" },
+          error: { code: "DUPLICATE", message: "このユーザー名はすでに使用されています。" },
         });
 
       // Act
@@ -238,7 +238,7 @@ describe("ProfileEditScreen", () => {
 
       // Assert
       await waitFor(() => {
-        expect(getByText("このユーザー名はすでに使用されています")).toBeDefined();
+        expect(getByText("このユーザー名はすでに使用されています。")).toBeDefined();
       });
     });
   });
