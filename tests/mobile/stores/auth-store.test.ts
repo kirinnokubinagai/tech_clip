@@ -53,6 +53,7 @@ describe("useAuthStore", () => {
       isAuthenticated: false,
       isLoading: true,
       sessionExpiredMessage: null,
+      hasAccount: false,
     });
     mockSetAuthToken.mockResolvedValue(undefined);
     mockSetRefreshToken.mockResolvedValue(undefined);
@@ -306,5 +307,72 @@ describe("useAuthStore", () => {
         "セッションの有効期限が切れました。再度ログインしてください",
       );
     });
+  });
+});
+
+describe("hasAccount フラグ", () => {
+  it("初期状態でhasAccountがfalseであること", () => {
+    // Arrange & Act
+    const state = useAuthStore.getState();
+
+    // Assert
+    expect(state.hasAccount).toBe(false);
+  });
+
+  it("signIn成功後にhasAccountがtrueになること", async () => {
+    // Arrange
+    mockApiFetch.mockResolvedValue({
+      success: true,
+      data: { user: TEST_USER, session: TEST_SESSION },
+    });
+
+    // Act
+    await useAuthStore.getState().signIn({ email: "test@example.com", password: "Password123" });
+
+    // Assert
+    expect(useAuthStore.getState().hasAccount).toBe(true);
+  });
+
+  it("signUp成功後にhasAccountがtrueになること", async () => {
+    // Arrange
+    mockApiFetch.mockResolvedValue({
+      success: true,
+      data: { user: TEST_USER, session: TEST_SESSION },
+    });
+
+    // Act
+    await useAuthStore.getState().signUp({
+      email: "test@example.com",
+      password: "Password123",
+      name: "テストユーザー",
+    });
+
+    // Assert
+    expect(useAuthStore.getState().hasAccount).toBe(true);
+  });
+
+  it("signOut後もhasAccountがtrueのままであること", async () => {
+    // Arrange
+    useAuthStore.setState({ isAuthenticated: true, hasAccount: true });
+    mockApiFetch.mockResolvedValue({ success: true, data: null });
+
+    // Act
+    await useAuthStore.getState().signOut();
+
+    // Assert
+    expect(useAuthStore.getState().hasAccount).toBe(true);
+    expect(useAuthStore.getState().isAuthenticated).toBe(false);
+  });
+
+  it("loadAccountFlagでSecureStoreの値を読み込めること", async () => {
+    // Arrange（SecureStoreに保存済みの想定）
+    const mockGetItemAsync = jest.fn().mockResolvedValue(JSON.stringify(true));
+    jest.spyOn(require("expo-secure-store"), "getItemAsync").mockImplementation(mockGetItemAsync);
+
+    // Act
+    await useAuthStore.getState().loadAccountFlag();
+
+    // Assert
+    expect(useAuthStore.getState().hasAccount).toBe(true);
   });
 });

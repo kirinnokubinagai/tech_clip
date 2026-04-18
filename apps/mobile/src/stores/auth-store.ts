@@ -1,3 +1,4 @@
+import * as SecureStore from "expo-secure-store";
 import { create } from "zustand";
 
 import { apiFetch, SessionExpiredError } from "@/lib/api";
@@ -12,6 +13,9 @@ import type {
   User,
 } from "@/types/auth";
 
+/** SecureStoreキー: アカウント作成済みフラグ */
+const HAS_ACCOUNT_KEY = "hasAccount";
+
 /** セッション期限切れメッセージ */
 const SESSION_EXPIRED_MESSAGE = "セッションの有効期限が切れました。再度ログインしてください";
 
@@ -22,6 +26,10 @@ type AuthStore = {
   isLoading: boolean;
   /** セッション期限切れ時に表示するメッセージ。nullの場合は表示しない */
   sessionExpiredMessage: string | null;
+  /** 一度でもサインインまたはサインアップに成功したことを示すフラグ */
+  hasAccount: boolean;
+  /** SecureStoreからhasAccountフラグを読み込む */
+  loadAccountFlag: () => Promise<void>;
   signIn: (params: SignInParams) => Promise<void>;
   signUp: (params: SignUpParams) => Promise<void>;
   signOut: () => Promise<void>;
@@ -43,6 +51,7 @@ export const useAuthStore = create<AuthStore>((set) => ({
   isAuthenticated: false,
   isLoading: true,
   sessionExpiredMessage: null,
+  hasAccount: false,
 
   /**
    * メールとパスワードでサインインする
@@ -63,10 +72,12 @@ export const useAuthStore = create<AuthStore>((set) => ({
     await setAuthToken(data.data.session.token);
     await setRefreshToken(data.data.session.refreshToken);
 
+    await SecureStore.setItemAsync(HAS_ACCOUNT_KEY, JSON.stringify(true));
     set({
       user: data.data.user,
       session: data.data.session,
       isAuthenticated: true,
+      hasAccount: true,
     });
   },
 
@@ -89,10 +100,12 @@ export const useAuthStore = create<AuthStore>((set) => ({
     await setAuthToken(data.data.session.token);
     await setRefreshToken(data.data.session.refreshToken);
 
+    await SecureStore.setItemAsync(HAS_ACCOUNT_KEY, JSON.stringify(true));
     set({
       user: data.data.user,
       session: data.data.session,
       isAuthenticated: true,
+      hasAccount: true,
     });
   },
 
@@ -245,5 +258,15 @@ export const useAuthStore = create<AuthStore>((set) => ({
     set((state) => ({
       user: state.user ? { ...state.user, ...patch } : state.user,
     }));
+  },
+
+  /**
+   * SecureStoreからhasAccountフラグを読み込む
+   * アプリ起動時に呼び出す
+   */
+  loadAccountFlag: async () => {
+    const stored = await SecureStore.getItemAsync(HAS_ACCOUNT_KEY);
+    const hasAccount = stored !== null ? (JSON.parse(stored) as boolean) : false;
+    set({ hasAccount });
   },
 }));

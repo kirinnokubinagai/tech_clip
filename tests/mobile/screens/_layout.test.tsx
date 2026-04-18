@@ -62,9 +62,18 @@ jest.mock("@mobile/stores/auth-store", () => ({
       selector: (s: {
         isAuthenticated: boolean;
         isLoading: boolean;
+        hasAccount: boolean;
         checkSession: () => void;
+        loadAccountFlag: () => Promise<void>;
       }) => unknown,
-    ) => selector({ isAuthenticated: false, isLoading: false, checkSession: jest.fn() }),
+    ) =>
+      selector({
+        isAuthenticated: false,
+        isLoading: false,
+        hasAccount: false,
+        checkSession: jest.fn(),
+        loadAccountFlag: jest.fn().mockResolvedValue(undefined),
+      }),
   ),
 }));
 
@@ -116,7 +125,9 @@ const mockedUseAuthStore = useAuthStore as jest.MockedFunction<typeof useAuthSto
 const createAuthStoreState = (isAuthenticated: boolean) => ({
   isAuthenticated,
   isLoading: false,
+  hasAccount: false,
   checkSession: jest.fn(),
+  loadAccountFlag: jest.fn().mockResolvedValue(undefined),
 });
 
 describe("RootLayout", () => {

@@ -32,7 +32,9 @@ initSentry(process.env.EXPO_PUBLIC_SENTRY_DSN);
 export default function RootLayout() {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const isLoading = useAuthStore((s) => s.isLoading);
+  const hasAccount = useAuthStore((s) => s.hasAccount);
   const checkSession = useAuthStore((s) => s.checkSession);
+  const loadAccountFlag = useAuthStore((s) => s.loadAccountFlag);
   const hasSeenOnboarding = useUIStore((s) => s.hasSeenOnboarding);
   const isOnboardingLoaded = useUIStore((s) => s.isOnboardingLoaded);
   const loadOnboardingState = useUIStore((s) => s.loadOnboardingState);
@@ -41,6 +43,7 @@ export default function RootLayout() {
 
   useEffect(() => {
     checkSession();
+    void loadAccountFlag();
     loadOnboardingState();
     void loadLanguage();
     void requestTrackingPermission();
@@ -52,7 +55,7 @@ export default function RootLayout() {
     });
     const bgSyncCleanup = startBackgroundSync();
     return bgSyncCleanup;
-  }, [checkSession, loadOnboardingState, loadLanguage]);
+  }, [checkSession, loadOnboardingState, loadLanguage, loadAccountFlag]);
 
   useEffect(() => {
     const cleanup = setupNotificationHandlers();
@@ -100,7 +103,8 @@ export default function RootLayout() {
         <Stack.Screen name="share-intent" options={{ presentation: "modal" }} />
       </Stack>
       {!hasSeenOnboarding && <Redirect href="/onboarding" />}
-      {hasSeenOnboarding && !isAuthenticated && <Redirect href="/(auth)/register" />}
+      {hasSeenOnboarding && !isAuthenticated && !hasAccount && <Redirect href="/(auth)/register" />}
+      {hasSeenOnboarding && !isAuthenticated && hasAccount && <Redirect href="/(auth)/login" />}
       {hasSeenOnboarding && isAuthenticated && <Redirect href="/(tabs)" />}
     </QueryClientProvider>
   );
