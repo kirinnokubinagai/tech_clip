@@ -102,6 +102,7 @@ export default function RegisterScreen() {
               editable={!isSubmitting}
               accessibilityLabel={t("auth.name")}
               accessibilityHint={t("auth.nameHint")}
+              testID="register-name-input"
             />
           </View>
 
@@ -120,6 +121,7 @@ export default function RegisterScreen() {
               editable={!isSubmitting}
               accessibilityLabel={t("auth.email")}
               accessibilityHint={t("auth.emailHint")}
+              testID="register-email-input"
             />
           </View>
 
@@ -137,6 +139,7 @@ export default function RegisterScreen() {
               editable={!isSubmitting}
               accessibilityLabel={t("auth.password")}
               accessibilityHint={t("auth.passwordHint", { min: PASSWORD_MIN_LENGTH })}
+              testID="register-password-input"
             />
           </View>
         </View>
