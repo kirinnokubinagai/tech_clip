@@ -92,7 +92,7 @@ app.post("/api/auth/verify-email", async (c) => {
   return handleEmailVerification(c.get("db"), c.env, c.get("auth")(), c.req.raw);
 });
 
-app.on(["POST", "GET"], "/api/auth/**", async (c) => {
+app.on(["POST", "GET"], "/api/auth/:path{.*}", async (c) => {
   return handleAuthCatchAll(c.get("db"), c.env, c.get("auth")(), c.req.raw);
 });
 

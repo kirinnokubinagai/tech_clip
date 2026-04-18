@@ -5,6 +5,7 @@ import { eq } from "drizzle-orm";
 import type { Database } from "../db";
 import * as schema from "../db/schema";
 import { users } from "../db/schema";
+import { type EmailEnv, sendEmailVerification } from "../services/emailService";
 
 /** OAuthプロバイダーの認証情報 */
 type OAuthCredentials = {
@@ -29,7 +30,7 @@ const PRODUCTION_API_URL = "https://api.techclip.app";
 const LOCAL_APP_URL = "http://localhost:8081";
 
 /** ローカル開発用のAPI URL（Better Auth baseURL のデフォルト） */
-const DEFAULT_API_BASE_URL = "http://localhost:18787";
+const DEFAULT_API_BASE_URL = "http://localhost:18787/api/auth";
 
 /** モバイルアプリのカスタムスキーム */
 const MOBILE_APP_SCHEME = "techclip://";
@@ -45,6 +46,7 @@ export type Auth = ReturnType<typeof createAuth>;
  * @param oauthProviders - OAuthプロバイダー設定（省略可）
  * @param baseURL - Better Auth のベースURL（API 自身の URL を渡す。省略時は DEFAULT_API_BASE_URL を使用）
  * @param additionalTrustedOrigins - 環境変数から追加するtrustedOrigins（省略可）
+ * @param emailEnv - メール送信環境変数（省略可）
  * @returns Better Auth インスタンス
  */
 export function createAuth(
@@ -53,6 +55,7 @@ export function createAuth(
   oauthProviders?: OAuthProviderConfig,
   baseURL?: string,
   additionalTrustedOrigins?: string[],
+  emailEnv?: EmailEnv,
 ) {
   const trustedOrigins = [
     MOBILE_APP_SCHEME,
@@ -73,6 +76,23 @@ export function createAuth(
     baseURL: baseURL ?? DEFAULT_API_BASE_URL,
     emailAndPassword: {
       enabled: true,
+      requireEmailVerification: true,
+    },
+    emailVerification: {
+      sendOnSignUp: true,
+      autoSignInAfterVerification: true,
+      sendVerificationEmail: async ({
+        user,
+        url,
+      }: {
+        user: { email: string; name?: string };
+        url: string;
+      }) => {
+        if (!emailEnv) {
+          return;
+        }
+        await sendEmailVerification(emailEnv, user.email, user.name ?? "", url);
+      },
     },
     databaseHooks: {
       user: {

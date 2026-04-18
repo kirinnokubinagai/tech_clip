@@ -110,6 +110,23 @@ FROM_EMAIL=no-reply@example.com
 # API_BASE_URL（Better Auth baseURL 用）
 # -----------------------------------------------------------------------------
 # API 自身のベース URL。Better Auth が内部ルーティングに使用する。
-# ローカル開発: http://localhost:18787
-# 本番環境: wrangler secret set API_BASE_URL https://api.techclip.app
-API_BASE_URL=http://localhost:18787
+# ローカル開発: http://localhost:18787/api/auth
+# 本番環境: wrangler secret set API_BASE_URL https://api.techclip.app/api/auth
+API_BASE_URL=http://localhost:18787/api/auth
+
+# -----------------------------------------------------------------------------
+# APP_URL（モバイルアプリ deep-link / OAuth redirect 先）
+# -----------------------------------------------------------------------------
+# Better Auth の baseURL とは別概念。メール認証やパスワードリセットの
+# リダイレクト先 URL として使用する。
+# ローカル開発: http://localhost:8081
+# 本番環境: wrangler secret set APP_URL https://techclip.app
+APP_URL=http://localhost:8081
+
+# -----------------------------------------------------------------------------
+# MAILPIT_URL（ローカル開発用メール送信）
+# -----------------------------------------------------------------------------
+# 設定されている場合は Resend の代わりに mailpit HTTP Send API を使用する。
+# 本番環境では設定しないこと（RESEND_API_KEY を使用）。
+# mailpit は nix develop 環境で自動的に起動される（http://localhost:8025）。
+MAILPIT_URL=http://localhost:8025/api/v1/send

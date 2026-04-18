@@ -20,12 +20,58 @@ export type NotificationItem = {
 export type EmailEnv = {
   RESEND_API_KEY: string;
   FROM_EMAIL: string;
+  /** Mailpit API エンドポイント（ローカル開発用。設定時は Resend の代わりに使用） */
+  MAILPIT_URL?: string;
 };
 
 /**
- * Resend API を使ってメールを送信する
+ * Mailpit API を使ってメールを送信する（ローカル開発用）
  *
- * @param env - 環境変数（RESEND_API_KEY, FROM_EMAIL）
+ * @param mailpitUrl - Mailpit API エンドポイント（例: http://localhost:8025/api/v1/send）
+ * @param from - 送信元メールアドレス
+ * @param to - 宛先メールアドレス
+ * @param subject - 件名
+ * @param htmlBody - HTMLボディ
+ * @returns 送信結果（messageId を含む）
+ * @throws メール送信に失敗した場合
+ */
+async function sendEmailViaMailpit(
+  mailpitUrl: string,
+  from: string,
+  to: string,
+  subject: string,
+  htmlBody: string,
+): Promise<SendEmailResult> {
+  const response = await fetch(mailpitUrl, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      From: { Email: from },
+      To: [{ Email: to }],
+      Subject: subject,
+      HTML: htmlBody,
+    }),
+  });
+
+  if (!response.ok) {
+    logger.error("Mailpit へのメール送信に失敗しました", {
+      status: response.status,
+      to,
+      subject,
+    });
+    throw new Error(`Mailpit へのメール送信に失敗しました: ステータス ${response.status}`);
+  }
+
+  const data = (await response.json()) as { ID: string };
+  return { messageId: data.ID };
+}
+
+/**
+ * メールを送信する（MAILPIT_URL が設定されていれば Mailpit を使用、なければ Resend を使用）
+ *
+ * @param env - 環境変数（RESEND_API_KEY, FROM_EMAIL, MAILPIT_URL?）
  * @param to - 宛先メールアドレス
  * @param subject - 件名
  * @param htmlBody - HTMLボディ
@@ -38,6 +84,11 @@ export async function sendEmail(
   subject: string,
   htmlBody: string,
 ): Promise<SendEmailResult> {
+  if (env.MAILPIT_URL) {
+    const fromEmail = env.FROM_EMAIL || "noreply@techclip.app";
+    return sendEmailViaMailpit(env.MAILPIT_URL, fromEmail, to, subject, htmlBody);
+  }
+
   if (!env.RESEND_API_KEY) {
     throw new Error("RESEND_API_KEY が設定されていません");
   }

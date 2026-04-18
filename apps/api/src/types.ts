@@ -29,6 +29,8 @@ export type Bindings = {
   APP_URL?: string;
   /** API 自身のベース URL（Better Auth baseURL 用） */
   API_BASE_URL?: string;
+  /** Mailpit API エンドポイント（ローカル開発用。設定時は Resend の代わりにメール送信） */
+  MAILPIT_URL?: string;
   /** カンマ区切りの追加 trustedOrigins（例: "https://staging.example.com,https://dev.example.com"） */
   TRUSTED_ORIGINS?: string;
   /** Sentry DSN（エラー監視用） */

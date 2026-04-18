@@ -6,6 +6,7 @@ import { fetchWithAuth } from "../lib/route-helpers";
 import { createAuthRoute } from "../routes/auth";
 import { createEmailVerificationRoute } from "../routes/email-verification";
 import { createPasswordResetRoute } from "../routes/password-reset";
+import type { EmailEnv } from "../services/emailService";
 import type { Bindings } from "../types";
 
 /** デフォルトのアプリ URL（ローカル開発用） */
@@ -49,10 +50,15 @@ export async function handleEmailVerification(
   request: Request,
 ): Promise<Response> {
   const appUrl = env.APP_URL ?? DEFAULT_APP_URL;
+  const emailEnv: EmailEnv = {
+    RESEND_API_KEY: env.RESEND_API_KEY,
+    FROM_EMAIL: env.FROM_EMAIL,
+    MAILPIT_URL: env.MAILPIT_URL,
+  };
   const route = createEmailVerificationRoute({
     db,
     appUrl,
-    emailEnv: { RESEND_API_KEY: env.RESEND_API_KEY, FROM_EMAIL: env.FROM_EMAIL },
+    emailEnv,
   });
 
   return fetchWithAuth(
@@ -85,10 +91,15 @@ export async function handleAuthCatchAll(
     (path === "/api/auth/forgot-password" || path === "/api/auth/reset-password");
 
   if (isPasswordReset) {
+    const emailEnv: EmailEnv = {
+      RESEND_API_KEY: env.RESEND_API_KEY,
+      FROM_EMAIL: env.FROM_EMAIL,
+      MAILPIT_URL: env.MAILPIT_URL,
+    };
     const passwordResetRoute = createPasswordResetRoute({
       db,
       appUrl: env.APP_URL ?? DEFAULT_APP_URL,
-      emailEnv: { RESEND_API_KEY: env.RESEND_API_KEY, FROM_EMAIL: env.FROM_EMAIL },
+      emailEnv,
       auth,
     });
     const subApp = new Hono();
