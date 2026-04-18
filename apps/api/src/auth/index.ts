@@ -2,6 +2,7 @@ import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 
 import type { Database } from "../db";
+import * as schema from "../db/schema";
 
 /** OAuthプロバイダーの認証情報 */
 type OAuthCredentials = {
@@ -57,7 +58,12 @@ export function createAuth(
   ];
 
   return betterAuth({
-    database: drizzleAdapter(db, { provider: "sqlite" }),
+    database: drizzleAdapter(db, {
+      provider: "sqlite",
+      schema,
+      usePlural: true,
+      experimental: { joins: true },
+    } as Parameters<typeof drizzleAdapter>[1]),
     secret,
     baseURL: baseURL ?? LOCAL_APP_URL,
     emailAndPassword: {
