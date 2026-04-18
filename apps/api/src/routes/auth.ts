@@ -319,45 +319,78 @@ export function createAuthRoute({ db, getAuth }: AuthRouteOptions) {
       );
     }
 
-    try {
-      const auth = getAuth();
-      const result = await auth.api.getSession({ headers: c.req.raw.headers });
+    const token = authHeader.slice("Bearer ".length);
 
-      if (!result) {
+    try {
+      // 独自の sessions テーブルから Bearer token でセッションを検索
+      const [sessionRow] = await db.select().from(sessions).where(eq(sessions.token, token));
+
+      if (!sessionRow) {
         return c.json(
           {
             success: false,
             error: {
               code: AUTH_REQUIRED_CODE,
-              message: "ログインが必要です",
+              message: "ログインが必要です。",
             },
           },
           HTTP_UNAUTHORIZED,
         );
       }
 
-      const user = result.user;
-      const session = result.session;
-      const expiresAt =
-        session.expiresAt instanceof Date
-          ? session.expiresAt.toISOString()
-          : String(session.expiresAt);
+      // セッションの有効期限チェック
+      const expiresAtMs =
+        typeof sessionRow.expiresAt === "string"
+          ? Date.parse(sessionRow.expiresAt)
+          : (sessionRow.expiresAt as Date).getTime();
+      if (Number.isFinite(expiresAtMs) && expiresAtMs <= Date.now()) {
+        return c.json(
+          {
+            success: false,
+            error: {
+              code: AUTH_EXPIRED_CODE,
+              message: REFRESH_TOKEN_EXPIRED_MESSAGE,
+            },
+          },
+          HTTP_UNAUTHORIZED,
+        );
+      }
+
+      const [userRow] = await db.select().from(users).where(eq(users.id, sessionRow.userId));
+
+      if (!userRow) {
+        return c.json(
+          {
+            success: false,
+            error: {
+              code: AUTH_REQUIRED_CODE,
+              message: "ログインが必要です。",
+            },
+          },
+          HTTP_UNAUTHORIZED,
+        );
+      }
+
+      const expiresAtStr =
+        typeof sessionRow.expiresAt === "string"
+          ? sessionRow.expiresAt
+          : new Date(sessionRow.expiresAt as number | Date).toISOString();
 
       return c.json(
         {
           success: true,
           data: {
             user: {
-              id: user.id,
-              email: user.email,
-              name: user.name,
-              image: user.image ?? null,
-              createdAt: user.createdAt,
-              updatedAt: user.updatedAt,
+              id: userRow.id,
+              email: userRow.email,
+              name: userRow.name,
+              image: userRow.image ?? null,
+              createdAt: userRow.createdAt,
+              updatedAt: userRow.updatedAt,
             },
             session: {
-              token: session.token,
-              expiresAt,
+              token: sessionRow.token,
+              expiresAt: expiresAtStr,
             },
           },
         },
