@@ -112,7 +112,7 @@ app.on(["GET", "POST", "PATCH", "DELETE"], "/api/articles", async (c) => {
   return handleArticles(c.get("db"), c.env, c.get("auth")(), c.req.raw);
 });
 
-app.on(["GET", "POST", "PATCH", "DELETE"], "/api/articles/**", async (c) => {
+app.on(["GET", "POST", "PATCH", "DELETE"], "/api/articles/:path{.*}", async (c) => {
   return handleArticles(c.get("db"), c.env, c.get("auth")(), c.req.raw);
 });
 
@@ -124,7 +124,7 @@ app.on(["GET", "PATCH", "DELETE"], "/api/users/me", async (c) => {
   return handleUsers(c.get("db"), c.env, c.get("auth")(), c.req.raw);
 });
 
-app.on(["GET", "POST", "PATCH", "DELETE"], "/api/users/**", async (c) => {
+app.on(["GET", "POST", "PATCH", "DELETE"], "/api/users/:path{.*}", async (c) => {
   return handleUsers(c.get("db"), c.env, c.get("auth")(), c.req.raw);
 });
 
@@ -132,7 +132,7 @@ app.on(["GET", "POST", "PATCH", "DELETE"], "/api/tags", async (c) => {
   return handleTags(c.get("db"), c.get("auth")(), c.req.raw);
 });
 
-app.on(["GET", "POST", "PATCH"], "/api/tags/**", async (c) => {
+app.on(["GET", "POST", "PATCH"], "/api/tags/:path{.*}", async (c) => {
   return handleTags(c.get("db"), c.get("auth")(), c.req.raw);
 });
 
@@ -140,7 +140,7 @@ app.on(["GET", "POST", "PATCH"], "/api/notifications", async (c) => {
   return handleNotifications(c.get("db"), c.get("auth")(), c.req.raw);
 });
 
-app.on(["GET", "POST", "PATCH"], "/api/notifications/**", async (c) => {
+app.on(["GET", "POST", "PATCH"], "/api/notifications/:path{.*}", async (c) => {
   return handleNotifications(c.get("db"), c.get("auth")(), c.req.raw);
 });
 
@@ -148,11 +148,11 @@ app.on(["GET", "POST"], "/api/subscription", async (c) => {
   return handleSubscription(c.get("db"), c.env, c.get("auth")(), c.req.raw);
 });
 
-app.on(["GET", "POST"], "/api/subscription/**", async (c) => {
+app.on(["GET", "POST"], "/api/subscription/:path{.*}", async (c) => {
   return handleSubscription(c.get("db"), c.env, c.get("auth")(), c.req.raw);
 });
 
-app.on(["POST"], "/api/analytics/**", async (c) => {
+app.on(["POST"], "/api/analytics/:path{.*}", async (c) => {
   return handleAnalytics(c.get("db"), c.get("auth")(), c.req.raw);
 });
 
