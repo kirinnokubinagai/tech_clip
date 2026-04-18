@@ -20,9 +20,17 @@ env:
     clearState: false
 - runFlow:
     when:
+      visible: "Process system isn't responding"
+    commands:
+      - tapOn: "Wait"
+      - waitForAnimationToEnd:
+          timeout: 3000
+- runFlow:
+    when:
       visible: "Open debugger to view warnings."
     commands:
-      - tapOn: "DISMISS"
+      - tapOn:
+          point: "90%, 93%"
       - waitForAnimationToEnd:
           timeout: 1000
 
@@ -32,7 +40,6 @@ env:
 # --- 記事保存画面 ---
 - assertVisible:
     id: "save-screen-title"
-    timeout: 5000
 - assertVisible: "URL"
 - takeScreenshot: screenshots/04-article-save/01-save-screen
 
@@ -68,7 +75,6 @@ env:
 # プレビュー表示を確認
 - assertVisible:
     id: "article-preview"
-    timeout: 10000
 - assertVisible: "プレビュー"
 
 # 保存ボタンをタップ
@@ -79,7 +85,6 @@ env:
 # 保存成功トースト確認
 - assertVisible:
     text: "記事を保存しました"
-    timeout: 5000
 - takeScreenshot: screenshots/04-article-save/02-saved
 
 # --- 戻るボタン ---
@@ -88,6 +93,5 @@ env:
 - openLink: techclip://article/save
 - assertVisible:
     id: "save-screen-title"
-    timeout: 5000
 - tapOn:
     text: "戻る"

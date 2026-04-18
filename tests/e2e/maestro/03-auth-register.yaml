@@ -19,14 +19,21 @@ env:
     clearState: true
 
 # オンボーディングをスキップ
-- extendedWaitUntil:
-    visible: "技術記事をワンタップで保存"
-    timeout: 30000
+- waitForAnimationToEnd:
+    timeout: 15000
+- runFlow:
+    when:
+      visible: "Process system isn't responding"
+    commands:
+      - tapOn: "Wait"
+      - waitForAnimationToEnd:
+          timeout: 3000
 - runFlow:
     when:
       visible: "Open debugger to view warnings."
     commands:
-      - tapOn: "DISMISS"
+      - tapOn:
+          point: "90%, 93%"
       - waitForAnimationToEnd:
           timeout: 1000
 - tapOn: "次へ"
@@ -44,7 +51,6 @@ env:
 
 - assertVisible:
     text: "ログイン"
-    timeout: 5000
 
 # ログイン画面から新規登録へ
 - assertVisible: "ログイン"
@@ -53,7 +59,6 @@ env:
 # --- 新規登録画面 ---
 - assertVisible:
     text: "アカウントを作成"
-    timeout: 5000
 - takeScreenshot: screenshots/03-auth-register/01-register-screen
 - assertVisible: "名前"
 - assertVisible: "メールアドレス"
@@ -65,6 +70,13 @@ env:
 
 # 名前入力
 - tapOn:
+- runFlow:
+    when:
+      visible: "Try out your stylus"
+    commands:
+      - tapOn: "Cancel"
+      - waitForAnimationToEnd:
+          timeout: 1000
     text: "名前を入力"
 - inputText: ${TEST_NAME}
 
@@ -74,6 +86,13 @@ env:
 
 # メールアドレス入力
 - tapOn:
+- runFlow:
+    when:
+      visible: "Try out your stylus"
+    commands:
+      - tapOn: "Cancel"
+      - waitForAnimationToEnd:
+          timeout: 1000
     text: "example@domain.com"
 - inputText: ${TEST_EMAIL}
 
@@ -83,6 +102,13 @@ env:
 
 # パスワード入力
 - tapOn:
+- runFlow:
+    when:
+      visible: "Try out your stylus"
+    commands:
+      - tapOn: "Cancel"
+      - waitForAnimationToEnd:
+          timeout: 1000
     text: "8文字以上"
 - inputText: ${TEST_PASSWORD}
 
@@ -94,14 +120,21 @@ env:
 # ログイン画面へのリンク確認
 - launchApp:
     clearState: true
-- extendedWaitUntil:
-    visible: "技術記事をワンタップで保存"
-    timeout: 30000
+- waitForAnimationToEnd:
+    timeout: 15000
+- runFlow:
+    when:
+      visible: "Process system isn't responding"
+    commands:
+      - tapOn: "Wait"
+      - waitForAnimationToEnd:
+          timeout: 3000
 - runFlow:
     when:
       visible: "Open debugger to view warnings."
     commands:
-      - tapOn: "DISMISS"
+      - tapOn:
+          point: "90%, 93%"
       - waitForAnimationToEnd:
           timeout: 1000
 - tapOn: "次へ"
@@ -118,13 +151,10 @@ env:
     timeout: 3000
 - assertVisible:
     text: "ログイン"
-    timeout: 5000
 - tapOn: "新規登録"
 - assertVisible:
     text: "すでにアカウントをお持ちですか？"
-    timeout: 5000
 - tapOn: "ログイン"
 - assertVisible:
     text: "ログイン"
-    timeout: 5000
 - takeScreenshot: screenshots/03-auth-register/02-back-to-login

@@ -19,14 +19,21 @@ env:
     clearState: true
 
 # オンボーディングをスキップしてログイン画面へ
-- extendedWaitUntil:
-    visible: "技術記事をワンタップで保存"
-    timeout: 30000
+- waitForAnimationToEnd:
+    timeout: 15000
+- runFlow:
+    when:
+      visible: "Process system isn't responding"
+    commands:
+      - tapOn: "Wait"
+      - waitForAnimationToEnd:
+          timeout: 3000
 - runFlow:
     when:
       visible: "Open debugger to view warnings."
     commands:
-      - tapOn: "DISMISS"
+      - tapOn:
+          point: "90%, 93%"
       - waitForAnimationToEnd:
           timeout: 1000
 - tapOn: "次へ"
@@ -45,23 +52,43 @@ env:
 # --- ログイン画面 ---
 - assertVisible:
     text: "ログイン"
-    timeout: 5000
 - assertVisible: "メールアドレス"
 - takeScreenshot: screenshots/02-auth-login/01-login-screen
 
 # メールアドレス入力
 - tapOn:
     id: "login-email-input"
+- runFlow:
+    when:
+      visible: "Try out your stylus"
+    commands:
+      - tapOn: "Cancel"
+      - waitForAnimationToEnd:
+          timeout: 1000
 - inputText: ${TEST_EMAIL}
 
 # パスワード入力
 - tapOn:
     id: "login-password-input"
+- runFlow:
+    when:
+      visible: "Try out your stylus"
+    commands:
+      - tapOn: "Cancel"
+      - waitForAnimationToEnd:
+          timeout: 1000
 - inputText: ${TEST_PASSWORD}
 
 # パスワード表示トグルの確認
 - tapOn:
     id: "login-toggle-password"
+- runFlow:
+    when:
+      visible: "Try out your stylus"
+    commands:
+      - tapOn: "Cancel"
+      - waitForAnimationToEnd:
+          timeout: 1000
 - assertVisible: "隠す"
 - tapOn:
     id: "login-toggle-password"
@@ -74,7 +101,6 @@ env:
 # ホーム画面に遷移することを確認
 - assertVisible:
     text: "すべて"
-    timeout: 5000
 - takeScreenshot: screenshots/02-auth-login/02-home-after-login
 
 # --- バリデーションエラーのテスト ---
@@ -82,14 +108,21 @@ env:
     clearState: true
 
 # オンボーディングスキップ
-- extendedWaitUntil:
-    visible: "技術記事をワンタップで保存"
-    timeout: 30000
+- waitForAnimationToEnd:
+    timeout: 15000
+- runFlow:
+    when:
+      visible: "Process system isn't responding"
+    commands:
+      - tapOn: "Wait"
+      - waitForAnimationToEnd:
+          timeout: 3000
 - runFlow:
     when:
       visible: "Open debugger to view warnings."
     commands:
-      - tapOn: "DISMISS"
+      - tapOn:
+          point: "90%, 93%"
       - waitForAnimationToEnd:
           timeout: 1000
 - tapOn: "次へ"
@@ -113,9 +146,23 @@ env:
 # メールのみ入力してパスワード短すぎエラー
 - tapOn:
     id: "login-email-input"
+- runFlow:
+    when:
+      visible: "Try out your stylus"
+    commands:
+      - tapOn: "Cancel"
+      - waitForAnimationToEnd:
+          timeout: 1000
 - inputText: "test@example.com"
 - tapOn:
     id: "login-password-input"
+- runFlow:
+    when:
+      visible: "Try out your stylus"
+    commands:
+      - tapOn: "Cancel"
+      - waitForAnimationToEnd:
+          timeout: 1000
 - inputText: "short"
 - tapOn:
     id: "login-submit-button"
@@ -126,4 +173,3 @@ env:
     id: "login-register-link"
 - assertVisible:
     text: "アカウントを作成"
-    timeout: 5000

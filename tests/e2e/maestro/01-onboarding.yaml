@@ -12,16 +12,22 @@ tags:
 # アプリ起動
 - launchApp:
     clearState: true
-# JS バンドル読み込み完了まで待機
-- extendedWaitUntil:
-    visible: "技術記事をワンタップで保存"
-    timeout: 30000
+- waitForAnimationToEnd:
+    timeout: 15000
 # デバッガーバナーを閉じる（表示されている場合のみ）
+- runFlow:
+    when:
+      visible: "Process system isn't responding"
+    commands:
+      - tapOn: "Wait"
+      - waitForAnimationToEnd:
+          timeout: 3000
 - runFlow:
     when:
       visible: "Open debugger to view warnings."
     commands:
-      - tapOn: "DISMISS"
+      - tapOn:
+          point: "90%, 93%"
       - waitForAnimationToEnd:
           timeout: 1000
 - takeScreenshot: screenshots/01-onboarding/01-launch
@@ -38,7 +44,6 @@ tags:
 # --- ページ2: AIが要約・翻訳 ---
 - assertVisible:
     text: "AIが要約・翻訳"
-    timeout: 5000
 - assertVisible: "英語記事も日本語で読める。要点だけ把握したいときはAI要約で時短。"
 - tapOn: "次へ"
 - waitForAnimationToEnd:
@@ -47,7 +52,6 @@ tags:
 # --- ページ3: お気に入り・タグで整理 ---
 - assertVisible:
     text: "お気に入り・タグで整理"
-    timeout: 5000
 - assertVisible: "タグ付けで記事を分類。お気に入り登録でいつでも素早くアクセス。"
 - tapOn: "次へ"
 - waitForAnimationToEnd:
@@ -56,7 +60,6 @@ tags:
 # --- ページ4: さあ、始めましょう（最終ページ）---
 - assertVisible:
     text: "さあ、始めましょう"
-    timeout: 5000
 - assertVisible: "アカウントを作成して、技術知識を効率よく管理しましょう。"
 - assertVisible: "始める"
 - tapOn: "始める"
@@ -67,4 +70,3 @@ tags:
 # ログイン画面またはホーム画面に遷移することを確認
 - assertVisible:
     text: "TechClip"
-    timeout: 5000

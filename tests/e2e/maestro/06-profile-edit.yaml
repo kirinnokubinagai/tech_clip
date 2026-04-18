@@ -18,9 +18,17 @@ env:
     clearState: false
 - runFlow:
     when:
+      visible: "Process system isn't responding"
+    commands:
+      - tapOn: "Wait"
+      - waitForAnimationToEnd:
+          timeout: 3000
+- runFlow:
+    when:
       visible: "Open debugger to view warnings."
     commands:
-      - tapOn: "DISMISS"
+      - tapOn:
+          point: "90%, 93%"
       - waitForAnimationToEnd:
           timeout: 1000
 
@@ -31,7 +39,6 @@ env:
 # --- プロフィール画面 ---
 - assertVisible:
     text: "プロフィール"
-    timeout: 5000
 - takeScreenshot: screenshots/06-profile-edit/01-profile-screen
 
 # プロフィール編集画面へ遷移（設定ボタン or 編集ボタン）
@@ -41,7 +48,6 @@ env:
 # 設定画面経由でプロフィール確認
 - assertVisible:
     text: "アカウント"
-    timeout: 5000
 
 # 戻ってプロフィール編集へ
 - tapOn:
@@ -53,7 +59,6 @@ env:
 # --- プロフィール編集画面 ---
 - assertVisible:
     id: "profile-edit-screen"
-    timeout: 5000
 - assertVisible: "プロフィール編集"
 
 # アバター変更ボタンの確認
@@ -97,7 +102,6 @@ env:
 # 保存成功トーストまたは前画面への遷移を確認
 - assertVisible:
     text: "プロフィールを更新しました"
-    timeout: 5000
 - takeScreenshot: screenshots/06-profile-edit/02-saved
 
 # 戻るボタン

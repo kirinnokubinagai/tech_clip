@@ -107,3 +107,7 @@ docs/superpowers/
 
 # polling state files (runtime, not for PRs)
 .claude/polling/
+
+# Maestro screenshot outputs
+tests/e2e/maestro/screenshots/
+screenshots/
