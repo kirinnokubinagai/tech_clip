@@ -155,7 +155,7 @@ export default function RegisterScreen() {
         <View className="mt-6 flex-row items-center justify-center">
           <Text className="text-sm text-text-muted">{t("auth.registerToLoginPrompt")}</Text>
           <Link href="/(auth)/login" asChild>
-            <Pressable>
+            <Pressable testID="register-login-link">
               <Text className="ml-1 text-sm font-semibold text-primary">{t("auth.login")}</Text>
             </Pressable>
           </Link>

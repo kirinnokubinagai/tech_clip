@@ -1,0 +1,75 @@
+# ログイン state 確保ヘルパー
+# ホーム画面にいない場合（未ログイン）、シードユーザーでログインする
+# clearState: false 前提の yaml から runFlow: で include して使用する
+
+appId: com.techclip.app
+
+env:
+  TEST_EMAIL: ${TEST_EMAIL}
+  TEST_PASSWORD: ${TEST_PASSWORD}
+
+---
+
+# ホーム画面にいなければログインフローを実行
+- runFlow:
+    when:
+      NOT:
+        visible: "すべて"
+    commands:
+      # onboarding が表示されている場合は 4 ページ通過
+      - runFlow:
+          when:
+            visible: "next-button"
+          commands:
+            - tapOn:
+                id: "next-button"
+            - waitForAnimationToEnd:
+                timeout: 2000
+            - runFlow:
+                when:
+                  visible: "next-button"
+                commands:
+                  - tapOn:
+                      id: "next-button"
+                  - waitForAnimationToEnd:
+                      timeout: 2000
+                  - runFlow:
+                      when:
+                        visible: "next-button"
+                      commands:
+                        - tapOn:
+                            id: "next-button"
+                        - waitForAnimationToEnd:
+                            timeout: 2000
+            - runFlow:
+                when:
+                  visible: "finish-button"
+                commands:
+                  - tapOn:
+                      id: "finish-button"
+                  - waitForAnimationToEnd:
+                      timeout: 3000
+      # register 画面 → login リンク経由でログイン画面へ
+      - runFlow:
+          when:
+            visible: "register-login-link"
+          commands:
+            - tapOn:
+                id: "register-login-link"
+            - waitForAnimationToEnd:
+                timeout: 2000
+      # ログイン画面でシードユーザーを使ってログイン
+      - runFlow:
+          when:
+            visible: "login-submit-button"
+          commands:
+            - tapOn:
+                id: "login-email-input"
+            - inputText: ${TEST_EMAIL}
+            - tapOn:
+                id: "login-password-input"
+            - inputText: ${TEST_PASSWORD}
+            - tapOn:
+                id: "login-submit-button"
+            - waitForAnimationToEnd:
+                timeout: 8000

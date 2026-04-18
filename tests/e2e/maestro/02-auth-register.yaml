@@ -102,7 +102,8 @@ env:
 - assertVisible: "パスワード"
 
 # バリデーション: 空送信
-- tapOn: "アカウントを作成"
+- tapOn:
+    id: "register-submit-button"
 - assertVisible: "名前を入力してください"
 
 # 名前入力
@@ -118,7 +119,8 @@ env:
 - inputText: ${TEST_NAME}
 
 # バリデーション: 名前のみで送信
-- tapOn: "アカウントを作成"
+- tapOn:
+    id: "register-submit-button"
 - assertVisible: "メールアドレスを入力してください"
 
 # メールアドレス入力
@@ -134,7 +136,8 @@ env:
 - inputText: ${TEST_EMAIL}
 
 # バリデーション: パスワードなしで送信
-- tapOn: "アカウントを作成"
+- tapOn:
+    id: "register-submit-button"
 - assertVisible: "パスワードを入力してください"
 
 # パスワード入力
@@ -150,7 +153,8 @@ env:
 - inputText: ${TEST_PASSWORD}
 
 # フォーム送信 → 自動ログイン → ホーム画面
-- tapOn: "アカウントを作成"
+- tapOn:
+    id: "register-submit-button"
 - waitForAnimationToEnd:
     timeout: 8000
 

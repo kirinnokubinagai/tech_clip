@@ -1,5 +1,6 @@
 # 認証フロー: ログイン
-# メール・パスワードを入力してログインし、ホーム画面に遷移することを確認する
+# clearState: true でアプリ起動後、onboarding → register 画面 → login リンク経由でログイン画面に遷移し、
+# シードユーザーでログインしてホーム画面遷移を確認する
 #
 # tags: smoke, auth
 
@@ -14,7 +15,7 @@ env:
 
 ---
 
-# アプリ起動（オンボーディング済み状態）
+# アプリ起動（clearState: true）
 - launchApp:
     clearState: true
 - runFlow:
@@ -24,10 +25,8 @@ env:
       - tapOn: "Cancel"
       - waitForAnimationToEnd:
           timeout: 1000
-
-# オンボーディングをスキップしてログイン画面へ
 - waitForAnimationToEnd:
-    timeout: 15000
+    timeout: 30000
 - runFlow:
     when:
       visible: "Process system isn't responding"
@@ -42,17 +41,65 @@ env:
       - tapOn:
           point: "90%, 93%"
       - waitForAnimationToEnd:
-          timeout: 1000
+          timeout: 2000
+
+# オンボーディング: 4ページ通過（next-button x3 → finish-button）
 - tapOn:
-    id: "skip-button"
+    id: "next-button"
+- waitForAnimationToEnd:
+    timeout: 2000
+- runFlow:
+    when:
+      visible: "Open debugger to view warnings."
+    commands:
+      - tapOn:
+          point: "90%, 93%"
+      - waitForAnimationToEnd:
+          timeout: 2000
+- tapOn:
+    id: "next-button"
+- waitForAnimationToEnd:
+    timeout: 2000
+- runFlow:
+    when:
+      visible: "Open debugger to view warnings."
+    commands:
+      - tapOn:
+          point: "90%, 93%"
+      - waitForAnimationToEnd:
+          timeout: 2000
+- tapOn:
+    id: "next-button"
+- waitForAnimationToEnd:
+    timeout: 2000
+- runFlow:
+    when:
+      visible: "Open debugger to view warnings."
+    commands:
+      - tapOn:
+          point: "90%, 93%"
+      - waitForAnimationToEnd:
+          timeout: 2000
+- tapOn:
+    id: "finish-button"
 - waitForAnimationToEnd:
     timeout: 3000
+
+# hasAccount=false のため register 画面にリダイレクトされる
+# register-login-link でログイン画面へ移動
+- assertVisible:
+    text: "アカウントを作成"
+- takeScreenshot: screenshots/03-auth-login/00-register-screen
+- tapOn:
+    id: "register-login-link"
+- waitForAnimationToEnd:
+    timeout: 2000
 
 # --- ログイン画面 ---
 - assertVisible:
     text: "ログイン"
 - assertVisible: "メールアドレス"
-- takeScreenshot: screenshots/02-auth-login/01-login-screen
+- takeScreenshot: screenshots/03-auth-login/01-login-screen
 
 # メールアドレス入力
 - tapOn:
@@ -98,11 +145,13 @@ env:
     id: "login-submit-button"
 
 # ホーム画面に遷移することを確認
+- waitForAnimationToEnd:
+    timeout: 8000
 - assertVisible:
     text: "すべて"
-- takeScreenshot: screenshots/02-auth-login/02-home-after-login
+- takeScreenshot: screenshots/03-auth-login/02-home-after-login
 
-# --- バリデーションエラーのテスト ---
+# --- バリデーションエラーのテスト（register 画面経由でログイン画面へ）---
 - launchApp:
     clearState: true
 - runFlow:
@@ -112,10 +161,8 @@ env:
       - tapOn: "Cancel"
       - waitForAnimationToEnd:
           timeout: 1000
-
-# オンボーディングスキップ
 - waitForAnimationToEnd:
-    timeout: 15000
+    timeout: 30000
 - runFlow:
     when:
       visible: "Process system isn't responding"
@@ -130,11 +177,27 @@ env:
       - tapOn:
           point: "90%, 93%"
       - waitForAnimationToEnd:
-          timeout: 1000
+          timeout: 2000
 - tapOn:
-    id: "skip-button"
+    id: "next-button"
+- waitForAnimationToEnd:
+    timeout: 2000
+- tapOn:
+    id: "next-button"
+- waitForAnimationToEnd:
+    timeout: 2000
+- tapOn:
+    id: "next-button"
+- waitForAnimationToEnd:
+    timeout: 2000
+- tapOn:
+    id: "finish-button"
 - waitForAnimationToEnd:
     timeout: 3000
+- tapOn:
+    id: "register-login-link"
+- waitForAnimationToEnd:
+    timeout: 2000
 
 # 空のまま送信 → エラー表示
 - tapOn:

@@ -40,6 +40,10 @@ env:
           point: "90%, 93%"
       - waitForAnimationToEnd:
           timeout: 1000
+- runFlow:
+    file: "00-login-helper.yaml"
+- waitForAnimationToEnd:
+    timeout: 2000
 
 # --- 記事保存画面への遷移 ---
 - openLink: techclip://article/save

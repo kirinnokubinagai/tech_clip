@@ -38,6 +38,10 @@ env:
           point: "90%, 93%"
       - waitForAnimationToEnd:
           timeout: 1000
+- runFlow:
+    file: "00-login-helper.yaml"
+- waitForAnimationToEnd:
+    timeout: 2000
 
 # プロフィールタブへ移動
 - tapOn:
