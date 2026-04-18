@@ -1,5 +1,6 @@
 # 認証フロー: 新規登録
-# 名前・メール・パスワードを入力してアカウント作成フローを確認する
+# オンボーディング「始める」から register 画面に遷移し、
+# ユニークメールでアカウント作成 → 自動ログイン → ホーム画面遷移を確認する
 #
 # tags: auth
 
@@ -8,13 +9,13 @@ tags:
   - auth
 
 env:
-  TEST_EMAIL: ${TEST_EMAIL}
+  TEST_EMAIL: ${TIMESTAMP}+maestro@techclip.app
   TEST_PASSWORD: ${TEST_PASSWORD}
   TEST_NAME: ${TEST_NAME}
 
 ---
 
-# アプリ起動（オンボーディング済み状態から）
+# アプリ起動（clearState でオンボーディング未閲覧状態に）
 - launchApp:
     clearState: true
 - runFlow:
@@ -24,10 +25,8 @@ env:
       - tapOn: "Cancel"
       - waitForAnimationToEnd:
           timeout: 1000
-
-# オンボーディングをスキップ
 - waitForAnimationToEnd:
-    timeout: 15000
+    timeout: 30000
 - runFlow:
     when:
       visible: "Process system isn't responding"
@@ -42,31 +41,62 @@ env:
       - tapOn:
           point: "90%, 93%"
       - waitForAnimationToEnd:
-          timeout: 1000
-- tapOn: "次へ"
+          timeout: 2000
+
+# オンボーディング: ページ1 → 2 → 3 → 4（始める）
+- runFlow:
+    when:
+      visible: "Open debugger to view warnings."
+    commands:
+      - tapOn:
+          point: "90%, 93%"
+      - waitForAnimationToEnd:
+          timeout: 2000
+- tapOn:
+    id: "next-button"
 - waitForAnimationToEnd:
     timeout: 2000
-- tapOn: "次へ"
+- runFlow:
+    when:
+      visible: "Open debugger to view warnings."
+    commands:
+      - tapOn:
+          point: "90%, 93%"
+      - waitForAnimationToEnd:
+          timeout: 2000
+- tapOn:
+    id: "next-button"
 - waitForAnimationToEnd:
     timeout: 2000
-- tapOn: "次へ"
+- runFlow:
+    when:
+      visible: "Open debugger to view warnings."
+    commands:
+      - tapOn:
+          point: "90%, 93%"
+      - waitForAnimationToEnd:
+          timeout: 2000
+- tapOn:
+    id: "next-button"
 - waitForAnimationToEnd:
     timeout: 2000
-- tapOn: "始める"
+- runFlow:
+    when:
+      visible: "Open debugger to view warnings."
+    commands:
+      - tapOn:
+          point: "90%, 93%"
+      - waitForAnimationToEnd:
+          timeout: 2000
+- tapOn:
+    id: "finish-button"
 - waitForAnimationToEnd:
     timeout: 3000
-
-- assertVisible:
-    text: "ログイン"
-
-# ログイン画面から新規登録へ
-- assertVisible: "ログイン"
-- tapOn: "新規登録"
 
 # --- 新規登録画面 ---
 - assertVisible:
     text: "アカウントを作成"
-- takeScreenshot: screenshots/03-auth-register/01-register-screen
+- takeScreenshot: screenshots/02-auth-register/01-register-screen
 - assertVisible: "名前"
 - assertVisible: "メールアドレス"
 - assertVisible: "パスワード"
@@ -77,6 +107,7 @@ env:
 
 # 名前入力
 - tapOn:
+    text: "名前を入力"
 - runFlow:
     when:
       visible: "Try out your stylus"
@@ -84,7 +115,6 @@ env:
       - tapOn: "Cancel"
       - waitForAnimationToEnd:
           timeout: 1000
-    text: "名前を入力"
 - inputText: ${TEST_NAME}
 
 # バリデーション: 名前のみで送信
@@ -93,6 +123,7 @@ env:
 
 # メールアドレス入力
 - tapOn:
+    text: "example@domain.com"
 - runFlow:
     when:
       visible: "Try out your stylus"
@@ -100,7 +131,6 @@ env:
       - tapOn: "Cancel"
       - waitForAnimationToEnd:
           timeout: 1000
-    text: "example@domain.com"
 - inputText: ${TEST_EMAIL}
 
 # バリデーション: パスワードなしで送信
@@ -109,6 +139,7 @@ env:
 
 # パスワード入力
 - tapOn:
+    text: "8文字以上"
 - runFlow:
     when:
       visible: "Try out your stylus"
@@ -116,59 +147,14 @@ env:
       - tapOn: "Cancel"
       - waitForAnimationToEnd:
           timeout: 1000
-    text: "8文字以上"
 - inputText: ${TEST_PASSWORD}
 
-# フォーム送信
+# フォーム送信 → 自動ログイン → ホーム画面
 - tapOn: "アカウントを作成"
 - waitForAnimationToEnd:
-    timeout: 5000
+    timeout: 8000
 
-# ログイン画面へのリンク確認
-- launchApp:
-    clearState: true
-- runFlow:
-    when:
-      visible: "Try out your stylus"
-    commands:
-      - tapOn: "Cancel"
-      - waitForAnimationToEnd:
-          timeout: 1000
-- waitForAnimationToEnd:
-    timeout: 15000
-- runFlow:
-    when:
-      visible: "Process system isn't responding"
-    commands:
-      - tapOn: "Wait"
-      - waitForAnimationToEnd:
-          timeout: 3000
-- runFlow:
-    when:
-      visible: "Open debugger to view warnings."
-    commands:
-      - tapOn:
-          point: "90%, 93%"
-      - waitForAnimationToEnd:
-          timeout: 1000
-- tapOn: "次へ"
-- waitForAnimationToEnd:
-    timeout: 2000
-- tapOn: "次へ"
-- waitForAnimationToEnd:
-    timeout: 2000
-- tapOn: "次へ"
-- waitForAnimationToEnd:
-    timeout: 2000
-- tapOn: "始める"
-- waitForAnimationToEnd:
-    timeout: 3000
+# ホーム画面に遷移することを確認（自動ログイン）
 - assertVisible:
-    text: "ログイン"
-- tapOn: "新規登録"
-- assertVisible:
-    text: "すでにアカウントをお持ちですか？"
-- tapOn: "ログイン"
-- assertVisible:
-    text: "ログイン"
-- takeScreenshot: screenshots/03-auth-register/02-back-to-login
+    text: "すべて"
+- takeScreenshot: screenshots/02-auth-register/02-home-after-register

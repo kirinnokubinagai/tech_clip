@@ -43,16 +43,8 @@ env:
           point: "90%, 93%"
       - waitForAnimationToEnd:
           timeout: 1000
-- tapOn: "次へ"
-- waitForAnimationToEnd:
-    timeout: 2000
-- tapOn: "次へ"
-- waitForAnimationToEnd:
-    timeout: 2000
-- tapOn: "次へ"
-- waitForAnimationToEnd:
-    timeout: 2000
-- tapOn: "始める"
+- tapOn:
+    id: "skip-button"
 - waitForAnimationToEnd:
     timeout: 3000
 
@@ -139,16 +131,8 @@ env:
           point: "90%, 93%"
       - waitForAnimationToEnd:
           timeout: 1000
-- tapOn: "次へ"
-- waitForAnimationToEnd:
-    timeout: 2000
-- tapOn: "次へ"
-- waitForAnimationToEnd:
-    timeout: 2000
-- tapOn: "次へ"
-- waitForAnimationToEnd:
-    timeout: 2000
-- tapOn: "始める"
+- tapOn:
+    id: "skip-button"
 - waitForAnimationToEnd:
     timeout: 3000
 

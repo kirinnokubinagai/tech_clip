@@ -32,7 +32,11 @@ set +e
 nix develop --command maestro test tests/e2e/maestro/ \
   --format junit \
   --output test-results/junit.xml \
-  --debug-output screenshots/debug
+  --debug-output screenshots/debug \
+  --env TEST_EMAIL="${TEST_EMAIL:-test+maestro@techclip.app}" \
+  --env TEST_PASSWORD="${TEST_PASSWORD:-TestPassword123}" \
+  --env TEST_NAME="${TEST_NAME:-Maestro Test User}" \
+  --env TIMESTAMP="${TIMESTAMP:-$(date +%s)}"
 MAESTRO_EXIT=$?
 set -e
 

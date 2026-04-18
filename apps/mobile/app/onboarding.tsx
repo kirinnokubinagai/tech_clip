@@ -41,7 +41,7 @@ export default function OnboardingScreen() {
       logger.warn("トラッキング権限リクエストに失敗しました", { error });
     }
     await setHasSeenOnboarding(true);
-    router.replace("/(auth)/login");
+    router.replace("/(auth)/register");
   };
 
   const handleSkip = async () => {

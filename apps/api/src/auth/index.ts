@@ -1,8 +1,10 @@
 import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
+import { eq } from "drizzle-orm";
 
 import type { Database } from "../db";
 import * as schema from "../db/schema";
+import { users } from "../db/schema";
 
 /** OAuthプロバイダーの認証情報 */
 type OAuthCredentials = {
@@ -68,6 +70,17 @@ export function createAuth(
     baseURL: baseURL ?? LOCAL_APP_URL,
     emailAndPassword: {
       enabled: true,
+    },
+    databaseHooks: {
+      user: {
+        create: {
+          after: async (user) => {
+            if (user.email.includes("+maestro@")) {
+              await db.update(users).set({ isTestAccount: true }).where(eq(users.id, user.id));
+            }
+          },
+        },
+      },
     },
     socialProviders: {
       ...(oauthProviders?.google && {
