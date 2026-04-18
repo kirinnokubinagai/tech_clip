@@ -117,8 +117,9 @@ describe("useAuthStore", () => {
     it("有効なデータで新規登録できること", async () => {
       // Arrange
       mockApiFetch.mockResolvedValue({
-        success: true,
-        data: { user: TEST_USER, session: TEST_SESSION },
+        token: TEST_SESSION.token,
+        user: TEST_USER,
+        session: TEST_SESSION,
       });
 
       // Act
@@ -138,8 +139,9 @@ describe("useAuthStore", () => {
     it("新規登録時にaccessTokenとrefreshTokenを別々に保存すること", async () => {
       // Arrange
       mockApiFetch.mockResolvedValue({
-        success: true,
-        data: { user: TEST_USER, session: TEST_SESSION },
+        token: TEST_SESSION.token,
+        user: TEST_USER,
+        session: TEST_SESSION,
       });
 
       // Act
@@ -336,8 +338,9 @@ describe("hasAccount フラグ", () => {
   it("signUp成功後にhasAccountがtrueになること", async () => {
     // Arrange
     mockApiFetch.mockResolvedValue({
-      success: true,
-      data: { user: TEST_USER, session: TEST_SESSION },
+      token: TEST_SESSION.token,
+      user: TEST_USER,
+      session: TEST_SESSION,
     });
 
     // Act
@@ -397,8 +400,8 @@ describe("signUp - メール確認必須時の自動サインイン", () => {
     // Arrange
     mockApiFetch
       .mockResolvedValueOnce({
-        success: true,
-        data: { user: TEST_USER, session: null },
+        token: null,
+        user: TEST_USER,
       })
       .mockResolvedValueOnce({
         success: true,
@@ -430,8 +433,8 @@ describe("signUp - メール確認必須時の自動サインイン", () => {
     // Arrange
     mockApiFetch
       .mockResolvedValueOnce({
-        success: true,
-        data: { user: TEST_USER, session: null },
+        token: null,
+        user: TEST_USER,
       })
       .mockResolvedValueOnce({
         success: false,

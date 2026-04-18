@@ -81,7 +81,7 @@ env:
 # --- バリデーション: 名前を空にして保存 ---
 - eraseText
 - tapOn: "保存する"
-- assertVisible: "名前を入力してください"
+- assertVisible: "名前を入力してください。"
 
 # --- 正常系: プロフィール更新 ---
 - tapOn:

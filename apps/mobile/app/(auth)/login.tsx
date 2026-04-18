@@ -3,6 +3,7 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
   ActivityIndicator,
+  Image,
   KeyboardAvoidingView,
   Linking,
   Platform,
@@ -163,6 +164,12 @@ export default function LoginScreen() {
         keyboardShouldPersistTaps="handled"
       >
         <View className="mb-12 items-center">
+          <Image
+            source={require("../../assets/images/icon.png")}
+            style={{ width: 80, height: 80, marginBottom: 16 }}
+            resizeMode="contain"
+            accessibilityLabel="TechClip logo"
+          />
           <Text className="text-4xl font-bold text-text">TechClip</Text>
           <Text className="mt-2 text-base text-text-muted">{t("auth.appTagline")}</Text>
         </View>

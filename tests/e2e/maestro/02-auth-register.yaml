@@ -104,7 +104,7 @@ env:
 # バリデーション: 空送信
 - tapOn:
     id: "register-submit-button"
-- assertVisible: "名前を入力してください"
+- assertVisible: "名前を入力してください。"
 
 # 名前入力
 - tapOn:
@@ -121,7 +121,7 @@ env:
 # バリデーション: 名前のみで送信
 - tapOn:
     id: "register-submit-button"
-- assertVisible: "メールアドレスを入力してください"
+- assertVisible: "メールアドレスを入力してください。"
 
 # メールアドレス入力
 - tapOn:
@@ -138,7 +138,7 @@ env:
 # バリデーション: パスワードなしで送信
 - tapOn:
     id: "register-submit-button"
-- assertVisible: "パスワードを入力してください"
+- assertVisible: "パスワードを入力してください。"
 
 # パスワード入力
 - tapOn:

@@ -57,7 +57,7 @@ env:
 # --- バリデーション: 空URL送信 ---
 - tapOn:
     id: "fetch-button"
-- assertVisible: "URLを入力してください"
+- assertVisible: "URLを入力してください。"
 
 # --- バリデーション: 不正URL ---
 - tapOn:
@@ -65,7 +65,7 @@ env:
 - inputText: "not-a-valid-url"
 - tapOn:
     id: "fetch-button"
-- assertVisible: "有効なURLを入力してください"
+- assertVisible: "有効なURLを入力してください。"
 
 # URLフィールドをクリア
 - eraseText

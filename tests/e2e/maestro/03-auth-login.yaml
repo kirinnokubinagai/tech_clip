@@ -203,7 +203,7 @@ env:
 # 空のまま送信 → エラー表示
 - tapOn:
     id: "login-submit-button"
-- assertVisible: "メールアドレスを入力してください"
+- assertVisible: "メールアドレスを入力してください。"
 
 # メールのみ入力してパスワード短すぎエラー
 - tapOn:

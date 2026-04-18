@@ -9,7 +9,6 @@ import type {
   SignInParams,
   SignInResponse,
   SignUpParams,
-  SignUpResponse,
   User,
 } from "@/types/auth";
 
@@ -88,27 +87,38 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
    * @throws Error - 登録失敗時
    */
   signUp: async (params: SignUpParams) => {
-    const data = await apiFetch<SignUpResponse | AuthErrorResponse>("/api/auth/sign-up/email", {
+    // Better Auth の sign-up/email は raw response を返す:
+    // 成功時: { token: string | null, user: {...}, session?: {...} }
+    // 失敗時: 4xx で apiFetch が ApiHttpError を throw
+    type BetterAuthSignUpResponse = {
+      token: string | null;
+      user: User;
+      session?: { token: string; refreshToken: string; expiresAt: string };
+    };
+    const data = await apiFetch<BetterAuthSignUpResponse>("/api/auth/sign-up/email", {
       method: "POST",
       body: JSON.stringify(params),
     });
 
-    if (!data.success) {
-      throw new Error(data.error.message);
+    if (!data.user) {
+      throw new Error("登録に失敗しました。");
     }
 
-    if (!data.data.session) {
+    // requireEmailVerification=true で session が返らない場合、
+    // 直ちに signIn を試みる（+maestro@ test users は emailVerified=true 自動設定されているので成功、
+    // それ以外は EMAIL_NOT_VERIFIED エラーが throw されて UI に表示される）
+    if (!data.session) {
       await get().signIn({ email: params.email, password: params.password });
       return;
     }
 
-    await setAuthToken(data.data.session.token);
-    await setRefreshToken(data.data.session.refreshToken);
+    await setAuthToken(data.session.token);
+    await setRefreshToken(data.session.refreshToken);
 
     await SecureStore.setItemAsync(HAS_ACCOUNT_KEY, JSON.stringify(true));
     set({
-      user: data.data.user,
-      session: data.data.session,
+      user: data.user,
+      session: data.session,
       isAuthenticated: true,
       hasAccount: true,
     });
