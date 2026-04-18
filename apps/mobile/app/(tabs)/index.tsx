@@ -4,6 +4,7 @@ import { useCallback, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { ActivityIndicator, FlatList, Pressable, RefreshControl, Text, View } from "react-native";
 
+import { AdBanner } from "@/components/AdBanner";
 import { ArticleCard } from "@/components/ArticleCard";
 import { useArticles, useToggleFavorite } from "@/hooks/use-articles";
 import { useColors } from "@/hooks/use-colors";
@@ -219,6 +220,7 @@ export default function HomeScreen() {
           contentContainerStyle={{ paddingTop: 4, paddingBottom: 20 }}
         />
       )}
+      <AdBanner />
     </View>
   );
 }
