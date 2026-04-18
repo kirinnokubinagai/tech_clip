@@ -1,3 +1,4 @@
+import { PlatformPressable } from "@react-navigation/elements";
 import { Tabs } from "expo-router";
 import { Bell, Home, Search, Settings, User } from "lucide-react-native";
 import { useTranslation } from "react-i18next";
@@ -40,7 +41,7 @@ export default function TabLayout() {
         name="index"
         options={{
           title: t("tabs.home"),
-          tabBarTestID: "tab-home",
+          tabBarButton: (props) => <PlatformPressable {...props} testID="tab-home" />,
           tabBarIcon: ({ color }) => <Home size={TAB_ICON_SIZE} color={color} />,
         }}
       />
@@ -48,7 +49,7 @@ export default function TabLayout() {
         name="search"
         options={{
           title: t("tabs.search"),
-          tabBarTestID: "tab-search",
+          tabBarButton: (props) => <PlatformPressable {...props} testID="tab-search" />,
           tabBarIcon: ({ color }) => <Search size={TAB_ICON_SIZE} color={color} />,
         }}
       />
@@ -56,7 +57,7 @@ export default function TabLayout() {
         name="notifications"
         options={{
           title: t("tabs.notifications"),
-          tabBarTestID: "tab-notifications",
+          tabBarButton: (props) => <PlatformPressable {...props} testID="tab-notifications" />,
           tabBarIcon: ({ color }) => (
             <View>
               <Bell size={TAB_ICON_SIZE} color={color} />
@@ -84,7 +85,7 @@ export default function TabLayout() {
         name="profile"
         options={{
           title: t("tabs.profile"),
-          tabBarTestID: "tab-profile",
+          tabBarButton: (props) => <PlatformPressable {...props} testID="tab-profile" />,
           tabBarIcon: ({ color }) => <User size={TAB_ICON_SIZE} color={color} />,
         }}
       />
@@ -92,7 +93,7 @@ export default function TabLayout() {
         name="settings"
         options={{
           title: t("tabs.settings"),
-          tabBarTestID: "tab-settings",
+          tabBarButton: (props) => <PlatformPressable {...props} testID="tab-settings" />,
           tabBarIcon: ({ color }) => <Settings size={TAB_ICON_SIZE} color={color} />,
         }}
       />
