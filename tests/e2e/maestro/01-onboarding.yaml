@@ -30,10 +30,10 @@ tags:
           timeout: 3000
 - runFlow:
     when:
-      visible: "Open debugger to view warnings."
+      visible: "Open debugger"
     commands:
       - tapOn:
-          point: "90%, 93%"
+          point: "92%, 93%"
       - waitForAnimationToEnd:
           timeout: 2000
 - takeScreenshot: screenshots/01-onboarding/01-launch
@@ -43,10 +43,10 @@ tags:
 - assertVisible: "Zenn、Qiita、dev.toなど19ソースに対応。気になった記事をすぐ保存できます。"
 - runFlow:
     when:
-      visible: "Open debugger to view warnings."
+      visible: "Open debugger"
     commands:
       - tapOn:
-          point: "90%, 93%"
+          point: "92%, 93%"
       - waitForAnimationToEnd:
           timeout: 2000
 - tapOn:
@@ -55,10 +55,10 @@ tags:
     timeout: 3000
 - runFlow:
     when:
-      visible: "Open debugger to view warnings."
+      visible: "Open debugger"
     commands:
       - tapOn:
-          point: "90%, 93%"
+          point: "92%, 93%"
       - waitForAnimationToEnd:
           timeout: 2000
 - takeScreenshot: screenshots/01-onboarding/02-page2
@@ -69,10 +69,10 @@ tags:
 - assertVisible: "英語記事も日本語で読める。要点だけ把握したいときはAI要約で時短。"
 - runFlow:
     when:
-      visible: "Open debugger to view warnings."
+      visible: "Open debugger"
     commands:
       - tapOn:
-          point: "90%, 93%"
+          point: "92%, 93%"
       - waitForAnimationToEnd:
           timeout: 2000
 - tapOn:
@@ -81,10 +81,10 @@ tags:
     timeout: 3000
 - runFlow:
     when:
-      visible: "Open debugger to view warnings."
+      visible: "Open debugger"
     commands:
       - tapOn:
-          point: "90%, 93%"
+          point: "92%, 93%"
       - waitForAnimationToEnd:
           timeout: 2000
 
@@ -94,10 +94,10 @@ tags:
 - assertVisible: "タグ付けで記事を分類。お気に入り登録でいつでも素早くアクセス。"
 - runFlow:
     when:
-      visible: "Open debugger to view warnings."
+      visible: "Open debugger"
     commands:
       - tapOn:
-          point: "90%, 93%"
+          point: "92%, 93%"
       - waitForAnimationToEnd:
           timeout: 2000
 - tapOn:
@@ -106,10 +106,10 @@ tags:
     timeout: 3000
 - runFlow:
     when:
-      visible: "Open debugger to view warnings."
+      visible: "Open debugger"
     commands:
       - tapOn:
-          point: "90%, 93%"
+          point: "92%, 93%"
       - waitForAnimationToEnd:
           timeout: 2000
 
@@ -120,10 +120,10 @@ tags:
 - assertVisible: "始める"
 - runFlow:
     when:
-      visible: "Open debugger to view warnings."
+      visible: "Open debugger"
     commands:
       - tapOn:
-          point: "90%, 93%"
+          point: "92%, 93%"
       - waitForAnimationToEnd:
           timeout: 2000
 - tapOn:

@@ -35,10 +35,10 @@ env:
           timeout: 3000
 - runFlow:
     when:
-      visible: "Open debugger to view warnings."
+      visible: "Open debugger"
     commands:
       - tapOn:
-          point: "90%, 93%"
+          point: "92%, 93%"
       - waitForAnimationToEnd:
           timeout: 1000
 - runFlow:
