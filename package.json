@@ -19,7 +19,12 @@
     "typecheck:uncached": "./scripts/verify-uncached.sh typecheck",
     "test:uncached": "./scripts/verify-uncached.sh test",
     "prepare": "husky",
-    "polling-watcher": "bash scripts/polling-watcher.sh"
+    "polling-watcher": "bash scripts/polling-watcher.sh",
+    "dev:e2e:up": "bash scripts/dev/up.sh",
+    "dev:e2e:down": "bash scripts/dev/down.sh",
+    "dev:e2e:status": "bash scripts/dev/status.sh",
+    "dev:e2e:seed": "bash scripts/dev/seed.sh",
+    "dev:e2e": "pnpm dev:e2e:up && pnpm dev:e2e:seed"
   },
   "pnpm": {
     "overrides": {

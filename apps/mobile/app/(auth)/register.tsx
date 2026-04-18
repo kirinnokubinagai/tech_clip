@@ -146,6 +146,7 @@ export default function RegisterScreen() {
           onPress={handleRegister}
           disabled={isSubmitting}
           isLoading={isSubmitting}
+          testID="register-submit-button"
           label={t("auth.createAccount")}
           accessibilityHint={t("auth.registerHint")}
           textClassName="text-base font-semibold text-white"

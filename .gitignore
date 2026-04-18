@@ -111,3 +111,6 @@ docs/superpowers/
 # Maestro screenshot outputs
 tests/e2e/maestro/screenshots/
 screenshots/
+
+local.db-shm
+local.db-wal

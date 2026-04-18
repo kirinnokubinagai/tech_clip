@@ -81,6 +81,7 @@
             curl
             openssl
             python3
+            turso-cli
             zap
             bats
             shellcheck
@@ -102,6 +103,7 @@
             zap
             bats
             mailpit
+            turso-cli
             claude-code-bin
             shellcheck
             actionlint

@@ -100,7 +100,7 @@ export default function RootLayout() {
         <Stack.Screen name="share-intent" options={{ presentation: "modal" }} />
       </Stack>
       {!hasSeenOnboarding && <Redirect href="/onboarding" />}
-      {hasSeenOnboarding && !isAuthenticated && <Redirect href="/(auth)/login" />}
+      {hasSeenOnboarding && !isAuthenticated && <Redirect href="/(auth)/register" />}
       {hasSeenOnboarding && isAuthenticated && <Redirect href="/(tabs)" />}
     </QueryClientProvider>
   );
