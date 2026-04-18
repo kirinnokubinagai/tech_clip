@@ -226,6 +226,7 @@ env:
       - waitForAnimationToEnd:
           timeout: 1000
 - inputText: "short"
+- hideKeyboard
 - tapOn:
     id: "login-submit-button"
 - assertVisible: "8文字以上"
