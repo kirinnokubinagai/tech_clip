@@ -1,0 +1,344 @@
+declare const process: {
+  env: Record<string, string | undefined>;
+  argv: string[];
+  stdout: { write: (s: string) => void };
+  stderr: { write: (s: string) => void };
+  exit: (code: number) => never;
+};
+
+import { createClient } from "@libsql/client";
+import { and, eq } from "drizzle-orm";
+import { drizzle } from "drizzle-orm/libsql";
+
+import { accounts, articles, articleTags, follows, tags, users } from "../src/db/schema";
+
+/** Maestro 静的 seed ユーザーのパスワード */
+const MAESTRO_STATIC_PASSWORD = "TestPassword123!";
+
+/** FOLLOWEE ユーザー（自分がフォロー・記事 5 件所有） */
+const FOLLOWEE_SPEC = {
+  email: "followee+maestro@techclip.app",
+  username: "followee_maestro",
+  name: "Followee Maestro",
+};
+
+/** FOLLOWER ユーザー（自分をフォローしてくる人） */
+const FOLLOWER_SPEC = {
+  email: "follower+maestro@techclip.app",
+  username: "follower_maestro",
+  name: "Follower Maestro",
+};
+
+/** SECONDARY ユーザー（通知送信源） */
+const SECONDARY_SPEC = {
+  email: "secondary+maestro@techclip.app",
+  username: "secondary_maestro",
+  name: "Secondary Maestro",
+};
+
+/** FOLLOWEE が所有する記事の URL プレフィックス */
+const FOLLOWEE_ARTICLE_URL_PREFIX = "https://seed.techclip.app/followee-maestro/article-";
+
+/** 記事数 */
+const ARTICLE_COUNT = 5;
+
+/** Maestro タグ名 */
+const MAESTRO_TAG_NAME = "maestro";
+
+/** 記事ソース */
+const SEED_SOURCE = "seed.techclip.app";
+
+/**
+ * scrypt でパスワードをハッシュ化する（Better Auth 互換）
+ *
+ * @param password - 平文パスワード
+ * @returns salt:hash 形式のハッシュ文字列
+ */
+async function hashPasswordForBetterAuth(password: string): Promise<string> {
+  const { scryptAsync } = await import("@noble/hashes/scrypt.js");
+  const { hex } = await import("@better-auth/utils/hex");
+
+  const N = 16384;
+  const r = 16;
+  const p = 1;
+  const dkLen = 64;
+
+  const saltBytes = crypto.getRandomValues(new Uint8Array(16));
+  const salt = hex.encode(saltBytes);
+  const key = await scryptAsync(password.normalize("NFKC"), salt, {
+    N,
+    p,
+    r,
+    dkLen,
+    maxmem: 128 * N * r * 2,
+  });
+  return `${salt}:${hex.encode(key)}`;
+}
+
+/**
+ * ユーザーを upsert する（存在すれば update、無ければ insert）
+ *
+ * @param db - Drizzle DB インスタンス
+ * @param spec - ユーザー情報
+ * @returns ユーザー ID
+ */
+async function upsertUser(
+  db: ReturnType<typeof drizzle>,
+  spec: { email: string; username: string; name: string },
+): Promise<string> {
+  const existing = await db.select().from(users).where(eq(users.email, spec.email)).limit(1);
+
+  if (existing.length > 0) {
+    await db
+      .update(users)
+      .set({
+        name: spec.name,
+        username: spec.username,
+        emailVerified: true,
+        isProfilePublic: true,
+        preferredLanguage: "ja",
+        isPremium: false,
+        freeAiUsesRemaining: 5,
+        isTestAccount: true,
+      })
+      .where(eq(users.id, existing[0].id));
+    return existing[0].id;
+  }
+
+  const id = crypto.randomUUID();
+  await db.insert(users).values({
+    id,
+    email: spec.email,
+    name: spec.name,
+    username: spec.username,
+    emailVerified: true,
+    isProfilePublic: true,
+    preferredLanguage: "ja",
+    isPremium: false,
+    freeAiUsesRemaining: 5,
+    isTestAccount: true,
+  });
+  return id;
+}
+
+/**
+ * credential account を upsert する（存在すれば password を update）
+ *
+ * @param db - Drizzle DB インスタンス
+ * @param userId - ユーザー ID
+ * @param plainPassword - 平文パスワード
+ */
+async function upsertAccount(
+  db: ReturnType<typeof drizzle>,
+  userId: string,
+  plainPassword: string,
+): Promise<void> {
+  const existing = await db
+    .select()
+    .from(accounts)
+    .where(and(eq(accounts.userId, userId), eq(accounts.providerId, "credential")))
+    .limit(1);
+
+  const hashed = await hashPasswordForBetterAuth(plainPassword);
+
+  if (existing.length > 0) {
+    await db.update(accounts).set({ password: hashed }).where(eq(accounts.id, existing[0].id));
+    return;
+  }
+
+  await db.insert(accounts).values({
+    id: crypto.randomUUID(),
+    userId,
+    accountId: userId,
+    providerId: "credential",
+    password: hashed,
+  });
+}
+
+/**
+ * 記事を upsert する（userId + url の unique 制約を利用）
+ *
+ * @param db - Drizzle DB インスタンス
+ * @param userId - ユーザー ID
+ * @param url - 記事 URL
+ * @param data - 記事データ
+ * @param createdAt - 作成日時
+ * @returns 記事 ID
+ */
+async function upsertArticle(
+  db: ReturnType<typeof drizzle>,
+  userId: string,
+  url: string,
+  data: { title: string; source: string },
+  createdAt: Date,
+): Promise<string> {
+  const existing = await db
+    .select()
+    .from(articles)
+    .where(and(eq(articles.userId, userId), eq(articles.url, url)))
+    .limit(1);
+
+  const now = new Date();
+
+  if (existing.length > 0) {
+    await db
+      .update(articles)
+      .set({ ...data, updatedAt: now })
+      .where(eq(articles.id, existing[0].id));
+    return existing[0].id;
+  }
+
+  const id = crypto.randomUUID();
+  await db.insert(articles).values({
+    id,
+    userId,
+    url,
+    source: data.source,
+    title: data.title,
+    createdAt,
+    updatedAt: now,
+  });
+  return id;
+}
+
+/**
+ * タグを upsert する（userId + name の unique 制約を利用）
+ *
+ * @param db - Drizzle DB インスタンス
+ * @param userId - ユーザー ID
+ * @param name - タグ名
+ * @returns タグ ID
+ */
+async function upsertTag(
+  db: ReturnType<typeof drizzle>,
+  userId: string,
+  name: string,
+): Promise<string> {
+  const existing = await db
+    .select()
+    .from(tags)
+    .where(and(eq(tags.userId, userId), eq(tags.name, name)))
+    .limit(1);
+
+  if (existing.length > 0) {
+    return existing[0].id;
+  }
+
+  const id = crypto.randomUUID();
+  await db.insert(tags).values({
+    id,
+    userId,
+    name,
+    createdAt: new Date(),
+  });
+  return id;
+}
+
+/**
+ * フォロー関係を upsert する（存在すれば skip）
+ *
+ * @param db - Drizzle DB インスタンス
+ * @param followerId - フォロワー ID
+ * @param followingId - フォロイー ID
+ */
+async function upsertFollow(
+  db: ReturnType<typeof drizzle>,
+  followerId: string,
+  followingId: string,
+): Promise<void> {
+  const existing = await db
+    .select()
+    .from(follows)
+    .where(and(eq(follows.followerId, followerId), eq(follows.followingId, followingId)))
+    .limit(1);
+
+  if (existing.length > 0) {
+    return;
+  }
+
+  await db.insert(follows).values({ followerId, followingId });
+}
+
+/**
+ * Maestro e2e 用静的 seed を実行する（冪等 upsert）
+ *
+ * 3 ユーザー（FOLLOWEE / FOLLOWER / SECONDARY）と FOLLOWEE の記事 5 件を seed する。
+ * TURSO_DATABASE_URL 環境変数が必要。TURSO_AUTH_TOKEN は省略可（ローカル turso dev 用）。
+ */
+async function seedMaestroStatic(): Promise<void> {
+  const databaseUrl = process.env.TURSO_DATABASE_URL;
+  const authToken = process.env.TURSO_AUTH_TOKEN;
+
+  if (!databaseUrl) {
+    throw new Error("環境変数 TURSO_DATABASE_URL が設定されていません");
+  }
+
+  const client = createClient({
+    url: databaseUrl,
+    authToken: authToken ?? "",
+  });
+  const db = drizzle(client);
+
+  process.stdout.write("Maestro 静的 seed を開始します...\n");
+
+  const followeeId = await upsertUser(db, FOLLOWEE_SPEC);
+  process.stdout.write(`FOLLOWEE upsert 完了: ${followeeId}\n`);
+
+  const followerId = await upsertUser(db, FOLLOWER_SPEC);
+  process.stdout.write(`FOLLOWER upsert 完了: ${followerId}\n`);
+
+  const secondaryId = await upsertUser(db, SECONDARY_SPEC);
+  process.stdout.write(`SECONDARY upsert 完了: ${secondaryId}\n`);
+
+  await upsertAccount(db, followeeId, MAESTRO_STATIC_PASSWORD);
+  await upsertAccount(db, followerId, MAESTRO_STATIC_PASSWORD);
+  await upsertAccount(db, secondaryId, MAESTRO_STATIC_PASSWORD);
+  process.stdout.write("accounts upsert 完了\n");
+
+  const articleIds: string[] = [];
+  for (let i = 0; i < ARTICLE_COUNT; i++) {
+    const url = `${FOLLOWEE_ARTICLE_URL_PREFIX}${i}`;
+    const createdAt = new Date(Date.now() + i * 1000);
+    const articleId = await upsertArticle(
+      db,
+      followeeId,
+      url,
+      {
+        title: `Maestro テスト記事 ${i + 1}`,
+        source: SEED_SOURCE,
+      },
+      createdAt,
+    );
+    articleIds.push(articleId);
+  }
+  process.stdout.write(`記事 ${ARTICLE_COUNT} 件 upsert 完了\n`);
+
+  const tagId = await upsertTag(db, followeeId, MAESTRO_TAG_NAME);
+  process.stdout.write(`タグ "${MAESTRO_TAG_NAME}" upsert 完了: ${tagId}\n`);
+
+  for (const articleId of articleIds) {
+    await db.insert(articleTags).values({ articleId, tagId }).onConflictDoNothing();
+  }
+  process.stdout.write("articleTags upsert 完了\n");
+
+  await upsertFollow(db, followeeId, followerId);
+  process.stdout.write("FOLLOWEE → FOLLOWER フォロー upsert 完了\n");
+
+  client.close();
+  process.stdout.write("Maestro 静的 seed 完了\n");
+}
+
+const isMain =
+  typeof process !== "undefined" &&
+  process.argv[1] !== undefined &&
+  (process.argv[1].endsWith("seed-maestro-static.ts") ||
+    process.argv[1].endsWith("seed-maestro-static.js"));
+
+if (isMain) {
+  seedMaestroStatic().catch((e) => {
+    process.stderr.write(`seed-maestro-static エラー: ${String(e)}\n`);
+    process.exit(1);
+  });
+}
+
+export { seedMaestroStatic };
