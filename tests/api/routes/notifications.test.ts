@@ -120,7 +120,7 @@ function createGetTestApp(mockQueryFn: MockQueryFn) {
   };
   const app = new Hono<{ Variables: Variables }>();
 
-  app.use("/api/notifications", (c, next) => {
+  app.use("*", (c, next) => {
     c.set("user", MOCK_USER);
     c.set("session", { id: "session_01" });
     return next();
@@ -130,7 +130,7 @@ function createGetTestApp(mockQueryFn: MockQueryFn) {
     db: mockDb as never,
     queryFn: mockQueryFn,
   });
-  app.route("/api", notificationsRoute);
+  app.route("/api/notifications", notificationsRoute);
 
   return app;
 }
@@ -148,7 +148,7 @@ function createGetTestAppWithoutAuth(mockQueryFn: MockQueryFn) {
     db: mockDb as never,
     queryFn: mockQueryFn,
   });
-  app.route("/api", notificationsRoute);
+  app.route("/api/notifications", notificationsRoute);
 
   return app;
 }

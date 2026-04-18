@@ -56,7 +56,7 @@ export function createTagsRoute(options: TagsRouteOptions) {
   const { db } = options;
   const route = new Hono<{ Variables: { user?: Record<string, unknown> } }>();
 
-  route.post("/tags", async (c) => {
+  route.post("/", async (c) => {
     const user = c.get("user");
     if (!user?.id) {
       return c.json(
@@ -135,7 +135,7 @@ export function createTagsRoute(options: TagsRouteOptions) {
     );
   });
 
-  route.get("/tags", async (c) => {
+  route.get("/", async (c) => {
     const user = c.get("user");
     if (!user?.id) {
       return c.json(
@@ -160,7 +160,7 @@ export function createTagsRoute(options: TagsRouteOptions) {
     });
   });
 
-  route.delete("/tags/:id", async (c) => {
+  route.delete("/:id", async (c) => {
     const user = c.get("user");
     if (!user?.id) {
       return c.json(
@@ -201,7 +201,21 @@ export function createTagsRoute(options: TagsRouteOptions) {
     return c.body(null, HTTP_NO_CONTENT);
   });
 
-  route.put("/articles/:id/tags", async (c) => {
+  return route;
+}
+/**
+ * 記事タグ更新ルートを生成する
+ *
+ * PUT /:id/tags: 記事へのタグ付け（置換方式）
+ *
+ * @param options - DB インスタンス
+ * @returns Hono ルーターインスタンス
+ */
+export function createArticleTagsRoute(options: TagsRouteOptions) {
+  const { db } = options;
+  const route = new Hono<{ Variables: { user?: Record<string, unknown> } }>();
+
+  route.put("/:id/tags", async (c) => {
     const user = c.get("user");
     if (!user?.id) {
       return c.json(

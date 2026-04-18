@@ -73,7 +73,7 @@ export function createNotificationsRoute(options: NotificationsRouteOptions) {
   const { db, queryFn } = options;
   const route = new Hono<{ Variables: { user?: Record<string, unknown> } }>();
 
-  route.get("/notifications", async (c) => {
+  route.get("/", async (c) => {
     const user = c.get("user");
     if (!user) {
       return c.json(

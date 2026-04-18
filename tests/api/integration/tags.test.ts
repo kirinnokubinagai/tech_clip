@@ -1,4 +1,4 @@
-import { createTagsRoute } from "@api/routes/tags";
+import { createArticleTagsRoute, createTagsRoute } from "@api/routes/tags";
 import { Hono } from "hono";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -119,7 +119,11 @@ function createTestApp(mockDb: ReturnType<typeof createMockDb>, authenticated = 
     await next();
   });
 
-  app.route("/", route);
+  const articleTagsRoute = createArticleTagsRoute({
+    db: mockDb as unknown as Parameters<typeof createTagsRoute>[0]["db"],
+  });
+  app.route("/tags", route);
+  app.route("/articles", articleTagsRoute);
   return app;
 }
 
