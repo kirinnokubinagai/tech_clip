@@ -10,6 +10,13 @@ env:
 
 ---
 
+# 最初に onboarding ページ1 または login-email-input または「すべて」（ホーム）
+# のいずれかが表示されるまで最大 60 秒待機する（Metro cold-start 対策）。
+# どれが出るかは前回 state に依存するため、3 つのうちどれかで OK。
+- extendedWaitUntil:
+    visible: "技術記事をワンタップで保存|すべて|メールアドレス"
+    timeout: 60000
+
 # ホーム画面にいなければログインフローを実行
 - runFlow:
     when:
@@ -18,40 +25,28 @@ env:
       # onboarding が表示されている場合は 4 ページ通過
       - runFlow:
           when:
-            visible: "next-button"
+            visible: "技術記事をワンタップで保存"
           commands:
             - tapOn:
                 id: "next-button"
             - waitForAnimationToEnd:
                 timeout: 2000
-            - runFlow:
-                when:
-                  visible: "next-button"
-                commands:
-                  - tapOn:
-                      id: "next-button"
-                  - waitForAnimationToEnd:
-                      timeout: 2000
-                  - runFlow:
-                      when:
-                        visible: "next-button"
-                      commands:
-                        - tapOn:
-                            id: "next-button"
-                        - waitForAnimationToEnd:
-                            timeout: 2000
-            - runFlow:
-                when:
-                  visible: "finish-button"
-                commands:
-                  - tapOn:
-                      id: "finish-button"
-                  - waitForAnimationToEnd:
-                      timeout: 3000
+            - tapOn:
+                id: "next-button"
+            - waitForAnimationToEnd:
+                timeout: 2000
+            - tapOn:
+                id: "next-button"
+            - waitForAnimationToEnd:
+                timeout: 2000
+            - tapOn:
+                id: "finish-button"
+            - waitForAnimationToEnd:
+                timeout: 3000
       # register 画面 → login リンク経由でログイン画面へ
       - runFlow:
           when:
-            visible: "register-login-link"
+            visible: "アカウントを作成"
           commands:
             - tapOn:
                 id: "register-login-link"
@@ -60,7 +55,7 @@ env:
       # ログイン画面でシードユーザーを使ってログイン
       - runFlow:
           when:
-            visible: "login-submit-button"
+            visible: "パスワードを忘れた方"
           commands:
             - tapOn:
                 id: "login-email-input"
@@ -68,6 +63,7 @@ env:
             - tapOn:
                 id: "login-password-input"
             - inputText: ${TEST_PASSWORD}
+            - hideKeyboard
             - tapOn:
                 id: "login-submit-button"
             - waitForAnimationToEnd:
