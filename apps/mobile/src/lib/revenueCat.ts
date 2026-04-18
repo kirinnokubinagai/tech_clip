@@ -13,19 +13,20 @@ export type SubscriptionStatus = {
   currentPlan: string | null;
 };
 
-/**
- * プラットフォームごとのRevenueCat APIキーを取得する
- *
- * @returns プラットフォームに対応するAPIキー
- */
-function requireEnvKey(name: string, value: string | undefined): string {
+/** 開発環境でのプレースホルダーキーのプレフィックス */
+const DEV_PLACEHOLDER_PREFIX = "your-";
+
+function requireEnvKey(name: string, value: string | undefined): string | null {
   if (!value || value === "undefined") {
     throw new Error(`環境変数 ${name} が設定されていません`);
+  }
+  if (__DEV__ && value.startsWith(DEV_PLACEHOLDER_PREFIX)) {
+    return null;
   }
   return value;
 }
 
-function getApiKey(): string {
+function getApiKey(): string | null {
   if (Platform.OS === "ios") {
     return requireEnvKey(
       "EXPO_PUBLIC_REVENUECAT_IOS_API_KEY",
@@ -65,6 +66,9 @@ function extractSubscriptionStatus(customerInfo: {
  */
 export async function configureRevenueCat(): Promise<void> {
   const apiKey = getApiKey();
+  if (apiKey === null) {
+    return;
+  }
   try {
     Purchases.setDebugLogsEnabled(__DEV__);
     await Purchases.configure({ apiKey });
