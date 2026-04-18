@@ -163,7 +163,12 @@
     "noMatch": "沒有符合「{{query}}」的文章",
     "backA11yLabel": "返回",
     "backA11yHint": "返回上一個頁面",
-    "generating": "生成中..."
+    "generating": "生成中...",
+    "premiumFeatures": {
+      "unlimitedAi": "無限AI功能",
+      "noAds": "無廣告",
+      "offlineAccess": "離線存取"
+    }
   },
   "search": {
     "placeholder": "搜尋文章...",

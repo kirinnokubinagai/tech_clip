@@ -2,9 +2,10 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import { ArrowLeft, ExternalLink, Globe, Heart, Languages, Sparkles } from "lucide-react-native";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { ActivityIndicator, Linking, Pressable, ScrollView, Text, View } from "react-native";
+import { ActivityIndicator, Linking, Modal, Pressable, ScrollView, Text, View } from "react-native";
 import Markdown from "react-native-markdown-display";
 
+import { PremiumGate } from "@/components/PremiumGate";
 import { SourceBadge } from "@/components/ui";
 import {
   useArticleDetail,
@@ -28,6 +29,19 @@ import {
 } from "@/lib/localDb";
 import { useSettingsStore } from "@/stores/settings-store";
 import type { ArticleDetail } from "@/types/article";
+
+/** AI使用回数上限エラーコード */
+const AI_LIMIT_ERROR_CODE = "AI_LIMIT_EXCEEDED";
+
+/** 無料ユーザーの月間AI使用上限回数 */
+const FREE_AI_USES_PER_MONTH = 5;
+
+/** プレミアム機能一覧（PremiumGate に渡す） */
+const PREMIUM_FEATURES = [
+  "article.premiumFeatures.unlimitedAi",
+  "article.premiumFeatures.noAds",
+  "article.premiumFeatures.offlineAccess",
+];
 
 /** 戻るアイコンサイズ */
 const BACK_ICON_SIZE = 24;
@@ -212,6 +226,8 @@ export default function ArticleDetailScreen() {
   const [translationJob, setTranslationJob] = useState<{ jobId: string; progress: number } | null>(
     null,
   );
+  const [showPremiumGate, setShowPremiumGate] = useState(false);
+  const [aiUsageCount, setAiUsageCount] = useState(0);
 
   const handleBack = useCallback(() => {
     router.back();
@@ -229,7 +245,17 @@ export default function ArticleDetailScreen() {
 
   const handleRequestSummary = useCallback(() => {
     if (!article) return;
-    requestSummary.mutate({ articleId: article.id, language: apiLanguage });
+    requestSummary.mutate(
+      { articleId: article.id, language: apiLanguage },
+      {
+        onSuccess: (data) => {
+          if (!data.success && "error" in data && data.error.code === AI_LIMIT_ERROR_CODE) {
+            setAiUsageCount(FREE_AI_USES_PER_MONTH);
+            setShowPremiumGate(true);
+          }
+        },
+      },
+    );
   }, [article, apiLanguage, requestSummary]);
 
   const handleRequestTranslation = useCallback(() => {
@@ -549,6 +575,20 @@ export default function ArticleDetailScreen() {
           )}
         </View>
       </ScrollView>
+      <Modal
+        visible={showPremiumGate}
+        animationType="slide"
+        transparent={false}
+        onRequestClose={() => setShowPremiumGate(false)}
+      >
+        <PremiumGate
+          currentUsage={aiUsageCount}
+          maxUsage={FREE_AI_USES_PER_MONTH}
+          features={PREMIUM_FEATURES.map((key) => t(key))}
+          onPurchase={() => setShowPremiumGate(false)}
+          onClose={() => setShowPremiumGate(false)}
+        />
+      </Modal>
     </View>
   );
 }

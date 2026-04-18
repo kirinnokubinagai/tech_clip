@@ -163,7 +163,12 @@
     "noMatch": "「{{query}}」에 일치하는 기사가 없습니다",
     "backA11yLabel": "뒤로",
     "backA11yHint": "이전 화면으로 돌아갑니다",
-    "generating": "생성 중..."
+    "generating": "생성 중...",
+    "premiumFeatures": {
+      "unlimitedAi": "무제한 AI 기능",
+      "noAds": "광고 없음",
+      "offlineAccess": "오프라인 접근"
+    }
   },
   "search": {
     "placeholder": "기사 검색...",

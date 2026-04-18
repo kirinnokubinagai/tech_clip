@@ -25,6 +25,12 @@ export const SEARCH_DEBOUNCE_MS = 300;
 
 type AiJobState = "queued" | "running" | "completed" | "failed";
 
+/** AI 制限超過などのビジネスエラー形状 */
+type AiApiErrorShape = {
+  success: false;
+  error: { code: string; message: string };
+};
+
 type SummaryJobStartResponse = {
   success: boolean;
   data: {
@@ -254,7 +260,7 @@ export function useRequestSummary() {
 
   return useMutation({
     mutationFn: async ({ articleId, language }: RequestSummaryParams) => {
-      const response = await apiFetch<SummaryJobStartResponse>(
+      const response = await apiFetch<SummaryJobStartResponse | AiApiErrorShape>(
         `/api/articles/${articleId}/summary`,
         { method: "POST", body: JSON.stringify({ language }) },
       );
@@ -279,7 +285,7 @@ export function useRequestTranslation() {
 
   return useMutation({
     mutationFn: async ({ articleId, targetLanguage }: RequestTranslationParams) => {
-      const response = await apiFetch<TranslationJobStartResponse>(
+      const response = await apiFetch<TranslationJobStartResponse | AiApiErrorShape>(
         `/api/articles/${articleId}/translate`,
         { method: "POST", body: JSON.stringify({ targetLanguage }) },
       );

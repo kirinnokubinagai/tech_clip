@@ -163,7 +163,12 @@
     "urlRequired": "Please enter a URL",
     "urlInvalid": "Please enter a valid URL",
     "noMatch": "No articles matching \"{{query}}\"",
-    "generating": "Generating..."
+    "generating": "Generating...",
+    "premiumFeatures": {
+      "unlimitedAi": "Unlimited AI features",
+      "noAds": "No ads",
+      "offlineAccess": "Offline access"
+    }
   },
   "search": {
     "placeholder": "Search articles...",
