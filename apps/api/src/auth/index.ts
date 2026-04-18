@@ -99,7 +99,10 @@ export function createAuth(
         create: {
           after: async (user) => {
             if (user.email.includes("+maestro@")) {
-              await db.update(users).set({ isTestAccount: true }).where(eq(users.id, user.id));
+              await db
+                .update(users)
+                .set({ isTestAccount: true, emailVerified: true })
+                .where(eq(users.id, user.id));
             }
           },
         },
