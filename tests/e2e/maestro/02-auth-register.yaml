@@ -34,65 +34,31 @@ env:
       - tapOn: "Wait"
       - waitForAnimationToEnd:
           timeout: 3000
-- runFlow:
-    when:
-      visible: "Open debugger"
-    commands:
-      - tapOn:
-          point: "92%, 93%"
-      - waitForAnimationToEnd:
-          timeout: 2000
 
 # オンボーディング: ページ1 → 2 → 3 → 4（始める）
-- runFlow:
-    when:
-      visible: "Open debugger"
-    commands:
-      - tapOn:
-          point: "92%, 93%"
-      - waitForAnimationToEnd:
-          timeout: 2000
-# アプリが完全にロードされて next-button が visible になるまで最大 30 秒待機
+# LogBox.ignoreAllLogs() で dev banner を無効化済みのため、unconditional 座標 tap は不要
+- extendedWaitUntil:
+    visible: "技術記事をワンタップで保存"
+    timeout: 60000
+- tapOn:
+    id: "next-button"
+- extendedWaitUntil:
+    visible: "AIが要約・翻訳"
+    timeout: 10000
+- tapOn:
+    id: "next-button"
+- extendedWaitUntil:
+    visible: "お気に入り・タグで整理"
+    timeout: 10000
+- tapOn:
+    id: "next-button"
+- extendedWaitUntil:
+    visible: "さあ、始めましょう"
+    timeout: 10000
 - extendedWaitUntil:
     visible:
-      id: "next-button"
-    timeout: 30000
-- tapOn:
-    id: "next-button"
-- waitForAnimationToEnd:
-    timeout: 2000
-- runFlow:
-    when:
-      visible: "Open debugger"
-    commands:
-      - tapOn:
-          point: "92%, 93%"
-      - waitForAnimationToEnd:
-          timeout: 2000
-- tapOn:
-    id: "next-button"
-- waitForAnimationToEnd:
-    timeout: 2000
-- runFlow:
-    when:
-      visible: "Open debugger"
-    commands:
-      - tapOn:
-          point: "92%, 93%"
-      - waitForAnimationToEnd:
-          timeout: 2000
-- tapOn:
-    id: "next-button"
-- waitForAnimationToEnd:
-    timeout: 2000
-- runFlow:
-    when:
-      visible: "Open debugger"
-    commands:
-      - tapOn:
-          point: "92%, 93%"
-      - waitForAnimationToEnd:
-          timeout: 2000
+      id: "finish-button"
+    timeout: 10000
 - tapOn:
     id: "finish-button"
 - waitForAnimationToEnd:
