@@ -107,6 +107,7 @@ env:
 - inputText: "testuser_e2e"
 
 # 保存
+- hideKeyboard
 - tapOn: "保存する"
 - waitForAnimationToEnd
 

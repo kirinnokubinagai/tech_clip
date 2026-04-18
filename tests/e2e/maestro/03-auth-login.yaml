@@ -140,7 +140,8 @@ env:
     id: "login-toggle-password"
 - assertVisible: "表示"
 
-# ログインボタンをタップ
+# キーボードを閉じてからログインボタンをタップ
+- hideKeyboard
 - tapOn:
     id: "login-submit-button"
 

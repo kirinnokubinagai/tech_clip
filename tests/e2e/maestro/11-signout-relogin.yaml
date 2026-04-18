@@ -65,6 +65,7 @@ env:
 - tapOn:
     id: "login-password-input"
 - inputText: ${TEST_PASSWORD}
+- hideKeyboard
 - tapOn:
     text: "ログイン"
 - waitForAnimationToEnd:

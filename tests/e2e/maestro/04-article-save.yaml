@@ -74,6 +74,7 @@ env:
 - tapOn:
     text: "https://"
 - inputText: ${TEST_ARTICLE_URL}
+- hideKeyboard
 - tapOn:
     id: "fetch-button"
 

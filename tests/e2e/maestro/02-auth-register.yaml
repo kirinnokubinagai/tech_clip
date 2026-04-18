@@ -108,7 +108,7 @@ env:
 
 # 名前入力
 - tapOn:
-    text: "名前を入力"
+    id: "register-name-input"
 - runFlow:
     when:
       visible: "Try out your stylus"
@@ -125,7 +125,7 @@ env:
 
 # メールアドレス入力
 - tapOn:
-    text: "example@domain.com"
+    id: "register-email-input"
 - runFlow:
     when:
       visible: "Try out your stylus"
@@ -142,7 +142,7 @@ env:
 
 # パスワード入力
 - tapOn:
-    text: "8文字以上"
+    id: "register-password-input"
 - runFlow:
     when:
       visible: "Try out your stylus"
@@ -153,6 +153,7 @@ env:
 - inputText: ${TEST_PASSWORD}
 
 # フォーム送信 → 自動ログイン → ホーム画面
+- hideKeyboard
 - tapOn:
     id: "register-submit-button"
 - waitForAnimationToEnd:
