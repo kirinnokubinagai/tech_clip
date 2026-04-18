@@ -1,4 +1,3 @@
-import { PlatformPressable } from "@react-navigation/elements";
 import { Tabs } from "expo-router";
 import { Bell, Home, Search, Settings, User } from "lucide-react-native";
 import { useTranslation } from "react-i18next";
@@ -41,7 +40,7 @@ export default function TabLayout() {
         name="index"
         options={{
           title: t("tabs.home"),
-          tabBarButton: (props) => <PlatformPressable {...props} testID="tab-home" />,
+          tabBarButtonTestID: "tab-home",
           tabBarIcon: ({ color }) => <Home size={TAB_ICON_SIZE} color={color} />,
         }}
       />
@@ -49,7 +48,7 @@ export default function TabLayout() {
         name="search"
         options={{
           title: t("tabs.search"),
-          tabBarButton: (props) => <PlatformPressable {...props} testID="tab-search" />,
+          tabBarButtonTestID: "tab-search",
           tabBarIcon: ({ color }) => <Search size={TAB_ICON_SIZE} color={color} />,
         }}
       />
@@ -57,7 +56,7 @@ export default function TabLayout() {
         name="notifications"
         options={{
           title: t("tabs.notifications"),
-          tabBarButton: (props) => <PlatformPressable {...props} testID="tab-notifications" />,
+          tabBarButtonTestID: "tab-notifications",
           tabBarIcon: ({ color }) => (
             <View>
               <Bell size={TAB_ICON_SIZE} color={color} />
@@ -85,7 +84,7 @@ export default function TabLayout() {
         name="profile"
         options={{
           title: t("tabs.profile"),
-          tabBarButton: (props) => <PlatformPressable {...props} testID="tab-profile" />,
+          tabBarButtonTestID: "tab-profile",
           tabBarIcon: ({ color }) => <User size={TAB_ICON_SIZE} color={color} />,
         }}
       />
@@ -93,7 +92,7 @@ export default function TabLayout() {
         name="settings"
         options={{
           title: t("tabs.settings"),
-          tabBarButton: (props) => <PlatformPressable {...props} testID="tab-settings" />,
+          tabBarButtonTestID: "tab-settings",
           tabBarIcon: ({ color }) => <Settings size={TAB_ICON_SIZE} color={color} />,
         }}
       />
