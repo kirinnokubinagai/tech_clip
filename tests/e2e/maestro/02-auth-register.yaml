@@ -52,6 +52,11 @@ env:
           point: "90%, 93%"
       - waitForAnimationToEnd:
           timeout: 2000
+# アプリが完全にロードされて next-button が visible になるまで最大 30 秒待機
+- extendedWaitUntil:
+    visible:
+      id: "next-button"
+    timeout: 30000
 - tapOn:
     id: "next-button"
 - waitForAnimationToEnd:
