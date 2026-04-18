@@ -1,0 +1,72 @@
+# 通知フロー
+# 通知タブを開いて通知一覧を確認し、既読・全既読操作を行う
+#
+# tags: notifications
+
+appId: com.techclip.app
+tags:
+  - notifications
+
+env:
+  TEST_EMAIL: ${TEST_EMAIL}
+  TEST_PASSWORD: ${TEST_PASSWORD}
+
+---
+
+# ログイン済み状態でアプリ起動
+- launchApp:
+    clearState: false
+- runFlow:
+    when:
+      visible: "Try out your stylus"
+    commands:
+      - tapOn: "Cancel"
+      - waitForAnimationToEnd:
+          timeout: 1000
+- runFlow:
+    when:
+      visible: "Process system isn't responding"
+    commands:
+      - tapOn: "Wait"
+      - waitForAnimationToEnd:
+          timeout: 3000
+- runFlow:
+    when:
+      visible: "Open debugger to view warnings."
+    commands:
+      - tapOn:
+          point: "90%, 93%"
+      - waitForAnimationToEnd:
+          timeout: 1000
+
+# --- ホーム画面確認 ---
+- assertVisible: "すべて"
+
+# 通知タブへ移動
+- tapOn:
+    id: "tab-notifications"
+- waitForAnimationToEnd:
+    timeout: 2000
+- takeScreenshot: screenshots/10-notifications/01-notifications-tab
+
+# 通知画面の基本要素確認
+- assertVisible:
+    text: "通知"
+
+# 全既読ボタン確認（通知がある場合）
+- runFlow:
+    when:
+      visible:
+        id: "mark-all-read-button"
+    commands:
+      - tapOn:
+          id: "mark-all-read-button"
+      - waitForAnimationToEnd:
+          timeout: 1000
+      - takeScreenshot: screenshots/10-notifications/02-all-read
+
+# ホームタブへ戻る
+- tapOn:
+    id: "tab-home"
+- assertVisible:
+    text: "すべて"
