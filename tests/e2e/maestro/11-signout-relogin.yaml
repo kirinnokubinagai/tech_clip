@@ -1,0 +1,76 @@
+# サインアウト・再ログインフロー
+# 設定画面からサインアウトし、再度ログインできることを確認する
+#
+# tags: auth
+
+appId: com.techclip.app
+tags:
+  - auth
+
+env:
+  TEST_EMAIL: ${TEST_EMAIL}
+  TEST_PASSWORD: ${TEST_PASSWORD}
+
+---
+
+# ログイン済み状態でアプリ起動
+- launchApp:
+    clearState: false
+- runFlow:
+    when:
+      visible: "Try out your stylus"
+    commands:
+      - tapOn: "Cancel"
+      - waitForAnimationToEnd:
+          timeout: 1000
+- runFlow:
+    when:
+      visible: "Process system isn't responding"
+    commands:
+      - tapOn: "Wait"
+      - waitForAnimationToEnd:
+          timeout: 3000
+
+# --- ホーム画面確認 ---
+- assertVisible: "すべて"
+
+# 設定タブへ移動
+- tapOn:
+    id: "tab-settings"
+- waitForAnimationToEnd:
+    timeout: 1000
+- assertVisible:
+    text: "設定"
+- takeScreenshot: screenshots/11-signout-relogin/01-settings
+
+# ログアウトボタンをタップ
+- tapOn:
+    text: "ログアウト"
+- waitForAnimationToEnd:
+    timeout: 2000
+- takeScreenshot: screenshots/11-signout-relogin/02-after-signout
+
+# ログイン画面が表示されることを確認
+- assertVisible:
+    text: "ログイン"
+
+# --- 再ログイン ---
+- tapOn:
+    text: "ログイン"
+- waitForAnimationToEnd:
+    timeout: 1000
+- tapOn:
+    id: "email-input"
+- inputText: ${TEST_EMAIL}
+- tapOn:
+    id: "password-input"
+- inputText: ${TEST_PASSWORD}
+- tapOn:
+    text: "ログイン"
+- waitForAnimationToEnd:
+    timeout: 5000
+
+# ホーム画面に戻ることを確認
+- assertVisible:
+    text: "すべて"
+- takeScreenshot: screenshots/11-signout-relogin/03-relogged-in

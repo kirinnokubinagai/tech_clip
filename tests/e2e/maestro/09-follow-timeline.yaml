@@ -1,0 +1,59 @@
+# フォロー・タイムラインフロー
+# ユーザーを検索してフォローし、タイムライン反映を確認する
+#
+# tags: social
+
+appId: com.techclip.app
+tags:
+  - social
+
+env:
+  TEST_EMAIL: ${TEST_EMAIL}
+  TEST_PASSWORD: ${TEST_PASSWORD}
+
+---
+
+# ログイン済み状態でアプリ起動
+- launchApp:
+    clearState: false
+- runFlow:
+    when:
+      visible: "Try out your stylus"
+    commands:
+      - tapOn: "Cancel"
+      - waitForAnimationToEnd:
+          timeout: 1000
+- runFlow:
+    when:
+      visible: "Process system isn't responding"
+    commands:
+      - tapOn: "Wait"
+      - waitForAnimationToEnd:
+          timeout: 3000
+- runFlow:
+    when:
+      visible: "Open debugger to view warnings."
+    commands:
+      - tapOn:
+          point: "90%, 93%"
+      - waitForAnimationToEnd:
+          timeout: 1000
+
+# --- ホーム画面確認 ---
+- assertVisible: "すべて"
+- takeScreenshot: screenshots/09-follow-timeline/01-home
+
+# 検索タブへ移動してユーザーを検索
+- tapOn:
+    id: "tab-search"
+- waitForAnimationToEnd:
+    timeout: 1000
+- assertVisible:
+    text: "検索"
+- takeScreenshot: screenshots/09-follow-timeline/02-search-tab
+
+# ホームに戻る
+- tapOn:
+    id: "tab-home"
+- assertVisible:
+    text: "すべて"
