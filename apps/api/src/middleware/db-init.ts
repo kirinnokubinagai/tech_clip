@@ -94,17 +94,24 @@ export function createDbInitMiddleware(
             .filter((origin) => origin.length > 0)
         : [];
 
+      const hasMailpit = !!c.env.MAILPIT_URL;
+      const hasResend = !!c.env.RESEND_API_KEY;
+      const emailEnv =
+        hasMailpit || hasResend
+          ? {
+              RESEND_API_KEY: c.env.RESEND_API_KEY ?? "",
+              FROM_EMAIL: c.env.FROM_EMAIL ?? "",
+              MAILPIT_URL: c.env.MAILPIT_URL,
+            }
+          : undefined;
+
       authInstance = createAuthFn(
         db,
         c.env.BETTER_AUTH_SECRET,
         oauthProviders,
         c.env.API_BASE_URL,
         additionalTrustedOrigins,
-        {
-          RESEND_API_KEY: c.env.RESEND_API_KEY ?? "",
-          FROM_EMAIL: c.env.FROM_EMAIL ?? "",
-          MAILPIT_URL: c.env.MAILPIT_URL,
-        },
+        emailEnv,
       );
       return authInstance;
     });

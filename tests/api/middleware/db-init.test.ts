@@ -28,6 +28,9 @@ type TestBindings = {
   APPLE_CLIENT_SECRET?: string;
   GITHUB_CLIENT_ID?: string;
   GITHUB_CLIENT_SECRET?: string;
+  MAILPIT_URL?: string;
+  RESEND_API_KEY?: string;
+  FROM_EMAIL?: string;
 };
 
 /** テスト用 Variables */
@@ -197,11 +200,7 @@ describe("createDbInitMiddleware", () => {
         {},
         undefined,
         [],
-        {
-          RESEND_API_KEY: "",
-          FROM_EMAIL: "",
-          MAILPIT_URL: undefined,
-        },
+        undefined,
       );
     });
 
@@ -246,11 +245,7 @@ describe("createDbInitMiddleware", () => {
         },
         undefined,
         [],
-        {
-          RESEND_API_KEY: "",
-          FROM_EMAIL: "",
-          MAILPIT_URL: undefined,
-        },
+        undefined,
       );
     });
 
@@ -289,11 +284,7 @@ describe("createDbInitMiddleware", () => {
         {},
         "https://api.techclip.app",
         [],
-        {
-          RESEND_API_KEY: "",
-          FROM_EMAIL: "",
-          MAILPIT_URL: undefined,
-        },
+        undefined,
       );
     });
 
@@ -332,11 +323,7 @@ describe("createDbInitMiddleware", () => {
         {},
         undefined,
         ["https://staging.techclip.app", "https://dev.techclip.app"],
-        {
-          RESEND_API_KEY: "",
-          FROM_EMAIL: "",
-          MAILPIT_URL: undefined,
-        },
+        undefined,
       );
     });
 
@@ -374,11 +361,7 @@ describe("createDbInitMiddleware", () => {
         {},
         undefined,
         [],
-        {
-          RESEND_API_KEY: "",
-          FROM_EMAIL: "",
-          MAILPIT_URL: undefined,
-        },
+        undefined,
       );
     });
 
@@ -434,6 +417,127 @@ describe("createDbInitMiddleware", () => {
     });
   });
 
+  describe("emailEnv の構築", () => {
+    it("MAILPIT_URL が設定されている場合 emailEnv がオブジェクトとして渡されること", async () => {
+      // Arrange
+      const capturedGetAuth: Array<() => typeof mockAuth> = [];
+      const app = new Hono<{ Bindings: TestBindings; Variables: TestVariables }>();
+      app.use(
+        "/api/*",
+        createDbInitMiddleware({
+          createDatabaseFn: mockCreateDatabase,
+          createAuthFn: mockCreateAuth,
+        }),
+      );
+      app.get("/api/test", (c) => {
+        capturedGetAuth.push(c.get("auth"));
+        return c.json({ ok: true });
+      });
+      const envWithMailpit: TestBindings = {
+        TURSO_DATABASE_URL: "libsql://test.turso.io",
+        TURSO_AUTH_TOKEN: "test-token",
+        BETTER_AUTH_SECRET: "test-secret-min-32-chars-long-enough!!",
+        MAILPIT_URL: "http://localhost:8025/api/v1/send",
+        FROM_EMAIL: "noreply@techclip.app",
+      };
+
+      // Act
+      await app.request("/api/test", {}, envWithMailpit);
+      capturedGetAuth[0]();
+
+      // Assert
+      expect(mockCreateAuth).toHaveBeenCalledWith(
+        mockDb,
+        "test-secret-min-32-chars-long-enough!!",
+        {},
+        undefined,
+        [],
+        {
+          RESEND_API_KEY: "",
+          FROM_EMAIL: "noreply@techclip.app",
+          MAILPIT_URL: "http://localhost:8025/api/v1/send",
+        },
+      );
+    });
+
+    it("RESEND_API_KEY が設定されている場合 emailEnv がオブジェクトとして渡されること", async () => {
+      // Arrange
+      const capturedGetAuth: Array<() => typeof mockAuth> = [];
+      const app = new Hono<{ Bindings: TestBindings; Variables: TestVariables }>();
+      app.use(
+        "/api/*",
+        createDbInitMiddleware({
+          createDatabaseFn: mockCreateDatabase,
+          createAuthFn: mockCreateAuth,
+        }),
+      );
+      app.get("/api/test", (c) => {
+        capturedGetAuth.push(c.get("auth"));
+        return c.json({ ok: true });
+      });
+      const envWithResend: TestBindings = {
+        TURSO_DATABASE_URL: "libsql://test.turso.io",
+        TURSO_AUTH_TOKEN: "test-token",
+        BETTER_AUTH_SECRET: "test-secret-min-32-chars-long-enough!!",
+        RESEND_API_KEY: "re_test_key",
+        FROM_EMAIL: "noreply@techclip.app",
+      };
+
+      // Act
+      await app.request("/api/test", {}, envWithResend);
+      capturedGetAuth[0]();
+
+      // Assert
+      expect(mockCreateAuth).toHaveBeenCalledWith(
+        mockDb,
+        "test-secret-min-32-chars-long-enough!!",
+        {},
+        undefined,
+        [],
+        {
+          RESEND_API_KEY: "re_test_key",
+          FROM_EMAIL: "noreply@techclip.app",
+          MAILPIT_URL: undefined,
+        },
+      );
+    });
+
+    it("MAILPIT_URL も RESEND_API_KEY も未設定の場合 emailEnv が undefined になること", async () => {
+      // Arrange
+      const capturedGetAuth: Array<() => typeof mockAuth> = [];
+      const app = new Hono<{ Bindings: TestBindings; Variables: TestVariables }>();
+      app.use(
+        "/api/*",
+        createDbInitMiddleware({
+          createDatabaseFn: mockCreateDatabase,
+          createAuthFn: mockCreateAuth,
+        }),
+      );
+      app.get("/api/test", (c) => {
+        capturedGetAuth.push(c.get("auth"));
+        return c.json({ ok: true });
+      });
+      const envWithoutEmail: TestBindings = {
+        TURSO_DATABASE_URL: "libsql://test.turso.io",
+        TURSO_AUTH_TOKEN: "test-token",
+        BETTER_AUTH_SECRET: "test-secret-min-32-chars-long-enough!!",
+      };
+
+      // Act
+      await app.request("/api/test", {}, envWithoutEmail);
+      capturedGetAuth[0]();
+
+      // Assert
+      expect(mockCreateAuth).toHaveBeenCalledWith(
+        mockDb,
+        "test-secret-min-32-chars-long-enough!!",
+        {},
+        undefined,
+        [],
+        undefined,
+      );
+    });
+  });
   describe("next() の呼び出し", () => {
     it("ミドルウェアが next を呼び出して後続処理が実行されること", async () => {
       // Arrange
