@@ -11,7 +11,8 @@ nix develop --command bash -c "cd apps/mobile && pnpm expo run:android --variant
 EXPO_PID=$!
 
 # Wait for app to be installed and running
-for _ in $(seq 1 60); do
+# 180 iterations × 5s = 15 min (native modules like react-native-webview extend build time)
+for _ in $(seq 1 180); do
   if adb shell pidof com.techclip.app > /dev/null 2>&1; then
     echo "App is running"
     break
@@ -20,7 +21,7 @@ for _ in $(seq 1 60); do
 done
 
 if ! adb shell pidof com.techclip.app > /dev/null 2>&1; then
-  echo "ERROR: App failed to start within 5 minutes"
+  echo "ERROR: App failed to start within 15 minutes"
   pkill -P $EXPO_PID 2>/dev/null || true
   kill $EXPO_PID 2>/dev/null || true
   echo "1" > test-results/maestro-exit-code.txt
