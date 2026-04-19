@@ -86,6 +86,9 @@ export async function parseHatena(url: string): Promise<ParsedArticle> {
 
   const html = await response.text();
   const { document } = parseHTML(html);
+  if (!document.documentElement) {
+    throw new Error("HTMLが空または不正です（Cloudflare等のbot対策の可能性）");
+  }
 
   const reader = new Readability(document);
   const article = reader.parse();

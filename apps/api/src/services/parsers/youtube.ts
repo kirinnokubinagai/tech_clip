@@ -458,10 +458,10 @@ export async function parseYouTube(url: string): Promise<ParsedArticle> {
   return {
     title: oembed.title,
     author: oembed.author_name,
-    content: captionText,
+    content: captionText ?? "",
     excerpt,
     thumbnailUrl: oembed.thumbnail_url ?? null,
-    readingTimeMinutes: captionText ? calculateReadingTime(captionText) : null,
+    readingTimeMinutes: captionText ? calculateReadingTime(captionText) : 0,
     publishedAt: null,
     source: SOURCE_IDENTIFIER,
   };
