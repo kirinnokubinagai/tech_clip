@@ -30,6 +30,10 @@ env:
       - tapOn: "Wait"
       - waitForAnimationToEnd:
           timeout: 3000
+- runFlow:
+    file: "00-login-helper.yaml"
+- waitForAnimationToEnd:
+    timeout: 2000
 
 # --- ホーム画面確認 ---
 - assertVisible: "すべて"
@@ -43,11 +47,17 @@ env:
     text: "設定"
 - takeScreenshot: screenshots/11-signout-relogin/01-settings
 
-# ログアウトボタンをタップ
+# ログアウトボタンをタップ（設定画面）
 - tapOn:
     text: "ログアウト"
 - waitForAnimationToEnd:
-    timeout: 2000
+    timeout: 1000
+# 確認ダイアログでログアウトボタンを再度タップ（ダイアログ内の2つ目のログアウト）
+- tapOn:
+    text: "ログアウト"
+    index: 1
+- waitForAnimationToEnd:
+    timeout: 3000
 - takeScreenshot: screenshots/11-signout-relogin/02-after-signout
 
 # ログイン画面が表示されることを確認
@@ -55,8 +65,7 @@ env:
     text: "ログイン"
 
 # --- 再ログイン ---
-- tapOn:
-    text: "ログイン"
+# ログイン画面に自動遷移済みのはずなので、この tap は不要（既に login 画面）
 - waitForAnimationToEnd:
     timeout: 1000
 - tapOn:
@@ -67,7 +76,7 @@ env:
 - inputText: ${TEST_PASSWORD}
 - hideKeyboard
 - tapOn:
-    text: "ログイン"
+    id: "login-submit-button"
 - waitForAnimationToEnd:
     timeout: 5000
 
