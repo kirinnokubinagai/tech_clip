@@ -289,7 +289,12 @@ export default function ArticleDetailScreen() {
     if (extractedText && extractedText.length > (article.content?.length ?? 0)) {
       await updateContent
         .mutateAsync({ articleId: article.id, content: extractedText })
-        .catch(() => {});
+        .catch((err) => {
+          logger.warn("記事本文の PATCH に失敗しました", {
+            articleId: article.id,
+            error: err instanceof Error ? err.message : String(err),
+          });
+        });
     }
     requestSummary.mutate(
       { articleId: article.id, language: apiLanguage },
@@ -309,7 +314,12 @@ export default function ArticleDetailScreen() {
     if (extractedText && extractedText.length > (article.content?.length ?? 0)) {
       await updateContent
         .mutateAsync({ articleId: article.id, content: extractedText })
-        .catch(() => {});
+        .catch((err) => {
+          logger.warn("記事本文の PATCH に失敗しました", {
+            articleId: article.id,
+            error: err instanceof Error ? err.message : String(err),
+          });
+        });
     }
     requestTranslation.mutate({
       articleId: article.id,
