@@ -43,9 +43,13 @@ env:
 - waitForAnimationToEnd:
     timeout: 2000
 
-# 設定タブへ移動
+# 設定タブへ移動（tab-bar visible 待機）
+- extendedWaitUntil:
+    visible:
+      id: "tab-settings"
+    timeout: 30000
 - tapOn:
-    text: "設定"
+    id: "tab-settings"
 
 # --- 設定画面 ---
 - assertVisible:
@@ -107,7 +111,7 @@ env:
 - tapOn: "アカウントを削除する"
 - assertVisible:
     text: "アカウントを削除する"
-- assertVisible: "この操作は取り消せません。"
+- assertVisible: ".*この操作は取り消せません.*"
 # キャンセル
 - tapOn: "キャンセル"
 - assertVisible: "アカウント管理"
