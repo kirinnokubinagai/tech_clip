@@ -22,6 +22,7 @@ import { parseArticle } from "../services/article-parser";
 import { summarizeArticle } from "../services/summary";
 import { translateArticle } from "../services/translator";
 import type { Bindings } from "../types";
+import { resolveUserFromRequest } from "../lib/resolve-user";
 
 /**
  * 公開記事一覧サブアプリを構築してリクエストを処理する
@@ -146,9 +147,9 @@ export async function handleArticles(
   const subApp = new Hono<{ Variables: { user?: Record<string, unknown> } }>();
 
   subApp.use("*", async (ctx, next) => {
-    const result = await auth.api.getSession({ headers: ctx.req.raw.headers });
-    if (result) {
-      ctx.set("user", result.user);
+    const user = await resolveUserFromRequest(db, auth, ctx.req.raw.headers);
+    if (user) {
+      ctx.set("user", user);
     }
     await next();
   });
