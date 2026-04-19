@@ -1,4 +1,5 @@
 # ログイン state 確保ヘルパー
+# 画面の安定を待ってから onboarding → register → login を適切にナビゲートする
 
 appId: com.techclip.app
 
@@ -8,68 +9,79 @@ env:
 
 ---
 
-# 初期ロード（Metro cold-start 対策）
+# Metro cold-start 待機（アニメーション停止まで最大 60 秒）
 - waitForAnimationToEnd:
     timeout: 60000
-# ホーム tab-home が出るまで or login-submit-button が出るまで待機（最大 30 秒）
+
+# いずれかの初期画面が確実に表示されるまで extendedWaitUntil を連続試行
+# 最初に hit する text でループを抜ける
 - extendedWaitUntil:
-    visible:
-      id: "tab-home|login-submit-button|next-button|register-submit-button"
+    visible: "技術記事をワンタップで保存"
+    timeout: 30000
+    optional: true
+- extendedWaitUntil:
+    visible: "パスワードを忘れた方"
+    timeout: 30000
+    optional: true
+- extendedWaitUntil:
+    visible: "アカウントを作成"
+    timeout: 30000
+    optional: true
+- extendedWaitUntil:
+    visible: "すべて"
     timeout: 30000
     optional: true
 
-# ホーム画面にいなければログインフローを実行
+# onboarding ページ1 検出 → 4 ページ通過
 - runFlow:
     when:
-      notVisible:
-        id: "tab-home"
+      visible: "技術記事をワンタップで保存"
     commands:
-      # onboarding ページ1 が表示されている場合は 4 ページ通過
-      - runFlow:
-          when:
-            visible:
-              id: "next-button"
-          commands:
-            - tapOn:
-                id: "next-button"
-            - waitForAnimationToEnd:
-                timeout: 2000
-            - tapOn:
-                id: "next-button"
-            - waitForAnimationToEnd:
-                timeout: 2000
-            - tapOn:
-                id: "next-button"
-            - waitForAnimationToEnd:
-                timeout: 2000
-            - tapOn:
-                id: "finish-button"
-            - waitForAnimationToEnd:
-                timeout: 3000
-      # register 画面 → login リンクをタップ
-      - runFlow:
-          when:
-            visible:
-              id: "register-submit-button"
-          commands:
-            - tapOn:
-                id: "register-login-link"
-            - waitForAnimationToEnd:
-                timeout: 2000
-      # ログイン画面 → ログイン実行
-      - runFlow:
-          when:
-            visible:
-              id: "login-submit-button"
-          commands:
-            - tapOn:
-                id: "login-email-input"
-            - inputText: ${TEST_EMAIL}
-            - tapOn:
-                id: "login-password-input"
-            - inputText: ${TEST_PASSWORD}
-            - hideKeyboard
-            - tapOn:
-                id: "login-submit-button"
-            - waitForAnimationToEnd:
-                timeout: 8000
+      - tapOn:
+          id: "next-button"
+      - waitForAnimationToEnd:
+          timeout: 2000
+      - tapOn:
+          id: "next-button"
+      - waitForAnimationToEnd:
+          timeout: 2000
+      - tapOn:
+          id: "next-button"
+      - waitForAnimationToEnd:
+          timeout: 2000
+      - tapOn:
+          id: "finish-button"
+      - waitForAnimationToEnd:
+          timeout: 3000
+
+# register 画面 → login リンクをタップ
+- runFlow:
+    when:
+      visible: "アカウントを作成"
+    commands:
+      - tapOn:
+          id: "register-login-link"
+      - waitForAnimationToEnd:
+          timeout: 3000
+
+# ログイン画面 → ログイン実行
+- runFlow:
+    when:
+      visible: "パスワードを忘れた方"
+    commands:
+      - tapOn:
+          id: "login-email-input"
+      - inputText: ${TEST_EMAIL}
+      - tapOn:
+          id: "login-password-input"
+      - inputText: ${TEST_PASSWORD}
+      - hideKeyboard
+      - tapOn:
+          id: "login-submit-button"
+      - waitForAnimationToEnd:
+          timeout: 10000
+
+# ホーム画面ロード完了待ち
+- extendedWaitUntil:
+    visible: "すべて"
+    timeout: 30000

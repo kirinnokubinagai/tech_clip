@@ -79,6 +79,8 @@ type TranslationJobStatusResponse = {
 type ArticlesFilter = {
   source?: ArticleSource;
   isFavorite?: boolean;
+  /** true のとき自分の記事ではなくフォロー中ユーザーの公開記事を取得する */
+  feedMode?: boolean;
 };
 
 /**
@@ -99,7 +101,9 @@ async function fetchArticles(
   if (filter.isFavorite) params.set("isFavorite", "true");
 
   const queryString = params.toString();
-  const path = `/api/articles${queryString ? `?${queryString}` : ""}`;
+  // feedMode=true のときはフォロー中ユーザーの公開記事を返す /api/feed を使用
+  const basePath = filter.feedMode ? "/api/feed" : "/api/articles";
+  const path = `${basePath}${queryString ? `?${queryString}` : ""}`;
 
   const response = await apiFetch<ArticlesListResponse>(path);
 

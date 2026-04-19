@@ -1,5 +1,6 @@
 # フォロー・タイムラインフロー
-# ユーザーを検索してフォローし、タイムライン反映を確認する
+# ホーム画面で「自分 / フォロー中」トグルを切り替えて、フォロー中ユーザーの
+# 公開記事が表示されることを確認する
 #
 # tags: social
 
@@ -31,14 +32,6 @@ env:
       - waitForAnimationToEnd:
           timeout: 3000
 - runFlow:
-    when:
-      visible: "Open debugger"
-    commands:
-      - tapOn:
-          point: "92%, 93%"
-      - waitForAnimationToEnd:
-          timeout: 1000
-- runFlow:
     file: "00-login-helper.yaml"
 - waitForAnimationToEnd:
     timeout: 2000
@@ -47,17 +40,20 @@ env:
 - assertVisible: "すべて"
 - takeScreenshot: screenshots/09-follow-timeline/01-home
 
-# 検索タブへ移動してユーザーを検索
+# --- フォロー中タイムライン切替 ---
+- assertVisible:
+    id: "feed-mode-toggle"
 - tapOn:
-    id: "tab-search"
+    id: "feed-mode-toggle"
 - waitForAnimationToEnd:
-    timeout: 1000
-- assertVisible:
-    text: "検索"
-- takeScreenshot: screenshots/09-follow-timeline/02-search-tab
+    timeout: 3000
+- assertVisible: "フォロー中"
+- takeScreenshot: screenshots/09-follow-timeline/02-feed-mode
 
-# ホームに戻る
+# --- 自分モードに戻す ---
 - tapOn:
-    id: "tab-home"
-- assertVisible:
-    text: "すべて"
+    id: "feed-mode-toggle"
+- waitForAnimationToEnd:
+    timeout: 2000
+- assertVisible: "自分"
+- takeScreenshot: screenshots/09-follow-timeline/03-own-mode

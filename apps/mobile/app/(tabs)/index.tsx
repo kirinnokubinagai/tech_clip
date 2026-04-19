@@ -1,5 +1,5 @@
 import { useRouter } from "expo-router";
-import { Heart, RefreshCw } from "lucide-react-native";
+import { Heart, RefreshCw, Users } from "lucide-react-native";
 import { useCallback, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { ActivityIndicator, FlatList, Pressable, RefreshControl, Text, View } from "react-native";
@@ -28,6 +28,7 @@ export default function HomeScreen() {
   const colors = useColors();
   const [selectedSource, setSelectedSource] = useState<ArticleSource | undefined>(undefined);
   const [isFavoriteOnly, setIsFavoriteOnly] = useState(false);
+  const [feedMode, setFeedMode] = useState(false);
 
   const { isOffline } = useNetworkStatus();
 
@@ -43,6 +44,7 @@ export default function HomeScreen() {
   } = useArticles({
     source: selectedSource,
     isFavorite: isFavoriteOnly || undefined,
+    feedMode,
   });
 
   const { articles: offlineArticles, isLoading: isOfflineLoading } = useOfflineArticles();
@@ -170,6 +172,25 @@ export default function HomeScreen() {
           )}
         />
         <View className="flex-row items-center mt-2 gap-3">
+          <Pressable
+            testID="feed-mode-toggle"
+            onPress={() => setFeedMode((prev) => !prev)}
+            className="flex-row items-center gap-1.5 rounded-full px-3 py-1.5"
+            style={{
+              backgroundColor: feedMode ? colors.primary : colors.card,
+            }}
+            accessibilityRole="button"
+            accessibilityLabel={feedMode ? "自分の記事を表示" : "フォロー中の記事を表示"}
+            accessibilityState={{ selected: feedMode }}
+          >
+            <Users size={FILTER_ICON_SIZE} color={feedMode ? colors.white : colors.textMuted} />
+            <Text
+              className="text-sm"
+              style={{ color: feedMode ? colors.white : colors.textMuted }}
+            >
+              {feedMode ? "フォロー中" : "自分"}
+            </Text>
+          </Pressable>
           <Pressable
             onPress={() => setIsFavoriteOnly((prev) => !prev)}
             className="flex-row items-center gap-1.5 rounded-full px-3 py-1.5"
