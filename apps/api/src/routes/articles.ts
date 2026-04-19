@@ -75,10 +75,14 @@ const UpdateArticleSchema = z
     isRead: z.boolean({ error: "isReadはブール値で指定してください" }).optional(),
     isFavorite: z.boolean({ error: "isFavoriteはブール値で指定してください" }).optional(),
     isPublic: z.boolean({ error: "isPublicはブール値で指定してください" }).optional(),
+    content: z.string({ error: "contentは文字列で指定してください" }).max(500_000).optional(),
   })
   .refine(
     (data) =>
-      data.isRead !== undefined || data.isFavorite !== undefined || data.isPublic !== undefined,
+      data.isRead !== undefined ||
+      data.isFavorite !== undefined ||
+      data.isPublic !== undefined ||
+      data.content !== undefined,
     {
       message: "更新するフィールドを1つ以上指定してください",
     },

@@ -1,0 +1,38 @@
+# プレミアムユーザーフロー
+# isPremium=true のユーザーで広告が非表示・AI 制限なしで使えることを確認
+
+appId: com.techclip.app
+tags:
+  - premium
+  - auth
+
+env:
+  TEST_EMAIL: ${TEST_EMAIL}
+  TEST_PASSWORD: ${TEST_PASSWORD}
+
+---
+
+- launchApp:
+    clearState: false
+- runFlow:
+    when:
+      visible: "Try out your stylus"
+    commands:
+      - tapOn: "Cancel"
+      - waitForAnimationToEnd:
+          timeout: 1000
+- runFlow:
+    file: "00-login-helper.yaml"
+- waitForAnimationToEnd:
+    timeout: 3000
+
+# --- ホーム画面確認 ---
+- extendedWaitUntil:
+    visible: "すべて"
+    timeout: 30000
+- takeScreenshot: screenshots/15-premium-user/01-home
+
+# --- プレミアム確認: 広告バナーが非表示 ---
+- assertNotVisible:
+    id: "ad-banner-container"
+- takeScreenshot: screenshots/15-premium-user/02-no-ads

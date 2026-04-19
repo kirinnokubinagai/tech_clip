@@ -10,6 +10,7 @@ import { SourceBadge } from "@/components/ui";
 import {
   useArticleDetail,
   useCloneArticle,
+  useUpdateArticleContent,
   useRequestSummary,
   useRequestTranslation,
   useSummaryJobStatus,
@@ -250,6 +251,7 @@ export default function ArticleDetailScreen() {
   }, [article, toggleFavorite]);
 
   const cloneArticle = useCloneArticle();
+  const updateContent = useUpdateArticleContent();
   const currentUserId = useAuthStore((s) => s.user?.id);
   const isNotOwner = !!article && !!currentUserId && article.userId !== currentUserId;
   const handleClone = useCallback(() => {
@@ -266,8 +268,12 @@ export default function ArticleDetailScreen() {
     Linking.openURL(article.url);
   }, [article]);
 
-  const handleRequestSummary = useCallback(() => {
+  const handleRequestSummary = useCallback(async () => {
     if (!article) return;
+    // WebView が抽出したテキストが DB の content より新しければ PATCH で更新してから要約
+    if (extractedText && extractedText.length > (article.content?.length ?? 0)) {
+      await updateContent.mutateAsync({ articleId: article.id, content: extractedText }).catch(() => {});
+    }
     requestSummary.mutate(
       { articleId: article.id, language: apiLanguage },
       {
@@ -279,15 +285,18 @@ export default function ArticleDetailScreen() {
         },
       },
     );
-  }, [article, apiLanguage, requestSummary]);
+  }, [article, apiLanguage, requestSummary, extractedText, updateContent]);
 
-  const handleRequestTranslation = useCallback(() => {
+  const handleRequestTranslation = useCallback(async () => {
     if (!article) return;
+    if (extractedText && extractedText.length > (article.content?.length ?? 0)) {
+      await updateContent.mutateAsync({ articleId: article.id, content: extractedText }).catch(() => {});
+    }
     requestTranslation.mutate({
       articleId: article.id,
       targetLanguage: apiLanguage,
     });
-  }, [article, apiLanguage, requestTranslation]);
+  }, [article, apiLanguage, requestTranslation, extractedText, updateContent]);
 
   useEffect(() => {
     if (!article || !requestSummary.data?.success) return;

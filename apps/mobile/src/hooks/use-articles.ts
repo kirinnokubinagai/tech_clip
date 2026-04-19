@@ -247,6 +247,22 @@ export function useToggleFavorite() {
  *
  * @returns TanStack Query の useMutation 結果
  */
+export function useUpdateArticleContent() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ articleId, content }: { articleId: string; content: string }) => {
+      const response = await apiFetch<{ success: boolean }>(`/api/articles/${articleId}`, {
+        method: "PATCH",
+        body: JSON.stringify({ content }),
+      });
+      return response;
+    },
+    onSuccess: (_, vars) => {
+      queryClient.invalidateQueries({ queryKey: [ARTICLE_DETAIL_QUERY_KEY, vars.articleId] });
+    },
+  });
+}
+
 export function useCloneArticle() {
   const queryClient = useQueryClient();
 

@@ -36,6 +36,13 @@ const SECONDARY_SPEC = {
   name: "Secondary Maestro",
 };
 
+/** PREMIUM ユーザー（有料アカウントのテスト用） */
+const PREMIUM_SPEC = {
+  email: "premium+maestro@techclip.app",
+  username: "premium_maestro",
+  name: "Premium Maestro",
+};
+
 /** Maestro タグ名 */
 const MAESTRO_TAG_NAME = "maestro";
 
@@ -581,9 +588,17 @@ async function seedMaestroStatic(): Promise<void> {
   const secondaryId = await upsertUser(db, SECONDARY_SPEC);
   process.stdout.write(`SECONDARY upsert 完了: ${secondaryId}\n`);
 
+  const premiumId = await upsertUser(db, PREMIUM_SPEC);
+  await db
+    .update(users)
+    .set({ isPremium: true, premiumExpiresAt: "2099-12-31T23:59:59.000Z" })
+    .where(eq(users.id, premiumId));
+  process.stdout.write(`PREMIUM upsert 完了（isPremium=true）: ${premiumId}\n`);
+
   await upsertAccount(db, followeeId, MAESTRO_STATIC_PASSWORD);
   await upsertAccount(db, followerId, MAESTRO_STATIC_PASSWORD);
   await upsertAccount(db, secondaryId, MAESTRO_STATIC_PASSWORD);
+  await upsertAccount(db, premiumId, MAESTRO_STATIC_PASSWORD);
   process.stdout.write("accounts upsert 完了\n");
 
   const articleIds: string[] = [];
