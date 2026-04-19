@@ -3,7 +3,7 @@ import { parseHTML } from "linkedom";
 import TurndownService from "turndown";
 
 import type { ParsedArticle } from "../../types/article";
-import { calculateReadingTime, TECHCLIP_USER_AGENT } from "./_shared";
+import { calculateReadingTime, htmlFragmentToMarkdown, TECHCLIP_USER_AGENT } from "./_shared";
 
 /** LogRocketブログのホスト名 */
 const LOGROCKET_HOSTNAME = "blog.logrocket.com";
@@ -96,8 +96,7 @@ export async function parseLogrocket(url: string): Promise<ParsedArticle> {
     headingStyle: "atx",
     codeBlockStyle: "fenced",
   });
-  const contentDoc = parseHTML(article.content);
-  const markdown = turndown.turndown(contentDoc.document.documentElement);
+  const markdown = htmlFragmentToMarkdown(article.content, turndown);
 
   const { document: originalDoc } = parseHTML(html);
   const doc = originalDoc as unknown as LinkedomDocument;

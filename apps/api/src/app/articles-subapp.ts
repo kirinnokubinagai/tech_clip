@@ -6,6 +6,7 @@ import type { Database } from "../db";
 import { articles, users } from "../db/schema";
 import { resolveGemmaModelTag } from "../lib/ai-model";
 import { toRecordArray } from "../lib/db-cast";
+import { resolveUserFromRequest } from "../lib/resolve-user";
 import { createAiLimitMiddleware } from "../middleware/ai-limit";
 import {
   createKvStore,
@@ -22,7 +23,6 @@ import { parseArticle } from "../services/article-parser";
 import { summarizeArticle } from "../services/summary";
 import { translateArticle } from "../services/translator";
 import type { Bindings } from "../types";
-import { resolveUserFromRequest } from "../lib/resolve-user";
 
 /**
  * 公開記事一覧サブアプリを構築してリクエストを処理する

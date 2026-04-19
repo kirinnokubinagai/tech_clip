@@ -1,8 +1,12 @@
-import { parseHTML } from "linkedom";
 import TurndownService from "turndown";
 
 import type { ParsedArticle } from "../../types/article";
-import { calculateReadingTime, MIN_READING_TIME_MINUTES, TECHCLIP_USER_AGENT } from "./_shared";
+import {
+  calculateReadingTime,
+  htmlFragmentToMarkdown,
+  MIN_READING_TIME_MINUTES,
+  TECHCLIP_USER_AGENT,
+} from "./_shared";
 import { parseGeneric } from "./generic";
 
 /** Hacker News Firebase APIのベースURL */
@@ -171,8 +175,7 @@ function buildFromText(
       headingStyle: "atx",
       codeBlockStyle: "fenced",
     });
-    const hnDoc = parseHTML(htmlContent);
-    content = turndown.turndown(hnDoc.document.documentElement);
+    content = htmlFragmentToMarkdown(htmlContent, turndown);
   }
 
   const plainText = stripHtmlTags(htmlContent);

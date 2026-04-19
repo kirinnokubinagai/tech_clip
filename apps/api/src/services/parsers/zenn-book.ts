@@ -1,8 +1,7 @@
-import { parseHTML } from "linkedom";
 import TurndownService from "turndown";
 
 import type { ParsedArticle } from "../../types/article";
-import { calculateReadingTime, TECHCLIP_USER_AGENT } from "./_shared";
+import { calculateReadingTime, htmlFragmentToMarkdown, TECHCLIP_USER_AGENT } from "./_shared";
 
 /** Zenn Books URLのパスパターン */
 const ZENN_BOOK_PATH_REGEX = /^\/[^/]+\/books\/([^/]+)\/?$/;
@@ -103,8 +102,7 @@ export async function parseZennBook(url: string): Promise<ParsedArticle> {
     headingStyle: "atx",
     codeBlockStyle: "fenced",
   });
-  const combinedDoc = parseHTML(combinedHtml);
-  const markdown = turndown.turndown(combinedDoc.document.documentElement);
+  const markdown = htmlFragmentToMarkdown(combinedHtml, turndown);
 
   const plainText = markdown.replace(/[#*`[\]()_~>-]/g, "");
 

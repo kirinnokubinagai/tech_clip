@@ -27,7 +27,6 @@ import { useAuthStore } from "../src/stores/auth-store";
 import { useSettingsStore } from "../src/stores/settings-store";
 import { useUIStore } from "../src/stores/ui-store";
 
-
 LogBox.ignoreAllLogs(true);
 initSentry(process.env.EXPO_PUBLIC_SENTRY_DSN);
 
