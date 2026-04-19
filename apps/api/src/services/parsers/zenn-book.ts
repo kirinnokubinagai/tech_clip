@@ -1,3 +1,4 @@
+import { parseHTML } from "linkedom";
 import TurndownService from "turndown";
 
 import type { ParsedArticle } from "../../types/article";
@@ -102,7 +103,8 @@ export async function parseZennBook(url: string): Promise<ParsedArticle> {
     headingStyle: "atx",
     codeBlockStyle: "fenced",
   });
-  const markdown = turndown.turndown(combinedHtml);
+  const combinedDoc = parseHTML(combinedHtml);
+  const markdown = turndown.turndown(combinedDoc.document.documentElement);
 
   const plainText = markdown.replace(/[#*`[\]()_~>-]/g, "");
 

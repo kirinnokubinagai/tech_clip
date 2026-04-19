@@ -345,12 +345,14 @@ export function createArticlesRoute(options: ArticlesRouteOptions) {
           HTTP_UNPROCESSABLE_ENTITY,
         );
       }
+      console.error("parseArticle failed:", error instanceof Error ? error.message : String(error), error instanceof Error ? error.stack : "");
       return c.json(
         {
           success: false,
           error: {
             code: "INTERNAL_ERROR",
             message: "記事の解析に失敗しました",
+            details: error instanceof Error ? error.message : String(error),
           },
         },
         HTTP_INTERNAL_SERVER_ERROR,

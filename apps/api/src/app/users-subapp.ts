@@ -187,7 +187,8 @@ export async function handleUsers(
   });
 
   return fetchWithAuth(
-    auth.api.getSession.bind(auth.api),
+    db,
+    auth,
     (subApp) => {
       subApp.route("/api/users", usersRoute);
       subApp.route("/api/users", followsRoute);

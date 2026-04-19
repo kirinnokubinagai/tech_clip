@@ -1,3 +1,4 @@
+import { parseHTML } from "linkedom";
 import TurndownService from "turndown";
 
 import type { ParsedArticle } from "../../types/article";
@@ -170,7 +171,8 @@ function buildFromText(
       headingStyle: "atx",
       codeBlockStyle: "fenced",
     });
-    content = turndown.turndown(htmlContent);
+    const hnDoc = parseHTML(htmlContent);
+    content = turndown.turndown(hnDoc.document.documentElement);
   }
 
   const plainText = stripHtmlTags(htmlContent);

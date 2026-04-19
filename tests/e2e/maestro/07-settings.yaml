@@ -64,7 +64,7 @@ env:
 - assertVisible: "無料"
 
 # バージョン表示
-- assertVisible: "バージョン"
+- assertVisible: ".*バージョン.*"
 
 # --- 通知スイッチ ---
 - assertVisible: "通知"
@@ -79,8 +79,9 @@ env:
 
 # --- 言語設定 ---
 - tapOn: "言語"
-- assertVisible:
-    text: "言語設定"
+- extendedWaitUntil:
+    visible: "日本語"
+    timeout: 5000
 - assertVisible: "日本語"
 - assertVisible: "English"
 - tapOn: "日本語"

@@ -1,3 +1,4 @@
+import { parseHTML } from "linkedom";
 import TurndownService from "turndown";
 
 import type { ParsedArticle } from "../../types/article";
@@ -101,7 +102,8 @@ export async function parseDevto(url: string): Promise<ParsedArticle> {
       headingStyle: "atx",
       codeBlockStyle: "fenced",
     });
-    content = turndown.turndown(data.body_html);
+    const bodyDoc = parseHTML(data.body_html);
+    content = turndown.turndown(bodyDoc.document.documentElement);
   }
 
   const plainText = content.replace(/[#*`[\]()>\-_~|]/g, "").replace(/\n+/g, " ");

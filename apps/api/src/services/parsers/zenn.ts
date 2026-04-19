@@ -1,3 +1,4 @@
+import { parseHTML } from "linkedom";
 import TurndownService from "turndown";
 
 import type { ParsedArticle } from "../../types/article";
@@ -113,7 +114,8 @@ export async function parseZenn(url: string): Promise<ParsedArticle> {
     headingStyle: "atx",
     codeBlockStyle: "fenced",
   });
-  const markdown = turndown.turndown(article.body_html);
+  const bodyDoc = parseHTML(article.body_html);
+  const markdown = turndown.turndown(bodyDoc.document.documentElement);
 
   const plainText = stripHtmlTags(article.body_html);
 

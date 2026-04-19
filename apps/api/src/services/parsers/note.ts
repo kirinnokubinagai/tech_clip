@@ -128,7 +128,8 @@ export async function parseNote(url: string): Promise<ParsedArticle> {
     headingStyle: "atx",
     codeBlockStyle: "fenced",
   });
-  const markdown = turndown.turndown(article.content);
+  const contentDoc = parseHTML(article.content);
+  const markdown = turndown.turndown(contentDoc.document.documentElement);
 
   const { document: originalDoc } = parseHTML(html);
   const doc = originalDoc as unknown as LinkedomDocument;

@@ -1,3 +1,4 @@
+import { parseHTML } from "linkedom";
 import TurndownService from "turndown";
 
 import type { ParsedArticle } from "../../types/article";
@@ -132,13 +133,15 @@ function buildContent(questionBody: string, acceptedAnswerBody: string | null): 
     codeBlockStyle: "fenced",
   });
 
-  const questionMd = turndown.turndown(questionBody);
+  const questionDoc = parseHTML(questionBody);
+  const questionMd = turndown.turndown(questionDoc.document.documentElement);
 
   if (!acceptedAnswerBody) {
     return questionMd;
   }
 
-  const answerMd = turndown.turndown(acceptedAnswerBody);
+  const answerDoc = parseHTML(acceptedAnswerBody);
+    const answerMd = turndown.turndown(answerDoc.document.documentElement);
 
   return `${questionMd}\n\n---\n\n## Accepted Answer\n\n${answerMd}`;
 }

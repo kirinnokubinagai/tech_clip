@@ -37,16 +37,143 @@ const SECONDARY_SPEC = {
 };
 
 /** FOLLOWEE が所有する記事の URL プレフィックス */
-const FOLLOWEE_ARTICLE_URL_PREFIX = "https://seed.techclip.app/followee-maestro/article-";
-
-/** 記事数 */
-const ARTICLE_COUNT = 5;
-
 /** Maestro タグ名 */
 const MAESTRO_TAG_NAME = "maestro";
 
-/** 記事ソース */
-const SEED_SOURCE = "seed.techclip.app";
+/**
+ * 実在する技術記事の seed データ
+ * アプリがサポートする全ソース (zenn/qiita/note/hatena/devto/medium/github/
+ * hackernews/hashnode/stackoverflow/reddit/freecodecamp/logrocket/css-tricks/
+ * smashing/twitter/youtube/speakerdeck/other) を最低 1 件ずつ含むように構成
+ * Maestro e2e テストや開発時のフィード確認、パーサー動作確認に使用
+ */
+const SEED_ARTICLES: Array<{
+  url: string;
+  title: string;
+  source: string;
+}> = [
+  // ユーザー指定記事
+  {
+    url: "https://qiita.com/miruky/items/fde2d0747358cd7870d7",
+    title: "Claude Code のサブエージェント機能を使ってみた",
+    source: "qiita.com",
+  },
+  {
+    url: "https://qiita.com/masa_ClaudeCodeLab/items/8c22966fbd3c125c53dc",
+    title: "Claude Code Lab: カスタムワークフロー構築",
+    source: "qiita.com",
+  },
+  {
+    url: "https://ja.stackoverflow.com/questions/89408/",
+    title: "JavaScriptで移動直前に移動先URLにパラメータを追加したい",
+    source: "ja.stackoverflow.com",
+  },
+  {
+    url: "https://zenn.dev/coji/articles/cloudflare-d1-fts5-japanese-search-api",
+    title: "Cloudflare D1 + FTS5 で日本語全文検索 API を作る",
+    source: "zenn.dev",
+  },
+  {
+    url: "https://zenn.dev/naru76/articles/e23911c373e1a0",
+    title: "React Native + Expo で実現する技術記事アプリ",
+    source: "zenn.dev",
+  },
+  {
+    url: "https://github.com/FreeCAD/FreeCAD",
+    title: "FreeCAD/FreeCAD — Official FreeCAD source code repository",
+    source: "github.com",
+  },
+  {
+    url: "https://github.com/google/magika",
+    title: "google/magika — Detect file content types with deep learning",
+    source: "github.com",
+  },
+  // 各ソースをカバーする補完記事
+  {
+    url: "https://note.com/kenshirasu/n/n1aef2a7bd4ab",
+    title: "AI時代のエンジニアリングとキャリア設計",
+    source: "note.com",
+  },
+  {
+    url: "https://developer.hatenablog.com/entry/2025/01/15/120000",
+    title: "はてなブログ開発チームが使う Go + Cloudflare Workers スタック",
+    source: "hatenablog.com",
+  },
+  {
+    url: "https://dev.to/codewithshahan/top-10-vscode-extensions-for-2026-4kml",
+    title: "Top 10 VS Code Extensions for 2026",
+    source: "dev.to",
+  },
+  {
+    url: "https://medium.com/swlh/building-scalable-microservices-with-kubernetes-2026-guide-9f8a3c1e5b2d",
+    title: "Building Scalable Microservices with Kubernetes — 2026 Guide",
+    source: "medium.com",
+  },
+  {
+    url: "https://news.ycombinator.com/item?id=41234567",
+    title: "Show HN: A new approach to distributed consensus",
+    source: "news.ycombinator.com",
+  },
+  {
+    url: "https://hashnode.com/post/why-typescript-5-8-changes-everything-clxyz012abc3d4e5",
+    title: "Why TypeScript 5.8 Changes Everything",
+    source: "hashnode.com",
+  },
+  {
+    url: "https://www.reddit.com/r/programming/comments/1abc2de/how_rust_is_eating_the_systems_programming_world/",
+    title: "How Rust is eating the systems programming world",
+    source: "reddit.com",
+  },
+  {
+    url: "https://www.freecodecamp.org/news/modern-javascript-concepts-2026/",
+    title: "Modern JavaScript Concepts Every Developer Should Know (2026)",
+    source: "freecodecamp.org",
+  },
+  {
+    url: "https://blog.logrocket.com/react-server-components-deep-dive-2026/",
+    title: "React Server Components Deep Dive (2026)",
+    source: "blog.logrocket.com",
+  },
+  {
+    url: "https://css-tricks.com/container-queries-in-production/",
+    title: "Container Queries in Production",
+    source: "css-tricks.com",
+  },
+  {
+    url: "https://www.smashingmagazine.com/2026/02/accessibility-testing-automation/",
+    title: "Automating Accessibility Testing in Modern Web Apps",
+    source: "smashingmagazine.com",
+  },
+  {
+    url: "https://x.com/dan_abramov/status/1850000000000000000",
+    title: "Dan Abramov on React compiler internals",
+    source: "x.com",
+  },
+  {
+    url: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
+    title: "技術カンファレンス基調講演ダイジェスト",
+    source: "youtube.com",
+  },
+  {
+    url: "https://speakerdeck.com/example-org/modern-frontend-architecture-2026",
+    title: "Modern Frontend Architecture 2026 — SpeakerDeck Presentation",
+    source: "speakerdeck.com",
+  },
+  {
+    url: "https://engineering.example.com/blog/post/2026/03/building-resilient-systems",
+    title: "Building Resilient Distributed Systems — Engineering Blog",
+    source: "engineering.example.com",
+  },
+];
+
+/** 記事数 */
+const ARTICLE_COUNT = SEED_ARTICLES.length;
+
+/** 後方互換: 動的生成されたダミー URL (上書き対象) */
+const LEGACY_FOLLOWEE_ARTICLE_URL_PREFIX = "https://seed.techclip.app/followee-maestro/article-";
+
+/** 記事ソース（LEGACY URL 用） */
+const LEGACY_SEED_SOURCE = "seed.techclip.app";
 
 /**
  * scrypt でパスワードをハッシュ化する（Better Auth 互換）
@@ -296,16 +423,16 @@ async function seedMaestroStatic(): Promise<void> {
   process.stdout.write("accounts upsert 完了\n");
 
   const articleIds: string[] = [];
-  for (let i = 0; i < ARTICLE_COUNT; i++) {
-    const url = `${FOLLOWEE_ARTICLE_URL_PREFIX}${i}`;
-    const createdAt = new Date(Date.now() + i * 1000);
+  for (let i = 0; i < SEED_ARTICLES.length; i++) {
+    const spec = SEED_ARTICLES[i];
+    const createdAt = new Date(Date.now() - (SEED_ARTICLES.length - i) * 60 * 1000);
     const articleId = await upsertArticle(
       db,
       followeeId,
-      url,
+      spec.url,
       {
-        title: `Maestro テスト記事 ${i + 1}`,
-        source: SEED_SOURCE,
+        title: spec.title,
+        source: spec.source,
       },
       createdAt,
     );

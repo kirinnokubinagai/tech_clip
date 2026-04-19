@@ -39,7 +39,8 @@ export async function handleNotifications(
   });
 
   return fetchWithAuth(
-    auth.api.getSession.bind(auth.api),
+    db,
+    auth,
     (subApp) => {
       subApp.route("/api/notifications", notificationsRoute);
     },
@@ -63,7 +64,8 @@ export async function handleNotificationSettings(
   const notificationSettingsRoute = createNotificationSettingsRoute({ db });
 
   return fetchWithAuth(
-    auth.api.getSession.bind(auth.api),
+    db,
+    auth,
     (subApp) => {
       subApp.route("/api/users/me", notificationSettingsRoute);
     },

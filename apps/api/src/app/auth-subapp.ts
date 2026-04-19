@@ -62,7 +62,8 @@ export async function handleEmailVerification(
   });
 
   return fetchWithAuth(
-    auth.api.getSession.bind(auth.api),
+    db,
+    auth,
     (subApp) => {
       subApp.route("/api/auth", route);
     },

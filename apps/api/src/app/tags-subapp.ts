@@ -16,7 +16,8 @@ export async function handleTags(db: Database, auth: Auth, request: Request): Pr
   const articleTagsRoute = createArticleTagsRoute({ db });
 
   return fetchWithAuth(
-    auth.api.getSession.bind(auth.api),
+    db,
+    auth,
     (subApp) => {
       subApp.route("/api/tags", tagsRoute);
       subApp.route("/api/articles", articleTagsRoute);
