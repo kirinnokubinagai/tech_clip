@@ -35,10 +35,7 @@ export function createFeedRoute(options: { db: Database }): Hono<Variables> {
 
     const userId = user.id as string;
     const cursor = c.req.query("cursor");
-    const limit = Math.min(
-      Number.parseInt(c.req.query("limit") ?? "", 10) || DEFAULT_LIMIT,
-      50,
-    );
+    const limit = Math.min(Number.parseInt(c.req.query("limit") ?? "", 10) || DEFAULT_LIMIT, 50);
 
     // 自分がフォローしているユーザーの ID 一覧
     const followingRows = await db
@@ -51,10 +48,7 @@ export function createFeedRoute(options: { db: Database }): Hono<Variables> {
       return c.json({ success: true, data: [], meta: { nextCursor: null, hasNext: false } });
     }
 
-    const conditions = [
-      inArray(articles.userId, followingIds),
-      eq(articles.isPublic, true),
-    ];
+    const conditions = [inArray(articles.userId, followingIds), eq(articles.isPublic, true)];
     if (cursor) {
       conditions.push(lt(articles.id, cursor));
     }

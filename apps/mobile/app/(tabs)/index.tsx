@@ -184,10 +184,7 @@ export default function HomeScreen() {
             accessibilityState={{ selected: feedMode }}
           >
             <Users size={FILTER_ICON_SIZE} color={feedMode ? colors.white : colors.textMuted} />
-            <Text
-              className="text-sm"
-              style={{ color: feedMode ? colors.white : colors.textMuted }}
-            >
+            <Text className="text-sm" style={{ color: feedMode ? colors.white : colors.textMuted }}>
               {feedMode ? "フォロー中" : "自分"}
             </Text>
           </Pressable>
