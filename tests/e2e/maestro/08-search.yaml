@@ -71,14 +71,15 @@ env:
 - inputText: "React"
 - waitForAnimationToEnd
 
-# 検索結果の記事をタップ
+# 検索結果の記事をタップ（結果リストの最初のカード）
 - tapOn:
+    id: "article-card"
     index: 0
-    text: "React"
 
 # 記事詳細画面に遷移することを確認
-- assertVisible:
-    text: "戻る"
+- extendedWaitUntil:
+    visible: "戻る"
+    timeout: 10000
 
 # 戻る
 - tapOn:

@@ -170,11 +170,13 @@ export async function handleArticles(
   );
   subApp.use("/api/articles/:id/translate", createAiLimitMiddleware(db));
 
+  // searchRoute は articlesRoute (:id パス) より先にマウント
+  // （/api/articles/search が /api/articles/:id にマッチしてしまう競合回避）
+  subApp.route("/api/articles", searchRoute);
   subApp.route("/api/articles", articlesRoute);
   subApp.route("/api", summaryRoute);
   subApp.route("/api/articles", aiRoute);
   subApp.route("/api/articles", favoriteRoute);
-  subApp.route("/api/articles", searchRoute);
 
   return subApp.fetch(request);
 }
