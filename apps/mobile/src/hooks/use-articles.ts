@@ -243,7 +243,10 @@ export function useToggleFavorite() {
 }
 
 /**
- * 他人の公開記事を自分のコレクションに保存する mutation hook
+ * 記事の本文（content）を更新する mutation hook
+ *
+ * WebView から抽出したテキストを事前に DB に保存してから summary/translate API
+ * を呼ぶためのユーティリティ。
  *
  * @returns TanStack Query の useMutation 結果
  */

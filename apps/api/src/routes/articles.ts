@@ -75,7 +75,11 @@ const UpdateArticleSchema = z
     isRead: z.boolean({ error: "isReadはブール値で指定してください" }).optional(),
     isFavorite: z.boolean({ error: "isFavoriteはブール値で指定してください" }).optional(),
     isPublic: z.boolean({ error: "isPublicはブール値で指定してください" }).optional(),
-    content: z.string({ error: "contentは文字列で指定してください" }).max(500_000).optional(),
+    content: z
+      .string({ error: "contentは文字列で指定してください" })
+      .min(1, "contentは1文字以上で指定してください")
+      .max(500_000)
+      .optional(),
   })
   .refine(
     (data) =>
@@ -709,6 +713,9 @@ export function createArticlesRoute(options: ArticlesRouteOptions) {
     }
     if (validation.data.isPublic !== undefined) {
       updateData.isPublic = validation.data.isPublic;
+    }
+    if (validation.data.content !== undefined) {
+      updateData.content = validation.data.content;
     }
 
     await db.update(articles).set(updateData).where(eq(articles.id, articleId));

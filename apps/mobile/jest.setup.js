@@ -66,3 +66,11 @@ if (typeof global.document === "undefined") {
     documentElement: { style: {} },
   };
 }
+
+// react-native-webview は native module のため jest 実行時は stub 化する
+jest.mock("react-native-webview", () => {
+  const React = require("react");
+  const WebView = React.forwardRef(() => null);
+  WebView.displayName = "WebView";
+  return { __esModule: true, default: WebView };
+});

@@ -5,8 +5,8 @@
  * 欠落しているキーを列挙して終了する。
  */
 import { readFileSync } from "node:fs";
-import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const LOCALES_DIR = join(__dirname, "..", "apps", "mobile", "src", "locales");
@@ -44,8 +44,12 @@ function normalizeKey(k: string): string {
 for (const locale of ["en", "ko", "zh-CN", "zh-TW"]) {
   const rawLocaleKeys = new Set(loadLocale(locale));
   const localeKeysNormalized = new Set([...rawLocaleKeys].map(normalizeKey));
-  const missing = [...baseKeys].filter((k) => !localeKeysNormalized.has(k) && !rawLocaleKeys.has(k));
-  const extra = [...rawLocaleKeys].filter((k) => !baseKeys.has(k) && !baseKeys.has(normalizeKey(k)));
+  const missing = [...baseKeys].filter(
+    (k) => !localeKeysNormalized.has(k) && !rawLocaleKeys.has(k),
+  );
+  const extra = [...rawLocaleKeys].filter(
+    (k) => !baseKeys.has(k) && !baseKeys.has(normalizeKey(k)),
+  );
   results.push({ locale, missing, extra });
 }
 

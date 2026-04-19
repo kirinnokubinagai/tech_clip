@@ -320,11 +320,19 @@ describe("POST /api/articles/:id/summary", () => {
     expect(mockSummarizeArticle).toHaveBeenCalledOnce();
   });
 
-  it("記事にcontentがない場合422を返すこと", async () => {
-    // Arrange
+  it("記事の title / excerpt / url が全て空の場合のみ 422 を返すこと", async () => {
+    // Arrange: content 無しでも title/excerpt/url が揃っていれば fallback 要約で 200 を返す
+    // ここでは title/excerpt/author/url すべて空にして 422 を再現する
     const app = createTestApp();
-    const articleNoContent = { ...MOCK_ARTICLE, content: null };
-    mockSelectWhere.mockResolvedValueOnce([articleNoContent]).mockResolvedValueOnce([]);
+    const articleAllEmpty = {
+      ...MOCK_ARTICLE,
+      content: null,
+      title: "",
+      author: null,
+      excerpt: null,
+      url: "",
+    };
+    mockSelectWhere.mockResolvedValueOnce([articleAllEmpty]).mockResolvedValueOnce([]);
 
     // Act
     const res = await app.request("/api/articles/article_001/summary", {

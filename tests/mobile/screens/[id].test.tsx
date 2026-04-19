@@ -69,6 +69,16 @@ jest.mock("@mobile/hooks/use-articles", () => ({
     mutate: jest.fn(),
     isPending: false,
   }),
+  useCloneArticle: () => ({
+    mutate: jest.fn(),
+    mutateAsync: jest.fn().mockResolvedValue({ success: true }),
+    isPending: false,
+  }),
+  useUpdateArticleContent: () => ({
+    mutate: jest.fn(),
+    mutateAsync: jest.fn().mockResolvedValue({ success: true }),
+    isPending: false,
+  }),
   useRequestSummary: () => ({
     mutate: mockRequestSummaryMutate,
     isPending: false,

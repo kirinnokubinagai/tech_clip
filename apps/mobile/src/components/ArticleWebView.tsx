@@ -1,7 +1,7 @@
 import { forwardRef, useCallback, useImperativeHandle, useRef, useState } from "react";
 import { ActivityIndicator, StyleSheet, View } from "react-native";
-import WebView from "react-native-webview";
 import type { WebViewMessageEvent } from "react-native-webview";
+import WebView from "react-native-webview";
 
 /** document.body.innerText を抽出する injected JS */
 const EXTRACT_TEXT_JS = `
@@ -72,6 +72,7 @@ type ArticleWebViewProps = {
 export const ArticleWebView = forwardRef<ArticleWebViewHandle, ArticleWebViewProps>(
   function ArticleWebView({ url, onExtract, onSnapshot, cachedHtml }, ref) {
     const webviewRef = useRef<WebView | null>(null);
+    const hasExtractedRef = useRef(false);
     const [isLoading, setIsLoading] = useState(true);
 
     const extractText = useCallback(() => {
@@ -120,14 +121,21 @@ export const ArticleWebView = forwardRef<ArticleWebViewHandle, ArticleWebViewPro
           onLoadStart={() => setIsLoading(true)}
           onLoadEnd={() => {
             setIsLoading(false);
-            // 初回ロード完了時に自動で snapshot + extract する
-            extractText();
-            snapshotHtml();
+            // 初回ロード完了時のみ自動抽出（SPA / クライアントナビで重複発火を防ぐ）
+            if (!hasExtractedRef.current) {
+              hasExtractedRef.current = true;
+              extractText();
+              snapshotHtml();
+            }
           }}
           onMessage={onMessage}
           javaScriptEnabled={true}
           domStorageEnabled={true}
           startInLoadingState={true}
+          // セキュリティ: 同一 origin 外の iframe 遷移を防ぐ
+          originWhitelist={["https://*", "http://*"]}
+          setSupportMultipleWindows={false}
+          mixedContentMode="never"
           testID="article-webview"
           style={styles.webview}
         />

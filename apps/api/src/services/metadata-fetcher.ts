@@ -14,6 +14,36 @@ const USER_AGENT = "Mozilla/5.0 (compatible; TechClipBot/1.0; +https://techclip.
 const FETCH_TIMEOUT_MS = 10_000;
 const READING_SPEED_CHARS_PER_MIN = 500;
 
+/**
+ * SSRF 対策: 内部ネットワーク・metadata サーバへの fetch を防ぐ
+ * ホスト名が私設 IP 帯 or 予約名に該当する URL は拒否する
+ */
+const PRIVATE_HOST_PATTERNS = [
+  /^localhost$/i,
+  /^127\.\d+\.\d+\.\d+$/,
+  /^10\.\d+\.\d+\.\d+$/,
+  /^192\.168\.\d+\.\d+$/,
+  /^172\.(1[6-9]|2\d|3[01])\.\d+\.\d+$/,
+  /^169\.254\.\d+\.\d+$/,
+  /^metadata\.google\.internal$/i,
+  /^metadata\.azure\.com$/i,
+  /^\[::1\]$/,
+  /^\[fc00:/i,
+  /^\[fd/i,
+  /^\[fe80:/i,
+];
+
+function isPrivateHost(urlString: string): boolean {
+  try {
+    const u = new URL(urlString);
+    const host = u.hostname;
+    if (u.protocol !== "http:" && u.protocol !== "https:") return true;
+    return PRIVATE_HOST_PATTERNS.some((p) => p.test(host));
+  } catch {
+    return true;
+  }
+}
+
 function firstNonEmpty(...values: Array<string | null | undefined>): string | null {
   for (const v of values) {
     if (typeof v === "string" && v.trim().length > 0) {
@@ -47,6 +77,10 @@ export async function fetchArticleMetadata(url: string): Promise<ParsedArticle> 
     source,
   };
 
+  if (isPrivateHost(url)) {
+    return fallback;
+  }
+
   let html = "";
   try {
     const response = await fetch(url, {
@@ -70,12 +104,12 @@ export async function fetchArticleMetadata(url: string): Promise<ParsedArticle> 
     return fallback;
   }
 
-  const title = firstNonEmpty(
-    getMeta(document, 'meta[property="og:title"]'),
-    getMeta(document, 'meta[name="twitter:title"]'),
-    document.querySelector("title")?.textContent ?? null,
-    url,
-  ) as string;
+  const title =
+    firstNonEmpty(
+      getMeta(document, 'meta[property="og:title"]'),
+      getMeta(document, 'meta[name="twitter:title"]'),
+      document.querySelector("title")?.textContent ?? null,
+    ) ?? url;
 
   const author = firstNonEmpty(
     getMeta(document, 'meta[name="author"]'),

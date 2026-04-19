@@ -1,21 +1,36 @@
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { ArrowLeft, BookmarkPlus, Eye, EyeOff, ExternalLink, Globe, Heart, Languages, Sparkles } from "lucide-react-native";
+import {
+  ArrowLeft,
+  BookmarkPlus,
+  ExternalLink,
+  Eye,
+  EyeOff,
+  Globe,
+  Heart,
+  Languages,
+  Sparkles,
+} from "lucide-react-native";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { ActivityIndicator, Linking, Modal, Pressable, ScrollView, Text, View } from "react-native";
 import Markdown from "react-native-markdown-display";
 
+import {
+  ArticleWebView,
+  type ArticleWebViewHandle,
+  type ExtractedPayload,
+} from "@/components/ArticleWebView";
 import { PremiumGate } from "@/components/PremiumGate";
 import { SourceBadge } from "@/components/ui";
 import {
   useArticleDetail,
   useCloneArticle,
-  useUpdateArticleContent,
   useRequestSummary,
   useRequestTranslation,
   useSummaryJobStatus,
   useToggleFavorite,
   useTranslationJobStatus,
+  useUpdateArticleContent,
 } from "@/hooks/use-articles";
 import { useColors } from "@/hooks/use-colors";
 import { useNetworkStatus } from "@/hooks/use-network-status";
@@ -30,9 +45,8 @@ import {
   upsertTranslation,
 } from "@/lib/localDb";
 import { getOfferings } from "@/lib/revenueCat";
-import { useSettingsStore } from "@/stores/settings-store";
 import { useAuthStore } from "@/stores/auth-store";
-import { ArticleWebView, type ArticleWebViewHandle, type ExtractedPayload } from "@/components/ArticleWebView";
+import { useSettingsStore } from "@/stores/settings-store";
 import type { ArticleDetail } from "@/types/article";
 
 /** AI使用回数上限エラーコード */
@@ -272,7 +286,9 @@ export default function ArticleDetailScreen() {
     if (!article) return;
     // WebView が抽出したテキストが DB の content より新しければ PATCH で更新してから要約
     if (extractedText && extractedText.length > (article.content?.length ?? 0)) {
-      await updateContent.mutateAsync({ articleId: article.id, content: extractedText }).catch(() => {});
+      await updateContent
+        .mutateAsync({ articleId: article.id, content: extractedText })
+        .catch(() => {});
     }
     requestSummary.mutate(
       { articleId: article.id, language: apiLanguage },
@@ -290,7 +306,9 @@ export default function ArticleDetailScreen() {
   const handleRequestTranslation = useCallback(async () => {
     if (!article) return;
     if (extractedText && extractedText.length > (article.content?.length ?? 0)) {
-      await updateContent.mutateAsync({ articleId: article.id, content: extractedText }).catch(() => {});
+      await updateContent
+        .mutateAsync({ articleId: article.id, content: extractedText })
+        .catch(() => {});
     }
     requestTranslation.mutate({
       articleId: article.id,
@@ -638,7 +656,10 @@ export default function ArticleDetailScreen() {
             ) : (
               <View className="items-center py-8">
                 <Text className="text-text-muted text-center">{t("article.noContent")}</Text>
-                <Pressable onPress={handleOpenExternal} className="mt-3 flex-row items-center gap-2">
+                <Pressable
+                  onPress={handleOpenExternal}
+                  className="mt-3 flex-row items-center gap-2"
+                >
                   <ExternalLink size={SECTION_ICON_SIZE} color={colors.primary} />
                   <Text className="text-primary">{t("article.viewOriginal")}</Text>
                 </Pressable>

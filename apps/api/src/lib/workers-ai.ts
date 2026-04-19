@@ -39,9 +39,7 @@ export function isWorkersAiTextResponse(
 /**
  * テキスト応答から文字列を取り出す
  */
-export function extractTextResponse(
-  value: LegacyResponse | ChatCompletionResponse,
-): string {
+export function extractTextResponse(value: LegacyResponse | ChatCompletionResponse): string {
   if ("response" in value && typeof value.response === "string") {
     return value.response;
   }

@@ -12,24 +12,48 @@ type TestCase = { source: string; url: string };
 
 const CASES: TestCase[] = [
   { source: "zenn", url: "https://zenn.dev/coji/articles/cloudflare-d1-fts5-japanese-search-api" },
-  { source: "zenn-book", url: "https://zenn.dev/mizchi/books/typescript-for-beginner/viewer/hello-typescript" },
+  {
+    source: "zenn-book",
+    url: "https://zenn.dev/mizchi/books/typescript-for-beginner/viewer/hello-typescript",
+  },
   { source: "qiita", url: "https://qiita.com/miruky/items/fde2d0747358cd7870d7" },
   { source: "note", url: "https://note.com/kenshirasu/n/n1aef2a7bd4ab" },
   { source: "hatena", url: "https://developer.hatenablog.com/entry/2024/04/01/120000" },
   { source: "devto", url: "https://dev.to/devteam/welcome-to-dev-4lla" },
-  { source: "medium", url: "https://medium.com/better-programming/10-modern-css-techniques-for-older-css-problems-722e7141099e" },
+  {
+    source: "medium",
+    url: "https://medium.com/better-programming/10-modern-css-techniques-for-older-css-problems-722e7141099e",
+  },
   { source: "hackernews", url: "https://news.ycombinator.com/item?id=41234567" },
-  { source: "hashnode", url: "https://kentcdodds.hashnode.dev/what-is-useevent-and-why-should-you-care" },
+  {
+    source: "hashnode",
+    url: "https://kentcdodds.hashnode.dev/what-is-useevent-and-why-should-you-care",
+  },
   { source: "github", url: "https://github.com/google/magika" },
   { source: "stackoverflow", url: "https://ja.stackoverflow.com/questions/89408" },
-  { source: "reddit", url: "https://www.reddit.com/r/programming/comments/1e91sgo/rust_is_now_part_of_the_linux_kernel/" },
-  { source: "freecodecamp", url: "https://www.freecodecamp.org/news/how-javascript-works-in-browser-and-node/" },
-  { source: "logrocket", url: "https://blog.logrocket.com/react-server-components-a-comprehensive-guide/" },
+  {
+    source: "reddit",
+    url: "https://www.reddit.com/r/programming/comments/1e91sgo/rust_is_now_part_of_the_linux_kernel/",
+  },
+  {
+    source: "freecodecamp",
+    url: "https://www.freecodecamp.org/news/how-javascript-works-in-browser-and-node/",
+  },
+  {
+    source: "logrocket",
+    url: "https://blog.logrocket.com/react-server-components-a-comprehensive-guide/",
+  },
   { source: "css-tricks", url: "https://css-tricks.com/a-complete-guide-to-css-functions/" },
-  { source: "smashing", url: "https://www.smashingmagazine.com/2024/06/accessible-mobile-tab-navigation-on-ios/" },
+  {
+    source: "smashing",
+    url: "https://www.smashingmagazine.com/2024/06/accessible-mobile-tab-navigation-on-ios/",
+  },
   { source: "twitter", url: "https://x.com/dan_abramov/status/1850000000000000000" },
   { source: "youtube", url: "https://www.youtube.com/watch?v=dQw4w9WgXcQ" },
-  { source: "speakerdeck", url: "https://speakerdeck.com/line_developers/ui-kit-and-design-system" },
+  {
+    source: "speakerdeck",
+    url: "https://speakerdeck.com/line_developers/ui-kit-and-design-system",
+  },
   { source: "other-generic", url: "https://blog.cloudflare.com/workers-ai/" },
 ];
 

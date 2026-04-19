@@ -20,7 +20,6 @@ import { createFeedRoute } from "../routes/feed";
 import { createPublicArticlesRoute } from "../routes/public-articles";
 import { buildFtsMatchExpression, createSearchRoute } from "../routes/search";
 import { createSummaryRoute } from "../routes/summary";
-import { parseArticle } from "../services/article-parser";
 import { fetchArticleMetadata } from "../services/metadata-fetcher";
 import { summarizeArticle } from "../services/summary";
 import { translateArticle } from "../services/translator";
