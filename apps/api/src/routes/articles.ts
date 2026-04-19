@@ -363,6 +363,83 @@ export function createArticlesRoute(options: ArticlesRouteOptions) {
     }
   });
 
+  route.post("/:id/clone", async (c) => {
+    const user = c.get("user");
+    if (!user?.id) {
+      return c.json(
+        {
+          success: false,
+          error: { code: AUTH_ERROR_CODE, message: AUTH_ERROR_MESSAGE },
+        },
+        HTTP_UNAUTHORIZED,
+      );
+    }
+
+    const userId = user.id as string;
+    const sourceId = c.req.param("id");
+
+    const [source] = await db.select().from(articles).where(eq(articles.id, sourceId));
+    if (!source) {
+      return c.json(
+        {
+          success: false,
+          error: { code: NOT_FOUND_ERROR_CODE, message: NOT_FOUND_ERROR_MESSAGE },
+        },
+        HTTP_NOT_FOUND,
+      );
+    }
+
+    if (source.userId !== userId && !source.isPublic) {
+      return c.json(
+        {
+          success: false,
+          error: { code: FORBIDDEN_ERROR_CODE, message: FORBIDDEN_ERROR_MESSAGE },
+        },
+        HTTP_FORBIDDEN,
+      );
+    }
+
+    const existing = await db
+      .select()
+      .from(articles)
+      .where(and(eq(articles.userId, userId), eq(articles.url, source.url)));
+    if (existing.length > 0) {
+      return c.json(
+        {
+          success: false,
+          error: { code: "DUPLICATE", message: "この記事はすでに保存されています" },
+        },
+        HTTP_CONFLICT,
+      );
+    }
+
+    const now = new Date();
+    const id = crypto.randomUUID();
+    const [inserted] = await db
+      .insert(articles)
+      .values({
+        id,
+        userId,
+        url: source.url,
+        source: source.source,
+        title: source.title,
+        author: source.author,
+        content: source.content,
+        excerpt: source.excerpt,
+        thumbnailUrl: source.thumbnailUrl,
+        readingTimeMinutes: source.readingTimeMinutes,
+        isRead: false,
+        isFavorite: false,
+        isPublic: false,
+        publishedAt: source.publishedAt,
+        createdAt: now,
+        updatedAt: now,
+      })
+      .returning();
+
+    return c.json({ success: true, data: inserted }, HTTP_CREATED);
+  });
+
   route.post("/", async (c) => {
     const user = c.get("user");
     if (!user?.id) {
@@ -517,7 +594,7 @@ export function createArticlesRoute(options: ArticlesRouteOptions) {
 
     const article = results[0];
 
-    if (article.userId !== (user.id as string)) {
+    if (article.userId !== (user.id as string) && !article.isPublic) {
       return c.json(
         {
           success: false,
