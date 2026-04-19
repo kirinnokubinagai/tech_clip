@@ -108,7 +108,8 @@ export default function RootLayout() {
       {!hasSeenOnboarding && <Redirect href="/onboarding" />}
       {hasSeenOnboarding && !isAuthenticated && !hasAccount && <Redirect href="/(auth)/register" />}
       {hasSeenOnboarding && !isAuthenticated && hasAccount && <Redirect href="/(auth)/login" />}
-      {hasSeenOnboarding && isAuthenticated && <Redirect href="/(tabs)" />}
+      {/* 認証済みユーザーの (tabs) リダイレクトは削除: deeplink による他ルート遷移を阻害するため。
+          expo-router は file-based route を自動解決するため明示的な redirect は不要 */}
     </QueryClientProvider>
   );
 }
