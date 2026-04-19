@@ -44,6 +44,7 @@ import {
   upsertSummary,
   upsertTranslation,
 } from "@/lib/localDb";
+import { logger } from "@/lib/logger";
 import { getOfferings } from "@/lib/revenueCat";
 import { useAuthStore } from "@/stores/auth-store";
 import { useSettingsStore } from "@/stores/settings-store";

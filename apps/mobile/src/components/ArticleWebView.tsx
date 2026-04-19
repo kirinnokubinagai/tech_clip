@@ -8,7 +8,20 @@ const EXTRACT_TEXT_JS = `
 (function() {
   try {
     var title = document.title || "";
-    var body = document.body ? (document.body.innerText || document.body.textContent || "") : "";
+    // 記事本文を優先して取得: <article> > <main> > role=main > body
+    var articleEl = document.querySelector("article")
+      || document.querySelector("main")
+      || document.querySelector('[role="main"]')
+      || document.body;
+    // 本文に混ざりやすいナビ・広告・フッター・スクリプトなどを除外してからテキスト化
+    var clone = articleEl ? articleEl.cloneNode(true) : null;
+    if (clone) {
+      var noise = clone.querySelectorAll('nav, footer, aside, script, style, noscript, iframe, [role="navigation"], [role="complementary"], [role="banner"], [aria-hidden="true"], [class*="ad"], [class*="sidebar"], [id*="ad-"]');
+      for (var i = 0; i < noise.length; i++) {
+        noise[i].parentNode && noise[i].parentNode.removeChild(noise[i]);
+      }
+    }
+    var body = clone ? (clone.innerText || clone.textContent || "") : "";
     var text = body.replace(/\\s+/g, " ").trim();
     window.ReactNativeWebView.postMessage(JSON.stringify({
       type: "extracted_text",
