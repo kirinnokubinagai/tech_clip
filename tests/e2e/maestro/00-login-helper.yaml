@@ -1,6 +1,4 @@
 # ログイン state 確保ヘルパー
-# ホーム画面にいない場合（未ログイン）、シードユーザーでログインする
-# clearState: false 前提の yaml から runFlow: で include して使用する
 
 appId: com.techclip.app
 
@@ -10,19 +8,27 @@ env:
 
 ---
 
-# Metro cold-start の初期ロードを待機（アニメーション停止を最大 60 秒）
+# 初期ロード（Metro cold-start 対策）
 - waitForAnimationToEnd:
     timeout: 60000
+# ホーム tab-home が出るまで or login-submit-button が出るまで待機（最大 30 秒）
+- extendedWaitUntil:
+    visible:
+      id: "tab-home|login-submit-button|next-button|register-submit-button"
+    timeout: 30000
+    optional: true
 
 # ホーム画面にいなければログインフローを実行
 - runFlow:
     when:
-      notVisible: "すべて"
+      notVisible:
+        id: "tab-home"
     commands:
       # onboarding ページ1 が表示されている場合は 4 ページ通過
       - runFlow:
           when:
-            visible: "技術記事をワンタップで保存"
+            visible:
+              id: "next-button"
           commands:
             - tapOn:
                 id: "next-button"
@@ -40,19 +46,21 @@ env:
                 id: "finish-button"
             - waitForAnimationToEnd:
                 timeout: 3000
-      # register 画面（アカウントを作成が見える）の場合 → login リンクをタップ
+      # register 画面 → login リンクをタップ
       - runFlow:
           when:
-            visible: "アカウントを作成"
+            visible:
+              id: "register-submit-button"
           commands:
             - tapOn:
                 id: "register-login-link"
             - waitForAnimationToEnd:
                 timeout: 2000
-      # ログイン画面（パスワードを忘れた方が見える）の場合 → ログイン
+      # ログイン画面 → ログイン実行
       - runFlow:
           when:
-            visible: "パスワードを忘れた方"
+            visible:
+              id: "login-submit-button"
           commands:
             - tapOn:
                 id: "login-email-input"

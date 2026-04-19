@@ -448,6 +448,13 @@ async function seedMaestroStatic(): Promise<void> {
   }
   process.stdout.write("articleTags upsert 完了\n");
 
+  // FOLLOWEE は paywall テスト用のため freeAiUsesRemaining を 0 に設定
+  await db
+    .update(users)
+    .set({ freeAiUsesRemaining: 0 })
+    .where(eq(users.id, followeeId));
+  process.stdout.write("FOLLOWEE freeAiUsesRemaining=0 に設定\n");
+
   await upsertFollow(db, followeeId, followerId);
   process.stdout.write("FOLLOWEE → FOLLOWER フォロー upsert 完了\n");
 
