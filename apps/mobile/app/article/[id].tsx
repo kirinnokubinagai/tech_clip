@@ -1,5 +1,5 @@
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { ArrowLeft, ExternalLink, Globe, Heart, Languages, Sparkles } from "lucide-react-native";
+import { ArrowLeft, BookmarkPlus, ExternalLink, Globe, Heart, Languages, Sparkles } from "lucide-react-native";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { ActivityIndicator, Linking, Modal, Pressable, ScrollView, Text, View } from "react-native";
@@ -9,6 +9,7 @@ import { PremiumGate } from "@/components/PremiumGate";
 import { SourceBadge } from "@/components/ui";
 import {
   useArticleDetail,
+  useCloneArticle,
   useRequestSummary,
   useRequestTranslation,
   useSummaryJobStatus,
@@ -29,6 +30,7 @@ import {
 } from "@/lib/localDb";
 import { getOfferings } from "@/lib/revenueCat";
 import { useSettingsStore } from "@/stores/settings-store";
+import { useAuthStore } from "@/stores/auth-store";
 import type { ArticleDetail } from "@/types/article";
 
 /** AI使用回数上限エラーコード */
@@ -239,6 +241,18 @@ export default function ArticleDetailScreen() {
     toggleFavorite.mutate({ articleId: article.id, isFavorite: article.isFavorite });
   }, [article, toggleFavorite]);
 
+  const cloneArticle = useCloneArticle();
+  const currentUserId = useAuthStore((s) => s.user?.id);
+  const isNotOwner = !!article && !!currentUserId && article.userId !== currentUserId;
+  const handleClone = useCallback(() => {
+    if (!article) return;
+    cloneArticle.mutate(article.id, {
+      onSuccess: () => {
+        router.replace("/(tabs)");
+      },
+    });
+  }, [article, cloneArticle, router]);
+
   const handleOpenExternal = useCallback(() => {
     if (!article?.url) return;
     Linking.openURL(article.url);
@@ -402,20 +416,36 @@ export default function ArticleDetailScreen() {
           >
             <ExternalLink size={HEADER_ICON_SIZE} color={colors.textMuted} />
           </Pressable>
-          <Pressable
-            onPress={handleToggleFavorite}
-            accessibilityRole="button"
-            accessibilityLabel={
-              article.isFavorite ? t("article.removeFromFavorites") : t("article.addToFavorites")
-            }
-            hitSlop={8}
-          >
-            <Heart
-              size={HEADER_ICON_SIZE}
-              color={article.isFavorite ? colors.favorite : colors.textMuted}
-              fill={article.isFavorite ? colors.favorite : "transparent"}
-            />
-          </Pressable>
+          {isNotOwner ? (
+            <Pressable
+              testID="clone-button"
+              onPress={handleClone}
+              disabled={cloneArticle.isPending}
+              accessibilityRole="button"
+              accessibilityLabel="自分のコレクションに保存"
+              hitSlop={8}
+            >
+              <BookmarkPlus
+                size={HEADER_ICON_SIZE}
+                color={cloneArticle.isPending ? colors.textMuted : colors.primary}
+              />
+            </Pressable>
+          ) : (
+            <Pressable
+              onPress={handleToggleFavorite}
+              accessibilityRole="button"
+              accessibilityLabel={
+                article.isFavorite ? t("article.removeFromFavorites") : t("article.addToFavorites")
+              }
+              hitSlop={8}
+            >
+              <Heart
+                size={HEADER_ICON_SIZE}
+                color={article.isFavorite ? colors.favorite : colors.textMuted}
+                fill={article.isFavorite ? colors.favorite : "transparent"}
+              />
+            </Pressable>
+          )}
         </View>
       </View>
 

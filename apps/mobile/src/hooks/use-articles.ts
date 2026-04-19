@@ -242,6 +242,28 @@ export function useToggleFavorite() {
   });
 }
 
+/**
+ * 他人の公開記事を自分のコレクションに保存する mutation hook
+ *
+ * @returns TanStack Query の useMutation 結果
+ */
+export function useCloneArticle() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (sourceArticleId: string) => {
+      const response = await apiFetch<{ success: boolean; data: { id: string } }>(
+        `/api/articles/${sourceArticleId}/clone`,
+        { method: "POST" },
+      );
+      return response;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [ARTICLES_QUERY_KEY] });
+    },
+  });
+}
+
 /** 要約リクエストのパラメータ */
 type RequestSummaryParams = {
   articleId: string;
