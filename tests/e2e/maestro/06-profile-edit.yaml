@@ -45,7 +45,7 @@ env:
 
 # プロフィールタブへ移動
 - tapOn:
-    text: "プロフィール"
+    id: "tab-profile"
 
 # --- プロフィール画面 ---
 - assertVisible:
@@ -54,22 +54,20 @@ env:
 
 # プロフィール編集画面へ遷移（設定ボタン or 編集ボタン）
 - tapOn:
-    text: "設定"
+    id: "tab-settings"
 
 # 設定画面経由でプロフィール確認
 - assertVisible:
     text: "アカウント"
 
-# 戻ってプロフィール編集へ
-- tapOn:
-    text: "戻る"
-
 # --- プロフィール編集画面への直接遷移 ---
 - openLink: techclip://profile/edit
 
 # --- プロフィール編集画面 ---
-- assertVisible:
-    id: "profile-edit-screen"
+- extendedWaitUntil:
+    visible:
+      id: "profile-edit-screen"
+    timeout: 30000
 - assertVisible: "プロフィール編集"
 
 # アバター変更ボタンの確認
