@@ -70,7 +70,8 @@ jobs:
       - name: Android Emulator + Maestro
         uses: reactivecircus/android-emulator-runner@324029e2f414c084d8b15ba075288885e74aef9c  # v2.13.0
         env:
-          NODE_OPTIONS: "--no-experimental-strip-types"
+          # NODE_OPTIONS は scripts/ci/run-android-e2e.sh 内で必要に応じて設定する
+          # (action-runner の node20 が --no-experimental-strip-types を受け入れないため)
           TEST_EMAIL: "test-${{ github.run_id }}+maestro@techclip.app"
           TEST_PASSWORD: ${{ secrets.MAESTRO_TEST_PASSWORD }}
           TEST_NAME: "Maestro Test User"
