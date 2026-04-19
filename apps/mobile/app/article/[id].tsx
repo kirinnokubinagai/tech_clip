@@ -1,5 +1,5 @@
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { ArrowLeft, BookmarkPlus, ExternalLink, Globe, Heart, Languages, Sparkles } from "lucide-react-native";
+import { ArrowLeft, BookmarkPlus, Eye, EyeOff, ExternalLink, Globe, Heart, Languages, Sparkles } from "lucide-react-native";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { ActivityIndicator, Linking, Modal, Pressable, ScrollView, Text, View } from "react-native";
@@ -31,6 +31,7 @@ import {
 import { getOfferings } from "@/lib/revenueCat";
 import { useSettingsStore } from "@/stores/settings-store";
 import { useAuthStore } from "@/stores/auth-store";
+import { ArticleWebView } from "@/components/ArticleWebView";
 import type { ArticleDetail } from "@/types/article";
 
 /** AI使用回数上限エラーコード */
@@ -230,6 +231,7 @@ export default function ArticleDetailScreen() {
     null,
   );
   const [showPremiumGate, setShowPremiumGate] = useState(false);
+  const [readerMode, setReaderMode] = useState(false);
   const [aiUsageCount, setAiUsageCount] = useState(0);
 
   const handleBack = useCallback(() => {
@@ -586,25 +588,49 @@ export default function ArticleDetailScreen() {
           </View>
         )}
 
-        <View className="px-4 pt-4">
-          {article.content ? (
-            <Markdown style={markdownStyles}>{article.content}</Markdown>
-          ) : isOffline ? (
-            <View className="items-center py-8">
-              <Text className="text-text-muted text-center">
-                {t("article.offlineContentUnavailable")}
-              </Text>
-            </View>
-          ) : (
-            <View className="items-center py-8">
-              <Text className="text-text-muted text-center">{t("article.noContent")}</Text>
-              <Pressable onPress={handleOpenExternal} className="mt-3 flex-row items-center gap-2">
-                <ExternalLink size={SECTION_ICON_SIZE} color={colors.primary} />
-                <Text className="text-primary">{t("article.viewOriginal")}</Text>
-              </Pressable>
-            </View>
-          )}
+        <View className="px-4 pt-2 pb-2 flex-row items-center justify-end">
+          <Pressable
+            testID="reader-mode-toggle"
+            onPress={() => setReaderMode((v) => !v)}
+            className="flex-row items-center gap-1.5 rounded-full px-3 py-1.5 border border-border"
+            accessibilityRole="button"
+            accessibilityLabel={readerMode ? "オリジナルサイト表示に戻す" : "リーダーモードで読む"}
+          >
+            {readerMode ? (
+              <EyeOff size={SECTION_ICON_SIZE} color={colors.textMuted} />
+            ) : (
+              <Eye size={SECTION_ICON_SIZE} color={colors.textMuted} />
+            )}
+            <Text className="text-sm" style={{ color: colors.textMuted }}>
+              {readerMode ? "オリジナル" : "リーダーモード"}
+            </Text>
+          </Pressable>
         </View>
+        {!readerMode && article.url && !isOffline ? (
+          <View style={{ height: 640 }}>
+            <ArticleWebView url={article.url} />
+          </View>
+        ) : (
+          <View className="px-4 pt-4">
+            {article.content ? (
+              <Markdown style={markdownStyles}>{article.content}</Markdown>
+            ) : isOffline ? (
+              <View className="items-center py-8">
+                <Text className="text-text-muted text-center">
+                  {t("article.offlineContentUnavailable")}
+                </Text>
+              </View>
+            ) : (
+              <View className="items-center py-8">
+                <Text className="text-text-muted text-center">{t("article.noContent")}</Text>
+                <Pressable onPress={handleOpenExternal} className="mt-3 flex-row items-center gap-2">
+                  <ExternalLink size={SECTION_ICON_SIZE} color={colors.primary} />
+                  <Text className="text-primary">{t("article.viewOriginal")}</Text>
+                </Pressable>
+              </View>
+            )}
+          </View>
+        )}
       </ScrollView>
       <Modal
         visible={showPremiumGate}

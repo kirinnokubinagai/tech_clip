@@ -267,6 +267,7 @@ function rowToArticleListItem(row: ArticleRow): ArticleListItem {
 function rowToArticleDetail(row: ArticleRow): ArticleDetail {
   return {
     id: row.id,
+    userId: (row as { user_id?: string }).user_id ?? "",
     title: row.title,
     author: row.author,
     source: row.source as ArticleDetail["source"],
