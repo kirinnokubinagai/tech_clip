@@ -16,6 +16,7 @@ import {
 import { createAiRoute } from "../routes/ai";
 import { createArticlesRoute } from "../routes/articles";
 import { createFavoriteRoute } from "../routes/favorite";
+import { createFeedRoute } from "../routes/feed";
 import { createPublicArticlesRoute } from "../routes/public-articles";
 import { buildFtsMatchExpression, createSearchRoute } from "../routes/search";
 import { createSummaryRoute } from "../routes/summary";
@@ -120,6 +121,8 @@ export async function handleArticles(
 
   const favoriteRoute = createFavoriteRoute({ db });
 
+  const feedRoute = createFeedRoute({ db });
+
   const searchRoute = createSearchRoute({
     searchQueryFn: async (params) => {
       const matchExpr = buildFtsMatchExpression(params.query);
@@ -170,6 +173,7 @@ export async function handleArticles(
   );
   subApp.use("/api/articles/:id/translate", createAiLimitMiddleware(db));
 
+  subApp.route("/api", feedRoute);
   // searchRoute は articlesRoute (:id パス) より先にマウント
   // （/api/articles/search が /api/articles/:id にマッチしてしまう競合回避）
   subApp.route("/api/articles", searchRoute);

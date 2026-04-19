@@ -112,6 +112,10 @@ app.on(["GET", "POST", "PATCH", "DELETE"], "/api/articles", async (c) => {
   return handleArticles(c.get("db"), c.env, c.get("auth")(), c.req.raw);
 });
 
+app.on(["GET"], "/api/feed", async (c) => {
+  return handleArticles(c.get("db"), c.env, c.get("auth")(), c.req.raw);
+});
+
 app.on(["GET", "POST", "PATCH", "DELETE"], "/api/articles/:path{.*}", async (c) => {
   return handleArticles(c.get("db"), c.env, c.get("auth")(), c.req.raw);
 });
