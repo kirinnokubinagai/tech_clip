@@ -51,118 +51,219 @@ const SEED_ARTICLES: Array<{
   url: string;
   title: string;
   source: string;
+  content: string;
+  excerpt: string;
+  author: string;
+  publishedAt: string;
 }> = [
   // ユーザー指定記事
   {
     url: "https://qiita.com/miruky/items/fde2d0747358cd7870d7",
     title: "Claude Code のサブエージェント機能を使ってみた",
     source: "qiita",
+    content: "# Claude Code のサブエージェント機能を使ってみた\n\n技術の進化は早く、最新動向をキャッチアップすることが重要です。\n\n## 背景\n\nソフトウェア開発において、選択する技術スタックは慎重に検討する必要があります。\n\n## 考察\n\n以下の観点で評価します:\n\n- パフォーマンス\n- メンテナンス性\n- コミュニティ活動度\n- ドキュメントの充実度\n\n## 具体例\n\n```javascript\nfunction calculate(x, y) {\n  return x + y;\n}\n```\n\n## おわりに\n\n継続的な学習が成功の鍵です。",
+    excerpt: "Claude Code のサブエージェント機能を使ってみた について解説する記事。実装手順や具体例を含めて詳しく紹介します。",
+    author: "maestro_author",
+    publishedAt: "2026-04-15T10:00:00.000Z",
   },
   {
     url: "https://qiita.com/masa_ClaudeCodeLab/items/8c22966fbd3c125c53dc",
     title: "Claude Code Lab: カスタムワークフロー構築",
     source: "qiita",
+    content: "# Claude Code Lab: カスタムワークフロー構築\n\n技術の進化は早く、最新動向をキャッチアップすることが重要です。\n\n## 背景\n\nソフトウェア開発において、選択する技術スタックは慎重に検討する必要があります。\n\n## 考察\n\n以下の観点で評価します:\n\n- パフォーマンス\n- メンテナンス性\n- コミュニティ活動度\n- ドキュメントの充実度\n\n## 具体例\n\n```javascript\nfunction calculate(x, y) {\n  return x + y;\n}\n```\n\n## おわりに\n\n継続的な学習が成功の鍵です。",
+    excerpt: "Claude Code Lab: カスタムワークフロー構築 について解説する記事。実装手順や具体例を含めて詳しく紹介します。",
+    author: "maestro_author",
+    publishedAt: "2026-04-15T10:00:00.000Z",
   },
   {
     url: "https://ja.stackoverflow.com/questions/89408/",
     title: "JavaScriptで移動直前に移動先URLにパラメータを追加したい",
     source: "stackoverflow",
+    content: "# JavaScriptで移動直前に移動先URLにパラメータを追加したい\n\n## はじめに\n\nこの記事を読むことで、新しい技術の活用方法が理解できます。\n\n## 前提条件\n\n- Node.js 20 以上\n- TypeScript 5.x\n- 基本的な React の知識\n\n## ステップバイステップ\n\n### Step 1: セットアップ\n\n```bash\nnpm install package\n```\n\n### Step 2: 設定\n\n設定ファイルを編集します。\n\n### Step 3: 動作確認\n\n## 結論\n\nこの手法により開発効率が向上します。",
+    excerpt: "JavaScriptで移動直前に移動先URLにパラメータを追加したい について解説する記事。実装手順や具体例を含めて詳しく紹介します。",
+    author: "maestro_author",
+    publishedAt: "2026-04-15T10:00:00.000Z",
   },
   {
     url: "https://zenn.dev/coji/articles/cloudflare-d1-fts5-japanese-search-api",
     title: "Cloudflare D1 + FTS5 で日本語全文検索 API を作る",
     source: "zenn",
+    content: "# Cloudflare D1 + FTS5 で日本語全文検索 API を作る\n\n## はじめに\n\nこの記事を読むことで、新しい技術の活用方法が理解できます。\n\n## 前提条件\n\n- Node.js 20 以上\n- TypeScript 5.x\n- 基本的な React の知識\n\n## ステップバイステップ\n\n### Step 1: セットアップ\n\n```bash\nnpm install package\n```\n\n### Step 2: 設定\n\n設定ファイルを編集します。\n\n### Step 3: 動作確認\n\n## 結論\n\nこの手法により開発効率が向上します。",
+    excerpt: "Cloudflare D1 + FTS5 で日本語全文検索 API を作る について解説する記事。実装手順や具体例を含めて詳しく紹介します。",
+    author: "maestro_author",
+    publishedAt: "2026-04-15T10:00:00.000Z",
   },
   {
     url: "https://zenn.dev/naru76/articles/e23911c373e1a0",
     title: "React Native + Expo で実現する技術記事アプリ",
     source: "zenn",
+    content: "# React Native + Expo で実現する技術記事アプリ\n\n技術の進化は早く、最新動向をキャッチアップすることが重要です。\n\n## 背景\n\nソフトウェア開発において、選択する技術スタックは慎重に検討する必要があります。\n\n## 考察\n\n以下の観点で評価します:\n\n- パフォーマンス\n- メンテナンス性\n- コミュニティ活動度\n- ドキュメントの充実度\n\n## 具体例\n\n```javascript\nfunction calculate(x, y) {\n  return x + y;\n}\n```\n\n## おわりに\n\n継続的な学習が成功の鍵です。",
+    excerpt: "React Native + Expo で実現する技術記事アプリ について解説する記事。実装手順や具体例を含めて詳しく紹介します。",
+    author: "maestro_author",
+    publishedAt: "2026-04-15T10:00:00.000Z",
   },
   {
     url: "https://github.com/FreeCAD/FreeCAD",
     title: "FreeCAD/FreeCAD — Official FreeCAD source code repository",
     source: "github",
+    content: "# FreeCAD/FreeCAD — Official FreeCAD source code repository\n\n## 概要\n\n本記事では技術的な実装方法について解説します。\n\n## 実装手順\n\n1. 環境構築\n2. 基本設定\n3. コードの実装\n4. テスト\n\n```typescript\nconst example = () => {\n  console.log(\"Hello\");\n  return 42;\n};\n```\n\n## まとめ\n\n以上が実装のポイントです。詳細は公式ドキュメントを参照してください。",
+    excerpt: "FreeCAD/FreeCAD — Official FreeCAD source code repository について解説する記事。実装手順や具体例を含めて詳しく紹介します。",
+    author: "maestro_author",
+    publishedAt: "2026-04-15T10:00:00.000Z",
   },
   {
     url: "https://github.com/google/magika",
     title: "google/magika — Detect file content types with deep learning",
     source: "github",
+    content: "# google/magika — Detect file content types with deep learning\n\n## 概要\n\n本記事では技術的な実装方法について解説します。\n\n## 実装手順\n\n1. 環境構築\n2. 基本設定\n3. コードの実装\n4. テスト\n\n```typescript\nconst example = () => {\n  console.log(\"Hello\");\n  return 42;\n};\n```\n\n## まとめ\n\n以上が実装のポイントです。詳細は公式ドキュメントを参照してください。",
+    excerpt: "google/magika — Detect file content types with deep learning について解説する記事。実装手順や具体例を含めて詳しく紹介します。",
+    author: "maestro_author",
+    publishedAt: "2026-04-15T10:00:00.000Z",
   },
   // 各ソースをカバーする補完記事
   {
     url: "https://note.com/kenshirasu/n/n1aef2a7bd4ab",
     title: "AI時代のエンジニアリングとキャリア設計",
     source: "note",
+    content: "# AI時代のエンジニアリングとキャリア設計\n\n技術の進化は早く、最新動向をキャッチアップすることが重要です。\n\n## 背景\n\nソフトウェア開発において、選択する技術スタックは慎重に検討する必要があります。\n\n## 考察\n\n以下の観点で評価します:\n\n- パフォーマンス\n- メンテナンス性\n- コミュニティ活動度\n- ドキュメントの充実度\n\n## 具体例\n\n```javascript\nfunction calculate(x, y) {\n  return x + y;\n}\n```\n\n## おわりに\n\n継続的な学習が成功の鍵です。",
+    excerpt: "AI時代のエンジニアリングとキャリア設計 について解説する記事。実装手順や具体例を含めて詳しく紹介します。",
+    author: "maestro_author",
+    publishedAt: "2026-04-15T10:00:00.000Z",
   },
   {
     url: "https://developer.hatenablog.com/entry/2025/01/15/120000",
     title: "はてなブログ開発チームが使う Go + Cloudflare Workers スタック",
     source: "hatena",
+    content: "# はてなブログ開発チームが使う Go + Cloudflare Workers スタック\n\n## はじめに\n\nこの記事を読むことで、新しい技術の活用方法が理解できます。\n\n## 前提条件\n\n- Node.js 20 以上\n- TypeScript 5.x\n- 基本的な React の知識\n\n## ステップバイステップ\n\n### Step 1: セットアップ\n\n```bash\nnpm install package\n```\n\n### Step 2: 設定\n\n設定ファイルを編集します。\n\n### Step 3: 動作確認\n\n## 結論\n\nこの手法により開発効率が向上します。",
+    excerpt: "はてなブログ開発チームが使う Go + Cloudflare Workers スタック について解説する記事。実装手順や具体例を含めて詳しく紹介します。",
+    author: "maestro_author",
+    publishedAt: "2026-04-15T10:00:00.000Z",
   },
   {
-    url: "https://dev.to/codewithshahan/top-10-vscode-extensions-for-2026-4kml",
-    title: "Top 10 VS Code Extensions for 2026",
+    url: "https://dev.to/ruppysuppy/7-killer-one-liners-in-javascript-33ar",
+    title: "7 Killer One-Liners In JavaScript",
     source: "devto",
+    content: "# 7 Killer One-Liners In JavaScript\n\n## 概要\n\n本記事では技術的な実装方法について解説します。\n\n## 実装手順\n\n1. 環境構築\n2. 基本設定\n3. コードの実装\n4. テスト\n\n```typescript\nconst example = () => {\n  console.log(\"Hello\");\n  return 42;\n};\n```\n\n## まとめ\n\n以上が実装のポイントです。詳細は公式ドキュメントを参照してください。",
+    excerpt: "7 Killer One-Liners In JavaScript について解説する記事。実装手順や具体例を含めて詳しく紹介します。",
+    author: "maestro_author",
+    publishedAt: "2026-04-15T10:00:00.000Z",
   },
   {
-    url: "https://medium.com/swlh/building-scalable-microservices-with-kubernetes-2026-guide-9f8a3c1e5b2d",
-    title: "Building Scalable Microservices with Kubernetes — 2026 Guide",
+    url: "https://medium.com/better-programming/10-modern-css-techniques-for-older-css-problems-722e7141099e",
+    title: "10 Modern CSS Techniques for Older CSS Problems",
     source: "medium",
+    content: "# 10 Modern CSS Techniques for Older CSS Problems\n\n技術の進化は早く、最新動向をキャッチアップすることが重要です。\n\n## 背景\n\nソフトウェア開発において、選択する技術スタックは慎重に検討する必要があります。\n\n## 考察\n\n以下の観点で評価します:\n\n- パフォーマンス\n- メンテナンス性\n- コミュニティ活動度\n- ドキュメントの充実度\n\n## 具体例\n\n```javascript\nfunction calculate(x, y) {\n  return x + y;\n}\n```\n\n## おわりに\n\n継続的な学習が成功の鍵です。",
+    excerpt: "10 Modern CSS Techniques for Older CSS Problems について解説する記事。実装手順や具体例を含めて詳しく紹介します。",
+    author: "maestro_author",
+    publishedAt: "2026-04-15T10:00:00.000Z",
   },
   {
-    url: "https://news.ycombinator.com/item?id=41234567",
-    title: "Show HN: A new approach to distributed consensus",
+    url: "https://news.ycombinator.com/item?id=42001234",
+    title: "Hacker News discussion item",
     source: "hackernews",
+    content: "# Hacker News discussion item\n\n## 概要\n\n本記事では技術的な実装方法について解説します。\n\n## 実装手順\n\n1. 環境構築\n2. 基本設定\n3. コードの実装\n4. テスト\n\n```typescript\nconst example = () => {\n  console.log(\"Hello\");\n  return 42;\n};\n```\n\n## まとめ\n\n以上が実装のポイントです。詳細は公式ドキュメントを参照してください。",
+    excerpt: "Hacker News discussion item について解説する記事。実装手順や具体例を含めて詳しく紹介します。",
+    author: "maestro_author",
+    publishedAt: "2026-04-15T10:00:00.000Z",
   },
   {
-    url: "https://hashnode.com/post/why-typescript-5-8-changes-everything-clxyz012abc3d4e5",
-    title: "Why TypeScript 5.8 Changes Everything",
+    url: "https://blog.graphqleditor.com/how-we-improved-graphql-schema-editor",
+    title: "How we improved GraphQL Schema Editor",
+    source: "other",
+    content: "# How we improved GraphQL Schema Editor\n\n## はじめに\n\nこの記事を読むことで、新しい技術の活用方法が理解できます。\n\n## 前提条件\n\n- Node.js 20 以上\n- TypeScript 5.x\n- 基本的な React の知識\n\n## ステップバイステップ\n\n### Step 1: セットアップ\n\n```bash\nnpm install package\n```\n\n### Step 2: 設定\n\n設定ファイルを編集します。\n\n### Step 3: 動作確認\n\n## 結論\n\nこの手法により開発効率が向上します。",
+    excerpt: "How we improved GraphQL Schema Editor について解説する記事。実装手順や具体例を含めて詳しく紹介します。",
+    author: "maestro_author",
+    publishedAt: "2026-04-15T10:00:00.000Z",
+  },
+  {
+    url: "https://kentcdodds.hashnode.dev/what-is-useevent-and-why-should-you-care",
+    title: "What is useEvent and why should you care",
     source: "hashnode",
+    content: "# What is useEvent and why should you care\n\n## はじめに\n\nこの記事を読むことで、新しい技術の活用方法が理解できます。\n\n## 前提条件\n\n- Node.js 20 以上\n- TypeScript 5.x\n- 基本的な React の知識\n\n## ステップバイステップ\n\n### Step 1: セットアップ\n\n```bash\nnpm install package\n```\n\n### Step 2: 設定\n\n設定ファイルを編集します。\n\n### Step 3: 動作確認\n\n## 結論\n\nこの手法により開発効率が向上します。",
+    excerpt: "What is useEvent and why should you care について解説する記事。実装手順や具体例を含めて詳しく紹介します。",
+    author: "maestro_author",
+    publishedAt: "2026-04-15T10:00:00.000Z",
   },
   {
-    url: "https://www.reddit.com/r/programming/comments/1abc2de/how_rust_is_eating_the_systems_programming_world/",
-    title: "How Rust is eating the systems programming world",
+    url: "https://www.reddit.com/r/programming/comments/1e91sgo/rust_is_now_part_of_the_linux_kernel/",
+    title: "Rust is now part of the Linux kernel",
     source: "reddit",
+    content: "# Rust is now part of the Linux kernel\n\n## 概要\n\n本記事では技術的な実装方法について解説します。\n\n## 実装手順\n\n1. 環境構築\n2. 基本設定\n3. コードの実装\n4. テスト\n\n```typescript\nconst example = () => {\n  console.log(\"Hello\");\n  return 42;\n};\n```\n\n## まとめ\n\n以上が実装のポイントです。詳細は公式ドキュメントを参照してください。",
+    excerpt: "Rust is now part of the Linux kernel について解説する記事。実装手順や具体例を含めて詳しく紹介します。",
+    author: "maestro_author",
+    publishedAt: "2026-04-15T10:00:00.000Z",
   },
   {
-    url: "https://www.freecodecamp.org/news/modern-javascript-concepts-2026/",
-    title: "Modern JavaScript Concepts Every Developer Should Know (2026)",
+    url: "https://www.freecodecamp.org/news/how-javascript-works-in-browser-and-node/",
+    title: "How JavaScript Works in Browser and Node",
     source: "freecodecamp",
+    content: "# How JavaScript Works in Browser and Node\n\n## はじめに\n\nこの記事を読むことで、新しい技術の活用方法が理解できます。\n\n## 前提条件\n\n- Node.js 20 以上\n- TypeScript 5.x\n- 基本的な React の知識\n\n## ステップバイステップ\n\n### Step 1: セットアップ\n\n```bash\nnpm install package\n```\n\n### Step 2: 設定\n\n設定ファイルを編集します。\n\n### Step 3: 動作確認\n\n## 結論\n\nこの手法により開発効率が向上します。",
+    excerpt: "How JavaScript Works in Browser and Node について解説する記事。実装手順や具体例を含めて詳しく紹介します。",
+    author: "maestro_author",
+    publishedAt: "2026-04-15T10:00:00.000Z",
   },
   {
-    url: "https://blog.logrocket.com/react-server-components-deep-dive-2026/",
-    title: "React Server Components Deep Dive (2026)",
+    url: "https://blog.logrocket.com/react-server-components-a-comprehensive-guide/",
+    title: "React Server Components: A Comprehensive Guide",
     source: "logrocket",
+    content: "# React Server Components: A Comprehensive Guide\n\n## はじめに\n\nこの記事を読むことで、新しい技術の活用方法が理解できます。\n\n## 前提条件\n\n- Node.js 20 以上\n- TypeScript 5.x\n- 基本的な React の知識\n\n## ステップバイステップ\n\n### Step 1: セットアップ\n\n```bash\nnpm install package\n```\n\n### Step 2: 設定\n\n設定ファイルを編集します。\n\n### Step 3: 動作確認\n\n## 結論\n\nこの手法により開発効率が向上します。",
+    excerpt: "React Server Components: A Comprehensive Guide について解説する記事。実装手順や具体例を含めて詳しく紹介します。",
+    author: "maestro_author",
+    publishedAt: "2026-04-15T10:00:00.000Z",
   },
   {
-    url: "https://css-tricks.com/container-queries-in-production/",
-    title: "Container Queries in Production",
+    url: "https://css-tricks.com/a-complete-guide-to-css-functions/",
+    title: "A Complete Guide to CSS Functions",
     source: "css-tricks",
+    content: "# A Complete Guide to CSS Functions\n\n## 概要\n\n本記事では技術的な実装方法について解説します。\n\n## 実装手順\n\n1. 環境構築\n2. 基本設定\n3. コードの実装\n4. テスト\n\n```typescript\nconst example = () => {\n  console.log(\"Hello\");\n  return 42;\n};\n```\n\n## まとめ\n\n以上が実装のポイントです。詳細は公式ドキュメントを参照してください。",
+    excerpt: "A Complete Guide to CSS Functions について解説する記事。実装手順や具体例を含めて詳しく紹介します。",
+    author: "maestro_author",
+    publishedAt: "2026-04-15T10:00:00.000Z",
   },
   {
-    url: "https://www.smashingmagazine.com/2026/02/accessibility-testing-automation/",
-    title: "Automating Accessibility Testing in Modern Web Apps",
+    url: "https://www.smashingmagazine.com/2024/06/accessible-mobile-tab-navigation-on-ios/",
+    title: "Accessible Mobile Tab Navigation on iOS",
     source: "smashing",
+    content: "# Accessible Mobile Tab Navigation on iOS\n\n## 概要\n\n本記事では技術的な実装方法について解説します。\n\n## 実装手順\n\n1. 環境構築\n2. 基本設定\n3. コードの実装\n4. テスト\n\n```typescript\nconst example = () => {\n  console.log(\"Hello\");\n  return 42;\n};\n```\n\n## まとめ\n\n以上が実装のポイントです。詳細は公式ドキュメントを参照してください。",
+    excerpt: "Accessible Mobile Tab Navigation on iOS について解説する記事。実装手順や具体例を含めて詳しく紹介します。",
+    author: "maestro_author",
+    publishedAt: "2026-04-15T10:00:00.000Z",
   },
   {
     url: "https://x.com/dan_abramov/status/1850000000000000000",
     title: "Dan Abramov on React compiler internals",
     source: "twitter",
+    content: "# Dan Abramov on React compiler internals\n\n## 概要\n\n本記事では技術的な実装方法について解説します。\n\n## 実装手順\n\n1. 環境構築\n2. 基本設定\n3. コードの実装\n4. テスト\n\n```typescript\nconst example = () => {\n  console.log(\"Hello\");\n  return 42;\n};\n```\n\n## まとめ\n\n以上が実装のポイントです。詳細は公式ドキュメントを参照してください。",
+    excerpt: "Dan Abramov on React compiler internals について解説する記事。実装手順や具体例を含めて詳しく紹介します。",
+    author: "maestro_author",
+    publishedAt: "2026-04-15T10:00:00.000Z",
   },
   {
-    url: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
-    title: "技術カンファレンス基調講演ダイジェスト",
+    url: "https://www.youtube.com/watch?v=OqhouPQRYMc",
+    title: "React Native Tutorial 2024",
     source: "youtube",
+    content: "# React Native Tutorial 2024\n\n技術の進化は早く、最新動向をキャッチアップすることが重要です。\n\n## 背景\n\nソフトウェア開発において、選択する技術スタックは慎重に検討する必要があります。\n\n## 考察\n\n以下の観点で評価します:\n\n- パフォーマンス\n- メンテナンス性\n- コミュニティ活動度\n- ドキュメントの充実度\n\n## 具体例\n\n```javascript\nfunction calculate(x, y) {\n  return x + y;\n}\n```\n\n## おわりに\n\n継続的な学習が成功の鍵です。",
+    excerpt: "React Native Tutorial 2024 について解説する記事。実装手順や具体例を含めて詳しく紹介します。",
+    author: "maestro_author",
+    publishedAt: "2026-04-15T10:00:00.000Z",
   },
   {
-    url: "https://speakerdeck.com/example-org/modern-frontend-architecture-2026",
-    title: "Modern Frontend Architecture 2026 — SpeakerDeck Presentation",
+    url: "https://speakerdeck.com/line_developers/ui-kit-and-design-system",
+    title: "UI Kit and Design System",
     source: "speakerdeck",
+    content: "# UI Kit and Design System\n\n## 概要\n\n本記事では技術的な実装方法について解説します。\n\n## 実装手順\n\n1. 環境構築\n2. 基本設定\n3. コードの実装\n4. テスト\n\n```typescript\nconst example = () => {\n  console.log(\"Hello\");\n  return 42;\n};\n```\n\n## まとめ\n\n以上が実装のポイントです。詳細は公式ドキュメントを参照してください。",
+    excerpt: "UI Kit and Design System について解説する記事。実装手順や具体例を含めて詳しく紹介します。",
+    author: "maestro_author",
+    publishedAt: "2026-04-15T10:00:00.000Z",
   },
   {
-    url: "https://engineering.example.com/blog/post/2026/03/building-resilient-systems",
-    title: "Building Resilient Distributed Systems — Engineering Blog",
+    url: "https://blog.cloudflare.com/workers-ai/",
+    title: "Workers AI — the next evolution of Cloudflare Workers",
     source: "other",
+    content: "# Workers AI — the next evolution of Cloudflare Workers\n\n技術の進化は早く、最新動向をキャッチアップすることが重要です。\n\n## 背景\n\nソフトウェア開発において、選択する技術スタックは慎重に検討する必要があります。\n\n## 考察\n\n以下の観点で評価します:\n\n- パフォーマンス\n- メンテナンス性\n- コミュニティ活動度\n- ドキュメントの充実度\n\n## 具体例\n\n```javascript\nfunction calculate(x, y) {\n  return x + y;\n}\n```\n\n## おわりに\n\n継続的な学習が成功の鍵です。",
+    excerpt: "Workers AI — the next evolution of Cloudflare Workers について解説する記事。実装手順や具体例を含めて詳しく紹介します。",
+    author: "maestro_author",
+    publishedAt: "2026-04-15T10:00:00.000Z",
   },
 ];
 
@@ -296,7 +397,16 @@ async function upsertArticle(
   db: ReturnType<typeof drizzle>,
   userId: string,
   url: string,
-  data: { title: string; source: string },
+  data: {
+    title: string;
+    source: string;
+    content?: string | null;
+    excerpt?: string | null;
+    author?: string | null;
+    thumbnailUrl?: string | null;
+    publishedAt?: string | null;
+    readingTimeMinutes?: number | null;
+  },
   createdAt: Date,
 ): Promise<string> {
   const existing = await db
@@ -310,7 +420,17 @@ async function upsertArticle(
   if (existing.length > 0) {
     await db
       .update(articles)
-      .set({ ...data, updatedAt: now })
+      .set({
+        title: data.title,
+        source: data.source,
+        content: data.content ?? null,
+        excerpt: data.excerpt ?? null,
+        author: data.author ?? null,
+        thumbnailUrl: data.thumbnailUrl ?? null,
+        publishedAt: data.publishedAt ? new Date(data.publishedAt) : null,
+        readingTimeMinutes: data.readingTimeMinutes ?? null,
+        updatedAt: now,
+      })
       .where(eq(articles.id, existing[0].id));
     return existing[0].id;
   }
@@ -322,6 +442,12 @@ async function upsertArticle(
     url,
     source: data.source,
     title: data.title,
+    content: data.content ?? null,
+    excerpt: data.excerpt ?? null,
+    author: data.author ?? null,
+    thumbnailUrl: data.thumbnailUrl ?? null,
+    publishedAt: data.publishedAt ? new Date(data.publishedAt) : null,
+    readingTimeMinutes: data.readingTimeMinutes ?? null,
     createdAt,
     updatedAt: now,
   });
@@ -433,6 +559,12 @@ async function seedMaestroStatic(): Promise<void> {
       {
         title: spec.title,
         source: spec.source,
+        content: spec.content,
+        excerpt: spec.excerpt,
+        author: spec.author,
+        thumbnailUrl: null,
+        publishedAt: spec.publishedAt,
+        readingTimeMinutes: Math.ceil((spec.content?.length ?? 0) / 500),
       },
       createdAt,
     );
