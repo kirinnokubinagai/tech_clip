@@ -1,21 +1,17 @@
-import { useCallback, useRef, useState } from "react";
+import { forwardRef, useCallback, useImperativeHandle, useRef, useState } from "react";
 import { ActivityIndicator, StyleSheet, View } from "react-native";
 import WebView from "react-native-webview";
 import type { WebViewMessageEvent } from "react-native-webview";
 
-/**
- * WebView 上で Readability を使って本文テキストを抽出する JS
- * onMessage で { type: "extracted", text, html, title } を送る
- */
-const EXTRACT_JS = `
+/** document.body.innerText を抽出する injected JS */
+const EXTRACT_TEXT_JS = `
 (function() {
   try {
-    // 最短路: textContent ベースで抽出（Readability を CDN から import するのは bundle 簡素化のため避ける）
     var title = document.title || "";
     var body = document.body ? (document.body.innerText || document.body.textContent || "") : "";
     var text = body.replace(/\\s+/g, " ").trim();
     window.ReactNativeWebView.postMessage(JSON.stringify({
-      type: "extracted",
+      type: "extracted_text",
       title: title,
       text: text.slice(0, 50000),
       url: location.href,
@@ -30,85 +26,120 @@ const EXTRACT_JS = `
 })();
 `;
 
-type ExtractedPayload = {
+/** document.documentElement.outerHTML を snapshot する injected JS */
+const SNAPSHOT_HTML_JS = `
+(function() {
+  try {
+    var html = document.documentElement ? document.documentElement.outerHTML : "";
+    window.ReactNativeWebView.postMessage(JSON.stringify({
+      type: "snapshot_html",
+      html: html.slice(0, 500000),
+      url: location.href,
+    }));
+  } catch (e) {}
+  true;
+})();
+`;
+
+export type ExtractedPayload = {
   title: string;
   text: string;
   url: string;
 };
 
+export type ArticleWebViewHandle = {
+  /** 本文テキストを抽出する */
+  extractText: () => void;
+  /** 完全な HTML スナップショットを要求する */
+  snapshotHtml: () => void;
+};
+
 type ArticleWebViewProps = {
-  /** 表示する記事 URL */
   url: string;
-  /** 本文抽出が完了したときに呼ばれるコールバック */
   onExtract?: (payload: ExtractedPayload) => void;
-  /** 抽出を外部からトリガーするための ref オブジェクト */
-  extractRef?: { extract: () => void } | null;
+  onSnapshot?: (html: string, url: string) => void;
+  /** オフライン時に cached HTML を表示する場合に指定 */
+  cachedHtml?: string | null;
 };
 
 /**
  * 記事を WebView で表示するコンポーネント
  *
- * オリジナルサイトを fidelity 100% で表示しつつ、
- * 要約・翻訳用のテキスト抽出をオンデマンドで提供する。
+ * - extractText() で document.innerText を抽出し onExtract に渡す
+ * - snapshotHtml() で outerHTML を取得し onSnapshot に渡す
+ * - cachedHtml が指定されるとオフラインキャッシュから表示
  */
-export function ArticleWebView({ url, onExtract }: ArticleWebViewProps): React.ReactElement {
-  const webviewRef = useRef<WebView | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+export const ArticleWebView = forwardRef<ArticleWebViewHandle, ArticleWebViewProps>(
+  function ArticleWebView({ url, onExtract, onSnapshot, cachedHtml }, ref) {
+    const webviewRef = useRef<WebView | null>(null);
+    const [isLoading, setIsLoading] = useState(true);
 
-  const extractContent = useCallback(() => {
-    webviewRef.current?.injectJavaScript(EXTRACT_JS);
-  }, []);
+    const extractText = useCallback(() => {
+      webviewRef.current?.injectJavaScript(EXTRACT_TEXT_JS);
+    }, []);
 
-  const onMessage = useCallback(
-    (event: WebViewMessageEvent) => {
-      try {
-        const payload = JSON.parse(event.nativeEvent.data) as {
-          type: string;
-          title?: string;
-          text?: string;
-          url?: string;
-        };
-        if (payload.type === "extracted" && payload.text !== undefined) {
-          onExtract?.({
-            title: payload.title ?? "",
-            text: payload.text,
-            url: payload.url ?? url,
-          });
+    const snapshotHtml = useCallback(() => {
+      webviewRef.current?.injectJavaScript(SNAPSHOT_HTML_JS);
+    }, []);
+
+    useImperativeHandle(ref, () => ({ extractText, snapshotHtml }), [extractText, snapshotHtml]);
+
+    const onMessage = useCallback(
+      (event: WebViewMessageEvent) => {
+        try {
+          const payload = JSON.parse(event.nativeEvent.data) as {
+            type?: string;
+            title?: string;
+            text?: string;
+            html?: string;
+            url?: string;
+          };
+          if (payload.type === "extracted_text" && typeof payload.text === "string") {
+            onExtract?.({
+              title: payload.title ?? "",
+              text: payload.text,
+              url: payload.url ?? url,
+            });
+          } else if (payload.type === "snapshot_html" && typeof payload.html === "string") {
+            onSnapshot?.(payload.html, payload.url ?? url);
+          }
+        } catch {
+          // malformed message - ignore
         }
-      } catch {
-        // silently ignore malformed messages
-      }
-    },
-    [onExtract, url],
-  );
+      },
+      [onExtract, onSnapshot, url],
+    );
 
-  // expose extract function via imperative handle pattern
-  if (typeof extractContent === "function") {
-    // No direct use; parent passes prop via callback if needed
-  }
+    const source = cachedHtml ? { html: cachedHtml, baseUrl: url } : { uri: url };
 
-  return (
-    <View style={styles.container}>
-      <WebView
-        ref={webviewRef}
-        source={{ uri: url }}
-        onLoadStart={() => setIsLoading(true)}
-        onLoadEnd={() => setIsLoading(false)}
-        onMessage={onMessage}
-        javaScriptEnabled={true}
-        domStorageEnabled={true}
-        startInLoadingState={true}
-        testID="article-webview"
-        style={styles.webview}
-      />
-      {isLoading ? (
-        <View style={styles.loadingOverlay} pointerEvents="none">
-          <ActivityIndicator size="large" />
-        </View>
-      ) : null}
-    </View>
-  );
-}
+    return (
+      <View style={styles.container}>
+        <WebView
+          ref={webviewRef}
+          source={source}
+          onLoadStart={() => setIsLoading(true)}
+          onLoadEnd={() => {
+            setIsLoading(false);
+            // 初回ロード完了時に自動で snapshot + extract する
+            extractText();
+            snapshotHtml();
+          }}
+          onMessage={onMessage}
+          javaScriptEnabled={true}
+          domStorageEnabled={true}
+          startInLoadingState={true}
+          testID="article-webview"
+          style={styles.webview}
+        />
+        {isLoading ? (
+          <View style={styles.loadingOverlay} pointerEvents="none">
+            <ActivityIndicator size="large" />
+          </View>
+        ) : null}
+      </View>
+    );
+  },
+);
 
 const styles = StyleSheet.create({
   container: { flex: 1 },

@@ -1,6 +1,6 @@
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { ArrowLeft, BookmarkPlus, Eye, EyeOff, ExternalLink, Globe, Heart, Languages, Sparkles } from "lucide-react-native";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { ActivityIndicator, Linking, Modal, Pressable, ScrollView, Text, View } from "react-native";
 import Markdown from "react-native-markdown-display";
@@ -31,7 +31,7 @@ import {
 import { getOfferings } from "@/lib/revenueCat";
 import { useSettingsStore } from "@/stores/settings-store";
 import { useAuthStore } from "@/stores/auth-store";
-import { ArticleWebView } from "@/components/ArticleWebView";
+import { ArticleWebView, type ArticleWebViewHandle, type ExtractedPayload } from "@/components/ArticleWebView";
 import type { ArticleDetail } from "@/types/article";
 
 /** AI使用回数上限エラーコード */
@@ -233,6 +233,12 @@ export default function ArticleDetailScreen() {
   const [showPremiumGate, setShowPremiumGate] = useState(false);
   const [readerMode, setReaderMode] = useState(false);
   const [aiUsageCount, setAiUsageCount] = useState(0);
+
+  const webviewRef = useRef<ArticleWebViewHandle | null>(null);
+  const [extractedText, setExtractedText] = useState<string | null>(null);
+  const handleExtract = useCallback((payload: ExtractedPayload) => {
+    setExtractedText(payload.text);
+  }, []);
 
   const handleBack = useCallback(() => {
     router.back();
@@ -608,7 +614,7 @@ export default function ArticleDetailScreen() {
         </View>
         {!readerMode && article.url && !isOffline ? (
           <View style={{ height: 640 }}>
-            <ArticleWebView url={article.url} />
+            <ArticleWebView ref={webviewRef} url={article.url} onExtract={handleExtract} />
           </View>
         ) : (
           <View className="px-4 pt-4">

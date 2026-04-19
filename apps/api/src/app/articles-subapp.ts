@@ -21,6 +21,7 @@ import { createPublicArticlesRoute } from "../routes/public-articles";
 import { buildFtsMatchExpression, createSearchRoute } from "../routes/search";
 import { createSummaryRoute } from "../routes/summary";
 import { parseArticle } from "../services/article-parser";
+import { fetchArticleMetadata } from "../services/metadata-fetcher";
 import { summarizeArticle } from "../services/summary";
 import { translateArticle } from "../services/translator";
 import type { Bindings } from "../types";
@@ -76,7 +77,7 @@ export async function handleArticles(
 ): Promise<Response> {
   const articlesRoute = createArticlesRoute({
     db,
-    parseArticleFn: parseArticle,
+    parseArticleFn: fetchArticleMetadata,
     queryFn: async (params) => {
       const conditions = [eq(articles.userId, params.userId)];
       if (params.cursor) {
