@@ -53,7 +53,9 @@ describe("cursor パラメータの URL エンコード", () => {
 
   it("base64url 形式の cursor が URL に混入しても + / = が生じないこと", () => {
     // base64url: + -> -, / -> _, = 除去済み のため URLSearchParams でエンコード不要
-    const base64urlCursor = btoa(JSON.stringify({ createdAt: "2024-01-01T00:00:00.000Z", id: "01JTEST001" }))
+    const base64urlCursor = btoa(
+      JSON.stringify({ createdAt: "2024-01-01T00:00:00.000Z", id: "01JTEST001" }),
+    )
       .replace(/\+/g, "-")
       .replace(/\//g, "_")
       .replace(/=/g, "");
