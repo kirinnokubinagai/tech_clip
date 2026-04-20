@@ -191,7 +191,7 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
    * アプリ起動時に呼び出す
    */
   checkSession: async () => {
-    set({ isLoading: true });
+    set({ isLoading: true, sessionExpiredMessage: null });
 
     const token = await getAuthToken();
 
