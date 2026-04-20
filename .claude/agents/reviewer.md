@@ -48,6 +48,36 @@ push が成功したら、以下のいずれかが成立するまで **絶対に
 
 ## ワークフロー
 
+### 複数レーン時の impl-ready 集約
+
+`issue-{N}-coder-api` / `issue-{N}-coder-mobile` のように同一 Issue で複数の lane 付き coder がいる場合:
+
+- 各 lane から `impl-ready: <hash> lane={lane-name}` を受信する
+- **全 lane から受信するまでレビューを開始しない**（受信済み lane 集合を内部で管理する）
+- 全 lane 揃ったら、最新 HEAD（各 lane commit を含む branch の先端）をレビュー
+- 統合レビュー PASS 後、1 回だけ push する
+
+#### 実装方針
+
+受信記録は `/tmp/impl-ready-{issue_number}.json` に追記して管理する:
+
+```bash
+# impl-ready を受信するたびに lane 情報を記録する
+IMPL_READY_FILE="/tmp/impl-ready-{issue_number}.json"
+# 初回: 空配列で初期化
+[ -f "$IMPL_READY_FILE" ] || echo '[]' > "$IMPL_READY_FILE"
+# lane 情報を追記（lane なし = "default"）
+LANE=$(echo "$MSG" | grep -oP 'lane=\K[^ ]+' || echo "default")
+HASH=$(echo "$MSG" | grep -oP 'impl-ready: \K[0-9a-f]+')
+jq --arg lane "$LANE" --arg hash "$HASH" '. += [{"lane": $lane, "hash": $hash}]' "$IMPL_READY_FILE" > "${IMPL_READY_FILE}.tmp" && mv "${IMPL_READY_FILE}.tmp" "$IMPL_READY_FILE"
+```
+
+全 lane の受信判定は orchestrator が spawn プロンプトで「期待 lane 数」を渡すか、
+team config を参照して同 Issue の coder 系エージェント数と照合する。
+
+lane 情報なし（`impl-ready: <hash>` のみ）は **単独 coder モード**として従来通り即レビューを開始する。
+
+
 ### フェーズ 0: coder からの SendMessage 待機
 
 coder から SendMessage が届くまで待機する。以下のメッセージを待つ:

@@ -45,6 +45,18 @@ push が成功したら、以下のいずれかが成立するまで **絶対に
 
 ## ワークフロー
 
+### 複数レーン時の impl-ready 集約
+
+`issue-{N}-infra-engineer-api` / `issue-{N}-infra-engineer-mobile` のように同一 Issue で複数の lane 付き infra-engineer がいる場合:
+
+- 各 lane から `impl-ready: <hash> lane={lane-name}` を受信する
+- **全 lane から受信するまでレビューを開始しない**（受信済み lane 集合を内部で管理する）
+- 全 lane 揃ったら、最新 HEAD（各 lane commit を含む branch の先端）をレビュー
+- 統合レビュー PASS 後、1 回だけ push する
+
+lane 情報なし（`impl-ready: <hash>` のみ）は **単独 infra-engineer モード**として従来通り即レビューを開始する。
+
+
 ### フェーズ 0: infra-engineer からの SendMessage 待機
 
 infra-engineer から SendMessage が届くまで待機する。以下のメッセージを待つ:

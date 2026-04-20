@@ -48,6 +48,18 @@ push が成功したら、以下のいずれかが成立するまで **絶対に
 
 ## ワークフロー
 
+### 複数レーン時の impl-ready 集約
+
+`issue-{N}-ui-designer-api` / `issue-{N}-ui-designer-mobile` のように同一 Issue で複数の lane 付き ui-designer がいる場合:
+
+- 各 lane から `impl-ready: <hash> lane={lane-name}` を受信する
+- **全 lane から受信するまでレビューを開始しない**（受信済み lane 集合を内部で管理する）
+- 全 lane 揃ったら、最新 HEAD（各 lane commit を含む branch の先端）をレビュー
+- 統合レビュー PASS 後、1 回だけ push する
+
+lane 情報なし（`impl-ready: <hash>` のみ）は **単独 ui-designer モード**として従来通り即レビューを開始する。
+
+
 ### フェーズ 0: ui-designer からの SendMessage 待機
 
 ui-designer から `impl-ready:` プレフィックスの SendMessage が届くまで待機する。
