@@ -3,6 +3,7 @@ import { eq } from "drizzle-orm";
 import type { Auth } from "../auth";
 import type { Database } from "../db";
 import { sessions, users } from "../db/schema";
+import type { User } from "../db/schema/users";
 
 /**
  * リクエストからユーザーを解決する
@@ -19,12 +20,15 @@ export async function resolveUserFromRequest(
   db: Database,
   auth: Auth,
   headers: Headers,
-): Promise<Record<string, unknown> | null> {
+): Promise<User | null> {
   // 1. Better Auth の cookie セッションを試す
   try {
     const result = await auth.api.getSession({ headers });
-    if (result?.user) {
-      return result.user as Record<string, unknown>;
+    if (result?.user?.id) {
+      const [userRow] = await db.select().from(users).where(eq(users.id, result.user.id));
+      if (userRow) {
+        return userRow;
+      }
     }
   } catch {
     // Cookie 検証失敗は無視して Bearer token を試す
@@ -52,5 +56,5 @@ export async function resolveUserFromRequest(
   }
 
   const [userRow] = await db.select().from(users).where(eq(users.id, sessionRow.userId));
-  return userRow ? (userRow as Record<string, unknown>) : null;
+  return userRow ?? null;
 }

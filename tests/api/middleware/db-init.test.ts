@@ -201,6 +201,7 @@ describe("createDbInitMiddleware", () => {
         undefined,
         [],
         undefined,
+        false,
       );
     });
 
@@ -246,6 +247,7 @@ describe("createDbInitMiddleware", () => {
         undefined,
         [],
         undefined,
+        false,
       );
     });
 
@@ -285,6 +287,7 @@ describe("createDbInitMiddleware", () => {
         "https://api.techclip.app",
         [],
         undefined,
+        false,
       );
     });
 
@@ -324,6 +327,7 @@ describe("createDbInitMiddleware", () => {
         undefined,
         ["https://staging.techclip.app", "https://dev.techclip.app"],
         undefined,
+        false,
       );
     });
 
@@ -362,6 +366,7 @@ describe("createDbInitMiddleware", () => {
         undefined,
         [],
         undefined,
+        false,
       );
     });
 
@@ -457,6 +462,7 @@ describe("createDbInitMiddleware", () => {
           FROM_EMAIL: "noreply@techclip.app",
           MAILPIT_URL: "http://localhost:8025/api/v1/send",
         },
+        false,
       );
     });
 
@@ -499,6 +505,7 @@ describe("createDbInitMiddleware", () => {
           FROM_EMAIL: "noreply@techclip.app",
           MAILPIT_URL: undefined,
         },
+        false,
       );
     });
 
@@ -535,6 +542,7 @@ describe("createDbInitMiddleware", () => {
         undefined,
         [],
         undefined,
+        false,
       );
     });
   });

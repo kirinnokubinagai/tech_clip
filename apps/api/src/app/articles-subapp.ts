@@ -4,6 +4,7 @@ import { Hono } from "hono";
 import type { Auth } from "../auth";
 import type { Database } from "../db";
 import { articles, users } from "../db/schema";
+import type { User } from "../db/schema/users";
 import { resolveGemmaModelTag } from "../lib/ai-model";
 import { toRecordArray } from "../lib/db-cast";
 import { resolveUserFromRequest } from "../lib/resolve-user";
@@ -147,7 +148,7 @@ export async function handleArticles(
   });
 
   const kvStore = createKvStore(env.RATE_LIMIT);
-  const subApp = new Hono<{ Variables: { user?: Record<string, unknown> } }>();
+  const subApp = new Hono<{ Variables: { user?: User } }>();
 
   subApp.use("*", async (ctx, next) => {
     const user = await resolveUserFromRequest(db, auth, ctx.req.raw.headers);

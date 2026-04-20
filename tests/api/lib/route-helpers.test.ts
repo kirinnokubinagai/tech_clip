@@ -17,15 +17,14 @@ function createMockAuth(
 }
 
 /**
- * 空の Database モック（Bearer 認証が呼ばれたときだけ参照される）
+ * Database モック: select().from().where() が rows を返す
+ * Cookie セッション解決でも DB lookup が発生するため rows を注入可能にする
  */
-function createMockDb() {
-  // Bearer token 検証パスに入ったら select が呼ばれるが、
-  // これらのテストは Cookie セッションを返すため通常は呼ばれない
+function createMockDb(rows: unknown[] = []) {
   return {
     select: vi.fn(() => ({
       from: vi.fn(() => ({
-        where: vi.fn(() => Promise.resolve([])),
+        where: vi.fn(() => Promise.resolve(rows)),
       })),
     })),
   } as unknown as Parameters<typeof fetchWithAuth>[0];
@@ -36,7 +35,7 @@ describe("fetchWithAuth", () => {
     // Arrange
     const mockUser = { id: "user-1", email: "test@example.com" };
     const getSession = vi.fn().mockResolvedValue({ user: mockUser });
-    const db = createMockDb();
+    const db = createMockDb([mockUser]);
     const auth = createMockAuth(getSession);
 
     // Act

@@ -3,6 +3,8 @@ import { ActivityIndicator, StyleSheet, View } from "react-native";
 import type { WebViewMessageEvent } from "react-native-webview";
 import WebView from "react-native-webview";
 
+import { WEBVIEW_ORIGIN_WHITELIST } from "@/lib/constants";
+
 /** document.body.innerText を抽出する injected JS */
 const EXTRACT_TEXT_JS = `
 (function() {
@@ -146,7 +148,7 @@ export const ArticleWebView = forwardRef<ArticleWebViewHandle, ArticleWebViewPro
           domStorageEnabled={true}
           startInLoadingState={true}
           // セキュリティ: 同一 origin 外の iframe 遷移を防ぐ
-          originWhitelist={["https://*", "http://*"]}
+          originWhitelist={[...WEBVIEW_ORIGIN_WHITELIST]}
           setSupportMultipleWindows={false}
           mixedContentMode="never"
           testID="article-webview"

@@ -18,6 +18,35 @@ export type { ArticleSource };
 /** ページネーションのデフォルト取得件数 */
 export const PAGINATION_LIMIT = 20;
 
+/**
+ * WebView で許可するオリジンのホワイトリスト
+ * 対応しているコンテンツソースのドメインのみ許可する
+ */
+export const WEBVIEW_ORIGIN_WHITELIST = [
+  "https://zenn.dev/*",
+  "https://qiita.com/*",
+  "https://note.com/*",
+  "https://b.hatena.ne.jp/*",
+  "https://hatenablog.com/*",
+  "https://*.hatenablog.com/*",
+  "https://dev.to/*",
+  "https://medium.com/*",
+  "https://news.ycombinator.com/*",
+  "https://hashnode.com/*",
+  "https://*.hashnode.dev/*",
+  "https://github.com/*",
+  "https://stackoverflow.com/*",
+  "https://www.reddit.com/*",
+  "https://speakerdeck.com/*",
+  "https://www.freecodecamp.org/*",
+  "https://blog.logrocket.com/*",
+  "https://css-tricks.com/*",
+  "https://www.smashingmagazine.com/*",
+  "https://twitter.com/*",
+  "https://x.com/*",
+  "https://www.youtube.com/*",
+] as const;
+
 /** TanStack Queryのstale判定時間（5分・ミリ秒） */
 export const STALE_TIME_MS = 5 * 60 * 1000;
 

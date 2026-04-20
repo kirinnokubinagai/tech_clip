@@ -50,11 +50,8 @@ const HTML_ENTITIES: Record<string, string> = {
  * @returns サニタイズ済みのプレーンテキスト（MAX_CONTENT_LENGTH 以内）
  */
 export function sanitizeArticleContent(content: string): string {
-  const withoutScript = content.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, " ");
-  const withoutStyle = withoutScript.replace(
-    /<style\b[^<]*(?:(?!<\/style>)<[^<]*)*<\/style>/gi,
-    " ",
-  );
+  const withoutScript = content.replace(/<script[\s\S]*?<\/script>/gi, " ");
+  const withoutStyle = withoutScript.replace(/<style[\s\S]*?<\/style>/gi, " ");
   const withoutTags = withoutStyle.replace(/<[^>]+>/g, " ");
   const decoded = withoutTags.replace(
     /&amp;|&lt;|&gt;|&quot;|&#039;|&apos;|&nbsp;/g,

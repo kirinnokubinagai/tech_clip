@@ -81,8 +81,10 @@ jobs:
           # (action-runner の node20 が --no-experimental-strip-types を受け入れないため)
           TURSO_DATABASE_URL: "http://127.0.0.1:8888"
           TURSO_AUTH_TOKEN: "dummy"
+          IS_E2E_ENV: "1"
           TEST_EMAIL: "test-${{ github.run_id }}+maestro@techclip.app"
-          TEST_PASSWORD: ${{ secrets.MAESTRO_TEST_PASSWORD }}
+          # seed-maestro-static.ts の MAESTRO_STATIC_PASSWORD と統一。CI secret 不要
+          TEST_PASSWORD: "TestPassword123!"
           TEST_NAME: "Maestro Test User"
           TIMESTAMP: ${{ github.run_id }}
         with:

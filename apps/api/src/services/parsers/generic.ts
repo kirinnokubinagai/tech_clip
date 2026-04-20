@@ -19,6 +19,35 @@ const PAYWALL_SELECTORS = [
 ];
 
 /**
+ * SSRF 対策: 内部ネットワーク・metadata サーバへの fetch を防ぐ
+ * ホスト名が私設 IP 帯 or 予約名に該当する URL は拒否する
+ */
+const PRIVATE_HOST_PATTERNS = [
+  /^localhost$/i,
+  /^127\.\d+\.\d+\.\d+$/,
+  /^10\.\d+\.\d+\.\d+$/,
+  /^192\.168\.\d+\.\d+$/,
+  /^172\.(1[6-9]|2\d|3[01])\.\d+\.\d+$/,
+  /^169\.254\.\d+\.\d+$/,
+  /^metadata\.google\.internal$/i,
+  /^metadata\.azure\.com$/i,
+  /^\[::1\]$/,
+  /^\[fc00:/i,
+  /^\[fd/i,
+  /^\[fe80:/i,
+];
+
+/**
+ * ホスト名がプライベート/予約アドレスかどうかを判定する
+ *
+ * @param hostname - チェックするホスト名
+ * @returns プライベートアドレスの場合 true
+ */
+function isPrivateHostname(hostname: string): boolean {
+  return PRIVATE_HOST_PATTERNS.some((p) => p.test(hostname));
+}
+
+/**
  * linkedomのドキュメント型
  *
  * Cloudflare Workers環境にはDOM型が存在しないため、
@@ -61,11 +90,19 @@ function getMetaContent(doc: LinkedomDocument, property: string): string | null 
 /**
  * 任意のURLからHTML取得 → 本文抽出 → Markdown変換する汎用パーサー
  *
+ * SSRF 対策として、プライベート IP アドレスやメタデータサーバーへの
+ * アクセスはブロックする。
+ *
  * @param url - パース対象のURL
  * @returns パースされた記事情報
- * @throws Error - HTMLの取得またはパースに失敗した場合
+ * @throws Error - プライベートIPへのアクセス、HTMLの取得またはパースに失敗した場合
  */
 export async function parseGeneric(url: string): Promise<ParsedArticle> {
+  const parsedUrl = new URL(url);
+  if (isPrivateHostname(parsedUrl.hostname)) {
+    throw new Error("プライベート IP は許可されません");
+  }
+
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
 
@@ -111,7 +148,6 @@ export async function parseGeneric(url: string): Promise<ParsedArticle> {
   const author = getMetaContent(doc, "article:author");
   const publishedAt = getMetaContent(doc, "article:published_time");
 
-  const parsed = new URL(url);
   const title = article.title ?? "";
   const textContent = article.textContent ?? "";
 
@@ -123,6 +159,6 @@ export async function parseGeneric(url: string): Promise<ParsedArticle> {
     thumbnailUrl,
     readingTimeMinutes: calculateReadingTime(textContent),
     publishedAt,
-    source: parsed.hostname,
+    source: parsedUrl.hostname,
   };
 }

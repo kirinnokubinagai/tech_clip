@@ -791,11 +791,9 @@ describe("PUT /api/articles/:id/tags", () => {
     it("成功レスポンスがAPI設計規約に従った形式であること", async () => {
       // Arrange
       const app = createArticleTestApp();
-      mockSelectWhere
-        .mockResolvedValueOnce([
-          { id: "article_01", userId: MOCK_USER.id, url: "https://example.com" },
-        ])
-        .mockResolvedValueOnce([]);
+      mockSelectWhere.mockResolvedValueOnce([
+        { id: "article_01", userId: MOCK_USER.id, url: "https://example.com" },
+      ]);
       mockDeleteWhere.mockResolvedValue({ rowsAffected: 0 });
 
       // Act
@@ -806,7 +804,11 @@ describe("PUT /api/articles/:id/tags", () => {
       });
 
       // Assert
-      expect(res.status).toBe(404);
+      expect(res.status).toBe(200);
+      const body = (await res.json()) as ArticleTagsResponseBody;
+      expect(body.success).toBe(true);
+      expect(body.data?.articleId).toBe("article_01");
+      expect(body.data?.tagIds).toEqual([]);
     });
   });
 });

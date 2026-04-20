@@ -43,6 +43,8 @@ export type Bindings = {
   GITHUB_TOKEN?: string;
   /** データベース保存用Gemmaモデルタグ（省略時は DEFAULT_GEMMA_MODEL_TAG を使用） */
   GEMMA_MODEL_NAME?: string;
+  /** E2E テスト環境フラグ（"1" で有効。CI / ローカル dev のみ設定する） */
+  IS_E2E_ENV?: string;
 };
 
 /** リクエストスコープで共有する変数 */

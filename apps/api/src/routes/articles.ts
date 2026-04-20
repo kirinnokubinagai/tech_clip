@@ -24,6 +24,7 @@ import {
   HTTP_UNAUTHORIZED,
   HTTP_UNPROCESSABLE_ENTITY,
 } from "../lib/http-status";
+import { createLogger } from "../lib/logger";
 import { omitContent } from "../lib/response-utils";
 import type { ParsedArticle } from "../services/article-parser";
 
@@ -353,11 +354,9 @@ export function createArticlesRoute(options: ArticlesRouteOptions) {
           HTTP_UNPROCESSABLE_ENTITY,
         );
       }
-      console.error(
-        "parseArticle failed:",
-        error instanceof Error ? error.message : String(error),
-        error instanceof Error ? error.stack : "",
-      );
+      createLogger().error("parseArticle failed", {
+        error: error instanceof Error ? error : new Error(String(error)),
+      });
       return c.json(
         {
           success: false,

@@ -2,10 +2,11 @@ import { Hono } from "hono";
 
 import type { Auth } from "../auth";
 import type { Database } from "../db";
+import type { User } from "../db/schema/users";
 import { resolveUserFromRequest } from "./resolve-user";
 
 /** 認証付きサブアプリの変数型 */
-type AuthVariables = { Variables: { user?: Record<string, unknown> } };
+type AuthVariables = { Variables: { user?: User } };
 
 /**
  * セッションミドルウェアを適用した認証済みサブアプリを生成し、

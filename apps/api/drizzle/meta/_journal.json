@@ -36,6 +36,13 @@
       "when": 1776484579120,
       "tag": "0004_add_is_test_account_to_users",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "6",
+      "when": 1776686097271,
+      "tag": "0005_add_performance_indexes",
+      "breakpoints": true
     }
   ]
 }

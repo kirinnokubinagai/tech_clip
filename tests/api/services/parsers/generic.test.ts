@@ -247,3 +247,60 @@ describe("parseGeneric", () => {
     });
   });
 });
+
+describe("SSRF 対策", () => {
+  it("localhost への fetch をブロックすること", async () => {
+    // Act & Assert
+    await expect(parseGeneric("http://localhost/secret")).rejects.toThrow(
+      "プライベート IP は許可されません",
+    );
+    expect(mockFetch).not.toHaveBeenCalled();
+  });
+
+  it("127.0.0.1 への fetch をブロックすること", async () => {
+    // Act & Assert
+    await expect(parseGeneric("http://127.0.0.1/secret")).rejects.toThrow(
+      "プライベート IP は許可されません",
+    );
+    expect(mockFetch).not.toHaveBeenCalled();
+  });
+
+  it("10.x.x.x プライベートアドレスへの fetch をブロックすること", async () => {
+    // Act & Assert
+    await expect(parseGeneric("http://10.0.0.1/secret")).rejects.toThrow(
+      "プライベート IP は許可されません",
+    );
+    expect(mockFetch).not.toHaveBeenCalled();
+  });
+
+  it("192.168.x.x プライベートアドレスへの fetch をブロックすること", async () => {
+    // Act & Assert
+    await expect(parseGeneric("http://192.168.1.1/secret")).rejects.toThrow(
+      "プライベート IP は許可されません",
+    );
+    expect(mockFetch).not.toHaveBeenCalled();
+  });
+
+  it("metadata.google.internal への fetch をブロックすること", async () => {
+    // Act & Assert
+    await expect(
+      parseGeneric("http://metadata.google.internal/computeMetadata/v1/"),
+    ).rejects.toThrow("プライベート IP は許可されません");
+    expect(mockFetch).not.toHaveBeenCalled();
+  });
+
+  it("パブリック URL への fetch は許可すること", async () => {
+    // Arrange
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      text: () => Promise.resolve(SAMPLE_HTML),
+    });
+
+    // Act
+    const result = await parseGeneric("https://example.com/article");
+
+    // Assert
+    expect(mockFetch).toHaveBeenCalledOnce();
+    expect(result.source).toBe("example.com");
+  });
+});
