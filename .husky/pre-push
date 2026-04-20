@@ -71,6 +71,14 @@ echo "全チェック通過"
 # emulator が起動していて maestro が使える時だけ実行
 if command -v adb >/dev/null 2>&1 && adb devices 2>/dev/null | grep -q "emulator"; then
   if command -v maestro >/dev/null 2>&1; then
+    echo "[pre-push] e2e 環境をリセット中..."
+    if bash "${REPO_ROOT}/scripts/e2e/reset-e2e-env.sh"; then
+      echo "[pre-push] e2e 環境リセット完了"
+    else
+      echo "[pre-push] WARNING: e2e 環境リセット失敗（Turso 未起動の可能性）。smoke test をスキップ"
+      exit 0
+    fi
+
     echo "[pre-push] maestro smoke test を実行中..."
     # 複数 worktree 並列 push 時のポート衝突回避:
     # worktree パスのハッシュから ANDROID_SERIAL を決定する（起動中エミュレーター一覧からインデックス選択）

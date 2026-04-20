@@ -6,6 +6,11 @@ export NODE_OPTIONS="${NODE_OPTIONS:---no-experimental-strip-types}"
 
 mkdir -p screenshots test-results
 
+# Reset DB and seed e2e data before building the app
+echo "[e2e] DB リセット + migrate + seed を実行中..."
+nix develop --command bash -c 'cd apps/api && export TURSO_DATABASE_URL="${TURSO_DATABASE_URL:-http://127.0.0.1:8888}" && export TURSO_AUTH_TOKEN="${TURSO_AUTH_TOKEN:-dummy}" && pnpm reset:e2e'
+echo "[e2e] DB セットアップ完了"
+
 # Build and install development build
 nix develop --command bash -c "cd apps/mobile && pnpm expo run:android --variant debug" &
 EXPO_PID=$!
