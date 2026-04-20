@@ -57,6 +57,7 @@ const EMPTY_CONTENT_HTML = `
 const mockFetch = vi.fn();
 
 beforeEach(() => {
+  mockFetch.mockReset();
   vi.stubGlobal("fetch", mockFetch);
 });
 
