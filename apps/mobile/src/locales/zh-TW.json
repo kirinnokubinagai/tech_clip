@@ -83,6 +83,8 @@
     "socialSeparator": "或",
     "continueWithGoogle": "透過Google登入",
     "continueWithGithub": "透過GitHub登入",
+    "signUpWithGoogle": "透過Google註冊",
+    "signUpWithGithub": "透過GitHub註冊",
     "socialLoginFailed": "社群登入啟動失敗，請再試一次。",
     "callback": {
       "signingIn": "登入中...",

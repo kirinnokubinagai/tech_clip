@@ -14,10 +14,17 @@ import {
 
 import { AuthAlert } from "@/components/auth/AuthAlert";
 import { AuthSubmitButton } from "@/components/auth/AuthSubmitButton";
+import { OAuthButtons, type SocialProvider } from "@/components/auth/OAuthButtons";
 import { useColors } from "@/hooks/use-colors";
 import { EMAIL_SIMPLE_REGEX, PASSWORD_MIN_LENGTH } from "@/lib/validation";
 import { useAuthStore } from "@/stores/auth-store";
 
+/**
+ * 新規登録画面
+ * メール・パスワード入力による登録フォームと、
+ * Google / GitHub OAuth による登録ボタンを表示する。
+ * OAuth 経由の場合、Better Auth が初回認証時に自動でアカウント作成を行う。
+ */
 export default function RegisterScreen() {
   const { t } = useTranslation();
   const colors = useColors();
@@ -27,7 +34,10 @@ export default function RegisterScreen() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [socialLoadingProvider, setSocialLoadingProvider] = useState<SocialProvider | null>(null);
   const [errorMessage, setErrorMessage] = useState("");
+
+  const isAnySubmitting = isSubmitting || socialLoadingProvider !== null;
 
   /**
    * 新規登録フォームを送信する
@@ -106,7 +116,7 @@ export default function RegisterScreen() {
               autoCapitalize="words"
               autoComplete="name"
               textContentType="name"
-              editable={!isSubmitting}
+              editable={!isAnySubmitting}
               accessibilityLabel={t("auth.name")}
               accessibilityHint={t("auth.nameHint")}
               testID="register-name-input"
@@ -125,7 +135,7 @@ export default function RegisterScreen() {
               autoComplete="email"
               keyboardType="email-address"
               textContentType="emailAddress"
-              editable={!isSubmitting}
+              editable={!isAnySubmitting}
               accessibilityLabel={t("auth.email")}
               accessibilityHint={t("auth.emailHint")}
               testID="register-email-input"
@@ -143,7 +153,7 @@ export default function RegisterScreen() {
               secureTextEntry
               autoComplete="new-password"
               textContentType="newPassword"
-              editable={!isSubmitting}
+              editable={!isAnySubmitting}
               accessibilityLabel={t("auth.password")}
               accessibilityHint={t("auth.passwordHint", { min: PASSWORD_MIN_LENGTH })}
               testID="register-password-input"
@@ -154,12 +164,26 @@ export default function RegisterScreen() {
         <AuthSubmitButton
           className="mt-6"
           onPress={handleRegister}
-          disabled={isSubmitting}
+          disabled={isAnySubmitting}
           isLoading={isSubmitting}
           testID="register-submit-button"
           label={t("auth.createAccount")}
           accessibilityHint={t("auth.registerHint")}
           textClassName="text-base font-semibold text-white"
+        />
+
+        <View className="my-6 flex-row items-center">
+          <View className="h-px flex-1 bg-border" />
+          <Text className="mx-3 text-sm text-text-muted">{t("auth.socialSeparator")}</Text>
+          <View className="h-px flex-1 bg-border" />
+        </View>
+
+        <OAuthButtons
+          mode="signup"
+          isAnySubmitting={isAnySubmitting}
+          onError={setErrorMessage}
+          onLoadingChange={setSocialLoadingProvider}
+          loadingProvider={socialLoadingProvider}
         />
 
         <View className="mt-6 flex-row items-center justify-center">

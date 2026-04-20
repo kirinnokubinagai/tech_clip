@@ -1,5 +1,6 @@
 import RegisterScreen from "@mobile-app/(auth)/register";
 import { act, fireEvent, render, waitFor } from "@testing-library/react-native";
+import { Linking } from "react-native";
 
 const mockSignUp = jest.fn();
 
@@ -11,8 +12,16 @@ jest.mock("@mobile/stores/auth-store", () => ({
   ),
 }));
 
+jest.mock("@/lib/api", () => ({
+  getBaseUrl: jest.fn(() => "http://localhost:8787"),
+  fetchWithTimeout: jest.fn((url: string, options: RequestInit) => fetch(url, options)),
+}));
+
+const mockOpenUrl = jest.spyOn(Linking, "openURL").mockResolvedValue();
+
 beforeEach(() => {
   jest.clearAllMocks();
+  global.fetch = jest.fn();
 });
 
 describe("RegisterScreen", () => {
@@ -140,6 +149,82 @@ describe("RegisterScreen", () => {
 
       // Assert: エラーメッセージがaccessibilityLabelとして表示されること
       expect(getByLabelText("メールアドレスはすでに使用されています")).toBeDefined();
+    });
+  });
+
+  describe("OAuthボタン表示", () => {
+    it("Google で登録ボタンが表示されること", async () => {
+      // Arrange & Act
+      const { getByLabelText } = await render(<RegisterScreen />);
+
+      // Assert
+      expect(getByLabelText("Google で登録")).toBeDefined();
+    });
+
+    it("GitHub で登録ボタンが表示されること", async () => {
+      // Arrange & Act
+      const { getByLabelText } = await render(<RegisterScreen />);
+
+      // Assert
+      expect(getByLabelText("GitHub で登録")).toBeDefined();
+    });
+
+    it("Google で登録押下時に認可URLを開くこと", async () => {
+      // Arrange
+      (global.fetch as jest.Mock).mockResolvedValue({
+        ok: true,
+        json: async () => ({ url: "https://accounts.google.com/o/oauth2/auth" }),
+      });
+      const { getByLabelText } = await render(<RegisterScreen />);
+
+      // Act
+      await fireEvent.press(getByLabelText("Google で登録"));
+
+      // Assert
+      await waitFor(() => {
+        expect(global.fetch).toHaveBeenCalledWith(
+          "http://localhost:8787/api/auth/sign-in/social",
+          expect.objectContaining({
+            method: "POST",
+          }),
+        );
+        expect(mockOpenUrl).toHaveBeenCalledWith("https://accounts.google.com/o/oauth2/auth");
+      });
+    });
+
+    it("OAuthソーシャル登録開始に失敗した場合エラーメッセージが表示されること", async () => {
+      // Arrange
+      (global.fetch as jest.Mock).mockResolvedValue({
+        ok: false,
+        json: async () => ({}),
+      });
+      const { getByLabelText, findByLabelText } = await render(<RegisterScreen />);
+
+      // Act
+      await fireEvent.press(getByLabelText("GitHub で登録"));
+
+      // Assert
+      expect(
+        await findByLabelText("ソーシャルログインの開始に失敗しました。もう一度お試しください。"),
+      ).toBeDefined();
+    });
+
+    it("https以外のURLが返された場合は遷移せずエラーメッセージを表示すること", async () => {
+      // Arrange
+      (global.fetch as jest.Mock).mockResolvedValue({
+        ok: true,
+        json: async () => ({ url: "javascript:alert('xss')" }),
+      });
+      const { getByLabelText, findByLabelText } = await render(<RegisterScreen />);
+
+      // Act
+      await fireEvent.press(getByLabelText("GitHub で登録"));
+
+      // Assert
+      expect(
+        await findByLabelText("ソーシャルログインの開始に失敗しました。もう一度お試しください。"),
+      ).toBeDefined();
+      expect(mockOpenUrl).not.toHaveBeenCalled();
     });
   });
 });

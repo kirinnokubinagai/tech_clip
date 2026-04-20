@@ -83,6 +83,8 @@
     "socialSeparator": "或",
     "continueWithGoogle": "通过Google登录",
     "continueWithGithub": "通过GitHub登录",
+    "signUpWithGoogle": "通过Google注册",
+    "signUpWithGithub": "通过GitHub注册",
     "socialLoginFailed": "社交登录启动失败，请再试一次。",
     "callback": {
       "signingIn": "登录中...",

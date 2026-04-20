@@ -83,6 +83,8 @@
     "socialSeparator": "또는",
     "continueWithGoogle": "Google로 로그인",
     "continueWithGithub": "GitHub로 로그인",
+    "signUpWithGoogle": "Google로 가입",
+    "signUpWithGithub": "GitHub로 가입",
     "socialLoginFailed": "소셜 로그인 시작에 실패했습니다. 다시 시도해 주세요.",
     "callback": {
       "signingIn": "로그인 중...",

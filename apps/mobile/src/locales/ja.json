@@ -83,6 +83,8 @@
     "socialSeparator": "または",
     "continueWithGoogle": "Google でログイン",
     "continueWithGithub": "GitHub でログイン",
+    "signUpWithGoogle": "Google で登録",
+    "signUpWithGithub": "GitHub で登録",
     "socialLoginFailed": "ソーシャルログインの開始に失敗しました。もう一度お試しください。",
     "callback": {
       "signingIn": "ログイン中...",
