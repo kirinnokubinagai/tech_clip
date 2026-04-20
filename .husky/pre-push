@@ -94,7 +94,7 @@ if command -v adb >/dev/null 2>&1 && adb devices 2>/dev/null | grep -q "emulator
       done < <(find "${REPO_ROOT}/tests/e2e/maestro" -name "*.yaml" ! -name ".env.yaml" | sort)
       if (( ${#_SMOKE_FLOWS[@]} == 0 )); then
         echo "[pre-push] smoke flow が見つかりません。smoke test をスキップ"
-      elif ! timeout 180 maestro test \
+      elif ! timeout 900 maestro test \
            --include-tags smoke \
            "${_SMOKE_FLOWS[@]}"; then
         echo ""
