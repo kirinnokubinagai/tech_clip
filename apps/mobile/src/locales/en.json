@@ -108,7 +108,9 @@
       "passwordMinLength": "Password must be at least {{min}} characters."
     },
     "continueWithApple": "Continue with Apple",
-    "signUpWithApple": "Sign up with Apple"
+    "signUpWithApple": "Sign up with Apple",
+    "nameOptional": "Name (optional)",
+    "nameOptionalHint": "If left blank, a name will be generated from your email"
   },
   "tabs": {
     "home": "Home",

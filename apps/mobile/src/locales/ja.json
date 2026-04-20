@@ -108,7 +108,9 @@
       "passwordMinLength": "パスワードは{{min}}文字以上で入力してください。"
     },
     "continueWithApple": "Apple でログイン",
-    "signUpWithApple": "Apple で登録"
+    "signUpWithApple": "Apple で登録",
+    "nameOptional": "お名前（任意）",
+    "nameOptionalHint": "未入力の場合はメールアドレスから自動生成されます"
   },
   "tabs": {
     "home": "ホーム",

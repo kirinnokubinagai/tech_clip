@@ -42,7 +42,8 @@ export type SignInResponse = {
 };
 
 export type SignUpParams = {
-  name: string;
+  /** 表示名（省略可。省略時はサーバー側でメールアドレスの local-part を使用する） */
+  name?: string;
   email: string;
   password: string;
 };

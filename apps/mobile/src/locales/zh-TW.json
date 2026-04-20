@@ -108,7 +108,9 @@
       "passwordMinLength": "請輸入{{min}}個字元以上的密碼"
     },
     "continueWithApple": "使用 Apple 繼續",
-    "signUpWithApple": "使用 Apple 註冊"
+    "signUpWithApple": "使用 Apple 註冊",
+    "nameOptional": "姓名（選填）",
+    "nameOptionalHint": "留空時將從電子郵件地址自動生成"
   },
   "tabs": {
     "home": "首頁",

@@ -46,10 +46,6 @@ export default function RegisterScreen() {
     setErrorMessage("");
     const trimmedEmail = email.trim();
 
-    if (!name.trim()) {
-      setErrorMessage(t("auth.validation.nameRequired"));
-      return;
-    }
     if (!trimmedEmail) {
       setErrorMessage(t("auth.validation.emailRequired"));
       return;
@@ -70,7 +66,7 @@ export default function RegisterScreen() {
     setIsSubmitting(true);
 
     try {
-      await signUp({ name: name.trim(), email: email.trim(), password });
+      await signUp({ name: name.trim() || undefined, email: email.trim(), password });
     } catch (error: unknown) {
       if (error instanceof Error) {
         setErrorMessage(error.message);
@@ -106,10 +102,12 @@ export default function RegisterScreen() {
 
         <View className="gap-4">
           <View>
-            <Text className="mb-1.5 text-sm font-medium text-text-muted">{t("auth.name")}</Text>
+            <Text className="mb-1.5 text-sm font-medium text-text-muted">
+              {t("auth.nameOptional")}
+            </Text>
             <TextInput
               className="rounded-lg border border-border bg-surface px-4 py-3 text-base text-text"
-              placeholder={t("auth.namePlaceholder")}
+              placeholder={t("auth.nameOptionalHint")}
               placeholderTextColor={colors.textDim}
               value={name}
               onChangeText={setName}
@@ -117,7 +115,7 @@ export default function RegisterScreen() {
               autoComplete="name"
               textContentType="name"
               editable={!isAnySubmitting}
-              accessibilityLabel={t("auth.name")}
+              accessibilityLabel={t("auth.nameOptional")}
               accessibilityHint={t("auth.nameHint")}
               testID="register-name-input"
             />

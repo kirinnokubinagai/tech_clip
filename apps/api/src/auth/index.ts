@@ -97,6 +97,15 @@ export function createAuth(
     databaseHooks: {
       user: {
         create: {
+          before: async (user) => {
+            if (!user.name || user.name.trim() === "") {
+              const localPart = user.email.split("@")[0] ?? user.email;
+              return {
+                data: { ...user, name: localPart },
+              };
+            }
+            return { data: user };
+          },
           after: async (user) => {
             if (user.email.includes("+maestro@")) {
               await db

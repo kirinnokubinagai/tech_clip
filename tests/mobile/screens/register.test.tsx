@@ -17,11 +17,6 @@ jest.mock("@/lib/api", () => ({
   fetchWithTimeout: jest.fn((url: string, options: RequestInit) => fetch(url, options)),
 }));
 
-jest.mock("react-native/Libraries/Utilities/Platform", () => ({
-  OS: "ios",
-  select: jest.fn((spec: Record<string, unknown>) => spec.ios),
-}));
-
 const mockOpenUrl = jest.spyOn(Linking, "openURL").mockResolvedValue();
 
 beforeEach(() => {
@@ -36,7 +31,7 @@ describe("RegisterScreen", () => {
       mockSignUp.mockResolvedValue(undefined);
       const { getByLabelText } = await render(<RegisterScreen />);
 
-      await fireEvent.changeText(getByLabelText("名前"), "テストユーザー");
+      await fireEvent.changeText(getByLabelText("お名前（任意）"), "テストユーザー");
       await fireEvent.changeText(getByLabelText("メールアドレス"), "test@example.com");
       await fireEvent.changeText(getByLabelText("パスワード"), "Password123");
 
@@ -54,8 +49,9 @@ describe("RegisterScreen", () => {
       });
     });
 
-    it("名前が空の場合signUpが呼ばれないこと", async () => {
+    it("名前が空でもsignUpがname=undefinedで呼ばれること", async () => {
       // Arrange
+      mockSignUp.mockResolvedValue(undefined);
       const { getByLabelText } = await render(<RegisterScreen />);
 
       await fireEvent.changeText(getByLabelText("メールアドレス"), "test@example.com");
@@ -66,7 +62,12 @@ describe("RegisterScreen", () => {
 
       // Assert
       await waitFor(() => {
-        expect(mockSignUp).not.toHaveBeenCalled();
+        expect(mockSignUp).toHaveBeenCalledTimes(1);
+        expect(mockSignUp).toHaveBeenCalledWith({
+          name: undefined,
+          email: "test@example.com",
+          password: "Password123",
+        });
       });
     });
 
@@ -74,7 +75,7 @@ describe("RegisterScreen", () => {
       // Arrange
       const { getByLabelText } = await render(<RegisterScreen />);
 
-      await fireEvent.changeText(getByLabelText("名前"), "テストユーザー");
+      await fireEvent.changeText(getByLabelText("お名前（任意）"), "テストユーザー");
       await fireEvent.changeText(getByLabelText("パスワード"), "Password123");
 
       // Act
@@ -90,7 +91,7 @@ describe("RegisterScreen", () => {
       // Arrange
       const { getByLabelText } = await render(<RegisterScreen />);
 
-      await fireEvent.changeText(getByLabelText("名前"), "テストユーザー");
+      await fireEvent.changeText(getByLabelText("お名前（任意）"), "テストユーザー");
       await fireEvent.changeText(getByLabelText("メールアドレス"), "invalid-email");
       await fireEvent.changeText(getByLabelText("パスワード"), "Password123");
 
@@ -108,7 +109,7 @@ describe("RegisterScreen", () => {
       // Arrange
       const { getByLabelText } = await render(<RegisterScreen />);
 
-      await fireEvent.changeText(getByLabelText("名前"), "テストユーザー");
+      await fireEvent.changeText(getByLabelText("お名前（任意）"), "テストユーザー");
       await fireEvent.changeText(getByLabelText("メールアドレス"), "test@example.com");
 
       // Act
@@ -124,7 +125,7 @@ describe("RegisterScreen", () => {
       // Arrange
       const { getByLabelText } = await render(<RegisterScreen />);
 
-      await fireEvent.changeText(getByLabelText("名前"), "テストユーザー");
+      await fireEvent.changeText(getByLabelText("お名前（任意）"), "テストユーザー");
       await fireEvent.changeText(getByLabelText("メールアドレス"), "test@example.com");
       await fireEvent.changeText(getByLabelText("パスワード"), "1234567");
 
@@ -143,7 +144,7 @@ describe("RegisterScreen", () => {
       mockSignUp.mockRejectedValue(new Error("メールアドレスはすでに使用されています"));
       const { getByLabelText } = await render(<RegisterScreen />);
 
-      await fireEvent.changeText(getByLabelText("名前"), "テストユーザー");
+      await fireEvent.changeText(getByLabelText("お名前（任意）"), "テストユーザー");
       await fireEvent.changeText(getByLabelText("メールアドレス"), "test@example.com");
       await fireEvent.changeText(getByLabelText("パスワード"), "Password123");
 
@@ -174,8 +175,8 @@ describe("RegisterScreen", () => {
       expect(getByLabelText("GitHub で登録")).toBeDefined();
     });
 
-    it("Apple で登録ボタンがiOSで表示されること", async () => {
-      // Arrange & Act
+    it("Apple で登録ボタンがiOS環境で表示されること", async () => {
+      // Arrange & Act (jest-expo はデフォルトで iOS 環境)
       const { getByLabelText } = await render(<RegisterScreen />);
 
       // Assert
