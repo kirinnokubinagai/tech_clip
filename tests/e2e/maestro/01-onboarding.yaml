@@ -39,8 +39,8 @@ tags:
 - takeScreenshot: screenshots/01-onboarding/01-launch
 
 # --- ページ1: 技術記事をワンタップで保存 ---
-- extendedWaitUntil:
-    visible: "技術記事をワンタップで保存"
+- assertVisible:
+    text: "技術記事をワンタップで保存"
     timeout: 60000
 - runFlow:
     when:
@@ -65,8 +65,8 @@ tags:
 - takeScreenshot: screenshots/01-onboarding/02-page2
 
 # --- ページ2: AIが要約・翻訳 ---
-- extendedWaitUntil:
-    visible: "AIが要約・翻訳"
+- assertVisible:
+    text: "AIが要約・翻訳"
     timeout: 10000
 - runFlow:
     when:
@@ -90,8 +90,8 @@ tags:
           timeout: 2000
 
 # --- ページ3: お気に入り・タグで整理 ---
-- extendedWaitUntil:
-    visible: "お気に入り・タグで整理"
+- assertVisible:
+    text: "お気に入り・タグで整理"
     timeout: 10000
 - runFlow:
     when:
@@ -115,8 +115,8 @@ tags:
           timeout: 2000
 
 # --- ページ4: さあ、始めましょう（最終ページ）---
-- extendedWaitUntil:
-    visible: "さあ、始めましょう"
+- assertVisible:
+    text: "さあ、始めましょう"
     timeout: 10000
 - runFlow:
     when:

@@ -37,27 +37,26 @@ env:
 
 # オンボーディング: ページ1 → 2 → 3 → 4（始める）
 # LogBox.ignoreAllLogs() で dev banner を無効化済みのため、unconditional 座標 tap は不要
-- extendedWaitUntil:
-    visible: "技術記事をワンタップで保存"
+- assertVisible:
+    text: "技術記事をワンタップで保存"
     timeout: 60000
 - tapOn:
     id: "next-button"
-- extendedWaitUntil:
-    visible: "AIが要約・翻訳"
+- assertVisible:
+    text: "AIが要約・翻訳"
     timeout: 10000
 - tapOn:
     id: "next-button"
-- extendedWaitUntil:
-    visible: "お気に入り・タグで整理"
+- assertVisible:
+    text: "お気に入り・タグで整理"
     timeout: 10000
 - tapOn:
     id: "next-button"
-- extendedWaitUntil:
-    visible: "さあ、始めましょう"
+- assertVisible:
+    text: "さあ、始めましょう"
     timeout: 10000
-- extendedWaitUntil:
-    visible:
-      id: "finish-button"
+- assertVisible:
+    id: "finish-button"
     timeout: 10000
 - tapOn:
     id: "finish-button"

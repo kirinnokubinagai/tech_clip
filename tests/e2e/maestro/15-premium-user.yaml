@@ -27,8 +27,8 @@ env:
     timeout: 3000
 
 # --- ホーム画面確認 ---
-- extendedWaitUntil:
-    visible: "すべて"
+- assertVisible:
+    text: "すべて"
     timeout: 30000
 - takeScreenshot: screenshots/15-premium-user/01-home
 

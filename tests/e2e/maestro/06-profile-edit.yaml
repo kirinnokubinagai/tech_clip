@@ -37,9 +37,8 @@ env:
 
 # プロフィール編集画面へ deeplink 遷移
 - openLink: techclip://profile/edit
-- extendedWaitUntil:
-    visible:
-      id: "profile-edit-screen"
+- assertVisible:
+    id: "profile-edit-screen"
     timeout: 30000
 - assertVisible: "プロフィール編集"
 - takeScreenshot: screenshots/06-profile-edit/01-edit-screen

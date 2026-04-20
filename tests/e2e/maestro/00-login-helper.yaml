@@ -13,24 +13,32 @@ env:
 - waitForAnimationToEnd:
     timeout: 60000
 
-# いずれかの初期画面が確実に表示されるまで extendedWaitUntil を連続試行
+# いずれかの初期画面が確実に表示されるまで runFlow when: visible で条件分岐
 # 最初に hit する text でループを抜ける
-- extendedWaitUntil:
-    visible: "技術記事をワンタップで保存"
-    timeout: 30000
-    optional: true
-- extendedWaitUntil:
-    visible: "パスワードを忘れた方"
-    timeout: 30000
-    optional: true
-- extendedWaitUntil:
-    visible: "アカウントを作成"
-    timeout: 30000
-    optional: true
-- extendedWaitUntil:
-    visible: "すべて"
-    timeout: 30000
-    optional: true
+- runFlow:
+    when:
+      visible: "技術記事をワンタップで保存"
+    commands:
+      - waitForAnimationToEnd:
+          timeout: 1000
+- runFlow:
+    when:
+      visible: "パスワードを忘れた方"
+    commands:
+      - waitForAnimationToEnd:
+          timeout: 1000
+- runFlow:
+    when:
+      visible: "アカウントを作成"
+    commands:
+      - waitForAnimationToEnd:
+          timeout: 1000
+- runFlow:
+    when:
+      visible: "すべて"
+    commands:
+      - waitForAnimationToEnd:
+          timeout: 1000
 
 # onboarding ページ1 検出 → 4 ページ通過
 - runFlow:
@@ -82,6 +90,6 @@ env:
           timeout: 10000
 
 # ホーム画面ロード完了待ち
-- extendedWaitUntil:
-    visible: "すべて"
+- assertVisible:
+    text: "すべて"
     timeout: 30000

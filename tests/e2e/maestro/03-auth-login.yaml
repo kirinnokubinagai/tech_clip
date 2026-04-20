@@ -44,8 +44,8 @@ env:
           timeout: 2000
 
 # オンボーディング: 4ページ通過（next-button x3 → finish-button）
-- extendedWaitUntil:
-    visible: "技術記事をワンタップで保存"
+- assertVisible:
+    text: "技術記事をワンタップで保存"
     timeout: 60000
 - tapOn:
     id: "next-button"
@@ -182,8 +182,8 @@ env:
           point: "92%, 93%"
       - waitForAnimationToEnd:
           timeout: 2000
-- extendedWaitUntil:
-    visible: "技術記事をワンタップで保存"
+- assertVisible:
+    text: "技術記事をワンタップで保存"
     timeout: 60000
 - tapOn:
     id: "next-button"

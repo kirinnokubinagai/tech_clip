@@ -44,9 +44,8 @@ env:
     timeout: 2000
 
 # 設定タブへ移動（tab-bar visible 待機）
-- extendedWaitUntil:
-    visible:
-      id: "tab-settings"
+- assertVisible:
+    id: "tab-settings"
     timeout: 30000
 - tapOn:
     id: "tab-settings"
@@ -83,8 +82,8 @@ env:
 
 # --- 言語設定 ---
 - tapOn: "言語"
-- extendedWaitUntil:
-    visible: "日本語"
+- assertVisible:
+    text: "日本語"
     timeout: 5000
 - assertVisible: "日本語"
 - assertVisible: "English"
