@@ -2,6 +2,7 @@
   "name": "@tech-clip/api",
   "version": "0.1.0",
   "private": true,
+  "type": "module",
   "scripts": {
     "dev": "wrangler dev",
     "build": "wrangler deploy --dry-run",
@@ -16,8 +17,8 @@
     "db:migrate": "drizzle-kit migrate",
     "db:studio": "drizzle-kit studio",
     "db:seed": "tsx src/db/seed.ts",
-    "reset-db": "node --experimental-strip-types scripts/reset-db.ts",
-    "seed:maestro": "node --experimental-strip-types scripts/seed-maestro-static.ts",
+    "reset-db": "tsx scripts/reset-db.ts",
+    "seed:maestro": "tsx scripts/seed-maestro-static.ts",
     "reset:e2e": "pnpm reset-db && pnpm db:migrate && pnpm db:seed && pnpm seed:maestro"
   },
   "dependencies": {
