@@ -39,6 +39,9 @@ issue-[0-9]*-reviewer|issue-[0-9]*-infra-reviewer|issue-[0-9]*-ui-reviewer)
         if [ "$EXISTS" = "0" ]; then
           deny "DENY: Issue #${ISSUE_NUM} に analyst (${ANALYST_NAME}) が存在しません。CLAUDE.md 必須 spawn 順序に従い analyst を先に spawn してください。"
         fi
+      else
+        # team config が存在しない = active-issues チームが未作成。異常状態なので deny する
+        deny "DENY: active-issues team config が存在しません。TeamCreate(\"active-issues\") を先に実行してください。"
       fi
       ;;
   esac

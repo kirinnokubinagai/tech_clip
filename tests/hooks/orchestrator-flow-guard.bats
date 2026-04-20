@@ -94,11 +94,12 @@ run_hook() {
     [ "$status" -eq 0 ]
 }
 
-@test "team config が存在しない場合は spawn が許可されること" {
+@test "team config が存在しない場合は spawn がブロックされること" {
     rm -f "$CLAUDE_USER_ROOT/teams/active-issues/config.json"
     local json='{"tool_name":"Agent","tool_input":{"name":"issue-999-coder","subagent_type":"coder"}}'
     run run_hook "$json"
-    [ "$status" -eq 0 ]
+    [ "$status" -eq 2 ]
+    [[ "$output" == *"DENY"* ]]
 }
 
 # -------------------------------------------------------------------------
