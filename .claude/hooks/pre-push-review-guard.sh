@@ -69,7 +69,7 @@ MARKER="${WORKTREE_PATH}/.claude/.review-passed"
 
 if [ ! -f "$MARKER" ]; then
   echo "DENY: ローカルレビューが完了していません。pushできません。" >&2
-  echo "  code-reviewerエージェントでレビューを実行し、全件PASSしてからpushしてください。" >&2
+  echo "  reviewer / infra-reviewer / ui-reviewer エージェントでレビューを実行し、全件PASSしてからpushしてください。" >&2
   echo "  レビュー完了後、マーカーファイルが自動作成されます: ${MARKER}" >&2
   exit 2
 fi
