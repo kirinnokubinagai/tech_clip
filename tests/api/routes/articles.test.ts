@@ -297,6 +297,16 @@ function createSingleArticleTestAppWithoutAuth() {
   return app;
 }
 
+/**
+ * テスト用 cursor エンコードヘルパー（base64url）
+ */
+function makeTestCursor(createdAt: string, id: string): string {
+  return btoa(JSON.stringify({ createdAt, id }))
+    .replace(/\+/g, "-")
+    .replace(/\//g, "_")
+    .replace(/=/g, "");
+}
+
 describe("GET /api/articles", () => {
   let mockQueryFn: MockQueryFn;
 
@@ -401,7 +411,8 @@ describe("GET /api/articles", () => {
       const app = createGetTestApp(mockQueryFn);
 
       // Act
-      const res = await app.request("/api/articles?cursor=article_020");
+      const validCursor = makeTestCursor("2024-01-20T00:00:00.000Z", "article_020");
+      const res = await app.request(`/api/articles?cursor=${validCursor}`);
 
       // Assert
       expect(res.status).toBe(200);
@@ -663,10 +674,11 @@ describe("GET /api/articles", () => {
       const app = createGetTestApp(mockQueryFn);
 
       // Act
-      await app.request("/api/articles?cursor=article_010");
+      const validCursor = makeTestCursor("2024-01-10T00:00:00.000Z", "article_010");
+      await app.request(`/api/articles?cursor=${validCursor}`);
 
       // Assert
-      expect(mockQueryFn).toHaveBeenCalledWith(expect.objectContaining({ cursor: "article_010" }));
+      expect(mockQueryFn).toHaveBeenCalledWith(expect.objectContaining({ cursor: validCursor }));
     });
 
     it("フィルター未指定時はundefinedが渡されること", async () => {

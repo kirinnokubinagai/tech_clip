@@ -66,3 +66,69 @@ export function htmlFragmentToMarkdown(html: string, turndown: TurndownService):
   >[0];
   return turndown.turndown(bodyAsTurndownInput);
 }
+
+/**
+ * 複合カーソル型
+ */
+export type CompositeCursor = {
+  createdAt: string;
+  id: string;
+};
+
+/**
+ * 複合カーソルを base64url エンコードして文字列化する
+ *
+ * `+`, `/`, `=` を URL 非安全文字として変換し、URL クエリパラメータに
+ * 混入しても壊れないようにする。
+ *
+ * @param createdAt - 記事の作成日時（ISO文字列）
+ * @param id - 記事のID
+ * @returns base64url エンコードされたカーソル文字列
+ */
+export function encodeCursor(createdAt: string, id: string): string {
+  const cursor: CompositeCursor = { createdAt, id };
+  return btoa(JSON.stringify(cursor)).replace(/\+/g, "-").replace(/\//g, "_").replace(/=/g, "");
+}
+
+/**
+ * base64url エンコードされたカーソル文字列をデコードする
+ *
+ * @param cursor - base64url エンコードされたカーソル文字列
+ * @returns デコードされた複合カーソル
+ * @throws SyntaxError - JSON パースに失敗した場合
+ * @throws Error - カーソルの構造が不正な場合
+ */
+export function decodeCursor(cursor: string): CompositeCursor {
+  const base64 = cursor.replace(/-/g, "+").replace(/_/g, "/");
+  const padded = base64 + "===".slice((base64.length + 3) % 4);
+  const decoded = JSON.parse(atob(padded)) as unknown;
+  if (
+    typeof decoded !== "object" ||
+    decoded === null ||
+    typeof (decoded as Record<string, unknown>).createdAt !== "string" ||
+    typeof (decoded as Record<string, unknown>).id !== "string"
+  ) {
+    throw new Error("カーソルの構造が不正です");
+  }
+  return decoded as CompositeCursor;
+}
+
+/** Cloudflare Workers CPU バジェット超過防止のための HTML 最大バイト数（1.5 MB） */
+export const MAX_HTML_BYTES = 1_500_000;
+
+/**
+ * HTML テキストのサイズが上限を超えていないか検証する
+ *
+ * Cloudflare Workers は CPU 時間の制限があるため、Readability/TurndownService の
+ * 処理対象 HTML のサイズに上限を設けてタイムアウトを防ぐ。
+ *
+ * @param html - 検証対象の HTML 文字列
+ * @throws Error - MAX_HTML_BYTES を超える場合
+ */
+export function assertHtmlSize(html: string): void {
+  if (html.length > MAX_HTML_BYTES) {
+    throw new Error(
+      `HTML サイズが上限を超えています（${html.length} バイト > ${MAX_HTML_BYTES} バイト）`,
+    );
+  }
+}
