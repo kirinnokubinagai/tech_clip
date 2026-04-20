@@ -191,9 +191,8 @@ export function createSubscriptionRoute(options: SubscriptionRouteOptions) {
       );
     }
 
-    const userData = found as unknown as Record<string, unknown>;
-    const isPremium = (userData.isPremium ?? false) as boolean;
-    const premiumExpiresAt = (userData.premiumExpiresAt ?? null) as string | null;
+    const isPremium = found.isPremium ?? false;
+    const premiumExpiresAt = found.premiumExpiresAt ?? null;
     const gracePeriod = isInGracePeriod(isPremium, premiumExpiresAt);
     const gracePeriodEndsAt =
       gracePeriod && premiumExpiresAt ? calcGracePeriodEndsAt(premiumExpiresAt) : null;
@@ -246,8 +245,7 @@ export function createSubscriptionRoute(options: SubscriptionRouteOptions) {
       );
     }
 
-    const userData = found as unknown as Record<string, unknown>;
-    if (!userData.isPremium) {
+    if (!found.isPremium) {
       return c.json(
         {
           success: false,
