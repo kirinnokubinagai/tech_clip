@@ -319,8 +319,10 @@ CRITICAL / HIGH / MEDIUM / LOW **すべての指摘が 0 件になるまで PASS
 ### フェーズ 5: push + PR 作成
 
 ```bash
-# レビュー通過マーカー作成
-# Write ツールを使って {worktree}/.claude/.review-passed を作成すること（内容は空でよい）
+# レビュー通過マーカー作成（HEAD SHA を書き込む）
+HEAD_SHA=$(git -C {worktree} rev-parse HEAD)
+# Write ツールを使って {worktree}/.claude/.review-passed を作成すること
+# ファイルの内容: "$HEAD_SHA"（HEAD の commit hash のみ、改行なし）
 
 # push
 cd {worktree} && bash scripts/push-verified.sh

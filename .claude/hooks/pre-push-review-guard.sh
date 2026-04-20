@@ -74,4 +74,13 @@ if [ ! -f "$MARKER" ]; then
   exit 2
 fi
 
+MARKER_SHA=$(cat "$MARKER" | tr -d '[:space:]')
+CURRENT_SHA=$(git -C "$WORKTREE_PATH" rev-parse HEAD 2>/dev/null || echo "")
+
+if [ -n "$CURRENT_SHA" ] && [ "$MARKER_SHA" != "$CURRENT_SHA" ]; then
+  echo "DENY: review-passed マーカー ($MARKER_SHA) は現在の HEAD ($CURRENT_SHA) と一致しません。" >&2
+  echo "  レビュー以降に新しい commit があります。再レビューしてください。" >&2
+  exit 2
+fi
+
 exit 0
