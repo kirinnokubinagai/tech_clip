@@ -31,7 +31,9 @@ console.warn = (...args) => {
     typeof args[0] === "string" &&
     (args[0].includes("フォールバック") ||
       args[0].includes("Fallback") ||
-      args[0].includes("fallback"))
+      args[0].includes("fallback") ||
+      // RevenueCat ネイティブモジュール未設定警告（テスト環境では常に出る既知の問題）
+      args[0].includes("[RevenueCat]"))
   ) {
     return;
   }
