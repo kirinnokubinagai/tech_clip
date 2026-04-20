@@ -194,6 +194,19 @@ reviewer からの SendMessage を待機する。`APPROVED`、`CHANGES_REQUESTED
 
 実装完了後は必ず `pnpm lint` を実行し、lint エラーがないことを確認する。
 
+## レーン並列動作時の注意
+
+`issue-{N}-coder-{lane}` として spawn された場合（lane 付きモード）:
+
+- analyst spec の自 lane セクションに記載された「触って OK」ファイルのみ触る
+- 他 lane と同じファイルを絶対に触らない（merge 事故防止）
+- impl-ready 通知時は lane 情報を含めて reviewer に送る:
+  - `SendMessage(to: "issue-{N}-reviewer", "impl-ready: <hash> lane={lane-name}")`
+- push 責任は reviewer のみ。各 lane は commit のみ行う
+
+`issue-{N}-coder`（lane なし）の場合は従来通りの動作（lane 情報なし）。
+
+
 ## 出力規約
 
 - 実装完了時: 変更ファイル名と1行の概要のみ報告（手順・経緯の説明不要）

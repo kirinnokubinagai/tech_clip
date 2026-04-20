@@ -216,6 +216,19 @@ ui-reviewer から SendMessage が届くまで待機する。
 - エラーメッセージは日本語で記述する
 - 未使用の import・変数は即削除
 
+## レーン並列動作時の注意
+
+`issue-{N}-ui-designer-{lane}` として spawn された場合（lane 付きモード）:
+
+- analyst spec の自 lane セクションに記載された「触って OK」ファイルのみ触る
+- 他 lane と同じファイルを絶対に触らない（merge 事故防止）
+- impl-ready 通知時は lane 情報を含めて ui-reviewer に送る:
+  - `SendMessage(to: "issue-{N}-ui-reviewer", "impl-ready: <hash> lane={lane-name}")`
+- push 責任は ui-reviewer のみ。各 lane は commit のみ行う
+
+`issue-{N}-ui-designer`（lane なし）の場合は従来通りの動作（lane 情報なし）。
+
+
 ## 出力規約
 
 - 実装完了時: 変更ファイル名と1行の概要のみ報告（手順・経緯の説明不要）
