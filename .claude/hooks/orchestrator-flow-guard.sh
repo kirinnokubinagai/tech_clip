@@ -29,8 +29,12 @@ deny() {
 if [ "$TOOL_NAME" = "Agent" ]; then
   NAME=$(echo "$TOOL_INPUT" | jq -r '.name // ""')
   case "$NAME" in
-    issue-[0-9]*-coder|issue-[0-9]*-infra-engineer|issue-[0-9]*-ui-designer|\
-issue-[0-9]*-reviewer|issue-[0-9]*-infra-reviewer|issue-[0-9]*-ui-reviewer)
+    issue-[0-9]*-coder|issue-[0-9]*-coder-*|\
+issue-[0-9]*-infra-engineer|issue-[0-9]*-infra-engineer-*|\
+issue-[0-9]*-ui-designer|issue-[0-9]*-ui-designer-*|\
+issue-[0-9]*-reviewer|issue-[0-9]*-reviewer-*|\
+issue-[0-9]*-infra-reviewer|issue-[0-9]*-infra-reviewer-*|\
+issue-[0-9]*-ui-reviewer|issue-[0-9]*-ui-reviewer-*)
       ISSUE_NUM=$(echo "$NAME" | grep -oE '^issue-[0-9]+' | grep -oE '[0-9]+')
       ANALYST_NAME="issue-${ISSUE_NUM}-analyst"
       if [ -f "$TEAM_CONFIG" ]; then

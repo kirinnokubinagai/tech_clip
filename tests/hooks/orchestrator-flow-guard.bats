@@ -223,6 +223,64 @@ run_hook() {
     [ "$status" -eq 0 ]
 }
 
+
+# -------------------------------------------------------------------------
+# Agent tool: lane suffix (複数レーン並列) テスト
+# -------------------------------------------------------------------------
+
+@test "analyst なしで lane 付き coder (issue-1056-coder-api) spawn はブロックされること" {
+    local json='{"tool_name":"Agent","tool_input":{"name":"issue-1056-coder-api","subagent_type":"coder"}}'
+    run run_hook "$json"
+    [ "$status" -eq 2 ]
+    [[ "$output" == *"DENY"* ]]
+}
+
+@test "analyst なしで lane 付き infra-engineer (issue-1056-infra-engineer-ci) spawn はブロックされること" {
+    local json='{"tool_name":"Agent","tool_input":{"name":"issue-1056-infra-engineer-ci","subagent_type":"infra-engineer"}}'
+    run run_hook "$json"
+    [ "$status" -eq 2 ]
+    [[ "$output" == *"DENY"* ]]
+}
+
+@test "analyst なしで lane 付き reviewer (issue-1056-reviewer-api) spawn はブロックされること" {
+    local json='{"tool_name":"Agent","tool_input":{"name":"issue-1056-reviewer-api","subagent_type":"reviewer"}}'
+    run run_hook "$json"
+    [ "$status" -eq 2 ]
+    [[ "$output" == *"DENY"* ]]
+}
+
+@test "analyst が存在する場合 lane 付き coder-api spawn が許可されること" {
+    echo '{"members":[{"name":"issue-1056-analyst"}]}' \
+        > "$CLAUDE_USER_ROOT/teams/active-issues/config.json"
+    local json='{"tool_name":"Agent","tool_input":{"name":"issue-1056-coder-api","subagent_type":"coder"}}'
+    run run_hook "$json"
+    [ "$status" -eq 0 ]
+}
+
+@test "analyst が存在する場合 lane 付き coder-mobile spawn が許可されること" {
+    echo '{"members":[{"name":"issue-1056-analyst"}]}' \
+        > "$CLAUDE_USER_ROOT/teams/active-issues/config.json"
+    local json='{"tool_name":"Agent","tool_input":{"name":"issue-1056-coder-mobile","subagent_type":"coder"}}'
+    run run_hook "$json"
+    [ "$status" -eq 0 ]
+}
+
+@test "analyst が存在する場合 lane 付き infra-reviewer-ci spawn が許可されること" {
+    echo '{"members":[{"name":"issue-1056-analyst"}]}' \
+        > "$CLAUDE_USER_ROOT/teams/active-issues/config.json"
+    local json='{"tool_name":"Agent","tool_input":{"name":"issue-1056-infra-reviewer-ci","subagent_type":"infra-reviewer"}}'
+    run run_hook "$json"
+    [ "$status" -eq 0 ]
+}
+
+@test "lane 付き coder から issue 番号が正しく抽出されること (1056-coder-api -> analyst: issue-1056-analyst)" {
+    # analyst なし → DENY に含まれる issue 番号が 1056 であること
+    local json='{"tool_name":"Agent","tool_input":{"name":"issue-1056-coder-api","subagent_type":"coder"}}'
+    run run_hook "$json"
+    [ "$status" -eq 2 ]
+    [[ "$output" == *"issue-1056-analyst"* ]]
+}
+
 # -------------------------------------------------------------------------
 # post-ask-user-question.sh と orchestrator-flow-guard.sh のパス一致テスト
 # -------------------------------------------------------------------------
