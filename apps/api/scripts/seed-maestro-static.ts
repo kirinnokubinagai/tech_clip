@@ -12,8 +12,25 @@ import { drizzle } from "drizzle-orm/libsql";
 
 import { accounts, articles, articleTags, follows, tags, users } from "../src/db/schema/index.ts";
 
-/** Maestro 静的 seed ユーザーのパスワード */
-const MAESTRO_STATIC_PASSWORD = "TestPassword123!";
+/** Turso dev サーバーの接続先 URL */
+const SEED_DATABASE_URL = process.env.TURSO_DATABASE_URL ?? "";
+
+/** ローカル DB URL かどうかを判定する */
+const IS_LOCAL_SEED_URL =
+  SEED_DATABASE_URL.startsWith("http://127.0.0.1") ||
+  SEED_DATABASE_URL.startsWith("http://localhost") ||
+  SEED_DATABASE_URL.startsWith("file:") ||
+  SEED_DATABASE_URL === "";
+
+if (!IS_LOCAL_SEED_URL) {
+  process.stderr.write(
+    "[seed-maestro-static] FATAL: seed-maestro-static は local DB 専用です。本番DBへの実行を中断します\n",
+  );
+  process.exit(1);
+}
+
+/** Maestro 静的 seed ユーザーのパスワード（ローカルフォールバック付き） */
+const MAESTRO_STATIC_PASSWORD = process.env.MAESTRO_TEST_PASSWORD ?? "TestPassword123!";
 
 /** FOLLOWEE ユーザー（自分がフォロー・記事 5 件所有） */
 const FOLLOWEE_SPEC = {
