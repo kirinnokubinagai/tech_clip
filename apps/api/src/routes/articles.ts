@@ -43,7 +43,7 @@ type ArticleCompositeCursor = {
  */
 function encodeArticleCursor(createdAt: string, id: string): string {
   const cursor: ArticleCompositeCursor = { createdAt, id };
-  return Buffer.from(JSON.stringify(cursor)).toString("base64url");
+  return btoa(JSON.stringify(cursor));
 }
 
 /** デフォルトのページサイズ */

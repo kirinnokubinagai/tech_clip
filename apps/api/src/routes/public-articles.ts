@@ -22,7 +22,7 @@ type PublicArticleCompositeCursor = {
  */
 function encodePublicCursor(createdAt: string, id: string): string {
   const cursor: PublicArticleCompositeCursor = { createdAt, id };
-  return Buffer.from(JSON.stringify(cursor)).toString("base64url");
+  return btoa(JSON.stringify(cursor));
 }
 
 /** デフォルトのページサイズ */

@@ -1,4 +1,4 @@
-import { and, desc, eq, inArray, lt, or, sql } from "drizzle-orm";
+import { and, desc, eq, inArray, lt, or, type SQL, sql } from "drizzle-orm";
 import { Hono } from "hono";
 
 import type { Database } from "../db";
@@ -36,7 +36,7 @@ type CompositeCursor = {
  */
 function encodeCursor(createdAt: string, id: string): string {
   const cursor: CompositeCursor = { createdAt, id };
-  return Buffer.from(JSON.stringify(cursor)).toString("base64url");
+  return btoa(JSON.stringify(cursor));
 }
 
 /**
@@ -47,7 +47,7 @@ function encodeCursor(createdAt: string, id: string): string {
  */
 function decodeCursor(cursor: string): CompositeCursor | null {
   try {
-    const decoded = JSON.parse(Buffer.from(cursor, "base64url").toString()) as unknown;
+    const decoded = JSON.parse(atob(cursor)) as unknown;
     if (
       typeof decoded !== "object" ||
       decoded === null ||
@@ -119,7 +119,7 @@ export function createFeedRoute(options: { db: Database }): Hono<Variables> {
             sql`${articles.createdAt} = ${new Date(cursor.createdAt)}`,
             lt(articles.id, cursor.id),
           ),
-        ) as ReturnType<typeof and>,
+        ) as SQL,
       );
     }
 

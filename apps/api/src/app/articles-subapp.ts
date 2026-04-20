@@ -1,4 +1,4 @@
-import { and, desc, eq, lt, or, sql } from "drizzle-orm";
+import { and, desc, eq, lt, or, type SQL, sql } from "drizzle-orm";
 import { Hono } from "hono";
 
 import type { Auth } from "../auth";
@@ -39,7 +39,7 @@ export async function handlePublicArticles(db: Database, request: Request): Prom
       const conditions = [eq(articles.userId, params.userId), eq(articles.isPublic, true)];
       if (params.cursor) {
         try {
-          const cur = JSON.parse(Buffer.from(params.cursor, "base64url").toString()) as {
+          const cur = JSON.parse(atob(params.cursor)) as {
             createdAt: string;
             id: string;
           };
@@ -48,7 +48,7 @@ export async function handlePublicArticles(db: Database, request: Request): Prom
             or(
               lt(articles.createdAt, cursorDate),
               and(sql`${articles.createdAt} = ${cursorDate}`, lt(articles.id, cur.id)),
-            ) as ReturnType<typeof and>,
+            ) as SQL,
           );
         } catch {
           conditions.push(lt(articles.id, params.cursor));
@@ -96,7 +96,7 @@ export async function handleArticles(
       const conditions = [eq(articles.userId, params.userId)];
       if (params.cursor) {
         try {
-          const cur = JSON.parse(Buffer.from(params.cursor, "base64url").toString()) as {
+          const cur = JSON.parse(atob(params.cursor)) as {
             createdAt: string;
             id: string;
           };
@@ -105,7 +105,7 @@ export async function handleArticles(
             or(
               lt(articles.createdAt, cursorDate),
               and(sql`${articles.createdAt} = ${cursorDate}`, lt(articles.id, cur.id)),
-            ) as ReturnType<typeof and>,
+            ) as SQL,
           );
         } catch {
           conditions.push(lt(articles.id, params.cursor));

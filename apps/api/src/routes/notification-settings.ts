@@ -20,9 +20,6 @@ import { createLogger } from "../lib/logger";
 
 const logger = createLogger("notification-settings");
 
-/** レスポンスから除外するフィールド */
-const OMIT_FIELDS = ["userId"] as const;
-
 /** 通知設定更新スキーマ */
 const UpdateNotificationSettingsSchema = z
   .object({
@@ -45,11 +42,8 @@ type NotificationSettingsRouteOptions = {
  * @returns userId を除いた通知設定データ
  */
 function omitFields(settings: NotificationSettings): Record<string, unknown> {
-  const result = { ...settings };
-  for (const field of OMIT_FIELDS) {
-    delete result[field];
-  }
-  return result;
+  const { userId: _userId, ...rest } = settings;
+  return rest;
 }
 
 /**
