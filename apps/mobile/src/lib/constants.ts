@@ -19,6 +19,12 @@ export type { ArticleSource };
 export const PAGINATION_LIMIT = 20;
 
 /**
+ * 記事サムネイル画像の高さ（px）
+ * ArticleCard と article/save 画面で共用する
+ */
+export const ARTICLE_THUMBNAIL_HEIGHT = 160;
+
+/**
  * WebView で許可するオリジンのホワイトリスト
  * 対応しているコンテンツソースのドメインのみ許可する
  */
