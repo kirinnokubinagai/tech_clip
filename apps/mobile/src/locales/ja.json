@@ -106,7 +106,9 @@
       "passwordRequired": "パスワードを入力してください。",
       "nameRequired": "名前を入力してください。",
       "passwordMinLength": "パスワードは{{min}}文字以上で入力してください。"
-    }
+    },
+    "continueWithApple": "Apple でログイン",
+    "signUpWithApple": "Apple で登録"
   },
   "tabs": {
     "home": "ホーム",

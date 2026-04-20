@@ -1,5 +1,5 @@
 import { useTranslation } from "react-i18next";
-import { ActivityIndicator, Linking, Pressable, Text, View } from "react-native";
+import { ActivityIndicator, Linking, Platform, Pressable, Text, View } from "react-native";
 import { SvgXml } from "react-native-svg";
 
 import { useColors } from "@/hooks/use-colors";
@@ -19,13 +19,18 @@ const GITHUB_LOGO_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24
   <path fill="currentColor" d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/>
 </svg>`;
 
+/** Apple ロゴのSVG（公式ブランドガイドライン準拠、モノクロ） */
+const APPLE_LOGO_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 384 512">
+  <path fill="currentColor" d="M318.7 268.7c-.2-36.7 16.4-64.4 50-84.8-18.8-26.9-47.2-41.7-84.7-44.6-35.5-2.8-74.3 20.7-88.5 20.7-15 0-49.4-19.7-76.4-19.7C63.3 141.2 4 184.8 4 273.5q0 39.3 14.4 81.2c12.8 36.7 59 126.7 107.2 125.2 25.2-.6 43-17.9 75.8-17.9 31.8 0 48.3 17.9 76.4 17.9 48.6-.7 90.4-82.5 102.6-119.3-65.2-30.7-61.7-90-61.7-91.9zm-56.6-164.2c27.3-32.4 24.8-61.9 24-72.5-24.1 1.4-52 16.4-67.9 34.9-17.5 19.8-27.8 44.3-25.6 71.9 26.1 2 49.9-11.4 69.5-34.3z"/>
+</svg>`;
+
 /** ソーシャルサインインAPIのパス */
 const SOCIAL_SIGN_IN_PATH = "/api/auth/sign-in/social";
 
 /** ソーシャル認証後のコールバックURL */
 const SOCIAL_CALLBACK_URL = `${APP_SCHEME}://auth/callback`;
 
-export type SocialProvider = "google" | "github";
+export type SocialProvider = "google" | "github" | "apple";
 
 /**
  * ソーシャルサインインAPIレスポンスにリダイレクトURLが含まれるか判定する
@@ -69,6 +74,11 @@ const PROVIDER_CONFIGS: ReadonlyArray<ProviderConfig> = [
     provider: "github",
     loginKey: "auth.continueWithGithub",
     signupKey: "auth.signUpWithGithub",
+  },
+  {
+    provider: "apple",
+    loginKey: "auth.continueWithApple",
+    signupKey: "auth.signUpWithApple",
   },
 ];
 
@@ -131,7 +141,9 @@ export function OAuthButtons({
 
   return (
     <View className="gap-3">
-      {PROVIDER_CONFIGS.map(({ provider, loginKey, signupKey }) => {
+      {PROVIDER_CONFIGS.filter(
+        (p) => p.provider !== "apple" || Platform.OS === "ios",
+      ).map(({ provider, loginKey, signupKey }) => {
         const translationKey = mode === "login" ? loginKey : signupKey;
         return (
           <Pressable
@@ -157,6 +169,8 @@ export function OAuthButtons({
               <>
                 {provider === "google" ? (
                   <SvgXml xml={GOOGLE_LOGO_SVG} width={20} height={20} />
+                ) : provider === "apple" ? (
+                  <SvgXml xml={APPLE_LOGO_SVG} width={20} height={20} color={colors.text} />
                 ) : (
                   <SvgXml xml={GITHUB_LOGO_SVG} width={20} height={20} color={colors.text} />
                 )}

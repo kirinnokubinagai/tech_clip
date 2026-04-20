@@ -106,7 +106,9 @@
       "passwordRequired": "请输入密码",
       "nameRequired": "请输入姓名",
       "passwordMinLength": "请输入{{min}}个字符以上的密码"
-    }
+    },
+    "continueWithApple": "使用 Apple 继续",
+    "signUpWithApple": "使用 Apple 注册"
   },
   "tabs": {
     "home": "首页",

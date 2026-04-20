@@ -106,7 +106,9 @@
       "passwordRequired": "Please enter your password",
       "nameRequired": "Please enter your name",
       "passwordMinLength": "Password must be at least {{min}} characters."
-    }
+    },
+    "continueWithApple": "Continue with Apple",
+    "signUpWithApple": "Sign up with Apple"
   },
   "tabs": {
     "home": "Home",

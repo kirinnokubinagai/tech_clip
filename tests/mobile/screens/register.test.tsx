@@ -17,6 +17,11 @@ jest.mock("@/lib/api", () => ({
   fetchWithTimeout: jest.fn((url: string, options: RequestInit) => fetch(url, options)),
 }));
 
+jest.mock("react-native/Libraries/Utilities/Platform", () => ({
+  OS: "ios",
+  select: jest.fn((spec: Record<string, unknown>) => spec.ios),
+}));
+
 const mockOpenUrl = jest.spyOn(Linking, "openURL").mockResolvedValue();
 
 beforeEach(() => {
@@ -167,6 +172,14 @@ describe("RegisterScreen", () => {
 
       // Assert
       expect(getByLabelText("GitHub で登録")).toBeDefined();
+    });
+
+    it("Apple で登録ボタンがiOSで表示されること", async () => {
+      // Arrange & Act
+      const { getByLabelText } = await render(<RegisterScreen />);
+
+      // Assert
+      expect(getByLabelText("Apple で登録")).toBeDefined();
     });
 
     it("Google で登録押下時に認可URLを開くこと", async () => {
