@@ -28,8 +28,11 @@ echo "[turso-ci] PID ${TURSO_PID} で起動しました"
 
 echo "[turso-ci] 起動完了を待機中..."
 for i in $(seq 1 "${MAX_RETRIES}"); do
-  if curl -sf -o /dev/null --max-time 2 "http://127.0.0.1:${PORT}"; then
-    echo "[turso-ci] Turso dev サーバーが準備完了 (${i}回目の試行)"
+  if curl -sf -o /dev/null --max-time 2 -X POST \
+       -H "Content-Type: application/json" \
+       -d '{"requests":[]}' \
+       "http://127.0.0.1:${PORT}/v2/pipeline"; then
+    echo "[turso-ci] sqld health check 成功 (${i}回目の試行)"
     exit 0
   fi
   echo "[turso-ci] 待機中... (${i}/${MAX_RETRIES})"
