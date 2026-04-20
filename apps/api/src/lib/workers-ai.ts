@@ -46,5 +46,5 @@ export function extractTextResponse(value: LegacyResponse | ChatCompletionRespon
   if ("choices" in value && value.choices.length > 0) {
     return value.choices[0].message.content;
   }
-  throw new Error("Workers AI response shape unknown");
+  throw new Error("Workers AI のレスポンス形式が不明です");
 }

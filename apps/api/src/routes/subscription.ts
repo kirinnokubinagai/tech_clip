@@ -73,11 +73,15 @@ async function verifyWebhookHmac(
     encoder.encode(secret),
     { name: "HMAC", hash: "SHA-256" },
     false,
-    ["sign"],
+    ["verify"],
   );
-  const mac = await crypto.subtle.sign("HMAC", key, encoder.encode(rawBody));
-  const expected = btoa(String.fromCharCode(...new Uint8Array(mac)));
-  return expected === signature;
+  let signatureBytes: Uint8Array;
+  try {
+    signatureBytes = Uint8Array.from(atob(signature), (c) => c.charCodeAt(0));
+  } catch {
+    return false;
+  }
+  return crypto.subtle.verify("HMAC", key, signatureBytes, encoder.encode(rawBody));
 }
 
 /**

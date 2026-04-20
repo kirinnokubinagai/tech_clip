@@ -23,7 +23,11 @@ import {
   HTTP_UNAUTHORIZED,
   HTTP_UNPROCESSABLE_ENTITY,
 } from "../lib/http-status";
+import { createLogger } from "../lib/logger";
 import { processAvatarImage, uploadAvatarToR2, validateImageFile } from "../services/imageUpload";
+
+/** ユーザールート用ロガー */
+const logger = createLogger();
 
 /** 名前最大文字数 */
 const NAME_MAX_LENGTH = 100;
@@ -398,7 +402,7 @@ export function createUsersRoute(options: UsersRouteOptions) {
     if (oldAvatarUrl) {
       const oldKey = oldAvatarUrl.replace(`${r2PublicUrl}/`, "");
       await r2Bucket.delete(oldKey).catch((err) => {
-        console.warn("旧アバター画像の削除に失敗しました", { oldKey, error: err });
+        logger.warn("旧アバター画像の削除に失敗しました", { oldKey, error: err });
       });
     }
 

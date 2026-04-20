@@ -43,6 +43,26 @@ type SubscriptionStatusResponse = {
 };
 
 /**
+ * テスト用 HMAC-SHA256 署名を生成する
+ *
+ * @param secret - HMAC シークレット
+ * @param body - リクエストボディ文字列
+ * @returns Base64 エンコードされた署名文字列
+ */
+async function generateHmacSignature(secret: string, body: string): Promise<string> {
+  const encoder = new TextEncoder();
+  const key = await crypto.subtle.importKey(
+    "raw",
+    encoder.encode(secret),
+    { name: "HMAC", hash: "SHA-256" },
+    false,
+    ["sign"],
+  );
+  const mac = await crypto.subtle.sign("HMAC", key, encoder.encode(body));
+  return btoa(String.fromCharCode(...new Uint8Array(mac)));
+}
+
+/**
  * テスト用モックDBを生成する
  *
  * @param userInDb - DBに存在するユーザーデータ
@@ -134,13 +154,15 @@ describe("サブスクリプションAPI 統合テスト", () => {
           expiration_at_ms: Date.now() + 30 * 24 * 60 * 60 * 1000,
         },
       };
+      const bodyStr = JSON.stringify(payload);
+      const signature = await generateHmacSignature(MOCK_WEBHOOK_SECRET, bodyStr);
       const req = new Request("http://localhost/webhooks/revenuecat", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${MOCK_WEBHOOK_SECRET}`,
+          "RevenueCat-Signature": signature,
         },
-        body: JSON.stringify(payload),
+        body: bodyStr,
       });
 
       // Act
@@ -159,13 +181,15 @@ describe("サブスクリプションAPI 統合テスト", () => {
           app_user_id: MOCK_USER.id,
         },
       };
+      const bodyStr = JSON.stringify(payload);
+      const wrongSignature = await generateHmacSignature("wrong_secret", bodyStr);
       const req = new Request("http://localhost/webhooks/revenuecat", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: "Bearer wrong_secret",
+          "RevenueCat-Signature": wrongSignature,
         },
-        body: JSON.stringify(payload),
+        body: bodyStr,
       });
 
       // Act
@@ -180,13 +204,15 @@ describe("サブスクリプションAPI 統合テスト", () => {
     it("不正なペイロードの場合に400エラーを返すこと", async () => {
       // Arrange
       const app = createTestApp(mockDb);
+      const bodyStr = JSON.stringify({ invalid: "payload" });
+      const signature = await generateHmacSignature(MOCK_WEBHOOK_SECRET, bodyStr);
       const req = new Request("http://localhost/webhooks/revenuecat", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${MOCK_WEBHOOK_SECRET}`,
+          "RevenueCat-Signature": signature,
         },
-        body: JSON.stringify({ invalid: "payload" }),
+        body: bodyStr,
       });
 
       // Act
@@ -209,13 +235,15 @@ describe("サブスクリプションAPI 統合テスト", () => {
           app_user_id: MOCK_USER.id,
         },
       };
+      const bodyStr = JSON.stringify(payload);
+      const signature = await generateHmacSignature(MOCK_WEBHOOK_SECRET, bodyStr);
       const req = new Request("http://localhost/webhooks/revenuecat", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${MOCK_WEBHOOK_SECRET}`,
+          "RevenueCat-Signature": signature,
         },
-        body: JSON.stringify(payload),
+        body: bodyStr,
       });
 
       // Act

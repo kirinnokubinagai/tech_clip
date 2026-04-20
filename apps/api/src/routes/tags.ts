@@ -283,8 +283,11 @@ export function createArticleTagsRoute(options: TagsRouteOptions) {
 
       await db.delete(articleTags).where(eq(articleTags.articleId, articleId));
 
-      for (const tagId of validTagIds) {
-        await db.insert(articleTags).values({ articleId, tagId }).onConflictDoNothing();
+      if (validTagIds.length > 0) {
+        await db
+          .insert(articleTags)
+          .values(validTagIds.map((tagId) => ({ articleId, tagId })))
+          .onConflictDoNothing();
       }
 
       return c.json({

@@ -396,7 +396,10 @@ export function createAuthRoute({ db, getAuth }: AuthRouteOptions) {
         },
         HTTP_OK,
       );
-    } catch {
+    } catch (error) {
+      logger.error("モバイルセッション取得中にエラーが発生しました", {
+        error: error instanceof Error ? { name: error.name, message: error.message } : error,
+      });
       return c.json(
         {
           success: false,
@@ -553,7 +556,10 @@ export function createAuthRoute({ db, getAuth }: AuthRouteOptions) {
         },
         HTTP_OK,
       );
-    } catch {
+    } catch (error) {
+      logger.error("トークンリフレッシュ処理中にエラーが発生しました", {
+        error: error instanceof Error ? { name: error.name, message: error.message } : error,
+      });
       return c.json(
         {
           success: false,

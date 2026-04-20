@@ -3,6 +3,7 @@ import { Hono } from "hono";
 import { z } from "zod";
 
 import type { Database } from "../db";
+import type { NotificationSettings } from "../db/schema";
 import { notificationSettings } from "../db/schema";
 import {
   AUTH_ERROR_CODE,
@@ -15,6 +16,9 @@ import {
   HTTP_UNAUTHORIZED,
   HTTP_UNPROCESSABLE_ENTITY,
 } from "../lib/http-status";
+import { createLogger } from "../lib/logger";
+
+const logger = createLogger("notification-settings");
 
 /** レスポンスから除外するフィールド */
 const OMIT_FIELDS = ["userId"] as const;
@@ -40,7 +44,7 @@ type NotificationSettingsRouteOptions = {
  * @param settings - 通知設定データ
  * @returns userId を除いた通知設定データ
  */
-function omitFields(settings: Record<string, unknown>): Record<string, unknown> {
+function omitFields(settings: NotificationSettings): Record<string, unknown> {
   const result = { ...settings };
   for (const field of OMIT_FIELDS) {
     delete result[field];
@@ -86,7 +90,7 @@ export function createNotificationSettingsRoute(options: NotificationSettingsRou
     if (existing) {
       return c.json({
         success: true,
-        data: omitFields(existing as unknown as Record<string, unknown>),
+        data: omitFields(existing),
       });
     }
 
@@ -110,7 +114,7 @@ export function createNotificationSettingsRoute(options: NotificationSettingsRou
 
     return c.json({
       success: true,
-      data: omitFields(created as unknown as Record<string, unknown>),
+      data: omitFields(created),
     });
   });
 
@@ -187,9 +191,13 @@ export function createNotificationSettingsRoute(options: NotificationSettingsRou
 
       return c.json({
         success: true,
-        data: omitFields(updated as unknown as Record<string, unknown>),
+        data: omitFields(updated),
       });
-    } catch {
+    } catch (error) {
+      logger.error("通知設定の更新に失敗しました", {
+        userId,
+        error: error instanceof Error ? { name: error.name, message: error.message } : error,
+      });
       return c.json(
         {
           success: false,

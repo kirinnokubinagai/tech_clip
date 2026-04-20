@@ -120,15 +120,10 @@ export function createEmailVerificationRoute(options: EmailVerificationRouteOpti
     });
 
     const verifyUrl = `${appUrl}/verify-email?token=${rawToken}`;
-    const userName = (found as unknown as Record<string, unknown>).name as string | null;
+    const userName = found.name;
 
     try {
-      await sendEmailVerification(
-        emailEnv,
-        (found as unknown as Record<string, unknown>).email as string,
-        userName ?? "",
-        verifyUrl,
-      );
+      await sendEmailVerification(emailEnv, found.email, userName ?? "", verifyUrl);
     } catch (error) {
       logger.error("認証メール送信エラー", { userId, error });
       return c.json(
@@ -209,8 +204,7 @@ export function createEmailVerificationRoute(options: EmailVerificationRouteOpti
       );
     }
 
-    const verif = verification as unknown as Record<string, unknown>;
-    const expiresAt = new Date(verif.expiresAt as string);
+    const expiresAt = new Date(verification.expiresAt as string);
     if (expiresAt <= new Date()) {
       return c.json(
         {
@@ -224,7 +218,7 @@ export function createEmailVerificationRoute(options: EmailVerificationRouteOpti
       );
     }
 
-    const identifier = verif.identifier as string;
+    const identifier = verification.identifier;
     const userId = identifier.replace(`${EMAIL_VERIFICATION_IDENTIFIER_PREFIX}:`, "");
 
     await db.update(users).set({ emailVerified: true }).where(eq(users.id, userId));
