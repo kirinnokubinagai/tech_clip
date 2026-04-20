@@ -82,6 +82,7 @@
             openssl
             python3
             turso-cli
+            sqld
             zap
             bats
             shellcheck
