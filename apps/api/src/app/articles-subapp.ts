@@ -22,6 +22,7 @@ import { createPublicArticlesRoute } from "../routes/public-articles";
 import { buildFtsMatchExpression, createSearchRoute } from "../routes/search";
 import { createSummaryRoute } from "../routes/summary";
 import { fetchArticleMetadata } from "../services/metadata-fetcher";
+import { decodeCursor } from "../services/parsers/_shared";
 import { summarizeArticle } from "../services/summary";
 import { translateArticle } from "../services/translator";
 import type { Bindings } from "../types";
@@ -38,21 +39,14 @@ export async function handlePublicArticles(db: Database, request: Request): Prom
     queryFn: async (params) => {
       const conditions = [eq(articles.userId, params.userId), eq(articles.isPublic, true)];
       if (params.cursor) {
-        try {
-          const cur = JSON.parse(atob(params.cursor)) as {
-            createdAt: string;
-            id: string;
-          };
-          const cursorDate = new Date(cur.createdAt);
-          conditions.push(
-            or(
-              lt(articles.createdAt, cursorDate),
-              and(sql`${articles.createdAt} = ${cursorDate}`, lt(articles.id, cur.id)),
-            ) as SQL,
-          );
-        } catch {
-          conditions.push(lt(articles.id, params.cursor));
-        }
+        const cur = decodeCursor(params.cursor);
+        const cursorDate = new Date(cur.createdAt);
+        conditions.push(
+          or(
+            lt(articles.createdAt, cursorDate),
+            and(sql`${articles.createdAt} = ${cursorDate}`, lt(articles.id, cur.id)),
+          ) as SQL,
+        );
       }
       const results = await db
         .select()
@@ -95,24 +89,17 @@ export async function handleArticles(
     queryFn: async (params) => {
       const conditions = [eq(articles.userId, params.userId)];
       if (params.cursor) {
-        try {
-          const cur = JSON.parse(atob(params.cursor)) as {
-            createdAt: string;
-            id: string;
-          };
-          const cursorDate = new Date(cur.createdAt);
-          conditions.push(
-            or(
-              lt(articles.createdAt, cursorDate),
-              and(sql`${articles.createdAt} = ${cursorDate}`, lt(articles.id, cur.id)),
-            ) as SQL,
-          );
-        } catch {
-          conditions.push(lt(articles.id, params.cursor));
-        }
+        const cur = decodeCursor(params.cursor);
+        const cursorDate = new Date(cur.createdAt);
+        conditions.push(
+          or(
+            lt(articles.createdAt, cursorDate),
+            and(sql`${articles.createdAt} = ${cursorDate}`, lt(articles.id, cur.id)),
+          ) as SQL,
+        );
       }
       if (params.source !== undefined) {
-        conditions.push(eq(articles.source, params.source as string));
+        conditions.push(eq(articles.source, params.source));
       }
       if (params.isFavorite !== undefined) {
         conditions.push(eq(articles.isFavorite, params.isFavorite));
