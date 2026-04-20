@@ -141,45 +141,45 @@ export function OAuthButtons({
 
   return (
     <View className="gap-3">
-      {PROVIDER_CONFIGS.filter(
-        (p) => p.provider !== "apple" || Platform.OS === "ios",
-      ).map(({ provider, loginKey, signupKey }) => {
-        const translationKey = mode === "login" ? loginKey : signupKey;
-        return (
-          <Pressable
-            key={provider}
-            onPress={() => handleSocialSignIn(provider)}
-            disabled={isAnySubmitting}
-            className="flex-row items-center justify-center gap-2 rounded-lg border border-border bg-card py-3.5"
-            style={({ pressed }) => ({
-              opacity: pressed || isAnySubmitting ? 0.7 : 1,
-            })}
-            accessibilityRole="button"
-            accessibilityLabel={t(translationKey)}
-            accessibilityState={{ disabled: isAnySubmitting }}
-            testID={`social-signin-${provider}`}
-          >
-            {loadingProvider === provider ? (
-              <ActivityIndicator
-                color={colors.text}
-                size="small"
-                testID={`social-signin-${provider}-loading`}
-              />
-            ) : (
-              <>
-                {provider === "google" ? (
-                  <SvgXml xml={GOOGLE_LOGO_SVG} width={20} height={20} />
-                ) : provider === "apple" ? (
-                  <SvgXml xml={APPLE_LOGO_SVG} width={20} height={20} color={colors.text} />
-                ) : (
-                  <SvgXml xml={GITHUB_LOGO_SVG} width={20} height={20} color={colors.text} />
-                )}
-                <Text className="text-base font-medium text-text">{t(translationKey)}</Text>
-              </>
-            )}
-          </Pressable>
-        );
-      })}
+      {PROVIDER_CONFIGS.filter((p) => p.provider !== "apple" || Platform.OS === "ios").map(
+        ({ provider, loginKey, signupKey }) => {
+          const translationKey = mode === "login" ? loginKey : signupKey;
+          return (
+            <Pressable
+              key={provider}
+              onPress={() => handleSocialSignIn(provider)}
+              disabled={isAnySubmitting}
+              className="flex-row items-center justify-center gap-2 rounded-lg border border-border bg-card py-3.5"
+              style={({ pressed }) => ({
+                opacity: pressed || isAnySubmitting ? 0.7 : 1,
+              })}
+              accessibilityRole="button"
+              accessibilityLabel={t(translationKey)}
+              accessibilityState={{ disabled: isAnySubmitting }}
+              testID={`social-signin-${provider}`}
+            >
+              {loadingProvider === provider ? (
+                <ActivityIndicator
+                  color={colors.text}
+                  size="small"
+                  testID={`social-signin-${provider}-loading`}
+                />
+              ) : (
+                <>
+                  {provider === "google" ? (
+                    <SvgXml xml={GOOGLE_LOGO_SVG} width={20} height={20} />
+                  ) : provider === "apple" ? (
+                    <SvgXml xml={APPLE_LOGO_SVG} width={20} height={20} color={colors.text} />
+                  ) : (
+                    <SvgXml xml={GITHUB_LOGO_SVG} width={20} height={20} color={colors.text} />
+                  )}
+                  <Text className="text-base font-medium text-text">{t(translationKey)}</Text>
+                </>
+              )}
+            </Pressable>
+          );
+        },
+      )}
     </View>
   );
 }
