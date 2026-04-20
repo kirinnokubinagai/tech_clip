@@ -117,8 +117,13 @@ export default function RootLayout() {
         <Stack.Screen name="share-intent" options={{ presentation: "modal" }} />
       </Stack>
       {!hasSeenOnboarding && <Redirect href="/onboarding" />}
-      {hasSeenOnboarding && !isAuthenticated && !hasAccount && <Redirect href="/(auth)/register" />}
-      {hasSeenOnboarding && !isAuthenticated && hasAccount && <Redirect href="/(auth)/login" />}
+      {/* 未認証 + (auth) 配下にいない場合のみ register/login に redirect */}
+      {hasSeenOnboarding && !isAuthenticated && !hasAccount && !isAuthSegment && (
+        <Redirect href="/(auth)/register" />
+      )}
+      {hasSeenOnboarding && !isAuthenticated && hasAccount && !isAuthSegment && (
+        <Redirect href="/(auth)/login" />
+      )}
       {/* 認証済みかつ (auth) 画面にいるときのみ (tabs) へ redirect。deeplink (article/save 等) は妨げない */}
       {hasSeenOnboarding && isAuthenticated && isAuthSegment && <Redirect href="/(tabs)" />}
     </QueryClientProvider>
