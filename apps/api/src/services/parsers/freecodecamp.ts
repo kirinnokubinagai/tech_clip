@@ -3,7 +3,12 @@ import { parseHTML } from "linkedom";
 import TurndownService from "turndown";
 
 import type { ParsedArticle } from "../../types/article";
-import { calculateReadingTime, htmlFragmentToMarkdown, TECHCLIP_USER_AGENT } from "./_shared";
+import {
+  assertHtmlSize,
+  calculateReadingTime,
+  htmlFragmentToMarkdown,
+  TECHCLIP_USER_AGENT,
+} from "./_shared";
 
 /** freeCodeCampのホスト名 */
 const FREECODECAMP_HOSTNAME = "freecodecamp.org";
@@ -83,6 +88,7 @@ export async function parseFreecodecamp(url: string): Promise<ParsedArticle> {
   }
 
   const html = await response.text();
+  assertHtmlSize(html);
   const { document } = parseHTML(html);
   if (!document.documentElement) {
     throw new Error("HTMLが空または不正です（Cloudflare等のbot対策の可能性）");

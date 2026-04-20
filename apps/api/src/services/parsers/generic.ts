@@ -47,6 +47,42 @@ function isPrivateHostname(hostname: string): boolean {
   return PRIVATE_HOST_PATTERNS.some((p) => p.test(hostname));
 }
 
+/** リダイレクトの最大ホップ数 */
+const MAX_REDIRECT_HOPS = 5;
+
+/**
+ * SSRF 対策付きの fetch ラッパー
+ *
+ * `redirect: "manual"` で fetch し、3xx レスポンスの Location ヘッダーを取り出して
+ * リダイレクト先のホストが isPrivateHostname に該当しないか検証しながら辿る。
+ * MAX_REDIRECT_HOPS を超えた場合はエラーをスローする。
+ *
+ * @param initialUrl - 最初の fetch 先 URL
+ * @param opts - fetch オプション（redirect は上書きされる）
+ * @returns 最終的な fetch レスポンス
+ * @throws Error - プライベート IP へのリダイレクト、ホップ数超過の場合
+ */
+async function safeFetch(initialUrl: string, opts: RequestInit = {}): Promise<Response> {
+  let url = initialUrl;
+  for (let hop = 0; hop < MAX_REDIRECT_HOPS; hop++) {
+    const parsed = new URL(url);
+    if (isPrivateHostname(parsed.hostname)) {
+      throw new Error("プライベート IP へのアクセスは許可されません");
+    }
+    const response = await fetch(url, { ...opts, redirect: "manual" });
+    if (response.status >= 300 && response.status < 400) {
+      const location = response.headers.get("Location");
+      if (!location) {
+        return response;
+      }
+      url = new URL(location, url).toString();
+      continue;
+    }
+    return response;
+  }
+  throw new Error("リダイレクト回数が上限を超えました");
+}
+
 /**
  * linkedomのドキュメント型
  *
@@ -108,10 +144,9 @@ export async function parseGeneric(url: string): Promise<ParsedArticle> {
 
   let response: Response;
   try {
-    response = await fetch(url, {
+    response = await safeFetch(url, {
       headers: { "User-Agent": TECHCLIP_USER_AGENT },
       signal: controller.signal,
-      redirect: "follow",
     });
   } finally {
     clearTimeout(timeoutId);

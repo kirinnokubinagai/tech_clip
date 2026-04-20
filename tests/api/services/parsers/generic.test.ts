@@ -305,3 +305,57 @@ describe("SSRF 対策", () => {
     expect(result.source).toBe("example.com");
   });
 });
+
+describe("SSRF リダイレクト対策", () => {
+  it("302 リダイレクト先がプライベート IP の場合エラーになること", async () => {
+    // Arrange
+    mockFetch.mockResolvedValueOnce({
+      ok: false,
+      status: 302,
+      headers: new Headers({ Location: "http://169.254.169.254/latest/meta-data/" }),
+    });
+
+    // Act & Assert
+    await expect(parseGeneric("https://example.com/redirect")).rejects.toThrow(
+      "プライベート IP へのアクセスは許可されません",
+    );
+  });
+
+  it("リダイレクト回数が上限を超えた場合エラーになること", async () => {
+    // Arrange
+    const redirectResponse = {
+      ok: false,
+      status: 302,
+      headers: new Headers({ Location: "https://example.com/hop" }),
+    };
+    for (let i = 0; i < 6; i++) {
+      mockFetch.mockResolvedValueOnce(redirectResponse);
+    }
+
+    // Act & Assert
+    await expect(parseGeneric("https://example.com/infinite-redirect")).rejects.toThrow(
+      "リダイレクト回数が上限を超えました",
+    );
+  });
+
+  it("正常な 302 リダイレクトはパブリック URL なら follow できること", async () => {
+    // Arrange
+    mockFetch
+      .mockResolvedValueOnce({
+        ok: false,
+        status: 302,
+        headers: new Headers({ Location: "https://example.com/final" }),
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        text: () => Promise.resolve(SAMPLE_HTML),
+      });
+
+    // Act
+    const result = await parseGeneric("https://example.com/redirect");
+
+    // Assert
+    expect(result.title).toBe("テスト記事タイトル");
+    expect(mockFetch).toHaveBeenCalledTimes(2);
+  });
+});
