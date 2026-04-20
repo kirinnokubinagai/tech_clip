@@ -496,12 +496,12 @@ CronCreate(cron='*/2 * * * *', durable=true, prompt='bash scripts/polling-watche
 SessionStart hook の `session-start-cron-register.sh` が `CRON_REGISTER:` メッセージを出力するので、
 orchestrator はそれを検知して CronCreate を実行すること。
 
-### APPROVED 受信後の next-issue-auto-spawn.sh 実行
+### APPROVED 受信後の next-issue-candidates.sh 実行
 
 `APPROVED: issue-{N}` を受信したら、以下を必ず実行する:
 
 1. `pending_count--`
-2. `bash scripts/next-issue-auto-spawn.sh` を実行して候補 Issue を確認
+2. `bash scripts/next-issue-candidates.sh` を実行して候補 Issue を確認（spawn は orchestrator の責任）
 3. 自動割り当て可能 Issue があれば MAX_PARALLEL（`config.json` の `max_parallel_issues`）を超えない範囲で即座に spawn
 4. 要人間確認 Issue のみ一覧提示
 
@@ -509,7 +509,7 @@ orchestrator はそれを検知して CronCreate を実行すること。
 
 | メッセージ | 送信者 | アクション |
 |---|---|---|
-| `APPROVED: issue-{N}` | reviewer | 完了通知、next-issue-auto-spawn 実行 |
+| `APPROVED: issue-{N}` | reviewer | 完了通知、next-issue-candidates 実行 |
 | `POLLING_TIMEOUT: issue-{N}` | polling-watcher / reviewer | タイムアウト通知、ユーザーに報告 |
 | `STUCK: issue-{N}` | reviewer | 障害通知、ユーザーに報告 |
 | `WORKTREE_REMOVE_FAILED` | reviewer | worktree 削除失敗通知 |

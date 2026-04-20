@@ -50,7 +50,7 @@ LOG_FILE="$POLLING_DIR/watcher-results.log"
 claude_send_message() {
   local target="$1"
   local message="$2"
-  local inbox="${HOME}/.claude-user/teams/${TEAM_NAME}/inboxes/${target}.jsonl"
+  local inbox="${WORKTREE}/.claude-user/teams/${TEAM_NAME}/inboxes/${target}.jsonl"
   mkdir -p "$(dirname "$inbox")"
   jq -n \
     --arg to "$target" \
@@ -101,7 +101,8 @@ for STATE_FILE in "$POLLING_DIR"/pr-*.json; do
     if [ "$ELAPSED" -ge "$TIMEOUT_SECONDS" ]; then
       echo "TIMEOUT: PR #$PR_NUMBER ($AGENT_NAME) ${ELAPSED}秒経過"
       echo "TIMEOUT: issue-${ISSUE_NUMBER} PR #$PR_NUMBER elapsed=${ELAPSED}s at=$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> "$LOG_FILE"
-      claude_send_message "$AGENT_NAME" "POLLING_TIMEOUT: PR #${PR_NUMBER} ${TIMEOUT_MINUTES}min exceeded"
+      # タイムアウトは reviewer が死んでいる可能性があるため orchestrator へ送信する（CLAUDE.md:512）
+      claude_send_message "orchestrator" "POLLING_TIMEOUT: issue-${ISSUE_NUMBER} PR #${PR_NUMBER} ${TIMEOUT_MINUTES}min exceeded"
       rm -f "$STATE_FILE"
       continue
     fi

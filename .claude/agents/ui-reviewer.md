@@ -364,7 +364,7 @@ push 完了後、polling state ファイルを作成して `polling-watcher`（C
 PR_NUMBER=<フェーズ 5 で確定した PR 番号>
 PUSH_SHA=$(git -C {worktree} rev-parse HEAD)
 ISSUE_NUMBER={issue_number}
-AGENT_NAME="issue-${ISSUE_NUMBER}-reviewer"
+AGENT_NAME="issue-${ISSUE_NUMBER}-ui-reviewer"
 POLLING_DIR="{worktree}/.claude/polling"
 
 mkdir -p "$POLLING_DIR"
