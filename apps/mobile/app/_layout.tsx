@@ -2,7 +2,7 @@ import "../global.css";
 import "../src/lib/i18n";
 
 import { QueryClientProvider } from "@tanstack/react-query";
-import { Redirect, Stack } from "expo-router";
+import { Redirect, Stack, useSegments } from "expo-router";
 import { useEffect } from "react";
 import { ActivityIndicator, LogBox, View } from "react-native";
 
@@ -41,6 +41,9 @@ initSentry(process.env.EXPO_PUBLIC_SENTRY_DSN);
 
 export default function RootLayout() {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+  const segments = useSegments();
+  /** (auth) グループ内にいるかどうか */
+  const isAuthSegment = segments[0] === "(auth)";
   const isLoading = useAuthStore((s) => s.isLoading);
   const hasAccount = useAuthStore((s) => s.hasAccount);
   const checkSession = useAuthStore((s) => s.checkSession);
@@ -116,8 +119,8 @@ export default function RootLayout() {
       {!hasSeenOnboarding && <Redirect href="/onboarding" />}
       {hasSeenOnboarding && !isAuthenticated && !hasAccount && <Redirect href="/(auth)/register" />}
       {hasSeenOnboarding && !isAuthenticated && hasAccount && <Redirect href="/(auth)/login" />}
-      {/* 認証済みユーザーの (tabs) リダイレクトは削除: deeplink による他ルート遷移を阻害するため。
-          expo-router は file-based route を自動解決するため明示的な redirect は不要 */}
+      {/* 認証済みかつ (auth) 画面にいるときのみ (tabs) へ redirect。deeplink (article/save 等) は妨げない */}
+      {hasSeenOnboarding && isAuthenticated && isAuthSegment && <Redirect href="/(tabs)" />}
     </QueryClientProvider>
   );
 }

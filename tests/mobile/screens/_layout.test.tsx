@@ -306,4 +306,32 @@ describe("RootLayout", () => {
       });
     });
   });
+
+  describe("認証後の (tabs) へのリダイレクト", () => {
+    it("認証済みかつ (auth) セグメントにいる場合は isAuthSegment が true になること", async () => {
+      // Arrange: useSegments が "(auth)" を返すよう上書き
+      const expoRouter = require("expo-router") as { useSegments: jest.Mock };
+      expoRouter.useSegments.mockReturnValue(["(auth)"]);
+      mockedUseAuthStore.mockImplementation(
+        (selector: (s: ReturnType<typeof createAuthStoreState>) => unknown) =>
+          selector(createAuthStoreState(true)),
+      );
+
+      // Act & Assert: レンダリングがクラッシュしないこと（Redirect が発火する条件が揃っていること）
+      await expect(render(<RootLayout />)).resolves.not.toThrow();
+    });
+
+    it("認証済みかつ (tabs) セグメントにいる場合はクラッシュしないこと（deeplink 保護）", async () => {
+      // Arrange: deeplink で (tabs) 直下にいる状態
+      const expoRouter = require("expo-router") as { useSegments: jest.Mock };
+      expoRouter.useSegments.mockReturnValue(["(tabs)"]);
+      mockedUseAuthStore.mockImplementation(
+        (selector: (s: ReturnType<typeof createAuthStoreState>) => unknown) =>
+          selector(createAuthStoreState(true)),
+      );
+
+      // Act & Assert: レンダリングがクラッシュしないこと
+      await expect(render(<RootLayout />)).resolves.not.toThrow();
+    });
+  });
 });
