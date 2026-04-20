@@ -68,14 +68,14 @@ env:
 - assertVisible:
     text: "アカウントを作成"
 - takeScreenshot: screenshots/02-auth-register/01-register-screen
-- assertVisible: "名前"
+- assertVisible: "お名前"
 - assertVisible: "メールアドレス"
 - assertVisible: "パスワード"
 
-# バリデーション: 空送信
+# バリデーション: 名前空のまま空送信 → メールエラー（name は optional）
 - tapOn:
     id: "register-submit-button"
-- assertVisible: "名前を入力してください。"
+- assertVisible: "メールアドレスを入力してください。"
 
 # 名前入力
 - tapOn:
@@ -89,7 +89,7 @@ env:
           timeout: 1000
 - inputText: ${TEST_NAME}
 
-# バリデーション: 名前のみで送信
+# バリデーション: 名前のみで送信 → メールエラー
 - tapOn:
     id: "register-submit-button"
 - assertVisible: "メールアドレスを入力してください。"
