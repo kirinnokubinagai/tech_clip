@@ -138,7 +138,7 @@ describe("syncManager", () => {
       mockApiFetch.mockResolvedValue(
         asApiFetchResult({
           success: false,
-          error: { code: "AUTH_REQUIRED", message: "ログインが必要です" },
+          error: { code: "AUTH_REQUIRED", message: "ログインが必要です。" },
         }),
       );
 

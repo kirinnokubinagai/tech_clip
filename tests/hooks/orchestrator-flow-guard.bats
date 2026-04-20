@@ -10,9 +10,11 @@ setup() {
     TMPDIR=$(mktemp -d)
     export HOME="$TMPDIR/home"
     mkdir -p "$HOME"
+    # CLAUDE_USER_ROOT をテスト用ディレクトリに設定（git rev-parse に依存しない）
+    export CLAUDE_USER_ROOT="$TMPDIR/claude-user"
     # デフォルトでメンバー空の team config を作成（analyst 省略チェックを有効化）
-    mkdir -p "$HOME/.claude-user/teams/active-issues"
-    echo '{"members":[]}' > "$HOME/.claude-user/teams/active-issues/config.json"
+    mkdir -p "$CLAUDE_USER_ROOT/teams/active-issues"
+    echo '{"members":[]}' > "$CLAUDE_USER_ROOT/teams/active-issues/config.json"
 }
 
 teardown() {
@@ -74,7 +76,7 @@ run_hook() {
 @test "analyst が存在する場合は coder spawn が許可されること" {
     # team config に analyst を追加
     echo '{"members":[{"name":"issue-100-analyst"},{"name":"issue-100-coder"}]}' \
-        > "$HOME/.claude-user/teams/active-issues/config.json"
+        > "$CLAUDE_USER_ROOT/teams/active-issues/config.json"
     local json='{"tool_name":"Agent","tool_input":{"name":"issue-100-coder","subagent_type":"coder"}}'
     run run_hook "$json"
     [ "$status" -eq 0 ]
@@ -92,11 +94,12 @@ run_hook() {
     [ "$status" -eq 0 ]
 }
 
-@test "team config が存在しない場合は spawn が許可されること" {
-    rm -f "$HOME/.claude-user/teams/active-issues/config.json"
+@test "team config が存在しない場合は spawn がブロックされること" {
+    rm -f "$CLAUDE_USER_ROOT/teams/active-issues/config.json"
     local json='{"tool_name":"Agent","tool_input":{"name":"issue-999-coder","subagent_type":"coder"}}'
     run run_hook "$json"
-    [ "$status" -eq 0 ]
+    [ "$status" -eq 2 ]
+    [[ "$output" == *"DENY"* ]]
 }
 
 # -------------------------------------------------------------------------
@@ -111,16 +114,16 @@ run_hook() {
 }
 
 @test "AskUserQuestion フラグがある場合は gh issue close が許可されること" {
-    mkdir -p "$HOME/.claude-user/projects/test-project/memory"
-    date -u +%Y-%m-%dT%H:%M:%SZ > "$HOME/.claude-user/projects/test-project/memory/tmp-last-askuserquestion.flag"
+    mkdir -p "$CLAUDE_USER_ROOT/projects/test-project/memory"
+    date -u +%Y-%m-%dT%H:%M:%SZ > "$CLAUDE_USER_ROOT/projects/test-project/memory/tmp-last-askuserquestion.flag"
     local json='{"tool_name":"Bash","tool_input":{"command":"gh issue close 123"}}'
     run run_hook "$json"
     [ "$status" -eq 0 ]
 }
 
 @test "期限切れの AskUserQuestion フラグは gh issue close をブロックすること" {
-    mkdir -p "$HOME/.claude-user/projects/test-project/memory"
-    echo "2000-01-01T00:00:00Z" > "$HOME/.claude-user/projects/test-project/memory/tmp-last-askuserquestion.flag"
+    mkdir -p "$CLAUDE_USER_ROOT/projects/test-project/memory"
+    echo "2000-01-01T00:00:00Z" > "$CLAUDE_USER_ROOT/projects/test-project/memory/tmp-last-askuserquestion.flag"
     local json='{"tool_name":"Bash","tool_input":{"command":"gh issue close 123"}}'
     run run_hook "$json"
     [ "$status" -eq 2 ]
@@ -218,4 +221,33 @@ run_hook() {
     local json='{"tool_name":"Write","tool_input":{"file_path":"/tmp/test.txt","content":"test"}}'
     run run_hook "$json"
     [ "$status" -eq 0 ]
+}
+
+# -------------------------------------------------------------------------
+# post-ask-user-question.sh と orchestrator-flow-guard.sh のパス一致テスト
+# -------------------------------------------------------------------------
+
+POST_HOOK="$(cd "$(dirname "$BATS_TEST_FILENAME")/../.." && pwd)/.claude/hooks/post-ask-user-question.sh"
+
+@test "post-ask-user-question.sh が CLAUDE_USER_ROOT に flag を書き込み guard が読めること" {
+    # post-ask-user-question.sh を実行（CLAUDE_USER_ROOT はすでに setup() で設定済み）
+    mkdir -p "$CLAUDE_USER_ROOT/projects/test-project/memory"
+    bash "$POST_HOOK"
+
+    # guard が同じ CLAUDE_USER_ROOT を読んで gh issue close を許可すること
+    local json='{"tool_name":"Bash","tool_input":{"command":"gh issue close 999"}}'
+    run run_hook "$json"
+    [ "$status" -eq 0 ]
+}
+
+@test "post-ask-user-question.sh の flag 書き込み先は CLAUDE_USER_ROOT 配下であること" {
+    mkdir -p "$CLAUDE_USER_ROOT/projects/test-project/memory"
+    bash "$POST_HOOK"
+
+    # flag が CLAUDE_USER_ROOT 配下に存在すること（HOME 配下ではないこと）
+    FLAG=$(ls "$CLAUDE_USER_ROOT/projects/"*/memory/tmp-last-askuserquestion.flag 2>/dev/null | head -1 || echo "")
+    [ -n "$FLAG" ]
+    # HOME 配下には存在しないこと
+    HOME_FLAG=$(ls "$HOME/.claude-user/projects/"*/memory/tmp-last-askuserquestion.flag 2>/dev/null | head -1 || echo "")
+    [ -z "$HOME_FLAG" ]
 }

@@ -13,7 +13,10 @@ INPUT=$(cat)
 TOOL_NAME=$(echo "$INPUT" | jq -r '.tool_name // ""')
 TOOL_INPUT=$(echo "$INPUT" | jq -r '.tool_input // {}')
 
-TEAM_CONFIG="${HOME}/.claude-user/teams/active-issues/config.json"
+REPO_ROOT=$(git rev-parse --show-toplevel 2>/dev/null || pwd)
+# CLAUDE_USER_ROOT はテスト時にオーバーライド可能（デフォルト: REPO_ROOT/.claude-user）
+CLAUDE_USER_ROOT="${CLAUDE_USER_ROOT:-${REPO_ROOT}/.claude-user}"
+TEAM_CONFIG="${CLAUDE_USER_ROOT}/teams/active-issues/config.json"
 
 deny() {
   local msg="$1"
@@ -36,6 +39,9 @@ issue-[0-9]*-reviewer|issue-[0-9]*-infra-reviewer|issue-[0-9]*-ui-reviewer)
         if [ "$EXISTS" = "0" ]; then
           deny "DENY: Issue #${ISSUE_NUM} に analyst (${ANALYST_NAME}) が存在しません。CLAUDE.md 必須 spawn 順序に従い analyst を先に spawn してください。"
         fi
+      else
+        # team config が存在しない = active-issues チームが未作成。異常状態なので deny する
+        deny "DENY: active-issues team config が存在しません。TeamCreate(\"active-issues\") を先に実行してください。"
       fi
       ;;
   esac
@@ -47,7 +53,7 @@ if [ "$TOOL_NAME" = "Bash" ]; then
 
   # gh issue close は AskUserQuestion 事前確認が必要（5分以内のフラグが必要）
   if echo "$COMMAND" | grep -qE '^\s*gh\s+issue\s+close\s'; then
-    FLAG_FILE=$(ls "${HOME}"/.claude-user/projects/*/memory/tmp-last-askuserquestion.flag 2>/dev/null | head -1)
+    FLAG_FILE=$(ls "${CLAUDE_USER_ROOT}/projects/"*/memory/tmp-last-askuserquestion.flag 2>/dev/null | head -1 || true)
     FLAG_VALID=false
     if [ -n "$FLAG_FILE" ] && [ -f "$FLAG_FILE" ]; then
       FLAG_TIME=$(cat "$FLAG_FILE" 2>/dev/null || echo "")

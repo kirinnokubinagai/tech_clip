@@ -1,4 +1,4 @@
-import { createTagsRoute } from "@api/routes/tags";
+import { createArticleTagsRoute, createTagsRoute } from "@api/routes/tags";
 import { Hono } from "hono";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -126,7 +126,7 @@ function createTestApp() {
   });
 
   const tagsRoute = createTagsRoute({ db: mockDb as never });
-  app.route("/api", tagsRoute);
+  app.route("/api/tags", tagsRoute);
 
   return app;
 }
@@ -140,7 +140,44 @@ function createTestAppWithoutAuth() {
   const app = new Hono();
 
   const tagsRoute = createTagsRoute({ db: mockDb as never });
-  app.route("/api", tagsRoute);
+  app.route("/api/tags", tagsRoute);
+
+  return app;
+}
+/**
+ * 記事タグ更新テスト用Honoアプリを作成する（認証あり）
+ *
+ * @returns テスト用Honoアプリ
+ */
+function createArticleTestApp() {
+  type Variables = {
+    user: typeof MOCK_USER;
+    session: Record<string, unknown>;
+  };
+  const app = new Hono<{ Variables: Variables }>();
+
+  app.use("*", async (c, next) => {
+    c.set("user", MOCK_USER);
+    c.set("session", { id: "session_01" });
+    await next();
+  });
+
+  const articleTagsRoute = createArticleTagsRoute({ db: mockDb as never });
+  app.route("/api/articles", articleTagsRoute);
+
+  return app;
+}
+
+/**
+ * 記事タグ更新テスト用Honoアプリを作成する（認証なし）
+ *
+ * @returns テスト用Honoアプリ（認証なし）
+ */
+function createArticleTestAppWithoutAuth() {
+  const app = new Hono();
+
+  const articleTagsRoute = createArticleTagsRoute({ db: mockDb as never });
+  app.route("/api/articles", articleTagsRoute);
 
   return app;
 }
@@ -597,7 +634,7 @@ describe("PUT /api/articles/:id/tags", () => {
   describe("正常系", () => {
     it("記事にタグを紐付けて200を返すこと", async () => {
       // Arrange
-      const app = createTestApp();
+      const app = createArticleTestApp();
       mockSelectWhere
         .mockResolvedValueOnce([
           { id: "article_01", userId: MOCK_USER.id, url: "https://example.com" },
@@ -629,7 +666,7 @@ describe("PUT /api/articles/:id/tags", () => {
 
     it("空のtagIds配列でタグをすべて解除できること", async () => {
       // Arrange
-      const app = createTestApp();
+      const app = createArticleTestApp();
       mockSelectWhere
         .mockResolvedValueOnce([
           { id: "article_01", userId: MOCK_USER.id, url: "https://example.com" },
@@ -657,7 +694,7 @@ describe("PUT /api/articles/:id/tags", () => {
   describe("認証", () => {
     it("未認証の場合401が返ること", async () => {
       // Arrange
-      const app = createTestAppWithoutAuth();
+      const app = createArticleTestAppWithoutAuth();
 
       // Act
       const res = await app.request("/api/articles/article_01/tags", {
@@ -677,7 +714,7 @@ describe("PUT /api/articles/:id/tags", () => {
   describe("バリデーション", () => {
     it("tagIdsが未指定の場合422を返すこと", async () => {
       // Arrange
-      const app = createTestApp();
+      const app = createArticleTestApp();
 
       // Act
       const res = await app.request("/api/articles/article_01/tags", {
@@ -695,7 +732,7 @@ describe("PUT /api/articles/:id/tags", () => {
 
     it("tagIdsが配列でない場合422を返すこと", async () => {
       // Arrange
-      const app = createTestApp();
+      const app = createArticleTestApp();
 
       // Act
       const res = await app.request("/api/articles/article_01/tags", {
@@ -715,7 +752,7 @@ describe("PUT /api/articles/:id/tags", () => {
   describe("記事の存在チェック", () => {
     it("存在しない記事IDの場合404を返すこと", async () => {
       // Arrange
-      const app = createTestApp();
+      const app = createArticleTestApp();
       mockSelectWhere.mockResolvedValueOnce([]);
 
       // Act
@@ -734,7 +771,7 @@ describe("PUT /api/articles/:id/tags", () => {
 
     it("記事が見つからない場合のエラーメッセージが日本語であること", async () => {
       // Arrange
-      const app = createTestApp();
+      const app = createArticleTestApp();
       mockSelectWhere.mockResolvedValueOnce([]);
 
       // Act
@@ -753,7 +790,7 @@ describe("PUT /api/articles/:id/tags", () => {
   describe("レスポンス形式", () => {
     it("成功レスポンスがAPI設計規約に従った形式であること", async () => {
       // Arrange
-      const app = createTestApp();
+      const app = createArticleTestApp();
       mockSelectWhere
         .mockResolvedValueOnce([
           { id: "article_01", userId: MOCK_USER.id, url: "https://example.com" },

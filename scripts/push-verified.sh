@@ -22,6 +22,17 @@ if [ "${1:-}" = "--create-polling-state" ]; then
   fi
 fi
 
+# フェイルセーフ: .claude/.review-passed マーカーの存在を確認する
+# pre-push-review-guard.sh が hook で動作しているが、何らかの理由で bypass された場合のセーフティネット
+WORKTREE_ROOT=$(git rev-parse --show-toplevel 2>/dev/null || pwd)
+REVIEW_MARKER="${WORKTREE_ROOT}/.claude/.review-passed"
+if [ ! -f "$REVIEW_MARKER" ]; then
+  echo "エラー: ローカルレビューが完了していません。push を中止します。" >&2
+  echo "  reviewer エージェントでレビューを実行し、全件 PASS してから push してください。" >&2
+  echo "  レビュー完了後、マーカーファイルが自動作成されます: ${REVIEW_MARKER}" >&2
+  exit 1
+fi
+
 LOCAL_SHA=$(git rev-parse HEAD)
 BRANCH=$(git rev-parse --abbrev-ref HEAD)
 

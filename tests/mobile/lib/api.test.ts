@@ -267,7 +267,7 @@ describe("apiFetch", () => {
         createFetchResponse(
           {
             success: false,
-            error: { code: "INTERNAL_ERROR", message: "サーバーエラーが発生しました" },
+            error: { code: "INTERNAL_ERROR", message: "サーバーエラーが発生しました。" },
           },
           { status: 500 },
         ),
@@ -279,7 +279,7 @@ describe("apiFetch", () => {
       // Assert
       expect(result).toEqual({
         success: false,
-        error: { code: "INTERNAL_ERROR", message: "サーバーエラーが発生しました" },
+        error: { code: "INTERNAL_ERROR", message: "サーバーエラーが発生しました。" },
       });
     });
 
@@ -482,21 +482,21 @@ describe("apiFetch", () => {
       expect(error).toBeInstanceOf(Error);
       expect(error).toBeInstanceOf(ApiError);
       expect(error).toBeInstanceOf(SessionExpiredError);
-      expect(error.message).toBe("セッションの有効期限が切れました。再度ログインしてください");
+      expect(error.message).toBe("セッションの有効期限が切れました。再度ログインしてください。");
     });
   });
 
   describe("ApiHttpError", () => {
     it("statusプロパティとメッセージを保持すること", () => {
       // Arrange & Act
-      const error = new ApiHttpError(500, "サーバーエラーが発生しました");
+      const error = new ApiHttpError(500, "サーバーエラーが発生しました。");
 
       // Assert
       expect(error).toBeInstanceOf(Error);
       expect(error).toBeInstanceOf(ApiError);
       expect(error).toBeInstanceOf(ApiHttpError);
       expect(error.status).toBe(500);
-      expect(error.message).toBe("サーバーエラーが発生しました");
+      expect(error.message).toBe("サーバーエラーが発生しました。");
       expect(error.name).toBe("ApiHttpError");
     });
   });
@@ -507,13 +507,13 @@ describe("apiFetch", () => {
       const cause = new TypeError("Network request failed");
 
       // Act
-      const error = new ApiNetworkError("ネットワークに接続できません", cause);
+      const error = new ApiNetworkError("ネットワークに接続できません。", cause);
 
       // Assert
       expect(error).toBeInstanceOf(Error);
       expect(error).toBeInstanceOf(ApiError);
       expect(error).toBeInstanceOf(ApiNetworkError);
-      expect(error.message).toBe("ネットワークに接続できません");
+      expect(error.message).toBe("ネットワークに接続できません。");
       expect(error.name).toBe("ApiNetworkError");
       expect(error.cause).toBe(cause);
     });
@@ -522,14 +522,14 @@ describe("apiFetch", () => {
   describe("ApiParseError", () => {
     it("statusとメッセージを保持すること", () => {
       // Arrange & Act
-      const error = new ApiParseError(200, "レスポンスの解析に失敗しました");
+      const error = new ApiParseError(200, "レスポンスの解析に失敗しました。");
 
       // Assert
       expect(error).toBeInstanceOf(Error);
       expect(error).toBeInstanceOf(ApiError);
       expect(error).toBeInstanceOf(ApiParseError);
       expect(error.status).toBe(200);
-      expect(error.message).toBe("レスポンスの解析に失敗しました");
+      expect(error.message).toBe("レスポンスの解析に失敗しました。");
       expect(error.name).toBe("ApiParseError");
     });
   });
@@ -676,7 +676,7 @@ describe("apiFetch", () => {
 
       // Assert
       expect(caughtError).toBeInstanceOf(ApiHttpError);
-      expect((caughtError as ApiHttpError).message).toBe("リソースが見つかりません");
+      expect((caughtError as ApiHttpError).message).toBe("リソースが見つかりません。");
     });
 
     it("429の非業務エラー応答でApiHttpError.messageが'リクエストが多すぎます...'になること", async () => {
@@ -699,7 +699,7 @@ describe("apiFetch", () => {
       // Assert
       expect(caughtError).toBeInstanceOf(ApiHttpError);
       expect((caughtError as ApiHttpError).message).toBe(
-        "リクエストが多すぎます。しばらく待ってから再度お試しください",
+        "リクエストが多すぎます。しばらく待ってから再度お試しください。",
       );
     });
 

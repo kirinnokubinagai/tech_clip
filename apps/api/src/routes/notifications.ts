@@ -17,6 +17,10 @@ import {
   HTTP_UNAUTHORIZED,
   HTTP_UNPROCESSABLE_ENTITY,
 } from "../lib/http-status";
+import { createLogger } from "../lib/logger";
+
+/** 通知ルート用ロガー */
+const logger = createLogger();
 
 /** デフォルトのページサイズ */
 const DEFAULT_LIMIT = 20;
@@ -73,7 +77,7 @@ export function createNotificationsRoute(options: NotificationsRouteOptions) {
   const { db, queryFn } = options;
   const route = new Hono<{ Variables: { user?: Record<string, unknown> } }>();
 
-  route.get("/notifications", async (c) => {
+  route.get("/", async (c) => {
     const user = c.get("user");
     if (!user) {
       return c.json(
@@ -200,7 +204,8 @@ export function createNotificationsRoute(options: NotificationsRouteOptions) {
         },
         HTTP_CREATED,
       );
-    } catch {
+    } catch (error) {
+      logger.warn("プッシュトークンの登録に失敗しました", { error, userId });
       return c.json(
         {
           success: false,
@@ -261,7 +266,8 @@ export function createNotificationsRoute(options: NotificationsRouteOptions) {
         success: true,
         data: updated,
       });
-    } catch {
+    } catch (error) {
+      logger.warn("通知の既読化に失敗しました", { error, userId, notificationId });
       return c.json(
         {
           success: false,
@@ -332,7 +338,8 @@ export function createNotificationsRoute(options: NotificationsRouteOptions) {
         success: true,
         data: null,
       });
-    } catch {
+    } catch (error) {
+      logger.warn("通知の一括既読化に失敗しました", { error, userId });
       return c.json(
         {
           success: false,

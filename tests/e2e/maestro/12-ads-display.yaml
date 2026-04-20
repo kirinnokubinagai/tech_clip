@@ -1,0 +1,67 @@
+# 広告表示フロー
+# 無料ユーザーとしてバナー広告が表示されることを確認する
+#
+# tags: ads
+
+appId: com.techclip.app
+tags:
+  - ads
+
+env:
+  TEST_EMAIL: ${TEST_EMAIL}
+  TEST_PASSWORD: ${TEST_PASSWORD}
+
+---
+
+# ログイン済み状態でアプリ起動（無料ユーザー前提）
+- launchApp:
+    clearState: false
+- runFlow:
+    when:
+      visible: "Try out your stylus"
+    commands:
+      - tapOn: "Cancel"
+      - waitForAnimationToEnd:
+          timeout: 1000
+- runFlow:
+    when:
+      visible: "Process system isn't responding"
+    commands:
+      - tapOn: "Wait"
+      - waitForAnimationToEnd:
+          timeout: 3000
+- runFlow:
+    when:
+      visible: "Open debugger"
+    commands:
+      - tapOn:
+          point: "92%, 93%"
+      - waitForAnimationToEnd:
+          timeout: 1000
+- runFlow:
+    file: "00-login-helper.yaml"
+- waitForAnimationToEnd:
+    timeout: 2000
+
+# --- ホーム画面確認 ---
+- assertVisible: "すべて"
+
+# バナー広告コンテナが存在することを確認
+- assertVisible:
+    id: "ad-banner-container"
+- takeScreenshot: screenshots/12-ads-display/01-banner-ad
+
+# 記事詳細へ移動してインタースティシャルが起動しないことを確認
+# （インタースティシャルはバックグラウンドで管理され、ユーザーへの直接確認は不可）
+- tapOn:
+    index: 0
+    id: "article-card"
+- assertVisible:
+    text: "戻る"
+- takeScreenshot: screenshots/12-ads-display/02-article-detail
+
+# 戻るボタンでホームへ
+- tapOn:
+    text: "戻る"
+- assertVisible:
+    text: "すべて"

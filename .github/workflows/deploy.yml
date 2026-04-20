@@ -13,16 +13,11 @@ permissions: read-all
 
 jobs:
   deploy-staging:
-    # TODO(issue-925-followup): KV/R2 リソース作成後に placeholder を実 ID に置換し、以下の if: false を削除する。
-    # フォローアップ手順:
-    #   1. wrangler kv namespace create tech-clip-rate-limit-staging --env staging で KV ID を取得
-    #   2. wrangler kv namespace create tech-clip-cache-staging --env staging で KV ID を取得
-    #   3. R2 bucket "tech-clip-avatars-staging" を作成
-    #   4. apps/api/wrangler.toml の REPLACE_WITH_... を実 ID に置換
-    #   5. APP_URL が Cloudflare アカウントの workers.dev 実 URL と一致することを確認
-    #      (tech-clip-api-staging.<account-subdomain>.workers.dev の形式になる場合があるため)
-    #   6. この if: false コメント行を削除して deploy-staging を再有効化
-    if: false  # TODO: フォローアップ Issue で KV/R2 リソース作成・REPLACE_WITH_... 置換後に削除すること
+    # main ブランチへの push 時に自動で staging にデプロイする。
+    # 注意: apps/api/wrangler.toml 内の REPLACE_WITH_... プレースホルダーが残っている場合は
+    #       wrangler deploy が失敗するため、その場合は本ジョブが自動的にエラー終了する。
+    #       KV/R2 リソース未作成の場合は secrets/wrangler.toml を設定してから有効化すること。
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     name: Deploy to Staging
     runs-on: ubuntu-latest
     environment: staging
@@ -58,8 +53,8 @@ jobs:
           exit 1
 
   zap-scan-staging:
-    # TODO(issue-925-followup): deploy-staging の再有効化に合わせてこの if: false も削除する。
-    if: false  # TODO: フォローアップ Issue で KV/R2 リソース作成・REPLACE_WITH_... 置換後に削除すること
+    # staging deploy 完了後に OWASP ZAP baseline scan を実行する。
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     name: OWASP ZAP Scan (Staging)
     needs: deploy-staging
     runs-on: ubuntu-latest

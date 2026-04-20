@@ -81,6 +81,10 @@
             curl
             openssl
             python3
+            turso-cli
+            sqld
+            android-tools
+            sqlite
             zap
             bats
             shellcheck
@@ -102,12 +106,21 @@
             zap
             bats
             mailpit
+            turso-cli
+            sqld
+            android-tools
+            sqlite
             claude-code-bin
             shellcheck
             actionlint
           ];
 
           shellHook = ''
+            # Remove homebrew / asdf shim leaks to keep nix store hermetic
+            PATH=$(echo "$PATH" | awk -v RS=: -v ORS=: '!/\/opt\/homebrew/ && !/\/.asdf\/shims/ && !/\/usr\/local\/bin/ {print}' | sed 's/:$//')
+            export PATH
+
+            export NODE_OPTIONS="--no-experimental-strip-types"
             # CLAUDE_CONFIG_DIR: auth・settings を .claude-user/ に隔離
             CLAUDE_USER_DIR="$PWD/.claude-user"
             export CLAUDE_CONFIG_DIR="$CLAUDE_USER_DIR"

@@ -230,9 +230,7 @@ export const useSettingsStore = create<SettingsStore>((set, get) => ({
         return;
       }
     } catch {
-      console.warn(
-        "SecureStore の要約言語設定のパースに失敗しました。デバイス言語にフォールバックします",
-      );
+      // パース失敗時はデバイス言語にフォールバックする（期待される挙動のためログ不要）
     }
     const fallback = resolveDeviceSummaryLanguage();
     await SecureStore.setItemAsync(SUMMARY_LANGUAGE_KEY, JSON.stringify(fallback));
@@ -292,7 +290,7 @@ export const useSettingsStore = create<SettingsStore>((set, get) => ({
       set({ notificationSettings: data.data });
     } catch {
       set({ notificationSettings: previous });
-      throw new Error("通知設定の更新に失敗しました");
+      throw new Error("通知設定の更新に失敗しました。");
     }
   },
 }));

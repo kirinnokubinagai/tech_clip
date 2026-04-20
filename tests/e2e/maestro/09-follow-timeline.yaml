@@ -1,0 +1,59 @@
+# フォロー・タイムラインフロー
+# ホーム画面で「自分 / フォロー中」トグルを切り替えて、フォロー中ユーザーの
+# 公開記事が表示されることを確認する
+#
+# tags: social
+
+appId: com.techclip.app
+tags:
+  - social
+
+env:
+  TEST_EMAIL: ${TEST_EMAIL}
+  TEST_PASSWORD: ${TEST_PASSWORD}
+
+---
+
+# ログイン済み状態でアプリ起動
+- launchApp:
+    clearState: false
+- runFlow:
+    when:
+      visible: "Try out your stylus"
+    commands:
+      - tapOn: "Cancel"
+      - waitForAnimationToEnd:
+          timeout: 1000
+- runFlow:
+    when:
+      visible: "Process system isn't responding"
+    commands:
+      - tapOn: "Wait"
+      - waitForAnimationToEnd:
+          timeout: 3000
+- runFlow:
+    file: "00-login-helper.yaml"
+- waitForAnimationToEnd:
+    timeout: 2000
+
+# --- ホーム画面確認 ---
+- assertVisible: "すべて"
+- takeScreenshot: screenshots/09-follow-timeline/01-home
+
+# --- フォロー中タイムライン切替 ---
+- assertVisible:
+    id: "feed-mode-toggle"
+- tapOn:
+    id: "feed-mode-toggle"
+- waitForAnimationToEnd:
+    timeout: 3000
+- assertVisible: "フォロー中"
+- takeScreenshot: screenshots/09-follow-timeline/02-feed-mode
+
+# --- 自分モードに戻す ---
+- tapOn:
+    id: "feed-mode-toggle"
+- waitForAnimationToEnd:
+    timeout: 2000
+- assertVisible: "自分"
+- takeScreenshot: screenshots/09-follow-timeline/03-own-mode

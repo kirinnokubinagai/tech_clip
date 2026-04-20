@@ -83,6 +83,8 @@
     "socialSeparator": "或",
     "continueWithGoogle": "通过Google登录",
     "continueWithGithub": "通过GitHub登录",
+    "signUpWithGoogle": "通过Google注册",
+    "signUpWithGithub": "通过GitHub注册",
     "socialLoginFailed": "社交登录启动失败，请再试一次。",
     "callback": {
       "signingIn": "登录中...",
@@ -104,7 +106,11 @@
       "passwordRequired": "请输入密码",
       "nameRequired": "请输入姓名",
       "passwordMinLength": "请输入{{min}}个字符以上的密码"
-    }
+    },
+    "continueWithApple": "使用 Apple 继续",
+    "signUpWithApple": "使用 Apple 注册",
+    "nameOptional": "姓名（可选）",
+    "nameOptionalHint": "留空时将从邮箱地址自动生成"
   },
   "tabs": {
     "home": "首页",
@@ -163,7 +169,12 @@
     "noMatch": "没有匹配「{{query}}」的文章",
     "backA11yLabel": "返回",
     "backA11yHint": "返回上一个页面",
-    "generating": "生成中..."
+    "generating": "生成中...",
+    "premiumFeatures": {
+      "unlimitedAi": "无限AI功能",
+      "noAds": "无广告",
+      "offlineAccess": "离线访问"
+    }
   },
   "search": {
     "placeholder": "搜索文章...",

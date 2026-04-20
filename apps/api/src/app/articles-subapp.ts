@@ -6,6 +6,7 @@ import type { Database } from "../db";
 import { articles, users } from "../db/schema";
 import { resolveGemmaModelTag } from "../lib/ai-model";
 import { toRecordArray } from "../lib/db-cast";
+import { resolveUserFromRequest } from "../lib/resolve-user";
 import { createAiLimitMiddleware } from "../middleware/ai-limit";
 import {
   createKvStore,
@@ -15,10 +16,11 @@ import {
 import { createAiRoute } from "../routes/ai";
 import { createArticlesRoute } from "../routes/articles";
 import { createFavoriteRoute } from "../routes/favorite";
+import { createFeedRoute } from "../routes/feed";
 import { createPublicArticlesRoute } from "../routes/public-articles";
 import { buildFtsMatchExpression, createSearchRoute } from "../routes/search";
 import { createSummaryRoute } from "../routes/summary";
-import { parseArticle } from "../services/article-parser";
+import { fetchArticleMetadata } from "../services/metadata-fetcher";
 import { summarizeArticle } from "../services/summary";
 import { translateArticle } from "../services/translator";
 import type { Bindings } from "../types";
@@ -74,7 +76,7 @@ export async function handleArticles(
 ): Promise<Response> {
   const articlesRoute = createArticlesRoute({
     db,
-    parseArticleFn: parseArticle,
+    parseArticleFn: fetchArticleMetadata,
     queryFn: async (params) => {
       const conditions = [eq(articles.userId, params.userId)];
       if (params.cursor) {
@@ -119,6 +121,8 @@ export async function handleArticles(
 
   const favoriteRoute = createFavoriteRoute({ db });
 
+  const feedRoute = createFeedRoute({ db });
+
   const searchRoute = createSearchRoute({
     searchQueryFn: async (params) => {
       const matchExpr = buildFtsMatchExpression(params.query);
@@ -146,9 +150,9 @@ export async function handleArticles(
   const subApp = new Hono<{ Variables: { user?: Record<string, unknown> } }>();
 
   subApp.use("*", async (ctx, next) => {
-    const result = await auth.api.getSession({ headers: ctx.req.raw.headers });
-    if (result) {
-      ctx.set("user", result.user);
+    const user = await resolveUserFromRequest(db, auth, ctx.req.raw.headers);
+    if (user) {
+      ctx.set("user", user);
     }
     await next();
   });
@@ -169,11 +173,14 @@ export async function handleArticles(
   );
   subApp.use("/api/articles/:id/translate", createAiLimitMiddleware(db));
 
+  subApp.route("/api", feedRoute);
+  // searchRoute は articlesRoute (:id パス) より先にマウント
+  // （/api/articles/search が /api/articles/:id にマッチしてしまう競合回避）
+  subApp.route("/api/articles", searchRoute);
   subApp.route("/api/articles", articlesRoute);
   subApp.route("/api", summaryRoute);
   subApp.route("/api/articles", aiRoute);
   subApp.route("/api/articles", favoriteRoute);
-  subApp.route("/api/articles", searchRoute);
 
   return subApp.fetch(request);
 }

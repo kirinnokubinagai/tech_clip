@@ -67,8 +67,24 @@ jobs:
           disable-animations: true
           script: echo "AVD snapshot generated"
 
+
+      - name: Start Turso dev server
+        run: nix develop --command bash scripts/ci/start-turso.sh
+        env:
+          TURSO_CI_DB_FILE: /tmp/tech-clip-ci-turso.db
+          TURSO_CI_PORT: "8888"
+
       - name: Android Emulator + Maestro
         uses: reactivecircus/android-emulator-runner@324029e2f414c084d8b15ba075288885e74aef9c  # v2.13.0
+        env:
+          # NODE_OPTIONS は scripts/ci/run-android-e2e.sh 内で必要に応じて設定する
+          # (action-runner の node20 が --no-experimental-strip-types を受け入れないため)
+          TURSO_DATABASE_URL: "http://127.0.0.1:8888"
+          TURSO_AUTH_TOKEN: "dummy"
+          TEST_EMAIL: "test-${{ github.run_id }}+maestro@techclip.app"
+          TEST_PASSWORD: ${{ secrets.MAESTRO_TEST_PASSWORD }}
+          TEST_NAME: "Maestro Test User"
+          TIMESTAMP: ${{ github.run_id }}
         with:
           api-level: 34
           target: google_apis
@@ -76,45 +92,7 @@ jobs:
           force-avd-creation: false
           emulator-options: -no-snapshot-save -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
           disable-animations: true
-          script: |
-            set -eu
-            mkdir -p screenshots test-results
-
-            # Build and install development build
-            nix develop --command bash -c "cd apps/mobile && pnpm expo run:android --variant debug" &
-            EXPO_PID=$!
-
-            # Wait for app to be installed and running
-            for i in $(seq 1 60); do
-              if adb shell pidof com.techclip.app > /dev/null 2>&1; then
-                echo "App is running"
-                break
-              fi
-              sleep 5
-            done
-
-            if ! adb shell pidof com.techclip.app > /dev/null 2>&1; then
-              echo "ERROR: App failed to start within 5 minutes"
-              pkill -P $EXPO_PID 2>/dev/null || true
-              kill $EXPO_PID 2>/dev/null || true
-              echo "1" > test-results/maestro-exit-code.txt
-              exit 1
-            fi
-
-            # Run Maestro tests (continue on failure to upload artifacts)
-            set +e
-            nix develop --command maestro test tests/e2e/maestro/ \
-              --format junit \
-              --output test-results/junit.xml \
-              --debug-output screenshots/debug
-            MAESTRO_EXIT=$?
-            set -e
-
-            pkill -P $EXPO_PID 2>/dev/null || true
-            kill $EXPO_PID 2>/dev/null || true
-
-            echo "$MAESTRO_EXIT" > test-results/maestro-exit-code.txt
-            exit 0
+          script: bash scripts/ci/run-android-e2e.sh
 
       - name: Upload screenshots artifact
         if: always()

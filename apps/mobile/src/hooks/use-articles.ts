@@ -25,6 +25,12 @@ export const SEARCH_DEBOUNCE_MS = 300;
 
 type AiJobState = "queued" | "running" | "completed" | "failed";
 
+/** AI 制限超過などのビジネスエラー形状 */
+type AiApiErrorShape = {
+  success: false;
+  error: { code: string; message: string };
+};
+
 type SummaryJobStartResponse = {
   success: boolean;
   data: {
@@ -73,6 +79,8 @@ type TranslationJobStatusResponse = {
 type ArticlesFilter = {
   source?: ArticleSource;
   isFavorite?: boolean;
+  /** true のとき自分の記事ではなくフォロー中ユーザーの公開記事を取得する */
+  feedMode?: boolean;
 };
 
 /**
@@ -93,7 +101,9 @@ async function fetchArticles(
   if (filter.isFavorite) params.set("isFavorite", "true");
 
   const queryString = params.toString();
-  const path = `/api/articles${queryString ? `?${queryString}` : ""}`;
+  // feedMode=true のときはフォロー中ユーザーの公開記事を返す /api/feed を使用
+  const basePath = filter.feedMode ? "/api/feed" : "/api/articles";
+  const path = `${basePath}${queryString ? `?${queryString}` : ""}`;
 
   const response = await apiFetch<ArticlesListResponse>(path);
 
@@ -232,6 +242,47 @@ export function useToggleFavorite() {
   });
 }
 
+/**
+ * 記事の本文（content）を更新する mutation hook
+ *
+ * WebView から抽出したテキストを事前に DB に保存してから summary/translate API
+ * を呼ぶためのユーティリティ。
+ *
+ * @returns TanStack Query の useMutation 結果
+ */
+export function useUpdateArticleContent() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ articleId, content }: { articleId: string; content: string }) => {
+      const response = await apiFetch<{ success: boolean }>(`/api/articles/${articleId}`, {
+        method: "PATCH",
+        body: JSON.stringify({ content }),
+      });
+      return response;
+    },
+    onSuccess: (_, vars) => {
+      queryClient.invalidateQueries({ queryKey: [ARTICLE_DETAIL_QUERY_KEY, vars.articleId] });
+    },
+  });
+}
+
+export function useCloneArticle() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (sourceArticleId: string) => {
+      const response = await apiFetch<{ success: boolean; data: { id: string } }>(
+        `/api/articles/${sourceArticleId}/clone`,
+        { method: "POST" },
+      );
+      return response;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [ARTICLES_QUERY_KEY] });
+    },
+  });
+}
+
 /** 要約リクエストのパラメータ */
 type RequestSummaryParams = {
   articleId: string;
@@ -254,7 +305,7 @@ export function useRequestSummary() {
 
   return useMutation({
     mutationFn: async ({ articleId, language }: RequestSummaryParams) => {
-      const response = await apiFetch<SummaryJobStartResponse>(
+      const response = await apiFetch<SummaryJobStartResponse | AiApiErrorShape>(
         `/api/articles/${articleId}/summary`,
         { method: "POST", body: JSON.stringify({ language }) },
       );
@@ -279,7 +330,7 @@ export function useRequestTranslation() {
 
   return useMutation({
     mutationFn: async ({ articleId, targetLanguage }: RequestTranslationParams) => {
-      const response = await apiFetch<TranslationJobStartResponse>(
+      const response = await apiFetch<TranslationJobStartResponse | AiApiErrorShape>(
         `/api/articles/${articleId}/translate`,
         { method: "POST", body: JSON.stringify({ targetLanguage }) },
       );

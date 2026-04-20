@@ -40,6 +40,7 @@ export default function TabLayout() {
         name="index"
         options={{
           title: t("tabs.home"),
+          tabBarButtonTestID: "tab-home",
           tabBarIcon: ({ color }) => <Home size={TAB_ICON_SIZE} color={color} />,
         }}
       />
@@ -47,6 +48,7 @@ export default function TabLayout() {
         name="search"
         options={{
           title: t("tabs.search"),
+          tabBarButtonTestID: "tab-search",
           tabBarIcon: ({ color }) => <Search size={TAB_ICON_SIZE} color={color} />,
         }}
       />
@@ -54,6 +56,7 @@ export default function TabLayout() {
         name="notifications"
         options={{
           title: t("tabs.notifications"),
+          tabBarButtonTestID: "tab-notifications",
           tabBarIcon: ({ color }) => (
             <View>
               <Bell size={TAB_ICON_SIZE} color={color} />
@@ -81,6 +84,7 @@ export default function TabLayout() {
         name="profile"
         options={{
           title: t("tabs.profile"),
+          tabBarButtonTestID: "tab-profile",
           tabBarIcon: ({ color }) => <User size={TAB_ICON_SIZE} color={color} />,
         }}
       />
@@ -88,6 +92,7 @@ export default function TabLayout() {
         name="settings"
         options={{
           title: t("tabs.settings"),
+          tabBarButtonTestID: "tab-settings",
           tabBarIcon: ({ color }) => <Settings size={TAB_ICON_SIZE} color={color} />,
         }}
       />

@@ -1,7 +1,7 @@
 import { DEFAULT_GEMMA_MODEL_TAG, WORKERS_AI_GEMMA_MODEL_ID } from "../lib/ai-model";
 import { LANGUAGE_DISPLAY_NAMES } from "../lib/language-display-names";
 import { createLogger } from "../lib/logger";
-import { isWorkersAiTextResponse } from "../lib/workers-ai";
+import { extractTextResponse, isWorkersAiTextResponse } from "../lib/workers-ai";
 import type { SUPPORTED_LANGUAGES } from "../validators/ai";
 
 /** 要約生成結果 */
@@ -105,7 +105,7 @@ Key Points:
     }
 
     return {
-      summary: result.response,
+      summary: extractTextResponse(result),
       model: resolvedModelTag,
     };
   } catch (error) {

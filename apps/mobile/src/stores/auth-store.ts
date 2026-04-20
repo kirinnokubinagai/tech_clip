@@ -1,3 +1,4 @@
+import * as SecureStore from "expo-secure-store";
 import { create } from "zustand";
 
 import { apiFetch, SessionExpiredError } from "@/lib/api";
@@ -8,12 +9,14 @@ import type {
   SignInParams,
   SignInResponse,
   SignUpParams,
-  SignUpResponse,
   User,
 } from "@/types/auth";
 
+/** SecureStoreキー: アカウント作成済みフラグ */
+const HAS_ACCOUNT_KEY = "hasAccount";
+
 /** セッション期限切れメッセージ */
-const SESSION_EXPIRED_MESSAGE = "セッションの有効期限が切れました。再度ログインしてください";
+const SESSION_EXPIRED_MESSAGE = "セッションの有効期限が切れました。再度ログインしてください。";
 
 type AuthStore = {
   user: User | null;
@@ -22,6 +25,10 @@ type AuthStore = {
   isLoading: boolean;
   /** セッション期限切れ時に表示するメッセージ。nullの場合は表示しない */
   sessionExpiredMessage: string | null;
+  /** 一度でもサインインまたはサインアップに成功したことを示すフラグ */
+  hasAccount: boolean;
+  /** SecureStoreからhasAccountフラグを読み込む */
+  loadAccountFlag: () => Promise<void>;
   signIn: (params: SignInParams) => Promise<void>;
   signUp: (params: SignUpParams) => Promise<void>;
   signOut: () => Promise<void>;
@@ -37,12 +44,13 @@ type AuthStore = {
   updateUserProfile: (patch: Partial<User>) => void;
 };
 
-export const useAuthStore = create<AuthStore>((set) => ({
+export const useAuthStore = create<AuthStore>((set, get) => ({
   user: null,
   session: null,
   isAuthenticated: false,
   isLoading: true,
   sessionExpiredMessage: null,
+  hasAccount: false,
 
   /**
    * メールとパスワードでサインインする
@@ -63,10 +71,12 @@ export const useAuthStore = create<AuthStore>((set) => ({
     await setAuthToken(data.data.session.token);
     await setRefreshToken(data.data.session.refreshToken);
 
+    await SecureStore.setItemAsync(HAS_ACCOUNT_KEY, JSON.stringify(true));
     set({
       user: data.data.user,
       session: data.data.session,
       isAuthenticated: true,
+      hasAccount: true,
     });
   },
 
@@ -77,22 +87,40 @@ export const useAuthStore = create<AuthStore>((set) => ({
    * @throws Error - 登録失敗時
    */
   signUp: async (params: SignUpParams) => {
-    const data = await apiFetch<SignUpResponse | AuthErrorResponse>("/api/auth/sign-up/email", {
+    // Better Auth の sign-up/email は raw response を返す:
+    // 成功時: { token: string | null, user: {...}, session?: {...} }
+    // 失敗時: 4xx で apiFetch が ApiHttpError を throw
+    type BetterAuthSignUpResponse = {
+      token: string | null;
+      user: User;
+      session?: { token: string; refreshToken: string; expiresAt: string };
+    };
+    const data = await apiFetch<BetterAuthSignUpResponse>("/api/auth/sign-up/email", {
       method: "POST",
       body: JSON.stringify(params),
     });
 
-    if (!data.success) {
-      throw new Error(data.error.message);
+    if (!data.user) {
+      throw new Error("登録に失敗しました。");
     }
 
-    await setAuthToken(data.data.session.token);
-    await setRefreshToken(data.data.session.refreshToken);
+    // requireEmailVerification=true で session が返らない場合、
+    // 直ちに signIn を試みる（+maestro@ test users は emailVerified=true 自動設定されているので成功、
+    // それ以外は EMAIL_NOT_VERIFIED エラーが throw されて UI に表示される）
+    if (!data.session) {
+      await get().signIn({ email: params.email, password: params.password });
+      return;
+    }
 
+    await setAuthToken(data.session.token);
+    await setRefreshToken(data.session.refreshToken);
+
+    await SecureStore.setItemAsync(HAS_ACCOUNT_KEY, JSON.stringify(true));
     set({
-      user: data.data.user,
-      session: data.data.session,
+      user: data.user,
+      session: data.session,
       isAuthenticated: true,
+      hasAccount: true,
     });
   },
 
@@ -163,7 +191,7 @@ export const useAuthStore = create<AuthStore>((set) => ({
    * アプリ起動時に呼び出す
    */
   checkSession: async () => {
-    set({ isLoading: true });
+    set({ isLoading: true, sessionExpiredMessage: null });
 
     const token = await getAuthToken();
 
@@ -245,5 +273,15 @@ export const useAuthStore = create<AuthStore>((set) => ({
     set((state) => ({
       user: state.user ? { ...state.user, ...patch } : state.user,
     }));
+  },
+
+  /**
+   * SecureStoreからhasAccountフラグを読み込む
+   * アプリ起動時に呼び出す
+   */
+  loadAccountFlag: async () => {
+    const stored = await SecureStore.getItemAsync(HAS_ACCOUNT_KEY);
+    const hasAccount = stored !== null ? (JSON.parse(stored) as boolean) : false;
+    set({ hasAccount });
   },
 }));

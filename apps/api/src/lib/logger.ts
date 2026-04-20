@@ -20,6 +20,47 @@ export type Logger = {
 };
 
 /**
+ * Error インスタンスを JSON シリアライズ可能なオブジェクトに変換する
+ *
+ * Error の name / message / stack は non-enumerable のため JSON.stringify では失われる。
+ * この関数で明示的に取り出してシリアライズする。
+ *
+ * @param err - 変換する Error インスタンス
+ * @returns シリアライズ可能なエラーオブジェクト
+ */
+function serializeError(err: Error): Record<string, unknown> {
+  const serialized: Record<string, unknown> = {
+    name: err.name,
+    message: err.message,
+    stack: err.stack,
+  };
+  const cause = (err as Error & { cause?: unknown }).cause;
+  if (cause !== undefined) {
+    serialized.cause = String(cause);
+  }
+  return serialized;
+}
+
+/**
+ * ログエントリを JSON シリアライズする
+ *
+ * context 内の Error インスタンスを serializeError で変換してから stringify する。
+ * Error の non-enumerable プロパティ（name / message / stack）を保持するため。
+ *
+ * @param entry - ログエントリ
+ * @returns JSON 文字列
+ */
+function serializeEntry(entry: LogEntry): string {
+  const out: Record<string, unknown> = { ...entry };
+  for (const [key, value] of Object.entries(out)) {
+    if (value instanceof Error) {
+      out[key] = serializeError(value);
+    }
+  }
+  return JSON.stringify(out);
+}
+
+/**
  * ログエントリをJSON文字列として出力する
  *
  * @param level - ログレベル
@@ -40,7 +81,7 @@ function writeLog(
     ...(requestId !== undefined ? { requestId } : {}),
     ...(context ?? {}),
   };
-  console.log(JSON.stringify(entry));
+  console.log(serializeEntry(entry));
 }
 
 /**

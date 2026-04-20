@@ -16,6 +16,32 @@ env:
 # ログイン済み状態でアプリ起動
 - launchApp:
     clearState: false
+- runFlow:
+    when:
+      visible: "Try out your stylus"
+    commands:
+      - tapOn: "Cancel"
+      - waitForAnimationToEnd:
+          timeout: 1000
+- runFlow:
+    when:
+      visible: "Process system isn't responding"
+    commands:
+      - tapOn: "Wait"
+      - waitForAnimationToEnd:
+          timeout: 3000
+- runFlow:
+    when:
+      visible: "Open debugger"
+    commands:
+      - tapOn:
+          point: "92%, 93%"
+      - waitForAnimationToEnd:
+          timeout: 1000
+- runFlow:
+    file: "00-login-helper.yaml"
+- waitForAnimationToEnd:
+    timeout: 2000
 
 # --- ホーム画面: 記事一覧表示 ---
 - assertVisible: "すべて"
@@ -28,56 +54,59 @@ env:
 
 # お気に入りフィルター
 - tapOn:
-    accessibilityLabel: "お気に入りのみ表示"
+    text: "お気に入りのみ表示"
 - assertVisible:
-    accessibilityLabel: "お気に入りフィルター解除"
+    text: "お気に入りフィルター解除"
 - tapOn:
-    accessibilityLabel: "お気に入りフィルター解除"
+    text: "お気に入りフィルター解除"
+- assertVisible:
+    text: "すべて"
 
 # 記事カードをタップして詳細へ
 - tapOn:
     index: 0
-    type: com.techclip.ArticleCard
+    id: "article-card"
 
 # --- 記事詳細画面 ---
 - assertVisible:
-    accessibilityLabel: "戻る"
+    text: "戻る"
 - takeScreenshot: screenshots/05-article-detail/02-detail
 
 # お気に入り追加
 - tapOn:
-    accessibilityLabel: "お気に入り追加"
+    text: "お気に入り追加"
 - assertVisible:
-    accessibilityLabel: "お気に入り解除"
+    text: "お気に入り解除"
 
 # お気に入り解除
 - tapOn:
-    accessibilityLabel: "お気に入り解除"
+    text: "お気に入り解除"
 - assertVisible:
-    accessibilityLabel: "お気に入り追加"
+    text: "お気に入り追加"
 
 # 要約ボタン
 - assertVisible:
-    accessibilityLabel: "要約を生成"
+    text: "要約"
 - tapOn:
-    accessibilityLabel: "要約を生成"
+    text: "要約"
 - waitForAnimationToEnd
 
 # 翻訳ボタン
 - assertVisible:
-    accessibilityLabel: "翻訳する"
+    text: "翻訳"
 - tapOn:
-    accessibilityLabel: "翻訳する"
+    text: "翻訳"
 - waitForAnimationToEnd
 
 # ブラウザで開くボタン確認
 - assertVisible:
-    accessibilityLabel: "ブラウザで開く"
+    text: "ブラウザで開く"
 
 # 戻るボタンでホームへ
 - tapOn:
-    accessibilityLabel: "戻る"
-- assertVisible: "すべて"
+    text: "戻る"
+- assertVisible:
+    text: "すべて"
 
 # --- ソースフィルター: Zenn ---
 - tapOn: "Zenn"
@@ -89,7 +118,5 @@ env:
 
 # プルリフレッシュ
 - swipe:
-    direction: DOWN
-    from:
-      x: 50%
-      y: 40%
+    start: "50%, 40%"
+    end: "50%, 80%"

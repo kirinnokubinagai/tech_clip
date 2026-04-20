@@ -3,7 +3,7 @@ import { parseHTML } from "linkedom";
 import TurndownService from "turndown";
 
 import type { ParsedArticle } from "../../types/article";
-import { calculateReadingTime, TECHCLIP_USER_AGENT } from "./_shared";
+import { calculateReadingTime, htmlFragmentToMarkdown, TECHCLIP_USER_AGENT } from "./_shared";
 
 /** はてなブログの対応ドメインパターン */
 const HATENA_DOMAIN_PATTERN = /\.(hatenablog\.com|hatenablog\.jp|hateblo\.jp)$/;
@@ -86,6 +86,9 @@ export async function parseHatena(url: string): Promise<ParsedArticle> {
 
   const html = await response.text();
   const { document } = parseHTML(html);
+  if (!document.documentElement) {
+    throw new Error("HTMLが空または不正です（Cloudflare等のbot対策の可能性）");
+  }
 
   const reader = new Readability(document);
   const article = reader.parse();
@@ -98,7 +101,7 @@ export async function parseHatena(url: string): Promise<ParsedArticle> {
     headingStyle: "atx",
     codeBlockStyle: "fenced",
   });
-  const markdown = turndown.turndown(article.content);
+  const markdown = htmlFragmentToMarkdown(article.content, turndown);
 
   const { document: originalDoc } = parseHTML(html);
   const doc = originalDoc as unknown as LinkedomDocument;

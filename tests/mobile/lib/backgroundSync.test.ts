@@ -28,7 +28,7 @@ import {
   startBackgroundSync,
   unregisterNativeBackgroundFetch,
 } from "@mobile/lib/backgroundSync";
-import { syncAllForOffline, syncArticles } from "@mobile/lib/syncManager";
+import { syncAllForOffline } from "@mobile/lib/syncManager";
 import * as BackgroundFetch from "expo-background-fetch";
 import { AppState } from "react-native";
 
@@ -331,11 +331,17 @@ describe("backgroundSync", () => {
     it("activeになった後は同期時刻が記録されること", async () => {
       // Arrange
       const before = Date.now();
-      (syncArticles as jest.Mock).mockResolvedValue({ synced: 1, errors: [] });
+      (syncAllForOffline as jest.Mock).mockResolvedValue({
+        contentsPrefetched: 1,
+        listSynced: 0,
+        errors: [],
+      });
       const handler = createAppStateHandler(DEFAULT_BACKGROUND_SYNC_CONFIG);
 
       // Act
       handler("active");
+      // syncAllForOffline().then() が実行されるのを待つ（Promise チェーン 2 ティック）
+      await Promise.resolve();
       await Promise.resolve();
 
       // Assert
@@ -348,9 +354,15 @@ describe("backgroundSync", () => {
   describe("resetBackgroundSyncState", () => {
     it("lastSyncedAtをnullにリセットすること", async () => {
       // Arrange
-      (syncArticles as jest.Mock).mockResolvedValue({ synced: 0, errors: [] });
+      (syncAllForOffline as jest.Mock).mockResolvedValue({
+        contentsPrefetched: 0,
+        listSynced: 0,
+        errors: [],
+      });
       const handler = createAppStateHandler(DEFAULT_BACKGROUND_SYNC_CONFIG);
       handler("active");
+      // syncAllForOffline().then() が実行されるのを待つ（Promise チェーン 2 ティック）
+      await Promise.resolve();
       await Promise.resolve();
       expect(getLastSyncedAt()).not.toBeNull();
 

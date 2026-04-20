@@ -121,7 +121,7 @@ function createTestApp(
     await next();
   });
 
-  app.route("/", route);
+  app.route("/notifications", route);
   return app;
 }
 
@@ -185,7 +185,7 @@ describe("通知API 統合テスト", () => {
       // Arrange
       mockDb.returning.mockResolvedValue([{ id: "push_token_001" }]);
       const app = createTestApp(mockDb, mockQueryFn);
-      const req = new Request("http://localhost/register", {
+      const req = new Request("http://localhost/notifications/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ token: "ExponentPushToken[xxx]", platform: "ios" }),
@@ -203,7 +203,7 @@ describe("通知API 統合テスト", () => {
     it("未認証の場合に401エラーを返すこと", async () => {
       // Arrange
       const app = createTestApp(mockDb, mockQueryFn, false);
-      const req = new Request("http://localhost/register", {
+      const req = new Request("http://localhost/notifications/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ token: "ExponentPushToken[xxx]", platform: "ios" }),
@@ -221,7 +221,7 @@ describe("通知API 統合テスト", () => {
     it("platformが不正な場合に422エラーを返すこと", async () => {
       // Arrange
       const app = createTestApp(mockDb, mockQueryFn);
-      const req = new Request("http://localhost/register", {
+      const req = new Request("http://localhost/notifications/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ token: "ExponentPushToken[xxx]", platform: "windows" }),
@@ -239,7 +239,7 @@ describe("通知API 統合テスト", () => {
     it("tokenが空の場合に422エラーを返すこと", async () => {
       // Arrange
       const app = createTestApp(mockDb, mockQueryFn);
-      const req = new Request("http://localhost/register", {
+      const req = new Request("http://localhost/notifications/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ token: "", platform: "ios" }),
@@ -267,7 +267,7 @@ describe("通知API 統合テスト", () => {
           Promise.resolve([MOCK_NOTIFICATIONS[0]]).then(resolve),
       });
       const app = createTestApp(mockDb, mockQueryFn);
-      const req = new Request(`http://localhost/${MOCK_NOTIFICATIONS[0].id}/read`, {
+      const req = new Request(`http://localhost/notifications/${MOCK_NOTIFICATIONS[0].id}/read`, {
         method: "PATCH",
       });
 
@@ -283,7 +283,7 @@ describe("通知API 統合テスト", () => {
     it("未認証の場合に401エラーを返すこと", async () => {
       // Arrange
       const app = createTestApp(mockDb, mockQueryFn, false);
-      const req = new Request("http://localhost/notif_001/read", {
+      const req = new Request("http://localhost/notifications/notif_001/read", {
         method: "PATCH",
       });
 

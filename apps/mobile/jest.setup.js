@@ -23,6 +23,23 @@ console.info = (...args) => {
   originalConsoleInfo(...args);
 };
 
+// テスト中の期待される挙動によるフォールバック warn を抑制する
+// （logger は debug レベルに変更済みだが、console.warn を直接呼ぶ箇所も念のため抑制）
+const originalConsoleWarn = console.warn;
+console.warn = (...args) => {
+  if (
+    typeof args[0] === "string" &&
+    (args[0].includes("フォールバック") ||
+      args[0].includes("Fallback") ||
+      args[0].includes("fallback") ||
+      // RevenueCat ネイティブモジュール未設定警告（テスト環境では常に出る既知の問題）
+      args[0].includes("[RevenueCat]"))
+  ) {
+    return;
+  }
+  originalConsoleWarn(...args);
+};
+
 // jest-expo setup workaround for React Native compatibility
 
 // NativeWind v4 CSS interop mock for Jest environment
@@ -66,3 +83,11 @@ if (typeof global.document === "undefined") {
     documentElement: { style: {} },
   };
 }
+
+// react-native-webview は native module のため jest 実行時は stub 化する
+jest.mock("react-native-webview", () => {
+  const React = require("react");
+  const WebView = React.forwardRef(() => null);
+  WebView.displayName = "WebView";
+  return { __esModule: true, default: WebView };
+});

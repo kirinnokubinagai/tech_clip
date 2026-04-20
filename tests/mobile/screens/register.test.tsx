@@ -1,5 +1,6 @@
 import RegisterScreen from "@mobile-app/(auth)/register";
 import { act, fireEvent, render, waitFor } from "@testing-library/react-native";
+import { Linking } from "react-native";
 
 const mockSignUp = jest.fn();
 
@@ -11,8 +12,16 @@ jest.mock("@mobile/stores/auth-store", () => ({
   ),
 }));
 
+jest.mock("@/lib/api", () => ({
+  getBaseUrl: jest.fn(() => "http://localhost:8787"),
+  fetchWithTimeout: jest.fn((url: string, options: RequestInit) => fetch(url, options)),
+}));
+
+const mockOpenUrl = jest.spyOn(Linking, "openURL").mockResolvedValue();
+
 beforeEach(() => {
   jest.clearAllMocks();
+  global.fetch = jest.fn();
 });
 
 describe("RegisterScreen", () => {
@@ -22,7 +31,7 @@ describe("RegisterScreen", () => {
       mockSignUp.mockResolvedValue(undefined);
       const { getByLabelText } = await render(<RegisterScreen />);
 
-      await fireEvent.changeText(getByLabelText("名前"), "テストユーザー");
+      await fireEvent.changeText(getByLabelText("お名前（任意）"), "テストユーザー");
       await fireEvent.changeText(getByLabelText("メールアドレス"), "test@example.com");
       await fireEvent.changeText(getByLabelText("パスワード"), "Password123");
 
@@ -40,8 +49,9 @@ describe("RegisterScreen", () => {
       });
     });
 
-    it("名前が空の場合signUpが呼ばれないこと", async () => {
+    it("名前が空でもsignUpがname=undefinedで呼ばれること", async () => {
       // Arrange
+      mockSignUp.mockResolvedValue(undefined);
       const { getByLabelText } = await render(<RegisterScreen />);
 
       await fireEvent.changeText(getByLabelText("メールアドレス"), "test@example.com");
@@ -52,7 +62,12 @@ describe("RegisterScreen", () => {
 
       // Assert
       await waitFor(() => {
-        expect(mockSignUp).not.toHaveBeenCalled();
+        expect(mockSignUp).toHaveBeenCalledTimes(1);
+        expect(mockSignUp).toHaveBeenCalledWith({
+          name: undefined,
+          email: "test@example.com",
+          password: "Password123",
+        });
       });
     });
 
@@ -60,7 +75,7 @@ describe("RegisterScreen", () => {
       // Arrange
       const { getByLabelText } = await render(<RegisterScreen />);
 
-      await fireEvent.changeText(getByLabelText("名前"), "テストユーザー");
+      await fireEvent.changeText(getByLabelText("お名前（任意）"), "テストユーザー");
       await fireEvent.changeText(getByLabelText("パスワード"), "Password123");
 
       // Act
@@ -76,7 +91,7 @@ describe("RegisterScreen", () => {
       // Arrange
       const { getByLabelText } = await render(<RegisterScreen />);
 
-      await fireEvent.changeText(getByLabelText("名前"), "テストユーザー");
+      await fireEvent.changeText(getByLabelText("お名前（任意）"), "テストユーザー");
       await fireEvent.changeText(getByLabelText("メールアドレス"), "invalid-email");
       await fireEvent.changeText(getByLabelText("パスワード"), "Password123");
 
@@ -87,14 +102,14 @@ describe("RegisterScreen", () => {
       await waitFor(() => {
         expect(mockSignUp).not.toHaveBeenCalled();
       });
-      expect(getByLabelText("メールアドレスの形式が正しくありません")).toBeDefined();
+      expect(getByLabelText("メールアドレスの形式が正しくありません。")).toBeDefined();
     });
 
     it("パスワードが空の場合signUpが呼ばれないこと", async () => {
       // Arrange
       const { getByLabelText } = await render(<RegisterScreen />);
 
-      await fireEvent.changeText(getByLabelText("名前"), "テストユーザー");
+      await fireEvent.changeText(getByLabelText("お名前（任意）"), "テストユーザー");
       await fireEvent.changeText(getByLabelText("メールアドレス"), "test@example.com");
 
       // Act
@@ -110,7 +125,7 @@ describe("RegisterScreen", () => {
       // Arrange
       const { getByLabelText } = await render(<RegisterScreen />);
 
-      await fireEvent.changeText(getByLabelText("名前"), "テストユーザー");
+      await fireEvent.changeText(getByLabelText("お名前（任意）"), "テストユーザー");
       await fireEvent.changeText(getByLabelText("メールアドレス"), "test@example.com");
       await fireEvent.changeText(getByLabelText("パスワード"), "1234567");
 
@@ -121,7 +136,7 @@ describe("RegisterScreen", () => {
       await waitFor(() => {
         expect(mockSignUp).not.toHaveBeenCalled();
       });
-      expect(getByLabelText("パスワードは8文字以上で入力してください")).toBeDefined();
+      expect(getByLabelText("パスワードは8文字以上で入力してください。")).toBeDefined();
     });
 
     it("signUpが失敗した場合エラーメッセージが表示されること", async () => {
@@ -129,7 +144,7 @@ describe("RegisterScreen", () => {
       mockSignUp.mockRejectedValue(new Error("メールアドレスはすでに使用されています"));
       const { getByLabelText } = await render(<RegisterScreen />);
 
-      await fireEvent.changeText(getByLabelText("名前"), "テストユーザー");
+      await fireEvent.changeText(getByLabelText("お名前（任意）"), "テストユーザー");
       await fireEvent.changeText(getByLabelText("メールアドレス"), "test@example.com");
       await fireEvent.changeText(getByLabelText("パスワード"), "Password123");
 
@@ -140,6 +155,90 @@ describe("RegisterScreen", () => {
 
       // Assert: エラーメッセージがaccessibilityLabelとして表示されること
       expect(getByLabelText("メールアドレスはすでに使用されています")).toBeDefined();
+    });
+  });
+
+  describe("OAuthボタン表示", () => {
+    it("Google で登録ボタンが表示されること", async () => {
+      // Arrange & Act
+      const { getByLabelText } = await render(<RegisterScreen />);
+
+      // Assert
+      expect(getByLabelText("Google で登録")).toBeDefined();
+    });
+
+    it("GitHub で登録ボタンが表示されること", async () => {
+      // Arrange & Act
+      const { getByLabelText } = await render(<RegisterScreen />);
+
+      // Assert
+      expect(getByLabelText("GitHub で登録")).toBeDefined();
+    });
+
+    it("Apple で登録ボタンがiOS環境で表示されること", async () => {
+      // Arrange & Act (jest-expo はデフォルトで iOS 環境)
+      const { getByLabelText } = await render(<RegisterScreen />);
+
+      // Assert
+      expect(getByLabelText("Apple で登録")).toBeDefined();
+    });
+
+    it("Google で登録押下時に認可URLを開くこと", async () => {
+      // Arrange
+      (global.fetch as jest.Mock).mockResolvedValue({
+        ok: true,
+        json: async () => ({ url: "https://accounts.google.com/o/oauth2/auth" }),
+      });
+      const { getByLabelText } = await render(<RegisterScreen />);
+
+      // Act
+      await fireEvent.press(getByLabelText("Google で登録"));
+
+      // Assert
+      await waitFor(() => {
+        expect(global.fetch).toHaveBeenCalledWith(
+          "http://localhost:8787/api/auth/sign-in/social",
+          expect.objectContaining({
+            method: "POST",
+          }),
+        );
+        expect(mockOpenUrl).toHaveBeenCalledWith("https://accounts.google.com/o/oauth2/auth");
+      });
+    });
+
+    it("OAuthソーシャル登録開始に失敗した場合エラーメッセージが表示されること", async () => {
+      // Arrange
+      (global.fetch as jest.Mock).mockResolvedValue({
+        ok: false,
+        json: async () => ({}),
+      });
+      const { getByLabelText, findByLabelText } = await render(<RegisterScreen />);
+
+      // Act
+      await fireEvent.press(getByLabelText("GitHub で登録"));
+
+      // Assert
+      expect(
+        await findByLabelText("ソーシャルログインの開始に失敗しました。もう一度お試しください。"),
+      ).toBeDefined();
+    });
+
+    it("https以外のURLが返された場合は遷移せずエラーメッセージを表示すること", async () => {
+      // Arrange
+      (global.fetch as jest.Mock).mockResolvedValue({
+        ok: true,
+        json: async () => ({ url: "javascript:alert('xss')" }),
+      });
+      const { getByLabelText, findByLabelText } = await render(<RegisterScreen />);
+
+      // Act
+      await fireEvent.press(getByLabelText("GitHub で登録"));
+
+      // Assert
+      expect(
+        await findByLabelText("ソーシャルログインの開始に失敗しました。もう一度お試しください。"),
+      ).toBeDefined();
+      expect(mockOpenUrl).not.toHaveBeenCalled();
     });
   });
 });

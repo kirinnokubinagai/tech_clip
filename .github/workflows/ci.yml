@@ -26,7 +26,6 @@ jobs:
     if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    continue-on-error: true  # トークン制限による失敗は後続をブロックしない
     permissions:
       contents: read
       pull-requests: write
@@ -37,7 +36,6 @@ jobs:
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v4.2.2
       - id: review
-        continue-on-error: true  # ワークフローファイル変更PRではGitHubセキュリティ制限で失敗するため
         uses: anthropics/claude-code-action@b47fd721da662d48c5680e154ad16a73ed74d2e0  # v1
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
@@ -66,12 +64,13 @@ jobs:
               gh pr edit ${{ github.event.pull_request.number }} --add-label "AI Review: NEEDS WORK" --remove-label "AI Review: PASS"
 
             重要: gh pr review --approve は絶対に実行しないでください。
-      # claude-review が API エラー等で失敗しても check-label は always() で実行される。
-      # ラベルなし（レビュー未実施 or トークン制限失敗）は PASS 扱いとする設計。
+      # claude-review が fail した場合は check-label は always() で実行される。
+      # ラベル "AI Review: NEEDS WORK" が付いていれば NEEDS WORK 扱いとする。
       # - push イベントでは claude-review ジョブ自体が skipped になるため needs_work は空文字になる。
       #   空文字 != 'true' は true となり PASS 扱いになる（意図した動作）。
-      # - PR イベントで claude-review が continue-on-error により失敗した場合も、
-      #   "AI Review: NEEDS WORK" ラベルが付いていなければ PASS 扱いになる（意図した動作）。
+      # - ワークフローファイル変更 PR では claude-review が GitHub セキュリティ制限で失敗するが、
+      #   その場合は ci-gate が claude-review failure を検知して "manual review required" として扱う。
+      #   （reviewer エージェントが手動モードに遷移する）
       # NG の場合は claude-review ステップがラベル "AI Review: NEEDS WORK" を付ける。
       - id: check-label
         if: always()

@@ -417,7 +417,21 @@ async function interpretResponse<T>(response: Response): Promise<T> {
  * @returns 新しいアクセストークン
  * @throws SessionExpiredError - リフレッシュに失敗した場合
  */
+/** 同時に複数の refresh が走らないよう in-flight Promise を共有 */
+let refreshInFlight: Promise<string> | null = null;
+
 async function refreshAccessToken(baseUrl: string): Promise<string> {
+  // 既に走っている refresh があればそれを待つ (token reuse detected 401 を防ぐ)
+  if (refreshInFlight) {
+    return refreshInFlight;
+  }
+  refreshInFlight = doRefreshAccessToken(baseUrl).finally(() => {
+    refreshInFlight = null;
+  });
+  return refreshInFlight;
+}
+
+async function doRefreshAccessToken(baseUrl: string): Promise<string> {
   const refreshToken = await getRefreshToken();
 
   if (!refreshToken) {

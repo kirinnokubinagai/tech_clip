@@ -122,7 +122,7 @@ describe("OnboardingScreen", () => {
       expect(getByTestId("finish-button")).not.toBeNull();
     });
 
-    it("最終ページの始めるボタンを押すとログイン画面に遷移すること", async () => {
+    it("最終ページの始めるボタンを押すと登録画面に遷移すること", async () => {
       // Arrange
       const { getByTestId } = await render(<OnboardingScreen />);
 
@@ -135,7 +135,7 @@ describe("OnboardingScreen", () => {
 
       // Assert
       await waitFor(() => {
-        expect(mockRouter.replace).toHaveBeenCalledWith("/(auth)/login");
+        expect(mockRouter.replace).toHaveBeenCalledWith("/(auth)/register");
       });
       expect(mockSetHasSeenOnboarding).toHaveBeenCalledWith(true);
     });

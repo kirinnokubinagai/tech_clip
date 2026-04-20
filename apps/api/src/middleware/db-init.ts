@@ -14,9 +14,15 @@ type DbInitBindings = {
   TURSO_DATABASE_URL: string;
   TURSO_AUTH_TOKEN: string;
   BETTER_AUTH_SECRET: string;
+  RESEND_API_KEY?: string;
+  FROM_EMAIL?: string;
   APP_URL?: string;
+  /** API 自身のベース URL（Better Auth baseURL に渡す。省略時は auth/index.ts の DEFAULT_API_BASE_URL を使用） */
+  API_BASE_URL?: string;
   /** カンマ区切りの追加 trustedOrigins（例: "https://staging.example.com,https://dev.example.com"） */
   TRUSTED_ORIGINS?: string;
+  /** Mailpit API エンドポイント（ローカル開発用） */
+  MAILPIT_URL?: string;
   GOOGLE_CLIENT_ID?: string;
   GOOGLE_CLIENT_SECRET?: string;
   APPLE_CLIENT_ID?: string;
@@ -88,12 +94,24 @@ export function createDbInitMiddleware(
             .filter((origin) => origin.length > 0)
         : [];
 
+      const hasMailpit = !!c.env.MAILPIT_URL;
+      const hasResend = !!c.env.RESEND_API_KEY;
+      const emailEnv =
+        hasMailpit || hasResend
+          ? {
+              RESEND_API_KEY: c.env.RESEND_API_KEY ?? "",
+              FROM_EMAIL: c.env.FROM_EMAIL ?? "",
+              MAILPIT_URL: c.env.MAILPIT_URL,
+            }
+          : undefined;
+
       authInstance = createAuthFn(
         db,
         c.env.BETTER_AUTH_SECRET,
         oauthProviders,
-        c.env.APP_URL,
+        c.env.API_BASE_URL,
         additionalTrustedOrigins,
+        emailEnv,
       );
       return authInstance;
     });

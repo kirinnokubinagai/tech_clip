@@ -1,0 +1,136 @@
+# 認証フロー: 新規登録
+# オンボーディング「始める」から register 画面に遷移し、
+# ユニークメールでアカウント作成 → 自動ログイン → ホーム画面遷移を確認する
+#
+# tags: auth
+
+appId: com.techclip.app
+tags:
+  - auth
+
+env:
+  TEST_EMAIL: ${TIMESTAMP}+maestro@techclip.app
+  TEST_PASSWORD: ${TEST_PASSWORD}
+  TEST_NAME: ${TEST_NAME}
+
+---
+
+# アプリ起動（clearState でオンボーディング未閲覧状態に）
+- launchApp:
+    clearState: true
+- runFlow:
+    when:
+      visible: "Try out your stylus"
+    commands:
+      - tapOn: "Cancel"
+      - waitForAnimationToEnd:
+          timeout: 1000
+- waitForAnimationToEnd:
+    timeout: 30000
+- runFlow:
+    when:
+      visible: "Process system isn't responding"
+    commands:
+      - tapOn: "Wait"
+      - waitForAnimationToEnd:
+          timeout: 3000
+
+# オンボーディング: ページ1 → 2 → 3 → 4（始める）
+# LogBox.ignoreAllLogs() で dev banner を無効化済みのため、unconditional 座標 tap は不要
+- extendedWaitUntil:
+    visible: "技術記事をワンタップで保存"
+    timeout: 60000
+- tapOn:
+    id: "next-button"
+- extendedWaitUntil:
+    visible: "AIが要約・翻訳"
+    timeout: 10000
+- tapOn:
+    id: "next-button"
+- extendedWaitUntil:
+    visible: "お気に入り・タグで整理"
+    timeout: 10000
+- tapOn:
+    id: "next-button"
+- extendedWaitUntil:
+    visible: "さあ、始めましょう"
+    timeout: 10000
+- extendedWaitUntil:
+    visible:
+      id: "finish-button"
+    timeout: 10000
+- tapOn:
+    id: "finish-button"
+- waitForAnimationToEnd:
+    timeout: 3000
+
+# --- 新規登録画面 ---
+- assertVisible:
+    text: "アカウントを作成"
+- takeScreenshot: screenshots/02-auth-register/01-register-screen
+- assertVisible: "お名前"
+- assertVisible: "メールアドレス"
+- assertVisible: "パスワード"
+
+# バリデーション: 名前空のまま空送信 → メールエラー（name は optional）
+- tapOn:
+    id: "register-submit-button"
+- assertVisible: "メールアドレスを入力してください。"
+
+# 名前入力
+- tapOn:
+    id: "register-name-input"
+- runFlow:
+    when:
+      visible: "Try out your stylus"
+    commands:
+      - tapOn: "Cancel"
+      - waitForAnimationToEnd:
+          timeout: 1000
+- inputText: ${TEST_NAME}
+
+# バリデーション: 名前のみで送信 → メールエラー
+- tapOn:
+    id: "register-submit-button"
+- assertVisible: "メールアドレスを入力してください。"
+
+# メールアドレス入力
+- tapOn:
+    id: "register-email-input"
+- runFlow:
+    when:
+      visible: "Try out your stylus"
+    commands:
+      - tapOn: "Cancel"
+      - waitForAnimationToEnd:
+          timeout: 1000
+- inputText: ${TEST_EMAIL}
+
+# バリデーション: パスワードなしで送信
+- tapOn:
+    id: "register-submit-button"
+- assertVisible: "パスワードを入力してください。"
+
+# パスワード入力
+- tapOn:
+    id: "register-password-input"
+- runFlow:
+    when:
+      visible: "Try out your stylus"
+    commands:
+      - tapOn: "Cancel"
+      - waitForAnimationToEnd:
+          timeout: 1000
+- inputText: ${TEST_PASSWORD}
+
+# フォーム送信 → 自動ログイン → ホーム画面
+- hideKeyboard
+- tapOn:
+    id: "register-submit-button"
+- waitForAnimationToEnd:
+    timeout: 8000
+
+# ホーム画面に遷移することを確認（自動ログイン）
+- assertVisible:
+    text: "すべて"
+- takeScreenshot: screenshots/02-auth-register/02-home-after-register

@@ -93,7 +93,7 @@ openssl rand -base64 32
 3. "Create Credentials" > "OAuth 2.0 Client IDs" を選択する
 4. アプリケーションの種類: "Web application"
 5. 承認済みリダイレクト URI に以下を追加する:
-   - 開発: `http://localhost:8787/api/auth/callback/google`
+   - 開発: `http://localhost:18787/api/auth/callback/google`
    - 本番: `https://your-api-domain.workers.dev/api/auth/callback/google`
 6. 作成後に表示されるクライアント ID とシークレットを設定する
 
@@ -165,8 +165,8 @@ console.log(header + '.' + payload + '.' + signature);
 1. "OAuth Apps" > "New OAuth App" をクリックする
 2. 以下を入力する:
    - Application name: `TechClip (dev)` など
-   - Homepage URL: `http://localhost:8787`
-   - Authorization callback URL: `http://localhost:8787/api/auth/callback/github`
+   - Homepage URL: `http://localhost:18787`
+   - Authorization callback URL: `http://localhost:18787/api/auth/callback/github`
 3. "Register application" をクリックする
 4. Client ID を `GITHUB_CLIENT_ID` に設定する
 5. "Generate a new client secret" から生成したシークレットを `GITHUB_CLIENT_SECRET` に設定する

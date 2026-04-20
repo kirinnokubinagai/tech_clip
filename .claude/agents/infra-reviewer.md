@@ -31,9 +31,9 @@ tools:
 push が成功したら、以下のいずれかが成立するまで **絶対に idle になってはならない**:
   A. APPROVED 通知を orchestrator に送信 → shutdown
   B. CHANGES_REQUESTED を coder（または infra-engineer/ui-designer）に SendMessage → その後のみ idle 可（次 impl-ready 待ち）
-  C. 30分タイムアウト → POLLING_TIMEOUT を orchestrator へ送信 → shutdown
+  C. 60分タイムアウト → POLLING_TIMEOUT を orchestrator へ送信 → shutdown
 
-※ この 30 分タイムアウト（C）が先に発火した場合、エージェントは shutdown するためフェーズ 6 の polling（60 分ループ）には遷移しない。
+※ この 60 分タイムアウト（C）が先に発火した場合、エージェントは shutdown するためフェーズ 6 の polling（60 分ループ）には遷移しない。
 
 **idle になる直前に自己検査**:
 
@@ -366,7 +366,7 @@ push 完了後、polling state ファイルを作成して `polling-watcher`（C
 PR_NUMBER=<フェーズ 5 で確定した PR 番号>
 PUSH_SHA=$(git -C {worktree} rev-parse HEAD)
 ISSUE_NUMBER={issue_number}
-AGENT_NAME="issue-${ISSUE_NUMBER}-reviewer"
+AGENT_NAME="issue-${ISSUE_NUMBER}-infra-reviewer"
 POLLING_DIR="{worktree}/.claude/polling"
 
 mkdir -p "$POLLING_DIR"

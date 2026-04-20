@@ -1,7 +1,7 @@
 import type { Auth } from "../auth";
 import type { Database } from "../db";
 import { fetchWithAuth } from "../lib/route-helpers";
-import { createTagsRoute } from "../routes/tags";
+import { createArticleTagsRoute, createTagsRoute } from "../routes/tags";
 
 /**
  * タグドメインのサブアプリを構築してリクエストを処理する
@@ -13,11 +13,14 @@ import { createTagsRoute } from "../routes/tags";
  */
 export async function handleTags(db: Database, auth: Auth, request: Request): Promise<Response> {
   const tagsRoute = createTagsRoute({ db });
+  const articleTagsRoute = createArticleTagsRoute({ db });
 
   return fetchWithAuth(
-    auth.api.getSession.bind(auth.api),
+    db,
+    auth,
     (subApp) => {
-      subApp.route("/api", tagsRoute);
+      subApp.route("/api/tags", tagsRoute);
+      subApp.route("/api/articles", articleTagsRoute);
     },
     request,
   );

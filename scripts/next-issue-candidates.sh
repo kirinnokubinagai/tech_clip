@@ -1,12 +1,13 @@
 #!/usr/bin/env bash
 #
-# next-issue-auto-spawn.sh: APPROVED 通知受信後、次の Issue を自動提示する (Part F)
+# next-issue-candidates.sh: APPROVED 通知受信後、次の Issue 候補を提示する (Part F)
 #
 # orchestrator が reviewer から "APPROVED: issue-N" を受けたときに呼ぶ。
 # 要人間確認 Issue を除いた自動割り当て可能 Issue 一覧を stdout に出力する。
+# spawn 自体は orchestrator の責任であり、このスクリプトは候補リストのみを返す。
 #
 # 使い方:
-#   bash scripts/next-issue-auto-spawn.sh [--json]
+#   bash scripts/next-issue-candidates.sh [--json]
 #
 # オプション:
 #   --json  JSON 形式で出力（orchestrator が処理しやすい形式）
@@ -21,6 +22,9 @@
 
 set -euo pipefail
 
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+CONFIG="${SCRIPT_DIR}/../.claude/config.json"
+
 OUTPUT_JSON=false
 if [ "${1:-}" = "--json" ]; then
   OUTPUT_JSON=true
@@ -31,6 +35,10 @@ if ! command -v gh >/dev/null 2>&1; then
   echo "ERROR: gh コマンドが見つかりません" >&2
   exit 1
 fi
+
+# config.json から要人間確認ラベルとタイトルパターンを読み込む
+HUMAN_LABELS=$(jq -r '.human_review_labels // ["release","requires-human"] | map(@json) | join(",")' "$CONFIG" 2>/dev/null || echo '"release","requires-human"')
+HUMAN_PATTERNS=$(jq -r '.human_review_title_patterns // ["go-no-go","store","production","smoke test","本番"] | join("|")' "$CONFIG" 2>/dev/null || echo 'go-no-go|store|production|smoke test|本番')
 
 # Issue 一覧を取得
 ISSUES_JSON=$(gh issue list --state open --limit 100 \
@@ -45,24 +53,20 @@ if [ "$ISSUES_JSON" = "[]" ] || [ -z "$ISSUES_JSON" ]; then
   exit 0
 fi
 
-# 要人間確認フィルタ
-AUTO_ASSIGNABLE=$(echo "$ISSUES_JSON" | jq -c '[
+# 要人間確認フィルタ（config.json の値を使用）
+AUTO_ASSIGNABLE=$(echo "$ISSUES_JSON" | jq -c --argjson labels "[$HUMAN_LABELS]" --arg patterns "$HUMAN_PATTERNS" '[
   .[] |
   select(
-    ([.labels[].name] | index("release") | not) and
-    ([.labels[].name] | index("requires-human") | not) and
-    (.title | test("go-no-go|store|production|smoke test"; "i") | not) and
-    (.title | contains("本番") | not)
+    ([ .labels[].name ] | any(. as $l | $labels | index($l)) | not) and
+    (.title | test($patterns; "i") | not)
   )
 ]')
 
-REQUIRES_HUMAN=$(echo "$ISSUES_JSON" | jq -c '[
+REQUIRES_HUMAN=$(echo "$ISSUES_JSON" | jq -c --argjson labels "[$HUMAN_LABELS]" --arg patterns "$HUMAN_PATTERNS" '[
   .[] |
   select(
-    ([.labels[].name] | index("release") != null) or
-    ([.labels[].name] | index("requires-human") != null) or
-    (.title | test("go-no-go|store|production|smoke test"; "i")) or
-    (.title | contains("本番"))
+    ([ .labels[].name ] | any(. as $l | $labels | index($l))) or
+    (.title | test($patterns; "i"))
   )
 ]')
 

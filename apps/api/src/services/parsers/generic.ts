@@ -3,7 +3,7 @@ import { parseHTML } from "linkedom";
 import TurndownService from "turndown";
 
 import type { ParsedArticle } from "../../types/article";
-import { calculateReadingTime, TECHCLIP_USER_AGENT } from "./_shared";
+import { calculateReadingTime, htmlFragmentToMarkdown, TECHCLIP_USER_AGENT } from "./_shared";
 
 /** fetchタイムアウト（ミリ秒） */
 const FETCH_TIMEOUT_MS = 10000;
@@ -103,7 +103,7 @@ export async function parseGeneric(url: string): Promise<ParsedArticle> {
     headingStyle: "atx",
     codeBlockStyle: "fenced",
   });
-  const markdown = turndown.turndown(article.content);
+  const markdown = htmlFragmentToMarkdown(article.content, turndown);
 
   const { document: originalDoc } = parseHTML(html);
   const doc = originalDoc as unknown as LinkedomDocument;

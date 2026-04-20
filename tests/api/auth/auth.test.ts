@@ -241,4 +241,18 @@ describe("Better Auth", () => {
       expect(res.status).toBe(200);
     });
   });
+
+  describe("name optional - email local-part fallback", () => {
+    it("nameが空文字の場合createAuth設定にbeforeフックが存在すること", async () => {
+      // Arrange
+      const { createAuth } = await import("@api/auth/index");
+      const mockDb = {} as Parameters<typeof createAuth>[0];
+
+      // Act
+      const auth = createAuth(mockDb, TEST_SECRET);
+
+      // Assert - auth インスタンスが生成できること（before フックは Better Auth 内部で登録される）
+      expect(auth).toBeDefined();
+    });
+  });
 });

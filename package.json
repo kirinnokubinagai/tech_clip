@@ -19,19 +19,27 @@
     "typecheck:uncached": "./scripts/verify-uncached.sh typecheck",
     "test:uncached": "./scripts/verify-uncached.sh test",
     "prepare": "husky",
-    "polling-watcher": "bash scripts/polling-watcher.sh"
+    "polling-watcher": "bash scripts/polling-watcher.sh",
+    "dev:e2e:up": "bash scripts/dev/up.sh",
+    "dev:e2e:down": "bash scripts/dev/down.sh",
+    "dev:e2e:status": "bash scripts/dev/status.sh",
+    "dev:e2e:seed": "bash scripts/dev/seed.sh",
+    "dev:e2e": "pnpm dev:e2e:up && pnpm dev:e2e:seed",
+    "check:nix-hermetic": "bash scripts/check-nix-hermetic.sh"
   },
   "pnpm": {
     "overrides": {
       "tar": ">=7.5.11",
       "esbuild": ">=0.25.0",
-      "brace-expansion": ">=5.0.5",
+      "brace-expansion@1": "^1.1.12",
+      "brace-expansion@2": "^2.0.2",
       "@tootallnate/once": ">=3.0.1",
       "markdown-it": ">=12.3.2",
       "@xmldom/xmldom": ">=0.8.12",
       "lodash": ">=4.18.0",
       "defu": "6.1.6",
-      "vite": "8.0.7"
+      "vite": "8.0.7",
+      "minimatch": "^9.0.0"
     }
   },
   "devDependencies": {

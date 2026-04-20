@@ -1,7 +1,7 @@
 import { DEFAULT_GEMMA_MODEL_TAG, WORKERS_AI_GEMMA_MODEL_ID } from "../lib/ai-model";
 import { LANGUAGE_DISPLAY_NAMES } from "../lib/language-display-names";
 import { createLogger } from "../lib/logger";
-import { isWorkersAiTextResponse } from "../lib/workers-ai";
+import { extractTextResponse, isWorkersAiTextResponse } from "../lib/workers-ai";
 import { isSupportedLanguage } from "../validators/ai";
 import { sanitizeArticleContent } from "./summary";
 
@@ -221,7 +221,7 @@ export async function translateArticle(params: TranslateArticleParams): Promise<
       throw new Error("Workers AI から有効な翻訳レスポンスを取得できませんでした");
     }
 
-    const parsed = parseTranslationResponse(result.response);
+    const parsed = parseTranslationResponse(extractTextResponse(result));
     const restoredContent = restoreCodeBlocks(parsed.translatedContent, blocks);
 
     return {
