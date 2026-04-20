@@ -623,7 +623,7 @@ describe("DELETE /api/tags/:id", () => {
 
 describe("PUT /api/articles/:id/tags", () => {
   beforeEach(() => {
-    vi.clearAllMocks();
+    vi.resetAllMocks();
     mockSelect.mockReturnValue({ from: mockSelectFrom });
     mockSelectFrom.mockReturnValue({ where: mockSelectWhere });
     mockDelete.mockReturnValue({ where: mockDeleteWhere });
