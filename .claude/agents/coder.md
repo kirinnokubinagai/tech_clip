@@ -82,6 +82,8 @@ ls {worktree}/docs/superpowers/specs/*.md | sort | tail -1
 
 テストは `tests/` ディレクトリの対応サブディレクトリに配置する（例: `tests/api/routes/`, `tests/mobile/components/`）。
 
+> **E2E テスト変更時の注意**: `tests/e2e/maestro/` 配下のファイルを新規作成・変更した場合は、通常の reviewer に加えて **e2e-reviewer** にも `impl-ready` を通知すること。E2E テストの変更は端末実行が必要なため、e2e-reviewer が専任でレビューする。
+
 ### フェーズ 2b: README/docs 整合性チェック
 
 変更内容に関連する README.md / docs/ の記述と整合しているか確認し、乖離があれば同じコミットで更新する:
