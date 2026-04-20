@@ -51,24 +51,33 @@ type SubscriptionRouteOptions = {
 };
 
 /**
- * タイミング攻撃を防ぐための定数時間文字列比較
+ * RevenueCat Webhook の HMAC-SHA256 署名を検証する
  *
- * @param a - 比較対象の文字列
- * @param b - 比較対象の文字列
- * @returns 一致する場合 true
+ * RevenueCat は v2 署名仕様として `RevenueCat-Signature` ヘッダーに
+ * HMAC-SHA256(secret, rawBody) を Base64 エンコードした値を付与する。
+ * Cloudflare Workers では crypto.subtle.verify を使ってタイミングセーフに検証する。
+ *
+ * @param secret - HMAC 署名シークレット
+ * @param rawBody - 生のリクエストボディ文字列
+ * @param signature - `RevenueCat-Signature` ヘッダーの値（Base64）
+ * @returns 署名が一致する場合 true
  */
-function timingSafeEqual(a: string, b: string): boolean {
-  if (a.length !== b.length) {
-    return false;
-  }
+async function verifyWebhookHmac(
+  secret: string,
+  rawBody: string,
+  signature: string,
+): Promise<boolean> {
   const encoder = new TextEncoder();
-  const bufA = encoder.encode(a);
-  const bufB = encoder.encode(b);
-  let result = 0;
-  for (let i = 0; i < bufA.length; i++) {
-    result |= bufA[i] ^ bufB[i];
-  }
-  return result === 0;
+  const key = await crypto.subtle.importKey(
+    "raw",
+    encoder.encode(secret),
+    { name: "HMAC", hash: "SHA-256" },
+    false,
+    ["sign"],
+  );
+  const mac = await crypto.subtle.sign("HMAC", key, encoder.encode(rawBody));
+  const expected = btoa(String.fromCharCode(...new Uint8Array(mac)));
+  return expected === signature;
 }
 
 /**
@@ -261,9 +270,22 @@ export function createSubscriptionRoute(options: SubscriptionRouteOptions) {
   });
 
   route.post("/webhooks/revenuecat", async (c) => {
-    const authHeader = c.req.header("Authorization");
+    if (!webhookSecret) {
+      return c.json(
+        {
+          success: false,
+          error: {
+            code: "INTERNAL_ERROR",
+            message: "Webhook シークレットが設定されていません",
+          },
+        },
+        500,
+      );
+    }
 
-    if (!authHeader) {
+    const signature = c.req.header("RevenueCat-Signature");
+
+    if (!signature) {
       return c.json(
         {
           success: false,
@@ -276,8 +298,10 @@ export function createSubscriptionRoute(options: SubscriptionRouteOptions) {
       );
     }
 
-    const token = authHeader.replace("Bearer ", "");
-    if (!timingSafeEqual(token, webhookSecret)) {
+    const rawBody = await c.req.text();
+
+    const isValid = await verifyWebhookHmac(webhookSecret, rawBody, signature);
+    if (!isValid) {
       return c.json(
         {
           success: false,
@@ -290,7 +314,12 @@ export function createSubscriptionRoute(options: SubscriptionRouteOptions) {
       );
     }
 
-    const body = await c.req.json().catch(() => ({}));
+    let body: unknown;
+    try {
+      body = JSON.parse(rawBody);
+    } catch {
+      body = {};
+    }
     const validation = WebhookPayloadSchema.safeParse(body);
 
     if (!validation.success) {
