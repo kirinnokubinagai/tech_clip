@@ -9,13 +9,13 @@ import { Button, Card, Input, SourceBadge, Toast } from "@/components/ui";
 import { useColors } from "@/hooks/use-colors";
 import { useToast } from "@/hooks/use-toast";
 import { apiFetch } from "@/lib/api";
+import { ARTICLE_THUMBNAIL_HEIGHT } from "@/lib/constants";
 import type { ArticlePreview, ParseArticleResponse, SaveArticleResponse } from "@/types/article";
 
 /** URL正規表現パターン */
 const URL_PATTERN = /^https?:\/\/.+/;
 
 /** サムネイル画像の高さ */
-const THUMBNAIL_HEIGHT = 160;
 
 /** ソースバッジのアイコンサイズ */
 const ICON_SIZE_SM = 14;
@@ -218,7 +218,7 @@ export default function SaveScreen() {
                   <Image
                     source={{ uri: preview.thumbnailUrl }}
                     className="w-full rounded-lg mb-3"
-                    style={{ height: THUMBNAIL_HEIGHT }}
+                    style={{ height: ARTICLE_THUMBNAIL_HEIGHT }}
                     resizeMode="cover"
                     accessibilityLabel={t("article.thumbnailAlt")}
                   />
