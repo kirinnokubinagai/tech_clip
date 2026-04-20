@@ -28,6 +28,24 @@ import { createLogger } from "../lib/logger";
 import { omitContent } from "../lib/response-utils";
 import type { ParsedArticle } from "../services/article-parser";
 
+/** 複合カーソル型 */
+type ArticleCompositeCursor = {
+  createdAt: string;
+  id: string;
+};
+
+/**
+ * 複合カーソルを Base64URL エンコードして文字列化する
+ *
+ * @param createdAt - 記事の作成日時（ISO文字列）
+ * @param id - 記事のID
+ * @returns Base64URL エンコードされたカーソル文字列
+ */
+function encodeArticleCursor(createdAt: string, id: string): string {
+  const cursor: ArticleCompositeCursor = { createdAt, id };
+  return Buffer.from(JSON.stringify(cursor)).toString("base64url");
+}
+
 /** デフォルトのページサイズ */
 const DEFAULT_LIMIT = 20;
 
@@ -274,7 +292,16 @@ export function createArticlesRoute(options: ArticlesRouteOptions) {
     const hasNext = fetchedArticles.length > limit;
     const sliced = hasNext ? fetchedArticles.slice(0, limit) : fetchedArticles;
     const data = sliced.map(omitContent);
-    const nextCursor = hasNext ? (data[data.length - 1].id as string) : null;
+    const lastItem = sliced[sliced.length - 1];
+    const nextCursor =
+      hasNext && lastItem
+        ? encodeArticleCursor(
+            lastItem.createdAt instanceof Date
+              ? (lastItem.createdAt as Date).toISOString()
+              : String(lastItem.createdAt),
+            lastItem.id as string,
+          )
+        : null;
 
     return c.json({
       success: true,

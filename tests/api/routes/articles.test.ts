@@ -410,7 +410,7 @@ describe("GET /api/articles", () => {
       expect(body.meta.hasNext).toBe(false);
     });
 
-    it("nextCursorが最後の記事のIDであること", async () => {
+    it("nextCursorが複合カーソル（createdAt+id）を含むこと", async () => {
       // Arrange
       mockQueryFn.mockResolvedValue(MOCK_ARTICLES.slice(0, 21));
       const app = createGetTestApp(mockQueryFn);
@@ -420,8 +420,13 @@ describe("GET /api/articles", () => {
 
       // Assert
       const body = (await res.json()) as ArticlesResponseBody;
+      expect(body.meta.nextCursor).not.toBeNull();
+      const decoded = JSON.parse(
+        Buffer.from(body.meta.nextCursor as string, "base64url").toString(),
+      ) as { createdAt: string; id: string };
       const lastArticle = body.data[body.data.length - 1];
-      expect(body.meta.nextCursor).toBe(lastArticle.id);
+      expect(decoded.id).toBe(lastArticle.id);
+      expect(decoded.createdAt).toBeDefined();
     });
   });
 

@@ -244,7 +244,12 @@ describe("GET /api/users/:id/articles", () => {
       // Assert
       expect(res.status).toBe(HTTP_OK);
       expect(body.meta.hasNext).toBe(true);
-      expect(body.meta.nextCursor).toBe(`article_pub_${String(DEFAULT_LIMIT).padStart(3, "0")}`);
+      expect(body.meta.nextCursor).not.toBeNull();
+      const decodedCursor = JSON.parse(
+        Buffer.from(body.meta.nextCursor as string, "base64url").toString(),
+      ) as { createdAt: string; id: string };
+      expect(decodedCursor.id).toBe(`article_pub_${String(DEFAULT_LIMIT).padStart(3, "0")}`);
+      expect(decodedCursor.createdAt).toBeDefined();
       expect(body.data).toHaveLength(DEFAULT_LIMIT);
     });
   });

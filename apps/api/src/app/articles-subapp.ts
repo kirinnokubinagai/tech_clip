@@ -1,4 +1,4 @@
-import { and, desc, eq, lt, sql } from "drizzle-orm";
+import { and, desc, eq, lt, or, sql } from "drizzle-orm";
 import { Hono } from "hono";
 
 import type { Auth } from "../auth";
@@ -38,13 +38,27 @@ export async function handlePublicArticles(db: Database, request: Request): Prom
     queryFn: async (params) => {
       const conditions = [eq(articles.userId, params.userId), eq(articles.isPublic, true)];
       if (params.cursor) {
-        conditions.push(lt(articles.id, params.cursor));
+        try {
+          const cur = JSON.parse(Buffer.from(params.cursor, "base64url").toString()) as {
+            createdAt: string;
+            id: string;
+          };
+          const cursorDate = new Date(cur.createdAt);
+          conditions.push(
+            or(
+              lt(articles.createdAt, cursorDate),
+              and(sql`${articles.createdAt} = ${cursorDate}`, lt(articles.id, cur.id)),
+            ) as ReturnType<typeof and>,
+          );
+        } catch {
+          conditions.push(lt(articles.id, params.cursor));
+        }
       }
       const results = await db
         .select()
         .from(articles)
         .where(and(...conditions))
-        .orderBy(desc(articles.createdAt))
+        .orderBy(desc(articles.createdAt), desc(articles.id))
         .limit(params.limit);
       return toRecordArray(results);
     },
@@ -81,7 +95,21 @@ export async function handleArticles(
     queryFn: async (params) => {
       const conditions = [eq(articles.userId, params.userId)];
       if (params.cursor) {
-        conditions.push(lt(articles.id, params.cursor));
+        try {
+          const cur = JSON.parse(Buffer.from(params.cursor, "base64url").toString()) as {
+            createdAt: string;
+            id: string;
+          };
+          const cursorDate = new Date(cur.createdAt);
+          conditions.push(
+            or(
+              lt(articles.createdAt, cursorDate),
+              and(sql`${articles.createdAt} = ${cursorDate}`, lt(articles.id, cur.id)),
+            ) as ReturnType<typeof and>,
+          );
+        } catch {
+          conditions.push(lt(articles.id, params.cursor));
+        }
       }
       if (params.source !== undefined) {
         conditions.push(eq(articles.source, params.source as string));
@@ -96,7 +124,7 @@ export async function handleArticles(
         .select()
         .from(articles)
         .where(and(...conditions))
-        .orderBy(desc(articles.createdAt))
+        .orderBy(desc(articles.createdAt), desc(articles.id))
         .limit(params.limit);
       return toRecordArray(results);
     },

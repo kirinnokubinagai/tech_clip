@@ -8,7 +8,7 @@
 import { articles, sessions, users } from "@api/db/schema/index";
 import { createArticlesRoute } from "@api/routes/articles";
 import { createClient } from "@libsql/client";
-import { and, desc, eq, lt } from "drizzle-orm";
+import { and, desc, eq, lt, or, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/libsql";
 import { Hono } from "hono";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -107,13 +107,27 @@ function buildTestApp(
     queryFn: async (params) => {
       const conditions = [eq(articles.userId, params.userId)];
       if (params.cursor) {
-        conditions.push(lt(articles.id, params.cursor));
+        try {
+          const cur = JSON.parse(Buffer.from(params.cursor, "base64url").toString()) as {
+            createdAt: string;
+            id: string;
+          };
+          const cursorDate = new Date(cur.createdAt);
+          conditions.push(
+            or(
+              lt(articles.createdAt, cursorDate),
+              and(sql`${articles.createdAt} = ${cursorDate}`, lt(articles.id, cur.id)),
+            ) as ReturnType<typeof and>,
+          );
+        } catch {
+          conditions.push(lt(articles.id, params.cursor));
+        }
       }
       const results = await (db as never as ReturnType<typeof drizzle>)
         .select()
         .from(articles)
         .where(and(...conditions))
-        .orderBy(desc(articles.createdAt))
+        .orderBy(desc(articles.createdAt), desc(articles.id))
         .limit(params.limit);
       return results as unknown as Array<Record<string, unknown>>;
     },
