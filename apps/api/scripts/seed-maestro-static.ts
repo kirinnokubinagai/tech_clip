@@ -29,6 +29,16 @@ if (!IS_LOCAL_SEED_URL) {
   process.exit(1);
 }
 
+/** CI 環境判定フラグ */
+const IS_CI_ENV = process.env.CI === "true" || process.env.GITHUB_ACTIONS === "true";
+
+if (IS_CI_ENV && !process.env.MAESTRO_TEST_PASSWORD) {
+  process.stderr.write(
+    "[seed-maestro] FATAL: CI 環境では MAESTRO_TEST_PASSWORD の設定が必要です\n",
+  );
+  process.exit(1);
+}
+
 /** Maestro 静的 seed ユーザーのパスワード（ローカルフォールバック付き） */
 const MAESTRO_STATIC_PASSWORD = process.env.MAESTRO_TEST_PASSWORD ?? "TestPassword123!";
 
