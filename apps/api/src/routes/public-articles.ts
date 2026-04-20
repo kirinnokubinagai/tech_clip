@@ -5,25 +5,8 @@ import {
   VALIDATION_ERROR_CODE,
   VALIDATION_ERROR_MESSAGE,
 } from "../lib/error-codes";
-import { HTTP_NOT_FOUND, HTTP_UNPROCESSABLE_ENTITY } from "../lib/http-status";
-
-/** 複合カーソル型 */
-type PublicArticleCompositeCursor = {
-  createdAt: string;
-  id: string;
-};
-
-/**
- * 複合カーソルを Base64URL エンコードして文字列化する
- *
- * @param createdAt - 記事の作成日時（ISO文字列）
- * @param id - 記事のID
- * @returns Base64URL エンコードされたカーソル文字列
- */
-function encodePublicCursor(createdAt: string, id: string): string {
-  const cursor: PublicArticleCompositeCursor = { createdAt, id };
-  return btoa(JSON.stringify(cursor));
-}
+import { HTTP_BAD_REQUEST, HTTP_NOT_FOUND, HTTP_UNPROCESSABLE_ENTITY } from "../lib/http-status";
+import { decodeCursor, encodeCursor } from "../services/parsers/_shared";
 
 /** デフォルトのページサイズ */
 const DEFAULT_LIMIT = 20;
@@ -124,6 +107,23 @@ export function createPublicArticlesRoute(options: PublicArticlesRouteOptions) {
       limit = parsed;
     }
 
+    if (cursor) {
+      try {
+        decodeCursor(cursor);
+      } catch {
+        return c.json(
+          {
+            success: false,
+            error: {
+              code: "INVALID_CURSOR",
+              message: "カーソルが不正です",
+            },
+          },
+          HTTP_BAD_REQUEST,
+        );
+      }
+    }
+
     const isUserExists = await userExistsFn(userId);
     if (!isUserExists) {
       return c.json(
@@ -150,7 +150,7 @@ export function createPublicArticlesRoute(options: PublicArticlesRouteOptions) {
     const lastItem = sliced[sliced.length - 1];
     const nextCursor =
       hasNext && lastItem
-        ? encodePublicCursor(
+        ? encodeCursor(
             lastItem.createdAt instanceof Date
               ? (lastItem.createdAt as Date).toISOString()
               : String(lastItem.createdAt),
@@ -158,6 +158,7 @@ export function createPublicArticlesRoute(options: PublicArticlesRouteOptions) {
           )
         : null;
 
+    c.header("Cache-Control", "public, max-age=60, s-maxage=300");
     return c.json({
       success: true,
       data,

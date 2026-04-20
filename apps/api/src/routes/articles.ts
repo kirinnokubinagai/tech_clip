@@ -27,24 +27,7 @@ import {
 import { createLogger } from "../lib/logger";
 import { omitContent } from "../lib/response-utils";
 import type { ParsedArticle } from "../services/article-parser";
-
-/** 複合カーソル型 */
-type ArticleCompositeCursor = {
-  createdAt: string;
-  id: string;
-};
-
-/**
- * 複合カーソルを Base64URL エンコードして文字列化する
- *
- * @param createdAt - 記事の作成日時（ISO文字列）
- * @param id - 記事のID
- * @returns Base64URL エンコードされたカーソル文字列
- */
-function encodeArticleCursor(createdAt: string, id: string): string {
-  const cursor: ArticleCompositeCursor = { createdAt, id };
-  return btoa(JSON.stringify(cursor));
-}
+import { decodeCursor, encodeCursor as encodeCursorBase64url } from "../services/parsers/_shared";
 
 /** デフォルトのページサイズ */
 const DEFAULT_LIMIT = 20;
@@ -280,8 +263,26 @@ export function createArticlesRoute(options: ArticlesRouteOptions) {
       );
     }
 
+    if (cursor) {
+      try {
+        decodeCursor(cursor);
+      } catch {
+        return c.json(
+          {
+            success: false,
+            error: {
+              code: "INVALID_CURSOR",
+              message: "カーソルが不正です",
+            },
+          },
+          400,
+        );
+      }
+    }
+
+    const userId = user.id as string;
     const fetchedArticles = await queryFn({
-      userId: user.id as string,
+      userId,
       limit: limit + 1,
       cursor: cursor || undefined,
       source: source || undefined,
@@ -295,7 +296,7 @@ export function createArticlesRoute(options: ArticlesRouteOptions) {
     const lastItem = sliced[sliced.length - 1];
     const nextCursor =
       hasNext && lastItem
-        ? encodeArticleCursor(
+        ? encodeCursorBase64url(
             lastItem.createdAt instanceof Date
               ? (lastItem.createdAt as Date).toISOString()
               : String(lastItem.createdAt),
