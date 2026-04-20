@@ -10,7 +10,7 @@ import { createClient } from "@libsql/client";
 import { and, eq } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/libsql";
 
-import { accounts, articles, articleTags, follows, tags, users } from "../src/db/schema";
+import { accounts, articles, articleTags, follows, tags, users } from "../src/db/schema/index.ts";
 
 /** Maestro 静的 seed ユーザーのパスワード */
 const MAESTRO_STATIC_PASSWORD = "TestPassword123!";
