@@ -40,6 +40,7 @@ async function runResetDb(): Promise<{ stdout: string; stderr: string; exitCode:
           ...process.env,
           TURSO_DATABASE_URL,
           TURSO_AUTH_TOKEN,
+          ALLOW_DB_RESET: "1",
         },
         timeout: 30_000,
       },
@@ -96,6 +97,64 @@ describe("reset-db スクリプト", () => {
     const second = await runResetDb();
     expect(second.exitCode).toBe(0);
     expect(second.stdout).toContain("[reset-db] All tables dropped");
+  });
+
+  it("ALLOW_DB_RESET=1 が未設定の場合はプロセスが終了コード1で終了すること", async () => {
+    if (!available) return;
+
+    const { execFile } = await import("node:child_process");
+    const { promisify } = await import("node:util");
+    const execFileAsync = promisify(execFile);
+    const scriptPath = new URL("../../../apps/api/scripts/reset-db.ts", import.meta.url).pathname;
+
+    // Arrange: ALLOW_DB_RESET を未設定にして実行
+    const result = await execFileAsync("node", ["--experimental-strip-types", scriptPath], {
+      env: {
+        ...process.env,
+        TURSO_DATABASE_URL,
+        TURSO_AUTH_TOKEN,
+        ALLOW_DB_RESET: undefined,
+      },
+      timeout: 10_000,
+    }).then(
+      () => ({ exitCode: 0, stderr: "" }),
+      (err: Error & { stderr?: string; code?: number }) => ({
+        exitCode: err.code ?? 1,
+        stderr: err.stderr ?? "",
+      }),
+    );
+
+    // Assert
+    expect(result.exitCode).toBe(1);
+    expect(result.stderr).toContain("ALLOW_DB_RESET=1");
+  });
+
+  it("本番相当の非ローカル URL の場合はプロセスが終了コード1で終了すること", async () => {
+    const { execFile } = await import("node:child_process");
+    const { promisify } = await import("node:util");
+    const execFileAsync = promisify(execFile);
+    const scriptPath = new URL("../../../apps/api/scripts/reset-db.ts", import.meta.url).pathname;
+
+    // Arrange: 本番相当の URL を設定して実行
+    const result = await execFileAsync("node", ["--experimental-strip-types", scriptPath], {
+      env: {
+        ...process.env,
+        TURSO_DATABASE_URL: "libsql://my-db-org.turso.io",
+        TURSO_AUTH_TOKEN: "dummy",
+        ALLOW_DB_RESET: "1",
+      },
+      timeout: 10_000,
+    }).then(
+      () => ({ exitCode: 0, stderr: "" }),
+      (err: Error & { stderr?: string; code?: number }) => ({
+        exitCode: err.code ?? 1,
+        stderr: err.stderr ?? "",
+      }),
+    );
+
+    // Assert
+    expect(result.exitCode).toBe(1);
+    expect(result.stderr).toContain("non-local URL");
   });
 
   it("FTS virtual table と shadow tables を持つ DB でも正常終了できること", async () => {

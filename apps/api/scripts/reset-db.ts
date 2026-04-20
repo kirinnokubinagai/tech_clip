@@ -19,6 +19,26 @@ const TURSO_AUTH_TOKEN = process.env.TURSO_AUTH_TOKEN ?? "dummy";
 /** テーブル削除の最大試行回数 */
 const MAX_DROP_ATTEMPTS = 5;
 
+/** ローカル DB URL かどうかを判定する */
+const IS_LOCAL_URL =
+  TURSO_DATABASE_URL.startsWith("http://127.0.0.1") ||
+  TURSO_DATABASE_URL.startsWith("http://localhost") ||
+  TURSO_DATABASE_URL.startsWith("file:");
+
+if (!IS_LOCAL_URL) {
+  process.stderr.write(
+    `[reset-db] FATAL: non-local URL detected. Aborting to prevent data loss. URL: ${TURSO_DATABASE_URL}\n`,
+  );
+  process.exit(1);
+}
+
+if (process.env.ALLOW_DB_RESET !== "1") {
+  process.stderr.write(
+    "[reset-db] FATAL: ALLOW_DB_RESET=1 が設定されていません。安全のため中断します\n",
+  );
+  process.exit(1);
+}
+
 const client = createClient({ url: TURSO_DATABASE_URL, authToken: TURSO_AUTH_TOKEN });
 
 process.stdout.write(`[reset-db] Connecting to ${TURSO_DATABASE_URL}\n`);

@@ -19,7 +19,7 @@
     "db:seed": "tsx src/db/seed.ts",
     "reset-db": "tsx scripts/reset-db.ts",
     "seed:maestro": "tsx scripts/seed-maestro-static.ts",
-    "reset:e2e": "pnpm reset-db && pnpm db:migrate && pnpm db:seed && pnpm seed:maestro"
+    "reset:e2e": "ALLOW_DB_RESET=1 pnpm reset-db && pnpm db:migrate && pnpm db:seed && pnpm seed:maestro"
   },
   "dependencies": {
     "@libsql/client": "^0.14.0",
