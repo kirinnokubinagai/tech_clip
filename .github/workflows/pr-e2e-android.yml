@@ -67,11 +67,20 @@ jobs:
           disable-animations: true
           script: echo "AVD snapshot generated"
 
+
+      - name: Start Turso dev server
+        run: nix develop --command bash scripts/ci/start-turso.sh
+        env:
+          TURSO_CI_DB_FILE: /tmp/tech-clip-ci-turso.db
+          TURSO_CI_PORT: "8888"
+
       - name: Android Emulator + Maestro
         uses: reactivecircus/android-emulator-runner@324029e2f414c084d8b15ba075288885e74aef9c  # v2.13.0
         env:
           # NODE_OPTIONS は scripts/ci/run-android-e2e.sh 内で必要に応じて設定する
           # (action-runner の node20 が --no-experimental-strip-types を受け入れないため)
+          TURSO_DATABASE_URL: "http://127.0.0.1:8888"
+          TURSO_AUTH_TOKEN: "dummy"
           TEST_EMAIL: "test-${{ github.run_id }}+maestro@techclip.app"
           TEST_PASSWORD: ${{ secrets.MAESTRO_TEST_PASSWORD }}
           TEST_NAME: "Maestro Test User"
