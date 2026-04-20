@@ -27,7 +27,16 @@ import { useAuthStore } from "../src/stores/auth-store";
 import { useSettingsStore } from "../src/stores/settings-store";
 import { useUIStore } from "../src/stores/ui-store";
 
-LogBox.ignoreAllLogs(true);
+/** E2E テスト実行時（EXPO_PUBLIC_E2E_MODE=1）のみ全ログを抑止する */
+const IS_E2E = process.env.EXPO_PUBLIC_E2E_MODE === "1";
+if (IS_E2E) {
+  LogBox.ignoreAllLogs(true);
+} else {
+  LogBox.ignoreLogs([
+    // expo-background-fetch の非推奨警告: 既知の問題、後続 Issue #855 で移行予定
+    /expo-background-fetch: This library is deprecated/,
+  ]);
+}
 initSentry(process.env.EXPO_PUBLIC_SENTRY_DSN);
 
 export default function RootLayout() {

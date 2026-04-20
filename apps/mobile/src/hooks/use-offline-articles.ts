@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 
 import { getOfflineArticles } from "@/lib/localDb";
+import { logger } from "@/lib/logger";
 import type { ArticleListItem } from "@/types/article";
 
 import { useNetworkStatus } from "./use-network-status";
@@ -36,7 +37,8 @@ export function useOfflineArticles(): OfflineArticlesResult {
       .then((cached) => {
         setArticles(cached);
       })
-      .catch(() => {
+      .catch((error: unknown) => {
+        logger.warn("オフライン記事の取得に失敗しました", { error });
         setArticles([]);
       })
       .finally(() => {
