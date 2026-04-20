@@ -336,7 +336,7 @@ describe("POST /api/auth/reset-password", () => {
       expect(body.data.message).toBe("パスワードをリセットしました。");
     });
 
-    it("パスワードリセット後にトークンが削除されること", async () => {
+    it("パスワードリセット後にトークンとセッションが削除されること", async () => {
       // Arrange
       mockSelectWhere.mockResolvedValueOnce([MOCK_VERIFICATION]).mockResolvedValueOnce([MOCK_USER]);
       const app = createTestApp();
@@ -347,8 +347,8 @@ describe("POST /api/auth/reset-password", () => {
         password: "NewPassword123",
       });
 
-      // Assert
-      expect(mockDelete).toHaveBeenCalledOnce();
+      // Assert: verification 削除 + session 全削除 = 2回
+      expect(mockDelete).toHaveBeenCalledTimes(2);
     });
 
     it("パスワードリセット後にユーザーのパスワードが更新されること", async () => {

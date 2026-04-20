@@ -1,10 +1,10 @@
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { Hono } from "hono";
 import { z } from "zod";
 
 import type { Auth } from "../auth";
 import type { Database } from "../db";
-import { accounts, users, verifications } from "../db/schema";
+import { accounts, sessions, users, verifications } from "../db/schema";
 import { VALIDATION_ERROR_CODE, VALIDATION_ERROR_MESSAGE } from "../lib/error-codes";
 import {
   HTTP_BAD_REQUEST,
@@ -138,6 +138,10 @@ export function createPasswordResetRoute(options: PasswordResetRouteOptions) {
     const hashedToken = await hashToken(rawToken);
     const expiresAt = new Date(Date.now() + RESET_TOKEN_TTL_MS).toISOString();
 
+    await db
+      .delete(verifications)
+      .where(eq(verifications.identifier, `${RESET_TOKEN_IDENTIFIER_PREFIX}${email}`));
+
     await db.insert(verifications).values({
       id: crypto.randomUUID(),
       identifier: `${RESET_TOKEN_IDENTIFIER_PREFIX}${email}`,
@@ -249,9 +253,14 @@ export function createPasswordResetRoute(options: PasswordResetRouteOptions) {
     const ctx = await auth.$context;
     const hashedPassword = await ctx.password.hash(password);
 
-    await db.update(accounts).set({ password: hashedPassword }).where(eq(accounts.userId, user.id));
+    await db
+      .update(accounts)
+      .set({ password: hashedPassword })
+      .where(and(eq(accounts.userId, user.id), eq(accounts.providerId, "credential")));
 
     await db.delete(verifications).where(eq(verifications.id, verification.id));
+
+    await db.delete(sessions).where(eq(sessions.userId, user.id));
 
     return c.json(
       {
