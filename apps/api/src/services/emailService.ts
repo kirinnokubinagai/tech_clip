@@ -1,4 +1,17 @@
 import { createLogger } from "../lib/logger";
+import { escapeHtml } from "./email/escape";
+import {
+  buildEmailVerificationHtml as buildEmailVerificationHtmlTemplate,
+  getEmailVerificationSubject,
+} from "./email/templates/email-verification";
+import {
+  buildNotificationDigestHtml as buildNotificationDigestHtmlTemplate,
+  getNotificationDigestSubject,
+} from "./email/templates/notification-digest";
+import {
+  buildPasswordResetHtml as buildPasswordResetHtmlTemplate,
+  getPasswordResetSubject,
+} from "./email/templates/password-reset";
 
 const logger = createLogger();
 
@@ -22,7 +35,12 @@ export type EmailEnv = {
   FROM_EMAIL: string;
   /** Mailpit API エンドポイント（ローカル開発用。設定時は Resend の代わりに使用） */
   MAILPIT_URL?: string;
+  /** アプリのベース URL（メールテンプレートのリンクに使用） */
+  APP_URL?: string;
 };
+
+/** アプリのデフォルトベース URL */
+const DEFAULT_APP_URL = "https://techclip.app";
 
 /**
  * Mailpit API を使ってメールを送信する（ローカル開発用）
@@ -127,40 +145,19 @@ export async function sendEmail(
 }
 
 /**
- * ユーザー入力をHTML内に安全に埋め込むためにエスケープする
- *
- * @param s - エスケープ対象の文字列
- * @returns HTMLエスケープ済みの文字列
- */
-function escapeHtml(s: string): string {
-  return s
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#039;");
-}
-
-/**
  * パスワードリセットメールのHTMLテンプレートを生成する
  *
  * @param userName - ユーザー名
  * @param resetUrl - パスワードリセットURL
+ * @param appUrl - アプリのベース URL（省略時はデフォルト値を使用）
  * @returns HTMLボディ文字列
  */
-export function buildPasswordResetHtml(userName: string, resetUrl: string): string {
-  const safeUserName = escapeHtml(userName);
-  const safeResetUrl = escapeHtml(resetUrl);
-  return `
-    <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;">
-      <h1>パスワードリセット</h1>
-      <p>${safeUserName} さん、</p>
-      <p>パスワードリセットのリクエストを受け付けました。</p>
-      <p>以下のリンクをクリックしてパスワードをリセットしてください。</p>
-      <p><a href="${safeResetUrl}">${safeResetUrl}</a></p>
-      <p>このリンクは24時間有効です。リクエストした覚えがない場合は、このメールを無視してください。</p>
-    </div>
-  `;
+export function buildPasswordResetHtml(
+  userName: string,
+  resetUrl: string,
+  appUrl: string = DEFAULT_APP_URL,
+): string {
+  return buildPasswordResetHtmlTemplate(userName, resetUrl, appUrl);
 }
 
 /**
@@ -168,20 +165,15 @@ export function buildPasswordResetHtml(userName: string, resetUrl: string): stri
  *
  * @param userName - ユーザー名
  * @param verifyUrl - メール認証URL
+ * @param appUrl - アプリのベース URL（省略時はデフォルト値を使用）
  * @returns HTMLボディ文字列
  */
-export function buildEmailVerificationHtml(userName: string, verifyUrl: string): string {
-  const safeUserName = escapeHtml(userName);
-  const safeVerifyUrl = escapeHtml(verifyUrl);
-  return `
-    <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;">
-      <h1>メールアドレス認証</h1>
-      <p>${safeUserName} さん、TechClip へようこそ！</p>
-      <p>メールアドレスを認証するために、以下のリンクをクリックしてください。</p>
-      <p><a href="${safeVerifyUrl}">${safeVerifyUrl}</a></p>
-      <p>このリンクは24時間有効です。</p>
-    </div>
-  `;
+export function buildEmailVerificationHtml(
+  userName: string,
+  verifyUrl: string,
+  appUrl: string = DEFAULT_APP_URL,
+): string {
+  return buildEmailVerificationHtmlTemplate(userName, verifyUrl, appUrl);
 }
 
 /**
@@ -189,39 +181,21 @@ export function buildEmailVerificationHtml(userName: string, verifyUrl: string):
  *
  * @param userName - ユーザー名
  * @param notifications - 通知アイテムのリスト
+ * @param appUrl - アプリのベース URL（省略時はデフォルト値を使用）
  * @returns HTMLボディ文字列
  */
 export function buildNotificationDigestHtml(
   userName: string,
   notifications: NotificationItem[],
+  appUrl: string = DEFAULT_APP_URL,
 ): string {
-  const safeUserName = escapeHtml(userName);
-  const notificationItems = notifications
-    .map(
-      (n) => `
-        <li style="margin-bottom: 12px;">
-          <strong>${escapeHtml(n.title)}</strong>
-          <p style="margin: 4px 0 0;">${escapeHtml(n.body)}</p>
-        </li>
-      `,
-    )
-    .join("");
-
-  return `
-    <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;">
-      <h1>通知ダイジェスト</h1>
-      <p>${safeUserName} さん、</p>
-      <p>最近の通知をお届けします。</p>
-      <ul style="padding-left: 20px;">
-        ${notificationItems}
-      </ul>
-    </div>
-  `;
+  return buildNotificationDigestHtmlTemplate(userName, notifications, appUrl);
 }
 
 /**
  * パスワードリセットメールを送信する
  *
+ * @param env - 環境変数（RESEND_API_KEY, FROM_EMAIL, APP_URL?）
  * @param to - 宛先メールアドレス
  * @param userName - ユーザー名
  * @param resetUrl - パスワードリセットURL
@@ -233,15 +207,16 @@ export async function sendPasswordReset(
   userName: string,
   resetUrl: string,
 ): Promise<SendEmailResult> {
-  const subject = "パスワードリセットのご案内";
-  const html = buildPasswordResetHtml(userName, resetUrl);
+  const subject = getPasswordResetSubject();
+  const appUrl = env.APP_URL ?? DEFAULT_APP_URL;
+  const html = buildPasswordResetHtml(userName, resetUrl, appUrl);
   return sendEmail(env, to, subject, html);
 }
 
 /**
  * メールアドレス認証メールを送信する
  *
- * @param env - 環境変数（RESEND_API_KEY, FROM_EMAIL）
+ * @param env - 環境変数（RESEND_API_KEY, FROM_EMAIL, APP_URL?）
  * @param to - 宛先メールアドレス
  * @param userName - ユーザー名
  * @param verifyUrl - メール認証URL
@@ -253,15 +228,16 @@ export async function sendEmailVerification(
   userName: string,
   verifyUrl: string,
 ): Promise<SendEmailResult> {
-  const subject = "メールアドレス認証のご案内";
-  const html = buildEmailVerificationHtml(userName, verifyUrl);
+  const subject = getEmailVerificationSubject();
+  const appUrl = env.APP_URL ?? DEFAULT_APP_URL;
+  const html = buildEmailVerificationHtml(userName, verifyUrl, appUrl);
   return sendEmail(env, to, subject, html);
 }
 
 /**
  * 通知ダイジェストメールを送信する
  *
- * @param env - 環境変数（RESEND_API_KEY, FROM_EMAIL）
+ * @param env - 環境変数（RESEND_API_KEY, FROM_EMAIL, APP_URL?）
  * @param to - 宛先メールアドレス
  * @param userName - ユーザー名
  * @param notifications - 通知アイテムのリスト
@@ -273,7 +249,10 @@ export async function sendNotificationDigest(
   userName: string,
   notifications: NotificationItem[],
 ): Promise<SendEmailResult> {
-  const subject = "通知ダイジェスト";
-  const html = buildNotificationDigestHtml(userName, notifications);
+  const subject = getNotificationDigestSubject();
+  const appUrl = env.APP_URL ?? DEFAULT_APP_URL;
+  const html = buildNotificationDigestHtml(userName, notifications, appUrl);
   return sendEmail(env, to, subject, html);
 }
+
+export { escapeHtml };
