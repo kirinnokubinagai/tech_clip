@@ -4,7 +4,6 @@ import { SvgXml } from "react-native-svg";
 
 import { useColors } from "@/hooks/use-colors";
 import { fetchWithTimeout, getBaseUrl } from "@/lib/api";
-import { APP_SCHEME } from "@/lib/constants";
 
 /** Google ブランドロゴのSVG（公式ブランドカラー準拠） */
 const GOOGLE_LOGO_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48">
@@ -41,8 +40,8 @@ function buildAppleSvg(fillColor: string): string {
 /** ソーシャルサインインAPIのパス */
 const SOCIAL_SIGN_IN_PATH = "/api/auth/sign-in/social";
 
-/** ソーシャル認証後のコールバックURL */
-const SOCIAL_CALLBACK_URL = `${APP_SCHEME}://auth/callback`;
+/** ソーシャル認証後のモバイル OAuth コールバックパス */
+const MOBILE_OAUTH_CALLBACK_PATH = "/api/auth/mobile-callback";
 
 export type SocialProvider = "google" | "github" | "apple";
 
@@ -138,7 +137,7 @@ export function OAuthButtons({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           provider,
-          callbackURL: SOCIAL_CALLBACK_URL,
+          callbackURL: `${getBaseUrl()}${MOBILE_OAUTH_CALLBACK_PATH}`,
           disableRedirect: true,
         }),
       });

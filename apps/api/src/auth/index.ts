@@ -32,6 +32,9 @@ const LOCAL_APP_URL = "http://localhost:8081";
 /** ローカル開発用のAPI URL（Better Auth baseURL のデフォルト） */
 const DEFAULT_API_BASE_URL = "http://localhost:18787/api/auth";
 
+/** ローカル開発用のAPI オリジン（mobile-callback の callbackURL として使用） */
+const LOCAL_API_ORIGIN = "http://localhost:18787";
+
 /** モバイルアプリのカスタムスキーム */
 const MOBILE_APP_SCHEME = "techclip://";
 
@@ -60,6 +63,7 @@ export function createAuth(
   const trustedOrigins = [
     MOBILE_APP_SCHEME,
     LOCAL_APP_URL,
+    LOCAL_API_ORIGIN,
     PRODUCTION_APP_URL,
     PRODUCTION_API_URL,
     ...(additionalTrustedOrigins ?? []),
