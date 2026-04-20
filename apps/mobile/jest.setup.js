@@ -23,6 +23,21 @@ console.info = (...args) => {
   originalConsoleInfo(...args);
 };
 
+// テスト中の期待される挙動によるフォールバック warn を抑制する
+// （logger は debug レベルに変更済みだが、console.warn を直接呼ぶ箇所も念のため抑制）
+const originalConsoleWarn = console.warn;
+console.warn = (...args) => {
+  if (
+    typeof args[0] === "string" &&
+    (args[0].includes("フォールバック") ||
+      args[0].includes("Fallback") ||
+      args[0].includes("fallback"))
+  ) {
+    return;
+  }
+  originalConsoleWarn(...args);
+};
+
 // jest-expo setup workaround for React Native compatibility
 
 // NativeWind v4 CSS interop mock for Jest environment

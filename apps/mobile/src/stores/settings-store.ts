@@ -230,9 +230,7 @@ export const useSettingsStore = create<SettingsStore>((set, get) => ({
         return;
       }
     } catch {
-      console.warn(
-        "SecureStore の要約言語設定のパースに失敗しました。デバイス言語にフォールバックします",
-      );
+      // パース失敗時はデバイス言語にフォールバックする（期待される挙動のためログ不要）
     }
     const fallback = resolveDeviceSummaryLanguage();
     await SecureStore.setItemAsync(SUMMARY_LANGUAGE_KEY, JSON.stringify(fallback));
