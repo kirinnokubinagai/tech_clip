@@ -12,6 +12,7 @@ import {
   SUPPORTED_UI_LANGUAGES,
   type SummaryLanguage,
 } from "@/lib/language-code";
+import { logger } from "@/lib/logger";
 
 export type { Language, SummaryLanguage };
 
@@ -257,7 +258,10 @@ export const useSettingsStore = create<SettingsStore>((set, get) => ({
         "/api/users/me/notification-settings",
       );
       set({ notificationSettings: data.data, isNotificationSettingsLoaded: true });
-    } catch {
+    } catch (error) {
+      logger.warn("通知設定の取得に失敗しました", {
+        error: error instanceof Error ? { name: error.name, message: error.message } : error,
+      });
       set({ isNotificationSettingsLoaded: true });
     }
   },
