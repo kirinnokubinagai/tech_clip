@@ -50,6 +50,7 @@ export type Auth = ReturnType<typeof createAuth>;
  * @param baseURL - Better Auth のベースURL（API 自身の URL を渡す。省略時は DEFAULT_API_BASE_URL を使用）
  * @param additionalTrustedOrigins - 環境変数から追加するtrustedOrigins（省略可）
  * @param emailEnv - メール送信環境変数（省略可）
+ * @param isE2eEnv - E2E テスト環境フラグ（Workers Binding の IS_E2E_ENV === "1" で有効化）
  * @returns Better Auth インスタンス
  */
 export function createAuth(
@@ -59,6 +60,7 @@ export function createAuth(
   baseURL?: string,
   additionalTrustedOrigins?: string[],
   emailEnv?: EmailEnv,
+  isE2eEnv?: boolean,
 ) {
   const trustedOrigins = [
     MOBILE_APP_SCHEME,
@@ -111,7 +113,16 @@ export function createAuth(
             return { data: user };
           },
           after: async (user) => {
-            if (user.email.includes("+maestro@")) {
+            /**
+             * E2E テスト用アカウントに自動で emailVerified を付与する
+             *
+             * 以下の 2 条件を both 満たしたときのみ有効化する:
+             *   1. isE2eEnv === true（Workers Binding IS_E2E_ENV="1" で CI / ローカル dev のみ有効）
+             *   2. email が "+maestro@techclip.app" で終わる（独自ドメインに限定し外部ドメインでの悪用を防ぐ）
+             *
+             * これにより attacker+maestro@gmail.com など任意ドメインでの検証バイパスを防ぐ。
+             */
+            if (isE2eEnv === true && user.email.endsWith("+maestro@techclip.app")) {
               await db
                 .update(users)
                 .set({ isTestAccount: true, emailVerified: true })
