@@ -49,14 +49,12 @@ export default function AuthCallbackScreen() {
         return;
       }
 
-      if (params.state) {
-        const savedState = await getOAuthState();
-        await removeOAuthState();
-        if (!savedState || savedState !== params.state) {
-          setErrorMessage(t("auth.callback.errorInvalidState"));
-          setState("error");
-          return;
-        }
+      const savedState = await getOAuthState();
+      await removeOAuthState();
+      if (!savedState || !params.state || savedState !== params.state) {
+        setErrorMessage(t("auth.callback.errorInvalidState"));
+        setState("error");
+        return;
       }
 
       try {
