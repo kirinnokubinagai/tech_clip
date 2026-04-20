@@ -4,6 +4,7 @@ import { SvgXml } from "react-native-svg";
 
 import { useColors } from "@/hooks/use-colors";
 import { fetchWithTimeout, getBaseUrl } from "@/lib/api";
+import { logger } from "@/lib/logger";
 import { removeOAuthState, setOAuthState } from "@/lib/secure-store";
 
 /** Google ブランドロゴのSVG（公式ブランドカラー準拠） */
@@ -159,7 +160,10 @@ export function OAuthButtons({
       }
 
       await Linking.openURL(responseBody.url);
-    } catch {
+    } catch (error) {
+      logger.warn("OAuth ログイン処理中にエラーが発生しました", {
+        error: error instanceof Error ? { name: error.name, message: error.message } : error,
+      });
       await removeOAuthState();
       onError(t("auth.socialLoginFailed"));
     } finally {
