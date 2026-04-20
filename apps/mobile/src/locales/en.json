@@ -92,7 +92,8 @@
       "errorSocialLogin": "Social login failed. Please try again.",
       "errorNoToken": "Authentication token not found. Please try again.",
       "errorSaveToken": "Failed to save authentication info. Please try again.",
-      "errorCheckSession": "Failed to verify authentication. Please try again."
+      "errorCheckSession": "Failed to verify authentication. Please try again.",
+      "errorInvalidState": "Invalid authentication session. Please try again."
     },
     "loginToRegister": "Sign up",
     "loginToRegisterPrompt": "Don't have an account?",

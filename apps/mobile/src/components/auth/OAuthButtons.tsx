@@ -4,6 +4,7 @@ import { SvgXml } from "react-native-svg";
 
 import { useColors } from "@/hooks/use-colors";
 import { fetchWithTimeout, getBaseUrl } from "@/lib/api";
+import { removeOAuthState, setOAuthState } from "@/lib/secure-store";
 
 /** Google ブランドロゴのSVG（公式ブランドカラー準拠） */
 const GOOGLE_LOGO_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48">
@@ -132,12 +133,16 @@ export function OAuthButtons({
     onLoadingChange(provider);
 
     try {
+      const oauthState = crypto.randomUUID();
+      await setOAuthState(oauthState);
+
+      const callbackWithState = `${getBaseUrl()}${MOBILE_OAUTH_CALLBACK_PATH}?state=${encodeURIComponent(oauthState)}`;
       const response = await fetchWithTimeout(`${getBaseUrl()}${SOCIAL_SIGN_IN_PATH}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           provider,
-          callbackURL: `${getBaseUrl()}${MOBILE_OAUTH_CALLBACK_PATH}`,
+          callbackURL: callbackWithState,
           disableRedirect: true,
         }),
       });
@@ -155,6 +160,7 @@ export function OAuthButtons({
 
       await Linking.openURL(responseBody.url);
     } catch {
+      await removeOAuthState();
       onError(t("auth.socialLoginFailed"));
     } finally {
       onLoadingChange(null);

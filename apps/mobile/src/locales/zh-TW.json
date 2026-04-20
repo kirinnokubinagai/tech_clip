@@ -92,7 +92,8 @@
       "errorSocialLogin": "社群登入失敗，請再試一次。",
       "errorNoToken": "未找到驗證權杖，請再試一次。",
       "errorSaveToken": "儲存驗證資訊失敗，請再試一次。",
-      "errorCheckSession": "驗證確認失敗，請再試一次。"
+      "errorCheckSession": "驗證確認失敗，請再試一次。",
+      "errorInvalidState": "認證工作階段無效，請重試。"
     },
     "loginToRegister": "註冊",
     "loginToRegisterPrompt": "尚無帳號的用戶",

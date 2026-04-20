@@ -62,3 +62,31 @@ export async function removeRefreshToken(): Promise<void> {
 export async function clearAuthTokens(): Promise<void> {
   await Promise.all([removeAuthToken(), removeRefreshToken()]);
 }
+
+/** OAuth state（CSRF 対策用 nonce）のストレージキー */
+const OAUTH_STATE_KEY = "oauth_state_nonce";
+
+/**
+ * OAuth state nonce を保存する
+ *
+ * @param state - ランダム生成した nonce 文字列
+ */
+export async function setOAuthState(state: string): Promise<void> {
+  await SecureStore.setItemAsync(OAUTH_STATE_KEY, state);
+}
+
+/**
+ * OAuth state nonce を取得する
+ *
+ * @returns 保存済みの nonce。存在しない場合はnull
+ */
+export async function getOAuthState(): Promise<string | null> {
+  return SecureStore.getItemAsync(OAUTH_STATE_KEY);
+}
+
+/**
+ * OAuth state nonce を削除する
+ */
+export async function removeOAuthState(): Promise<void> {
+  await SecureStore.deleteItemAsync(OAUTH_STATE_KEY);
+}

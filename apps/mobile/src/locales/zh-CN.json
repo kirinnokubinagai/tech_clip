@@ -92,7 +92,8 @@
       "errorSocialLogin": "社交登录失败，请再试一次。",
       "errorNoToken": "未找到认证令牌，请再试一次。",
       "errorSaveToken": "保存认证信息失败，请再试一次。",
-      "errorCheckSession": "验证认证失败，请再试一次。"
+      "errorCheckSession": "验证认证失败，请再试一次。",
+      "errorInvalidState": "认证会话无效，请重试。"
     },
     "loginToRegister": "注册",
     "loginToRegisterPrompt": "没有账户的用户",

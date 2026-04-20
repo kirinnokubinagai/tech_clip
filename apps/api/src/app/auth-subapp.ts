@@ -158,14 +158,21 @@ export async function handleMobileOAuthCallback(
     expiresAt: sessionRow.expiresAt,
   });
 
-  const params = new URLSearchParams({
+  const url = new URL(request.url);
+  const oauthState = url.searchParams.get("state");
+
+  const deepLinkParams = new URLSearchParams({
     token: sessionToken,
     refresh_token: plainRefreshToken,
   });
 
+  if (oauthState) {
+    deepLinkParams.set("state", oauthState);
+  }
+
   return new Response(null, {
     status: 302,
-    headers: { Location: `${MOBILE_CALLBACK_URL}?${params.toString()}` },
+    headers: { Location: `${MOBILE_CALLBACK_URL}?${deepLinkParams.toString()}` },
   });
 }
 
