@@ -221,3 +221,32 @@ run_hook() {
     run run_hook "$json"
     [ "$status" -eq 0 ]
 }
+
+# -------------------------------------------------------------------------
+# post-ask-user-question.sh と orchestrator-flow-guard.sh のパス一致テスト
+# -------------------------------------------------------------------------
+
+POST_HOOK="$(cd "$(dirname "$BATS_TEST_FILENAME")/../.." && pwd)/.claude/hooks/post-ask-user-question.sh"
+
+@test "post-ask-user-question.sh が CLAUDE_USER_ROOT に flag を書き込み guard が読めること" {
+    # post-ask-user-question.sh を実行（CLAUDE_USER_ROOT はすでに setup() で設定済み）
+    mkdir -p "$CLAUDE_USER_ROOT/projects/test-project/memory"
+    bash "$POST_HOOK"
+
+    # guard が同じ CLAUDE_USER_ROOT を読んで gh issue close を許可すること
+    local json='{"tool_name":"Bash","tool_input":{"command":"gh issue close 999"}}'
+    run run_hook "$json"
+    [ "$status" -eq 0 ]
+}
+
+@test "post-ask-user-question.sh の flag 書き込み先は CLAUDE_USER_ROOT 配下であること" {
+    mkdir -p "$CLAUDE_USER_ROOT/projects/test-project/memory"
+    bash "$POST_HOOK"
+
+    # flag が CLAUDE_USER_ROOT 配下に存在すること（HOME 配下ではないこと）
+    FLAG=$(ls "$CLAUDE_USER_ROOT/projects/"*/memory/tmp-last-askuserquestion.flag 2>/dev/null | head -1 || echo "")
+    [ -n "$FLAG" ]
+    # HOME 配下には存在しないこと
+    HOME_FLAG=$(ls "$HOME/.claude-user/projects/"*/memory/tmp-last-askuserquestion.flag 2>/dev/null | head -1 || echo "")
+    [ -z "$HOME_FLAG" ]
+}
