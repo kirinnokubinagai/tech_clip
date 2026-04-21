@@ -10,7 +10,15 @@ import { createClient } from "@libsql/client";
 import { and, eq } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/libsql";
 
-import { accounts, articles, articleTags, follows, tags, users } from "../src/db/schema/index.ts";
+import {
+  accounts,
+  articles,
+  articleTags,
+  follows,
+  notifications,
+  tags,
+  users,
+} from "../src/db/schema/index.ts";
 
 /** Turso dev サーバーの接続先 URL */
 const SEED_DATABASE_URL = process.env.TURSO_DATABASE_URL ?? "";
@@ -584,6 +592,47 @@ async function upsertFollow(
   await db.insert(follows).values({ followerId, followingId });
 }
 
+/** 通知の型名 */
+type NotificationType = "new_follower" | "article_liked" | "system_update";
+
+/** 通知シードデータの定義 */
+const SEED_NOTIFICATIONS: Array<{ type: NotificationType; title: string; body: string }> = [
+  {
+    type: "new_follower",
+    title: "新しいフォロワーがいます",
+    body: "followeeユーザーがあなたをフォローしました。",
+  },
+  {
+    type: "system_update",
+    title: "システムのお知らせ",
+    body: "TechClipがアップデートされました。新機能をお試しください。",
+  },
+];
+
+/**
+ * 通知を upsert する（id の onConflictDoNothing で冪等）
+ *
+ * @param db - Drizzle DB インスタンス
+ * @param userId - 通知先ユーザー ID
+ * @param id - 通知 ID（固定値で冪等性を保証）
+ * @param type - 通知タイプ
+ * @param title - 通知タイトル
+ * @param body - 通知本文
+ */
+async function upsertNotification(
+  db: ReturnType<typeof drizzle>,
+  userId: string,
+  id: string,
+  type: NotificationType,
+  title: string,
+  body: string,
+): Promise<void> {
+  await db
+    .insert(notifications)
+    .values({ id, userId, type, title, body, isRead: false })
+    .onConflictDoNothing();
+}
+
 /**
  * Maestro e2e 用静的 seed を実行する（冪等 upsert）
  *
@@ -666,6 +715,19 @@ async function seedMaestroStatic(): Promise<void> {
 
   await upsertFollow(db, followerId, followeeId);
   process.stdout.write("FOLLOWER → FOLLOWEE フォロー upsert 完了\n");
+
+  for (let i = 0; i < SEED_NOTIFICATIONS.length; i++) {
+    const n = SEED_NOTIFICATIONS[i];
+    await upsertNotification(
+      db,
+      followerId,
+      `maestro-notification-follower-${i}`,
+      n.type,
+      n.title,
+      n.body,
+    );
+  }
+  process.stdout.write(`FOLLOWER 通知 ${SEED_NOTIFICATIONS.length} 件 upsert 完了\n`);
 
   client.close();
   process.stdout.write("Maestro 静的 seed 完了\n");

@@ -1,5 +1,8 @@
 # 通知フロー
-# 通知タブを開いて通知一覧を確認し、既読・全既読操作を行う
+# FOLLOWER ユーザーでログインして通知一覧・既読操作を確認する
+# seed-maestro-static で FOLLOWER に通知 2 件が事前作成される
+#
+# 事前条件: seed で FOLLOWER に通知が作成済みであること
 #
 # tags: notifications
 
@@ -8,14 +11,14 @@ tags:
   - notifications
 
 env:
-  TEST_EMAIL: ${TEST_EMAIL}
-  TEST_PASSWORD: ${TEST_PASSWORD}
+  TEST_EMAIL: ${FOLLOWER_EMAIL}
+  TEST_PASSWORD: ${FOLLOWER_PASSWORD}
 
 ---
 
-# ログイン済み状態でアプリ起動
+# FOLLOWER ユーザーとして起動（seed データで通知あり）
 - launchApp:
-    clearState: false
+    clearState: true
 - runFlow:
     when:
       visible: "Try out your stylus"
@@ -50,24 +53,29 @@ env:
 - tapOn:
     id: "tab-notifications"
 - waitForAnimationToEnd:
-    timeout: 2000
+    timeout: 3000
 - takeScreenshot: screenshots/10-notifications/01-notifications-tab
 
-# 通知画面の基本要素確認
+# 通知画面タイトル確認
 - assertVisible:
     text: "通知"
 
-# 全既読ボタン確認（通知がある場合）
-- runFlow:
-    when:
-      visible:
-        id: "mark-all-read-button"
-    commands:
-      - tapOn:
-          id: "mark-all-read-button"
-      - waitForAnimationToEnd:
-          timeout: 1000
-      - takeScreenshot: screenshots/10-notifications/02-all-read
+# seed で作成した通知一覧が表示されることを確認
+- assertVisible:
+    id: "notifications-list"
+    timeout: 5000
+- takeScreenshot: screenshots/10-notifications/02-notifications-list
+
+# 全既読ボタンが表示されることを確認（seed 通知は is_read=false）
+- assertVisible:
+    id: "mark-all-read-button"
+
+# 全既読ボタンをタップ
+- tapOn:
+    id: "mark-all-read-button"
+- waitForAnimationToEnd:
+    timeout: 1000
+- takeScreenshot: screenshots/10-notifications/03-all-read
 
 # ホームタブへ戻る
 - tapOn:
