@@ -96,5 +96,15 @@ export async function handleAuthCatchAll(
     return subApp.fetch(request);
   }
 
+  // NOTE (SSRF/漏洩対策):
+  // Better Auth の OAuth ハンドラが将来 Deep Link リダイレクトを返す場合、
+  // アクセストークンやセッショントークンをクエリパラメータに含めることは避ける。
+  //   - クエリパラメータはブラウザ履歴・プロキシログ・Referer ヘッダに残り、漏洩リスクが高い
+  //   - 代替案:
+  //     (a) 短命な一度限りの exchange code をクエリに載せ、アプリ側で POST で token と交換する
+  //     (b) URL fragment (#access_token=...) を使う（Referer に乗らない）
+  //     (c) 可能であればバックエンド → ネイティブブリッジを介して token を渡す
+  // 現状 Better Auth の標準ハンドラに委譲しているためコード側のリスクは無いが、
+  // Deep Link 向けのカスタムコールバックを実装する際はこのコメントを必ず確認すること。
   return auth.handler(request);
 }

@@ -19,6 +19,7 @@ import {
   HTTP_UNPROCESSABLE_ENTITY,
 } from "../lib/http-status";
 import { createLogger } from "../lib/logger";
+import { hashTokenSha256 } from "../lib/token-utils";
 import type { EmailEnv } from "../services/emailService";
 import { sendEmailVerification } from "../services/emailService";
 
@@ -41,23 +42,6 @@ type EmailVerificationRouteOptions = {
   appUrl: string;
   emailEnv: EmailEnv;
 };
-
-/**
- * メール認証用トークンをSHA-256でハッシュ化する
- *
- * Web Crypto API (SubtleCrypto) を使用してハッシュ化する。
- * Cloudflare Workers 環境でも動作する。
- *
- * @param token - ハッシュ化するトークン文字列
- * @returns ハッシュ化された16進数文字列
- */
-async function hashToken(token: string): Promise<string> {
-  const encoder = new TextEncoder();
-  const data = encoder.encode(token);
-  const hashBuffer = await crypto.subtle.digest("SHA-256", data);
-  const hashArray = Array.from(new Uint8Array(hashBuffer));
-  return hashArray.map((b) => b.toString(16).padStart(2, "0")).join("");
-}
 
 /**
  * メール認証ルートを生成する
@@ -104,7 +88,7 @@ export function createEmailVerificationRoute(options: EmailVerificationRouteOpti
     }
 
     const rawToken = crypto.randomUUID();
-    const hashedToken = await hashToken(rawToken);
+    const hashedToken = await hashTokenSha256(rawToken);
     const identifier = `${EMAIL_VERIFICATION_IDENTIFIER_PREFIX}:${userId}`;
     const expiresAt = new Date(Date.now() + VERIFICATION_TOKEN_TTL_MS).toISOString();
 
@@ -189,7 +173,7 @@ export function createEmailVerificationRoute(options: EmailVerificationRouteOpti
     }
 
     const { token } = validation.data;
-    const hashedToken = await hashToken(token);
+    const hashedToken = await hashTokenSha256(token);
 
     const [verification] = await db
       .select()
