@@ -1,5 +1,5 @@
-# プロフィール編集フロー
-# プロフィール編集画面で名前/bio/SNSリンクを更新できることを確認する
+# プロフィール表示・編集フロー
+# プロフィールタブで基本表示を確認し、編集画面で名前/bio/SNSリンクを更新できることを確認する
 #
 # tags: profile
 
@@ -31,17 +31,51 @@ env:
       - waitForAnimationToEnd:
           timeout: 3000
 - runFlow:
+    when:
+      visible: "Open debugger"
+    commands:
+      - tapOn:
+          point: "92%, 93%"
+      - waitForAnimationToEnd:
+          timeout: 1000
+- runFlow:
     file: "00-login-helper.yaml"
 - waitForAnimationToEnd:
     timeout: 2000
 
-# プロフィール編集画面へ deeplink 遷移
+# --- プロフィールタブ表示確認 ---
+- tapOn:
+    id: "tab-profile"
+- waitForAnimationToEnd:
+    timeout: 3000
+- takeScreenshot: screenshots/06-profile-edit/01-profile-tab
+
+# プロフィールヘッダーが表示されること
+- assertVisible:
+    id: "profile-header"
+    timeout: 10000
+
+# ユーザー名が表示されること
+- assertVisible:
+    id: "profile-name"
+
+# 設定ボタンが表示されること
+- assertVisible:
+    id: "profile-settings-button"
+
+# フォロワー・フォロー統計が表示されること
+- assertVisible:
+    id: "profile-stats"
+
+- takeScreenshot: screenshots/06-profile-edit/02-profile-header
+
+# --- プロフィール編集画面へ ---
 - openLink: techclip://profile/edit
 - assertVisible:
     id: "profile-edit-screen"
     timeout: 30000
 - assertVisible: "プロフィール編集"
-- takeScreenshot: screenshots/06-profile-edit/01-edit-screen
+- takeScreenshot: screenshots/06-profile-edit/03-edit-screen
 
 # アバター変更ボタン
 - assertVisible:
@@ -58,4 +92,4 @@ env:
     id: "profile-edit-back-button"
 - waitForAnimationToEnd:
     timeout: 2000
-- takeScreenshot: screenshots/06-profile-edit/02-back
+- takeScreenshot: screenshots/06-profile-edit/04-back
