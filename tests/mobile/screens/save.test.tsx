@@ -6,6 +6,13 @@ import { setMockLocale } from "../helpers/i18n-test-utils";
 /** apiFetchのモック */
 const mockApiFetch = jest.fn();
 
+/** invalidateQueriesのモック */
+const mockInvalidateQueries = jest.fn();
+
+jest.mock("@tanstack/react-query", () => ({
+  useQueryClient: () => ({ invalidateQueries: mockInvalidateQueries }),
+}));
+
 jest.mock("@/lib/api", () => ({
   apiFetch: (...args: unknown[]) => mockApiFetch(...args),
 }));

@@ -84,7 +84,7 @@ export default function RegisterScreen() {
       behavior={Platform.OS === "ios" ? "padding" : "height"}
     >
       <ScrollView
-        contentContainerClassName="flex-1 justify-center px-6"
+        contentContainerClassName="flex-1 justify-center px-6 py-8"
         keyboardShouldPersistTaps="handled"
       >
         <View className="mb-10 items-center">
