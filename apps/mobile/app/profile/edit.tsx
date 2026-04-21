@@ -530,11 +530,7 @@ export default function ProfileEditScreen() {
                 <ActivityIndicator color={colors.white} />
               </View>
             ) : (
-              <Button
-                testID="profile-edit-save-button"
-                onPress={handleSave}
-                disabled={isSaving}
-              >
+              <Button testID="profile-edit-save-button" onPress={handleSave} disabled={isSaving}>
                 {t("profile.edit.saveButton")}
               </Button>
             )}
