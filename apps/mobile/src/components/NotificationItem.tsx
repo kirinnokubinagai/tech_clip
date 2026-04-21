@@ -14,6 +14,7 @@ export type NotificationItemData = {
   body: string;
   isRead: boolean;
   createdAt: string;
+  articleId?: string;
 };
 
 type NotificationItemProps = {

@@ -12,7 +12,7 @@ import type {
 } from "@/types/article";
 
 /** 記事一覧のクエリキー */
-const ARTICLES_QUERY_KEY = "articles";
+export const ARTICLES_QUERY_KEY = "articles";
 
 /** 記事詳細のクエリキー */
 const ARTICLE_DETAIL_QUERY_KEY = "article-detail";

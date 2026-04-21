@@ -13,3 +13,10 @@ env:
   TEST_PASSWORD: E2ETestPass123!
   TEST_NAME: E2Eテストユーザー
   API_BASE_URL: http://localhost:8787
+  # シナリオ別ユーザー（seed-maestro-static.ts で作成）
+  FOLLOWER_EMAIL: follower+maestro@techclip.app
+  FOLLOWER_PASSWORD: TestPassword123!
+  FOLLOWEE_EMAIL: followee+maestro@techclip.app
+  FOLLOWEE_PASSWORD: TestPassword123!
+  PREMIUM_EMAIL: premium+maestro@techclip.app
+  PREMIUM_PASSWORD: TestPassword123!

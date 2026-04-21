@@ -664,8 +664,8 @@ async function seedMaestroStatic(): Promise<void> {
   await db.update(users).set({ freeAiUsesRemaining: 0 }).where(eq(users.id, followeeId));
   process.stdout.write("FOLLOWEE freeAiUsesRemaining=0 に設定\n");
 
-  await upsertFollow(db, followeeId, followerId);
-  process.stdout.write("FOLLOWEE → FOLLOWER フォロー upsert 完了\n");
+  await upsertFollow(db, followerId, followeeId);
+  process.stdout.write("FOLLOWER → FOLLOWEE フォロー upsert 完了\n");
 
   client.close();
   process.stdout.write("Maestro 静的 seed 完了\n");

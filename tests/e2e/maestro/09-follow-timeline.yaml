@@ -1,6 +1,8 @@
 # フォロー・タイムラインフロー
-# ホーム画面で「自分 / フォロー中」トグルを切り替えて、フォロー中ユーザーの
-# 公開記事が表示されることを確認する
+# FOLLOWER ユーザーでログインし「フォロー中」モードに切り替えて
+# FOLLOWEE の公開記事が表示されることを確認する
+#
+# 事前条件: seed でFOLLOWERがFOLLOWEEをフォロー済み、FOLLOWEEに記事が存在すること
 #
 # tags: social
 
@@ -9,14 +11,14 @@ tags:
   - social
 
 env:
-  TEST_EMAIL: ${TEST_EMAIL}
-  TEST_PASSWORD: ${TEST_PASSWORD}
+  TEST_EMAIL: ${FOLLOWER_EMAIL}
+  TEST_PASSWORD: ${FOLLOWER_PASSWORD}
 
 ---
 
-# ログイン済み状態でアプリ起動
+# フレッシュ状態でFOLLOWERとしてアプリ起動
 - launchApp:
-    clearState: false
+    clearState: true
 - runFlow:
     when:
       visible: "Try out your stylus"
@@ -31,6 +33,14 @@ env:
       - tapOn: "Wait"
       - waitForAnimationToEnd:
           timeout: 3000
+- runFlow:
+    when:
+      visible: "Open debugger"
+    commands:
+      - tapOn:
+          point: "92%, 93%"
+      - waitForAnimationToEnd:
+          timeout: 1000
 - runFlow:
     file: "00-login-helper.yaml"
 - waitForAnimationToEnd:
@@ -49,6 +59,11 @@ env:
     timeout: 3000
 - assertVisible: "フォロー中"
 - takeScreenshot: screenshots/09-follow-timeline/02-feed-mode
+
+# フォロー中ユーザー（FOLLOWEE）の記事が表示されることを確認
+- assertVisible:
+    id: "article-card"
+    timeout: 10000
 
 # --- 自分モードに戻す ---
 - tapOn:

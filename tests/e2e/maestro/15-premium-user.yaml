@@ -7,13 +7,13 @@ tags:
   - auth
 
 env:
-  TEST_EMAIL: ${TEST_EMAIL}
-  TEST_PASSWORD: ${TEST_PASSWORD}
+  TEST_EMAIL: ${PREMIUM_EMAIL}
+  TEST_PASSWORD: ${PREMIUM_PASSWORD}
 
 ---
 
 - launchApp:
-    clearState: false
+    clearState: true
 - runFlow:
     when:
       visible: "Try out your stylus"

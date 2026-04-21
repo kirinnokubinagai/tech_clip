@@ -1,3 +1,4 @@
+import { useQueryClient } from "@tanstack/react-query";
 import * as Haptics from "expo-haptics";
 import { router, useLocalSearchParams } from "expo-router";
 import { AlertCircle, ArrowLeft, ExternalLink, Loader2 } from "lucide-react-native";
@@ -6,6 +7,7 @@ import { useTranslation } from "react-i18next";
 import { Image, Pressable, ScrollView, Text, View } from "react-native";
 
 import { Button, Card, Input, SourceBadge, Toast } from "@/components/ui";
+import { ARTICLES_QUERY_KEY } from "@/hooks/use-articles";
 import { useColors } from "@/hooks/use-colors";
 import { useToast } from "@/hooks/use-toast";
 import { apiFetch } from "@/lib/api";
@@ -51,6 +53,7 @@ function validateUrl(url: string): "article.urlRequired" | "article.urlInvalid" 
 export default function SaveScreen() {
   const { t } = useTranslation();
   const colors = useColors();
+  const queryClient = useQueryClient();
   const { url: sharedUrl } = useLocalSearchParams<{ url?: string }>();
   const [url, setUrl] = useState(sharedUrl ?? "");
   const [preview, setPreview] = useState<ArticlePreview | null>(null);
@@ -119,13 +122,14 @@ export default function SaveScreen() {
       }
 
       showToast(t("article.savedSuccess"), "success");
+      queryClient.invalidateQueries({ queryKey: [ARTICLES_QUERY_KEY] });
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     } catch {
       setErrorMessage(t("article.saveFailed"));
     } finally {
       setIsSaving(false);
     }
-  }, [preview, url, showToast, t]);
+  }, [preview, url, showToast, t, queryClient]);
 
   return (
     <View className="flex-1">
