@@ -43,7 +43,7 @@ import {
 } from "@/lib/secure-store";
 
 beforeEach(() => {
-  jest.resetAllMocks();
+  jest.clearAllMocks();
   mockUseLocalSearchParams.mockReturnValue({});
   (mockGetOAuthState as jest.Mock).mockResolvedValue(null);
   (mockRemoveOAuthState as jest.Mock).mockResolvedValue(undefined);
