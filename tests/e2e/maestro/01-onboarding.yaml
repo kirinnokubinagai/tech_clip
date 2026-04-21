@@ -40,6 +40,15 @@ tags:
 
 # --- ページ1: 技術記事をワンタップで保存 ---
 - assertVisible:
+    id: "onboarding-title"
+    timeout: 60000
+- assertVisible:
+    id: "onboarding-description"
+- assertVisible:
+    id: "page-indicator"
+- assertVisible:
+    id: "skip-button"
+- assertVisible:
     text: "技術記事をワンタップで保存"
     timeout: 60000
 - runFlow:

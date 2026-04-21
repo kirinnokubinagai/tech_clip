@@ -1,3 +1,6 @@
+/** Jest 実行前に NODE_ENV を test に強制セット（シェル環境の上書きを防ぐ） */
+process.env.NODE_ENV = "test";
+
 /** テストタイムアウト（ミリ秒） */
 const TEST_TIMEOUT_MS = 30000;
 

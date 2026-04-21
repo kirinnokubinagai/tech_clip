@@ -52,6 +52,8 @@ env:
 - assertVisible:
     id: "fetch-button"
     timeout: 60000
+- assertVisible:
+    id: "save-screen-title"
 - assertVisible: "URL"
 - takeScreenshot: screenshots/04-article-save/01-save-screen
 

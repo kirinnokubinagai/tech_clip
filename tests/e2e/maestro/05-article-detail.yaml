@@ -62,6 +62,36 @@ env:
 - assertVisible:
     text: "すべて"
 
+# 記事カードのソースバッジ (source-badge) が表示されていることを確認
+- assertVisible:
+    id: "source-badge"
+
+# 記事カードのお気に入りボタン (favorite-button) が表示されていることを確認
+- assertVisible:
+    id: "favorite-button"
+
+# お気に入り未登録状態なのでアウトラインアイコンが表示されること
+- assertVisible:
+    id: "favorite-icon-outline"
+
+# お気に入りボタンをタップして登録 → 塗りつぶしアイコンに切り替わること
+- tapOn:
+    index: 0
+    id: "favorite-button"
+- waitForAnimationToEnd:
+    timeout: 2000
+- assertVisible:
+    id: "favorite-icon-filled"
+
+# お気に入り解除して元に戻す
+- tapOn:
+    index: 0
+    id: "favorite-button"
+- waitForAnimationToEnd:
+    timeout: 2000
+- assertVisible:
+    id: "favorite-icon-outline"
+
 # 記事カードをタップして詳細へ
 - tapOn:
     index: 0
@@ -71,6 +101,11 @@ env:
 - assertVisible:
     text: "戻る"
 - takeScreenshot: screenshots/05-article-detail/02-detail
+
+# WebView が表示されていることを確認
+- assertVisible:
+    id: "article-webview"
+    timeout: 10000
 
 # お気に入り追加
 - tapOn:
@@ -86,21 +121,43 @@ env:
 
 # 要約ボタン
 - assertVisible:
+    id: "summary-button"
+- assertVisible:
     text: "要約"
 - tapOn:
-    text: "要約"
+    id: "summary-button"
 - waitForAnimationToEnd
 
 # 翻訳ボタン
 - assertVisible:
+    id: "translation-button"
+- assertVisible:
     text: "翻訳"
 - tapOn:
-    text: "翻訳"
+    id: "translation-button"
 - waitForAnimationToEnd
 
 # ブラウザで開くボタン確認
 - assertVisible:
     text: "ブラウザで開く"
+
+# リーダーモードトグル: 有効化
+- assertVisible:
+    id: "reader-mode-toggle"
+- tapOn:
+    id: "reader-mode-toggle"
+- waitForAnimationToEnd:
+    timeout: 1000
+- assertVisible:
+    text: "オリジナル"
+
+# リーダーモードトグル: 無効化
+- tapOn:
+    id: "reader-mode-toggle"
+- waitForAnimationToEnd:
+    timeout: 1000
+- assertVisible:
+    text: "リーダーモード"
 
 # 戻るボタンでホームへ
 - tapOn:

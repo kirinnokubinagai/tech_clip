@@ -49,6 +49,10 @@ env:
 # --- ホーム画面確認 ---
 - assertVisible: "すべて"
 
+# seed 通知が未読のため通知タブバッジが表示されること
+- assertVisible:
+    id: "tab-badge"
+
 # 通知タブへ移動
 - tapOn:
     id: "tab-notifications"
@@ -64,6 +68,29 @@ env:
 - assertVisible:
     id: "notifications-list"
     timeout: 5000
+
+# 個別通知アイテムが表示されることを確認（seed で最低1件作成済み）
+- assertVisible:
+    id: "notification-item"
+    timeout: 5000
+
+# 通知アイテムの内部要素確認
+- assertVisible:
+    id: "notification-title"
+- assertVisible:
+    id: "notification-body"
+- assertVisible:
+    id: "notification-time"
+
+# 未読インジケーターが表示されること（seed 通知は is_read=false）
+- assertVisible:
+    id: "unread-indicator"
+
+# seed 通知の種別アイコン確認（seed: new_follower + system_update）
+- assertVisible:
+    id: "notification-icon-follow"
+- assertVisible:
+    id: "notification-icon-system"
 - takeScreenshot: screenshots/10-notifications/02-notifications-list
 
 # 全既読ボタンが表示されることを確認（seed 通知は is_read=false）

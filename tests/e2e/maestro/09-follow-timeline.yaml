@@ -65,6 +65,24 @@ env:
     id: "article-card"
     timeout: 10000
 
+# FOLLOWEEの記事をタップして詳細へ（isNotOwner=true のためクローンボタンが表示される）
+- tapOn:
+    index: 0
+    id: "article-card"
+- waitForAnimationToEnd:
+    timeout: 2000
+
+# クローンボタンが表示されることを確認
+- assertVisible:
+    id: "clone-button"
+- takeScreenshot: screenshots/09-follow-timeline/02b-article-clone-button
+
+# 戻る
+- tapOn:
+    text: "戻る"
+- waitForAnimationToEnd:
+    timeout: 1000
+
 # --- 自分モードに戻す ---
 - tapOn:
     id: "feed-mode-toggle"

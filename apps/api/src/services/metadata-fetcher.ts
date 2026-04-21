@@ -65,7 +65,25 @@ function getMeta(doc: ReturnType<typeof parseHTML>["document"], selector: string
  * 失敗時（fetch 失敗・HTML 空・meta 無し）は URL のみから title を生成する。
  */
 export async function fetchArticleMetadata(url: string): Promise<ParsedArticle> {
-  const source = detectSource(url);
+  let source: ReturnType<typeof detectSource>;
+  try {
+    source = detectSource(url);
+  } catch {
+    source = "other";
+  }
+
+  if (isPrivateHost(url)) {
+    return {
+      title: url,
+      author: null,
+      content: "",
+      excerpt: null,
+      thumbnailUrl: null,
+      publishedAt: null,
+      readingTimeMinutes: 0,
+      source,
+    };
+  }
   const fallback: ParsedArticle = {
     title: url,
     author: null,
@@ -76,10 +94,6 @@ export async function fetchArticleMetadata(url: string): Promise<ParsedArticle> 
     readingTimeMinutes: 0,
     source,
   };
-
-  if (isPrivateHost(url)) {
-    return fallback;
-  }
 
   let html = "";
   try {
