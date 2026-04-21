@@ -158,6 +158,26 @@ describe("apiFetch", () => {
       const headers = callArgs.headers as Record<string, string>;
       expect(headers["Content-Type"]).toBe("application/json");
     });
+
+    it("204 No Content を成功として扱い undefined を返すこと", async () => {
+      // Arrange
+      mockFetch.mockResolvedValue(
+        createFetchResponse("", {
+          status: 204,
+          contentType: null,
+          jsonImpl: () => Promise.reject(new Error("No body")),
+          textImpl: () => Promise.resolve(""),
+        }),
+      );
+
+      // Act
+      const result = await apiFetch<undefined>("/api/auth/sign-out", {
+        method: "POST",
+      });
+
+      // Assert
+      expect(result).toBeUndefined();
+    });
   });
 
   describe("トークンリフレッシュ", () => {

@@ -24,6 +24,9 @@ const HTTP_STATUS_SUCCESS_MIN = 200;
 /** HTTPステータスコード: 成功範囲の上限（未満） */
 const HTTP_STATUS_SUCCESS_MAX = 300;
 
+/** HTTPステータスコード: コンテンツなし */
+const HTTP_STATUS_NO_CONTENT = 204;
+
 /** JSONのContent-Type判定用の文字列 */
 const JSON_CONTENT_TYPE_HINT = "json";
 
@@ -262,6 +265,9 @@ async function tryParseJson(response: Response): Promise<unknown> {
  * @throws ApiParseError - Content-TypeがJSON以外、またはJSONパース失敗時
  */
 async function parseSuccessBody<T>(response: Response): Promise<T> {
+  if (response.status === HTTP_STATUS_NO_CONTENT) {
+    return undefined as T;
+  }
   if (!shouldParseAsJson(response)) {
     throw new ApiParseError(response.status, i18n.t("api.errors.parse"));
   }

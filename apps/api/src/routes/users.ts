@@ -24,6 +24,7 @@ import {
   HTTP_INTERNAL_SERVER_ERROR,
   HTTP_NO_CONTENT,
   HTTP_NOT_FOUND,
+  HTTP_OK,
   HTTP_UNAUTHORIZED,
   HTTP_UNPROCESSABLE_ENTITY,
 } from "../lib/http-status";
@@ -499,7 +500,13 @@ export function createUsersRoute(options: UsersRouteOptions) {
       .set({ password: hashedNewPassword })
       .where(and(eq(accounts.userId, userId), eq(accounts.providerId, "credential")));
 
-    return c.body(null, HTTP_NO_CONTENT);
+    return c.json(
+      {
+        success: true,
+        data: { message: "パスワードを変更しました" },
+      },
+      HTTP_OK,
+    );
   });
 
   route.delete("/me", async (c) => {

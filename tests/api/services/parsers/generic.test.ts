@@ -348,7 +348,7 @@ describe("SSRF 対策", () => {
   it("localhost への fetch をブロックすること", async () => {
     // Act & Assert
     await expect(parseGeneric("http://localhost/secret")).rejects.toThrow(
-      "プライベート IP は許可されません",
+      "内部ネットワークへの fetch は許可されていません",
     );
     expect(mockFetch).not.toHaveBeenCalled();
   });
@@ -356,7 +356,7 @@ describe("SSRF 対策", () => {
   it("127.0.0.1 への fetch をブロックすること", async () => {
     // Act & Assert
     await expect(parseGeneric("http://127.0.0.1/secret")).rejects.toThrow(
-      "プライベート IP は許可されません",
+      "内部ネットワークへの fetch は許可されていません",
     );
     expect(mockFetch).not.toHaveBeenCalled();
   });
@@ -364,7 +364,7 @@ describe("SSRF 対策", () => {
   it("10.x.x.x プライベートアドレスへの fetch をブロックすること", async () => {
     // Act & Assert
     await expect(parseGeneric("http://10.0.0.1/secret")).rejects.toThrow(
-      "プライベート IP は許可されません",
+      "内部ネットワークへの fetch は許可されていません",
     );
     expect(mockFetch).not.toHaveBeenCalled();
   });
@@ -372,7 +372,7 @@ describe("SSRF 対策", () => {
   it("192.168.x.x プライベートアドレスへの fetch をブロックすること", async () => {
     // Act & Assert
     await expect(parseGeneric("http://192.168.1.1/secret")).rejects.toThrow(
-      "プライベート IP は許可されません",
+      "内部ネットワークへの fetch は許可されていません",
     );
     expect(mockFetch).not.toHaveBeenCalled();
   });
@@ -381,7 +381,7 @@ describe("SSRF 対策", () => {
     // Act & Assert
     await expect(
       parseGeneric("http://metadata.google.internal/computeMetadata/v1/"),
-    ).rejects.toThrow("プライベート IP は許可されません");
+    ).rejects.toThrow("内部ネットワークへの fetch は許可されていません");
     expect(mockFetch).not.toHaveBeenCalled();
   });
 
