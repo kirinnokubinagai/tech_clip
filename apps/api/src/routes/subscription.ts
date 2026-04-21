@@ -9,6 +9,7 @@ import {
   AUTH_INVALID_MESSAGE,
   AUTH_ERROR_CODE as AUTH_REQUIRED_CODE,
   AUTH_ERROR_MESSAGE as AUTH_REQUIRED_MESSAGE,
+  NOT_FOUND_ERROR_CODE,
 } from "../lib/error-codes";
 import { HTTP_BAD_REQUEST, HTTP_NOT_FOUND, HTTP_OK, HTTP_UNAUTHORIZED } from "../lib/http-status";
 
@@ -183,7 +184,7 @@ export function createSubscriptionRoute(options: SubscriptionRouteOptions) {
         {
           success: false,
           error: {
-            code: "NOT_FOUND",
+            code: NOT_FOUND_ERROR_CODE,
             message: "ユーザーが見つかりません",
           },
         },
@@ -237,7 +238,7 @@ export function createSubscriptionRoute(options: SubscriptionRouteOptions) {
         {
           success: false,
           error: {
-            code: "NOT_FOUND",
+            code: NOT_FOUND_ERROR_CODE,
             message: "ユーザーが見つかりません",
           },
         },

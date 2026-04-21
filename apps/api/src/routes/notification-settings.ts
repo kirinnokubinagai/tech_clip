@@ -8,6 +8,7 @@ import { notificationSettings } from "../db/schema";
 import {
   AUTH_ERROR_CODE,
   AUTH_ERROR_MESSAGE,
+  INTERNAL_ERROR_CODE,
   VALIDATION_ERROR_CODE,
   VALIDATION_ERROR_MESSAGE,
 } from "../lib/error-codes";
@@ -196,7 +197,7 @@ export function createNotificationSettingsRoute(options: NotificationSettingsRou
         {
           success: false,
           error: {
-            code: "INTERNAL_ERROR",
+            code: INTERNAL_ERROR_CODE,
             message: "通知設定の更新に失敗しました",
           },
         },
