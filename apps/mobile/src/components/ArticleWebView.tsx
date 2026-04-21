@@ -155,7 +155,7 @@ export const ArticleWebView = forwardRef<ArticleWebViewHandle, ArticleWebViewPro
           style={styles.webview}
         />
         {isLoading ? (
-          <View style={styles.loadingOverlay} pointerEvents="none">
+          <View style={styles.loadingOverlay} pointerEvents="none" testID="article-webview-loading">
             <ActivityIndicator size="large" />
           </View>
         ) : null}
