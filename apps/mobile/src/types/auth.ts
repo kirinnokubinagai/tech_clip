@@ -63,3 +63,29 @@ export type AuthErrorResponse = {
     message: string;
   };
 };
+
+/** サインアウト API レスポンス（成功時） */
+export type SignOutResponse = {
+  success: true;
+  data: null;
+};
+
+/** アカウント削除 API レスポンス（成功時） */
+export type DeleteAccountResponse = {
+  success: true;
+  data: null;
+};
+
+/** パスワード変更 API レスポンス（成功時） */
+export type ChangePasswordResponse = {
+  success: boolean;
+};
+
+/** セッション確認 API レスポンス（成功時） */
+export type SessionCheckResponse = {
+  success: true;
+  data: {
+    user: User;
+    session: Session;
+  };
+};

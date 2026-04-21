@@ -16,85 +16,80 @@ describe("AuthSubmitButton", () => {
   });
 
   describe("レンダリング", () => {
-    it("ラベルテキストが表示されること", async () => {
-      // Arrange & Act
+    it("ラベルを表示できること", async () => {
       const { getByText } = await render(<AuthSubmitButton {...DEFAULT_PROPS} />);
 
-      // Assert
       expect(getByText("ログイン")).toBeTruthy();
     });
 
-    it("isLoading=trueのときラベルテキストが非表示になること", async () => {
-      // Arrange & Act
+    it("isLoading 時にラベルが非表示になること", async () => {
       const { queryByText } = await render(
-        <AuthSubmitButton {...DEFAULT_PROPS} isLoading={true} testID="submit-btn" />,
+        <AuthSubmitButton {...DEFAULT_PROPS} isLoading testID="submit-btn" />,
       );
 
-      // Assert
       expect(queryByText("ログイン")).toBeNull();
     });
 
-    it("isLoading=falseのときラベルが表示されること", async () => {
-      // Arrange & Act
-      const { getByText } = await render(<AuthSubmitButton {...DEFAULT_PROPS} isLoading={false} />);
+    it("isLoading 時でもボタン自体は残ること", async () => {
+      const { queryByText, getByRole } = await render(
+        <AuthSubmitButton {...DEFAULT_PROPS} isLoading />,
+      );
 
-      // Assert
-      expect(getByText("ログイン")).toBeTruthy();
+      expect(queryByText("ログイン")).toBeNull();
+      expect(getByRole("button")).toBeTruthy();
     });
 
-    it("testIDが設定されること", async () => {
-      // Arrange & Act
+    it("textClassName をラベルへ適用できること", async () => {
+      const { getByText } = await render(
+        <AuthSubmitButton {...DEFAULT_PROPS} textClassName="text-success" />,
+      );
+
+      expect(getByText("ログイン").props.className).toContain("text-success");
+    });
+
+    it("testID が設定されること", async () => {
       const { getByTestId } = await render(
         <AuthSubmitButton {...DEFAULT_PROPS} testID="submit-button" />,
       );
 
-      // Assert
       expect(getByTestId("submit-button")).toBeTruthy();
     });
   });
 
   describe("インタラクション", () => {
-    it("ボタンを押すとonPressが呼ばれること", async () => {
-      // Arrange
+    it("押下時に onPress が呼ばれること", async () => {
       const onPress = jest.fn();
-      const { getByRole } = await render(<AuthSubmitButton label="送信" onPress={onPress} />);
+      const { getByTestId } = await render(
+        <AuthSubmitButton label="送信" onPress={onPress} testID="submit-btn" />,
+      );
 
-      // Act
-      fireEvent.press(getByRole("button"));
+      fireEvent.press(getByTestId("submit-btn"));
 
-      // Assert
       expect(onPress).toHaveBeenCalledTimes(1);
     });
 
-    it("disabled=trueのときonPressが呼ばれないこと", async () => {
-      // Arrange
+    it("disabled 時に onPress が呼ばれないこと", async () => {
       const onPress = jest.fn();
-      const { getByRole } = await render(
-        <AuthSubmitButton label="送信" onPress={onPress} disabled={true} />,
+      const { getByTestId } = await render(
+        <AuthSubmitButton label="送信" onPress={onPress} testID="submit-btn" disabled />,
       );
 
-      // Act
-      fireEvent.press(getByRole("button"));
+      fireEvent.press(getByTestId("submit-btn"));
 
-      // Assert
       expect(onPress).not.toHaveBeenCalled();
     });
   });
 
   describe("アクセシビリティ", () => {
-    it("accessibilityRole='button'が設定されていること", async () => {
-      // Arrange & Act
+    it("accessibilityRole が button であること", async () => {
       const { getByRole } = await render(<AuthSubmitButton {...DEFAULT_PROPS} />);
 
-      // Assert
       expect(getByRole("button")).toBeTruthy();
     });
 
-    it("accessibilityLabelにラベルが設定されていること", async () => {
-      // Arrange & Act
+    it("accessibilityLabel にラベルが設定されること", async () => {
       const { getByLabelText } = await render(<AuthSubmitButton {...DEFAULT_PROPS} />);
 
-      // Assert
       expect(getByLabelText("ログイン")).toBeTruthy();
     });
   });

@@ -191,11 +191,7 @@ export function createEmailVerificationRoute(options: EmailVerificationRouteOpti
       );
     }
 
-<<<<<<< HEAD
     const expiresAt = new Date(String(verification.expiresAt));
-=======
-    const expiresAt = new Date(verification.expiresAt);
->>>>>>> aecd3e00 (refactor(api): add missing error code constants, replace string literals, fix 204 response)
     if (expiresAt <= new Date()) {
       return c.json(
         {
@@ -209,14 +205,10 @@ export function createEmailVerificationRoute(options: EmailVerificationRouteOpti
       );
     }
 
-<<<<<<< HEAD
     const userId = String(verification.identifier).replace(
       `${EMAIL_VERIFICATION_IDENTIFIER_PREFIX}:`,
       "",
     );
-=======
-    const userId = verification.identifier.replace(`${EMAIL_VERIFICATION_IDENTIFIER_PREFIX}:`, "");
->>>>>>> aecd3e00 (refactor(api): add missing error code constants, replace string literals, fix 204 response)
 
     await db.update(users).set({ emailVerified: true }).where(eq(users.id, userId));
 

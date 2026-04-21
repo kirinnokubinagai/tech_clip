@@ -27,9 +27,6 @@ const HTTP_STATUS_SUCCESS_MAX = 300;
 /** JSONのContent-Type判定用の文字列 */
 const JSON_CONTENT_TYPE_HINT = "json";
 
-/** getBaseUrl のフォールバックURL */
-const DEFAULT_API_BASE_URL = "http://localhost:8787";
-
 /** Abortエラーの識別名 */
 const ABORT_ERROR_NAME = "AbortError";
 
@@ -152,16 +149,19 @@ function isRefreshTokenResponse(value: unknown): value is RefreshTokenResponse {
  * APIのベースURLを取得する
  *
  * @returns Workers APIのベースURL
+ * @throws Error - EXPO_PUBLIC_API_BASE_URL（app.config の extra.apiUrl）が未設定の場合
  */
 export function getBaseUrl(): string {
   const extra = Constants.expoConfig?.extra;
   if (extra && typeof extra === "object" && "apiUrl" in extra) {
     const apiUrl = (extra as { apiUrl?: unknown }).apiUrl;
-    if (typeof apiUrl === "string") {
+    if (typeof apiUrl === "string" && apiUrl.length > 0) {
       return apiUrl;
     }
   }
-  return DEFAULT_API_BASE_URL;
+  throw new Error(
+    "APIのベースURLが設定されていません。EXPO_PUBLIC_API_BASE_URL を設定してください",
+  );
 }
 
 /**
@@ -470,6 +470,32 @@ async function doRefreshAccessToken(baseUrl: string): Promise<string> {
 }
 
 /**
+ * リフレッシュトークンの in-flight Promise を管理するクロージャ
+ * 複数の 401 応答から同時に refreshAccessToken が呼ばれても 1 回の refresh に集約する
+ */
+const createRefreshCoordinator = () => {
+  let inFlight: Promise<string> | null = null;
+
+  const runOrJoin = async (baseUrl: string): Promise<string> => {
+    if (inFlight !== null) {
+      return inFlight;
+    }
+    inFlight = (async () => {
+      try {
+        return await refreshAccessToken(baseUrl);
+      } finally {
+        inFlight = null;
+      }
+    })();
+    return inFlight;
+  };
+
+  return { runOrJoin };
+};
+
+const refreshCoordinator = createRefreshCoordinator();
+
+/**
  * Workers APIへのfetchラッパー
  * Authorizationヘッダーを自動付与し、401時はトークンリフレッシュを試みる
  *
@@ -500,7 +526,7 @@ export async function apiFetch<T>(path: string, options: RequestInit = {}): Prom
     return interpretResponse<T>(response);
   }
 
-  const newToken = await refreshAccessToken(baseUrl);
+  const newToken = await refreshCoordinator.runOrJoin(baseUrl);
 
   const retryHeaders = buildHeaders(newToken, headersWithoutContentType);
   const retryResponse = await fetchWithTimeout(`${baseUrl}${path}`, {

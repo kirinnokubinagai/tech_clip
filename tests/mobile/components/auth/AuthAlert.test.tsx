@@ -2,51 +2,55 @@ import { AuthAlert } from "@mobile/components/auth/AuthAlert";
 import { render } from "@testing-library/react-native";
 
 describe("AuthAlert", () => {
-  describe("レンダリング", () => {
-    it("メッセージテキストが表示されること", async () => {
-      // Arrange
-      const message = "エラーが発生しました";
+  describe("error バリアント", () => {
+    it("メッセージを表示できること", async () => {
+      const { getByText } = await render(<AuthAlert message="エラーメッセージ" />);
 
-      // Act
-      const { getByText } = await render(<AuthAlert message={message} />);
-
-      // Assert
-      expect(getByText(message)).toBeTruthy();
+      expect(getByText("エラーメッセージ")).toBeTruthy();
     });
 
-    it("variant='success'でメッセージが表示されること", async () => {
-      // Arrange
-      const message = "保存が完了しました";
+    it("error バリアントのスタイルが適用されること", async () => {
+      const { getByText } = await render(<AuthAlert message="エラー" variant="error" />);
 
-      // Act
-      const { getByText } = await render(<AuthAlert message={message} variant="success" />);
-
-      // Assert
-      expect(getByText(message)).toBeTruthy();
+      expect(getByText("エラー").props.className).toContain("text-error");
     });
 
-    it("accessibilityRole='alert'が設定されていること", async () => {
-      // Arrange
-      const message = "テストメッセージ";
+    it("デフォルトバリアントが error であること", async () => {
+      const { getByText } = await render(<AuthAlert message="デフォルト" />);
 
-      // Act
-      const { toJSON } = await render(<AuthAlert message={message} />);
-      const json = JSON.stringify(toJSON());
+      expect(getByText("デフォルト").props.className).toContain("text-error");
+    });
+  });
 
-      // Assert
-      expect(json).toContain('"accessibilityRole":"alert"');
+  describe("success バリアント", () => {
+    it("success バリアントのスタイルが適用されること", async () => {
+      const { getByText } = await render(<AuthAlert message="成功" variant="success" />);
+
+      expect(getByText("成功").props.className).toContain("text-success");
     });
 
-    it("accessibilityLabelにメッセージが設定されていること", async () => {
-      // Arrange
-      const message = "アクセシビリティテスト";
+    it("success バリアントでもメッセージを表示できること", async () => {
+      const { getByText } = await render(
+        <AuthAlert message="操作が完了しました" variant="success" />,
+      );
 
-      // Act
-      const { toJSON } = await render(<AuthAlert message={message} />);
-      const json = JSON.stringify(toJSON());
+      expect(getByText("操作が完了しました")).toBeTruthy();
+    });
+  });
 
-      // Assert
-      expect(json).toContain(`"accessibilityLabel":"${message}"`);
+  describe("アクセシビリティ", () => {
+    it("accessibilityRole が alert であること", async () => {
+      const { getByLabelText } = await render(<AuthAlert message="アラート" />);
+
+      expect(getByLabelText("アラート").props.accessibilityRole).toBe("alert");
+    });
+
+    it("accessibilityLabel にメッセージが設定されること", async () => {
+      const { toJSON } = await render(<AuthAlert message="アクセシビリティテスト" />);
+
+      expect(JSON.stringify(toJSON())).toContain(
+        '"accessibilityLabel":"アクセシビリティテスト"',
+      );
     });
   });
 });

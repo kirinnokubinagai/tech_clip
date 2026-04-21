@@ -1,6 +1,12 @@
 import { CallbackErrorView, CallbackLoadingView } from "@mobile/components/auth/CallbackViews";
 import { fireEvent, render } from "@testing-library/react-native";
 
+jest.mock("react-i18next", () => ({
+  useTranslation: () => ({
+    t: (key: string) => key,
+  }),
+}));
+
 describe("CallbackErrorView", () => {
   const DEFAULT_PROPS = {
     message: "認証に失敗しました",
@@ -15,52 +21,48 @@ describe("CallbackErrorView", () => {
 
   describe("レンダリング", () => {
     it("エラーメッセージが表示されること", async () => {
-      // Arrange & Act
       const { getByText } = await render(<CallbackErrorView {...DEFAULT_PROPS} />);
 
-      // Assert
       expect(getByText("認証に失敗しました")).toBeTruthy();
     });
 
-    it("errorTestIdが設定されていること", async () => {
-      // Arrange & Act
+    it("errorTestId が設定されること", async () => {
       const { getByTestId } = await render(<CallbackErrorView {...DEFAULT_PROPS} />);
 
-      // Assert
       expect(getByTestId("error-text")).toBeTruthy();
     });
 
-    it("backButtonTestIdが設定されていること", async () => {
-      // Arrange & Act
+    it("backButtonTestId が設定されること", async () => {
       const { getByTestId } = await render(<CallbackErrorView {...DEFAULT_PROPS} />);
 
-      // Assert
       expect(getByTestId("back-button")).toBeTruthy();
     });
 
-    it("エラーテキストにaccessibilityRole='alert'が設定されていること", async () => {
-      // Arrange & Act
-      const { toJSON } = await render(<CallbackErrorView {...DEFAULT_PROPS} />);
-      const json = JSON.stringify(toJSON());
+    it("翻訳された戻るボタンラベルを使うこと", async () => {
+      const { getByLabelText } = await render(<CallbackErrorView {...DEFAULT_PROPS} />);
 
-      // Assert
-      expect(json).toContain('"accessibilityRole":"alert"');
+      expect(getByLabelText("auth.callback.backToLogin")).toBeTruthy();
     });
   });
 
   describe("インタラクション", () => {
-    it("戻るボタンを押すとonBackToLoginが呼ばれること", async () => {
-      // Arrange
+    it("戻るボタンを押すと onBackToLogin が呼ばれること", async () => {
       const onBackToLogin = jest.fn();
       const { getByTestId } = await render(
         <CallbackErrorView {...DEFAULT_PROPS} onBackToLogin={onBackToLogin} />,
       );
 
-      // Act
       fireEvent.press(getByTestId("back-button"));
 
-      // Assert
       expect(onBackToLogin).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  describe("アクセシビリティ", () => {
+    it("エラーテキストに accessibilityRole='alert' が設定されていること", async () => {
+      const { getByRole } = await render(<CallbackErrorView {...DEFAULT_PROPS} />);
+
+      expect(getByRole("alert")).toBeTruthy();
     });
   });
 });
@@ -72,29 +74,22 @@ describe("CallbackLoadingView", () => {
   };
 
   describe("レンダリング", () => {
-    it("メッセージテキストが表示されること", async () => {
-      // Arrange & Act
+    it("ローディングメッセージが表示されること", async () => {
       const { getByText } = await render(<CallbackLoadingView {...DEFAULT_PROPS} />);
 
-      // Assert
       expect(getByText("認証処理中...")).toBeTruthy();
     });
 
-    it("ActivityIndicatorがloadingTestIdで表示されること", async () => {
-      // Arrange & Act
+    it("ActivityIndicator が testID 付きで表示されること", async () => {
       const { getByTestId } = await render(<CallbackLoadingView {...DEFAULT_PROPS} />);
 
-      // Assert
       expect(getByTestId("loading-indicator")).toBeTruthy();
     });
 
-    it("ActivityIndicatorのaccessibilityLabelにメッセージが設定されていること", async () => {
-      // Arrange & Act
-      const { toJSON } = await render(<CallbackLoadingView {...DEFAULT_PROPS} />);
-      const json = JSON.stringify(toJSON());
+    it("ActivityIndicator の accessibilityLabel にメッセージが設定されること", async () => {
+      const { getByTestId } = await render(<CallbackLoadingView {...DEFAULT_PROPS} />);
 
-      // Assert
-      expect(json).toContain('"accessibilityLabel":"認証処理中..."');
+      expect(getByTestId("loading-indicator").props.accessibilityLabel).toBe("認証処理中...");
     });
   });
 });

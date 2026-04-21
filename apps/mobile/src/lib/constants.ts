@@ -81,7 +81,6 @@ type ThemeColors = {
   info: string;
   dangerSurface: string;
   successSurface: string;
-  accent: string;
   error: string;
   success: string;
   warning: string;
@@ -97,21 +96,12 @@ type ThemeColors = {
  * - SEMANTIC_COLORS（共有）→ DARK_COLORS（ダークテーマ）にスプレッド
  * - error / success / warning / favorite / neutral / white はここで一元管理
  *
- * ## accent トークンについて
- * 現在 accent = "#14b8a6" は Primary と同値。
- * TODO(#855): Primary に一本化し accent トークンを削除する（docs/mobile-theme.md 移行タスク#2 参照）
- *
  * ## 新色を追加するルール
  * - 既存トークンでカバーできない意味的状態が新たに生まれたときのみ追加する
  * - グラデーション・ネオン・蛍光系カラーは禁止（AIっぽい印象を避けるため）
  * - 追加時は docs/mobile-theme.md にも記載すること
  */
 const SEMANTIC_COLORS = {
-  /**
-   * アクセントカラー（Primary と同値）
-   * @deprecated Primary に一本化予定。docs/mobile-theme.md 移行タスク#2 参照
-   */
-  accent: "#14b8a6",
   /** エラー色（危険操作・失敗状態） */
   error: "#ef4444",
   /** 成功色（完了・OK状態） */

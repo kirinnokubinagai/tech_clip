@@ -5,9 +5,13 @@ import { apiFetch, SessionExpiredError } from "@/lib/api";
 import { clearAuthTokens, getAuthToken, setAuthToken, setRefreshToken } from "@/lib/secure-store";
 import type {
   AuthErrorResponse,
+  ChangePasswordResponse,
+  DeleteAccountResponse,
   Session,
+  SessionCheckResponse,
   SignInParams,
   SignInResponse,
+  SignOutResponse,
   SignUpParams,
   User,
 } from "@/types/auth";
@@ -131,7 +135,7 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
    */
   signOut: async () => {
     try {
-      await apiFetch<{ success: true; data: null }>("/api/auth/sign-out", {
+      await apiFetch<SignOutResponse>("/api/auth/sign-out", {
         method: "POST",
       });
     } catch {
@@ -152,7 +156,7 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
    * サーバー側のユーザーデータを全削除後、ローカル状態をクリアする
    */
   deleteAccount: async () => {
-    await apiFetch<{ success: true; data: null }>("/api/users/me", {
+    await apiFetch<DeleteAccountResponse>("/api/users/me", {
       method: "DELETE",
     });
 
@@ -173,7 +177,7 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
    * @throws Error - 現在のパスワードが不正または変更失敗時
    */
   changePassword: async (currentPassword: string, newPassword: string) => {
-    const data = await apiFetch<{ success: boolean } | AuthErrorResponse>(
+    const data = await apiFetch<ChangePasswordResponse | AuthErrorResponse>(
       "/api/users/me/password",
       {
         method: "PATCH",
@@ -201,9 +205,7 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
     }
 
     try {
-      const data = await apiFetch<
-        { success: true; data: { user: User; session: Session } } | AuthErrorResponse
-      >("/api/auth/session");
+      const data = await apiFetch<SessionCheckResponse | AuthErrorResponse>("/api/auth/session");
 
       if (!data.success) {
         await clearAuthTokens();

@@ -23,6 +23,7 @@ import {
   ApiNetworkError,
   ApiParseError,
   apiFetch,
+  getBaseUrl,
   SessionExpiredError,
 } from "@mobile/lib/api";
 import i18n from "@mobile/lib/i18n";
@@ -440,6 +441,39 @@ describe("apiFetch", () => {
     });
   });
 
+  describe("refreshCoordinator（in-flight 管理）", () => {
+    it("2つの apiFetch が同時に 401 を受けた場合にリフレッシュAPIへの呼び出しが1回だけになること", async () => {
+      // Arrange
+      const newToken = "new-access-token";
+      const refreshResponse = {
+        success: true,
+        data: { token: newToken, refreshToken: "new-refresh-token" },
+      };
+
+      let refreshResolve!: (value: Response) => void;
+      const refreshPromise = new Promise<Response>((resolve) => {
+        refreshResolve = resolve;
+      });
+
+      mockFetch
+        .mockResolvedValueOnce(createFetchResponse({}, { status: 401 }))
+        .mockResolvedValueOnce(createFetchResponse({}, { status: 401 }))
+        .mockImplementationOnce(() => refreshPromise)
+        .mockResolvedValue(createFetchResponse({ success: true, data: {} }));
+
+      const [p1, p2] = [apiFetch("/first"), apiFetch("/second")];
+
+      refreshResolve(createFetchResponse(refreshResponse, { status: 200 }));
+
+      await Promise.all([p1, p2]);
+
+      const refreshCalls = mockFetch.mock.calls.filter(
+        ([url]: [string]) => typeof url === "string" && url.includes("/api/auth/refresh"),
+      );
+      expect(refreshCalls).toHaveLength(1);
+    });
+  });
+
   describe("リフレッシュAPIの耐性", () => {
     it("リフレッシュAPIが非JSONを返した場合はSessionExpiredErrorにラップされること", async () => {
       // Arrange
@@ -790,7 +824,7 @@ describe("apiFetch", () => {
       );
     });
 
-    it("extra.apiUrlが未設定の場合はlocalhost:8787をフォールバックとして使用すること", async () => {
+    it("extra.apiUrlが未設定の場合はエラーをスローすること", () => {
       // Arrange
       const originalConfig = Constants.expoConfig;
       Object.defineProperty(Constants, "expoConfig", {
@@ -798,14 +832,55 @@ describe("apiFetch", () => {
         writable: true,
         configurable: true,
       });
-      mockGetAuthToken.mockResolvedValue(null);
-      mockFetch.mockResolvedValue(createFetchResponse({ success: true, data: [] }));
 
-      // Act
-      await apiFetch("/test");
+      // Act & Assert
+      expect(() => getBaseUrl()).toThrow(
+        "APIのベースURLが設定されていません。EXPO_PUBLIC_API_BASE_URL を設定してください",
+      );
 
-      // Assert
-      expect(mockFetch).toHaveBeenCalledWith("http://localhost:8787/test", expect.any(Object));
+      // Cleanup
+      Object.defineProperty(Constants, "expoConfig", {
+        value: originalConfig,
+        writable: true,
+        configurable: true,
+      });
+    });
+
+    it("extra.apiUrlが空文字の場合はエラーをスローすること", () => {
+      // Arrange
+      const originalConfig = Constants.expoConfig;
+      Object.defineProperty(Constants, "expoConfig", {
+        value: { extra: { apiUrl: "" } },
+        writable: true,
+        configurable: true,
+      });
+
+      // Act & Assert
+      expect(() => getBaseUrl()).toThrow(
+        "APIのベースURLが設定されていません。EXPO_PUBLIC_API_BASE_URL を設定してください",
+      );
+
+      // Cleanup
+      Object.defineProperty(Constants, "expoConfig", {
+        value: originalConfig,
+        writable: true,
+        configurable: true,
+      });
+    });
+
+    it("expoConfigがnullの場合はエラーをスローすること", () => {
+      // Arrange
+      const originalConfig = Constants.expoConfig;
+      Object.defineProperty(Constants, "expoConfig", {
+        value: null,
+        writable: true,
+        configurable: true,
+      });
+
+      // Act & Assert
+      expect(() => getBaseUrl()).toThrow(
+        "APIのベースURLが設定されていません。EXPO_PUBLIC_API_BASE_URL を設定してください",
+      );
 
       // Cleanup
       Object.defineProperty(Constants, "expoConfig", {
