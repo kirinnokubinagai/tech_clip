@@ -177,6 +177,7 @@ export default function LoginScreen() {
 
           <Link href="/(auth)/forgot-password" asChild>
             <Pressable
+              testID="login-forgot-password-link"
               className="mb-6 self-start"
               accessibilityRole="link"
               accessibilityLabel={t("auth.forgotPassword")}

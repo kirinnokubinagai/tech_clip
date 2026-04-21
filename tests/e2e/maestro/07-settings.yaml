@@ -94,8 +94,19 @@ env:
 - tapOn: "パスワード変更"
 - assertVisible:
     text: "パスワード変更"
+    timeout: 5000
+- assertVisible:
+    id: "change-password-current-input"
+- assertVisible:
+    id: "change-password-new-input"
+- assertVisible:
+    id: "change-password-confirm-input"
+- assertVisible:
+    id: "change-password-save-button"
 - tapOn:
-    text: "戻る"
+    id: "change-password-back-button"
+- waitForAnimationToEnd:
+    timeout: 1000
 
 # --- ログアウト確認ダイアログ ---
 - tapOn: "ログアウト"

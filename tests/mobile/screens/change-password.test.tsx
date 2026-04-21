@@ -204,34 +204,34 @@ describe("ChangePasswordScreen", () => {
 
     it("現在のパスワード入力フィールドが表示されること", async () => {
       // Arrange & Act
-      const { getByPlaceholderText } = await render(<ChangePasswordScreen />);
+      const { getByTestId } = await render(<ChangePasswordScreen />);
 
       // Assert
-      expect(getByPlaceholderText("現在のパスワードを入力")).toBeDefined();
+      expect(getByTestId("change-password-current-input")).toBeDefined();
     });
 
     it("新しいパスワード入力フィールドが表示されること", async () => {
       // Arrange & Act
-      const { getByPlaceholderText } = await render(<ChangePasswordScreen />);
+      const { getByTestId } = await render(<ChangePasswordScreen />);
 
       // Assert
-      expect(getByPlaceholderText("新しいパスワードを入力")).toBeDefined();
+      expect(getByTestId("change-password-new-input")).toBeDefined();
     });
 
     it("確認用パスワード入力フィールドが表示されること", async () => {
       // Arrange & Act
-      const { getByPlaceholderText } = await render(<ChangePasswordScreen />);
+      const { getByTestId } = await render(<ChangePasswordScreen />);
 
       // Assert
-      expect(getByPlaceholderText("新しいパスワードを再入力")).toBeDefined();
+      expect(getByTestId("change-password-confirm-input")).toBeDefined();
     });
 
     it("変更するボタンが表示されること", async () => {
       // Arrange & Act
-      const { getByText } = await render(<ChangePasswordScreen />);
+      const { getByTestId } = await render(<ChangePasswordScreen />);
 
       // Assert
-      expect(getByText("変更する")).toBeDefined();
+      expect(getByTestId("change-password-save-button")).toBeDefined();
     });
   });
 
