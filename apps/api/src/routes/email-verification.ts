@@ -7,6 +7,9 @@ import { users, verifications } from "../db/schema";
 import {
   AUTH_ERROR_CODE,
   AUTH_ERROR_MESSAGE,
+  INTERNAL_ERROR_CODE,
+  INVALID_REQUEST_ERROR_CODE,
+  NOT_FOUND_ERROR_CODE,
   VALIDATION_ERROR_CODE,
   VALIDATION_ERROR_MESSAGE,
 } from "../lib/error-codes";
@@ -79,7 +82,7 @@ export function createEmailVerificationRoute(options: EmailVerificationRouteOpti
         {
           success: false,
           error: {
-            code: "NOT_FOUND",
+            code: NOT_FOUND_ERROR_CODE,
             message: "ユーザーが見つかりません",
           },
         },
@@ -114,7 +117,7 @@ export function createEmailVerificationRoute(options: EmailVerificationRouteOpti
         {
           success: false,
           error: {
-            code: "INTERNAL_ERROR",
+            code: INTERNAL_ERROR_CODE,
             message: "認証メールの送信に失敗しました",
           },
         },
@@ -180,7 +183,7 @@ export function createEmailVerificationRoute(options: EmailVerificationRouteOpti
         {
           success: false,
           error: {
-            code: "INVALID_REQUEST",
+            code: INVALID_REQUEST_ERROR_CODE,
             message: "無効なトークンです",
           },
         },
@@ -188,13 +191,17 @@ export function createEmailVerificationRoute(options: EmailVerificationRouteOpti
       );
     }
 
-    const expiresAt = new Date(verification.expiresAt as string);
+<<<<<<< HEAD
+    const expiresAt = new Date(String(verification.expiresAt));
+=======
+    const expiresAt = new Date(verification.expiresAt);
+>>>>>>> aecd3e00 (refactor(api): add missing error code constants, replace string literals, fix 204 response)
     if (expiresAt <= new Date()) {
       return c.json(
         {
           success: false,
           error: {
-            code: "INVALID_REQUEST",
+            code: INVALID_REQUEST_ERROR_CODE,
             message: "トークンの有効期限が切れています",
           },
         },
@@ -202,8 +209,14 @@ export function createEmailVerificationRoute(options: EmailVerificationRouteOpti
       );
     }
 
-    const identifier = verification.identifier;
-    const userId = identifier.replace(`${EMAIL_VERIFICATION_IDENTIFIER_PREFIX}:`, "");
+<<<<<<< HEAD
+    const userId = String(verification.identifier).replace(
+      `${EMAIL_VERIFICATION_IDENTIFIER_PREFIX}:`,
+      "",
+    );
+=======
+    const userId = verification.identifier.replace(`${EMAIL_VERIFICATION_IDENTIFIER_PREFIX}:`, "");
+>>>>>>> aecd3e00 (refactor(api): add missing error code constants, replace string literals, fix 204 response)
 
     await db.update(users).set({ emailVerified: true }).where(eq(users.id, userId));
 

@@ -5,7 +5,12 @@ import { z } from "zod";
 import type { Auth } from "../auth";
 import type { Database } from "../db";
 import { accounts, sessions, users, verifications } from "../db/schema";
-import { VALIDATION_ERROR_CODE, VALIDATION_ERROR_MESSAGE } from "../lib/error-codes";
+import {
+  INTERNAL_ERROR_CODE,
+  INVALID_REQUEST_ERROR_CODE,
+  VALIDATION_ERROR_CODE,
+  VALIDATION_ERROR_MESSAGE,
+} from "../lib/error-codes";
 import {
   HTTP_BAD_REQUEST,
   HTTP_INTERNAL_SERVER_ERROR,
@@ -143,7 +148,7 @@ export function createPasswordResetRoute(options: PasswordResetRouteOptions) {
         {
           success: false,
           error: {
-            code: "INTERNAL_ERROR",
+            code: INTERNAL_ERROR_CODE,
             message: "サーバーエラーが発生しました",
           },
         },
@@ -195,7 +200,7 @@ export function createPasswordResetRoute(options: PasswordResetRouteOptions) {
         {
           success: false,
           error: {
-            code: "INVALID_REQUEST",
+            code: INVALID_REQUEST_ERROR_CODE,
             message: INVALID_TOKEN_MESSAGE,
           },
         },
@@ -203,13 +208,13 @@ export function createPasswordResetRoute(options: PasswordResetRouteOptions) {
       );
     }
 
-    if (new Date(verification.expiresAt) < new Date()) {
+    if (new Date(String(verification.expiresAt)) < new Date()) {
       await db.delete(verifications).where(eq(verifications.id, verification.id));
       return c.json(
         {
           success: false,
           error: {
-            code: "INVALID_REQUEST",
+            code: INVALID_REQUEST_ERROR_CODE,
             message: INVALID_TOKEN_MESSAGE,
           },
         },
@@ -217,7 +222,7 @@ export function createPasswordResetRoute(options: PasswordResetRouteOptions) {
       );
     }
 
-    const rawIdentifier = verification.identifier;
+    const rawIdentifier = String(verification.identifier);
     const email = rawIdentifier.startsWith(RESET_TOKEN_IDENTIFIER_PREFIX)
       ? rawIdentifier.slice(RESET_TOKEN_IDENTIFIER_PREFIX.length)
       : rawIdentifier;
@@ -229,7 +234,7 @@ export function createPasswordResetRoute(options: PasswordResetRouteOptions) {
         {
           success: false,
           error: {
-            code: "INVALID_REQUEST",
+            code: INVALID_REQUEST_ERROR_CODE,
             message: INVALID_TOKEN_MESSAGE,
           },
         },

@@ -7,6 +7,8 @@ import { notifications, users } from "../db/schema";
 import {
   AUTH_ERROR_CODE,
   AUTH_ERROR_MESSAGE,
+  INTERNAL_ERROR_CODE,
+  NOT_FOUND_ERROR_CODE,
   VALIDATION_ERROR_CODE,
   VALIDATION_ERROR_MESSAGE,
 } from "../lib/error-codes";
@@ -210,7 +212,7 @@ export function createNotificationsRoute(options: NotificationsRouteOptions) {
         {
           success: false,
           error: {
-            code: "INTERNAL_ERROR",
+            code: INTERNAL_ERROR_CODE,
             message: "トークンの登録に失敗しました",
           },
         },
@@ -247,7 +249,7 @@ export function createNotificationsRoute(options: NotificationsRouteOptions) {
         {
           success: false,
           error: {
-            code: "NOT_FOUND",
+            code: NOT_FOUND_ERROR_CODE,
             message: "通知が見つかりません",
           },
         },
@@ -272,7 +274,7 @@ export function createNotificationsRoute(options: NotificationsRouteOptions) {
         {
           success: false,
           error: {
-            code: "INTERNAL_ERROR",
+            code: INTERNAL_ERROR_CODE,
             message: "通知の更新に失敗しました",
           },
         },
@@ -344,7 +346,7 @@ export function createNotificationsRoute(options: NotificationsRouteOptions) {
         {
           success: false,
           error: {
-            code: "INTERNAL_ERROR",
+            code: INTERNAL_ERROR_CODE,
             message: "通知の更新に失敗しました",
           },
         },

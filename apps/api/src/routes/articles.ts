@@ -7,8 +7,10 @@ import { articles, summaries, translations } from "../db/schema";
 import {
   AUTH_ERROR_CODE,
   AUTH_ERROR_MESSAGE,
+  DUPLICATE_ERROR_CODE,
   FORBIDDEN_ERROR_CODE,
   FORBIDDEN_ERROR_MESSAGE,
+  INTERNAL_ERROR_CODE,
   NOT_FOUND_ERROR_CODE,
   VALIDATION_ERROR_CODE,
   VALIDATION_ERROR_MESSAGE,
@@ -129,13 +131,16 @@ function isNoCaptionsError(error: unknown): boolean {
   return error instanceof Error && error.message === NO_CAPTIONS_ERROR_CODE;
 }
 
+/** parseBooleanParam の結果型 */
+type BooleanParamResult = boolean | undefined | "invalid";
+
 /**
  * ブール値クエリパラメータをパースする
  *
  * @param value - クエリパラメータの文字列値
- * @returns パース結果。無効な値の場合はエラー文字列
+ * @returns パース結果。無効な値の場合は "invalid"
  */
-function parseBooleanParam(value: string | undefined): boolean | undefined | string {
+function parseBooleanParam(value: string | undefined): BooleanParamResult {
   if (value === undefined) {
     return undefined;
   }
@@ -389,7 +394,7 @@ export function createArticlesRoute(options: ArticlesRouteOptions) {
         {
           success: false,
           error: {
-            code: "INTERNAL_ERROR",
+            code: INTERNAL_ERROR_CODE,
             message: "記事の解析に失敗しました",
           },
         },
@@ -524,7 +529,7 @@ export function createArticlesRoute(options: ArticlesRouteOptions) {
         {
           success: false,
           error: {
-            code: "DUPLICATE",
+            code: DUPLICATE_ERROR_CODE,
             message: "この記事はすでに保存されています",
           },
         },
@@ -586,7 +591,7 @@ export function createArticlesRoute(options: ArticlesRouteOptions) {
         {
           success: false,
           error: {
-            code: "INTERNAL_ERROR",
+            code: INTERNAL_ERROR_CODE,
             message: "記事の取得・保存に失敗しました",
           },
         },

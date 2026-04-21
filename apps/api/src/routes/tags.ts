@@ -7,6 +7,8 @@ import { articles, articleTags, tags } from "../db/schema";
 import {
   AUTH_ERROR_CODE,
   AUTH_ERROR_MESSAGE,
+  DUPLICATE_ERROR_CODE,
+  NOT_FOUND_ERROR_CODE,
   VALIDATION_ERROR_CODE,
   VALIDATION_ERROR_MESSAGE,
 } from "../lib/error-codes";
@@ -105,7 +107,7 @@ export function createTagsRoute(options: TagsRouteOptions) {
         {
           success: false,
           error: {
-            code: "DUPLICATE",
+            code: DUPLICATE_ERROR_CODE,
             message: "このタグはすでに登録されています",
           },
         },
@@ -188,7 +190,7 @@ export function createTagsRoute(options: TagsRouteOptions) {
         {
           success: false,
           error: {
-            code: "NOT_FOUND",
+            code: NOT_FOUND_ERROR_CODE,
             message: "タグが見つかりません",
           },
         },
@@ -265,7 +267,7 @@ export function createArticleTagsRoute(options: TagsRouteOptions) {
         {
           success: false,
           error: {
-            code: "NOT_FOUND",
+            code: NOT_FOUND_ERROR_CODE,
             message: "記事が見つかりません",
           },
         },
