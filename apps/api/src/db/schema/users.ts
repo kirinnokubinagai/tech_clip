@@ -28,7 +28,7 @@ export const users = sqliteTable("users", {
   pushEnabled: integer("push_enabled", { mode: "boolean" }).default(true),
   // テスト・QA管理
   isTestAccount: integer("is_test_account", { mode: "boolean" }).default(false),
-  // タイムスタンプ
+  // タイムスタンプ（D1/SQLite はネイティブの timestamp 型を持たないため text で管理する）
   createdAt: text("created_at").notNull().default(sql`(datetime('now'))`),
   updatedAt: text("updated_at").notNull().default(sql`(datetime('now'))`),
 });
