@@ -73,7 +73,7 @@ env:
 
 # --- 正常系: 有効な GitHub URL で記事を取得 + プレビュー + 保存 ---
 - tapOn:
-    id: "input-field"
+    id: "article-url-input"
 - eraseText
 - inputText: ${TEST_ARTICLE_URL}
 - assertVisible:

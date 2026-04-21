@@ -156,6 +156,7 @@ export default function SaveScreen() {
           {/* URL入力 */}
           <View className="mb-4">
             <Input
+              testID="article-url-input"
               label={t("article.urlLabel")}
               placeholder={t("article.urlPlaceholder")}
               value={url}

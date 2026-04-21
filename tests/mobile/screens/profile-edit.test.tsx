@@ -135,7 +135,7 @@ describe("ProfileEditScreen", () => {
       await waitFor(() => {
         expect(getByPlaceholderText("名前を入力").props.value).toBe("テストユーザー");
       });
-      await fireEvent.press(getByTestId("button"));
+      await fireEvent.press(getByTestId("profile-edit-save-button"));
 
       // Assert
       await waitFor(() => {
@@ -156,7 +156,7 @@ describe("ProfileEditScreen", () => {
       await waitFor(() => {
         expect(getByPlaceholderText("名前を入力").props.value).toBe("テストユーザー");
       });
-      await fireEvent.press(getByTestId("button"));
+      await fireEvent.press(getByTestId("profile-edit-save-button"));
 
       // Assert
       await waitFor(() => {
@@ -181,7 +181,7 @@ describe("ProfileEditScreen", () => {
       await waitFor(() => {
         expect(getByPlaceholderText("名前を入力").props.value).toBe("テストユーザー");
       });
-      await fireEvent.press(getByTestId("button"));
+      await fireEvent.press(getByTestId("profile-edit-save-button"));
 
       // Assert
       await waitFor(() => {
@@ -204,7 +204,7 @@ describe("ProfileEditScreen", () => {
       });
       const nameInput = getByPlaceholderText("名前を入力");
       await fireEvent.changeText(nameInput, "");
-      await fireEvent.press(getByTestId("button"));
+      await fireEvent.press(getByTestId("profile-edit-save-button"));
 
       // Assert
       await waitFor(() => {
@@ -234,7 +234,7 @@ describe("ProfileEditScreen", () => {
 
       const usernameInput = getByPlaceholderText("username");
       await fireEvent.changeText(usernameInput, "newusername");
-      await fireEvent.press(getByTestId("button"));
+      await fireEvent.press(getByTestId("profile-edit-save-button"));
 
       // Assert
       await waitFor(() => {
@@ -274,7 +274,7 @@ describe("ProfileEditScreen", () => {
       await waitFor(() => {
         expect(ImagePicker.launchImageLibraryAsync).toHaveBeenCalled();
       });
-      await fireEvent.press(getByTestId("button"));
+      await fireEvent.press(getByTestId("profile-edit-save-button"));
 
       // Assert
       await waitFor(() => {
@@ -300,7 +300,7 @@ describe("ProfileEditScreen", () => {
       });
 
       const initialCallCount = apiFetch.mock.calls.length;
-      await fireEvent.press(getByTestId("button"));
+      await fireEvent.press(getByTestId("profile-edit-save-button"));
 
       // Assert
       await waitFor(() => {

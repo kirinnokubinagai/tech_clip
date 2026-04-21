@@ -124,6 +124,7 @@ export default function SearchScreen() {
           <Search size={SEARCH_ICON_SIZE} color={colors.textDim} />
           <TextInput
             ref={inputRef}
+            testID="search-input"
             className="flex-1 text-text text-base py-1"
             placeholder={t("search.placeholder")}
             placeholderTextColor={colors.textDim}

@@ -93,5 +93,16 @@ describe("Input", () => {
       const input = getByTestId("input-field");
       expect(input.props.editable).toBe(false);
     });
+
+    it("カスタムtestIDが正しく設定されること", async () => {
+      // Arrange & Act
+      const { getByTestId } = await render(
+        <Input placeholder="カスタムID" testID="custom-input-id" />,
+      );
+
+      // Assert
+      const input = getByTestId("custom-input-id");
+      expect(input.props.placeholder).toBe("カスタムID");
+    });
   });
 });

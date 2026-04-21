@@ -456,6 +456,7 @@ export default function ProfileEditScreen() {
 
         <View className="px-4 gap-4">
           <Input
+            testID="profile-edit-name-input"
             label={t("profile.edit.nameLabel")}
             placeholder={t("profile.edit.namePlaceholder")}
             value={formData.name}
@@ -465,6 +466,7 @@ export default function ProfileEditScreen() {
           />
 
           <Input
+            testID="profile-edit-username-input"
             label={t("profile.edit.usernameLabel")}
             placeholder={t("profile.edit.usernamePlaceholder")}
             value={formData.username}
@@ -474,6 +476,7 @@ export default function ProfileEditScreen() {
           />
 
           <Input
+            testID="profile-edit-bio-input"
             label={t("profile.edit.bioLabel")}
             placeholder={t("profile.edit.bioPlaceholder")}
             value={formData.bio}
@@ -489,6 +492,7 @@ export default function ProfileEditScreen() {
 
             <View className="gap-4">
               <Input
+                testID="profile-edit-twitter-input"
                 label={t("profile.edit.twitterUsernameLabel")}
                 placeholder={t("profile.edit.twitterUsernamePlaceholder")}
                 value={formData.twitterUsername}
@@ -498,6 +502,7 @@ export default function ProfileEditScreen() {
               />
 
               <Input
+                testID="profile-edit-github-input"
                 label={t("profile.edit.githubUsernameLabel")}
                 placeholder={t("profile.edit.githubUsernamePlaceholder")}
                 value={formData.githubUsername}
@@ -507,6 +512,7 @@ export default function ProfileEditScreen() {
               />
 
               <Input
+                testID="profile-edit-website-input"
                 label={t("profile.edit.websiteUrlLabel")}
                 placeholder={t("profile.edit.websiteUrlPlaceholder")}
                 value={formData.websiteUrl}
@@ -524,7 +530,11 @@ export default function ProfileEditScreen() {
                 <ActivityIndicator color={colors.white} />
               </View>
             ) : (
-              <Button onPress={handleSave} disabled={isSaving}>
+              <Button
+                testID="profile-edit-save-button"
+                onPress={handleSave}
+                disabled={isSaving}
+              >
                 {t("profile.edit.saveButton")}
               </Button>
             )}
