@@ -4,6 +4,7 @@ import { Hono } from "hono";
 import type { Auth } from "../auth";
 import type { Database } from "../db";
 import { refreshTokens, sessions } from "../db/schema";
+import { generateRefreshToken, hashTokenSha256 } from "../lib/token-utils";
 import { fetchWithAuth } from "../lib/route-helpers";
 import { createAuthRoute } from "../routes/auth";
 import { createEmailVerificationRoute } from "../routes/email-verification";
@@ -16,32 +17,6 @@ const DEFAULT_APP_URL = "http://localhost:8081";
 
 /** モバイルアプリの deep link スキーム */
 const MOBILE_CALLBACK_URL = "techclip://auth/callback";
-
-/** リフレッシュトークンのバイト数 */
-const REFRESH_TOKEN_BYTES = 24;
-
-/**
- * ランダムなリフレッシュトークン文字列を生成する
- *
- * @returns 平文のリフレッシュトークン（16進数 48 文字）
- */
-function generateRefreshToken(): string {
-  const bytes = new Uint8Array(REFRESH_TOKEN_BYTES);
-  crypto.getRandomValues(bytes);
-  return Array.from(bytes, (b) => b.toString(16).padStart(2, "0")).join("");
-}
-
-/**
- * リフレッシュトークンを SHA-256 でハッシュ化する
- *
- * @param token - 平文のリフレッシュトークン
- * @returns 16進文字列のハッシュ値
- */
-async function hashToken(token: string): Promise<string> {
-  const encoded = new TextEncoder().encode(token);
-  const digest = await crypto.subtle.digest("SHA-256", encoded);
-  return Array.from(new Uint8Array(digest), (v) => v.toString(16).padStart(2, "0")).join("");
-}
 
 /**
  * 認証ルートのサブアプリを構築してリクエストを処理する
@@ -148,7 +123,7 @@ export async function handleMobileOAuthCallback(
   }
 
   const plainRefreshToken = generateRefreshToken();
-  const tokenHash = await hashToken(plainRefreshToken);
+  const tokenHash = await hashTokenSha256(plainRefreshToken);
 
   await db.insert(refreshTokens).values({
     id: crypto.randomUUID(),
@@ -217,5 +192,15 @@ export async function handleAuthCatchAll(
     return handleMobileOAuthCallback(db, auth, request);
   }
 
+  // NOTE (SSRF/漏洩対策):
+  // Better Auth の OAuth ハンドラが将来 Deep Link リダイレクトを返す場合、
+  // アクセストークンやセッショントークンをクエリパラメータに含めることは避ける。
+  //   - クエリパラメータはブラウザ履歴・プロキシログ・Referer ヘッダに残り、漏洩リスクが高い
+  //   - 代替案:
+  //     (a) 短命な一度限りの exchange code をクエリに載せ、アプリ側で POST で token と交換する
+  //     (b) URL fragment (#access_token=...) を使う（Referer に乗らない）
+  //     (c) 可能であればバックエンド → ネイティブブリッジを介して token を渡す
+  // 現状 Better Auth の標準ハンドラに委譲しているためコード側のリスクは無いが、
+  // Deep Link 向けのカスタムコールバックを実装する際はこのコメントを必ず確認すること。
   return auth.handler(request);
 }

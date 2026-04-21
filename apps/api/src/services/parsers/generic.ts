@@ -22,9 +22,10 @@ const PAYWALL_SELECTORS = [
  * SSRF 対策: 内部ネットワーク・metadata サーバへの fetch を防ぐ
  * ホスト名が私設 IP 帯 or 予約名に該当する URL は拒否する
  */
-const PRIVATE_HOST_PATTERNS = [
+const PRIVATE_HOST_PATTERNS: ReadonlyArray<RegExp> = [
   /^localhost$/i,
   /^127\.\d+\.\d+\.\d+$/,
+  /^0\.0\.0\.0$/,
   /^10\.\d+\.\d+\.\d+$/,
   /^192\.168\.\d+\.\d+$/,
   /^172\.(1[6-9]|2\d|3[01])\.\d+\.\d+$/,
@@ -32,6 +33,7 @@ const PRIVATE_HOST_PATTERNS = [
   /^metadata\.google\.internal$/i,
   /^metadata\.azure\.com$/i,
   /^\[::1\]$/,
+  /^\[::\]$/,
   /^\[fc00:/i,
   /^\[fd/i,
   /^\[fe80:/i,
@@ -45,6 +47,27 @@ const PRIVATE_HOST_PATTERNS = [
  */
 function isPrivateHostname(hostname: string): boolean {
   return PRIVATE_HOST_PATTERNS.some((p) => p.test(hostname));
+}
+
+/**
+ * URL が内部ネットワーク or メタデータサーバを指しているか判定する
+ *
+ * @param urlString - 判定対象の URL 文字列
+ * @returns 内部ネットワークと判定した場合 true。parse 失敗や非 http(s) プロトコルも true
+ */
+function isPrivateHost(urlString: string): boolean {
+  let parsedUrl: URL;
+  try {
+    parsedUrl = new URL(urlString);
+  } catch {
+    return true;
+  }
+
+  if (parsedUrl.protocol !== "http:" && parsedUrl.protocol !== "https:") {
+    return true;
+  }
+
+  return isPrivateHostname(parsedUrl.hostname);
 }
 
 /** リダイレクトの最大ホップ数 */
@@ -134,10 +157,10 @@ function getMetaContent(doc: LinkedomDocument, property: string): string | null 
  * @throws Error - プライベートIPへのアクセス、HTMLの取得またはパースに失敗した場合
  */
 export async function parseGeneric(url: string): Promise<ParsedArticle> {
-  const parsedUrl = new URL(url);
-  if (isPrivateHostname(parsedUrl.hostname)) {
-    throw new Error("プライベート IP は許可されません");
+  if (isPrivateHost(url)) {
+    throw new Error("内部ネットワークへの fetch は許可されていません");
   }
+  const parsedUrl = new URL(url);
 
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);

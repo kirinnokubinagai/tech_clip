@@ -1,13 +1,7 @@
 import type { MiddlewareHandler } from "hono";
 
-/** 未認証エラーレスポンスのエラーコード */
-const AUTH_ERROR_CODE = "AUTH_REQUIRED";
-
-/** 未認証エラーレスポンスのメッセージ */
-const AUTH_ERROR_MESSAGE = "ログインが必要です";
-
-/** HTTP 401 Unauthorized ステータスコード */
-const HTTP_UNAUTHORIZED = 401;
+import { AUTH_ERROR_CODE, AUTH_ERROR_MESSAGE } from "../lib/error-codes";
+import { HTTP_UNAUTHORIZED } from "../lib/http-status";
 
 /**
  * Better Auth セッション検証用の型定義

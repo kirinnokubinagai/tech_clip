@@ -13,6 +13,7 @@ import {
   HTTP_UNPROCESSABLE_ENTITY,
 } from "../lib/http-status";
 import { createLogger } from "../lib/logger";
+import { hashTokenSha256 } from "../lib/token-utils";
 import type { EmailEnv } from "../services/emailService";
 import { sendPasswordReset } from "../services/emailService";
 
@@ -70,23 +71,6 @@ type PasswordResetRouteOptions = {
 };
 
 /**
- * パスワードリセット用トークンをハッシュ化する
- *
- * Web Crypto API (SubtleCrypto) を使用してSHA-256でハッシュ化する。
- * Cloudflare Workers 環境でも動作する。
- *
- * @param token - ハッシュ化するトークン文字列
- * @returns ハッシュ化された16進数文字列
- */
-async function hashToken(token: string): Promise<string> {
-  const encoder = new TextEncoder();
-  const data = encoder.encode(token);
-  const hashBuffer = await crypto.subtle.digest("SHA-256", data);
-  const hashArray = Array.from(new Uint8Array(hashBuffer));
-  return hashArray.map((b) => b.toString(16).padStart(2, "0")).join("");
-}
-
-/**
  * パスワードリセットフロー用のルートを生成する
  *
  * POST /forgot-password: パスワードリセットメール送信
@@ -135,7 +119,7 @@ export function createPasswordResetRoute(options: PasswordResetRouteOptions) {
     }
 
     const rawToken = crypto.randomUUID();
-    const hashedToken = await hashToken(rawToken);
+    const hashedToken = await hashTokenSha256(rawToken);
     const expiresAt = new Date(Date.now() + RESET_TOKEN_TTL_MS).toISOString();
 
     await db
@@ -199,7 +183,7 @@ export function createPasswordResetRoute(options: PasswordResetRouteOptions) {
 
     const { token, password } = validation.data;
 
-    const hashedToken = await hashToken(token);
+    const hashedToken = await hashTokenSha256(token);
 
     const [verification] = await db
       .select()
@@ -233,7 +217,10 @@ export function createPasswordResetRoute(options: PasswordResetRouteOptions) {
       );
     }
 
-    const email = verification.identifier.replace(RESET_TOKEN_IDENTIFIER_PREFIX, "");
+    const rawIdentifier = verification.identifier;
+    const email = rawIdentifier.startsWith(RESET_TOKEN_IDENTIFIER_PREFIX)
+      ? rawIdentifier.slice(RESET_TOKEN_IDENTIFIER_PREFIX.length)
+      : rawIdentifier;
 
     const [user] = await db.select().from(users).where(eq(users.email, email));
 
