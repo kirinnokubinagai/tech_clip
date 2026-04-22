@@ -31,7 +31,6 @@ describe("RegisterScreen", () => {
       mockSignUp.mockResolvedValue(undefined);
       const { getByLabelText } = await render(<RegisterScreen />);
 
-      await fireEvent.changeText(getByLabelText("お名前（任意）"), "テストユーザー");
       await fireEvent.changeText(getByLabelText("メールアドレス"), "test@example.com");
       await fireEvent.changeText(getByLabelText("パスワード"), "Password123");
 
@@ -42,19 +41,19 @@ describe("RegisterScreen", () => {
       await waitFor(() => {
         expect(mockSignUp).toHaveBeenCalledTimes(1);
         expect(mockSignUp).toHaveBeenCalledWith({
-          name: "テストユーザー",
+          name: "test",
           email: "test@example.com",
           password: "Password123",
         });
       });
     });
 
-    it("名前が空でもsignUpがname=undefinedで呼ばれること", async () => {
+    it("emailのローカルパートがnameとして渡されること", async () => {
       // Arrange
       mockSignUp.mockResolvedValue(undefined);
       const { getByLabelText } = await render(<RegisterScreen />);
 
-      await fireEvent.changeText(getByLabelText("メールアドレス"), "test@example.com");
+      await fireEvent.changeText(getByLabelText("メールアドレス"), "john.doe@example.com");
       await fireEvent.changeText(getByLabelText("パスワード"), "Password123");
 
       // Act
@@ -64,8 +63,8 @@ describe("RegisterScreen", () => {
       await waitFor(() => {
         expect(mockSignUp).toHaveBeenCalledTimes(1);
         expect(mockSignUp).toHaveBeenCalledWith({
-          name: undefined,
-          email: "test@example.com",
+          name: "john.doe",
+          email: "john.doe@example.com",
           password: "Password123",
         });
       });
@@ -75,7 +74,6 @@ describe("RegisterScreen", () => {
       // Arrange
       const { getByLabelText } = await render(<RegisterScreen />);
 
-      await fireEvent.changeText(getByLabelText("お名前（任意）"), "テストユーザー");
       await fireEvent.changeText(getByLabelText("パスワード"), "Password123");
 
       // Act
@@ -91,7 +89,6 @@ describe("RegisterScreen", () => {
       // Arrange
       const { getByLabelText } = await render(<RegisterScreen />);
 
-      await fireEvent.changeText(getByLabelText("お名前（任意）"), "テストユーザー");
       await fireEvent.changeText(getByLabelText("メールアドレス"), "invalid-email");
       await fireEvent.changeText(getByLabelText("パスワード"), "Password123");
 
@@ -109,7 +106,6 @@ describe("RegisterScreen", () => {
       // Arrange
       const { getByLabelText } = await render(<RegisterScreen />);
 
-      await fireEvent.changeText(getByLabelText("お名前（任意）"), "テストユーザー");
       await fireEvent.changeText(getByLabelText("メールアドレス"), "test@example.com");
 
       // Act
@@ -125,7 +121,6 @@ describe("RegisterScreen", () => {
       // Arrange
       const { getByLabelText } = await render(<RegisterScreen />);
 
-      await fireEvent.changeText(getByLabelText("お名前（任意）"), "テストユーザー");
       await fireEvent.changeText(getByLabelText("メールアドレス"), "test@example.com");
       await fireEvent.changeText(getByLabelText("パスワード"), "1234567");
 
@@ -144,7 +139,6 @@ describe("RegisterScreen", () => {
       mockSignUp.mockRejectedValue(new Error("メールアドレスはすでに使用されています"));
       const { getByLabelText } = await render(<RegisterScreen />);
 
-      await fireEvent.changeText(getByLabelText("お名前（任意）"), "テストユーザー");
       await fireEvent.changeText(getByLabelText("メールアドレス"), "test@example.com");
       await fireEvent.changeText(getByLabelText("パスワード"), "Password123");
 
