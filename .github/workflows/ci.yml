@@ -163,16 +163,17 @@ jobs:
       - name: hooksテスト
         run: nix develop .#ci --command bats tests/hooks/
 
-  # ── Step 5（並列）: ZAP セキュリティスキャン（PR + コード変更時のみ）────
+  # ── Step 5（並列）: ZAP セキュリティスキャン（コード変更時のみ）─────────
   zap:
     needs: [claude-review, changes]
     if: |
       always() &&
-      github.event_name == 'pull_request' &&
       needs.changes.outputs.code == 'true' &&
       needs.claude-review.outputs.needs_work != 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 45
+    permissions:
+      contents: read
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v4.2.2
       - uses: ./.github/actions/nix-setup
