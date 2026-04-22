@@ -22,13 +22,22 @@ env:
       - waitForAnimationToEnd:
           timeout: 1000
 - runFlow:
+    when:
+      visible: "take pictures and record video"
+    commands:
+      - tapOn: "Don't allow"
+      - waitForAnimationToEnd:
+          timeout: 1000
+
+- runFlow:
     file: "00-login-helper.yaml"
 - waitForAnimationToEnd:
     timeout: 3000
 
 # --- ホーム画面確認 ---
-- assertVisible:
-    text: "すべて"
+- extendedWaitUntil:
+    visible:
+      text: "すべて"
     timeout: 30000
 - takeScreenshot: screenshots/15-premium-user/01-home
 

@@ -90,6 +90,7 @@ env:
           timeout: 10000
 
 # ホーム画面ロード完了待ち
-- assertVisible:
-    text: "すべて"
+- extendedWaitUntil:
+    visible:
+      text: "すべて"
     timeout: 30000

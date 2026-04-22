@@ -103,8 +103,9 @@ env:
 - takeScreenshot: screenshots/05-article-detail/02-detail
 
 # WebView が表示されていることを確認
-- assertVisible:
-    id: "article-webview"
+- extendedWaitUntil:
+    visible:
+      id: "article-webview"
     timeout: 10000
 
 # お気に入り追加

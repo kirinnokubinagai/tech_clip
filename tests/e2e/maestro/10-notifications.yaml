@@ -42,6 +42,14 @@ env:
       - waitForAnimationToEnd:
           timeout: 1000
 - runFlow:
+    when:
+      visible: "take pictures and record video"
+    commands:
+      - tapOn: "Don't allow"
+      - waitForAnimationToEnd:
+          timeout: 1000
+
+- runFlow:
     file: "00-login-helper.yaml"
 - waitForAnimationToEnd:
     timeout: 2000
@@ -65,13 +73,15 @@ env:
     text: "通知"
 
 # seed で作成した通知一覧が表示されることを確認
-- assertVisible:
-    id: "notifications-list"
+- extendedWaitUntil:
+    visible:
+      id: "notifications-list"
     timeout: 5000
 
 # 個別通知アイテムが表示されることを確認（seed で最低1件作成済み）
-- assertVisible:
-    id: "notification-item"
+- extendedWaitUntil:
+    visible:
+      id: "notification-item"
     timeout: 5000
 
 # 通知アイテムの内部要素確認

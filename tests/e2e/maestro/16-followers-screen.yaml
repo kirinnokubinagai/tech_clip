@@ -42,14 +42,23 @@ env:
       - waitForAnimationToEnd:
           timeout: 1000
 - runFlow:
+    when:
+      visible: "take pictures and record video"
+    commands:
+      - tapOn: "Don't allow"
+      - waitForAnimationToEnd:
+          timeout: 1000
+
+- runFlow:
     file: "00-login-helper.yaml"
 - waitForAnimationToEnd:
     timeout: 2000
 
 # --- フォロワー一覧画面を開く（ディープリンク経由） ---
 - openLink: techclip://profile/followers
-- assertVisible:
-    id: "followers-screen"
+- extendedWaitUntil:
+    visible:
+      id: "followers-screen"
     timeout: 10000
 - takeScreenshot: screenshots/16-followers-screen/01-followers-screen
 
@@ -63,8 +72,9 @@ env:
 - takeScreenshot: screenshots/16-followers-screen/02-tabs
 
 # --- フォロワータブ: 初期タブはフォロワー ---
-- assertVisible:
-    id: "followers-list"
+- extendedWaitUntil:
+    visible:
+      id: "followers-list"
     timeout: 10000
 - takeScreenshot: screenshots/16-followers-screen/03-followers-list
 
@@ -73,8 +83,9 @@ env:
     id: "tab-following"
 - waitForAnimationToEnd:
     timeout: 3000
-- assertVisible:
-    id: "followers-list"
+- extendedWaitUntil:
+    visible:
+      id: "followers-list"
     timeout: 10000
 - takeScreenshot: screenshots/16-followers-screen/04-following-list
 
@@ -96,11 +107,13 @@ env:
 
 # --- フォロー中タブを初期表示で開く（?tab=following） ---
 - openLink: techclip://profile/followers?tab=following
-- assertVisible:
-    id: "followers-screen"
+- extendedWaitUntil:
+    visible:
+      id: "followers-screen"
     timeout: 10000
-- assertVisible:
-    id: "followers-list"
+- extendedWaitUntil:
+    visible:
+      id: "followers-list"
     timeout: 10000
 - takeScreenshot: screenshots/16-followers-screen/05-following-tab-initial
 
@@ -111,8 +124,9 @@ env:
     id: "followers-list"
 - waitForAnimationToEnd:
     timeout: 2000
-- assertVisible:
-    id: "user-profile-screen"
+- extendedWaitUntil:
+    visible:
+      id: "user-profile-screen"
     timeout: 10000
 - takeScreenshot: screenshots/16-followers-screen/06-user-profile
 
@@ -132,6 +146,7 @@ env:
     id: "user-profile-back-button"
 - waitForAnimationToEnd:
     timeout: 1000
-- assertVisible:
-    id: "followers-screen"
+- extendedWaitUntil:
+    visible:
+      id: "followers-screen"
     timeout: 5000

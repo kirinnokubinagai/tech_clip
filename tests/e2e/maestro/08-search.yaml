@@ -77,8 +77,9 @@ env:
     index: 0
 
 # 記事詳細画面に遷移することを確認
-- assertVisible:
-    text: "戻る"
+- extendedWaitUntil:
+    visible:
+      text: "戻る"
     timeout: 10000
 
 # 戻る

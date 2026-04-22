@@ -1,6 +1,6 @@
 # 認証フロー: 新規登録
 # オンボーディング「始める」から register 画面に遷移し、
-# ユニークメールでアカウント作成 → 自動ログイン → ホーム画面遷移を確認する
+# ユニークメールでアカウント作成 → プロフィール設定 → ホーム画面遷移を確認する
 #
 # tags: auth
 
@@ -37,26 +37,39 @@ env:
 
 # オンボーディング: ページ1 → 2 → 3 → 4（始める）
 # LogBox.ignoreAllLogs() で dev banner を無効化済みのため、unconditional 座標 tap は不要
-- assertVisible:
-    text: "技術記事をワンタップで保存"
+- runFlow:
+    when:
+      visible: "take pictures and record video"
+    commands:
+      - tapOn: "Don't allow"
+      - waitForAnimationToEnd:
+          timeout: 1000
+
+- extendedWaitUntil:
+    visible:
+      text: "技術記事をワンタップで保存"
     timeout: 60000
 - tapOn:
     id: "next-button"
-- assertVisible:
-    text: "AIが要約・翻訳"
+- extendedWaitUntil:
+    visible:
+      text: "AIが要約・翻訳"
     timeout: 10000
 - tapOn:
     id: "next-button"
-- assertVisible:
-    text: "お気に入り・タグで整理"
+- extendedWaitUntil:
+    visible:
+      text: "お気に入り・タグで整理"
     timeout: 10000
 - tapOn:
     id: "next-button"
-- assertVisible:
-    text: "さあ、始めましょう"
+- extendedWaitUntil:
+    visible:
+      text: "さあ、始めましょう"
     timeout: 10000
-- assertVisible:
-    id: "finish-button"
+- extendedWaitUntil:
+    visible:
+      id: "finish-button"
     timeout: 10000
 - tapOn:
     id: "finish-button"
@@ -67,28 +80,10 @@ env:
 - assertVisible:
     text: "アカウントを作成"
 - takeScreenshot: screenshots/02-auth-register/01-register-screen
-- assertVisible: "お名前"
 - assertVisible: "メールアドレス"
 - assertVisible: "パスワード"
 
-# バリデーション: 名前空のまま空送信 → メールエラー（name は optional）
-- tapOn:
-    id: "register-submit-button"
-- assertVisible: "メールアドレスを入力してください。"
-
-# 名前入力
-- tapOn:
-    id: "register-name-input"
-- runFlow:
-    when:
-      visible: "Try out your stylus"
-    commands:
-      - tapOn: "Cancel"
-      - waitForAnimationToEnd:
-          timeout: 1000
-- inputText: ${TEST_NAME}
-
-# バリデーション: 名前のみで送信 → メールエラー
+# バリデーション: 空のまま送信 → メールエラー
 - tapOn:
     id: "register-submit-button"
 - assertVisible: "メールアドレスを入力してください。"
@@ -105,7 +100,7 @@ env:
           timeout: 1000
 - inputText: ${TEST_EMAIL}
 
-# バリデーション: パスワードなしで送信
+# バリデーション: メールのみで送信 → パスワードエラー
 - tapOn:
     id: "register-submit-button"
 - assertVisible: "パスワードを入力してください。"
@@ -122,14 +117,38 @@ env:
           timeout: 1000
 - inputText: ${TEST_PASSWORD}
 
-# フォーム送信 → 自動ログイン → ホーム画面
+# フォーム送信 → プロフィール設定画面へ
 - hideKeyboard
 - tapOn:
     id: "register-submit-button"
 - waitForAnimationToEnd:
     timeout: 8000
 
-# ホーム画面に遷移することを確認（自動ログイン）
+# --- プロフィール設定画面 ---
+- extendedWaitUntil:
+    visible:
+      text: "プロフィールを設定"
+    timeout: 10000
+- takeScreenshot: screenshots/02-auth-register/02-profile-setup-screen
+
+# 名前を入力して保存
+- tapOn:
+    id: "profile-setup-name-input"
+- runFlow:
+    when:
+      visible: "Try out your stylus"
+    commands:
+      - tapOn: "Cancel"
+      - waitForAnimationToEnd:
+          timeout: 1000
+- inputText: ${TEST_NAME}
+- hideKeyboard
+- tapOn:
+    id: "profile-setup-save-button"
+- waitForAnimationToEnd:
+    timeout: 5000
+
+# ホーム画面に遷移することを確認
 - assertVisible:
     text: "すべて"
-- takeScreenshot: screenshots/02-auth-register/02-home-after-register
+- takeScreenshot: screenshots/02-auth-register/03-home-after-register

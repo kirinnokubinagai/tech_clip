@@ -36,11 +36,20 @@ tags:
           point: "92%, 93%"
       - waitForAnimationToEnd:
           timeout: 2000
+- runFlow:
+    when:
+      visible: "take pictures and record video"
+    commands:
+      - tapOn: "Don't allow"
+      - waitForAnimationToEnd:
+          timeout: 1000
+
 - takeScreenshot: screenshots/01-onboarding/01-launch
 
 # --- ページ1: 技術記事をワンタップで保存 ---
-- assertVisible:
-    id: "onboarding-title"
+- extendedWaitUntil:
+    visible:
+      id: "onboarding-title"
     timeout: 60000
 - assertVisible:
     id: "onboarding-description"
@@ -48,8 +57,9 @@ tags:
     id: "page-indicator"
 - assertVisible:
     id: "skip-button"
-- assertVisible:
-    text: "技術記事をワンタップで保存"
+- extendedWaitUntil:
+    visible:
+      text: "技術記事をワンタップで保存"
     timeout: 60000
 - runFlow:
     when:
@@ -74,8 +84,9 @@ tags:
 - takeScreenshot: screenshots/01-onboarding/02-page2
 
 # --- ページ2: AIが要約・翻訳 ---
-- assertVisible:
-    text: "AIが要約・翻訳"
+- extendedWaitUntil:
+    visible:
+      text: "AIが要約・翻訳"
     timeout: 10000
 - runFlow:
     when:
@@ -99,8 +110,9 @@ tags:
           timeout: 2000
 
 # --- ページ3: お気に入り・タグで整理 ---
-- assertVisible:
-    text: "お気に入り・タグで整理"
+- extendedWaitUntil:
+    visible:
+      text: "お気に入り・タグで整理"
     timeout: 10000
 - runFlow:
     when:
@@ -124,8 +136,9 @@ tags:
           timeout: 2000
 
 # --- ページ4: さあ、始めましょう（最終ページ）---
-- assertVisible:
-    text: "さあ、始めましょう"
+- extendedWaitUntil:
+    visible:
+      text: "さあ、始めましょう"
     timeout: 10000
 - runFlow:
     when:

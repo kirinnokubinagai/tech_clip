@@ -41,6 +41,14 @@ env:
       - waitForAnimationToEnd:
           timeout: 1000
 - runFlow:
+    when:
+      visible: "take pictures and record video"
+    commands:
+      - tapOn: "Don't allow"
+      - waitForAnimationToEnd:
+          timeout: 1000
+
+- runFlow:
     file: "00-login-helper.yaml"
 - waitForAnimationToEnd:
     timeout: 2000
@@ -49,8 +57,9 @@ env:
 - openLink: techclip://article/save
 
 # --- 記事保存画面（fetch-button 存在で save 画面到達を判定）---
-- assertVisible:
-    id: "fetch-button"
+- extendedWaitUntil:
+    visible:
+      id: "fetch-button"
     timeout: 60000
 - assertVisible:
     id: "save-screen-title"
@@ -78,15 +87,17 @@ env:
     id: "article-url-input"
 - eraseText
 - inputText: ${TEST_ARTICLE_URL}
-- assertVisible:
-    id: "fetch-button"
+- extendedWaitUntil:
+    visible:
+      id: "fetch-button"
     timeout: 10000
 - tapOn:
     id: "fetch-button"
 
 # プレビュー表示を最大 30 秒待機（外部 URL fetch + parse）
-- assertVisible:
-    id: "article-preview"
+- extendedWaitUntil:
+    visible:
+      id: "article-preview"
     timeout: 30000
 
 # 保存ボタンをタップ

@@ -51,8 +51,9 @@ env:
 - takeScreenshot: screenshots/06-profile-edit/01-profile-tab
 
 # プロフィールヘッダーが表示されること
-- assertVisible:
-    id: "profile-header"
+- extendedWaitUntil:
+    visible:
+      id: "profile-header"
     timeout: 10000
 
 # ユーザー名が表示されること
@@ -91,8 +92,9 @@ env:
 
 # --- プロフィール編集画面へ ---
 - openLink: techclip://profile/edit
-- assertVisible:
-    id: "profile-edit-screen"
+- extendedWaitUntil:
+    visible:
+      id: "profile-edit-screen"
     timeout: 30000
 - assertVisible: "プロフィール編集"
 - takeScreenshot: screenshots/06-profile-edit/03-edit-screen
@@ -162,15 +164,17 @@ env:
     timeout: 3000
 
 # bio が設定されたので profile-bio が表示されること
-- assertVisible:
-    id: "profile-bio"
+- extendedWaitUntil:
+    visible:
+      id: "profile-bio"
     timeout: 5000
 - takeScreenshot: screenshots/06-profile-edit/04-profile-bio
 
 # 戻るボタンが存在することを確認（編集画面に戻り確認後、back は既にナビゲート済み）
 - openLink: techclip://profile/edit
-- assertVisible:
-    id: "profile-edit-back-button"
+- extendedWaitUntil:
+    visible:
+      id: "profile-edit-back-button"
     timeout: 30000
 
 # bio をクリア（テストの冪等性確保）

@@ -42,6 +42,14 @@ env:
       - waitForAnimationToEnd:
           timeout: 1000
 - runFlow:
+    when:
+      visible: "take pictures and record video"
+    commands:
+      - tapOn: "Don't allow"
+      - waitForAnimationToEnd:
+          timeout: 1000
+
+- runFlow:
     file: "00-login-helper.yaml"
 - waitForAnimationToEnd:
     timeout: 2000
@@ -61,8 +69,9 @@ env:
 - takeScreenshot: screenshots/09-follow-timeline/02-feed-mode
 
 # フォロー中ユーザー（FOLLOWEE）の記事が表示されることを確認
-- assertVisible:
-    id: "article-card"
+- extendedWaitUntil:
+    visible:
+      id: "article-card"
     timeout: 10000
 
 # FOLLOWEEの記事をタップして詳細へ（isNotOwner=true のためクローンボタンが表示される）

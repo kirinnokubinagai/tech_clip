@@ -44,8 +44,9 @@ env:
     timeout: 2000
 
 # 設定タブへ移動（tab-bar visible 待機）
-- assertVisible:
-    id: "tab-settings"
+- extendedWaitUntil:
+    visible:
+      id: "tab-settings"
     timeout: 30000
 - tapOn:
     id: "tab-settings"
@@ -91,8 +92,9 @@ env:
     id: "settings-language-button"
 - tapOn:
     id: "settings-language-button"
-- assertVisible:
-    text: "日本語"
+- extendedWaitUntil:
+    visible:
+      text: "日本語"
     timeout: 5000
 - assertVisible: "日本語"
 - assertVisible: "English"
@@ -101,8 +103,9 @@ env:
 
 # --- パスワード変更画面への遷移 ---
 - tapOn: "パスワード変更"
-- assertVisible:
-    text: "パスワード変更"
+- extendedWaitUntil:
+    visible:
+      text: "パスワード変更"
     timeout: 5000
 - assertVisible:
     id: "change-password-current-input"
