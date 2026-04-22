@@ -139,7 +139,7 @@ describe("ArticleDetailScreen", () => {
 
       // Assert
       await waitFor(() => {
-        expect(getOfflineArticleById).toHaveBeenCalledWith("article-1");
+        expect(getOfflineArticleById).toHaveBeenCalledWith("article-1", "ja", "ja");
       });
     });
 

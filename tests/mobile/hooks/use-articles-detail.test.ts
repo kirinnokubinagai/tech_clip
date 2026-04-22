@@ -79,11 +79,15 @@ describe("useArticleDetail", () => {
       const wrapper = createWrapper(queryClient);
 
       // Act
-      const { result } = await renderHook(() => useArticleDetail("article-123"), { wrapper });
+      const { result } = await renderHook(() => useArticleDetail("article-123", "ja"), {
+        wrapper,
+      });
 
       // Assert
       await waitFor(() => expect(result.current.isSuccess).toBe(true));
-      expect(mockApiFetch).toHaveBeenCalledWith("/api/articles/article-123");
+      expect(mockApiFetch).toHaveBeenCalledWith(
+        "/api/articles/article-123?language=ja&targetLanguage=ja",
+      );
       expect(result.current.data?.id).toBe("article-123");
     });
 
@@ -92,7 +96,7 @@ describe("useArticleDetail", () => {
       const wrapper = createWrapper(queryClient);
 
       // Act
-      const { result } = await renderHook(() => useArticleDetail(""), { wrapper });
+      const { result } = await renderHook(() => useArticleDetail("", "ja"), { wrapper });
 
       // Assert
       expect(result.current.fetchStatus).toBe("idle");
@@ -110,7 +114,9 @@ describe("useArticleDetail", () => {
       const wrapper = createWrapper(queryClient);
 
       // Act
-      const { result } = await renderHook(() => useArticleDetail("article-999"), { wrapper });
+      const { result } = await renderHook(() => useArticleDetail("article-999", "ja"), {
+        wrapper,
+      });
 
       // Assert
       await waitFor(() => expect(result.current.isError).toBe(true));
@@ -226,7 +232,7 @@ describe("useSummaryJobStatus", () => {
 
       // Act
       await act(async () => {
-        result.current.mutate({ articleId: "article-123", jobId: "job-123" });
+        result.current.mutate({ articleId: "article-123", jobId: "job-123", language: "ja" });
       });
 
       // Assert
@@ -245,7 +251,7 @@ describe("useSummaryJobStatus", () => {
 
       // Act
       await act(async () => {
-        result.current.mutate({ articleId: "article-123", jobId: "job-123" });
+        result.current.mutate({ articleId: "article-123", jobId: "job-123", language: "ja" });
       });
 
       // Assert
@@ -272,7 +278,11 @@ describe("useTranslationJobStatus", () => {
 
       // Act
       await act(async () => {
-        result.current.mutate({ articleId: "article-123", jobId: "job-456" });
+        result.current.mutate({
+          articleId: "article-123",
+          jobId: "job-456",
+          targetLanguage: "en",
+        });
       });
 
       // Assert

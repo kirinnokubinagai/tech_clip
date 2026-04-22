@@ -1,4 +1,5 @@
 import Constants from "expo-constants";
+import { Platform } from "react-native";
 
 jest.mock("expo-constants", () => ({
   __esModule: true,
@@ -842,6 +843,78 @@ describe("apiFetch", () => {
         "http://test-api.example.com/test",
         expect.any(Object),
       );
+    });
+
+    it("iOSではextra.apiUrlIosを優先して使用すること", () => {
+      // Arrange
+      const originalPlatform = Platform.OS;
+      const originalConfig = Constants.expoConfig;
+      Object.defineProperty(Platform, "OS", {
+        value: "ios",
+        writable: true,
+        configurable: true,
+      });
+      Object.defineProperty(Constants, "expoConfig", {
+        value: {
+          extra: {
+            apiUrl: "http://fallback-api.example.com",
+            apiUrlIos: "http://ios-api.example.com",
+          },
+        },
+        writable: true,
+        configurable: true,
+      });
+
+      // Act & Assert
+      expect(getBaseUrl()).toBe("http://ios-api.example.com");
+
+      // Cleanup
+      Object.defineProperty(Platform, "OS", {
+        value: originalPlatform,
+        writable: true,
+        configurable: true,
+      });
+      Object.defineProperty(Constants, "expoConfig", {
+        value: originalConfig,
+        writable: true,
+        configurable: true,
+      });
+    });
+
+    it("Androidではextra.apiUrlAndroidを優先して使用すること", () => {
+      // Arrange
+      const originalPlatform = Platform.OS;
+      const originalConfig = Constants.expoConfig;
+      Object.defineProperty(Platform, "OS", {
+        value: "android",
+        writable: true,
+        configurable: true,
+      });
+      Object.defineProperty(Constants, "expoConfig", {
+        value: {
+          extra: {
+            apiUrl: "http://fallback-api.example.com",
+            apiUrlAndroid: "http://android-api.example.com",
+          },
+        },
+        writable: true,
+        configurable: true,
+      });
+
+      // Act & Assert
+      expect(getBaseUrl()).toBe("http://android-api.example.com");
+
+      // Cleanup
+      Object.defineProperty(Platform, "OS", {
+        value: originalPlatform,
+        writable: true,
+        configurable: true,
+      });
+      Object.defineProperty(Constants, "expoConfig", {
+        value: originalConfig,
+        writable: true,
+        configurable: true,
+      });
     });
 
     it("extra.apiUrlが未設定の場合はエラーをスローすること", () => {

@@ -1,4 +1,5 @@
 import Constants from "expo-constants";
+import { Platform } from "react-native";
 
 import i18n from "./i18n";
 import {
@@ -156,10 +157,25 @@ function isRefreshTokenResponse(value: unknown): value is RefreshTokenResponse {
  */
 export function getBaseUrl(): string {
   const extra = Constants.expoConfig?.extra;
-  if (extra && typeof extra === "object" && "apiUrl" in extra) {
-    const apiUrl = (extra as { apiUrl?: unknown }).apiUrl;
-    if (typeof apiUrl === "string" && apiUrl.length > 0) {
-      return apiUrl;
+  if (extra && typeof extra === "object") {
+    const apiConfig = extra as {
+      apiUrl?: unknown;
+      apiUrlIos?: unknown;
+      apiUrlAndroid?: unknown;
+    };
+    const platformApiUrl =
+      Platform.OS === "ios"
+        ? apiConfig.apiUrlIos
+        : Platform.OS === "android"
+          ? apiConfig.apiUrlAndroid
+          : undefined;
+
+    if (typeof platformApiUrl === "string" && platformApiUrl.length > 0) {
+      return platformApiUrl;
+    }
+
+    if (typeof apiConfig.apiUrl === "string" && apiConfig.apiUrl.length > 0) {
+      return apiConfig.apiUrl;
     }
   }
   throw new Error(

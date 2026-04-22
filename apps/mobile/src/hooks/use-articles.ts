@@ -156,8 +156,15 @@ async function fetchSearchResults(
  * @param articleId - 記事ID
  * @returns 記事詳細データ
  */
-async function fetchArticleDetail(articleId: string): Promise<ArticleDetail> {
-  const response = await apiFetch<ArticleDetailResponse>(`/api/articles/${articleId}`);
+async function fetchArticleDetail(
+  articleId: string,
+  language: SummaryLang,
+): Promise<ArticleDetail> {
+  const params = new URLSearchParams({
+    language,
+    targetLanguage: language,
+  });
+  const response = await apiFetch<ArticleDetailResponse>(`/api/articles/${articleId}?${params}`);
 
   if (!response.success) {
     throw new Error(response.error.message);
@@ -165,10 +172,10 @@ async function fetchArticleDetail(articleId: string): Promise<ArticleDetail> {
 
   await upsertArticle(response.data);
   if (response.data.summary !== null) {
-    await upsertSummary(articleId, response.data.summary);
+    await upsertSummary(articleId, language, response.data.summary);
   }
   if (response.data.translation !== null) {
-    await upsertTranslation(articleId, response.data.translation);
+    await upsertTranslation(articleId, language, response.data.translation);
   }
 
   return response.data;
@@ -211,11 +218,11 @@ export function useSearchArticles(query: string) {
  * @param articleId - 記事ID
  * @returns TanStack QueryのuseQuery結果
  */
-export function useArticleDetail(articleId: string) {
+export function useArticleDetail(articleId: string, language: SummaryLang) {
   return useQuery({
-    queryKey: [ARTICLE_DETAIL_QUERY_KEY, articleId],
-    queryFn: () => fetchArticleDetail(articleId),
-    enabled: !!articleId,
+    queryKey: [ARTICLE_DETAIL_QUERY_KEY, articleId, language],
+    queryFn: () => fetchArticleDetail(articleId, language),
+    enabled: !!articleId && !!language,
   });
 }
 
@@ -311,9 +318,9 @@ export function useRequestSummary() {
       );
       return response;
     },
-    onSuccess: async (data, { articleId }) => {
+    onSuccess: async (data, { articleId, language }) => {
       if (data.success && data.data.summary?.summary) {
-        await upsertSummary(articleId, data.data.summary.summary);
+        await upsertSummary(articleId, language, data.data.summary.summary);
       }
       queryClient.invalidateQueries({ queryKey: [ARTICLE_DETAIL_QUERY_KEY, articleId] });
     },
@@ -336,9 +343,9 @@ export function useRequestTranslation() {
       );
       return response;
     },
-    onSuccess: async (data, { articleId }) => {
+    onSuccess: async (data, { articleId, targetLanguage }) => {
       if (data.success && data.data.translation?.translatedContent) {
-        await upsertTranslation(articleId, data.data.translation.translatedContent);
+        await upsertTranslation(articleId, targetLanguage, data.data.translation.translatedContent);
       }
       queryClient.invalidateQueries({ queryKey: [ARTICLE_DETAIL_QUERY_KEY, articleId] });
     },
@@ -354,12 +361,19 @@ export function useSummaryJobStatus() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ articleId, jobId }: { articleId: string; jobId: string }) => {
+    mutationFn: async ({
+      articleId,
+      jobId,
+    }: {
+      articleId: string;
+      jobId: string;
+      language: SummaryLang;
+    }) => {
       return apiFetch<SummaryJobStatusResponse>(`/api/articles/${articleId}/summary/jobs/${jobId}`);
     },
     onSuccess: async (data, variables) => {
       if (data.success && data.data.summary?.summary) {
-        await upsertSummary(variables.articleId, data.data.summary.summary);
+        await upsertSummary(variables.articleId, variables.language, data.data.summary.summary);
       }
       if (data.success && data.data.status === "completed") {
         queryClient.invalidateQueries({
@@ -379,14 +393,25 @@ export function useTranslationJobStatus() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ articleId, jobId }: { articleId: string; jobId: string }) => {
+    mutationFn: async ({
+      articleId,
+      jobId,
+    }: {
+      articleId: string;
+      jobId: string;
+      targetLanguage: SummaryLang;
+    }) => {
       return apiFetch<TranslationJobStatusResponse>(
         `/api/articles/${articleId}/translate/jobs/${jobId}`,
       );
     },
     onSuccess: async (data, variables) => {
       if (data.success && data.data.translation?.translatedContent) {
-        await upsertTranslation(variables.articleId, data.data.translation.translatedContent);
+        await upsertTranslation(
+          variables.articleId,
+          variables.targetLanguage,
+          data.data.translation.translatedContent,
+        );
       }
       if (data.success && data.data.status === "completed") {
         queryClient.invalidateQueries({

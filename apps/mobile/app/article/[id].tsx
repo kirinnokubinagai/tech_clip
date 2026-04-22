@@ -186,7 +186,7 @@ export default function ArticleDetailScreen() {
     isLoading: isOnlineLoading,
     isError: isOnlineError,
     refetch,
-  } = useArticleDetail(id);
+  } = useArticleDetail(id, apiLanguage);
   const [offlineArticle, setOfflineArticle] = useState<ArticleDetail | null>(null);
   const [isOfflineLoading, setIsOfflineLoading] = useState(false);
   const [isOfflineError, setIsOfflineError] = useState(false);
@@ -205,7 +205,7 @@ export default function ArticleDetailScreen() {
     setIsOfflineLoading(true);
     setIsOfflineError(false);
 
-    getOfflineArticleById(id)
+    getOfflineArticleById(id, apiLanguage, apiLanguage)
       .then((cached) => {
         setOfflineArticle(cached);
         if (cached === null) {
@@ -219,7 +219,7 @@ export default function ArticleDetailScreen() {
       .finally(() => {
         setIsOfflineLoading(false);
       });
-  }, [isOffline, id]);
+  }, [apiLanguage, id, isOffline]);
 
   useEffect(() => {
     if (isOffline || !onlineArticle) {
@@ -227,12 +227,12 @@ export default function ArticleDetailScreen() {
     }
     void upsertArticle(onlineArticle);
     if (onlineArticle.summary) {
-      void upsertSummary(onlineArticle.id, onlineArticle.summary);
+      void upsertSummary(onlineArticle.id, apiLanguage, onlineArticle.summary);
     }
     if (onlineArticle.translation) {
-      void upsertTranslation(onlineArticle.id, onlineArticle.translation);
+      void upsertTranslation(onlineArticle.id, apiLanguage, onlineArticle.translation);
     }
-  }, [isOffline, onlineArticle]);
+  }, [apiLanguage, isOffline, onlineArticle]);
 
   const article = isOffline ? offlineArticle : onlineArticle;
   const isLoading = isOffline ? isOfflineLoading : isOnlineLoading;
@@ -356,7 +356,7 @@ export default function ArticleDetailScreen() {
 
     const intervalId = setInterval(() => {
       summaryJobStatus.mutate(
-        { articleId: article.id, jobId: summaryJob.jobId },
+        { articleId: article.id, jobId: summaryJob.jobId, language: apiLanguage },
         {
           onSuccess: (response) => {
             if (!response.success) {
@@ -383,14 +383,14 @@ export default function ArticleDetailScreen() {
     }, JOB_POLL_INTERVAL_MS);
 
     return () => clearInterval(intervalId);
-  }, [article, summaryJob, summaryJobStatus]);
+  }, [apiLanguage, article, summaryJob, summaryJobStatus]);
 
   useEffect(() => {
     if (!article || !translationJob) return;
 
     const intervalId = setInterval(() => {
       translationJobStatus.mutate(
-        { articleId: article.id, jobId: translationJob.jobId },
+        { articleId: article.id, jobId: translationJob.jobId, targetLanguage: apiLanguage },
         {
           onSuccess: (response) => {
             if (!response.success) {
@@ -417,7 +417,7 @@ export default function ArticleDetailScreen() {
     }, JOB_POLL_INTERVAL_MS);
 
     return () => clearInterval(intervalId);
-  }, [article, translationJob, translationJobStatus]);
+  }, [apiLanguage, article, translationJob, translationJobStatus]);
 
   if (isLoading) {
     return (
