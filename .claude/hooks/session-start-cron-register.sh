@@ -20,4 +20,9 @@ else
   CRON_EXPR="*/${INTERVAL_MINUTES} * * * *"
 fi
 
-echo "CRON_REGISTER: please call CronCreate(cron=\'${CRON_EXPR}\', durable=true, prompt=\'bash scripts/polling-watcher.sh\')"
+POLLING_DIR="${SCRIPT_DIR}/../polling"
+ACTIVE_POLLS=$(find "$POLLING_DIR" -name "pr-*.json" 2>/dev/null | wc -l | tr -d ' ')
+
+if [ "${ACTIVE_POLLS}" -gt 0 ]; then
+  echo "CRON_REGISTER: please call CronCreate(cron=\'${CRON_EXPR}\', durable=true, prompt=\'bash scripts/polling-watcher.sh\')"
+fi
