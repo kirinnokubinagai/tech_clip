@@ -3,7 +3,7 @@
     "name": "TechClip",
     "slug": "tech-clip",
     "scheme": "techclip",
-    "version": "0.0.1",
+    "version": "1.0",
     "orientation": "portrait",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
@@ -95,7 +95,9 @@
           "androidAppId": "ca-app-pub-3940256099942544~3347511713",
           "iosAppId": "ca-app-pub-3940256099942544~1458002511"
         }
-      ]
+      ],
+      "./plugins/with-native-build-fixes",
+      "./plugins/with-android-maestro-queries"
     ]
   }
 }

@@ -1,0 +1,12 @@
+--- a/build/parse.js
++++ b/build/parse.js
+@@ -65,8 +65,9 @@
+ */
+ function parse(xml) {
+     // prevent the parser from logging non-fatal errors
+-    const doc = new xmldom_1.DOMParser({ errorHandler() { } }).parseFromString(xml, 'application/xml');
++    const normalizedXml = typeof xml === 'string' ? xml.replace(/^\uFEFF/, '').trimStart() : xml;
++    const doc = new xmldom_1.DOMParser({ errorHandler() { } }).parseFromString(normalizedXml, 'application/xml');
+     (0, assert_1.default)(doc.documentElement.nodeName === 'plist', 'malformed document. First element should be <plist>');
+     let plist = parsePlistXML(doc.documentElement);
+     // the root <plist> node gets interpreted as an Array,
