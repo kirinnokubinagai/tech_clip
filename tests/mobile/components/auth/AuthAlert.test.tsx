@@ -48,9 +48,7 @@ describe("AuthAlert", () => {
     it("accessibilityLabel にメッセージが設定されること", async () => {
       const { toJSON } = await render(<AuthAlert message="アクセシビリティテスト" />);
 
-      expect(JSON.stringify(toJSON())).toContain(
-        '"accessibilityLabel":"アクセシビリティテスト"',
-      );
+      expect(JSON.stringify(toJSON())).toContain('"accessibilityLabel":"アクセシビリティテスト"');
     });
   });
 });
