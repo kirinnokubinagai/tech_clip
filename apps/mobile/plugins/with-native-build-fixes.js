@@ -1,11 +1,7 @@
 const fs = require("fs");
 const path = require("path");
 
-const {
-  createRunOncePlugin,
-  withDangerousMod,
-  withPodfile,
-} = require("expo/config-plugins");
+const { createRunOncePlugin, withDangerousMod, withPodfile } = require("expo/config-plugins");
 
 const PODFILE_HELPER_START = "# BEGIN tech-clip native build fixes";
 const PODFILE_HELPER_END = "# END tech-clip native build fixes";
@@ -87,7 +83,7 @@ SCRIPT
 
       shell_script = phase.shell_script || ''
       unless shell_script.include?('touch "${scriptOutputFile}"')
-        shell_script = shell_script.rstrip + "\\n\\ntouch \\\"${scriptOutputFile}\\\"\\n"
+        shell_script = shell_script.rstrip + "\\n\\ntouch \\"${scriptOutputFile}\\"\\n"
       end
       phase.shell_script = shell_script
     end
