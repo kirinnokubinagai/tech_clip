@@ -2,6 +2,10 @@
 # DB migration + static seed
 set -euo pipefail
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+# shellcheck source=../lib/nix.sh
+source "${REPO_ROOT}/scripts/lib/nix.sh"
+ensure_nix_shell "${REPO_ROOT}" "$@"
+
 cd "$REPO_ROOT/apps/api"
 
 # turso dev が動作しているか check

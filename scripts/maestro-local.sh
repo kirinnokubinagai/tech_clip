@@ -4,6 +4,9 @@ set -euo pipefail
 SCRIPT_PATH="${BASH_SOURCE[0]}"
 SCRIPT_DIR="$(cd "$(dirname "${SCRIPT_PATH}")" && pwd)"
 REPO_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
+# shellcheck source=./lib/nix.sh
+source "${SCRIPT_DIR}/lib/nix.sh"
+ensure_nix_shell "${REPO_ROOT}" "$@"
 
 # --- 色付け ---
 if [ -t 1 ]; then
@@ -85,7 +88,7 @@ check_command() {
 }
 
 check_command "pnpm" "nix develop（flake.nix で管理）"
-check_command "maestro" "curl -Ls 'https://get.maestro.mobile.dev' | bash"
+check_command "maestro" "direnv allow または nix develop を実行してください"
 
 if [ "${PLATFORM}" = "ios" ]; then
   check_command "xcrun" "Xcode をインストールしてください（App Store または developer.apple.com）"
@@ -141,15 +144,15 @@ cd "${REPO_ROOT}/apps/mobile"
 
 if [ "${PLATFORM}" = "ios" ]; then
   if [ -n "${TIMEOUT_CMD}" ]; then
-    "${TIMEOUT_CMD}" "${TIMEOUT_BUILD_SEC}" pnpm expo run:ios > "${BUILD_LOG}" 2>&1 &
+    "${TIMEOUT_CMD}" "${TIMEOUT_BUILD_SEC}" pnpm exec expo run:ios > "${BUILD_LOG}" 2>&1 &
   else
-    pnpm expo run:ios > "${BUILD_LOG}" 2>&1 &
+    pnpm exec expo run:ios > "${BUILD_LOG}" 2>&1 &
   fi
 elif [ "${PLATFORM}" = "android" ]; then
   if [ -n "${TIMEOUT_CMD}" ]; then
-    "${TIMEOUT_CMD}" "${TIMEOUT_BUILD_SEC}" pnpm expo run:android --variant debug > "${BUILD_LOG}" 2>&1 &
+    "${TIMEOUT_CMD}" "${TIMEOUT_BUILD_SEC}" pnpm exec expo run:android --variant debug > "${BUILD_LOG}" 2>&1 &
   else
-    pnpm expo run:android --variant debug > "${BUILD_LOG}" 2>&1 &
+    pnpm exec expo run:android --variant debug > "${BUILD_LOG}" 2>&1 &
   fi
 fi
 
@@ -167,7 +170,13 @@ echo "[maestro-local] アプリの起動を待機中..."
 
 while true; do
   if [ "${PLATFORM}" = "ios" ]; then
-    SIMULATOR_UDID="$(xcrun simctl list devices booted 2>/dev/null | grep -E '\(Booted\)' | head -1 | grep -oE '[0-9A-F-]{36}')"
+    SIMULATOR_UDID="$(
+      xcrun simctl list devices booted 2>/dev/null \
+        | grep -E '\(Booted\)' \
+        | head -1 \
+        | grep -oE '[0-9A-F-]{36}' \
+        || true
+    )"
     if [ -n "${SIMULATOR_UDID}" ]; then
       _LAUNCHED=0
       _INNER_WAITED=0
@@ -222,6 +231,52 @@ if [ "${PLATFORM}" = "android" ]; then
     _IDX=$(( 16#${_WORKTREE_HASH} % ${#_EMULATORS[@]} ))
     export ANDROID_SERIAL="${_EMULATORS[${_IDX}]}"
     echo "[maestro-local] ANDROID_SERIAL=${ANDROID_SERIAL}（${#_EMULATORS[@]}台中インデックス${_IDX}）"
+  fi
+fi
+
+# --- Android: ADB port forwarding + Maestro driver 起動 ---
+if [ "${PLATFORM}" = "android" ]; then
+  echo "[maestro-local] ADB port forwarding (7001) をリセットします..."
+  adb forward --remove tcp:7001 2>/dev/null || true
+  adb forward tcp:7001 tcp:7001 2>/dev/null && \
+    echo "${COLOR_GREEN}  ADB forward tcp:7001 → OK${COLOR_RESET}" || \
+    echo "${COLOR_YELLOW}  警告: ADB forward tcp:7001 に失敗しました${COLOR_RESET}"
+
+  # 前回の Maestro Java プロセスが残っていると DADB ポートを掴んだままになるため強制終了する
+  echo "[maestro-local] 残留 Maestro プロセスを確認・終了します..."
+  _MAESTRO_PIDS="$(pgrep -f 'maestro' 2>/dev/null | grep -v "$$" || true)"
+  if [ -n "${_MAESTRO_PIDS}" ]; then
+    echo "${COLOR_YELLOW}  残留プロセス検出: ${_MAESTRO_PIDS} → kill${COLOR_RESET}"
+    # shellcheck disable=SC2086
+    kill -9 ${_MAESTRO_PIDS} 2>/dev/null || true
+    sleep 1
+  fi
+
+  # Maestro driver を instrumentation runner 経由で起動する
+  # 注意: `am start -n dev.mobile.maestro/.android.MaestroDriverApp` は "No activity found" で失敗する
+  if adb shell pm list packages 2>/dev/null | grep -q "dev.mobile.maestro"; then
+    echo "[maestro-local] Maestro driver を instrumentation runner で起動します..."
+    adb shell am instrument -w \
+      dev.mobile.maestro.test/androidx.test.runner.AndroidJUnitRunner \
+      > /dev/null 2>&1 &
+
+    # port 7001 が LISTEN 状態になるまで最大 15 秒待機する
+    _DRIVER_WAITED=0
+    _DRIVER_READY=0
+    while [ "${_DRIVER_WAITED}" -lt 15 ]; do
+      if adb shell ss -tlnp 2>/dev/null | grep -q ":7001"; then
+        _DRIVER_READY=1
+        break
+      fi
+      sleep 1
+      _DRIVER_WAITED=$(( _DRIVER_WAITED + 1 ))
+    done
+
+    if [ "${_DRIVER_READY}" -eq 1 ]; then
+      echo "${COLOR_GREEN}  Maestro driver 起動完了（${_DRIVER_WAITED}秒）${COLOR_RESET}"
+    else
+      echo "${COLOR_YELLOW}  警告: Maestro driver の起動確認がタイムアウトしました（port 7001 未 LISTEN）${COLOR_RESET}"
+    fi
   fi
 fi
 

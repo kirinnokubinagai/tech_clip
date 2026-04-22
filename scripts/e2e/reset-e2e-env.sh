@@ -13,6 +13,9 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "${SCRIPT_DIR}/../.." && pwd)"
+# shellcheck source=../lib/nix.sh
+source "${REPO_ROOT}/scripts/lib/nix.sh"
+ensure_nix_shell "${REPO_ROOT}" "$@"
 
 TURSO_DATABASE_URL="${TURSO_DATABASE_URL:-http://127.0.0.1:8888}"
 export TURSO_DATABASE_URL

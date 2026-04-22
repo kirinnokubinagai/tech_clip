@@ -4,17 +4,17 @@
   "private": true,
   "packageManager": "pnpm@10.33.0",
   "scripts": {
-    "dev:mobile": "turbo run dev --filter=@tech-clip/mobile",
-    "dev:api": "turbo run dev --filter=@tech-clip/api",
-    "build": "turbo run build",
-    "typecheck": "turbo run typecheck",
-    "test": "turbo run test",
+    "dev:mobile": "bash scripts/run-hermetic.sh turbo run dev --filter=@tech-clip/mobile",
+    "dev:api": "bash scripts/run-hermetic.sh turbo run dev --filter=@tech-clip/api",
+    "build": "bash scripts/run-hermetic.sh turbo run build",
+    "typecheck": "bash scripts/run-hermetic.sh turbo run typecheck",
+    "test": "bash scripts/run-hermetic.sh turbo run test",
     "test:e2e:ios": "bash scripts/maestro-local.sh ios",
     "test:e2e:android": "bash scripts/maestro-local.sh android",
     "lint": "./scripts/run-biome-check.sh",
     "lint:fix": "./scripts/run-biome-check.sh --write",
-    "deploy:staging": "turbo run deploy:staging --filter=@tech-clip/api",
-    "deploy:production": "turbo run deploy:production --filter=@tech-clip/api",
+    "deploy:staging": "bash scripts/run-hermetic.sh turbo run deploy:staging --filter=@tech-clip/api",
+    "deploy:production": "bash scripts/run-hermetic.sh turbo run deploy:production --filter=@tech-clip/api",
     "verify:uncached": "./scripts/verify-uncached.sh",
     "typecheck:uncached": "./scripts/verify-uncached.sh typecheck",
     "test:uncached": "./scripts/verify-uncached.sh test",
@@ -28,6 +28,9 @@
     "check:nix-hermetic": "bash scripts/check-nix-hermetic.sh"
   },
   "pnpm": {
+    "patchedDependencies": {
+      "@expo/plist@0.5.2": "patches/@expo__plist@0.5.2.patch"
+    },
     "overrides": {
       "tar": ">=7.5.11",
       "esbuild": ">=0.25.0",

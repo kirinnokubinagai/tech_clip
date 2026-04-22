@@ -4,6 +4,10 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
+# shellcheck source=../lib/nix.sh
+source "${REPO_ROOT}/scripts/lib/nix.sh"
+ensure_nix_shell "${REPO_ROOT}" "$@"
+
 LOG_DIR="/tmp/techclip-dev"
 mkdir -p "$LOG_DIR"
 
@@ -42,7 +46,7 @@ start_service turso 8888 \
 
 # 2. API (wrangler dev)
 start_service api 18787 \
-  "cd apps/api && pnpm wrangler dev --port 18787 --ip 0.0.0.0"
+  "cd apps/api && pnpm exec wrangler dev --port 18787 --ip 0.0.0.0"
 
 # 3. mailpit
 start_service mailpit 8025 \
@@ -50,7 +54,7 @@ start_service mailpit 8025 \
 
 # 4. Metro
 start_service metro 8081 \
-  "cd apps/mobile && NODE_OPTIONS=--no-experimental-strip-types pnpm expo start --dev-client --port 8081"
+  "cd apps/mobile && pnpm exec expo start --dev-client --port 8081"
 
 # 5. Android emulator
 if adb devices 2>/dev/null | grep -q "emulator.*device$"; then

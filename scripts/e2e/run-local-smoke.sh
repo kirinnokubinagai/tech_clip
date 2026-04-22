@@ -12,6 +12,9 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "${SCRIPT_DIR}/../.." && pwd)"
+# shellcheck source=../lib/nix.sh
+source "${REPO_ROOT}/scripts/lib/nix.sh"
+ensure_nix_shell "${REPO_ROOT}" "$@"
 
 FLOW_PATH="${1:-${REPO_ROOT}/tests/e2e/maestro/}"
 
@@ -41,7 +44,7 @@ check_cmd() {
   fi
 }
 
-check_cmd "maestro"  "curl -Ls 'https://get.maestro.mobile.dev' | bash"
+check_cmd "maestro"  "direnv allow または nix develop を実行してください"
 check_cmd "adb"      "Android Studio / Android SDK をインストールしてください"
 check_cmd "pnpm"     "nix develop（flake.nix で管理）"
 check_cmd "curl"     "curl をインストールしてください"

@@ -5,13 +5,21 @@
 
 set -eo pipefail
 
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+REPO_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
+# shellcheck source=./lib/nix.sh
+source "${SCRIPT_DIR}/lib/nix.sh"
+ensure_nix_shell "${REPO_ROOT}" "$@"
+
 FAIL=0
+
+sanitize_nix_tool_path
 
 # 検証対象コマンド一覧
 CMDS=(turso sqld adb sqlite3 maestro zap turbo biome node pnpm)
 
 for cmd in "${CMDS[@]}"; do
-  path=$(which "$cmd" 2>/dev/null || echo "NOT_FOUND")
+  path="$(resolve_preferred_command "$cmd" || echo "NOT_FOUND")"
   printf "%-12s %s\n" "$cmd:" "$path"
   case "$path" in
     /nix/store/*) ;;

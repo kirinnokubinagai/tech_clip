@@ -81,6 +81,8 @@
             curl
             openssl
             python3
+            coreutils
+            libxml2
             turso-cli
             sqld
             android-tools
@@ -102,6 +104,8 @@
             git
             jq
             curl
+            coreutils
+            libxml2
             maestro
             zap
             bats
