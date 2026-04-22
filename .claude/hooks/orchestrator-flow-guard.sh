@@ -62,7 +62,7 @@ if [ "$TOOL_NAME" = "Bash" ]; then
     if [ -n "$FLAG_FILE" ] && [ -f "$FLAG_FILE" ]; then
       FLAG_TIME=$(cat "$FLAG_FILE" 2>/dev/null || echo "")
       if [ -n "$FLAG_TIME" ]; then
-        FLAG_EPOCH=$(date -j -f "%Y-%m-%dT%H:%M:%SZ" "$FLAG_TIME" +%s 2>/dev/null \
+        FLAG_EPOCH=$(TZ=UTC date -j -f "%Y-%m-%dT%H:%M:%S" "${FLAG_TIME%Z}" +%s 2>/dev/null \
           || date -d "$FLAG_TIME" +%s 2>/dev/null \
           || echo 0)
         NOW_EPOCH=$(date +%s)
