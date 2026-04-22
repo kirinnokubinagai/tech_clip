@@ -31,6 +31,8 @@ type AuthStore = {
   sessionExpiredMessage: string | null;
   /** 一度でもサインインまたはサインアップに成功したことを示すフラグ */
   hasAccount: boolean;
+  /** メール登録後のプロフィール設定が必要かどうか */
+  needsProfileSetup: boolean;
   /** SecureStoreからhasAccountフラグを読み込む */
   loadAccountFlag: () => Promise<void>;
   signIn: (params: SignInParams) => Promise<void>;
@@ -46,6 +48,8 @@ type AuthStore = {
   changePassword: (currentPassword: string, newPassword: string) => Promise<void>;
   /** ユーザーのプロフィール情報を部分更新する */
   updateUserProfile: (patch: Partial<User>) => void;
+  /** プロフィール設定完了フラグをクリアする */
+  clearNeedsProfileSetup: () => void;
 };
 
 export const useAuthStore = create<AuthStore>((set, get) => ({
@@ -55,6 +59,7 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
   isLoading: true,
   sessionExpiredMessage: null,
   hasAccount: false,
+  needsProfileSetup: false,
 
   /**
    * メールとパスワードでサインインする
@@ -113,6 +118,7 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
     // それ以外は EMAIL_NOT_VERIFIED エラーが throw されて UI に表示される）
     if (!data.session) {
       await get().signIn({ email: params.email, password: params.password });
+      set({ needsProfileSetup: true });
       return;
     }
 
@@ -125,6 +131,7 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
       session: data.session,
       isAuthenticated: true,
       hasAccount: true,
+      needsProfileSetup: true,
     });
   },
 
@@ -275,6 +282,14 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
     set((state) => ({
       user: state.user ? { ...state.user, ...patch } : state.user,
     }));
+  },
+
+  /**
+   * プロフィール設定完了フラグをクリアする
+   * プロフィール設定画面での保存またはスキップ後に呼び出す
+   */
+  clearNeedsProfileSetup: () => {
+    set({ needsProfileSetup: false });
   },
 
   /**

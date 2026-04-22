@@ -418,5 +418,18 @@
     "error": "读取分享数据失败",
     "notFound": "未找到URL",
     "close": "关闭"
+  },
+  "profileSetup": {
+    "title": "设置个人资料",
+    "subtitle": "账号已创建成功。请设置您的显示名称。",
+    "nameLabel": "名称",
+    "namePlaceholder": "请输入名称",
+    "saveButton": "保存",
+    "skipButton": "跳过",
+    "saveFailed": "保存个人资料失败。",
+    "validation": {
+      "nameRequired": "请输入名称。",
+      "nameTooLong": "名称不能超过{{max}}个字符。"
+    }
   }
 }

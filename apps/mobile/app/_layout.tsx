@@ -44,8 +44,11 @@ export default function RootLayout() {
   const segments = useSegments();
   /** (auth) グループ内にいるかどうか */
   const isAuthSegment = segments[0] === "(auth)";
+  /** プロフィール設定画面にいるかどうか */
+  const isProfileSetupSegment = segments[0] === "profile" && (segments as string[])[1] === "setup";
   const isLoading = useAuthStore((s) => s.isLoading);
   const hasAccount = useAuthStore((s) => s.hasAccount);
+  const needsProfileSetup = useAuthStore((s) => s.needsProfileSetup);
   const checkSession = useAuthStore((s) => s.checkSession);
   const loadAccountFlag = useAuthStore((s) => s.loadAccountFlag);
   const hasSeenOnboarding = useUIStore((s) => s.hasSeenOnboarding);
@@ -113,6 +116,7 @@ export default function RootLayout() {
         <Stack.Screen name="article/[id]" options={{ presentation: "card" }} />
         <Stack.Screen name="article/save" options={{ presentation: "card" }} />
         <Stack.Screen name="profile/edit" options={{ presentation: "card" }} />
+        <Stack.Screen name="profile/setup" options={{ presentation: "fullScreenModal" }} />
         <Stack.Screen name="settings/change-password" options={{ presentation: "card" }} />
         <Stack.Screen name="share-intent" options={{ presentation: "modal" }} />
       </Stack>
@@ -124,8 +128,14 @@ export default function RootLayout() {
       {hasSeenOnboarding && !isAuthenticated && hasAccount && !isAuthSegment && (
         <Redirect href="/(auth)/login" />
       )}
+      {/* 認証済みでプロフィール設定が必要な場合はプロフィール設定画面へ */}
+      {hasSeenOnboarding && isAuthenticated && needsProfileSetup && !isProfileSetupSegment && (
+        <Redirect href="/profile/setup" />
+      )}
       {/* 認証済みかつ (auth) 画面にいるときのみ (tabs) へ redirect。deeplink (article/save 等) は妨げない */}
-      {hasSeenOnboarding && isAuthenticated && isAuthSegment && <Redirect href="/(tabs)" />}
+      {hasSeenOnboarding && isAuthenticated && isAuthSegment && !needsProfileSetup && (
+        <Redirect href="/(tabs)" />
+      )}
     </QueryClientProvider>
   );
 }

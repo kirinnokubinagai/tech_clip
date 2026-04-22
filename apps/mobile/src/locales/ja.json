@@ -418,5 +418,18 @@
     "error": "共有データの読み取りに失敗しました。",
     "notFound": "URLが見つかりません。",
     "close": "閉じる"
+  },
+  "profileSetup": {
+    "title": "プロフィールを設定",
+    "subtitle": "アカウント作成が完了しました。あなたの名前を設定しましょう。",
+    "nameLabel": "名前",
+    "namePlaceholder": "名前を入力",
+    "saveButton": "設定を保存",
+    "skipButton": "スキップ",
+    "saveFailed": "プロフィールの保存に失敗しました。",
+    "validation": {
+      "nameRequired": "名前を入力してください。",
+      "nameTooLong": "名前は{{max}}文字以内で入力してください。"
+    }
   }
 }

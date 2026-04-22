@@ -418,5 +418,18 @@
     "error": "공유 데이터를 읽는데 실패했습니다.",
     "notFound": "URL을 찾을 수 없습니다.",
     "close": "닫기"
+  },
+  "profileSetup": {
+    "title": "프로필 설정",
+    "subtitle": "계정이 생성되었습니다. 표시 이름을 설정해주세요.",
+    "nameLabel": "이름",
+    "namePlaceholder": "이름을 입력하세요",
+    "saveButton": "저장",
+    "skipButton": "건너뛰기",
+    "saveFailed": "프로필 저장에 실패했습니다.",
+    "validation": {
+      "nameRequired": "이름을 입력해주세요.",
+      "nameTooLong": "이름은 {{max}}자 이내로 입력해주세요."
+    }
   }
 }

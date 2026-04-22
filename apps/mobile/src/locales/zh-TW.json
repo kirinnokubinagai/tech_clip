@@ -418,5 +418,18 @@
     "error": "讀取分享資料失敗",
     "notFound": "未找到URL",
     "close": "關閉"
+  },
+  "profileSetup": {
+    "title": "設定個人資料",
+    "subtitle": "帳號已建立成功。請設定您的顯示名稱。",
+    "nameLabel": "名稱",
+    "namePlaceholder": "請輸入名稱",
+    "saveButton": "儲存",
+    "skipButton": "跳過",
+    "saveFailed": "儲存個人資料失敗。",
+    "validation": {
+      "nameRequired": "請輸入名稱。",
+      "nameTooLong": "名稱不能超過{{max}}個字元。"
+    }
   }
 }

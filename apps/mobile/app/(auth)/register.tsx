@@ -24,13 +24,13 @@ import { useAuthStore } from "@/stores/auth-store";
  * メール・パスワード入力による登録フォームと、
  * Google / GitHub OAuth による登録ボタンを表示する。
  * OAuth 経由の場合、Better Auth が初回認証時に自動でアカウント作成を行う。
+ * 登録成功後はプロフィール設定画面へ遷移する。
  */
 export default function RegisterScreen() {
   const { t } = useTranslation();
   const colors = useColors();
   const signUp = useAuthStore((s) => s.signUp);
 
-  const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -66,7 +66,8 @@ export default function RegisterScreen() {
     setIsSubmitting(true);
 
     try {
-      await signUp({ name: name.trim() || undefined, email: email.trim(), password });
+      const localPart = trimmedEmail.split("@")[0] ?? trimmedEmail;
+      await signUp({ email: trimmedEmail, password, name: localPart });
     } catch (error: unknown) {
       if (error instanceof Error) {
         setErrorMessage(error.message);
@@ -84,7 +85,7 @@ export default function RegisterScreen() {
       behavior={Platform.OS === "ios" ? "padding" : "height"}
     >
       <ScrollView
-        contentContainerClassName="flex-1 justify-center px-6 py-8"
+        contentContainerClassName="grow justify-center px-6 py-8"
         keyboardShouldPersistTaps="handled"
       >
         <View className="mb-10 items-center">
@@ -101,26 +102,6 @@ export default function RegisterScreen() {
         {errorMessage !== "" && <AuthAlert message={errorMessage} />}
 
         <View className="gap-4">
-          <View>
-            <Text className="mb-1.5 text-sm font-medium text-text-muted">
-              {t("auth.nameOptional")}
-            </Text>
-            <TextInput
-              className="rounded-lg border border-border bg-surface px-4 py-3 text-base text-text"
-              placeholder={t("auth.nameOptionalHint")}
-              placeholderTextColor={colors.textDim}
-              value={name}
-              onChangeText={setName}
-              autoCapitalize="words"
-              autoComplete="name"
-              textContentType="name"
-              editable={!isAnySubmitting}
-              accessibilityLabel={t("auth.nameOptional")}
-              accessibilityHint={t("auth.nameHint")}
-              testID="register-name-input"
-            />
-          </View>
-
           <View>
             <Text className="mb-1.5 text-sm font-medium text-text-muted">{t("auth.email")}</Text>
             <TextInput
