@@ -30,6 +30,7 @@ import { createLogger } from "../lib/logger";
 import { omitContent } from "../lib/response-utils";
 import type { ParsedArticle } from "../services/article-parser";
 import { decodeCursor, encodeCursor as encodeCursorBase64url } from "../services/parsers/_shared";
+import { SUPPORTED_LANGUAGES } from "../validators/ai";
 
 /** デフォルトのページサイズ */
 const DEFAULT_LIMIT = 20;
@@ -113,6 +114,11 @@ export type ArticlesQueryFn = (
 
 /** parseArticle関数の型 */
 type ParseArticleFn = (url: string) => Promise<ParsedArticle>;
+
+const ArticleDetailQuerySchema = z.object({
+  language: z.enum(SUPPORTED_LANGUAGES).optional(),
+  targetLanguage: z.enum(SUPPORTED_LANGUAGES).optional(),
+});
 
 /** createArticlesRouteのオプション */
 type ArticlesRouteOptions = {
@@ -615,7 +621,30 @@ export function createArticlesRoute(options: ArticlesRouteOptions) {
       );
     }
 
+    const detailQuery = ArticleDetailQuerySchema.safeParse({
+      language: c.req.query("language"),
+      targetLanguage: c.req.query("targetLanguage"),
+    });
+    if (!detailQuery.success) {
+      return c.json(
+        {
+          success: false,
+          error: {
+            code: VALIDATION_ERROR_CODE,
+            message: VALIDATION_ERROR_MESSAGE,
+            details: detailQuery.error.issues.map((e) => ({
+              field: e.path.join("."),
+              message: e.message,
+            })),
+          },
+        },
+        HTTP_UNPROCESSABLE_ENTITY,
+      );
+    }
+
     const articleId = c.req.param("id");
+    const summaryLanguage = detailQuery.data.language ?? "ja";
+    const translationLanguage = detailQuery.data.targetLanguage ?? "en";
 
     const results = await db.select().from(articles).where(eq(articles.id, articleId));
 
@@ -650,11 +679,16 @@ export function createArticlesRoute(options: ArticlesRouteOptions) {
     const [summary] = await db
       .select()
       .from(summaries)
-      .where(and(eq(summaries.articleId, articleId), eq(summaries.language, "ja")));
+      .where(and(eq(summaries.articleId, articleId), eq(summaries.language, summaryLanguage)));
     const [translation] = await db
       .select()
       .from(translations)
-      .where(and(eq(translations.articleId, articleId), eq(translations.targetLanguage, "en")));
+      .where(
+        and(
+          eq(translations.articleId, articleId),
+          eq(translations.targetLanguage, translationLanguage),
+        ),
+      );
 
     return c.json(
       {

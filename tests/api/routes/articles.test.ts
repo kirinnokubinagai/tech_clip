@@ -1087,6 +1087,40 @@ describe("GET /api/articles/:id", () => {
       const body = (await res.json()) as ArticleResponseBody;
       expect(body.data).toHaveProperty("content", "記事本文 1");
     });
+
+    it("language と targetLanguage を指定すると対応する要約と翻訳を返すこと", async () => {
+      // Arrange
+      const app = createSingleArticleTestApp();
+      mockSelectWhere
+        .mockResolvedValueOnce([MOCK_SINGLE_ARTICLE])
+        .mockResolvedValueOnce([{ summary: "English summary" }])
+        .mockResolvedValueOnce([{ translatedContent: "中文翻訳" }]);
+
+      // Act
+      const res = await app.request("/api/articles/article_001?language=en&targetLanguage=zh-CN");
+
+      // Assert
+      expect(res.status).toBe(HTTP_OK);
+      const body = (await res.json()) as ArticleResponseBody;
+      expect(body.data).toHaveProperty("summary", "English summary");
+      expect(body.data).toHaveProperty("translation", "中文翻訳");
+    });
+  });
+
+  describe("クエリバリデーション", () => {
+    it("不正な targetLanguage を指定すると422が返ること", async () => {
+      // Arrange
+      const app = createSingleArticleTestApp();
+
+      // Act
+      const res = await app.request("/api/articles/article_001?targetLanguage=fr");
+
+      // Assert
+      expect(res.status).toBe(HTTP_UNPROCESSABLE_ENTITY);
+      const body = (await res.json()) as ErrorResponseBody;
+      expect(body.success).toBe(false);
+      expect(body.error.code).toBe("VALIDATION_FAILED");
+    });
   });
 
   describe("認証エラー", () => {
