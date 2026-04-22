@@ -1,5 +1,5 @@
-const fs = require("fs");
-const path = require("path");
+const fs = require("node:fs");
+const path = require("node:path");
 
 const { createRunOncePlugin, withDangerousMod, withPodfile } = require("expo/config-plugins");
 
@@ -9,8 +9,11 @@ const PODFILE_HELPER_END = "# END tech-clip native build fixes";
 function withNativeBuildFixes(config) {
   config = withPodfile(config, (config) => {
     const marketingVersion = JSON.stringify(config.version ?? "1.0");
+    // biome-ignore lint/suspicious/noTemplateCurlyInString: Xcode shell variable references, not JS template literals
     const projectAbbreviation = "${_PROJECT_ABBREVIATION}";
+    // biome-ignore lint/suspicious/noTemplateCurlyInString: Xcode shell variable references, not JS template literals
     const podsRoot = "${PODS_ROOT}";
+    // biome-ignore lint/suspicious/noTemplateCurlyInString: Xcode shell variable references, not JS template literals
     const scriptOutputFile = "${SCRIPT_OUTPUT_FILE_0}";
     const helperBlock = `${PODFILE_HELPER_START}
 def tech_clip_patch_native_projects!(installer)
