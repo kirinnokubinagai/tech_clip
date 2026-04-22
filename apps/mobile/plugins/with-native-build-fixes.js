@@ -9,12 +9,9 @@ const PODFILE_HELPER_END = "# END tech-clip native build fixes";
 function withNativeBuildFixes(config) {
   config = withPodfile(config, (config) => {
     const marketingVersion = JSON.stringify(config.version ?? "1.0");
-    // biome-ignore lint/suspicious/noTemplateCurlyInString: Xcode shell variable references, not JS template literals
-    const projectAbbreviation = "${_PROJECT_ABBREVIATION}";
-    // biome-ignore lint/suspicious/noTemplateCurlyInString: Xcode shell variable references, not JS template literals
-    const podsRoot = "${PODS_ROOT}";
-    // biome-ignore lint/suspicious/noTemplateCurlyInString: Xcode shell variable references, not JS template literals
-    const scriptOutputFile = "${SCRIPT_OUTPUT_FILE_0}";
+    const projectAbbreviation = "$" + "{_PROJECT_ABBREVIATION}";
+    const podsRoot = "$" + "{PODS_ROOT}";
+    const scriptOutputFile = "$" + "{SCRIPT_OUTPUT_FILE_0}";
     const helperBlock = `${PODFILE_HELPER_START}
 def tech_clip_patch_native_projects!(installer)
   share_view_controller_path = File.join(Pod::Config.instance.installation_root, '..', 'ShareExtension', 'ShareViewController.swift')
