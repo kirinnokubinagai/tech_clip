@@ -390,8 +390,7 @@ const TEST_USER_ARTICLES: Array<{
     source: "zenn",
     content:
       "# TypeScript の型システムを深く理解する\n\nTypeScript は JavaScript に型安全性を追加するプログラミング言語です。\n\n## 基本的な型\n\n- string: 文字列型\n- number: 数値型\n- boolean: 真偽値型\n\n## 型推論\n\nTypeScript は変数の型を自動推論します。\n\n```typescript\nconst greeting: string = 'Hello';\nconst count: number = 42;\n```\n\n## ジェネリクス\n\nジェネリクスを使うと再利用可能なコードを書けます。\n\n```typescript\nfunction identity<T>(arg: T): T {\n  return arg;\n}\n```\n\n## まとめ\n\nTypeScript の型システムを理解することで、バグを早期に発見し、コード品質を向上させることができます。",
-    excerpt:
-      "TypeScriptの型システムについて、基本的な型から高度なジェネリクスまで解説します。",
+    excerpt: "TypeScriptの型システムについて、基本的な型から高度なジェネリクスまで解説します。",
     author: "test_user",
     publishedAt: "2026-04-10T10:00:00.000Z",
   },
@@ -400,7 +399,7 @@ const TEST_USER_ARTICLES: Array<{
     title: "React Hooks 完全ガイド：useState から useEffect まで",
     source: "qiita",
     content:
-      "# React Hooks 完全ガイド：useState から useEffect まで\n\nReact Hooks は関数コンポーネントで状態管理や副作用を扱うための仕組みです。\n\n## useState\n\n```javascript\nconst [count, setCount] = useState(0);\n```\n\n## useEffect\n\n副作用の処理に使います。\n\n```javascript\nuseEffect(() => {\n  document.title = `Count: ${count}`;\n}, [count]);\n```\n\n## useCallback\n\nコールバック関数をメモ化します。\n\n## useMemo\n\n計算結果をメモ化します。\n\n## まとめ\n\nHooks を使いこなすことで React アプリの品質が向上します。",
+      "# React Hooks 完全ガイド：useState から useEffect まで\n\nReact Hooks は関数コンポーネントで状態管理や副作用を扱うための仕組みです。\n\n## useState\n\n```javascript\nconst [count, setCount] = useState(0);\n```\n\n## useEffect\n\n副作用の処理に使います。\n\n```javascript\nuseEffect(() => {\n  document.title = count.toString();\n}, [count]);\n```\n\n## useCallback\n\nコールバック関数をメモ化します。\n\n## useMemo\n\n計算結果をメモ化します。\n\n## まとめ\n\nHooks を使いこなすことで React アプリの品質が向上します。",
     excerpt: "React Hooksの使い方を useState/useEffect/useCallback/useMemo を中心に解説します。",
     author: "test_user",
     publishedAt: "2026-04-08T10:00:00.000Z",
@@ -411,8 +410,7 @@ const TEST_USER_ARTICLES: Array<{
     source: "hatena",
     content:
       "# TypeScript × React のベストプラクティス 2026\n\n## はじめに\n\nTypeScript と React を組み合わせた開発のベストプラクティスを紹介します。\n\n## Props の型定義\n\n```typescript\ntype ButtonProps = {\n  label: string;\n  onClick: () => void;\n  disabled?: boolean;\n};\n\nconst Button: React.FC<ButtonProps> = ({ label, onClick, disabled }) => (\n  <button onClick={onClick} disabled={disabled}>\n    {label}\n  </button>\n);\n```\n\n## カスタム Hooks\n\n```typescript\nfunction useCounter(initialValue: number) {\n  const [count, setCount] = useState(initialValue);\n  const increment = () => setCount((c) => c + 1);\n  return { count, increment };\n}\n```\n\n## まとめ\n\n型安全な React コンポーネントを書くことで保守性が向上します。",
-    excerpt:
-      "TypeScriptとReactを組み合わせた開発のベストプラクティスをコード例付きで解説します。",
+    excerpt: "TypeScriptとReactを組み合わせた開発のベストプラクティスをコード例付きで解説します。",
     author: "test_user",
     publishedAt: "2026-04-05T10:00:00.000Z",
   },
@@ -422,8 +420,7 @@ const TEST_USER_ARTICLES: Array<{
     source: "devto",
     content:
       "# React Native + Expo でモバイルアプリ開発入門 2026\n\nReact Native と Expo を使うと JavaScript/TypeScript でネイティブモバイルアプリを作れます。\n\n## セットアップ\n\n```bash\nnpx create-expo-app my-app\ncd my-app\nnpx expo start\n```\n\n## 基本コンポーネント\n\n- View: レイアウト用コンテナ\n- Text: テキスト表示\n- Pressable: タッチイベント\n\n## まとめ\n\nExpo を使うとモバイルアプリ開発のハードルが大幅に下がります。",
-    excerpt:
-      "React NativeとExpoを使ったモバイルアプリ開発の始め方を初心者向けに解説します。",
+    excerpt: "React NativeとExpoを使ったモバイルアプリ開発の始め方を初心者向けに解説します。",
     author: "test_user",
     publishedAt: "2026-04-02T10:00:00.000Z",
   },
@@ -1017,7 +1014,14 @@ async function seedMaestroStatic(): Promise<void> {
 
     for (let i = 0; i < testUserNotifications.length; i++) {
       const n = testUserNotifications[i];
-      await upsertNotification(db, testUserId, `maestro-notification-test-${i}`, n.type, n.title, n.body);
+      await upsertNotification(
+        db,
+        testUserId,
+        `maestro-notification-test-${i}`,
+        n.type,
+        n.title,
+        n.body,
+      );
     }
     process.stdout.write(`TEST USER 通知 ${testUserNotifications.length} 件 upsert 完了\n`);
   } else {
