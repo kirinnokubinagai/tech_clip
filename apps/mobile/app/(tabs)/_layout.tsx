@@ -5,6 +5,7 @@ import { Text, View } from "react-native";
 
 import { useColors } from "@/hooks/use-colors";
 import { useUnreadNotificationCount } from "@/hooks/use-notifications";
+import { DARK_COLORS } from "@/lib/constants";
 
 /** タブアイコンサイズ */
 const TAB_ICON_SIZE = 24;
@@ -23,13 +24,13 @@ export default function TabLayout() {
         tabBarActiveTintColor: colors.primary,
         tabBarInactiveTintColor: colors.textDim,
         tabBarStyle: {
-          backgroundColor: colors.surface,
-          borderTopColor: colors.border,
+          backgroundColor: DARK_COLORS.surface,
+          borderTopColor: DARK_COLORS.border,
         },
         headerStyle: {
-          backgroundColor: colors.surface,
+          backgroundColor: DARK_COLORS.surface,
         },
-        headerTintColor: colors.text,
+        headerTintColor: DARK_COLORS.text,
         headerShadowVisible: false,
         tabBarLabelStyle: {
           fontSize: 11,

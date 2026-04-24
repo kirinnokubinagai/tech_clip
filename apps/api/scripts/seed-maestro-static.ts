@@ -614,6 +614,46 @@ const SEED_NOTIFICATIONS: Array<{ type: NotificationType; title: string; body: s
     title: "システムのお知らせ",
     body: "TechClipがアップデートされました。新機能をお試しください。",
   },
+  {
+    type: "new_follower",
+    title: "新しいフォロワーがいます",
+    body: "secondaryユーザーがあなたをフォローしました。",
+  },
+  {
+    type: "article_liked",
+    title: "記事にいいねが付きました",
+    body: "あなたのクリップした記事に followeeユーザー がいいねしました。",
+  },
+  {
+    type: "article_liked",
+    title: "記事にいいねが付きました",
+    body: "あなたのクリップした記事に secondaryユーザー がいいねしました。",
+  },
+  {
+    type: "system_update",
+    title: "新機能のお知らせ：通知機能が強化されました",
+    body: "フォロワーの最新活動やいいね通知をリアルタイムで受け取れるようになりました。",
+  },
+  {
+    type: "new_follower",
+    title: "新しいフォロワーがいます",
+    body: "premiumユーザーがあなたをフォローしました。",
+  },
+  {
+    type: "article_liked",
+    title: "記事にいいねが付きました",
+    body: "あなたのクリップした記事に 3人 がいいねしました。",
+  },
+  {
+    type: "system_update",
+    title: "メンテナンスのお知らせ",
+    body: "定期メンテナンスを実施します。一部機能が一時的に利用できない場合があります。",
+  },
+  {
+    type: "new_follower",
+    title: "新しいフォロワーがいます",
+    body: "changepassユーザーがあなたをフォローしました。",
+  },
 ];
 
 /**
