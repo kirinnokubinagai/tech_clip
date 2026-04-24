@@ -116,11 +116,16 @@ export function createAuth(
             /**
              * E2E テスト用アカウントに自動で emailVerified を付与する
              *
-             * 以下の 2 条件を both 満たしたときのみ有効化する:
-             *   1. isE2eEnv === true（Workers Binding IS_E2E_ENV="1" で CI / ローカル dev のみ有効）
-             *   2. email が "+maestro@techclip.app" で終わる（独自ドメインに限定し外部ドメインでの悪用を防ぐ）
+             * 呼び出し側（db-init.ts）で以下の 2 条件を AND 評価し true の場合のみ
+             * isE2eEnv=true が渡される:
+             *   1. Workers Binding IS_E2E_ENV === "1"
+             *   2. Workers Binding ENVIRONMENT !== "production"
              *
-             * これにより attacker+maestro@gmail.com など任意ドメインでの検証バイパスを防ぐ。
+             * さらにこの関数内で以下の条件を AND する:
+             *   3. email が "+maestro@techclip.app" で終わる（独自ドメインに限定）
+             *
+             * これにより本番環境で万一 IS_E2E_ENV=1 が設定されても、
+             * または attacker+maestro@gmail.com など任意ドメインでも、検証バイパスを防ぐ。
              */
             if (isE2eEnv === true && user.email.endsWith("+maestro@techclip.app")) {
               await db

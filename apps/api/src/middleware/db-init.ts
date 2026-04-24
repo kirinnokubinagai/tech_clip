@@ -25,6 +25,8 @@ type DbInitBindings = {
   MAILPIT_URL?: string;
   /** E2E テスト環境フラグ（"1" で有効。CI / ローカル dev のみ設定する） */
   IS_E2E_ENV?: string;
+  /** デプロイ環境識別子（"production" / "staging" / "development" 等） */
+  ENVIRONMENT?: string;
   GOOGLE_CLIENT_ID?: string;
   GOOGLE_CLIENT_SECRET?: string;
   APPLE_CLIENT_ID?: string;
@@ -114,7 +116,7 @@ export function createDbInitMiddleware(
         c.env.API_BASE_URL,
         additionalTrustedOrigins,
         emailEnv,
-        c.env.IS_E2E_ENV === "1",
+        c.env.IS_E2E_ENV === "1" && c.env.ENVIRONMENT !== "production",
       );
       return authInstance;
     });

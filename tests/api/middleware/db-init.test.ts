@@ -31,6 +31,8 @@ type TestBindings = {
   MAILPIT_URL?: string;
   RESEND_API_KEY?: string;
   FROM_EMAIL?: string;
+  IS_E2E_ENV?: string;
+  ENVIRONMENT?: string;
 };
 
 /** テスト用 Variables */
@@ -546,6 +548,106 @@ describe("createDbInitMiddleware", () => {
       );
     });
   });
+  describe("IS_E2E_ENV 本番環境保護", () => {
+    it("ENVIRONMENT=production かつ IS_E2E_ENV=1 の場合 isE2eEnv が false で渡されること", async () => {
+      // Arrange
+      const capturedGetAuth: Array<() => typeof mockAuth> = [];
+      const app = new Hono<{ Bindings: TestBindings; Variables: TestVariables }>();
+      app.use(
+        "/api/*",
+        createDbInitMiddleware({
+          createDatabaseFn: mockCreateDatabase,
+          createAuthFn: mockCreateAuth,
+        }),
+      );
+      app.get("/api/test", (c) => {
+        capturedGetAuth.push(c.get("auth"));
+        return c.json({ ok: true });
+      });
+
+      const env: TestBindings = {
+        TURSO_DATABASE_URL: "libsql://test.turso.io",
+        TURSO_AUTH_TOKEN: "test-token",
+        BETTER_AUTH_SECRET: "test-secret-min-32-chars-long-enough!!",
+        IS_E2E_ENV: "1",
+        ENVIRONMENT: "production",
+      };
+
+      // Act
+      await app.request("/api/test", {}, env);
+      capturedGetAuth[0]();
+
+      // Assert
+      const lastArg = mockCreateAuth.mock.calls[0][6];
+      expect(lastArg).toBe(false);
+    });
+
+    it("ENVIRONMENT=development かつ IS_E2E_ENV=1 の場合 isE2eEnv が true で渡されること", async () => {
+      // Arrange
+      const capturedGetAuth: Array<() => typeof mockAuth> = [];
+      const app = new Hono<{ Bindings: TestBindings; Variables: TestVariables }>();
+      app.use(
+        "/api/*",
+        createDbInitMiddleware({
+          createDatabaseFn: mockCreateDatabase,
+          createAuthFn: mockCreateAuth,
+        }),
+      );
+      app.get("/api/test", (c) => {
+        capturedGetAuth.push(c.get("auth"));
+        return c.json({ ok: true });
+      });
+
+      const env: TestBindings = {
+        TURSO_DATABASE_URL: "libsql://test.turso.io",
+        TURSO_AUTH_TOKEN: "test-token",
+        BETTER_AUTH_SECRET: "test-secret-min-32-chars-long-enough!!",
+        IS_E2E_ENV: "1",
+        ENVIRONMENT: "development",
+      };
+
+      // Act
+      await app.request("/api/test", {}, env);
+      capturedGetAuth[0]();
+
+      // Assert
+      const lastArg = mockCreateAuth.mock.calls[0][6];
+      expect(lastArg).toBe(true);
+    });
+
+    it("ENVIRONMENT=development かつ IS_E2E_ENV=undefined の場合 isE2eEnv が false で渡されること", async () => {
+      // Arrange
+      const capturedGetAuth: Array<() => typeof mockAuth> = [];
+      const app = new Hono<{ Bindings: TestBindings; Variables: TestVariables }>();
+      app.use(
+        "/api/*",
+        createDbInitMiddleware({
+          createDatabaseFn: mockCreateDatabase,
+          createAuthFn: mockCreateAuth,
+        }),
+      );
+      app.get("/api/test", (c) => {
+        capturedGetAuth.push(c.get("auth"));
+        return c.json({ ok: true });
+      });
+
+      const env: TestBindings = {
+        TURSO_DATABASE_URL: "libsql://test.turso.io",
+        TURSO_AUTH_TOKEN: "test-token",
+        BETTER_AUTH_SECRET: "test-secret-min-32-chars-long-enough!!",
+        ENVIRONMENT: "development",
+      };
+
+      // Act
+      await app.request("/api/test", {}, env);
+      capturedGetAuth[0]();
+
+      // Assert
+      const lastArg = mockCreateAuth.mock.calls[0][6];
+      expect(lastArg).toBe(false);
+    });
+  });
+
   describe("next() の呼び出し", () => {
     it("ミドルウェアが next を呼び出して後続処理が実行されること", async () => {
       // Arrange

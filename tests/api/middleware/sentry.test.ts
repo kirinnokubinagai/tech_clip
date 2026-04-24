@@ -5,12 +5,17 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 /** fetch のモック型 */
 type MockFetch = ReturnType<typeof vi.fn>;
 
-/** テスト用 Hono アプリを作成する */
-function createTestApp(sentryDsn: string | undefined, fetchMock: MockFetch) {
-  type Bindings = {
-    SENTRY_DSN?: string;
-  };
+type Bindings = {
+  SENTRY_DSN?: string;
+  ENVIRONMENT?: string;
+};
 
+/** テスト用 Hono アプリを作成する */
+function createTestApp(
+  sentryDsn: string | undefined,
+  fetchMock: MockFetch,
+  environment?: string,
+) {
   const app = new Hono<{ Bindings: Bindings }>();
   app.use("*", createSentryMiddleware(fetchMock as typeof fetch));
 
@@ -29,7 +34,7 @@ function createTestApp(sentryDsn: string | undefined, fetchMock: MockFetch) {
   return {
     request: (path: string, init?: RequestInit) => {
       const req = new Request(`http://localhost${path}`, init);
-      return app.fetch(req, { SENTRY_DSN: sentryDsn } as Bindings);
+      return app.fetch(req, { SENTRY_DSN: sentryDsn, ENVIRONMENT: environment } as Bindings);
     },
   };
 }
@@ -50,7 +55,7 @@ describe("createSentryMiddleware", () => {
   describe("正常系リクエスト", () => {
     it("エラーがない場合はSentryにイベントを送信しないこと", async () => {
       // Arrange
-      const app = createTestApp("https://key@sentry.io/123", fetchMock);
+      const app = createTestApp("https://key@sentry.io/123", fetchMock, "production");
 
       // Act
       const res = await app.request("/ok");
@@ -64,7 +69,7 @@ describe("createSentryMiddleware", () => {
   describe("エラーキャプチャ", () => {
     it("エラー発生時にSentryエンドポイントへfetchを呼ぶこと", async () => {
       // Arrange
-      const app = createTestApp("https://key@sentry.io/123", fetchMock);
+      const app = createTestApp("https://key@sentry.io/123", fetchMock, "production");
 
       // Act
       const res = await app.request("/error");
@@ -77,7 +82,7 @@ describe("createSentryMiddleware", () => {
     it("SentryエンドポイントURLが正しいこと", async () => {
       // Arrange
       const dsn = "https://publickey@o123.ingest.sentry.io/456";
-      const app = createTestApp(dsn, fetchMock);
+      const app = createTestApp(dsn, fetchMock, "production");
 
       // Act
       await app.request("/error");
@@ -91,7 +96,7 @@ describe("createSentryMiddleware", () => {
 
     it("SentryにPOSTリクエストを送信すること", async () => {
       // Arrange
-      const app = createTestApp("https://key@sentry.io/123", fetchMock);
+      const app = createTestApp("https://key@sentry.io/123", fetchMock, "production");
 
       // Act
       await app.request("/error");
@@ -103,7 +108,7 @@ describe("createSentryMiddleware", () => {
 
     it("リクエストボディにエラーメッセージが含まれること", async () => {
       // Arrange
-      const app = createTestApp("https://key@sentry.io/123", fetchMock);
+      const app = createTestApp("https://key@sentry.io/123", fetchMock, "production");
 
       // Act
       await app.request("/error");
@@ -119,7 +124,7 @@ describe("createSentryMiddleware", () => {
 
     it("リクエストボディにエラー型が含まれること", async () => {
       // Arrange
-      const app = createTestApp("https://key@sentry.io/123", fetchMock);
+      const app = createTestApp("https://key@sentry.io/123", fetchMock, "production");
 
       // Act
       await app.request("/custom-error");
@@ -135,7 +140,7 @@ describe("createSentryMiddleware", () => {
 
     it("Content-Typeヘッダーがapplication/jsonであること", async () => {
       // Arrange
-      const app = createTestApp("https://key@sentry.io/123", fetchMock);
+      const app = createTestApp("https://key@sentry.io/123", fetchMock, "production");
 
       // Act
       await app.request("/error");
@@ -148,7 +153,7 @@ describe("createSentryMiddleware", () => {
 
     it("X-Sentry-Authヘッダーが設定されていること", async () => {
       // Arrange
-      const app = createTestApp("https://key@sentry.io/123", fetchMock);
+      const app = createTestApp("https://key@sentry.io/123", fetchMock, "production");
 
       // Act
       await app.request("/error");
@@ -160,12 +165,25 @@ describe("createSentryMiddleware", () => {
       expect(headers["X-Sentry-Auth"]).toContain("Sentry ");
       expect(headers["X-Sentry-Auth"]).toContain("sentry_key=");
     });
+
+    it("送信ボディに environment フィールドが含まれること", async () => {
+      // Arrange
+      const app = createTestApp("https://key@sentry.io/123", fetchMock, "production");
+
+      // Act
+      await app.request("/error");
+
+      // Assert
+      const callOptions = fetchMock.mock.calls[0][1] as RequestInit;
+      const body = JSON.parse(callOptions.body as string) as Record<string, unknown>;
+      expect(body.environment).toBe("production");
+    });
   });
 
   describe("SENTRY_DSN未設定", () => {
     it("SENTRY_DSNが未設定の場合はエラーをキャプチャせずにスルーすること", async () => {
       // Arrange
-      const app = createTestApp(undefined, fetchMock);
+      const app = createTestApp(undefined, fetchMock, "production");
 
       // Act
       const res = await app.request("/error");
@@ -176,10 +194,69 @@ describe("createSentryMiddleware", () => {
     });
   });
 
+  describe("環境別ガード", () => {
+    it("ENVIRONMENT=development の場合 fetchFn が呼ばれないこと", async () => {
+      // Arrange
+      const app = createTestApp("https://key@sentry.io/123", fetchMock, "development");
+
+      // Act
+      await app.request("/error");
+
+      // Assert
+      expect(fetchMock).not.toHaveBeenCalled();
+    });
+
+    it("ENVIRONMENT=production の場合 fetchFn が呼ばれること", async () => {
+      // Arrange
+      const app = createTestApp("https://key@sentry.io/123", fetchMock, "production");
+
+      // Act
+      await app.request("/error");
+
+      // Assert
+      expect(fetchMock).toHaveBeenCalledTimes(1);
+    });
+
+    it("ENVIRONMENT=staging の場合 fetchFn が呼ばれること", async () => {
+      // Arrange
+      const app = createTestApp("https://key@sentry.io/123", fetchMock, "staging");
+
+      // Act
+      await app.request("/error");
+
+      // Assert
+      expect(fetchMock).toHaveBeenCalledTimes(1);
+    });
+
+    it("ENVIRONMENT=undefined の場合 fetchFn が呼ばれないこと", async () => {
+      // Arrange
+      const app = createTestApp("https://key@sentry.io/123", fetchMock, undefined);
+
+      // Act
+      await app.request("/error");
+
+      // Assert
+      expect(fetchMock).not.toHaveBeenCalled();
+    });
+
+    it("staging 環境で送信ボディに environment=staging が含まれること", async () => {
+      // Arrange
+      const app = createTestApp("https://key@sentry.io/123", fetchMock, "staging");
+
+      // Act
+      await app.request("/error");
+
+      // Assert
+      const callOptions = fetchMock.mock.calls[0][1] as RequestInit;
+      const body = JSON.parse(callOptions.body as string) as Record<string, unknown>;
+      expect(body.environment).toBe("staging");
+    });
+  });
+
   describe("エラーの再スロー", () => {
     it("エラーをキャプチャした後もレスポンスは500を返すこと", async () => {
       // Arrange
-      const app = createTestApp("https://key@sentry.io/123", fetchMock);
+      const app = createTestApp("https://key@sentry.io/123", fetchMock, "production");
 
       // Act
       const res = await app.request("/error");
@@ -192,7 +269,7 @@ describe("createSentryMiddleware", () => {
   describe("DSN解析", () => {
     it("プロジェクトIDがURLに含まれること", async () => {
       // Arrange
-      const app = createTestApp("https://abc123@sentry.io/789", fetchMock);
+      const app = createTestApp("https://abc123@sentry.io/789", fetchMock, "production");
 
       // Act
       await app.request("/error");
