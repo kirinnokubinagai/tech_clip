@@ -77,10 +77,13 @@ lane は `[a-zA-Z0-9][a-zA-Z0-9-]*` の英数字ハイフン文字列。
 4. **reviewer は 1 体が全 lane の impl-ready を集約**: 全 lane から受信後に統合レビュー
 5. **push は reviewer 1 回のみ**: lane ごとに push してはならない
 6. **E2E レーン（`tests/e2e/maestro/**` / testID / locales 変更を含む lane）は必ず e2e-reviewer を経由する**:
-   - その lane の coder は `impl-ready` を **e2e-reviewer** に送る（reviewer に直接送らない）
-   - e2e-reviewer が静的検証・emulator 実行後に reviewer へ `e2e-approved: <hash>` を送る
-   - reviewer は e2e-approved を「その lane の impl-ready」として扱い、全 lane 揃い次第統合レビューを開始する
-   - orchestrator は E2E 変更レーンが含まれる Issue を多レーン並列で扱う場合、**e2e-reviewer を必ず spawn すること**
+   - E2E 変更を含む全 lane の coder は `impl-ready` を **e2e-reviewer** に送る（reviewer に直接送らない）
+   - **e2e-reviewer は 1 Issue につき 1 体のみ**（複数 E2E lane があっても e2e-reviewer は 1 体で集約する。複数 spawn 禁止）
+   - e2e-reviewer は **全 E2E lane の impl-ready が揃うまで待機**し、リビルド・emulator 実行を **1 回だけ** 行う
+   - 理由: emulator は同時に 1 プロセスしか制御できないため、e2e-reviewer が並列実行するとバッティングする
+   - PASS 後、e2e-reviewer は reviewer へ `e2e-approved: <hash>` を送信する（全 E2E lane を一括承認）
+   - reviewer は e2e-approved を「全 E2E lane の impl-ready」として扱い、non-E2E lane の impl-ready も揃い次第統合レビューを開始する
+   - orchestrator は E2E 変更を含む lane がある Issue を多レーン並列で扱う場合、**e2e-reviewer を必ず 1 体だけ spawn すること**（spawn プロンプトに期待 E2E lane 数を `expected_e2e_lanes: N` の形で渡す）
 
 #### 適用基準
 - 大 Issue かつ「サブ Issue 分割するほどではない」中規模並列化

@@ -53,7 +53,7 @@ push が成功したら、以下のいずれかが成立するまで **絶対に
 `issue-{N}-coder-api` / `issue-{N}-coder-mobile` のように同一 Issue で複数の lane 付き coder がいる場合:
 
 - 各 lane から `impl-ready: <hash> lane={lane-name}` を受信する
-- **E2E レーン（maestro yaml / testID / locales 変更を含む lane）は例外**: その lane の coder から impl-ready を直接受け取らず、代わりに **e2e-reviewer から `e2e-approved: <hash> lane={lane-name}`** を受信する。e2e-approved を「その lane の impl-ready」として集約する
+- **E2E レーン（maestro yaml / testID / locales 変更を含む lane）は例外**: E2E lane の coder から impl-ready を直接受け取らず、代わりに **e2e-reviewer から `e2e-approved: <hash>`** を受信する。e2e-approved は全 E2E lane の一括承認を意味し、「全 E2E lane の impl-ready」として集約する（e2e-approved は 1 通のみ届く）
 - **全 lane から受信するまでレビューを開始しない**（受信済み lane 集合を内部で管理する）
 - 全 lane 揃ったら、最新 HEAD（各 lane commit を含む branch の先端）をレビュー
 - 統合レビュー PASS 後、1 回だけ push する

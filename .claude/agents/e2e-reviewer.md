@@ -26,11 +26,37 @@ tools:
 - `issue_number`: Issue 番号
 - `agent_name`: チーム内での自分の名前（例: "issue-123-e2e-reviewer"）
 
+## 受け取る追加パラメータ
+
+- `expected_e2e_lanes`: E2E 変更を含む lane 数（orchestrator が spawn プロンプトで渡す。単一 lane の場合は `1`）
+
 ## 入口条件
 
-coder / infra-engineer から `impl-ready: <hash>` を受領したら開始する。
+### 基本ルール
+- **1 Issue につき e2e-reviewer は 1 体のみ**。複数 E2E lane があっても並列起動してはならない
+- E2E 変更を含む全 lane の coder が `impl-ready: <hash> lane={lane-name}` を送ってくる
+- **全 E2E lane の impl-ready が揃うまで待機**し、揃ってからフェーズ 0〜4 を 1 回だけ実行する
+- 理由: emulator は同時に 1 プロセスしか制御できず、並列実行するとバッティングする
 
-diff に以下のファイルが含まれる場合は **必須通過**:
+### 複数 E2E lane の集約管理
+
+受信記録を `/tmp/e2e-impl-ready-{issue_number}.json` で管理する:
+
+```bash
+E2E_READY_FILE="/tmp/e2e-impl-ready-{issue_number}.json"
+[ -f "$E2E_READY_FILE" ] || echo '[]' > "$E2E_READY_FILE"
+LANE=$(echo "$MSG" | grep -oP 'lane=\K[^ ]+' || echo "default")
+HASH=$(echo "$MSG" | grep -oP 'impl-ready: \K[0-9a-f]+' | head -1)
+jq --arg lane "$LANE" --arg hash "$HASH" '. += [{"lane": $lane, "hash": $hash}]' \
+  "$E2E_READY_FILE" > "${E2E_READY_FILE}.tmp" && mv "${E2E_READY_FILE}.tmp" "$E2E_READY_FILE"
+RECEIVED=$(jq 'length' "$E2E_READY_FILE")
+```
+
+`$RECEIVED == $expected_e2e_lanes` になったらフェーズ 0 へ進む。それまでは次の impl-ready を待つ。
+
+### diff 確認対象
+
+全 E2E lane の変更を合算した diff で以下が含まれる場合は **必須通過**:
 - `tests/e2e/maestro/**`
 - `apps/mobile/app/**/*.tsx`（testID 追加を含む）
 - `apps/mobile/src/**/*.tsx`（testID 追加を含む）
@@ -38,7 +64,7 @@ diff に以下のファイルが含まれる場合は **必須通過**:
 - `apps/mobile/metro.config.js`
 - `apps/mobile/src/locales/**`
 
-含まれない場合は **スキップ可**（coder/infra-engineer が直接 `reviewer` へ送る）。
+含まれない場合は reviewer に直接転送（スキップ可）。
 
 ## フェーズ 0: diff 確認
 
@@ -132,20 +158,27 @@ SendMessage(to: "issue-{N}-reviewer", "e2e-approved: <commit-hash>")
 
 ### FAIL の場合
 
-失敗した yaml とコマンドを特定し、修正提案を添えて送信:
+失敗した yaml を所有する lane の coder を特定し、修正提案を添えて送信する:
 
 ```
-SendMessage(to: "issue-{N}-infra-engineer", "CHANGES_REQUESTED: <yaml名> の <コマンド> が失敗。<詳細と修正提案>")
+# 失敗 yaml が属する lane の coder に送る（複数 lane が原因なら複数送信可）
+SendMessage(to: "issue-{N}-coder-{lane}", "CHANGES_REQUESTED: <yaml名> の <コマンド> が失敗。<詳細と修正提案>")
 ```
 
-修正後に infra-engineer から `impl-ready: <new-hash>` が再送されたら フェーズ 1 から繰り返す。
+lane が特定できない場合は全 E2E lane の coder に送る。
+
+修正後に coder から `impl-ready: <new-hash> lane={lane-name}` が再送されたら:
+- 該当 lane の記録を更新する（`/tmp/e2e-impl-ready-{issue_number}.json` の該当エントリを新 hash で上書き）
+- 全 E2E lane 分の impl-ready が揃っていることを確認してからフェーズ 1 に戻る
 
 ## フェーズ 5: CHANGES_REQUESTED 修正ループ
 
-infra-engineer から `impl-ready: <new-hash>` を受領したら:
-1. フェーズ 1（静的検証）から再実行する
-2. rebuild 要否を再判定する
-3. 全 flow 再実行する
+修正済み coder から `impl-ready: <new-hash> lane={lane-name}` を受領したら:
+1. 該当 lane の impl-ready を更新する
+2. 全 E2E lane 分揃っていることを確認する（揃っていなければ他 lane を待つ）
+3. フェーズ 1（静的検証）から再実行する
+4. rebuild 要否を再判定する
+5. 全 flow 再実行する
 
 ## 出力規約
 
