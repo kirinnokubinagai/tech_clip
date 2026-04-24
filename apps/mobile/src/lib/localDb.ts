@@ -93,6 +93,7 @@ export async function initLocalDb(): Promise<void> {
     )`,
   );
 
+  await migrateArticlesAddUserIdColumn(db);
   await migrateLegacyAiCacheTables(db);
 }
 
@@ -117,12 +118,14 @@ async function hasColumn(
   return rows.some((row) => row.name === columnName);
 }
 
-async function migrateLegacyAiCacheTables(database: SQLiteDatabase): Promise<void> {
-  const articlesHaveUserId = await hasColumn(database, "articles", "user_id");
-  if (!articlesHaveUserId) {
+async function migrateArticlesAddUserIdColumn(database: SQLiteDatabase): Promise<void> {
+  const hasUserId = await hasColumn(database, "articles", "user_id");
+  if (!hasUserId) {
     await database.execAsync("ALTER TABLE articles ADD COLUMN user_id TEXT");
   }
+}
 
+async function migrateLegacyAiCacheTables(database: SQLiteDatabase): Promise<void> {
   const summariesHaveLanguage = await hasColumn(database, "summaries", "language");
   if (!summariesHaveLanguage) {
     await database.execAsync(
