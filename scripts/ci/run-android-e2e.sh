@@ -11,6 +11,12 @@ echo "[e2e] DB リセット + migrate + seed を実行中..."
 nix develop --command bash -c 'cd apps/api && export TURSO_DATABASE_URL="${TURSO_DATABASE_URL:-http://127.0.0.1:8888}" && export TURSO_AUTH_TOKEN="${TURSO_AUTH_TOKEN:-dummy}" && pnpm reset:e2e'
 echo "[e2e] DB セットアップ完了"
 
+# Expo public env vars must be embedded into the JS bundle at build time.
+# Set placeholder key so revenueCat.ts skips initialization in __DEV__ mode
+# (value starting with "your-" triggers the skip path in requireEnvKey).
+export EXPO_PUBLIC_E2E_MODE="1"
+export EXPO_PUBLIC_REVENUECAT_ANDROID_API_KEY="your-revenuecat-android-api-key"
+
 # Build and install development build
 nix develop --command bash -c "cd apps/mobile && pnpm expo run:android --variant debug" &
 EXPO_PID=$!
