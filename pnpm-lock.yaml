@@ -11,11 +11,17 @@ overrides:
   brace-expansion@2: ^2.0.2
   '@tootallnate/once': '>=3.0.1'
   markdown-it: '>=12.3.2'
-  '@xmldom/xmldom': '>=0.8.12'
+  '@xmldom/xmldom': '>=0.9.10'
+  uuid: '>=14.0.0'
   lodash: '>=4.18.0'
   defu: 6.1.6
   vite: 8.0.7
   minimatch: ^9.0.0
+
+patchedDependencies:
+  '@expo/plist@0.5.2':
+    hash: 14b39851f9e6e12e01c59ffba2c7fc109bcd7fa4b606cbd18f499230f36e0f33
+    path: patches/@expo__plist@0.5.2.patch
 
 importers:
 
@@ -2628,8 +2634,8 @@ packages:
   '@vitest/utils@4.1.1':
     resolution: {integrity: sha512-cNxAlaB3sHoCdL6pj6yyUXv9Gry1NHNg0kFTXdvSIZXLHsqKH7chiWOkwJ5s5+d/oMwcoG9T0bKU38JZWKusrQ==}
 
-  '@xmldom/xmldom@0.9.9':
-    resolution: {integrity: sha512-qycIHAucxy/LXAYIjmLmtQ8q9GPnMbnjG1KXhWm9o5sCr6pOYDATkMPiTNa6/v8eELyqOQ2FsEqeoFYmgv/gJg==}
+  '@xmldom/xmldom@0.9.10':
+    resolution: {integrity: sha512-A9gOqLdi6cV4ibazAjcQufGj0B1y/vDqYrcuP6d/6x8P27gRS8643Dj9o1dEKtB6O7fwxb2FgBmJS2mX7gpvdw==}
     engines: {node: '>=14.6'}
 
   abab@2.0.6:
@@ -5908,8 +5914,8 @@ packages:
     resolution: {integrity: sha512-pMZTvIkT1d+TFGvDOqodOclx0QWkkgi6Tdoa8gC8ffGAAqz9pzPTZWAybbsHHoED/ztMtkv/VoYTYyShUn81hA==}
     engines: {node: '>= 0.4.0'}
 
-  uuid@7.0.3:
-    resolution: {integrity: sha512-DPSke0pXhTZgoF/d+WSt2QaKMCFSfx7QegxEWT+JOuHF5aWrKEn0G+ztjuJg/gG8/ItK+rbPCD/yNv8yyih6Cg==}
+  uuid@14.0.0:
+    resolution: {integrity: sha512-Qo+uWgilfSmAhXCMav1uYFynlQO7fMFiMVZsQqZRMIXp0O7rR7qjkj+cPvBHLgBqi960QCoo/PH2/6ZtVqKvrg==}
     hasBin: true
 
   v8-to-istanbul@9.3.0:
@@ -7139,7 +7145,7 @@ snapshots:
       '@expo/metro-config': 55.0.11(expo@55.0.9)(typescript@5.9.3)
       '@expo/osascript': 2.4.2
       '@expo/package-manager': 1.10.3
-      '@expo/plist': 0.5.2
+      '@expo/plist': 0.5.2(patch_hash=14b39851f9e6e12e01c59ffba2c7fc109bcd7fa4b606cbd18f499230f36e0f33)
       '@expo/prebuild-config': 55.0.11(expo@55.0.9)(typescript@5.9.3)
       '@expo/require-utils': 55.0.3(typescript@5.9.3)
       '@expo/router-server': 55.0.11(@expo/metro-runtime@55.0.9)(expo-constants@55.0.9)(expo-font@55.0.4)(expo-router@55.0.8)(expo-server@55.0.6)(expo@55.0.9)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
@@ -7209,7 +7215,7 @@ snapshots:
     dependencies:
       '@expo/config-types': 55.0.5
       '@expo/json-file': 10.0.12
-      '@expo/plist': 0.5.2
+      '@expo/plist': 0.5.2(patch_hash=14b39851f9e6e12e01c59ffba2c7fc109bcd7fa4b606cbd18f499230f36e0f33)
       '@expo/sdk-runtime-versions': 1.0.0
       chalk: 4.1.2
       debug: 4.4.3
@@ -7405,9 +7411,9 @@ snapshots:
       ora: 3.4.0
       resolve-workspace-root: 2.0.1
 
-  '@expo/plist@0.5.2':
+  '@expo/plist@0.5.2(patch_hash=14b39851f9e6e12e01c59ffba2c7fc109bcd7fa4b606cbd18f499230f36e0f33)':
     dependencies:
-      '@xmldom/xmldom': 0.9.9
+      '@xmldom/xmldom': 0.9.10
       base64-js: 1.5.1
       xmlbuilder: 15.1.1
 
@@ -8293,9 +8299,7 @@ snapshots:
       metro-runtime: 0.83.5
     transitivePeerDependencies:
       - '@babel/core'
-      - bufferutil
       - supports-color
-      - utf-8-validate
 
   '@react-native/normalize-colors@0.74.89': {}
 
@@ -8751,7 +8755,7 @@ snapshots:
       convert-source-map: 2.0.0
       tinyrainbow: 3.1.0
 
-  '@xmldom/xmldom@0.9.9': {}
+  '@xmldom/xmldom@0.9.10': {}
 
   abab@2.0.6: {}
 
@@ -11485,7 +11489,7 @@ snapshots:
 
   plist@3.1.0:
     dependencies:
-      '@xmldom/xmldom': 0.9.9
+      '@xmldom/xmldom': 0.9.10
       base64-js: 1.5.1
       xmlbuilder: 15.1.1
 
@@ -12437,7 +12441,7 @@ snapshots:
 
   utils-merge@1.0.1: {}
 
-  uuid@7.0.3: {}
+  uuid@14.0.0: {}
 
   v8-to-istanbul@9.3.0:
     dependencies:
@@ -12609,7 +12613,7 @@ snapshots:
   xcode@3.0.1:
     dependencies:
       simple-plist: 1.3.1
-      uuid: 7.0.3
+      uuid: 14.0.0
 
   xml-name-validator@4.0.0: {}
 

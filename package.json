@@ -28,9 +28,6 @@
     "check:nix-hermetic": "bash scripts/check-nix-hermetic.sh"
   },
   "pnpm": {
-    "patchedDependencies": {
-      "@expo/plist@0.5.2": "patches/@expo__plist@0.5.2.patch"
-    },
     "overrides": {
       "tar": ">=7.5.11",
       "esbuild": ">=0.25.0",
@@ -38,11 +35,15 @@
       "brace-expansion@2": "^2.0.2",
       "@tootallnate/once": ">=3.0.1",
       "markdown-it": ">=12.3.2",
-      "@xmldom/xmldom": ">=0.8.12",
+      "@xmldom/xmldom": ">=0.9.10",
+      "uuid": ">=14.0.0",
       "lodash": ">=4.18.0",
       "defu": "6.1.6",
       "vite": "8.0.7",
       "minimatch": "^9.0.0"
+    },
+    "patchedDependencies": {
+      "@expo/plist@0.5.2": "patches/@expo__plist@0.5.2.patch"
     }
   },
   "devDependencies": {
