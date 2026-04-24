@@ -118,6 +118,8 @@
             shellcheck
             actionlint
             jdk17
+            wrangler
+            eas-cli
           ];
 
           shellHook = ''
@@ -142,13 +144,6 @@
             if [ -x "$HOME/.local/bin/claude" ]; then
               export PATH="$HOME/.local/bin:$PATH"
             fi
-
-            # wrangler は nixpkgs の nodePackages から削除されたため npx ラッパーで提供
-            wrangler() { npx --yes wrangler@latest "$@"; }
-
-            # eas-cli は nixpkgs にないため npx ラッパーで提供
-            # fish/zsh 互換のため export -f は使用しない（bash 専用構文）
-            eas() { npx --yes eas-cli@latest "$@"; }
 
             # シークレットファイルのセットアップコマンド
             setup-secrets() {
@@ -204,7 +199,7 @@
             echo "  Node:     $(node --version)"
             echo "  pnpm:     $(pnpm --version)"
             echo "  wrangler: $(wrangler --version 2>/dev/null | head -1)"
-            echo "  eas:      via npx (run 'eas --version' to check)"
+            echo "  eas:      $(eas --version 2>/dev/null | head -1)"
             echo "  mailpit:  smtp://localhost:1025  http://localhost:8025"
             echo ""
             echo "Quick start:"
