@@ -151,6 +151,8 @@ BUILD_LOG="/tmp/maestro-local-${PLATFORM}-build.log"
 echo "[maestro-local] ${PLATFORM} dev client をビルド中..."
 echo "  ログ: ${BUILD_LOG}"
 
+export EXPO_PUBLIC_E2E_MODE="1"
+
 cd "${REPO_ROOT}/apps/mobile"
 
 if [ "${PLATFORM}" = "ios" ]; then
@@ -310,6 +312,7 @@ maestro test \
   --env TEST_EMAIL="${TEST_EMAIL:-test+maestro@techclip.app}" \
   --env TEST_PASSWORD="${TEST_PASSWORD:-TestPassword123!}" \
   --env TEST_NAME="${TEST_NAME:-Maestro Test User}" \
+  --env TIMESTAMP="${TIMESTAMP:-$(date +%s)}" \
   --env API_BASE_URL="${API_BASE_URL:-http://127.0.0.1:18787}" \
   --env FOLLOWER_EMAIL="${FOLLOWER_EMAIL:-follower+maestro@techclip.app}" \
   --env FOLLOWER_PASSWORD="${FOLLOWER_PASSWORD:-TestPassword123!}" \
