@@ -294,7 +294,7 @@ describe("useAuthStore", () => {
       expect(useAuthStore.getState().sessionExpiredMessage).toBeNull();
     });
 
-    it("checkSession時にSessionExpiredErrorがスローされたらhandleSessionExpiredが呼ばれること", async () => {
+    it("checkSession時にSessionExpiredErrorがスローされた場合は未認証状態になること", async () => {
       // Arrange
       mockGetAuthToken.mockResolvedValue("expired-token");
       mockApiFetch.mockRejectedValue(new SessionExpiredError());
@@ -305,9 +305,7 @@ describe("useAuthStore", () => {
       // Assert
       const state = useAuthStore.getState();
       expect(state.isAuthenticated).toBe(false);
-      expect(state.sessionExpiredMessage).toBe(
-        "セッションの有効期限が切れました。再度ログインしてください。",
-      );
+      expect(state.sessionExpiredMessage).toBeNull();
     });
   });
 });

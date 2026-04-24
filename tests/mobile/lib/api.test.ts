@@ -496,7 +496,7 @@ describe("apiFetch", () => {
   });
 
   describe("リフレッシュAPIの耐性", () => {
-    it("リフレッシュAPIが非JSONを返した場合はSessionExpiredErrorにラップされること", async () => {
+    it("リフレッシュAPIが非JSONを返した場合はApiHttpErrorをスローすること", async () => {
       // Arrange
       mockFetch
         .mockResolvedValueOnce(
@@ -510,11 +510,11 @@ describe("apiFetch", () => {
         );
 
       // Act & Assert
-      await expect(apiFetch("/articles")).rejects.toThrow(SessionExpiredError);
-      expect(mockClearAuthTokens).toHaveBeenCalledTimes(1);
+      await expect(apiFetch("/articles")).rejects.toThrow(ApiHttpError);
+      expect(mockClearAuthTokens).not.toHaveBeenCalled();
     });
 
-    it("リフレッシュAPIがネットワークエラーになった場合はSessionExpiredErrorにラップされること", async () => {
+    it("リフレッシュAPIがネットワークエラーになった場合はApiNetworkErrorをスローすること", async () => {
       // Arrange
       mockFetch
         .mockResolvedValueOnce(
@@ -523,8 +523,8 @@ describe("apiFetch", () => {
         .mockRejectedValueOnce(new TypeError("Network request failed"));
 
       // Act & Assert
-      await expect(apiFetch("/articles")).rejects.toThrow(SessionExpiredError);
-      expect(mockClearAuthTokens).toHaveBeenCalledTimes(1);
+      await expect(apiFetch("/articles")).rejects.toThrow(ApiNetworkError);
+      expect(mockClearAuthTokens).not.toHaveBeenCalled();
     });
   });
 

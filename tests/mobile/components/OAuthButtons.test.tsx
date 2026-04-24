@@ -25,7 +25,7 @@ describe("OAuthButtons", () => {
   });
 
   describe("GitHub アイコンの fill 色", () => {
-    it("ライトテーマのとき GitHub SVG xml に '#1c1917' の fill が含まれること", async () => {
+    it("ライトテーマのとき GitHub SVG xml に '#000000' の fill が含まれること", async () => {
       // Arrange
       jest.spyOn(ReactNative, "useColorScheme").mockReturnValue("light");
 
@@ -33,12 +33,12 @@ describe("OAuthButtons", () => {
       const { toJSON } = await render(<OAuthButtons {...DEFAULT_PROPS} />);
       const jsonStr = JSON.stringify(toJSON());
 
-      // Assert: currentColor が含まれず、ライトテーマのテキスト色が含まれること
+      // Assert: currentColor が含まれず、ライトテーマのモノクロ色が含まれること
       expect(jsonStr).not.toContain("currentColor");
-      expect(jsonStr).toContain("1c1917");
+      expect(jsonStr).toContain("000000");
     });
 
-    it("ダークテーマのとき GitHub SVG xml に '#e2e8f0' の fill が含まれること", async () => {
+    it("ダークテーマのとき GitHub SVG xml に '#ffffff' の fill が含まれること", async () => {
       // Arrange
       jest.spyOn(ReactNative, "useColorScheme").mockReturnValue("dark");
 
@@ -46,9 +46,9 @@ describe("OAuthButtons", () => {
       const { toJSON } = await render(<OAuthButtons {...DEFAULT_PROPS} />);
       const jsonStr = JSON.stringify(toJSON());
 
-      // Assert: currentColor が含まれず、ダークテーマのテキスト色が含まれること
+      // Assert: currentColor が含まれず、ダークテーマのモノクロ色が含まれること
       expect(jsonStr).not.toContain("currentColor");
-      expect(jsonStr).toContain("e2e8f0");
+      expect(jsonStr).toContain("ffffff");
     });
   });
 
