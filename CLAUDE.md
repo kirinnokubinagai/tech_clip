@@ -76,6 +76,11 @@ lane は `[a-zA-Z0-9][a-zA-Z0-9-]*` の英数字ハイフン文字列。
 3. **file ownership 厳格遵守**: 各 coder は自 lane の集合以外に絶対触らない
 4. **reviewer は 1 体が全 lane の impl-ready を集約**: 全 lane から受信後に統合レビュー
 5. **push は reviewer 1 回のみ**: lane ごとに push してはならない
+6. **E2E レーン（`tests/e2e/maestro/**` / testID / locales 変更を含む lane）は必ず e2e-reviewer を経由する**:
+   - その lane の coder は `impl-ready` を **e2e-reviewer** に送る（reviewer に直接送らない）
+   - e2e-reviewer が静的検証・emulator 実行後に reviewer へ `e2e-approved: <hash>` を送る
+   - reviewer は e2e-approved を「その lane の impl-ready」として扱い、全 lane 揃い次第統合レビューを開始する
+   - orchestrator は E2E 変更レーンが含まれる Issue を多レーン並列で扱う場合、**e2e-reviewer を必ず spawn すること**
 
 #### 適用基準
 - 大 Issue かつ「サブ Issue 分割するほどではない」中規模並列化
@@ -406,6 +411,7 @@ TeamDelete("active-issues")
 ☐ 矛盾するなら AskUserQuestion で確認したか？
 ☐ 「効率のため」「bot review 済みだから」「軽微だから」などの自己解釈で省略していないか？
 ☐ 今から取る行動が「逸脱例リスト」のどれかに該当していないか？
+☐ 多レーン並列を採用する場合、E2E 変更（`tests/e2e/maestro/**` / testID / locales）を含む lane があるか？あれば e2e-reviewer を spawn し、その lane の coder に「impl-ready は e2e-reviewer へ送れ」と指示したか？
 
 いずれかが不安定なら必ず AskUserQuestion する。判断を独断で下すことは禁止。
 

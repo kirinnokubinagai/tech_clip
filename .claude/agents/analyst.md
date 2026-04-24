@@ -72,12 +72,17 @@ lanes:
   ci:
     owners: [.github/**, scripts/ci/**]
     focus: "CI workflow 修正"
+  e2e:
+    owners: [tests/e2e/maestro/**, apps/mobile/src/locales/**]
+    focus: "E2E Maestro yaml / testID / locales 修正"
+    via_e2e_reviewer: true  # このレーンは必ず e2e-reviewer を経由する
 \`\`\`
 
 - `owners` は glob パターン。**重複 path は厳禁**
 - orchestrator がこの yaml を読んで各 coder に「自分の lane」を渡す想定
 - レーン分けが不要な場合（単独 coder）は yaml セクションを省略する
 - analyst は 1 体のみ（`issue-{N}-analyst`）。lane 分割しない
+- **`via_e2e_reviewer: true` が付いた lane**: orchestrator は e2e-reviewer を spawn し、その lane の coder には「impl-ready は issue-{N}-e2e-reviewer へ送れ」と伝えること。reviewer には「e2e-reviewer から e2e-approved が来たら E2E レーン完了とみなす」と伝えること
 
 
 ## ワークフロー
