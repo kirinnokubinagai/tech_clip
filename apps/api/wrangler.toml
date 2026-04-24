@@ -34,6 +34,9 @@ binding = "AI"
 crons = ["0 0 1 * *"]
 
 # --- Staging 環境 ---
+# TODO: Staging環境はまだ構築されていません。
+# 本番デプロイ前に以下のプレースホルダーを実際の値に置き換えてください。
+# 参考: docs/deployment.md または GitHub Secrets の設定を確認してください。
 # NOTE: フォローアップ Issue で以下の placeholder を実際の ID に置換すること。
 #   1. wrangler kv namespace create tech-clip-rate-limit-staging --env staging
 #   2. wrangler kv namespace create tech-clip-cache-staging --env staging
