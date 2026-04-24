@@ -11,11 +11,7 @@ type Bindings = {
 };
 
 /** テスト用 Hono アプリを作成する */
-function createTestApp(
-  sentryDsn: string | undefined,
-  fetchMock: MockFetch,
-  environment?: string,
-) {
+function createTestApp(sentryDsn: string | undefined, fetchMock: MockFetch, environment?: string) {
   const app = new Hono<{ Bindings: Bindings }>();
   app.use("*", createSentryMiddleware(fetchMock as typeof fetch));
 
