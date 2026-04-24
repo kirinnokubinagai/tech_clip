@@ -23,7 +23,7 @@ export TURSO_AUTH_TOKEN="${TURSO_AUTH_TOKEN:-dummy}"
 
 echo "[e2e-reset] Turso dev サーバー (${TURSO_DATABASE_URL}) を確認中..."
 
-if ! curl -sf -o /dev/null --max-time 3 "${TURSO_DATABASE_URL}"; then
+if ! curl -s -o /dev/null --max-time 3 "${TURSO_DATABASE_URL}"; then
   echo ""
   echo "ERROR: Turso dev サーバーに接続できません (${TURSO_DATABASE_URL})"
   echo "  起動コマンド: turso dev --port 8888"

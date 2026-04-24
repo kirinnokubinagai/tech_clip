@@ -35,8 +35,10 @@ cleanup() {
     echo "[maestro-local] バックグラウンドビルドプロセスを停止します (PID: ${BUILD_PID})"
     kill "${BUILD_PID}" 2>/dev/null || true
   fi
+  # 残留 Maestro プロセスも終了させる
+  pkill -9 -f "maestro.cli.AppKt" 2>/dev/null || true
 }
-trap cleanup EXIT
+trap cleanup EXIT INT TERM
 
 # --- 使用法 ---
 usage() {
@@ -135,6 +137,15 @@ if [ -z "${TIMEOUT_CMD}" ]; then
   echo "${COLOR_YELLOW}警告: timeout/gtimeout コマンドが見つかりません。タイムアウトなしで実行します${COLOR_RESET}"
 fi
 
+# --- 既存 APK をアンインストール（古いビルドを踏まないための保険）---
+APP_ID="${MAESTRO_APP_ID:-com.techclip.app}"
+if [ "${PLATFORM}" = "android" ]; then
+  if adb shell pm list packages 2>/dev/null | grep -q "^package:${APP_ID}$"; then
+    echo "[maestro-local] 既存 APK をアンインストールします: ${APP_ID}"
+    adb uninstall "${APP_ID}" 2>/dev/null || true
+  fi
+fi
+
 # --- dev client ビルド + 起動 ---
 BUILD_LOG="/tmp/maestro-local-${PLATFORM}-build.log"
 echo "[maestro-local] ${PLATFORM} dev client をビルド中..."
@@ -160,9 +171,18 @@ BUILD_PID="$!"
 
 cd "${REPO_ROOT}"
 
-# --- アプリ起動待機 ---
-APP_ID="${MAESTRO_APP_ID:-com.techclip.app}"
-APP_WAIT_MAX_SEC="${MAESTRO_APP_WAIT_MAX_SEC:-300}"
+# --- Phase 1: ビルド完了待機 ---
+echo "[maestro-local] ビルド完了を待機中..."
+wait "${BUILD_PID}"
+BUILD_EXIT=$?
+if [ "${BUILD_EXIT}" -ne 0 ]; then
+  echo "${COLOR_RED}エラー: ビルドが失敗しました（終了コード: ${BUILD_EXIT}）。ログを確認してください: ${BUILD_LOG}${COLOR_RESET}" >&2
+  exit 5
+fi
+echo "${COLOR_GREEN}[maestro-local] ビルド完了${COLOR_RESET}"
+
+# --- Phase 2: アプリ起動待機 ---
+APP_LAUNCH_WAIT_MAX_SEC="${MAESTRO_APP_WAIT_MAX_SEC:-120}"
 APP_WAIT_INTERVAL=5
 APP_WAITED=0
 
@@ -201,13 +221,8 @@ while true; do
     fi
   fi
 
-  if ! kill -0 "${BUILD_PID}" 2>/dev/null; then
-    echo "${COLOR_RED}エラー: ビルドが失敗しました。ログを確認してください: ${BUILD_LOG}${COLOR_RESET}" >&2
-    exit 5
-  fi
-
-  if [ "${APP_WAITED}" -ge "${APP_WAIT_MAX_SEC}" ]; then
-    echo "${COLOR_RED}エラー: アプリの起動待機がタイムアウトしました（${APP_WAIT_MAX_SEC}秒）${COLOR_RESET}" >&2
+  if [ "${APP_WAITED}" -ge "${APP_LAUNCH_WAIT_MAX_SEC}" ]; then
+    echo "${COLOR_RED}エラー: アプリの起動待機がタイムアウトしました（${APP_LAUNCH_WAIT_MAX_SEC}秒）${COLOR_RESET}" >&2
     echo "  ビルドログを確認してください: ${BUILD_LOG}" >&2
     exit 4
   fi
@@ -292,6 +307,16 @@ maestro test \
   --format junit \
   --output "${JUNIT_OUTPUT}" \
   --debug-output "${DEBUG_OUTPUT}" \
+  --env TEST_EMAIL="${TEST_EMAIL:-test+maestro@techclip.app}" \
+  --env TEST_PASSWORD="${TEST_PASSWORD:-TestPassword123!}" \
+  --env TEST_NAME="${TEST_NAME:-Maestro Test User}" \
+  --env API_BASE_URL="${API_BASE_URL:-http://127.0.0.1:18787}" \
+  --env FOLLOWER_EMAIL="${FOLLOWER_EMAIL:-follower+maestro@techclip.app}" \
+  --env FOLLOWER_PASSWORD="${FOLLOWER_PASSWORD:-TestPassword123!}" \
+  --env FOLLOWEE_EMAIL="${FOLLOWEE_EMAIL:-followee+maestro@techclip.app}" \
+  --env FOLLOWEE_PASSWORD="${FOLLOWEE_PASSWORD:-TestPassword123!}" \
+  --env PREMIUM_EMAIL="${PREMIUM_EMAIL:-premium+maestro@techclip.app}" \
+  --env PREMIUM_PASSWORD="${PREMIUM_PASSWORD:-TestPassword123!}" \
   "${FLOW_PATH}" || MAESTRO_EXIT=$?
 
 # --- 結果サマリー ---

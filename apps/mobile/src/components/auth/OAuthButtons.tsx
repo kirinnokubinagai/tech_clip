@@ -1,5 +1,13 @@
 import { useTranslation } from "react-i18next";
-import { ActivityIndicator, Linking, Platform, Pressable, Text, View } from "react-native";
+import {
+  ActivityIndicator,
+  Linking,
+  Platform,
+  Pressable,
+  Text,
+  useColorScheme,
+  View,
+} from "react-native";
 import { SvgXml } from "react-native-svg";
 
 import { useColors } from "@/hooks/use-colors";
@@ -118,9 +126,10 @@ export function OAuthButtons({
 }: OAuthButtonsProps) {
   const { t } = useTranslation();
   const colors = useColors();
+  const colorScheme = useColorScheme();
 
-  /** GitHub・Apple アイコンの fill 色（テーマ連動） */
-  const monoIconFill = colors.text;
+  /** GitHub・Apple アイコンの fill 色（null はダークとして扱う） */
+  const monoIconFill = colorScheme === "light" ? "#000000" : "#ffffff";
   const githubSvg = buildGithubSvg(monoIconFill);
   const appleSvg = buildAppleSvg(monoIconFill);
 

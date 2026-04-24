@@ -1,10 +1,9 @@
 appId: com.techclip.app
----
+
 # TechClip Maestro E2E テスト設定
 # 実行方法: bash scripts/maestro-local.sh android
 
 # デフォルトタイムアウト（ミリ秒）
-# 要素が見つかるまで待機する最大時間
 waitForAppToSettleTimeout: 3000
 
 # 環境変数（CI では --env フラグで上書きする）
@@ -13,7 +12,6 @@ env:
   TEST_PASSWORD: TestPassword123!
   TEST_NAME: Maestro Test User
   API_BASE_URL: http://127.0.0.1:18787
-  # シナリオ別ユーザー（seed-maestro-static.ts で作成）
   FOLLOWER_EMAIL: follower+maestro@techclip.app
   FOLLOWER_PASSWORD: TestPassword123!
   FOLLOWEE_EMAIL: followee+maestro@techclip.app

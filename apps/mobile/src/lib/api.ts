@@ -461,34 +461,37 @@ async function doRefreshAccessToken(baseUrl: string): Promise<string> {
     throw new SessionExpiredError();
   }
 
+  let response: Response;
   try {
-    const response = await fetchWithTimeout(`${baseUrl}${REFRESH_TOKEN_PATH}`, {
+    response = await fetchWithTimeout(`${baseUrl}${REFRESH_TOKEN_PATH}`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ refreshToken }),
     });
+  } catch {
+    // ネットワーク不通・タイムアウト: トークンは保持してそのまま投げる
+    throw new ApiNetworkError();
+  }
 
-    if (!isSuccessStatus(response.status)) {
-      await clearAuthTokens();
-      throw new SessionExpiredError();
-    }
-
-    const parsed = await tryParseJson(response);
-    if (!isRefreshTokenResponse(parsed)) {
-      await clearAuthTokens();
-      throw new SessionExpiredError();
-    }
-
-    await setAuthToken(parsed.data.token);
-    await setRefreshToken(parsed.data.refreshToken);
-    return parsed.data.token;
-  } catch (error) {
-    if (error instanceof SessionExpiredError) {
-      throw error;
-    }
+  if (response.status === HTTP_STATUS_UNAUTHORIZED) {
     await clearAuthTokens();
     throw new SessionExpiredError();
   }
+
+  if (!isSuccessStatus(response.status)) {
+    // 5xx などサーバー一時エラー: トークンは保持して上位に伝える
+    throw new ApiHttpError(response.status, response.statusText);
+  }
+
+  const parsed = await tryParseJson(response);
+  if (!isRefreshTokenResponse(parsed)) {
+    await clearAuthTokens();
+    throw new SessionExpiredError();
+  }
+
+  await setAuthToken(parsed.data.token);
+  await setRefreshToken(parsed.data.refreshToken);
+  return parsed.data.token;
 }
 
 /**

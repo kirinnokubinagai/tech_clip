@@ -1,7 +1,7 @@
 import * as SecureStore from "expo-secure-store";
 import { create } from "zustand";
 
-import { apiFetch, SessionExpiredError } from "@/lib/api";
+import { apiFetch } from "@/lib/api";
 import { clearAuthTokens, getAuthToken, setAuthToken, setRefreshToken } from "@/lib/secure-store";
 import type {
   AuthErrorResponse,
@@ -226,19 +226,7 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
         isAuthenticated: true,
         isLoading: false,
       });
-    } catch (error) {
-      if (error instanceof SessionExpiredError) {
-        await clearAuthTokens();
-        set({
-          user: null,
-          session: null,
-          isAuthenticated: false,
-          isLoading: false,
-          sessionExpiredMessage: SESSION_EXPIRED_MESSAGE,
-        });
-        return;
-      }
-
+    } catch {
       await clearAuthTokens();
       set({
         user: null,
