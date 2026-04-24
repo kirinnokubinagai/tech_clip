@@ -65,6 +65,10 @@ coverage/
 
 # Claude Code ランタイムロックファイル
 .claude/*.lock
+# レビュー済みマーカー（reviewer エージェントのみが生成。コミット禁止）
+.claude/.review-passed
+# ポーリング状態ファイル（CI watcher の一時ファイル）
+.claude/polling/
 
 # Claude Code ユーザー設定ディレクトリ（認証情報を含むため除外）
 .claude-user/
