@@ -470,7 +470,10 @@ async function doRefreshAccessToken(baseUrl: string): Promise<string> {
     });
   } catch (networkErr) {
     // ネットワーク不通・タイムアウト: トークンは保持してそのまま投げる
-    throw new ApiNetworkError("トークンリフレッシュ中にネットワークエラーが発生しました", networkErr);
+    throw new ApiNetworkError(
+      "トークンリフレッシュ中にネットワークエラーが発生しました",
+      networkErr,
+    );
   }
 
   if (response.status === HTTP_STATUS_UNAUTHORIZED) {
