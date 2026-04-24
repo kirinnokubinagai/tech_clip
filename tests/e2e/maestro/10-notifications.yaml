@@ -111,7 +111,16 @@ env:
 - tapOn:
     id: "mark-all-read-button"
 - waitForAnimationToEnd:
-    timeout: 1000
+    timeout: 2000
+
+# 既読反映の確認: unread-indicator が画面から消えていること
+- assertNotVisible:
+    id: "unread-indicator"
+
+# 全既読後はタブバッジも消えていること
+- assertNotVisible:
+    id: "tab-badge"
+
 - takeScreenshot: screenshots/10-notifications/03-all-read
 
 # ホームタブへ戻る

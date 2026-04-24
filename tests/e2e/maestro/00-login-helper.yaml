@@ -13,6 +13,14 @@ env:
 - waitForAnimationToEnd:
     timeout: 60000
 
+# 既にログイン済みでホームが表示されている場合は何もせず抜ける
+- runFlow:
+    when:
+      visible: "すべて"
+    commands:
+      - waitForAnimationToEnd:
+          timeout: 1000
+
 # いずれかの初期画面が確実に表示されるまで runFlow when: visible で条件分岐
 # 最初に hit する text でループを抜ける
 - runFlow:

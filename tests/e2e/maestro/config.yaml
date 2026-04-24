@@ -18,3 +18,5 @@ env:
   FOLLOWEE_PASSWORD: TestPassword123!
   PREMIUM_EMAIL: premium+maestro@techclip.app
   PREMIUM_PASSWORD: TestPassword123!
+  CHANGEPASS_EMAIL: changepass+maestro@techclip.app
+  CHANGEPASS_PASSWORD: TestPassword123!

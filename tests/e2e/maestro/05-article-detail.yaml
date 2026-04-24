@@ -127,7 +127,12 @@ env:
     text: "要約"
 - tapOn:
     id: "summary-button"
-- waitForAnimationToEnd
+- waitForAnimationToEnd:
+    timeout: 3000
+# タップ後もボタン自体は disable 状態で visible のまま（ActivityIndicator 表示中）
+# これによりタップが反映された（= crash していない / 画面遷移していない）ことを確認
+- assertVisible:
+    id: "summary-button"
 
 # 翻訳ボタン
 - assertVisible:
@@ -136,7 +141,11 @@ env:
     text: "翻訳"
 - tapOn:
     id: "translation-button"
-- waitForAnimationToEnd
+- waitForAnimationToEnd:
+    timeout: 3000
+# タップ後もボタン自体は disable 状態で visible のまま（ActivityIndicator 表示中）
+- assertVisible:
+    id: "translation-button"
 
 # ブラウザで開くボタン確認
 - assertVisible:

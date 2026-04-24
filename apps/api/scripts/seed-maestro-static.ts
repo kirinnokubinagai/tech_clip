@@ -78,6 +78,13 @@ const PREMIUM_SPEC = {
   name: "Premium Maestro",
 };
 
+/** CHANGEPASS ユーザー（パスワード変更 E2E 専用） */
+const CHANGEPASS_SPEC = {
+  email: "changepass+maestro@techclip.app",
+  username: "changepass_maestro",
+  name: "ChangePass Maestro",
+};
+
 /** Maestro タグ名 */
 const MAESTRO_TAG_NAME = "maestro";
 
@@ -671,10 +678,14 @@ async function seedMaestroStatic(): Promise<void> {
     .where(eq(users.id, premiumId));
   process.stdout.write(`PREMIUM upsert 完了（isPremium=true）: ${premiumId}\n`);
 
+  const changepassId = await upsertUser(db, CHANGEPASS_SPEC);
+  process.stdout.write(`CHANGEPASS upsert 完了: ${changepassId}\n`);
+
   await upsertAccount(db, followeeId, MAESTRO_STATIC_PASSWORD);
   await upsertAccount(db, followerId, MAESTRO_STATIC_PASSWORD);
   await upsertAccount(db, secondaryId, MAESTRO_STATIC_PASSWORD);
   await upsertAccount(db, premiumId, MAESTRO_STATIC_PASSWORD);
+  await upsertAccount(db, changepassId, MAESTRO_STATIC_PASSWORD);
   process.stdout.write("accounts upsert 完了\n");
 
   const articleIds: string[] = [];
