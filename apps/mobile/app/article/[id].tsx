@@ -618,7 +618,9 @@ export default function ArticleDetailScreen() {
               <Sparkles size={SECTION_ICON_SIZE} color={colors.success} />
               <Text className="text-sm font-semibold text-success">{t("article.summary")}</Text>
             </View>
-            <Text className="text-sm text-text leading-relaxed">{article.summary}</Text>
+            <Text testID="summary-content" className="text-sm text-text leading-relaxed">
+              {article.summary}
+            </Text>
           </View>
         )}
 
@@ -630,7 +632,9 @@ export default function ArticleDetailScreen() {
                 {t("article.translation")}
               </Text>
             </View>
-            <Text className="text-sm text-text leading-relaxed">{article.translation}</Text>
+            <Text testID="translation-content" className="text-sm text-text leading-relaxed">
+              {article.translation}
+            </Text>
           </View>
         )}
 

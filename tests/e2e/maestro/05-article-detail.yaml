@@ -120,32 +120,25 @@ env:
 - assertVisible:
     text: "お気に入り追加"
 
-# 要約ボタン
+# 要約ボタン（seed により初回表示時点で要約済み）
 - assertVisible:
     id: "summary-button"
+# seed により「要約済み」が表示されること
 - assertVisible:
-    text: "要約"
-- tapOn:
-    id: "summary-button"
-- waitForAnimationToEnd:
-    timeout: 3000
-# タップ後もボタン自体は disable 状態で visible のまま（ActivityIndicator 表示中）
-# これによりタップが反映された（= crash していない / 画面遷移していない）ことを確認
+    text: "要約済み"
+# 要約内容が表示されていること
 - assertVisible:
-    id: "summary-button"
+    id: "summary-content"
 
-# 翻訳ボタン
+# 翻訳ボタン（seed により初回表示時点で翻訳済み）
 - assertVisible:
     id: "translation-button"
+# seed により「翻訳済み」が表示されること
 - assertVisible:
-    text: "翻訳"
-- tapOn:
-    id: "translation-button"
-- waitForAnimationToEnd:
-    timeout: 3000
-# タップ後もボタン自体は disable 状態で visible のまま（ActivityIndicator 表示中）
+    text: "翻訳済み"
+# 翻訳内容が表示されていること
 - assertVisible:
-    id: "translation-button"
+    id: "translation-content"
 
 # ブラウザで開くボタン確認
 - assertVisible:

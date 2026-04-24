@@ -16,7 +16,9 @@ import {
   articleTags,
   follows,
   notifications,
+  summaries,
   tags,
+  translations,
   users,
 } from "../src/db/schema/index.ts";
 
@@ -363,6 +365,90 @@ const SEED_ARTICLES: Array<{
 
 /** 記事数 */
 const ARTICLE_COUNT = SEED_ARTICLES.length;
+
+/** TEST USER (test+maestro@techclip.app) のメールアドレス */
+const TEST_USER_EMAIL = "test+maestro@techclip.app";
+
+/**
+ * TEST USER 専用の seed 記事
+ * test 05 (article-detail) のソースフィルター確認と
+ * test 08 (search) の "TypeScript" / "React" キーワード検索に対応する
+ * 最初の記事には要約・翻訳を pre-seed して E2E で内容確認する
+ */
+const TEST_USER_ARTICLES: Array<{
+  url: string;
+  title: string;
+  source: string;
+  content: string;
+  excerpt: string;
+  author: string;
+  publishedAt: string;
+}> = [
+  {
+    url: "https://zenn.dev/mizchi/articles/understanding-typescript-type-system",
+    title: "TypeScript の型システムを深く理解する",
+    source: "zenn",
+    content:
+      "# TypeScript の型システムを深く理解する\n\nTypeScript は JavaScript に型安全性を追加するプログラミング言語です。\n\n## 基本的な型\n\n- string: 文字列型\n- number: 数値型\n- boolean: 真偽値型\n\n## 型推論\n\nTypeScript は変数の型を自動推論します。\n\n```typescript\nconst greeting: string = 'Hello';\nconst count: number = 42;\n```\n\n## ジェネリクス\n\nジェネリクスを使うと再利用可能なコードを書けます。\n\n```typescript\nfunction identity<T>(arg: T): T {\n  return arg;\n}\n```\n\n## まとめ\n\nTypeScript の型システムを理解することで、バグを早期に発見し、コード品質を向上させることができます。",
+    excerpt:
+      "TypeScriptの型システムについて、基本的な型から高度なジェネリクスまで解説します。",
+    author: "test_user",
+    publishedAt: "2026-04-10T10:00:00.000Z",
+  },
+  {
+    url: "https://qiita.com/test_author/items/react-hooks-complete-guide",
+    title: "React Hooks 完全ガイド：useState から useEffect まで",
+    source: "qiita",
+    content:
+      "# React Hooks 完全ガイド：useState から useEffect まで\n\nReact Hooks は関数コンポーネントで状態管理や副作用を扱うための仕組みです。\n\n## useState\n\n```javascript\nconst [count, setCount] = useState(0);\n```\n\n## useEffect\n\n副作用の処理に使います。\n\n```javascript\nuseEffect(() => {\n  document.title = `Count: ${count}`;\n}, [count]);\n```\n\n## useCallback\n\nコールバック関数をメモ化します。\n\n## useMemo\n\n計算結果をメモ化します。\n\n## まとめ\n\nHooks を使いこなすことで React アプリの品質が向上します。",
+    excerpt: "React Hooksの使い方を useState/useEffect/useCallback/useMemo を中心に解説します。",
+    author: "test_user",
+    publishedAt: "2026-04-08T10:00:00.000Z",
+  },
+  {
+    url: "https://developer.hatenablog.com/entry/2026/01/10/typescript-react-best-practices",
+    title: "TypeScript × React のベストプラクティス 2026",
+    source: "hatena",
+    content:
+      "# TypeScript × React のベストプラクティス 2026\n\n## はじめに\n\nTypeScript と React を組み合わせた開発のベストプラクティスを紹介します。\n\n## Props の型定義\n\n```typescript\ntype ButtonProps = {\n  label: string;\n  onClick: () => void;\n  disabled?: boolean;\n};\n\nconst Button: React.FC<ButtonProps> = ({ label, onClick, disabled }) => (\n  <button onClick={onClick} disabled={disabled}>\n    {label}\n  </button>\n);\n```\n\n## カスタム Hooks\n\n```typescript\nfunction useCounter(initialValue: number) {\n  const [count, setCount] = useState(initialValue);\n  const increment = () => setCount((c) => c + 1);\n  return { count, increment };\n}\n```\n\n## まとめ\n\n型安全な React コンポーネントを書くことで保守性が向上します。",
+    excerpt:
+      "TypeScriptとReactを組み合わせた開発のベストプラクティスをコード例付きで解説します。",
+    author: "test_user",
+    publishedAt: "2026-04-05T10:00:00.000Z",
+  },
+  {
+    url: "https://dev.to/test_author/react-native-expo-2026-guide",
+    title: "React Native + Expo でモバイルアプリ開発入門 2026",
+    source: "devto",
+    content:
+      "# React Native + Expo でモバイルアプリ開発入門 2026\n\nReact Native と Expo を使うと JavaScript/TypeScript でネイティブモバイルアプリを作れます。\n\n## セットアップ\n\n```bash\nnpx create-expo-app my-app\ncd my-app\nnpx expo start\n```\n\n## 基本コンポーネント\n\n- View: レイアウト用コンテナ\n- Text: テキスト表示\n- Pressable: タッチイベント\n\n## まとめ\n\nExpo を使うとモバイルアプリ開発のハードルが大幅に下がります。",
+    excerpt:
+      "React NativeとExpoを使ったモバイルアプリ開発の始め方を初心者向けに解説します。",
+    author: "test_user",
+    publishedAt: "2026-04-02T10:00:00.000Z",
+  },
+  {
+    url: "https://github.com/microsoft/TypeScript",
+    title: "microsoft/TypeScript — TypeScript is a superset of JavaScript",
+    source: "github",
+    content:
+      "# microsoft/TypeScript\n\nTypeScript is a language for application-scale JavaScript.\n\n## TypeScript adds optional types\n\nTypeScript adds optional types, classes, and modules to JavaScript.\n\n## Compile to plain JavaScript\n\nTypeScript compiles to plain, idiomatic JavaScript that runs in any browser, in Node.js, or in any JavaScript engine.\n\n## Key Features\n\n- Optional static typing\n- Type inference\n- Generics\n- Decorators\n- Async/await support",
+    excerpt: "TypeScript is a typed superset of JavaScript that compiles to plain JavaScript.",
+    author: "test_user",
+    publishedAt: "2026-03-28T10:00:00.000Z",
+  },
+];
+
+/** TEST USER 記事に pre-seed する日本語要約 */
+const TEST_SUMMARY_JA =
+  "TypeScript は JavaScript に型安全性を追加するプログラミング言語です。型推論やジェネリクスを活用することで、コンパイル時にバグを早期に発見でき、大規模プロジェクトの保守性が向上します。";
+
+/** TEST USER 記事に pre-seed する英語翻訳タイトル */
+const TEST_TRANSLATION_TITLE = "Deep Understanding of TypeScript Type System";
+
+/** TEST USER 記事に pre-seed する英語翻訳本文 */
+const TEST_TRANSLATION_CONTENT =
+  "TypeScript is a programming language that adds type safety to JavaScript. By leveraging type inference and generics, you can catch bugs at compile time and improve the maintainability of large-scale projects. Understanding the TypeScript type system is essential for writing high-quality JavaScript applications.";
 /**
  * scrypt でパスワードをハッシュ化する（Better Auth 互換）
  *
@@ -681,6 +767,63 @@ async function upsertNotification(
 }
 
 /**
+ * 要約を upsert する（articleId + language の unique 制約を利用）
+ *
+ * @param db - Drizzle DB インスタンス
+ * @param articleId - 記事 ID
+ * @param language - 言語コード（例: "ja"）
+ * @param summaryText - 要約テキスト
+ */
+async function upsertSummary(
+  db: ReturnType<typeof drizzle>,
+  articleId: string,
+  language: string,
+  summaryText: string,
+): Promise<void> {
+  await db
+    .insert(summaries)
+    .values({
+      id: crypto.randomUUID(),
+      articleId,
+      language,
+      summary: summaryText,
+      model: "seed-mock",
+      createdAt: new Date(),
+    })
+    .onConflictDoNothing();
+}
+
+/**
+ * 翻訳を upsert する（articleId + targetLanguage の unique 制約を利用）
+ *
+ * @param db - Drizzle DB インスタンス
+ * @param articleId - 記事 ID
+ * @param targetLanguage - 翻訳先言語コード（例: "en"）
+ * @param translatedTitle - 翻訳済みタイトル
+ * @param translatedContent - 翻訳済み本文
+ */
+async function upsertTranslation(
+  db: ReturnType<typeof drizzle>,
+  articleId: string,
+  targetLanguage: string,
+  translatedTitle: string,
+  translatedContent: string,
+): Promise<void> {
+  await db
+    .insert(translations)
+    .values({
+      id: crypto.randomUUID(),
+      articleId,
+      targetLanguage,
+      translatedTitle,
+      translatedContent,
+      model: "seed-mock",
+      createdAt: new Date(),
+    })
+    .onConflictDoNothing();
+}
+
+/**
  * Maestro e2e 用静的 seed を実行する（冪等 upsert）
  *
  * 3 ユーザー（FOLLOWEE / FOLLOWER / SECONDARY）と FOLLOWEE の記事 5 件を seed する。
@@ -779,6 +922,109 @@ async function seedMaestroStatic(): Promise<void> {
     );
   }
   process.stdout.write(`FOLLOWER 通知 ${SEED_NOTIFICATIONS.length} 件 upsert 完了\n`);
+
+  // TEST USER (test+maestro@techclip.app) の補完 seed
+  // main seed.ts が作成した TEST USER にメールアドレスで検索してIDを取得し、
+  // 記事・要約・翻訳・フォロー・通知を追加する
+  const testUserRows = await db
+    .select()
+    .from(users)
+    .where(eq(users.email, TEST_USER_EMAIL))
+    .limit(1);
+
+  if (testUserRows.length > 0) {
+    const testUserId = testUserRows[0].id;
+
+    await db
+      .update(users)
+      .set({ isTestAccount: true, freeAiUsesRemaining: 5 })
+      .where(eq(users.id, testUserId));
+
+    const testArticleIds: string[] = [];
+    for (let i = 0; i < TEST_USER_ARTICLES.length; i++) {
+      const spec = TEST_USER_ARTICLES[i];
+      // 最新記事が先頭に来るよう作成日時を設定（index 0 が最新）
+      const createdAt = new Date(Date.now() - i * 3 * 60 * 1000);
+      const articleId = await upsertArticle(
+        db,
+        testUserId,
+        spec.url,
+        {
+          title: spec.title,
+          source: spec.source,
+          content: spec.content,
+          excerpt: spec.excerpt,
+          author: spec.author,
+          thumbnailUrl: null,
+          publishedAt: spec.publishedAt,
+          readingTimeMinutes: Math.ceil((spec.content?.length ?? 0) / 500),
+        },
+        createdAt,
+      );
+      testArticleIds.push(articleId);
+    }
+    process.stdout.write(`TEST USER 記事 ${TEST_USER_ARTICLES.length} 件 upsert 完了\n`);
+
+    // 最初の記事（ホーム画面先頭）に要約と翻訳を pre-seed
+    if (testArticleIds.length > 0) {
+      await upsertSummary(db, testArticleIds[0], "ja", TEST_SUMMARY_JA);
+      await upsertTranslation(
+        db,
+        testArticleIds[0],
+        "en",
+        TEST_TRANSLATION_TITLE,
+        TEST_TRANSLATION_CONTENT,
+      );
+      process.stdout.write("TEST USER 記事[0] の要約・翻訳 pre-seed 完了\n");
+    }
+
+    // TEST USER が FOLLOWEE をフォロー
+    await upsertFollow(db, testUserId, followeeId);
+    process.stdout.write("TEST USER → FOLLOWEE フォロー upsert 完了\n");
+
+    // TEST USER の通知を seed
+    const testUserNotifications: Array<{
+      type: NotificationType;
+      title: string;
+      body: string;
+    }> = [
+      {
+        type: "new_follower",
+        title: "新しいフォロワーがいます",
+        body: "followerユーザーがあなたをフォローしました。",
+      },
+      {
+        type: "article_liked",
+        title: "記事にいいねが付きました",
+        body: "あなたのクリップした記事に followeeユーザー がいいねしました。",
+      },
+      {
+        type: "system_update",
+        title: "システムのお知らせ",
+        body: "TechClipがアップデートされました。新機能をお試しください。",
+      },
+      {
+        type: "new_follower",
+        title: "新しいフォロワーがいます",
+        body: "secondaryユーザーがあなたをフォローしました。",
+      },
+      {
+        type: "article_liked",
+        title: "記事にいいねが付きました",
+        body: "あなたのクリップした記事に 5人 がいいねしました。",
+      },
+    ];
+
+    for (let i = 0; i < testUserNotifications.length; i++) {
+      const n = testUserNotifications[i];
+      await upsertNotification(db, testUserId, `maestro-notification-test-${i}`, n.type, n.title, n.body);
+    }
+    process.stdout.write(`TEST USER 通知 ${testUserNotifications.length} 件 upsert 完了\n`);
+  } else {
+    process.stdout.write(
+      `WARN: TEST USER (${TEST_USER_EMAIL}) が見つかりません。db:seed を先に実行してください。\n`,
+    );
+  }
 
   client.close();
   process.stdout.write("Maestro 静的 seed 完了\n");
