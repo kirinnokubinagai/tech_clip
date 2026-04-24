@@ -18,6 +18,13 @@ jobs:
     steps:
       - uses: actions/checkout@v6
       - uses: ./.github/actions/nix-setup
+      - name: Cache pnpm store
+        uses: actions/cache@v4
+        with:
+          path: ~/.pnpm-store
+          key: pnpm-store-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
+          restore-keys: |
+            pnpm-store-${{ runner.os }}-
       - name: Mask EXPO_TOKEN in logs
         env:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
@@ -46,6 +53,13 @@ jobs:
           key: gradle-${{ runner.os }}-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
           restore-keys: |
             gradle-${{ runner.os }}-
+      - name: Cache pnpm store
+        uses: actions/cache@v4
+        with:
+          path: ~/.pnpm-store
+          key: pnpm-store-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
+          restore-keys: |
+            pnpm-store-${{ runner.os }}-
       - name: Mask EXPO_TOKEN in logs
         env:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
