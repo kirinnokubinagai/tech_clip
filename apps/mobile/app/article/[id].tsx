@@ -446,6 +446,7 @@ export default function ArticleDetailScreen() {
     <View className="flex-1 bg-background">
       <View className="flex-row items-center justify-between px-4 pt-14 pb-3 bg-surface border-b border-border">
         <Pressable
+          testID="article-back-button"
           onPress={handleBack}
           accessibilityRole="button"
           accessibilityLabel={t("article.backA11yLabel")}
@@ -455,6 +456,7 @@ export default function ArticleDetailScreen() {
         </Pressable>
         <View className="flex-row items-center gap-4">
           <Pressable
+            testID="article-open-browser-button"
             onPress={handleOpenExternal}
             accessibilityRole="button"
             accessibilityLabel={t("article.openInBrowser")}

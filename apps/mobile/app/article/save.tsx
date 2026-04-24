@@ -144,6 +144,7 @@ export default function SaveScreen() {
           {/* ヘッダー */}
           <View className="flex-row items-center mb-6">
             <Pressable
+              testID="save-back-button"
               onPress={() => router.back()}
               accessibilityRole="button"
               accessibilityLabel={t("article.backA11yLabel")}
@@ -197,6 +198,7 @@ export default function SaveScreen() {
           {/* エラーメッセージ */}
           {errorMessage && (
             <View
+              testID="save-error-message"
               className="flex-row items-center gap-2 rounded-lg bg-error/10 border border-error/30 p-3 mb-4"
               accessibilityRole="alert"
               accessibilityLabel={errorMessage}

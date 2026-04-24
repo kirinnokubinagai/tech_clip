@@ -15,6 +15,7 @@ let db: SQLiteDatabase | null = null;
  */
 type ArticleRow = {
   id: string;
+  user_id?: string | null;
   title: string;
   author: string | null;
   source: string;
@@ -52,6 +53,7 @@ export async function initLocalDb(): Promise<void> {
   await db.execAsync(
     `CREATE TABLE IF NOT EXISTS articles (
       id TEXT PRIMARY KEY,
+      user_id TEXT,
       title TEXT NOT NULL,
       author TEXT,
       source TEXT NOT NULL,
@@ -116,6 +118,11 @@ async function hasColumn(
 }
 
 async function migrateLegacyAiCacheTables(database: SQLiteDatabase): Promise<void> {
+  const articlesHaveUserId = await hasColumn(database, "articles", "user_id");
+  if (!articlesHaveUserId) {
+    await database.execAsync("ALTER TABLE articles ADD COLUMN user_id TEXT");
+  }
+
   const summariesHaveLanguage = await hasColumn(database, "summaries", "language");
   if (!summariesHaveLanguage) {
     await database.execAsync(
@@ -215,11 +222,12 @@ export async function upsertArticle(article: ArticleListItem | ArticleDetail): P
 
   await database.runAsync(
     `INSERT OR REPLACE INTO articles
-      (id, title, author, source, published_at, excerpt, thumbnail_url, url,
+      (id, user_id, title, author, source, published_at, excerpt, thumbnail_url, url,
        is_favorite, content, is_read, reading_time_minutes, created_at, updated_at, synced_at)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))`,
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))`,
     [
       article.id,
+      detail.userId ?? null,
       article.title,
       article.author ?? null,
       article.source,
@@ -345,7 +353,7 @@ function rowToArticleListItem(row: ArticleRow): ArticleListItem {
 function rowToArticleDetail(row: ArticleRow): ArticleDetail {
   return {
     id: row.id,
-    userId: (row as { user_id?: string }).user_id ?? "",
+    userId: row.user_id ?? "",
     title: row.title,
     author: row.author,
     source: row.source as ArticleDetail["source"],
