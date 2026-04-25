@@ -10,60 +10,38 @@ triggers:
 
 このスキルを呼び出す前に以下がコンテキストに存在すること:
 - `{worktree}`: worktree の絶対パス
-- `{impl_agent_name}`: 実装エージェント名（例: `issue-1056-coder`, `issue-1074-infra-engineer`）
+- `{impl_agent_name}`: 実装エージェント名
 - `{issue_number}`: Issue 番号
 
 ## 手順
 
-### 1. lint
-
-```bash
-LINT_OUTPUT=$(cd {worktree} && direnv exec {worktree} pnpm lint 2>&1 || true)
-```
-
-`error` または `✘` が出力に含まれる場合 → **手順 4: CHANGES_REQUESTED 送信** へ。
-
-### 2. typecheck
-
-```bash
-TC_OUTPUT=$(cd {worktree} && direnv exec {worktree} pnpm typecheck 2>&1 || true)
-```
-
-エラーが含まれる場合 → **手順 4** へ。
-
-### 3. テスト
-
-```bash
-TEST_OUTPUT=$(cd {worktree} && direnv exec {worktree} pnpm test 2>&1 || true)
-```
-
-失敗がある場合 → **手順 4** へ。
-
-### 4. CHANGES_REQUESTED 送信（失敗時のみ）
+スクリプトを実行する:
 
 ```
-SendMessage(to: "{impl_agent_name}",
-  "CHANGES_REQUESTED: 事前チェックが失敗しました。以下を修正してください:\n\n<失敗した項目と出力>")
+WORKTREE={worktree} bash scripts/skills/pre-check.sh
 ```
 
-送信後、フェーズ 0 に戻り次の `impl-ready` を待つ。
+スクリプトは lint → typecheck → test の順に実行し、最初に失敗した段階で終了する。
 
-### 5. 全件 PASS
+### 出力に応じた処理
 
-すべて成功した場合、呼び出し元の次フェーズ（コードレビュー）へ進む。
+- `FAIL:lint` / `FAIL:typecheck` / `FAIL:test` → 失敗内容を読み取り、以下を送信してフェーズ 0 に戻る:
+  ```
+  SendMessage(to: "{impl_agent_name}",
+    "CHANGES_REQUESTED: 事前チェックが失敗しました。以下を修正してください:\n\n<失敗した項目と出力>")
+  ```
 
----
+- `OK:all_passed` → 呼び出し元の次フェーズ（コードレビュー）へ進む
 
 ## STUCK vs CHANGES_REQUESTED（必読）
 
 | 状況 | 正しい対応 |
 |---|---|
 | pnpm lint / typecheck / test が失敗 | `CHANGES_REQUESTED` を `{impl_agent_name}` に送信してフェーズ 0 へ |
-| コードレビューで指摘あり（CRITICAL/HIGH/MEDIUM/LOW） | `CHANGES_REQUESTED` を `{impl_agent_name}` に送信してフェーズ 0 へ |
+| コードレビューで指摘あり | `CHANGES_REQUESTED` を `{impl_agent_name}` に送信してフェーズ 0 へ |
 | PR E2E が失敗 | `CHANGES_REQUESTED` を `{impl_agent_name}` に送信してフェーズ 0 へ |
 | conflict が発生 | `CONFLICT_INVESTIGATE` を analyst に送信 |
 | push が infrastructure 理由でブロック | `STUCK` を orchestrator に送信 |
-| CI システム障害・spec の根本的な矛盾など人間判断が必要 | `STUCK` を orchestrator に送信 |
+| CI システム障害・人間判断が必要な問題 | `STUCK` を orchestrator に送信 |
 
 **lint/test の失敗を「pre-existing failures」と判断して STUCK にすることは禁止。**
-コードに問題があれば常に `{impl_agent_name}` に返す。
