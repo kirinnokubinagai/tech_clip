@@ -431,6 +431,17 @@ JSON_EOF
 | `VERDICT: external_merged PR #N` | そのままフェーズ 7（MERGED 状態で後片付け）へ |
 | `VERDICT: closed PR #N` | coder に CLOSED_WITHOUT_MERGE 通知 → フェーズ 0 |
 | `POLLING_TIMEOUT: PR #N` | orchestrator に POLLING_TIMEOUT 通知 → 終了 |
+| `CONFLICT_DETECTED: PR #N ...` | analyst に `CONFLICT_INVESTIGATE` を送信 → フェーズ 0 に戻り次の impl-ready を待つ |
+
+**`CONFLICT_DETECTED` 受信時の処理**:
+
+```bash
+# polling-watcher からの CONFLICT_DETECTED を受信した場合
+# polling state ファイルはそのまま残す（conflict 解消後の再 push で再評価される）
+SendMessage(to: "issue-{issue_number}-analyst",
+  "CONFLICT_INVESTIGATE: polling-watcher が PR #${PR_NUMBER} の mergeStateStatus=DIRTY を検知しました。origin/main との conflict を調査して coder に両立解消方針を渡してください。")
+# フェーズ 0 に戻り、CONFLICT_RESOLVED を待つ
+```
 
 **`approve` 受信後の `mergeStateStatus` チェック（BEHIND 自動追従）**:
 
