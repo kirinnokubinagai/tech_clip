@@ -119,6 +119,7 @@ evaluate_verdict() {
   fi
 
   # --- 条件3-b: claude-review 完了後の判定コメント ---
+  # claude-review が success で完了し新コメントを投稿しなかった場合、既存ラベルで判定する
   local COMMENTS_JSON COMMENT BODY
   COMMENTS_JSON=$(gh pr view "$PR_NUMBER" --repo "$OWNER/$REPO" --json comments 2>/dev/null || echo '{"comments":[]}')
 
@@ -128,6 +129,19 @@ evaluate_verdict() {
     2>/dev/null || echo "null")
 
   if [ "$COMMENT" = "null" ] || [ -z "$COMMENT" ]; then
+    # 新コメントなし: claude-review success + PASS ラベルで approve、NEEDS WORK ラベルで request_changes
+    if [ "$CR_CONCLUSION" = "success" ]; then
+      HAS_PASS=$(echo "$LABELS" | jq -r --arg p "$PASS_LABEL" 'map(. == $p) | any' 2>/dev/null || echo "false")
+      HAS_NEEDS=$(echo "$LABELS" | jq -r --arg n "$NEEDS_LABEL" 'map(. == $n) | any' 2>/dev/null || echo "false")
+      if [ "$HAS_PASS" = "true" ]; then
+        echo "approve"
+        return 0
+      fi
+      if [ "$HAS_NEEDS" = "true" ]; then
+        echo "request_changes"
+        return 0
+      fi
+    fi
     echo "pending"
     return 0
   fi
