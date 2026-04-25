@@ -259,25 +259,13 @@ fi
 
 #### 事前チェック（必須）
 
-```bash
-cd {worktree} && direnv exec {worktree} pnpm lint
-cd {worktree} && direnv exec {worktree} pnpm typecheck
-cd {worktree} && direnv exec {worktree} pnpm test
+`impl_agent_name = "issue-{issue_number}-coder"` として以下を呼び出す:
+
+```
+Skill(review/pre-check)
 ```
 
-いずれかが失敗した場合は **必ず coder に `CHANGES_REQUESTED` を送信してフェーズ 0 に戻る**。orchestrator に `STUCK` を報告してはならない。
-
-```bash
-# 失敗時の対応例（lint 失敗の場合）
-LINT_OUTPUT=$(cd {worktree} && direnv exec {worktree} pnpm lint 2>&1 || true)
-if echo "$LINT_OUTPUT" | grep -qiE "error|✘"; then
-  SendMessage(to: "issue-{issue_number}-coder",
-    "CHANGES_REQUESTED: pnpm lint が失敗しました。以下のエラーを修正してください:\n\n${LINT_OUTPUT}")
-  # フェーズ 0 に戻る（次の impl-ready を待つ）
-fi
-```
-
-> **STUCK を使う場面**: lint/typecheck/test の失敗は **STUCK ではない**。coder が修正できる問題であるため、必ず `CHANGES_REQUESTED` で coder に返す。STUCK は「coder では解決できない問題」のみに使用する（例: インフラ障害、CI システム自体のエラー、spec の根本的な矛盾、push が infrastructure 理由でブロックされている等）。
+スキルが CHANGES_REQUESTED を送信してフェーズ 0 に戻るか、全件 PASS でここを通過する。
 
 #### コードレビュー観点
 
@@ -641,16 +629,16 @@ SendMessage(to: "orchestrator", "APPROVED: issue-{issue_number}")
 
 ## STUCK vs CHANGES_REQUESTED（必読）
 
+詳細は `Skill(review/pre-check)` を参照。要約:
+
 | 状況 | 正しい対応 |
 |---|---|
-| pnpm lint / typecheck / test が失敗 | `CHANGES_REQUESTED` を coder に送信してフェーズ 0 へ |
-| コードレビューで指摘あり（CRITICAL/HIGH/MEDIUM/LOW） | `CHANGES_REQUESTED` を coder に送信してフェーズ 0 へ |
-| PR E2E が失敗 | `CHANGES_REQUESTED` を coder に送信してフェーズ 0 へ |
+| pnpm lint / typecheck / test が失敗 | `CHANGES_REQUESTED` を coder に送信 |
+| コードレビューで指摘あり | `CHANGES_REQUESTED` を coder に送信 |
+| PR E2E が失敗 | `CHANGES_REQUESTED` を coder に送信 |
 | conflict が発生 | `CONFLICT_INVESTIGATE` を analyst に送信 |
 | push が infrastructure 理由でブロック | `STUCK` を orchestrator に送信 |
-| CI システム障害・spec の根本的な矛盾など人間判断が必要 | `STUCK` を orchestrator に送信 |
-
-**lint/test の失敗を「pre-existing failures」と判断して STUCK にすることは禁止**。コードに問題があれば常に coder に返す。
+| CI システム障害・人間判断が必要な問題 | `STUCK` を orchestrator に送信 |
 
 ## 出力言語
 

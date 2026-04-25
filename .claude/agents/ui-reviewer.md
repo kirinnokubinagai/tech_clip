@@ -232,13 +232,13 @@ SendMessage(
 
 ### フェーズ 2: 事前チェック（必須）
 
-```bash
-cd {worktree} && direnv exec {worktree} pnpm lint
-cd {worktree} && direnv exec {worktree} pnpm typecheck
-cd {worktree} && direnv exec {worktree} pnpm test
+`impl_agent_name = "issue-{issue_number}-ui-designer"` として以下を呼び出す:
+
+```
+Skill(review/pre-check)
 ```
 
-いずれかが失敗した場合は FAIL として ui-designer に CHANGES_REQUESTED を送信する。
+スキルが CHANGES_REQUESTED を送信してフェーズ 0 に戻るか、全件 PASS でここを通過する。
 
 ### フェーズ 3: UI/UX レビュー実行
 
