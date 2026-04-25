@@ -40,7 +40,8 @@
       "lodash": ">=4.18.0",
       "defu": "6.1.6",
       "vite": "8.0.7",
-      "minimatch": "^9.0.0"
+      "minimatch": "^9.0.0",
+      "postcss": ">=8.5.10"
     },
     "patchedDependencies": {
       "@expo/plist@0.5.2": "patches/@expo__plist@0.5.2.patch"
