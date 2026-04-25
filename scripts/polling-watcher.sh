@@ -91,6 +91,16 @@ for STATE_FILE in "$POLLING_DIR"/pr-*.json; do
     continue
   fi
 
+  # mergeStateStatus チェック: DIRTY = conflict with main
+  MERGE_STATE=$(gh pr view "$PR_NUMBER" --json mergeStateStatus --jq '.mergeStateStatus' 2>/dev/null || echo "")
+  if [ "$MERGE_STATE" = "DIRTY" ]; then
+    echo "CONFLICT: PR #$PR_NUMBER ($AGENT_NAME) conflict with main" >&2
+    echo "CONFLICT: issue-${ISSUE_NUMBER} PR #$PR_NUMBER mergeState=DIRTY at=$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> "$LOG_FILE"
+    claude_send_message "$AGENT_NAME" "CONFLICT_DETECTED: PR #${PR_NUMBER} has conflict with main (mergeStateStatus=DIRTY). CONFLICT_INVESTIGATE を analyst に送信してください。"
+    # state ファイルは残す（conflict 解消・再 push 後に再評価）
+    continue
+  fi
+
   # タイムアウト確認
   if [ -n "$STARTED_AT" ]; then
     STARTED_EPOCH=$(date -j -f "%Y-%m-%dT%H:%M:%SZ" "$STARTED_AT" +%s 2>/dev/null \
