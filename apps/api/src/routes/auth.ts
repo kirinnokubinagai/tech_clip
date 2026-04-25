@@ -18,6 +18,7 @@ import {
   HTTP_UNPROCESSABLE_ENTITY,
 } from "../lib/http-status";
 import { createLogger } from "../lib/logger";
+import { generateRefreshToken, hashTokenSha256 } from "../lib/token-utils";
 
 /**
  * Better Auth インスタンスの型定義
@@ -46,39 +47,11 @@ type AuthRouteOptions = {
   getAuth: () => AuthInstance;
 };
 
-/** リフレッシュトークンの文字数 */
-const REFRESH_TOKEN_LENGTH = 48;
-
 /** セッション期限切れエラーメッセージ */
 const REFRESH_TOKEN_EXPIRED_MESSAGE = "セッションの有効期限が切れました。再度ログインしてください";
 
 /** 認証ルート用ロガー */
 const logger = createLogger();
-
-/**
- * リフレッシュトークンを SHA-256 でハッシュ化する
- *
- * @param token - 平文のリフレッシュトークン
- * @returns 16進文字列のハッシュ値
- */
-async function hashRefreshToken(token: string): Promise<string> {
-  const encoded = new TextEncoder().encode(token);
-  const digest = await crypto.subtle.digest("SHA-256", encoded);
-  return Array.from(new Uint8Array(digest), (value) => value.toString(16).padStart(2, "0")).join(
-    "",
-  );
-}
-
-/**
- * ランダムなリフレッシュトークン文字列を生成する
- *
- * @returns 平文のリフレッシュトークン
- */
-function generateRefreshToken(): string {
-  const bytes = new Uint8Array(REFRESH_TOKEN_LENGTH / 2);
-  crypto.getRandomValues(bytes);
-  return Array.from(bytes, (b) => b.toString(16).padStart(2, "0")).join("");
-}
 
 /**
  * セッションに紐づくリフレッシュトークンを発行して保存する
@@ -92,7 +65,7 @@ async function createRefreshTokenRecord(
   session: { id: string; userId: string; expiresAt: string },
 ): Promise<string> {
   const refreshToken = generateRefreshToken();
-  const tokenHash = await hashRefreshToken(refreshToken);
+  const tokenHash = await hashTokenSha256(refreshToken);
 
   await db.insert(refreshTokens).values({
     id: crypto.randomUUID(),
@@ -400,7 +373,7 @@ export function createAuthRoute({ db, getAuth }: AuthRouteOptions) {
     }
 
     try {
-      const refreshTokenHash = await hashRefreshToken(parsed.data.refreshToken);
+      const refreshTokenHash = await hashTokenSha256(parsed.data.refreshToken);
 
       const result = await db.transaction(async (tx) => {
         const [refreshTokenRow] = await tx
@@ -483,7 +456,7 @@ export function createAuthRoute({ db, getAuth }: AuthRouteOptions) {
         }
 
         const nextRefreshToken = generateRefreshToken();
-        const nextRefreshTokenHash = await hashRefreshToken(nextRefreshToken);
+        const nextRefreshTokenHash = await hashTokenSha256(nextRefreshToken);
 
         await tx
           .update(refreshTokens)
