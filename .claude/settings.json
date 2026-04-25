@@ -294,6 +294,7 @@
       "SendMessage",
       "Edit(.claude/**)",
       "Write(.claude/**)",
+      "Write(.claude/.review-passed)",
       "Edit(CLAUDE.md)",
       "Write(CLAUDE.md)"
     ],
