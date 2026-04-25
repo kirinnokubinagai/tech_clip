@@ -17,8 +17,12 @@ echo "[e2e] DB セットアップ完了"
 # Expo public env vars must be embedded into the JS bundle at build time.
 # Set placeholder key so revenueCat.ts skips initialization in __DEV__ mode
 # (value starting with "your-" triggers the skip path in requireEnvKey).
+# EXPO_PUBLIC_API_URL_ANDROID must point to the CI API server port (18787).
+# The Android emulator reaches the host machine at 10.0.2.2; without this
+# the app.config.ts default of :8787 mismatches the wrangler dev port.
 export EXPO_PUBLIC_E2E_MODE="1"
 export EXPO_PUBLIC_REVENUECAT_ANDROID_API_KEY="your-revenuecat-android-api-key"
+export EXPO_PUBLIC_API_URL_ANDROID="http://10.0.2.2:${API_CI_PORT:-18787}"
 
 # Build and install development build
 nix develop --command bash -c "cd apps/mobile && pnpm expo run:android --variant debug" &
