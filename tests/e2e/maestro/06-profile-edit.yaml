@@ -188,25 +188,8 @@ env:
     timeout: 5000
 - takeScreenshot: screenshots/06-profile-edit/04-profile-bio
 
-# 戻るボタンが存在することを確認（編集画面に戻り確認後、back は既にナビゲート済み）
-- openLink: techclip://profile/edit
-- extendedWaitUntil:
-    visible:
-      id: "profile-edit-back-button"
-    timeout: 30000
-
-# bio をクリア（テストの冪等性確保）
-- tapOn:
-    id: "profile-edit-bio-input"
-- eraseText
-- hideKeyboard
-- tapOn:
-    id: "profile-edit-save-button"
-- waitForAnimationToEnd:
-    timeout: 3000
-
-- tapOn:
-    id: "profile-edit-back-button"
-- waitForAnimationToEnd:
-    timeout: 2000
-- takeScreenshot: screenshots/06-profile-edit/05-back
+# Note: bio クリア (idempotency) は別 Issue で対応する。
+# expo-router で同 route への再 openLink がナビゲートしない既知問題があるため、
+# 06 では「bio 入力→保存→保存後 profile タブで bio 表示確認」までで完結。
+# router.back() は handleSave 内で自動発火するため明示的な back-button タップ不要。
+- takeScreenshot: screenshots/06-profile-edit/05-final

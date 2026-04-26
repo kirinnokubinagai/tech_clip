@@ -16,9 +16,10 @@ env:
 
 ---
 
-# ログイン済み状態でアプリ起動
+# clearState: true で別ユーザー状態を完全リセット
+# (TEST_USER 状態が残っていると freeAiUsesRemaining=5 で paywall が発動しないため)
 - launchApp:
-    clearState: false
+    clearState: true
 - runFlow:
     when:
       visible: "Try out your stylus"
