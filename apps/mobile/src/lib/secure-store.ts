@@ -12,7 +12,11 @@ const REFRESH_TOKEN_KEY = "refresh_token";
  * @returns 認証トークン。存在しない場合はnull
  */
 export async function getAuthToken(): Promise<string | null> {
-  return SecureStore.getItemAsync(TOKEN_KEY);
+  try {
+    return await SecureStore.getItemAsync(TOKEN_KEY);
+  } catch {
+    return null;
+  }
 }
 
 /**
@@ -28,7 +32,11 @@ export async function setAuthToken(token: string): Promise<void> {
  * 認証トークンを削除する
  */
 export async function removeAuthToken(): Promise<void> {
-  await SecureStore.deleteItemAsync(TOKEN_KEY);
+  try {
+    await SecureStore.deleteItemAsync(TOKEN_KEY);
+  } catch {
+    // ignore
+  }
 }
 
 /**
@@ -37,7 +45,11 @@ export async function removeAuthToken(): Promise<void> {
  * @returns リフレッシュトークン。存在しない場合はnull
  */
 export async function getRefreshToken(): Promise<string | null> {
-  return SecureStore.getItemAsync(REFRESH_TOKEN_KEY);
+  try {
+    return await SecureStore.getItemAsync(REFRESH_TOKEN_KEY);
+  } catch {
+    return null;
+  }
 }
 
 /**
@@ -53,7 +65,11 @@ export async function setRefreshToken(token: string): Promise<void> {
  * リフレッシュトークンを削除する
  */
 export async function removeRefreshToken(): Promise<void> {
-  await SecureStore.deleteItemAsync(REFRESH_TOKEN_KEY);
+  try {
+    await SecureStore.deleteItemAsync(REFRESH_TOKEN_KEY);
+  } catch {
+    // ignore
+  }
 }
 
 /**
@@ -81,7 +97,11 @@ export async function setOAuthState(state: string): Promise<void> {
  * @returns 保存済みの nonce。存在しない場合はnull
  */
 export async function getOAuthState(): Promise<string | null> {
-  return SecureStore.getItemAsync(OAUTH_STATE_KEY);
+  try {
+    return await SecureStore.getItemAsync(OAUTH_STATE_KEY);
+  } catch {
+    return null;
+  }
 }
 
 /**

@@ -252,6 +252,19 @@ describe("useAuthStore", () => {
       expect(state.isAuthenticated).toBe(false);
       expect(state.isLoading).toBe(false);
     });
+
+    it("getAuthTokenがSecureStoreエラーをスローした場合にisLoadingがfalseになること", async () => {
+      // Arrange: pm clear 後の Android Keystore 不整合を模倣
+      mockGetAuthToken.mockRejectedValue(new Error("SecureStore error after pm clear"));
+
+      // Act
+      await useAuthStore.getState().checkSession();
+
+      // Assert
+      const state = useAuthStore.getState();
+      expect(state.isAuthenticated).toBe(false);
+      expect(state.isLoading).toBe(false);
+    });
   });
 
   describe("セッション期限切れハンドリング", () => {
@@ -375,6 +388,18 @@ describe("hasAccount フラグ", () => {
 
     // Assert
     expect(useAuthStore.getState().hasAccount).toBe(true);
+  });
+
+  it("loadAccountFlagでSecureStoreがエラーをスローした場合にhasAccountがfalseになること", async () => {
+    // Arrange: pm clear 後の Android Keystore 不整合を模倣
+    const mockGetItemAsync = jest.fn().mockRejectedValue(new Error("SecureStore error after pm clear"));
+    jest.spyOn(require("expo-secure-store"), "getItemAsync").mockImplementation(mockGetItemAsync);
+
+    // Act
+    await useAuthStore.getState().loadAccountFlag();
+
+    // Assert
+    expect(useAuthStore.getState().hasAccount).toBe(false);
   });
 });
 

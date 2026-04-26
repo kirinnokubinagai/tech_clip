@@ -190,16 +190,20 @@ export const useSettingsStore = create<SettingsStore>((set, get) => ({
    * アプリ起動時に呼び出す
    */
   loadLanguage: async () => {
-    const stored = await SecureStore.getItemAsync(LANGUAGE_KEY);
-    if (stored === null) {
+    try {
+      const stored = await SecureStore.getItemAsync(LANGUAGE_KEY);
+      if (stored === null) {
+        set({ language: DEFAULT_LANGUAGE, isLanguageLoaded: true });
+        return;
+      }
+      const { language, needsMigration } = normalizeStoredLanguage(stored);
+      if (needsMigration) {
+        await SecureStore.setItemAsync(LANGUAGE_KEY, JSON.stringify(language));
+      }
+      set({ language, isLanguageLoaded: true });
+    } catch {
       set({ language: DEFAULT_LANGUAGE, isLanguageLoaded: true });
-      return;
     }
-    const { language, needsMigration } = normalizeStoredLanguage(stored);
-    if (needsMigration) {
-      await SecureStore.setItemAsync(LANGUAGE_KEY, JSON.stringify(language));
-    }
-    set({ language, isLanguageLoaded: true });
   },
 
   /**
@@ -219,23 +223,27 @@ export const useSettingsStore = create<SettingsStore>((set, get) => ({
    * パース失敗時や不正値の場合はデバイス言語にフォールバックし、SecureStoreを修復する
    */
   loadSummaryLanguage: async () => {
-    const stored = await SecureStore.getItemAsync(SUMMARY_LANGUAGE_KEY);
-    if (stored === null) {
-      set({ summaryLanguage: resolveDeviceSummaryLanguage(), isSummaryLanguageLoaded: true });
-      return;
-    }
     try {
-      const parsed = JSON.parse(stored) as unknown;
-      if (typeof parsed === "string" && isSupportedSummaryLanguage(parsed)) {
-        set({ summaryLanguage: parsed, isSummaryLanguageLoaded: true });
+      const stored = await SecureStore.getItemAsync(SUMMARY_LANGUAGE_KEY);
+      if (stored === null) {
+        set({ summaryLanguage: resolveDeviceSummaryLanguage(), isSummaryLanguageLoaded: true });
         return;
       }
+      try {
+        const parsed = JSON.parse(stored) as unknown;
+        if (typeof parsed === "string" && isSupportedSummaryLanguage(parsed)) {
+          set({ summaryLanguage: parsed, isSummaryLanguageLoaded: true });
+          return;
+        }
+      } catch {
+        // パース失敗時はデバイス言語にフォールバックする（期待される挙動のためログ不要）
+      }
+      const fallback = resolveDeviceSummaryLanguage();
+      await SecureStore.setItemAsync(SUMMARY_LANGUAGE_KEY, JSON.stringify(fallback));
+      set({ summaryLanguage: fallback, isSummaryLanguageLoaded: true });
     } catch {
-      // パース失敗時はデバイス言語にフォールバックする（期待される挙動のためログ不要）
+      set({ summaryLanguage: resolveDeviceSummaryLanguage(), isSummaryLanguageLoaded: true });
     }
-    const fallback = resolveDeviceSummaryLanguage();
-    await SecureStore.setItemAsync(SUMMARY_LANGUAGE_KEY, JSON.stringify(fallback));
-    set({ summaryLanguage: fallback, isSummaryLanguageLoaded: true });
   },
 
   /**

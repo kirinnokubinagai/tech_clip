@@ -204,7 +204,13 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
   checkSession: async () => {
     set({ isLoading: true, sessionExpiredMessage: null });
 
-    const token = await getAuthToken();
+    let token: string | null;
+    try {
+      token = await getAuthToken();
+    } catch {
+      set({ isLoading: false, isAuthenticated: false });
+      return;
+    }
 
     if (!token) {
       set({ isLoading: false, isAuthenticated: false });
@@ -283,10 +289,18 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
   /**
    * SecureStoreからhasAccountフラグを読み込む
    * アプリ起動時に呼び出す
+   *
+   * `pm clear` (Maestro clearState) で SharedPreferences が消えても
+   * Android Keystore のキーが残るため SecureStore が throw する場合がある。
+   * その場合はアカウントなし扱いにする。
    */
   loadAccountFlag: async () => {
-    const stored = await SecureStore.getItemAsync(HAS_ACCOUNT_KEY);
-    const hasAccount = stored !== null ? (JSON.parse(stored) as boolean) : false;
-    set({ hasAccount });
+    try {
+      const stored = await SecureStore.getItemAsync(HAS_ACCOUNT_KEY);
+      const hasAccount = stored !== null ? (JSON.parse(stored) as boolean) : false;
+      set({ hasAccount });
+    } catch {
+      set({ hasAccount: false });
+    }
   },
 }));

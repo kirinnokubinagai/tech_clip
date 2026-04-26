@@ -59,6 +59,17 @@ describe("secure-store", () => {
       // Assert
       expect(result).toBeNull();
     });
+
+    it("SecureStoreがエラーをスローした場合nullを返すこと", async () => {
+      // Arrange: pm clear 後の Android Keystore 不整合を模倣
+      mockGetItemAsync.mockRejectedValue(new Error("SecureStore error after pm clear"));
+
+      // Act
+      const result = await getAuthToken();
+
+      // Assert
+      expect(result).toBeNull();
+    });
   });
 
   describe("setAuthToken", () => {
@@ -100,6 +111,17 @@ describe("secure-store", () => {
     it("リフレッシュトークンが存在しない場合nullを返すこと", async () => {
       // Arrange
       mockGetItemAsync.mockResolvedValue(null);
+
+      // Act
+      const result = await getRefreshToken();
+
+      // Assert
+      expect(result).toBeNull();
+    });
+
+    it("SecureStoreがエラーをスローした場合nullを返すこと", async () => {
+      // Arrange: pm clear 後の Android Keystore 不整合を模倣
+      mockGetItemAsync.mockRejectedValue(new Error("SecureStore error after pm clear"));
 
       // Act
       const result = await getRefreshToken();
