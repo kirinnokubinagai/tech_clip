@@ -148,7 +148,6 @@ if command -v adb >/dev/null 2>&1 && adb devices 2>/dev/null | grep -q "emulator
           done < "$_ENV_FILE"
         fi
         if ! timeout 900 maestro test \
-             --include-tags smoke \
              "${_MAESTRO_ENV_ARGS[@]}" \
              "${_SMOKE_FLOWS[@]}"; then
           echo ""
