@@ -39,7 +39,7 @@ env:
       - waitForAnimationToEnd:
           timeout: 1000
 - runFlow:
-    file: "00-login-helper.yaml"
+    file: "helpers/login-helper.yaml"
 - waitForAnimationToEnd:
     timeout: 2000
 
@@ -134,6 +134,11 @@ env:
 - inputText: "E2E test bio"
 - hideKeyboard
 
+- scrollUntilVisible:
+    element:
+      id: "profile-edit-save-button"
+    direction: DOWN
+    timeout: 10000
 - assertVisible:
     id: "profile-edit-save-button"
 
@@ -152,6 +157,11 @@ env:
 - takeScreenshot: screenshots/06-profile-edit/03b-edit-social-links
 
 # 保存ボタンをタップ（bio が保存される）
+- scrollUntilVisible:
+    element:
+      id: "profile-edit-save-button"
+    direction: DOWN
+    timeout: 10000
 - tapOn:
     id: "profile-edit-save-button"
 - waitForAnimationToEnd:

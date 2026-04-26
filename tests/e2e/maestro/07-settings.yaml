@@ -39,7 +39,7 @@ env:
       - waitForAnimationToEnd:
           timeout: 1000
 - runFlow:
-    file: "00-login-helper.yaml"
+    file: "helpers/login-helper.yaml"
 - waitForAnimationToEnd:
     timeout: 2000
 
@@ -57,6 +57,11 @@ env:
 - takeScreenshot: screenshots/07-settings/01-settings-screen
 - assertVisible: "サブスクリプション"
 - assertVisible: "一般"
+- scrollUntilVisible:
+    element:
+      text: "アカウント管理"
+    direction: DOWN
+    timeout: 10000
 - assertVisible: "アカウント管理"
 
 # アカウントセクション

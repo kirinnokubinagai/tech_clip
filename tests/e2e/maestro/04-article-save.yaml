@@ -49,7 +49,7 @@ env:
           timeout: 1000
 
 - runFlow:
-    file: "00-login-helper.yaml"
+    file: "helpers/login-helper.yaml"
 - waitForAnimationToEnd:
     timeout: 2000
 
@@ -101,6 +101,11 @@ env:
     timeout: 30000
 
 # 保存ボタンをタップ
+- scrollUntilVisible:
+    element:
+      id: "save-button"
+    direction: DOWN
+    timeout: 10000
 - tapOn:
     id: "save-button"
 - waitForAnimationToEnd:

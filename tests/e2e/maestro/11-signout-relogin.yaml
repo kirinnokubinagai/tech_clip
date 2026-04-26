@@ -31,7 +31,7 @@ env:
       - waitForAnimationToEnd:
           timeout: 3000
 - runFlow:
-    file: "00-login-helper.yaml"
+    file: "helpers/login-helper.yaml"
 - waitForAnimationToEnd:
     timeout: 2000
 

@@ -39,7 +39,7 @@ env:
       - waitForAnimationToEnd:
           timeout: 1000
 - runFlow:
-    file: "00-login-helper.yaml"
+    file: "helpers/login-helper.yaml"
 - waitForAnimationToEnd:
     timeout: 2000
 
@@ -71,6 +71,11 @@ env:
     id: "favorite-button"
 
 # お気に入り未登録状態なのでアウトラインアイコンが表示されること
+- scrollUntilVisible:
+    element:
+      id: "favorite-icon-outline"
+    direction: DOWN
+    timeout: 10000
 - assertVisible:
     id: "favorite-icon-outline"
 
