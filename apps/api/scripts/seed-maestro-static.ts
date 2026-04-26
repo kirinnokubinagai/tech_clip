@@ -576,6 +576,7 @@ async function upsertArticle(
     thumbnailUrl?: string | null;
     publishedAt?: string | null;
     readingTimeMinutes?: number | null;
+    isPublic?: boolean;
   },
   createdAt: Date,
 ): Promise<string> {
@@ -599,6 +600,7 @@ async function upsertArticle(
         thumbnailUrl: data.thumbnailUrl ?? null,
         publishedAt: data.publishedAt ? new Date(data.publishedAt) : null,
         readingTimeMinutes: data.readingTimeMinutes ?? null,
+        isPublic: data.isPublic ?? false,
         updatedAt: now,
       })
       .where(eq(articles.id, existing[0].id));
@@ -618,6 +620,7 @@ async function upsertArticle(
     thumbnailUrl: data.thumbnailUrl ?? null,
     publishedAt: data.publishedAt ? new Date(data.publishedAt) : null,
     readingTimeMinutes: data.readingTimeMinutes ?? null,
+    isPublic: data.isPublic ?? false,
     createdAt,
     updatedAt: now,
   });
@@ -885,6 +888,7 @@ async function seedMaestroStatic(): Promise<void> {
         thumbnailUrl: null,
         publishedAt: spec.publishedAt,
         readingTimeMinutes: Math.ceil((spec.content?.length ?? 0) / 500),
+        isPublic: true,
       },
       createdAt,
     );
@@ -900,9 +904,14 @@ async function seedMaestroStatic(): Promise<void> {
   }
   process.stdout.write("articleTags upsert 完了\n");
 
-  // FOLLOWEE は paywall テスト用のため freeAiUsesRemaining を 0 に設定
-  await db.update(users).set({ freeAiUsesRemaining: 0 }).where(eq(users.id, followeeId));
-  process.stdout.write("FOLLOWEE freeAiUsesRemaining=0 に設定\n");
+  // FOLLOWEE は paywall テスト用のため freeAiUsesRemaining=0 かつ freeAiResetAt を遠い未来に設定
+  // freeAiResetAt が null または過去だと ai-limit ミドルウェアが自動リセットしてしまい、
+  // ペイウォール (402) が発火しないため、十分先の日付で reset を抑制する
+  await db
+    .update(users)
+    .set({ freeAiUsesRemaining: 0, freeAiResetAt: "2099-12-31T23:59:59.000Z" })
+    .where(eq(users.id, followeeId));
+  process.stdout.write("FOLLOWEE freeAiUsesRemaining=0, freeAiResetAt=2099-12-31 に設定\n");
 
   await upsertFollow(db, followerId, followeeId);
   process.stdout.write("FOLLOWER → FOLLOWEE フォロー upsert 完了\n");
