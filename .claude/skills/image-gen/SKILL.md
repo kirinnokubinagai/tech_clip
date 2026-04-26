@@ -61,9 +61,86 @@ codex "次の画像を生成して <output-path> に保存してください。
 **重要**: `組み込みのimage_genツールを直接使って` を必ず末尾に含める。
 省略すると Codex がコードを書こうとする。
 
-### Step 4: 生成結果を確認する
+---
 
-Read ツールで生成された画像を表示し、ユーザーに確認する。
+## モックアップ生成時の追加ワークフロー
+
+**以下の Step 4-6 は用途が「画面モックアップ」（`docs/design/` への出力）の場合のみ実行する。**
+アイコン・スプラッシュ等の単体生成では Step 7 へスキップする。
+
+### Step 4: HTML/CSS で表現できないアセットを識別する
+
+モックアッププロンプトの内容を解析し、以下の基準で抽出対象をリストアップする（Codex 呼び出しなし、Claude が判断）。
+
+**抽出する（画像ファイルが必要なもの）:**
+- アイコン — ボタン・ナビゲーション・ラベルに付く小アイコン
+- アプリロゴ・ブランドマーク — ロゴ・マスコット・ブランド画像
+- イラスト — 空状態・オンボーディング用画像
+- サムネイルプレースホルダー — 記事・ユーザー画像の枠
+- 背景テクスチャ/パターン — CSS グラデーション以外の背景素材
+
+**抽出しない（HTML/CSS で表現可能なもの）:**
+- 色・グラデーション・シャドウ
+- ボーダー・角丸
+- テキスト・フォント
+- レイアウト・余白
+
+識別結果をリストとして整理し、各アセットの保存先パスとサイズを決定する:
+
+**命名規則:**
+- アイコン: `<名詞>.png`（例: `bookmark.png`, `share.png`, `arrow-right.png`）
+- イラスト: `<用途-説明>.png`（例: `empty-state-article.png`, `onboarding-welcome.png`）
+- プレースホルダー: `placeholder-<種別>.png`（例: `placeholder-article.png`, `placeholder-avatar.png`）
+
+**保存先:**
+- アイコン → `docs/design/assets/icons/<name>.png`（48×48）
+- イラスト・プレースホルダー・ブランドマーク → `docs/design/assets/images/<name>.png`（表示サイズ基準）
+
+### Step 5: 各アセットを個別生成する
+
+まずディレクトリを作成する:
+
+```bash
+mkdir -p docs/design/assets/icons docs/design/assets/images
+```
+
+識別したアセットを順次 Codex で生成する。各アセットに対して以下のパターンを使う:
+
+```bash
+codex "次の画像を生成して docs/design/assets/icons/<name>.png に保存してください。
+Flat design icon, teal #14b8a6, <説明>, transparent background,
+matching the minimalist style of the mockup just generated.
+<サイズ>px の正確なサイズで生成してください。
+組み込みのimage_genツールを直接使って生成してください。"
+```
+
+**重要**: モックアップと同じスタイル・カラー（teal #14b8a6）をプロンプトに含め、一貫性を保つ。
+
+### Step 6: 採用手順をユーザーに伝える
+
+全アセット生成後、以下の形式で結果を報告する:
+
+```
+生成完了:
+📱 モックアップ
+  - docs/design/<screen-name>.png
+
+🎨 抽出素材（docs/design/assets/）
+  - docs/design/assets/icons/bookmark.png（48×48）
+  - docs/design/assets/icons/share.png（48×48）
+  - docs/design/assets/images/placeholder-article.png（375×200）
+
+採用する素材があれば「<name>.png を使う」と指示してください。
+  icons/  → apps/mobile/assets/icons/
+  images/ → apps/mobile/assets/images/
+に移動します。
+```
+
+---
+
+### Step 7: 生成結果をすべて確認する
+
+Read ツールでモックアップ・全アセットの画像を表示し、ユーザーに確認する。
 
 ## 前提条件
 
