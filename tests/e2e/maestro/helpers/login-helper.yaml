@@ -76,7 +76,7 @@ env:
       visible: "アカウントを作成"
     commands:
       - tapOn:
-          id: "register-login-link"
+          text: "ログイン"
       - waitForAnimationToEnd:
           timeout: 3000
 

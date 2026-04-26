@@ -77,13 +77,19 @@ env:
     timeout: 3000
 
 # --- 新規登録画面 ---
-- assertVisible:
-    text: "アカウントを作成"
+- extendedWaitUntil:
+    visible:
+      text: "アカウントを作成"
+    timeout: 15000
 - takeScreenshot: screenshots/02-auth-register/01-register-screen
 - assertVisible: "メールアドレス"
 - assertVisible: "パスワード"
 
 # バリデーション: 空のまま送信 → メールエラー
+- extendedWaitUntil:
+    visible:
+      id: "register-submit-button"
+    timeout: 10000
 - tapOn:
     id: "register-submit-button"
 - assertVisible: "メールアドレスを入力してください。"

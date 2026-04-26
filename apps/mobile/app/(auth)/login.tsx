@@ -5,7 +5,6 @@ import {
   Image,
   KeyboardAvoidingView,
   Platform,
-  Pressable,
   ScrollView,
   Text,
   TextInput,
@@ -175,15 +174,13 @@ export default function LoginScreen() {
             </View>
           </View>
 
-          <Link href="/(auth)/forgot-password" asChild>
-            <Pressable
-              testID="login-forgot-password-link"
-              className="mb-6 self-start"
-              accessibilityRole="link"
-              accessibilityLabel={t("auth.forgotPassword")}
-            >
-              <Text className="text-sm font-medium text-primary">{t("auth.forgotPassword")}</Text>
-            </Pressable>
+          <Link
+            href="/(auth)/forgot-password"
+            testID="login-forgot-password-link"
+            className="mb-6 self-start"
+            accessibilityLabel={t("auth.forgotPassword")}
+          >
+            <Text className="text-sm font-medium text-primary">{t("auth.forgotPassword")}</Text>
           </Link>
 
           <AuthSubmitButton
@@ -215,12 +212,10 @@ export default function LoginScreen() {
 
         <View className="mt-6 flex-row items-center justify-center">
           <Text className="text-sm text-text-muted">{t("auth.loginToRegisterPrompt")}</Text>
-          <Link href="/(auth)/register" asChild>
-            <Pressable testID="login-register-link">
-              <Text className="ml-1 text-sm font-semibold text-primary">
-                {t("auth.loginToRegister")}
-              </Text>
-            </Pressable>
+          <Link href="/(auth)/register" testID="login-register-link">
+            <Text className="ml-1 text-sm font-semibold text-primary">
+              {t("auth.loginToRegister")}
+            </Text>
           </Link>
         </View>
       </ScrollView>

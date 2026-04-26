@@ -52,8 +52,10 @@ env:
     id: "tab-settings"
 
 # --- 設定画面 ---
-- assertVisible:
-    text: "アカウント"
+- extendedWaitUntil:
+    visible:
+      text: "アカウント"
+    timeout: 15000
 - takeScreenshot: screenshots/07-settings/01-settings-screen
 - assertVisible: "サブスクリプション"
 - assertVisible: "一般"

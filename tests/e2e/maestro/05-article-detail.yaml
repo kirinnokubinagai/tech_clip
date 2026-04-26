@@ -63,6 +63,10 @@ env:
     text: "すべて"
 
 # 記事カードのソースバッジ (source-badge) が表示されていることを確認
+- extendedWaitUntil:
+    visible:
+      id: "source-badge"
+    timeout: 15000
 - assertVisible:
     id: "source-badge"
 

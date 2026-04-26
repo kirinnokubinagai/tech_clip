@@ -685,58 +685,58 @@ async function upsertFollow(
   await db.insert(follows).values({ followerId, followingId });
 }
 
-/** 通知の型名 */
-type NotificationType = "new_follower" | "article_liked" | "system_update";
+/** 通知の型名（モバイル NotificationType と一致させる） */
+type NotificationType = "follow" | "like" | "system";
 
 /** 通知シードデータの定義 */
 const SEED_NOTIFICATIONS: Array<{ type: NotificationType; title: string; body: string }> = [
   {
-    type: "new_follower",
+    type: "follow",
     title: "新しいフォロワーがいます",
     body: "followeeユーザーがあなたをフォローしました。",
   },
   {
-    type: "system_update",
+    type: "system",
     title: "システムのお知らせ",
     body: "TechClipがアップデートされました。新機能をお試しください。",
   },
   {
-    type: "new_follower",
+    type: "follow",
     title: "新しいフォロワーがいます",
     body: "secondaryユーザーがあなたをフォローしました。",
   },
   {
-    type: "article_liked",
+    type: "like",
     title: "記事にいいねが付きました",
     body: "あなたのクリップした記事に followeeユーザー がいいねしました。",
   },
   {
-    type: "article_liked",
+    type: "like",
     title: "記事にいいねが付きました",
     body: "あなたのクリップした記事に secondaryユーザー がいいねしました。",
   },
   {
-    type: "system_update",
+    type: "system",
     title: "新機能のお知らせ：通知機能が強化されました",
     body: "フォロワーの最新活動やいいね通知をリアルタイムで受け取れるようになりました。",
   },
   {
-    type: "new_follower",
+    type: "follow",
     title: "新しいフォロワーがいます",
     body: "premiumユーザーがあなたをフォローしました。",
   },
   {
-    type: "article_liked",
+    type: "like",
     title: "記事にいいねが付きました",
     body: "あなたのクリップした記事に 3人 がいいねしました。",
   },
   {
-    type: "system_update",
+    type: "system",
     title: "メンテナンスのお知らせ",
     body: "定期メンテナンスを実施します。一部機能が一時的に利用できない場合があります。",
   },
   {
-    type: "new_follower",
+    type: "follow",
     title: "新しいフォロワーがいます",
     body: "changepassユーザーがあなたをフォローしました。",
   },
@@ -995,27 +995,27 @@ async function seedMaestroStatic(): Promise<void> {
       body: string;
     }> = [
       {
-        type: "new_follower",
+        type: "follow",
         title: "新しいフォロワーがいます",
         body: "followerユーザーがあなたをフォローしました。",
       },
       {
-        type: "article_liked",
+        type: "like",
         title: "記事にいいねが付きました",
         body: "あなたのクリップした記事に followeeユーザー がいいねしました。",
       },
       {
-        type: "system_update",
+        type: "system",
         title: "システムのお知らせ",
         body: "TechClipがアップデートされました。新機能をお試しください。",
       },
       {
-        type: "new_follower",
+        type: "follow",
         title: "新しいフォロワーがいます",
         body: "secondaryユーザーがあなたをフォローしました。",
       },
       {
-        type: "article_liked",
+        type: "like",
         title: "記事にいいねが付きました",
         body: "あなたのクリップした記事に 5人 がいいねしました。",
       },

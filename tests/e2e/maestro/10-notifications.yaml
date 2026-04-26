@@ -96,7 +96,7 @@ env:
 - assertVisible:
     id: "unread-indicator"
 
-# seed 通知の種別アイコン確認（seed: new_follower + system_update）
+# seed 通知の種別アイコン確認（seed: follow + system）
 - assertVisible:
     id: "notification-icon-follow"
 - assertVisible:

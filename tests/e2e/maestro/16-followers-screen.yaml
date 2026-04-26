@@ -119,9 +119,13 @@ env:
 
 # --- フォロー中リストからユーザープロフィールへ遷移 ---
 # フォロー中の最初のユーザー（FOLLOWEE）をタップして別ユーザープロフィール画面へ
+- extendedWaitUntil:
+    visible:
+      id: "follower-list-item"
+    timeout: 10000
 - tapOn:
     index: 0
-    id: "followers-list"
+    id: "follower-list-item"
 - waitForAnimationToEnd:
     timeout: 2000
 - extendedWaitUntil:

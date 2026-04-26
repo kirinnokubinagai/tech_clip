@@ -134,6 +134,10 @@ env:
 - inputText: "E2E test bio"
 - hideKeyboard
 
+- extendedWaitUntil:
+    visible:
+      id: "profile-edit-save-button"
+    timeout: 15000
 - scrollUntilVisible:
     element:
       id: "profile-edit-save-button"
@@ -157,6 +161,10 @@ env:
 - takeScreenshot: screenshots/06-profile-edit/03b-edit-social-links
 
 # 保存ボタンをタップ（bio が保存される）
+- extendedWaitUntil:
+    visible:
+      id: "profile-edit-save-button"
+    timeout: 15000
 - scrollUntilVisible:
     element:
       id: "profile-edit-save-button"

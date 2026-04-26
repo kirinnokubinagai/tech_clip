@@ -101,6 +101,10 @@ env:
     timeout: 30000
 
 # 保存ボタンをタップ
+- extendedWaitUntil:
+    visible:
+      id: "save-button"
+    timeout: 15000
 - scrollUntilVisible:
     element:
       id: "save-button"
