@@ -128,7 +128,7 @@ if command -v adb >/dev/null 2>&1 && adb devices 2>/dev/null | grep -q "emulator
       _SMOKE_FLOWS=()
       while IFS= read -r _f; do
         _SMOKE_FLOWS+=("$_f")
-      done < <(find "${REPO_ROOT}/tests/e2e/maestro" -name "*.yaml" ! -name ".env.yaml" | sort)
+      done < <(find "${REPO_ROOT}/tests/e2e/maestro" -maxdepth 1 -name "*.yaml" ! -name ".env.yaml" ! -name "config.yaml" | sort)
       if (( ${#_SMOKE_FLOWS[@]} == 0 )); then
         echo "[pre-push] smoke flow が見つかりません。smoke test をスキップ"
       else
