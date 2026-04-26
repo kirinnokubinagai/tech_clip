@@ -140,7 +140,7 @@ export default function SaveScreen() {
         onDismiss={dismissToast}
       />
       <ScrollView className="flex-1 bg-background" keyboardShouldPersistTaps="handled">
-        <View className="px-4 pt-4 pb-8">
+        <View className="px-4 pt-14 pb-8">
           {/* ヘッダー */}
           <View className="flex-row items-center mb-6">
             <Pressable

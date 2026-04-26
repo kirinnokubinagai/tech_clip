@@ -102,18 +102,17 @@ export const ArticleCard = memo(function ArticleCard({
               hitSlop={8}
             >
               {article.isFavorite ? (
-                <Heart
-                  testID="favorite-icon-filled"
-                  size={FAVORITE_ICON_SIZE}
-                  color={colors.favorite}
-                  fill={colors.favorite}
-                />
+                <View testID="favorite-icon-filled">
+                  <Heart
+                    size={FAVORITE_ICON_SIZE}
+                    color={colors.favorite}
+                    fill={colors.favorite}
+                  />
+                </View>
               ) : (
-                <Heart
-                  testID="favorite-icon-outline"
-                  size={FAVORITE_ICON_SIZE}
-                  color={colors.textMuted}
-                />
+                <View testID="favorite-icon-outline">
+                  <Heart size={FAVORITE_ICON_SIZE} color={colors.textMuted} />
+                </View>
               )}
             </Pressable>
           </View>
