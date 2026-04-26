@@ -392,7 +392,9 @@ describe("hasAccount フラグ", () => {
 
   it("loadAccountFlagでSecureStoreがエラーをスローした場合にhasAccountがfalseになること", async () => {
     // Arrange: pm clear 後の Android Keystore 不整合を模倣
-    const mockGetItemAsync = jest.fn().mockRejectedValue(new Error("SecureStore error after pm clear"));
+    const mockGetItemAsync = jest
+      .fn()
+      .mockRejectedValue(new Error("SecureStore error after pm clear"));
     jest.spyOn(require("expo-secure-store"), "getItemAsync").mockImplementation(mockGetItemAsync);
 
     // Act
