@@ -544,6 +544,7 @@ orchestrator はそれを検知して CronCreate を実行すること。
 | メッセージ | 送信者 | アクション |
 |---|---|---|
 | `APPROVED: issue-{N}` | reviewer | 完了通知、next-issue-candidates 実行 |
+| `PUSH_IN_PROGRESS: issue-{N}` | reviewer | push-verified.sh 開始通知。受信後 **15 分間は ping しない** |
 | `POLLING_TIMEOUT: issue-{N}` | polling-watcher / reviewer | タイムアウト通知、ユーザーに報告 |
 | `STUCK: issue-{N}` | reviewer | 障害通知、ユーザーに報告 |
 | `WORKTREE_REMOVE_FAILED` | reviewer | worktree 削除失敗通知 |
@@ -552,6 +553,8 @@ orchestrator はそれを検知して CronCreate を実行すること。
 ### 10 分無音時の生存確認 ping
 
 reviewer 系エージェントから **10 分以上** 任意のメッセージが届かない場合、orchestrator は生存確認 ping を送る。
+
+**例外**: `PUSH_IN_PROGRESS: issue-{N}` を受信した場合は受信時刻から **15 分間** ping を抑制する。`push-verified.sh` は lint + typecheck + テスト全件を実行するため最大 5 分以上かかる。この間に ping を送ると reviewer が「止まっている」と誤判定され二重 spawn が発生する。
 
 **タイマー実装方針（pull 型）**: orchestrator はイベント駆動のため常時監視は行えない。他 Issue の `APPROVED:` 受信や別の SendMessage など、orchestrator のターンが回ってきたタイミングで「最後のメッセージ受信時刻」と現在時刻を比較し、10 分超過していれば ping を送る（pull 型チェック）。
 

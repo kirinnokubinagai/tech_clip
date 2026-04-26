@@ -17,6 +17,17 @@ triggers:
 
 ## 手順
 
+**Step 1: orchestrator に push 開始を通知する（必須）**
+
+push-verified.sh は lint + typecheck + test を実行するため 3〜5 分かかる。
+開始前に必ず orchestrator へ通知し、無音タイムアウト誤判定を防ぐ:
+
+```
+SendMessage(to: "orchestrator", "PUSH_IN_PROGRESS: issue-{issue_number} push-verified.sh を開始します（lint + typecheck + test で 3〜5 分かかります）")
+```
+
+**Step 2: push + PR 作成スクリプトを実行する**
+
 ```sh
 WORKTREE={worktree} \
 ISSUE_NUMBER={issue_number} \
