@@ -227,7 +227,7 @@ jq が使えない環境では `gh issue list --state open --limit 100 --json nu
 - **AI エージェントの挙動について指摘を受けた場合、memory への記録だけで終わらせず、Issue を立てて skills / CLAUDE.md / rules / サブエージェント定義を直接編集する恒久的な対策を即座に行う**
 - **`.claude/settings.json` の `permissions.allow` でエージェントの `.claude/**` / `CLAUDE.md` / `.claude/.review-passed` への Write/Edit を許可している。permission 層の許可は orchestrator 直接編集ガードや review-passed マーカー作成ルールを無効化しない（hook 層と責務分離）**
   - 理由: `permissions.allow` に無修飾の `"Write"` / `"Edit"` が存在しても、`defaultMode: "auto"` のもとでは `.claude/**` のような管理系パスへの書き込みは ask にフォールバックする場合がある。明示的なパスルール（`Edit(.claude/**)` / `Write(.claude/**)` 等）を追加することで auto allow を成立させ、並列エージェントの permission prompt 詰まりを解消している。
-- **作業開始前に必ず関連スキルを Skill ツールで呼ぶ**（機能実装・バグ修正開始時は `brainstorming`、Issue 作成時は `create-issue` 等、`.claude/skills/` 配下に該当するスキルがある場合は必ず呼ぶ。スキル定義が存在するのに呼ばずに作業を開始することは禁止する）
+- **作業開始前に必ず関連スキルを Skill ツールで呼ぶ**（機能実装・バグ修正開始時は `brainstorming`、Issue 作成時は `create-issue`、**アイコン・スプラッシュ・モックアップ等の画像生成時は `image-gen`** 等、`.claude/skills/` 配下に該当するスキルがある場合は必ず呼ぶ。スキル定義が存在するのに呼ばずに作業を開始することは禁止する）
 - **エージェントは標準ワークフローから外れる判断を独断で行わない。必ず `AskUserQuestion` ツールで orchestrator または人間ユーザーに確認する**
 - **判断の分類**: 通常フロー内 = 自律実行 / ワークフロー逸脱 = `AskUserQuestion` 必須
   - 逸脱例: 必須フローのスキップ、CHANGES_REQUESTED の軽微判断による省略、worktree/PR の通常外 close/削除、conflict の自己判断解消、CI bypass、別 branch への pivot、「resolved」と独断判定して終了、**analyst の spawn 省略**、**bot レビュー（claude-review など）を analyst の代わりとして扱う判断**、**空コミットでの CI 強制発火**、**複数 Issue を単一 PR に統合する判断**、**stacked PR の採用判断**、**Issue / PR / worktree の独断 close / 削除（通常フロー以外）**、**push 順序の逆転（reviewer より先に coder が push する等）**、**orchestrator が `.review-passed` マーカーを作成しようとする場合（reviewer 不在・CI 詰まり等の理由を問わず）**、**hook / SessionStart 自動指示（CRON_REGISTER 等）をユーザーへの明示的な確認なしに実行する場合**
