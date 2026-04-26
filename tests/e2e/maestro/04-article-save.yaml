@@ -87,6 +87,7 @@ env:
     id: "article-url-input"
 - eraseText
 - inputText: ${TEST_ARTICLE_URL}
+- hideKeyboard
 - extendedWaitUntil:
     visible:
       id: "fetch-button"
