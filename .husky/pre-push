@@ -96,71 +96,101 @@ fi
 
 echo "全チェック通過"
 
-# Maestro smoke test（conditional）
-# emulator が起動していて maestro が使える時だけ実行
-if command -v adb >/dev/null 2>&1 && adb devices 2>/dev/null | grep -q "emulator"; then
-  if command -v maestro >/dev/null 2>&1; then
-    echo "[pre-push] e2e 環境をリセット中..."
-    if bash "${REPO_ROOT}/scripts/e2e/reset-e2e-env.sh"; then
-      echo "[pre-push] e2e 環境リセット完了"
-    else
-      echo "[pre-push] WARNING: e2e 環境リセット失敗（Turso 未起動の可能性）。smoke test をスキップ"
-      exit 0
-    fi
-
-    echo "[pre-push] maestro smoke test を実行中..."
-    # 複数 worktree 並列 push 時のポート衝突回避:
-    # worktree パスのハッシュから ANDROID_SERIAL を決定する（起動中エミュレーター一覧からインデックス選択）
-    _WORKTREE_HASH="$(echo "${REPO_ROOT}" | shasum -a 256 | cut -c1-8)"
-    # bash 3.2 互換の配列構築（macOS デフォルト bash は 3.2 のため mapfile 不可）
-    _EMULATORS=()
-    while IFS= read -r _e; do
-      _EMULATORS+=("$_e")
-    done < <(adb devices 2>/dev/null | grep "emulator" | awk '{print $1}')
-    if (( ${#_EMULATORS[@]} == 0 )); then
-      echo "[pre-push] emulator が切断されました。smoke test をスキップ"
-    else
-      _IDX=$(( 16#${_WORKTREE_HASH} % ${#_EMULATORS[@]} ))
-      export ANDROID_SERIAL="${_EMULATORS[${_IDX}]}"
-      # .env.yaml は環境変数ファイルであり flow ではないため除外する
-      # maestro がディレクトリを再帰スキャンすると .env.yaml を flow として
-      # 解釈し "Either 'url' or 'appId' must be specified" で失敗するため
-      _SMOKE_FLOWS=()
-      while IFS= read -r _f; do
-        _SMOKE_FLOWS+=("$_f")
-      done < <(find "${REPO_ROOT}/tests/e2e/maestro" -maxdepth 1 -name "*.yaml" ! -name ".env.yaml" ! -name "config.yaml" | sort)
-      if (( ${#_SMOKE_FLOWS[@]} == 0 )); then
-        echo "[pre-push] smoke flow が見つかりません。smoke test をスキップ"
-      else
-        # .env.yaml から key=value を読み込み --env 引数に展開する
-        # (maestro にディレクトリを渡さないため env block が自動ロードされない)
-        _MAESTRO_ENV_ARGS=()
-        _ENV_FILE="${REPO_ROOT}/tests/e2e/maestro/.env.yaml"
-        if [ -f "$_ENV_FILE" ]; then
-          while IFS= read -r _line; do
-            case "$_line" in
-              ''|'#'*) continue ;;
-            esac
-            _k="${_line%%:*}"
-            _v="${_line#*: }"
-            [ -z "$_k" ] && continue
-            _MAESTRO_ENV_ARGS+=("--env" "${_k}=${_v}")
-          done < "$_ENV_FILE"
-        fi
-        if ! timeout 900 maestro test \
-             "${_MAESTRO_ENV_ARGS[@]}" \
-             "${_SMOKE_FLOWS[@]}"; then
-          echo ""
-          echo "❌ maestro smoke test 失敗"
-          echo "修正するか、どうしても push したい場合は git push --no-verify"
-          exit 1
-        fi
-        echo "✅ maestro smoke test OK"
-      fi
-    fi
-  else
-    echo "[pre-push] maestro 未インストール。smoke test をスキップ"
-  fi
-else
-  echo "[pre-push] emulator 未起動。maestro smoke test をスキップ"
+# Maestro smoke test
+# CI 環境のみスキップ。ローカルでは必ず全件実行する。
+if [ "${CI:-}" = "true" ] || [ "${GITHUB_ACTIONS:-}" = "true" ]; then
+  echo "[pre-push] CI 環境のため smoke test をスキップ"
+  exit 0
 fi
+
+# maestro インストール確認
+if ! command -v maestro >/dev/null 2>&1; then
+  echo "[pre-push] ERROR: maestro がインストールされていません。"
+  echo "  インストール: curl -Ls \"https://get.maestro.mobile.dev\" | bash"
+  exit 1
+fi
+
+# adb / emulator 確認
+if ! command -v adb >/dev/null 2>&1; then
+  echo "[pre-push] ERROR: adb が見つかりません。Android SDK を確認してください。"
+  exit 1
+fi
+if ! adb devices 2>/dev/null | grep -q "emulator"; then
+  echo "[pre-push] ERROR: Android emulator が起動していません。"
+  echo "  起動例: emulator -avd <avd-name> &"
+  exit 1
+fi
+
+# Turso が未起動なら自動起動する
+if ! curl -sf -o /dev/null --max-time 3 -X POST \
+     -H "Content-Type: application/json" \
+     -d '{"requests":[]}' \
+     "http://127.0.0.1:8888/v2/pipeline" 2>/dev/null; then
+  echo "[pre-push] Turso dev サーバーが未起動です。自動起動します..."
+  if ! bash "${REPO_ROOT}/scripts/ci/start-turso.sh"; then
+    echo "[pre-push] ERROR: Turso dev サーバーの起動に失敗しました。"
+    echo "  手動起動: turso dev --port 8888 --db-file local.db"
+    exit 1
+  fi
+  echo "[pre-push] Turso dev サーバーが起動しました"
+fi
+
+echo "[pre-push] e2e 環境をリセット中..."
+if ! bash "${REPO_ROOT}/scripts/e2e/reset-e2e-env.sh"; then
+  echo "[pre-push] ERROR: e2e 環境リセットに失敗しました。"
+  exit 1
+fi
+echo "[pre-push] e2e 環境リセット完了"
+
+echo "[pre-push] maestro smoke test を実行中..."
+# 複数 worktree 並列 push 時のポート衝突回避:
+# worktree パスのハッシュから ANDROID_SERIAL を決定する（起動中エミュレーター一覧からインデックス選択）
+_WORKTREE_HASH="$(echo "${REPO_ROOT}" | shasum -a 256 | cut -c1-8)"
+# bash 3.2 互換の配列構築（macOS デフォルト bash は 3.2 のため mapfile 不可）
+_EMULATORS=()
+while IFS= read -r _e; do
+  _EMULATORS+=("$_e")
+done < <(adb devices 2>/dev/null | grep "emulator" | awk '{print $1}')
+if (( ${#_EMULATORS[@]} == 0 )); then
+  echo "[pre-push] ERROR: emulator リストが空です（adb devices で再確認してください）。"
+  exit 1
+fi
+_IDX=$(( 16#${_WORKTREE_HASH} % ${#_EMULATORS[@]} ))
+export ANDROID_SERIAL="${_EMULATORS[${_IDX}]}"
+
+# .env.yaml は環境変数ファイルであり flow ではないため除外する
+# maestro がディレクトリを再帰スキャンすると .env.yaml を flow として
+# 解釈し "Either 'url' or 'appId' must be specified" で失敗するため
+_SMOKE_FLOWS=()
+while IFS= read -r _f; do
+  _SMOKE_FLOWS+=("$_f")
+done < <(find "${REPO_ROOT}/tests/e2e/maestro" -maxdepth 1 -name "*.yaml" ! -name ".env.yaml" ! -name "config.yaml" | sort)
+if (( ${#_SMOKE_FLOWS[@]} == 0 )); then
+  echo "[pre-push] ERROR: smoke flow が見つかりません。"
+  exit 1
+fi
+
+# .env.yaml から key=value を読み込み --env 引数に展開する
+# (maestro にディレクトリを渡さないため env block が自動ロードされない)
+_MAESTRO_ENV_ARGS=()
+_ENV_FILE="${REPO_ROOT}/tests/e2e/maestro/.env.yaml"
+if [ -f "$_ENV_FILE" ]; then
+  while IFS= read -r _line; do
+    case "$_line" in
+      ''|'#'*) continue ;;
+    esac
+    _k="${_line%%:*}"
+    _v="${_line#*: }"
+    [ -z "$_k" ] && continue
+    _MAESTRO_ENV_ARGS+=("--env" "${_k}=${_v}")
+  done < "$_ENV_FILE"
+fi
+if ! timeout 900 maestro test \
+     "${_MAESTRO_ENV_ARGS[@]}" \
+     "${_SMOKE_FLOWS[@]}"; then
+  echo ""
+  echo "❌ maestro smoke test 失敗"
+  echo "修正するか、どうしても push したい場合は git push --no-verify"
+  exit 1
+fi
+echo "✅ maestro smoke test OK"
