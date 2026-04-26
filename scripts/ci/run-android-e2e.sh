@@ -64,6 +64,15 @@ nix develop --command maestro test tests/e2e/maestro/ \
   --env TEST_EMAIL="${TEST_EMAIL:-test+maestro@techclip.app}" \
   --env TEST_PASSWORD="${TEST_PASSWORD:-TestPassword123!}" \
   --env TEST_NAME="${TEST_NAME:-Maestro Test User}" \
+  --env API_BASE_URL="${API_BASE_URL:-http://10.0.2.2:${API_CI_PORT:-18787}}" \
+  --env FOLLOWER_EMAIL="${FOLLOWER_EMAIL:-follower+maestro@techclip.app}" \
+  --env FOLLOWER_PASSWORD="${FOLLOWER_PASSWORD:-TestPassword123!}" \
+  --env FOLLOWEE_EMAIL="${FOLLOWEE_EMAIL:-followee+maestro@techclip.app}" \
+  --env FOLLOWEE_PASSWORD="${FOLLOWEE_PASSWORD:-TestPassword123!}" \
+  --env PREMIUM_EMAIL="${PREMIUM_EMAIL:-premium+maestro@techclip.app}" \
+  --env PREMIUM_PASSWORD="${PREMIUM_PASSWORD:-TestPassword123!}" \
+  --env CHANGEPASS_EMAIL="${CHANGEPASS_EMAIL:-changepass+maestro@techclip.app}" \
+  --env CHANGEPASS_PASSWORD="${CHANGEPASS_PASSWORD:-TestPassword123!}" \
   --env TIMESTAMP="${TIMESTAMP:-$(date +%s)}"
 MAESTRO_EXIT=$?
 set -e
