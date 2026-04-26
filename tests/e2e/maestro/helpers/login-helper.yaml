@@ -48,23 +48,29 @@ env:
       - waitForAnimationToEnd:
           timeout: 1000
 
-# onboarding ページ1 検出 → 4 ページ通過
+# onboarding ページ1 検出 → 4 ページ通過 (各ページの text を確認してから次へ)
 - runFlow:
     when:
       visible: "技術記事をワンタップで保存"
     commands:
       - tapOn:
           id: "next-button"
-      - waitForAnimationToEnd:
-          timeout: 2000
+      - extendedWaitUntil:
+          visible:
+            text: "AIが要約・翻訳"
+          timeout: 10000
       - tapOn:
           id: "next-button"
-      - waitForAnimationToEnd:
-          timeout: 2000
+      - extendedWaitUntil:
+          visible:
+            text: "お気に入り・タグで整理"
+          timeout: 10000
       - tapOn:
           id: "next-button"
-      - waitForAnimationToEnd:
-          timeout: 2000
+      - extendedWaitUntil:
+          visible:
+            id: "finish-button"
+          timeout: 10000
       - tapOn:
           id: "finish-button"
       - waitForAnimationToEnd:

@@ -58,40 +58,22 @@ env:
     timeout: 60000
 - tapOn:
     id: "next-button"
-- waitForAnimationToEnd:
-    timeout: 2000
-- runFlow:
-    when:
-      visible: "Open debugger"
-    commands:
-      - tapOn:
-          point: "92%, 93%"
-      - waitForAnimationToEnd:
-          timeout: 2000
+- extendedWaitUntil:
+    visible:
+      text: "AIが要約・翻訳"
+    timeout: 10000
 - tapOn:
     id: "next-button"
-- waitForAnimationToEnd:
-    timeout: 2000
-- runFlow:
-    when:
-      visible: "Open debugger"
-    commands:
-      - tapOn:
-          point: "92%, 93%"
-      - waitForAnimationToEnd:
-          timeout: 2000
+- extendedWaitUntil:
+    visible:
+      text: "お気に入り・タグで整理"
+    timeout: 10000
 - tapOn:
     id: "next-button"
-- waitForAnimationToEnd:
-    timeout: 2000
-- runFlow:
-    when:
-      visible: "Open debugger"
-    commands:
-      - tapOn:
-          point: "92%, 93%"
-      - waitForAnimationToEnd:
-          timeout: 2000
+- extendedWaitUntil:
+    visible:
+      id: "finish-button"
+    timeout: 10000
 - tapOn:
     id: "finish-button"
 - waitForAnimationToEnd:
@@ -199,20 +181,24 @@ env:
     timeout: 60000
 - tapOn:
     id: "next-button"
-- waitForAnimationToEnd:
-    timeout: 2000
+- extendedWaitUntil:
+    visible:
+      text: "AIが要約・翻訳"
+    timeout: 10000
 - tapOn:
     id: "next-button"
-- waitForAnimationToEnd:
-    timeout: 2000
+- extendedWaitUntil:
+    visible:
+      text: "お気に入り・タグで整理"
+    timeout: 10000
 - tapOn:
     id: "next-button"
-- waitForAnimationToEnd:
-    timeout: 2000
+- extendedWaitUntil:
+    visible:
+      id: "finish-button"
+    timeout: 10000
 - tapOn:
     id: "finish-button"
-- waitForAnimationToEnd:
-    timeout: 3000
 - extendedWaitUntil:
     visible:
       text: "アカウントを作成"
