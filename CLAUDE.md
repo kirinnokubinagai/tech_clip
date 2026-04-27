@@ -222,6 +222,7 @@ jq が使えない環境では `gh issue list --state open --limit 100 --json nu
 - **active-issues チームが既に存在する場合は TeamDelete / 再作成は不要**（`Agent(team_name="active-issues", ...)` で新メンバーをそのまま追加できる。`TeamCreate` は存在しない場合のみ実行する）
 - **すべてのエージェントを spawn するときは必ず `mode="acceptEdits"` を指定する**（実装系・レビュー系を問わず）
 - **`.claude/.review-passed` マーカーの作成は reviewer 系エージェント（`reviewer` / `infra-reviewer` / `ui-reviewer`）のみに許可される。`coder` / `infra-engineer` / `ui-designer` / オーケストレーターがこのマーカーを作成することは禁止する**（このマーカーはレビュー PASS の証憑として `pre-push-review-guard.sh` がチェックするため、レビュワー以外が作成すると「レビューを通らずに push できる抜け道」になる）
+- **`.claude/.e2e-passed` マーカーの作成は `e2e-reviewer` のみに許可される**。全 E2E flow PASS 確認後、`e2e-reviewer` が `echo "<HEAD_SHA>" > {worktree}/.claude/.e2e-passed` を実行してマーカーを書き込む。その後 reviewer へ `e2e-approved: <hash>` を送信する。`pre-push-e2e-guard.sh` がこのマーカーと HEAD SHA の一致を確認し、不一致・マーカー不在の場合は push をブロックする
 - **レビュー PASS 後のマーカー作成・push・PR 作成は各レビュワーエージェントが担当する**（オーケストレーターは行わない）
 - **orchestrator は spawn プロンプトに spec ファイルの保存先を書かない（analyst 定義に委ねる）**
 - **AI エージェントの挙動について指摘を受けた場合、memory への記録だけで終わらせず、Issue を立てて skills / CLAUDE.md / rules / サブエージェント定義を直接編集する恒久的な対策を即座に行う**
@@ -641,6 +642,7 @@ worktree-isolation-guard.sh により以下の制限がある（mainブランチ
 
 なお `.omc/state/**` は worktree 上でも Edit/Write がブロックされる（is_blocked_file による）。
 `.claude/.review-passed` は **reviewer 系エージェントのみが** Write ツールで作成すること（例: Write ツールで `{worktree}/.claude/.review-passed` を作成、内容は空でよい）。coder 系エージェントおよびオーケストレーターはこのマーカーを作成してはならない。
+`.claude/.e2e-passed` は **`e2e-reviewer` のみが** Bash ツールで `echo "<HEAD_SHA>" > {worktree}/.claude/.e2e-passed` として作成すること。内容は HEAD SHA 文字列。`pre-push-e2e-guard.sh` がマーカーの存在と SHA 一致を確認する。
 
 | 項目 | 詳細 |
 |---|---|

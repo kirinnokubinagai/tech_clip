@@ -100,6 +100,12 @@
           },
           {
             "type": "command",
+            "command": "bash \"$(git rev-parse --show-toplevel 2>/dev/null || echo .)/.claude/hooks/pre-push-e2e-guard.sh\"",
+            "timeout": 10,
+            "statusMessage": "Checking E2E gate..."
+          },
+          {
+            "type": "command",
             "command": "bash \"$(git rev-parse --show-toplevel 2>/dev/null || echo .)/.claude/hooks/main-commit-guard.sh\"",
             "timeout": 5,
             "statusMessage": "Checking branch for commit..."

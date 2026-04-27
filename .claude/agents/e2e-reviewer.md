@@ -152,6 +152,15 @@ done
 
 ### PASS の場合
 
+全 flow PASS 確認後、HEAD SHA を `.e2e-passed` マーカーに書き込む:
+
+```bash
+HEAD_SHA=$(git -C {worktree} rev-parse HEAD)
+echo "$HEAD_SHA" > {worktree}/.claude/.e2e-passed
+```
+
+その後 reviewer に通知する:
+
 ```
 SendMessage(to: "issue-{N}-reviewer", "e2e-approved: <commit-hash>")
 ```
