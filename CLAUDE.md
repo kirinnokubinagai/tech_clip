@@ -249,6 +249,10 @@ jq が使えない環境では `gh issue list --state open --limit 100 --json nu
   - 例外: 既存 spec への補足訂正のみ（`補足:` / `訂正:` / `clarification:` で始まるメッセージ、または analyst 宛メッセージ）
   - 違反例: orchestrator が Phase 構成 / 設計原則 / ファイル構造を独自定義して infra-engineer / coder / ui-designer に直接送る
   - `orchestrator-flow-guard.sh` が SendMessage に含まれる spec 相当キーワードを検知してブロックする
+- **`orchestrator-flow-guard.sh` の SendMessage ガードは `CLAUDE_AGENT_NAME` が空（= orchestrator）の場合のみ発動する**:
+  - 1500 文字制限・SPEC_PATTERN 検知・C-3a の `spec:` 直送 deny の 3 つはすべて orchestrator 専用ガード
+  - サブエージェント間通信（analyst → reviewer、reviewer → coder 等）は長大 / spec-related な内容を送ることが正常なため、これらのガードでブロックしない
+  - hook 実装で sender 判定が漏れた場合は IS_ORCHESTRATOR 変数パターン（`[ -z "${CLAUDE_AGENT_NAME:-}" ]` → IS_ORCHESTRATOR=true）で修正すること（C-12 参照）
 - **analyst は spec 作成前に必ず以下を読む**（spec authoring checklist）:
   1. `flake.nix`（toolchain 仮定: nix が提供する coreutils / jq / 他 tools の前提）
   2. `package.json` / `pnpm-workspace.yaml`（依存ツール、script 規約）
