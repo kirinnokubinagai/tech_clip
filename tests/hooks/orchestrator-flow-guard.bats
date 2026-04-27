@@ -309,3 +309,61 @@ POST_HOOK="$(cd "$(dirname "$BATS_TEST_FILENAME")/../.." && pwd)/.claude/hooks/p
     HOME_FLAG=$(ls "$HOME/.claude-user/projects/"*/memory/tmp-last-askuserquestion.flag 2>/dev/null | head -1 || echo "")
     [ -z "$HOME_FLAG" ]
 }
+
+# -------------------------------------------------------------------------
+# SendMessage tool: orchestrator spec 直接送信ガードテスト (Phase 12)
+# -------------------------------------------------------------------------
+
+@test "orchestrator が 'Phase 5:' を含むメッセージを coder へ送ると DENY されること" {
+    local msg="Phase 5: create-review-marker.sh を修正してください"
+    local json
+    json=$(jq -n --arg to "issue-999-coder" --arg msg "$msg" \
+        '{"tool_name":"SendMessage","tool_input":{"to":$to,"message":$msg}}')
+    run run_hook "$json"
+    [ "$status" -eq 2 ]
+    [[ "$output" == *"DENY"* ]]
+}
+
+@test "orchestrator が 'Phase 5:' を含むメッセージを analyst へ送ると許可されること" {
+    local msg="Phase 5: 以下の内容で spec を作成してください"
+    local json
+    json=$(jq -n --arg to "issue-999-analyst" --arg msg "$msg" \
+        '{"tool_name":"SendMessage","tool_input":{"to":$to,"message":$msg}}')
+    run run_hook "$json"
+    [ "$status" -eq 0 ]
+}
+
+@test "orchestrator が '補足:' 始まりのメッセージを infra-engineer へ送ると許可されること" {
+    local msg="補足: flake.nix の coreutils は gnused を含みます"
+    local json
+    json=$(jq -n --arg to "issue-999-infra-engineer" --arg msg "$msg" \
+        '{"tool_name":"SendMessage","tool_input":{"to":$to,"message":$msg}}')
+    run run_hook "$json"
+    [ "$status" -eq 0 ]
+}
+
+@test "orchestrator が短い shutdown_request を reviewer へ送ると許可されること" {
+    local msg='{"type":"shutdown_request","request_id":"abc123"}'
+    local json
+    json=$(jq -n --arg to "issue-999-reviewer" --arg msg "$msg" \
+        '{"tool_name":"SendMessage","tool_input":{"to":$to,"message":$msg}}')
+    run run_hook "$json"
+    [ "$status" -eq 0 ]
+}
+
+@test "orchestrator が '## Phase' を含む長大メッセージを infra-engineer へ送ると DENY されること" {
+    local long_msg
+    long_msg=$(printf '## Phase 3: implementation\n%.0s' {1..80})
+    local json
+    json=$(jq -n --arg to "issue-999-infra-engineer" --arg msg "$long_msg" \
+        '{"tool_name":"SendMessage","tool_input":{"to":$to,"message":$msg}}')
+    run run_hook "$json"
+    [ "$status" -eq 2 ]
+    [[ "$output" == *"DENY"* ]]
+}
+
+@test "orchestrator が短い impl-ready メッセージを reviewer へ送ると許可されること" {
+    local json='{"tool_name":"SendMessage","tool_input":{"to":"issue-999-reviewer","message":"impl-ready: abc1234567890"}}'
+    run run_hook "$json"
+    [ "$status" -eq 0 ]
+}

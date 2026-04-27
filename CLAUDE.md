@@ -224,6 +224,27 @@ jq が使えない環境では `gh issue list --state open --limit 100 --json nu
 - **`.claude/.review-passed` マーカーの作成は reviewer 系エージェント（`reviewer` / `infra-reviewer` / `ui-reviewer`）のみに許可される。`coder` / `infra-engineer` / `ui-designer` / オーケストレーターがこのマーカーを作成することは禁止する**（このマーカーはレビュー PASS の証憑として `pre-push-review-guard.sh` がチェックするため、レビュワー以外が作成すると「レビューを通らずに push できる抜け道」になる）
 - **`.claude/.e2e-passed` マーカーの作成は `e2e-reviewer` のみに許可される**。全 E2E flow PASS 確認後、`e2e-reviewer` が `bash scripts/gate/run-maestro-and-create-marker.sh --agent <name>` を実行してマーカーを生成する（JSON 形式）。その後 reviewer へ `e2e-approved: <hash>` を送信する。`pre-push-e2e-guard.sh` がこのマーカーと HEAD SHA の一致・有効期限・flows_passed == flows_total を確認し、不一致・不正形式・期限切れの場合は push をブロックする
 - **レビュー PASS 後のマーカー作成・push・PR 作成は各レビュワーエージェントが担当する**（オーケストレーターは行わない）
+- **orchestrator は spec を直接書いて実装エージェントに送ってはならない**。spec 作成は必ず analyst を経由する
+  - 例外: 既存 spec への補足訂正のみ（`補足:` / `訂正:` / `clarification:` で始まるメッセージ、または analyst 宛メッセージ）
+  - 違反例: orchestrator が Phase 構成 / 設計原則 / ファイル構造を独自定義して infra-engineer / coder / ui-designer に直接送る
+  - `orchestrator-flow-guard.sh` が SendMessage に含まれる spec 相当キーワードを検知してブロックする
+- **analyst は spec 作成前に必ず以下を読む**（spec authoring checklist）:
+  1. `flake.nix`（toolchain 仮定: nix が提供する coreutils / jq / 他 tools の前提）
+  2. `package.json` / `pnpm-workspace.yaml`（依存ツール、script 規約）
+  3. `.claude/gate-rules.json`（gate 判定 rules、existing path patterns）
+  4. 既存スクリプト（`scripts/gate/*`, `scripts/lib/*`）（命名・構造の既存 convention）
+  5. 関連 agent 定義（`reviewer.md` / `e2e-reviewer.md` 等）（既存 phase 構成）
+  6. 関連既存テスト（`tests/scripts/`）（test 命名・bats 構造）
+  7. 関連 hook（`pre-push-*-guard.sh`）（既存 hook の動作と整合性）
+- **analyst の spec 末尾には以下のチェックリストを全項目埋めて添付すること**（未記入は spec として不完全と判定される）:
+  - `[ ] toolchain 仮定`: nix flake で提供されるツールのみ使用しているか確認済 / 追加が必要なら flake.nix 修正案も含む
+  - `[ ] test 追加要件`: 修正対象に対応する test 追加（Phase 11 mapping rule に従う）を明記済
+  - `[ ] migration`: 既存資産との整合性 / 旧形式の retrocompat / bootstrap 手順を明記済
+  - `[ ] CI 影響`: workflow file 変更含むか、含まなければ既存 path filter で対応可
+  - `[ ] Idempotency`: 同一 input で複数回実行可能か
+  - `[ ] Atomic`: 部分書き込みで状態破壊しないか
+  - `[ ] Permission`: 書き込み先が `Write/Edit allow list` に含まれるか
+  - `[ ] AskUserQuestion 不要`: architectural 判断のみで進められるか
 - **orchestrator は spawn プロンプトに spec ファイルの保存先を書かない（analyst 定義に委ねる）**
 - **AI エージェントの挙動について指摘を受けた場合、memory への記録だけで終わらせず、Issue を立てて skills / CLAUDE.md / rules / サブエージェント定義を直接編集する恒久的な対策を即座に行う**
 - **`.claude/settings.json` の `permissions.allow` でエージェントの `.claude/**` / `CLAUDE.md` / `.claude/.review-passed` への Write/Edit を許可している。permission 層の許可は orchestrator 直接編集ガードや review-passed マーカー作成ルールを無効化しない（hook 層と責務分離）**

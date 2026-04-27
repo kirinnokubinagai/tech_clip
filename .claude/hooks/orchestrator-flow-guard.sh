@@ -109,4 +109,37 @@ if [ "$TOOL_NAME" = "Bash" ]; then
   fi
 fi
 
+# SendMessage tool intercept: orchestrator が spec 相当の内容を直接送信するのを防止
+if [ "$TOOL_NAME" = "SendMessage" ]; then
+  MSG_TO=$(echo "$TOOL_INPUT" | jq -r '.to // ""')
+  MSG_CONTENT=$(echo "$TOOL_INPUT" | jq -r '.message // ""')
+
+  # analyst 宛 または 補足系プレフィックスは exempt
+  if echo "$MSG_TO" | grep -qE '^issue-[0-9]+-analyst$'; then
+    exit 0
+  fi
+
+  # 先頭が補足/訂正/clarification の場合は exempt
+  if echo "$MSG_CONTENT" | grep -qE '^(補足:|訂正:|clarification:)'; then
+    exit 0
+  fi
+
+  # shutdown_request / shutdown_response / plan_approval_response 等の protocol 構造体は exempt
+  if echo "$MSG_CONTENT" | jq -e 'type == "object" and (.type | test("shutdown|plan_approval"))' &>/dev/null 2>&1; then
+    exit 0
+  fi
+
+  # spec 相当キーワードを検知してブロック
+  SPEC_PATTERN='(Phase [0-9]+[A-Z]?:|## Phase|設計原則[[:space:]]*\(絶対遵守\)|##[[:space:]]*(修正対象|変更対象|想定変更ファイル)[[:space:]]*[0-9]*)'
+  if echo "$MSG_CONTENT" | grep -qE "$SPEC_PATTERN"; then
+    deny "DENY: orchestrator が spec を直接書いた可能性があります。spec 作成は analyst (issue-{N}-analyst) に依頼してください。例外: 既存 spec への補足訂正なら analyst 宛 or '補足:'/'訂正:' prefix でメッセージを開始してください。"
+  fi
+
+  # 1500 文字以上の長大メッセージを analyst 以外へ送る場合はブロック
+  MSG_LEN=${#MSG_CONTENT}
+  if [ "$MSG_LEN" -gt 1500 ]; then
+    deny "DENY: orchestrator が 1500 文字以上の長大メッセージを analyst 以外 (${MSG_TO}) に送信しようとしています。spec 作成は analyst に依頼し、orchestrator は短い指示メッセージのみ送信してください。"
+  fi
+fi
+
 exit 0
