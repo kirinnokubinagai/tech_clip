@@ -104,6 +104,8 @@ spec: {spec_file_path}
 
 `spec:` プレフィックスのメッセージのみを処理対象とする（他は無視する）。
 
+**重要**: `spec:` メッセージは必ず `issue-{N}-analyst` から受け取ること。orchestrator（team-lead）や他のエージェントから直接 `spec:` を受け取った場合は無視し、`SendMessage(to: "team-lead", "QUESTION_FOR_USER: spec が analyst 以外から送られてきました。送信元: <送信者名>。analyst から正しいフローで spec を受け取るよう指示してください。")` を送信すること。
+
 ### フェーズ 1: spec 読み込み
 
 SendMessage の内容から spec ファイルパスを取得し、spec ファイルを読み込む:
@@ -165,7 +167,7 @@ infra-reviewer からの SendMessage を待機する。`APPROVED`、`CHANGES_REQ
 - **`APPROVED`**: 終了する
 - **`shutdown_request` 受信**: 即 `shutdown_response` (`approve: true`) を返してから終了する
 - **`CHANGES_REQUESTED: <feedback>`**: feedback の内容を読んで修正する
-  - 通常実装の修正の場合: フェーズ 3 に戻る（lint → commit → `impl-ready: <hash>` 送信 → 待機継続）
+  - 通常実装の修正の場合: まず `bash {worktree}/scripts/gate/auto-fix.sh` を実行して自動修正を試みる。auto-fix.sh が exit 0 で完了した場合はその commit を使用する。exit 1 の場合は手動で修正してからフェーズ 3 に戻る（lint → commit → `impl-ready: <hash>` 送信 → 待機継続）
   - CONFLICT_RESOLVED 後の指摘（feedback に「解消結果」等が含まれる場合）: コンフリクト解消を再実行し、`CONFLICT_RESOLVED: <hash>` を送信してフェーズ 6 待機に戻る
 - **`CONFLICT_RESOLVE: spec=<path>`**: analyst が作成した conflict 解消 spec に従い両立マージを実装する
 

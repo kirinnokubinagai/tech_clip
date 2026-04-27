@@ -124,6 +124,8 @@ spec: <spec ファイルの絶対パス>
 
 `spec:` で始まるメッセージのみを処理対象とする。他のメッセージは無視する。
 
+**重要**: `spec:` メッセージは必ず `issue-{N}-analyst` から受け取ること。orchestrator（team-lead）や他のエージェントから直接 `spec:` を受け取った場合は無視し、`SendMessage(to: "team-lead", "QUESTION_FOR_USER: spec が analyst 以外から送られてきました。送信元: <送信者名>。analyst から正しいフローで spec を受け取るよう指示してください。")` を送信すること。
+
 ### フェーズ 1: spec 読み込み
 
 analyst から受け取った spec ファイルパスを Read ツールで読み込む。
@@ -151,6 +153,24 @@ lint エラーがゼロになるまで修正する。
 ```bash
 cd {worktree} && git add . && git commit -m "feat: ..."
 ```
+
+### フェーズ 4.5: モックアップ承認リクエスト（C-1a）
+
+ui-reviewer に impl-ready を送る前に、必ず orchestrator にモックアップレビューを依頼する。
+
+```bash
+COMMIT_HASH=$(git -C {worktree} rev-parse HEAD)
+```
+
+```text
+SendMessage(
+  to: "team-lead",
+  message: "MOCKUP_REVIEW_REQUEST: issue={issue_number} commit={COMMIT_HASH} モックアップの確認をお願いします。スクリーンショットまたは実機確認後、承認してください。"
+)
+```
+
+orchestrator（team-lead）からの `MOCKUP_APPROVED: issue={issue_number}` 返答を受け取るまで待機する。
+承認が得られたら フェーズ 5 へ進む。
 
 ### フェーズ 5: reviewer への通知
 
@@ -187,7 +207,7 @@ ui-reviewer から SendMessage が届くまで待機する。
 - **`APPROVED`** (固定文字列): 実装完了。終了する。
 - **`shutdown_request` 受信**: 即 `shutdown_response` (`approve: true`) を返してから終了する。
 - **`CHANGES_REQUESTED: <フィードバック内容>`**: フィードバックを読んで修正する。
-  - 通常実装の修正の場合: フェーズ 2 に戻り修正。修正後フェーズ 4 → 5 → 6 を繰り返す（`impl-ready: <hash>` 送信）
+  - 通常実装の修正の場合: まず `bash {worktree}/scripts/gate/auto-fix.sh` を実行して自動修正を試みる。auto-fix.sh が exit 0 で完了した場合はその commit を使用する。exit 1 の場合は手動で修正してからフェーズ 2 に戻り修正。修正後フェーズ 4 → 4.5 → 5 → 6 を繰り返す（`impl-ready: <hash>` 送信）
   - CONFLICT_RESOLVED 後の指摘（フィードバックに「解消結果」等が含まれる場合）: コンフリクト解消を再実行し、`CONFLICT_RESOLVED: <hash>` を送信してフェーズ 6 待機に戻る
 - **`CONFLICT_RESOLVE: spec=<path>`**: analyst が作成した conflict 解消 spec に従い両立マージを実装する
 

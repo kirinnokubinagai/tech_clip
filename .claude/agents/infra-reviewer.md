@@ -329,10 +329,11 @@ fi
 ### フェーズ 5: push + PR 作成
 
 ```bash
-# レビュー通過マーカー作成（HEAD SHA を書き込む）
-HEAD_SHA=$(git -C {worktree} rev-parse HEAD)
-# Write ツールを使って {worktree}/.claude/.review-passed を作成すること
-# ファイルの内容: "$HEAD_SHA"（HEAD の commit hash のみ、改行なし）
+# レビュー通過マーカー作成
+bash {worktree}/scripts/gate/create-review-marker.sh --agent issue-{N}-infra-reviewer
+# このスクリプトが lint + typecheck + test チェックを実行し、全て PASS した場合のみ
+# JSON 形式のマーカーを atomic write する。
+# 絶対に Write ツールで .review-passed を直接作成しないこと（rule violation）
 
 # push
 cd {worktree} && bash scripts/push-verified.sh
@@ -606,6 +607,33 @@ SendMessage(to: "orchestrator", "APPROVED: issue-{issue_number}")
 ```
 
 最後に infra-reviewer 自身が終了する。
+
+## マニュアルレビューモードフォールバック（C-8a）
+
+`bash {worktree}/scripts/gate/check-claude-review-mode.sh` を polling 開始前に実行し、
+claude-review bot がスキップ判定になった場合は以下のフォールバックを適用する:
+
+```bash
+MODE=$(bash {worktree}/scripts/gate/check-claude-review-mode.sh)
+```
+
+- `MODE=auto`: 通常通り claude-review bot の VERDICT を待つ（フェーズ 6 の通常フロー）
+- `MODE=manual`: claude-review bot が動作しないため、以下の手動レビューフローを実行する
+
+### マニュアルレビューフロー
+
+1. `gh pr view <N> --json reviews,statusCheckRollup,reviewDecision` でレビュー状態を取得する
+2. CI の全 status check が `SUCCESS` または `SKIPPED`（required check 以外）であることを確認する
+3. 手動でコード・インフラ設定レビューを実行する
+4. 問題なければ `bash {worktree}/scripts/gate/create-review-marker.sh --agent issue-{N}-infra-reviewer` を実行する
+5. マーカー作成後 push → PR 作成（または更新）し、フェーズ 7 に進む
+
+```text
+SendMessage(to: "team-lead",
+  "QUESTION_FOR_USER: claude-review bot がスキップ状態です（check-claude-review-mode.sh = manual）。手動レビューモードでフェーズ 7 に進みます。問題がある場合は指示してください。")
+```
+
+orchestrator の応答を待たずに 5 分後にタイムアウトして手動レビューフローを実行してよい。
 
 ## レビュー方針（厳守）
 
