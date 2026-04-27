@@ -150,8 +150,9 @@ if ! bash "${REPO_ROOT}/scripts/e2e/reset-e2e-env.sh"; then
 fi
 echo "[pre-push] e2e 環境リセット完了"
 
-# 並列度: MAESTRO_SHARDS が指定されればそれを使う。未指定なら 2 (デフォルト)
-_TARGET_SHARDS="${MAESTRO_SHARDS:-2}"
+# 並列度: MAESTRO_SHARDS が指定されればそれを使う。
+# 未指定なら 4 (8 core / 16GB Mac でも安定動作する経験則的デフォルト)
+_TARGET_SHARDS="${MAESTRO_SHARDS:-4}"
 
 # 既存 emulator 数を確認
 _EXISTING_EMU_COUNT=$(adb devices 2>/dev/null | grep -cE '^emulator-[0-9]+\s+device' || echo 0)

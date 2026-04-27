@@ -17,7 +17,7 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(git -C "$SCRIPT_DIR" rev-parse --show-toplevel 2>/dev/null || git rev-parse --show-toplevel)"
 
-TARGET_SHARDS="${MAESTRO_SHARDS:-2}"
+TARGET_SHARDS="${MAESTRO_SHARDS:-4}"
 SPECIFIC_FLOW="${1:-}"
 
 if ! command -v maestro >/dev/null 2>&1; then

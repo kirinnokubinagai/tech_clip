@@ -13,6 +13,9 @@ on:
       - "flake.lock"
       - ".github/workflows/pr-e2e-android.yml"
       - ".github/actions/upload-pr-e2e-comment/**"
+      - "scripts/ci/**"
+      - "scripts/dev/setup-avd.sh"
+      - "scripts/dev/launch-shard-emulators.sh"
 
 permissions:
   contents: write
@@ -30,12 +33,12 @@ jobs:
       # 1 件 fail しても他 shard を走らせて全体結果を取得する
       fail-fast: false
       matrix:
-        # シャード数を増やすと wall-clock が短縮されるが runner 時間は増える。
-        # 18 flow を 2 shard で約半減を狙う。要なら 3-4 shard に拡張可能。
+        # 18 flow を 2 shard で並列実行 (要なら 3-4 に拡張可能)
         shard: [1, 2]
     env:
       SHARD_INDEX: ${{ matrix.shard }}
       SHARD_TOTAL: 2
+      # nix が ANDROID_HOME を提供するので暫定: nix shell 経由で実行する
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v4.2.2
 
@@ -78,27 +81,12 @@ jobs:
 
       - uses: ./.github/actions/nix-setup
 
-      - name: AVD cache
+      - name: nix Android SDK cache
         uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae  # v5.0.5
-        id: avd-cache
         with:
           path: |
-            ~/.android/avd/*
-            ~/.android/adb*
-          key: avd-api34-x86_64-google_apis-v1
-
-      - name: Generate AVD snapshot (cache miss)
-        if: steps.avd-cache.outputs.cache-hit != 'true'
-        uses: reactivecircus/android-emulator-runner@1dcd0090116d15e7c562f8db72807de5e036a4ed  # v2.13.0
-        with:
-          api-level: 34
-          target: google_apis
-          arch: x86_64
-          force-avd-creation: false
-          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
-          disable-animations: true
-          script: echo "AVD snapshot generated"
-
+            ~/.android-nix
+          key: nix-avd-${{ hashFiles('flake.lock', 'scripts/dev/setup-avd.sh') }}-v1
 
       - name: Start Turso dev server
         run: nix develop --command bash scripts/ci/start-turso.sh
@@ -106,28 +94,29 @@ jobs:
           TURSO_CI_DB_FILE: /tmp/tech-clip-ci-turso.db
           TURSO_CI_PORT: "8888"
 
-      - name: Android Emulator + Maestro
-        uses: reactivecircus/android-emulator-runner@324029e2f414c084d8b15ba075288885e74aef9c  # v2.13.0
+      - name: Boot Android emulator (nix-provided)
+        run: nix develop --command bash scripts/ci/start-emulator.sh techclip-ci 5554
+
+      - name: Run E2E (shard ${{ matrix.shard }}/2)
         env:
-          # NODE_OPTIONS は scripts/ci/run-android-e2e.sh 内で必要に応じて設定する
-          # (action-runner の node20 が --no-experimental-strip-types を受け入れないため)
           TURSO_DATABASE_URL: "http://127.0.0.1:8888"
           TURSO_AUTH_TOKEN: "dummy"
           IS_E2E_ENV: "1"
           TEST_EMAIL: "test+maestro@techclip.app"
-          # seed-maestro-static.ts の MAESTRO_STATIC_PASSWORD と統一。CI secret 不要
           TEST_PASSWORD: "TestPassword123!"
           TEST_NAME: "Maestro Test User"
           MAESTRO_TEST_PASSWORD: "TestPassword123!"
           TIMESTAMP: ${{ github.run_id }}
-        with:
-          api-level: 34
-          target: google_apis
-          arch: x86_64
-          force-avd-creation: false
-          emulator-options: -no-snapshot-save -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
-          disable-animations: true
-          script: bash scripts/ci/run-android-e2e.sh
+        run: nix develop --command bash scripts/ci/run-android-e2e.sh
+
+      - name: Stop emulator
+        if: always()
+        run: |
+          if [ -f /tmp/emulator-5554.pid ]; then
+            PID=$(cat /tmp/emulator-5554.pid)
+            kill "$PID" 2>/dev/null || true
+          fi
+          nix develop --command adb -s emulator-5554 emu kill 2>/dev/null || true
 
       - name: Upload screenshots artifact
         if: always()
@@ -186,8 +175,6 @@ jobs:
         run: |
           set -eo pipefail
           mkdir -p test-results
-          # 全 shard の junit を 1 ファイルに連結 (upload-pr-e2e-comment 互換のため)
-          # 簡易的に最初に見つかった file を junit.xml に複製し、合計値を計算
           SHARD_FILES=$(ls test-results/junit-shard*of2.xml 2>/dev/null || true)
           if [ -z "$SHARD_FILES" ]; then
             echo "no shard junit files found" >&2
@@ -206,18 +193,15 @@ jobs:
             ERRORS=$((ERRORS + er))
           done
           echo "Aggregate: tests=$TOTAL failures=$FAILED errors=$ERRORS"
-          # 集約 junit.xml を生成 (testsuite を 1 つにまとめる)
           {
             echo '<?xml version="1.0" encoding="UTF-8"?>'
             echo "<testsuite tests=\"$TOTAL\" failures=\"$FAILED\" errors=\"$ERRORS\">"
             for f in $SHARD_FILES; do
-              # testsuite の中身 (testcase 等) のみを抽出して連結
               sed -n '/<testcase/,/<\/testcase>/p' "$f" || true
             done
             echo '</testsuite>'
           } > test-results/junit.xml
 
-          # exit code: 全 shard が 0 (all pass) でなければ 1
           OVERALL=0
           for f in $(ls test-results/maestro-exit-code-shard*of2.txt 2>/dev/null); do
             EC=$(cat "$f" 2>/dev/null || echo 1)
