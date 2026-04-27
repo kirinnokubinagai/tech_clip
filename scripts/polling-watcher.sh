@@ -1,13 +1,24 @@
 #!/usr/bin/env bash
 #
-# polling-watcher.sh: orchestrator 主導ポーリング (Part C)
+# polling-watcher.sh: reviewer 自己 polling（active polling 設計）
 #
-# Mac 稼働中前提。CronCreate (*/2 * * * *) または SessionStart hook で定期実行する。
-# .claude/polling/*.json を読んで各 PR の verdict を評価し、
-# 確定したら reviewer agent に SendMessage で通知する。
+# reviewer が push 後に同期呼び出しする。内部で最大 9 分間 INTERVAL 秒毎に
+# PR の verdict を評価し、stdout 最終行に結果を出力して exit する。
 #
 # 使い方:
-#   bash scripts/polling-watcher.sh [worktree_path]
+#   bash scripts/polling-watcher.sh <PR_NUMBER> [worktree_path]
+#
+# stdout 出力（最終行のみが結果）:
+#   VERDICT: approve PR #<N>
+#   VERDICT: request_changes PR #<N>
+#   VERDICT: external_merged PR #<N>
+#   VERDICT: closed PR #<N>
+#   VERDICT: conflict PR #<N>
+#   VERDICT: timeout PR #<N> elapsed=<sec>s
+#   VERDICT: still_pending PR #<N>
+#   VERDICT: error <reason>
+#
+# stderr には逐次の進捗 / debug を出す。
 #
 # .claude/polling/pr-<PR_NUMBER>.json の形式:
 #   {
@@ -21,122 +32,142 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-WORKTREE="${1:-$(git -C "$SCRIPT_DIR" rev-parse --show-toplevel 2>/dev/null || pwd)}"
+
+# 引数チェック
+if [ $# -lt 1 ]; then
+  echo "Usage: $0 <PR_NUMBER> [worktree_path]" >&2
+  exit 1
+fi
+
+PR_NUMBER="$1"
+WORKTREE="${2:-$(git -C "$SCRIPT_DIR" rev-parse --show-toplevel 2>/dev/null || pwd)}"
 POLLING_DIR="$WORKTREE/.claude/polling"
 CONFIG="$WORKTREE/.claude/config.json"
 LIB="$SCRIPT_DIR/lib/evaluate-verdict.sh"
 
 if [ ! -f "$LIB" ]; then
-  echo "ERROR: evaluate-verdict.sh not found: $LIB" >&2
-  exit 1
+  echo "VERDICT: error evaluate-verdict.sh not found: $LIB"
+  exit 0
 fi
 # shellcheck source=scripts/lib/evaluate-verdict.sh
 source "$LIB"
 
-if [ ! -d "$POLLING_DIR" ]; then
-  echo "polling dir not found: $POLLING_DIR"
+# state ファイル確認
+STATE_FILE="$POLLING_DIR/pr-${PR_NUMBER}.json"
+if [ ! -f "$STATE_FILE" ]; then
+  echo "VERDICT: error state_file_missing PR #${PR_NUMBER}"
   exit 0
 fi
 
+# state ファイル読み込み
+PUSH_SHA=$(jq -r '.push_sha // ""' "$STATE_FILE" 2>/dev/null || echo "")
+ISSUE_NUMBER=$(jq -r '.issue_number // ""' "$STATE_FILE" 2>/dev/null || echo "")
+AGENT_NAME=$(jq -r '.agent_name // ""' "$STATE_FILE" 2>/dev/null || echo "")
+STARTED_AT=$(jq -r '.started_at // ""' "$STATE_FILE" 2>/dev/null || echo "")
+
+if [ -z "$PUSH_SHA" ] || [ -z "$AGENT_NAME" ]; then
+  echo "VERDICT: error invalid_state_file PR #${PR_NUMBER}"
+  exit 0
+fi
+
+# タイムアウト設定
 TIMEOUT_MINUTES=$(jq -r '.polling_timeout_minutes // 60' "$CONFIG" 2>/dev/null || echo "60")
 TIMEOUT_SECONDS=$((TIMEOUT_MINUTES * 60))
-TEAM_NAME="active-issues"
+
+# 内部ループ設定（最大 9 分）
+INTERNAL_LOOP_DEADLINE_SEC=540
+INTERVAL_SEC=$(( $(jq -r '.polling_interval_minutes // 2' "$CONFIG" 2>/dev/null || echo "2") * 60 ))
 
 LOG_FILE="$POLLING_DIR/watcher-results.log"
 
-# ---------------------------------------------------------------------------
-# claude_send_message: チームの inbox ファイルに書き込んで SendMessage を擬似実装する
-# ---------------------------------------------------------------------------
-claude_send_message() {
-  local target="$1"
-  local message="$2"
-  local inbox="${WORKTREE}/.claude-user/teams/${TEAM_NAME}/inboxes/${target}.jsonl"
-  mkdir -p "$(dirname "$inbox")"
-  jq -n \
-    --arg to "$target" \
-    --arg from "polling-watcher" \
-    --arg msg "$message" \
-    '{to: $to, from: $from, message: $msg, timestamp: (now | todate)}' >> "$inbox"
-  echo "SendMessage -> $target: $message" >&2
+# started_at からの経過秒数を計算するヘルパー
+elapsed_since_started() {
+  if [ -z "$STARTED_AT" ]; then
+    echo 0
+    return
+  fi
+  local STARTED_EPOCH
+  STARTED_EPOCH=$(date -j -f "%Y-%m-%dT%H:%M:%SZ" "$STARTED_AT" +%s 2>/dev/null \
+    || date -d "$STARTED_AT" +%s 2>/dev/null \
+    || echo 0)
+  local NOW_EPOCH
+  NOW_EPOCH=$(date +%s)
+  echo $((NOW_EPOCH - STARTED_EPOCH))
 }
 
-for STATE_FILE in "$POLLING_DIR"/pr-*.json; do
-  [ -f "$STATE_FILE" ] || continue
+LOOP_START=$(date +%s)
 
-  PR_NUMBER=$(jq -r '.pr_number // ""' "$STATE_FILE" 2>/dev/null || echo "")
-  PUSH_SHA=$(jq -r '.push_sha // ""' "$STATE_FILE" 2>/dev/null || echo "")
-  ISSUE_NUMBER=$(jq -r '.issue_number // ""' "$STATE_FILE" 2>/dev/null || echo "")
-  AGENT_NAME=$(jq -r '.agent_name // ""' "$STATE_FILE" 2>/dev/null || echo "")
-  STARTED_AT=$(jq -r '.started_at // ""' "$STATE_FILE" 2>/dev/null || echo "")
+echo "INFO: polling PR #${PR_NUMBER} (issue: ${ISSUE_NUMBER}, sha: ${PUSH_SHA})" >&2
 
-  if [ -z "$PR_NUMBER" ] || [ -z "$PUSH_SHA" ] || [ -z "$AGENT_NAME" ]; then
-    echo "SKIP: 不正な state ファイル: $STATE_FILE"
-    continue
-  fi
-
-  # PR の状態確認（外部 merge / close チェック）
+while :; do
+  # 1) PR 全体状態（MERGED / CLOSED）を確認
   PR_STATE=$(gh pr view "$PR_NUMBER" --json state --jq '.state' 2>/dev/null || echo "")
   if [ "$PR_STATE" = "MERGED" ]; then
     echo "EXTERNAL_MERGED: PR #$PR_NUMBER" >&2
     echo "EXTERNAL_MERGED: issue-${ISSUE_NUMBER} PR #$PR_NUMBER at=$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> "$LOG_FILE"
-    claude_send_message "$AGENT_NAME" "VERDICT: external_merged PR #${PR_NUMBER} merged externally"
     rm -f "$STATE_FILE"
-    continue
+    echo "VERDICT: external_merged PR #${PR_NUMBER}"
+    exit 0
   fi
   if [ "$PR_STATE" = "CLOSED" ]; then
     echo "CLOSED: PR #$PR_NUMBER" >&2
     echo "CLOSED: issue-${ISSUE_NUMBER} PR #$PR_NUMBER at=$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> "$LOG_FILE"
-    claude_send_message "$AGENT_NAME" "VERDICT: closed PR #${PR_NUMBER} closed without merge"
     rm -f "$STATE_FILE"
-    continue
+    echo "VERDICT: closed PR #${PR_NUMBER}"
+    exit 0
   fi
 
-  # mergeStateStatus チェック: DIRTY = conflict with main
+  # 2) mergeStateStatus チェック: DIRTY = conflict with main
   MERGE_STATE=$(gh pr view "$PR_NUMBER" --json mergeStateStatus --jq '.mergeStateStatus' 2>/dev/null || echo "")
   if [ "$MERGE_STATE" = "DIRTY" ]; then
-    echo "CONFLICT: PR #$PR_NUMBER ($AGENT_NAME) conflict with main" >&2
+    echo "CONFLICT: PR #$PR_NUMBER conflict with main" >&2
     echo "CONFLICT: issue-${ISSUE_NUMBER} PR #$PR_NUMBER mergeState=DIRTY at=$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> "$LOG_FILE"
-    claude_send_message "$AGENT_NAME" "CONFLICT_DETECTED: PR #${PR_NUMBER} has conflict with main (mergeStateStatus=DIRTY). CONFLICT_INVESTIGATE を analyst に送信してください。"
-    # state ファイルは残す（conflict 解消・再 push 後に再評価）
-    continue
+    # state は残す（conflict 解消後 reviewer が再呼び出し）
+    echo "VERDICT: conflict PR #${PR_NUMBER}"
+    exit 0
   fi
 
-  # タイムアウト確認
-  if [ -n "$STARTED_AT" ]; then
-    STARTED_EPOCH=$(date -j -f "%Y-%m-%dT%H:%M:%SZ" "$STARTED_AT" +%s 2>/dev/null \
-      || date -d "$STARTED_AT" +%s 2>/dev/null \
-      || echo 0)
-    NOW_EPOCH=$(date +%s)
-    ELAPSED=$((NOW_EPOCH - STARTED_EPOCH))
-    if [ "$ELAPSED" -ge "$TIMEOUT_SECONDS" ]; then
-      echo "TIMEOUT: PR #$PR_NUMBER ($AGENT_NAME) ${ELAPSED}秒経過"
-      echo "TIMEOUT: issue-${ISSUE_NUMBER} PR #$PR_NUMBER elapsed=${ELAPSED}s at=$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> "$LOG_FILE"
-      # タイムアウトは reviewer が死んでいる可能性があるため orchestrator へ送信する（CLAUDE.md:512）
-      claude_send_message "orchestrator" "POLLING_TIMEOUT: issue-${ISSUE_NUMBER} PR #${PR_NUMBER} ${TIMEOUT_MINUTES}min exceeded"
-      rm -f "$STATE_FILE"
-      continue
-    fi
+  # 3) TIMEOUT 確認（state.started_at + polling_timeout_minutes）
+  ELAPSED=$(elapsed_since_started)
+  if [ "$ELAPSED" -ge "$TIMEOUT_SECONDS" ]; then
+    echo "TIMEOUT: PR #$PR_NUMBER ${ELAPSED}s elapsed" >&2
+    echo "TIMEOUT: issue-${ISSUE_NUMBER} PR #$PR_NUMBER elapsed=${ELAPSED}s at=$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> "$LOG_FILE"
+    rm -f "$STATE_FILE"
+    echo "VERDICT: timeout PR #${PR_NUMBER} elapsed=${ELAPSED}s"
+    exit 0
   fi
 
-  VERDICT=$(evaluate_verdict "$PR_NUMBER" "$PUSH_SHA" "$CONFIG")
+  # 4) 3条件AND verdict
+  V=$(evaluate_verdict "$PR_NUMBER" "$PUSH_SHA" "$CONFIG")
+  echo "INFO: evaluate_verdict -> $V (PR #${PR_NUMBER})" >&2
 
-  if [ "$VERDICT" = "pending" ]; then
-    echo "PENDING: PR #$PR_NUMBER ($AGENT_NAME) verdict 未確定"
-    continue
-  fi
-
-  echo "VERDICT: PR #$PR_NUMBER = $VERDICT (agent: $AGENT_NAME)"
-
-  case "$VERDICT" in
+  case "$V" in
     approve)
       echo "POLLING_WATCHER_APPROVE: issue-${ISSUE_NUMBER} PR #$PR_NUMBER at=$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> "$LOG_FILE"
-      claude_send_message "$AGENT_NAME" "VERDICT: approve PR #${PR_NUMBER} passed"
+      rm -f "$STATE_FILE"
+      echo "VERDICT: approve PR #${PR_NUMBER}"
+      exit 0
       ;;
     request_changes)
       echo "POLLING_WATCHER_CHANGES: issue-${ISSUE_NUMBER} PR #$PR_NUMBER at=$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> "$LOG_FILE"
-      claude_send_message "$AGENT_NAME" "VERDICT: request_changes PR #${PR_NUMBER}"
+      rm -f "$STATE_FILE"
+      echo "VERDICT: request_changes PR #${PR_NUMBER}"
+      exit 0
+      ;;
+    pending)
+      echo "PENDING: PR #$PR_NUMBER verdict 未確定" >&2
       ;;
   esac
 
-  rm -f "$STATE_FILE"
+  # 5) 9 分の内部 deadline チェック
+  NOW=$(date +%s)
+  if [ $((NOW - LOOP_START)) -ge "$INTERNAL_LOOP_DEADLINE_SEC" ]; then
+    echo "STILL_PENDING: PR #$PR_NUMBER 9min internal loop exceeded" >&2
+    echo "STILL_PENDING: issue-${ISSUE_NUMBER} PR #$PR_NUMBER at=$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> "$LOG_FILE"
+    # state は残して再呼び出しを促す
+    echo "VERDICT: still_pending PR #${PR_NUMBER}"
+    exit 0
+  fi
+
+  sleep "$INTERVAL_SEC"
 done

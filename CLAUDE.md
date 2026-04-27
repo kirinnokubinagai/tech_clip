@@ -510,26 +510,21 @@ reviewer → analyst: CONFLICT_INVESTIGATE
 
 ---
 
-## polling-watcher と CronCreate 登録規約
+## polling-watcher と reviewer 自己 polling 規約
 
 ### polling-watcher の役割
 
-reviewer は push 後に `.claude/polling/pr-<PR_NUMBER>.json` を作成して待機する。
-`scripts/polling-watcher.sh` が CronCreate（`*/2 * * * *`）で 2 分毎に実行され、
-3 条件 AND 判定（CI 完了 + claude-review job 完了 + AI Review ラベル + 判定コメント）を評価し、
-結果を reviewer agent の inbox に SendMessage する。
+reviewer は push 後に `.claude/polling/pr-<PR_NUMBER>.json` を作成し、
+`bash scripts/polling-watcher.sh <PR_NUMBER>` を **同期的に呼び出す**。
+watcher は内部で最大 9 分間 INTERVAL 秒毎に評価し、stdout の最終行に `VERDICT: <種別> PR #<N>` を出力して exit する。
 
-### CronCreate 登録（SessionStart 必須）
+reviewer は stdout の VERDICT を読み、`still_pending` なら再呼び出し、それ以外は対応する分岐へ進む。
 
-orchestrator は SessionStart 時に必ず以下を実行する:
+### CronCreate 登録は不要
 
-```
-CronCreate(cron='*/2 * * * *', durable=true, prompt='bash scripts/polling-watcher.sh')
-```
-
-`durable=true` は 7 日で自動削除されるため、**毎回 SessionStart で再登録**する。
-SessionStart hook の `session-start-cron-register.sh` が `CRON_REGISTER:` メッセージを出力するので、
-orchestrator はそれを検知して CronCreate を実行すること。
+旧設計では SessionStart で `CronCreate(cron='*/2 * * * *', durable=true, ...)` を登録していたが、
+reviewer 自己 polling 設計では不要のため、orchestrator は CronCreate を呼ばない。
+SessionStart hook の `session-start-cron-register.sh` は削除済み。
 
 ### APPROVED 受信後の next-issue-candidates.sh 実行
 
@@ -546,7 +541,7 @@ orchestrator はそれを検知して CronCreate を実行すること。
 |---|---|---|
 | `APPROVED: issue-{N}` | reviewer | 完了通知、next-issue-candidates 実行 |
 | `PUSH_IN_PROGRESS: issue-{N}` | reviewer | push-verified.sh 開始通知。受信後 **15 分間は ping しない** |
-| `POLLING_TIMEOUT: issue-{N}` | polling-watcher / reviewer | タイムアウト通知、ユーザーに報告 |
+| `POLLING_TIMEOUT: issue-{N}` | reviewer | タイムアウト通知、ユーザーに報告 |
 | `STUCK: issue-{N}` | reviewer | 障害通知、ユーザーに報告 |
 | `WORKTREE_REMOVE_FAILED` | reviewer | worktree 削除失敗通知 |
 | `PING` | orchestrator → agent | 生存確認 |

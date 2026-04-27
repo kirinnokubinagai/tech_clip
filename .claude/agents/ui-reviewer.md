@@ -372,7 +372,7 @@ EOF
 
 **自動モード（MODE=auto）のみ実行。手動モード（MODE=manual）はフェーズ 3.5 で完結しているためスキップ。**
 
-push 完了後、polling state ファイルを作成して `polling-watcher`（CronCreate で 2 分毎起動）に判定を委ねる。
+push 完了後、polling state ファイルを作成して `polling-watcher` を同期呼び出しし、stdout の VERDICT を取得する。
 
 ```bash
 PR_NUMBER=<フェーズ 5 で確定した PR 番号>
@@ -391,17 +391,34 @@ cat > "$POLLING_DIR/pr-${PR_NUMBER}.json" << JSON_EOF
   "started_at": "$(date -u +%Y-%m-%dT%H:%M:%SZ)"
 }
 JSON_EOF
+
+# polling-watcher を同期呼び出しし、stdout から VERDICT を読み取る
+while :; do
+  OUTPUT=$(bash scripts/polling-watcher.sh "${PR_NUMBER}" "{worktree}")
+  VERDICT_LINE=$(echo "$OUTPUT" | grep -E '^VERDICT: ' | tail -1)
+  case "$VERDICT_LINE" in
+    "VERDICT: approve "*)            break ;;
+    "VERDICT: request_changes "*)    break ;;
+    "VERDICT: external_merged "*)    break ;;
+    "VERDICT: closed "*)             break ;;
+    "VERDICT: conflict "*)           break ;;
+    "VERDICT: timeout "*)            break ;;
+    "VERDICT: still_pending "*)      continue ;;
+    *)                               break ;;
+  esac
+done
 ```
 
-その後、`polling-watcher` から以下のいずれかの SendMessage を待機する:
+`polling-watcher` の stdout 最終行から以下のいずれかの VERDICT を読み取る:
 
-| メッセージ | アクション |
+| VERDICT | アクション |
 |---|---|
-| `VERDICT: approve PR #N passed` | mergeStateStatus チェック → フェーズ 6.5 へ進む |
+| `VERDICT: approve PR #N` | mergeStateStatus チェック → フェーズ 6.5 へ進む |
 | `VERDICT: request_changes PR #N` | bot コメントを取得して実装 agent に CHANGES_REQUESTED 転送 → フェーズ 0 |
 | `VERDICT: external_merged PR #N` | そのままフェーズ 7（MERGED 状態で後片付け）へ |
 | `VERDICT: closed PR #N` | 実装 agent に CLOSED_WITHOUT_MERGE 通知 → フェーズ 0 |
-| `POLLING_TIMEOUT: PR #N` | orchestrator に POLLING_TIMEOUT 通知 → 終了 |
+| `VERDICT: timeout PR #N elapsed=Xs` | orchestrator に POLLING_TIMEOUT 通知 → 終了 |
+| `VERDICT: still_pending PR #N` | 再度 polling-watcher を呼び出す（ループ継続） |
 
 **`approve` 受信後の `mergeStateStatus` チェック（BEHIND 自動追従）**:
 

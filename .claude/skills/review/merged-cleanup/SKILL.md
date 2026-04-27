@@ -8,7 +8,7 @@ triggers:
 
 # マージ後クリーンアップスキル
 
-polling-watcher から `VERDICT: external_merged PR #N` を受信した後、または PR が MERGED 状態になったことを確認した後に実行する。
+polling-watcher の stdout から `VERDICT: external_merged PR #N` を取得した後、または PR が MERGED 状態になったことを確認した後に実行する。
 
 このスキルを呼び出す前に以下がコンテキストに存在すること:
 - `{worktree}`: worktree の絶対パス
