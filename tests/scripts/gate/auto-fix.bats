@@ -186,3 +186,55 @@ STUB
     [ "$status" -eq 1 ]
     [[ "$output" == *"lint がまだ失敗しています"* ]]
 }
+
+@test "生成された TS stub は静的解析で non-failing パターンのみ含むこと [C-11]" {
+    cat > "$REPO_DIR/scripts/gate/check-test-coverage.sh" <<'EOF'
+#!/usr/bin/env bash
+echo "ERROR: test 不足" >&2
+echo "  - apps/api/src/baz.ts -> tests/api/baz.test.ts (新規ファイルに test が必要)" >&2
+exit 1
+EOF
+    chmod +x "$REPO_DIR/scripts/gate/check-test-coverage.sh"
+
+    cat > "$TMPDIR/bin/pnpm" <<'STUB'
+#!/usr/bin/env bash
+exit 0
+STUB
+    chmod +x "$TMPDIR/bin/pnpm"
+
+    run run_script "test ファイルが存在しない: tests/api/baz.test.ts"
+    [ "$status" -eq 0 ]
+
+    # import 行と it.todo のみが含まれること
+    grep -qE '^import \{ describe, it \} from "vitest";$' "$REPO_DIR/tests/api/baz.test.ts"
+    grep -qE 'it\.todo\(' "$REPO_DIR/tests/api/baz.test.ts"
+    # expect / assert / throw 等の failing 可能 statement が含まれないこと
+    ! grep -qE '(expect\(|assert\(|throw |fail\(|toBe\()' "$REPO_DIR/tests/api/baz.test.ts"
+    # 実行可能な it(...) (it.todo 以外) が含まれないこと
+    ! grep -qE '^  it\([^.]' "$REPO_DIR/tests/api/baz.test.ts"
+}
+
+@test "生成された bats stub は skip のみで静的解析 non-failing であること [C-11]" {
+    cat > "$REPO_DIR/scripts/gate/check-test-coverage.sh" <<'EOF'
+#!/usr/bin/env bash
+echo "ERROR: test 不足" >&2
+echo "  - .claude/hooks/baz.sh -> tests/hooks/baz.bats (新規ファイルに test が必要)" >&2
+exit 1
+EOF
+    chmod +x "$REPO_DIR/scripts/gate/check-test-coverage.sh"
+
+    cat > "$TMPDIR/bin/pnpm" <<'STUB'
+#!/usr/bin/env bash
+exit 0
+STUB
+    chmod +x "$TMPDIR/bin/pnpm"
+
+    run run_script "test が必要: tests/hooks/baz.bats"
+    [ "$status" -eq 0 ]
+
+    # @test ブロックと skip のみ含まれること
+    grep -qE '^@test ".*" \{$' "$REPO_DIR/tests/hooks/baz.bats"
+    grep -qE '  skip ' "$REPO_DIR/tests/hooks/baz.bats"
+    # run / [ ... ] 等の実行 statement が含まれないこと
+    ! grep -qE '^  (run |\[ |\[\[ )' "$REPO_DIR/tests/hooks/baz.bats"
+}
