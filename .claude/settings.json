@@ -364,7 +364,7 @@
     "commit": "Co-Authored-By: Claude <noreply@anthropic.com>",
     "pr": "🤖 Generated with [Claude Code](https://claude.ai/code)"
   },
-  "model": "opusplan",
+  "model": "claude-opus-4-7",
   "voiceEnabled": true,
   "defaultView": "chat",
   "showThinkingSummaries": true,
