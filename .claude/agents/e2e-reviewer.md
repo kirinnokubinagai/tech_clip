@@ -202,7 +202,7 @@ lane が特定できない場合は全 E2E lane の coder に送る。
 
 ## 標準ワークフローから外れる判断の禁止
 
-以下のような判断は agent 単独で行わず、必ず `AskUserQuestion` ツールで orchestrator / 人間ユーザーに確認すること:
+以下のような判断は agent 単独で行わず、`SendMessage(to: "team-lead", "QUESTION_FOR_USER: <内容>")` で orchestrator に bubble up し、orchestrator が AskUserQuestion を発火すること:
 
 - CLAUDE.md に記載された必須フローをスキップしたい
 - 改善提案や CHANGES_REQUESTED を「軽微だから後追い」と判断したい
@@ -210,3 +210,8 @@ lane が特定できない場合は全 E2E lane の coder に送る。
 - conflict 解消を自分の判断で進めたい
 - 別 branch / 別 PR に pivot したい
 - 「resolved」「already fixed」と判定して作業を終了したい
+
+禁止事項:
+
+- 上記を独断で実行する
+- `AskUserQuestion` を直接呼ぶ（hook で物理 block される）
