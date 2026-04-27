@@ -1,104 +1,78 @@
 import { AdBanner } from "@mobile/components/AdBanner";
-import { render } from "@testing-library/react-native";
-import React from "react";
-import { View } from "react-native";
+import { act, render, screen } from "@testing-library/react-native";
 
-import { useSubscription } from "@/hooks/use-subscription";
+import { apiFetch } from "@/lib/api";
 
-jest.mock("react-native-google-mobile-ads", () => ({
-  BannerAd: jest.fn(),
-  BannerAdSize: {
-    ANCHORED_ADAPTIVE_BANNER: "ANCHORED_ADAPTIVE_BANNER",
-  },
-  TestIds: {
-    ADAPTIVE_BANNER: "ca-app-pub-3940256099942544/9214589741",
-  },
+jest.mock("react-native-google-mobile-ads", () => {
+  const { createElement } = require("react");
+  const { View } = require("react-native");
+  return {
+    BannerAd: ({ testID, ...props }: { testID?: string; unitId: string; size: string }) =>
+      createElement(View, { testID: testID ?? "banner-ad", ...props }),
+    BannerAdSize: {
+      ANCHORED_ADAPTIVE_BANNER: "ANCHORED_ADAPTIVE_BANNER",
+    },
+    TestIds: {
+      ADAPTIVE_BANNER: "ca-app-pub-3940256099942544/9214589741",
+    },
+  };
+});
+
+jest.mock("@/lib/api", () => ({
+  apiFetch: jest.fn(),
 }));
 
-jest.mock("@/hooks/use-subscription", () => ({
-  useSubscription: jest.fn(),
-}));
-
-const { BannerAd } = jest.requireMock("react-native-google-mobile-ads") as {
-  BannerAd: jest.Mock;
-};
-
-const mockedUseSubscription = useSubscription as jest.MockedFunction<typeof useSubscription>;
+const mockedApiFetch = apiFetch as jest.MockedFunction<typeof apiFetch>;
 
 describe("AdBanner", () => {
-  beforeEach(() => {
-    BannerAd.mockImplementation((props: Record<string, unknown>) =>
-      React.createElement(View, { testID: "banner-ad", ...props }),
-    );
-    mockedUseSubscription.mockReturnValue({
-      isSubscribed: false,
-      currentPlan: null,
-      isLoading: false,
-      error: null,
-      purchase: jest.fn(),
-      restore: jest.fn(),
-    });
+  afterEach(() => {
+    jest.clearAllMocks();
   });
 
   describe("無料ユーザー", () => {
     it("バナー広告が表示されること", async () => {
       // Arrange
-      mockedUseSubscription.mockReturnValue({
-        isSubscribed: false,
-        currentPlan: null,
-        isLoading: false,
-        error: null,
-        purchase: jest.fn(),
-        restore: jest.fn(),
-      });
+      mockedApiFetch.mockResolvedValue({ success: true, data: { isPremium: false } } as never);
 
       // Act
-      const { getByTestId } = await render(<AdBanner />);
+      await act(async () => {
+        render(<AdBanner />);
+      });
 
       // Assert
-      expect(getByTestId("ad-banner-container")).toBeDefined();
-      expect(getByTestId("banner-ad")).toBeDefined();
+      expect(screen.getByTestId("ad-banner-container")).toBeDefined();
+      expect(screen.getByTestId("banner-ad")).toBeDefined();
     });
   });
 
   describe("プレミアムユーザー", () => {
     it("バナー広告が非表示になること", async () => {
       // Arrange
-      mockedUseSubscription.mockReturnValue({
-        isSubscribed: true,
-        currentPlan: "premium_monthly",
-        isLoading: false,
-        error: null,
-        purchase: jest.fn(),
-        restore: jest.fn(),
-      });
+      mockedApiFetch.mockResolvedValue({ success: true, data: { isPremium: true } } as never);
 
       // Act
-      const { queryByTestId } = await render(<AdBanner />);
+      await act(async () => {
+        render(<AdBanner />);
+      });
 
       // Assert
-      expect(queryByTestId("ad-banner-container")).toBeNull();
-      expect(queryByTestId("banner-ad")).toBeNull();
+      expect(screen.queryByTestId("ad-banner-container")).toBeNull();
+      expect(screen.queryByTestId("banner-ad")).toBeNull();
     });
   });
 
   describe("プロパティ", () => {
     it("カスタムtestIDが適用されること", async () => {
       // Arrange
-      mockedUseSubscription.mockReturnValue({
-        isSubscribed: false,
-        currentPlan: null,
-        isLoading: false,
-        error: null,
-        purchase: jest.fn(),
-        restore: jest.fn(),
-      });
+      mockedApiFetch.mockResolvedValue({ success: true, data: { isPremium: false } } as never);
 
       // Act
-      const { getByTestId } = await render(<AdBanner testID="custom-ad" />);
+      await act(async () => {
+        render(<AdBanner testID="custom-ad" />);
+      });
 
       // Assert
-      expect(getByTestId("custom-ad")).toBeDefined();
+      expect(screen.getByTestId("custom-ad")).toBeDefined();
     });
   });
 
@@ -107,13 +81,15 @@ describe("AdBanner", () => {
       // Arrange
       const originalEnv = process.env.EXPO_PUBLIC_ADMOB_BANNER_ID;
       process.env.EXPO_PUBLIC_ADMOB_BANNER_ID = "ca-app-pub-1234567890/1234567890";
+      mockedApiFetch.mockResolvedValue({ success: true, data: { isPremium: false } } as never);
 
       // Act
-      const { getByTestId } = await render(<AdBanner />);
+      await act(async () => {
+        render(<AdBanner />);
+      });
 
       // Assert
-      const bannerAd = getByTestId("banner-ad");
-      expect(bannerAd).toBeDefined();
+      expect(screen.getByTestId("banner-ad")).toBeDefined();
 
       // Cleanup
       process.env.EXPO_PUBLIC_ADMOB_BANNER_ID = originalEnv;
@@ -123,17 +99,33 @@ describe("AdBanner", () => {
       // Arrange
       const originalEnv = process.env.EXPO_PUBLIC_ADMOB_BANNER_ID;
       process.env.EXPO_PUBLIC_ADMOB_BANNER_ID = undefined;
+      mockedApiFetch.mockResolvedValue({ success: true, data: { isPremium: false } } as never);
 
       // Act
-      const { getByTestId } = await render(<AdBanner />);
+      await act(async () => {
+        render(<AdBanner />);
+      });
 
       // Assert
-      const bannerAd = getByTestId("banner-ad");
+      const bannerAd = screen.getByTestId("banner-ad");
       expect(bannerAd).toBeDefined();
       expect(bannerAd.props.unitId).toBe("ca-app-pub-3940256099942544/9214589741");
 
       // Cleanup
       process.env.EXPO_PUBLIC_ADMOB_BANNER_ID = originalEnv;
+    });
+
+    it("APIエラー時はデフォルト（無料）状態で広告を表示すること", async () => {
+      // Arrange
+      mockedApiFetch.mockRejectedValue(new Error("ネットワークエラー"));
+
+      // Act
+      await act(async () => {
+        render(<AdBanner />);
+      });
+
+      // Assert — エラー時は isPremium=false のまま広告を表示する
+      expect(screen.getByTestId("ad-banner-container")).toBeDefined();
     });
   });
 });
