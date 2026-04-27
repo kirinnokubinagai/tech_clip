@@ -2,9 +2,11 @@ name: PR E2E (Android)
 
 on:
   pull_request:
+    # gate-rules.json の ci_path_filters.e2e_android と同期させること
     paths:
       - "apps/mobile/**"
-      - "tests/e2e/maestro/**"
+      - "tests/e2e/**"
+      - "packages/**"
       - "package.json"
       - "pnpm-lock.yaml"
       - "flake.nix"

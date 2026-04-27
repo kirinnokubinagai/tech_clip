@@ -93,6 +93,7 @@ jobs:
           fi
 
   # ── Step 2: 変更ファイル検出（claude-review に依存しない）─────────────────
+  # パス分類は .claude/gate-rules.json の ci_path_filters と同期させること。
   changes:
     runs-on: ubuntu-latest
     timeout-minutes: 5
@@ -110,15 +111,16 @@ jobs:
             echo "hooks=true" >> "$GITHUB_OUTPUT"
             exit 0
           fi
-          # .claude/ 配下（agents/・rules/ 等の設定ファイル群）、docs/ 配下、および *.md ファイルは
-          # コードチェックの対象外とする。これらはドキュメントやエージェント定義・プロジェクトルールであり
-          # lint/typecheck/test には関係しないためスキップすることで不要な CI 実行を避ける。
-          # hooks/ のみ別途 hooks-test ジョブで検証する（下記 HOOKS_CHANGED 参照）。
+          # gate-rules.json の review_gate.auto_pass_paths に相当するものはスキップする。
+          # *.md, docs/**, *.png, *.jpg 等の doc-only 変更は code=false → checks/zap をスキップ。
           CHANGED=$(git diff --name-only "origin/${{ github.base_ref }}...HEAD" 2>/dev/null \
-            | grep -cvE '^(\.claude/|docs/|.*\.md$)' || echo 0)
+            | grep -cvE '^(docs/|.*\.(md|png|jpg|svg|ico|webp)$|\.gitignore$|.+/CHANGELOG\.md$|.+/LICENSE.*$)' \
+            || echo 0)
           echo "code=$([ "${CHANGED:-0}" -gt 0 ] && echo 'true' || echo 'false')" >> "$GITHUB_OUTPUT"
+          # gate-rules.json の ci_path_filters.hooks_test と同期:
+          # .claude/hooks/**, scripts/**, tests/hooks/** のいずれかが変更された場合に hooks=true
           HOOKS_CHANGED=$(git diff --name-only "origin/${{ github.base_ref }}...HEAD" 2>/dev/null \
-            | grep -cE '^\.claude/hooks/' || echo 0)
+            | grep -cE '^(\.claude/hooks/|scripts/|tests/hooks/)' || echo 0)
           echo "hooks=$([ "${HOOKS_CHANGED:-0}" -gt 0 ] && echo 'true' || echo 'false')" >> "$GITHUB_OUTPUT"
 
   # ── Step 3: コードチェック（Nix 1回 → lint/typecheck/test/audit 順次）──────

@@ -211,7 +211,36 @@ Skill(review/pre-check)
 - **全件 PASS（0件）**: フェーズ 5 へ進む
 
 
-### フェーズ 5: push + PR 作成
+### フェーズ 5: gate marker 生成 + push + PR 作成
+
+#### ステップ 1: review marker 生成
+
+```bash
+bash {worktree}/scripts/gate/create-review-marker.sh --agent issue-{N}-reviewer
+```
+
+FAIL → `CHANGES_REQUESTED` を実装エージェントに送信してフェーズ 0 へ戻る。
+
+#### ステップ 2: e2e_gate 判定と e2e marker 生成
+
+```bash
+EVAL=$(bash {worktree}/scripts/gate/evaluate-paths.sh)
+E2E_AUTO_SKIP=$(echo "$EVAL" | jq -r '.e2e_gate.auto_skip')
+E2E_REQUIRED=$(echo "$EVAL" | jq -r '.e2e_gate.required')
+```
+
+- `e2e_gate.required == false` または `e2e_gate.auto_skip == true`:
+  ```bash
+  bash {worktree}/scripts/gate/create-e2e-marker.sh --agent issue-{N}-reviewer
+  ```
+  → skip marker を書き込んで次のステップへ進む
+
+- `e2e_gate.required == true && auto_skip == false`:
+  e2e-reviewer から `e2e-approved: <hash>` を受信済みであること。
+  受信済みの場合は `create-e2e-marker.sh` で skip marker を書き込む（e2e-reviewer 側でマーカー済み）。
+  未受信の場合は e2e-reviewer に impl-ready を送信して待機し、受信後にこのステップを再実行する。
+
+#### ステップ 3: push
 
 ```
 Skill(review/push-and-pr)

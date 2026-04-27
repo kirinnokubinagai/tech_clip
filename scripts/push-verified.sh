@@ -29,13 +29,29 @@ REVIEW_MARKER="${WORKTREE_ROOT}/.claude/.review-passed"
 
 if [ ! -f "$REVIEW_MARKER" ]; then
   echo "エラー: ローカルレビューが完了していません。push を中止します。" >&2
-  echo "  reviewer エージェントでレビューを実行し、全件 PASS してから push してください。" >&2
-  echo "  レビュー完了後、マーカーファイルが自動作成されます: ${REVIEW_MARKER}" >&2
+  echo "  bash scripts/gate/create-review-marker.sh --agent <name> を実行してください。" >&2
+  echo "  マーカーファイル: ${REVIEW_MARKER}" >&2
   exit 1
 fi
 
-MARKER_SHA=$(cat "$REVIEW_MARKER" | tr -d '[:space:]')
 CURRENT_SHA=$(git rev-parse HEAD)
+
+# JSON マーカー形式（schema_version を持つ object）と旧 SHA-only 文字列の両方に対応
+if command -v jq &>/dev/null && jq -e 'type == "object"' "$REVIEW_MARKER" &>/dev/null 2>&1; then
+  MARKER_SHA=$(jq -r '.head_sha // empty' "$REVIEW_MARKER" 2>/dev/null || true)
+  LINT_STATUS=$(jq -r '.lint_status // "UNKNOWN"' "$REVIEW_MARKER" 2>/dev/null || echo "UNKNOWN")
+  TYPECHECK_STATUS=$(jq -r '.typecheck_status // "UNKNOWN"' "$REVIEW_MARKER" 2>/dev/null || echo "UNKNOWN")
+  if [ "$LINT_STATUS" != "PASS" ]; then
+    echo "エラー: review marker の lint_status が PASS ではありません: $LINT_STATUS" >&2
+    exit 1
+  fi
+  if [ "$TYPECHECK_STATUS" != "PASS" ]; then
+    echo "エラー: review marker の typecheck_status が PASS ではありません: $TYPECHECK_STATUS" >&2
+    exit 1
+  fi
+else
+  MARKER_SHA=$(tr -d '[:space:]' < "$REVIEW_MARKER")
+fi
 
 if [ "$MARKER_SHA" != "$CURRENT_SHA" ]; then
   echo "エラー: review-passed マーカー ($MARKER_SHA) は現在の HEAD ($CURRENT_SHA) と一致しません。" >&2

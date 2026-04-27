@@ -137,32 +137,35 @@ rebuild が失敗した場合は coder に `CHANGES_REQUESTED: rebuild 失敗 - 
 
 ## フェーズ 3: emulator 上での Maestro 全 flow 実行
 
+`scripts/gate/run-maestro-and-create-marker.sh` を使用する:
+
 ```bash
-for yaml in {worktree}/tests/e2e/maestro/*.yaml; do
-  direnv exec {worktree} maestro test "$yaml"
-done
+bash {worktree}/scripts/gate/run-maestro-and-create-marker.sh \
+  --agent issue-{N}-e2e-reviewer
 ```
+
+このスクリプトは:
+1. `helpers/` を除く全 yaml を JUnit XML 形式で実行する
+2. 全 PASS なら `.claude/.e2e-passed` に JSON マーカーを atomic write する
+3. FAIL なら exit 1 で終了する（マーカーは作成されない）
 
 ### PASS 判定
 
-- 全 yaml で全コマンドが `COMPLETED` になること
-- `FAILED` が 1 件でもあれば FAIL 判定
+- `run-maestro-and-create-marker.sh` が exit 0 で完了すること
+- `.claude/.e2e-passed` の flows_passed == flows_total であること
 
 ## フェーズ 4: 結果に応じた送信
 
 ### PASS の場合
 
-全 flow PASS 確認後、HEAD SHA を `.e2e-passed` マーカーに書き込む:
+`run-maestro-and-create-marker.sh` が成功した後、reviewer に通知する:
 
 ```bash
 HEAD_SHA=$(git -C {worktree} rev-parse HEAD)
-echo "$HEAD_SHA" > {worktree}/.claude/.e2e-passed
 ```
 
-その後 reviewer に通知する:
-
 ```
-SendMessage(to: "issue-{N}-reviewer", "e2e-approved: <commit-hash>")
+SendMessage(to: "issue-{N}-reviewer", "e2e-approved: <HEAD_SHA>")
 ```
 
 ### FAIL の場合

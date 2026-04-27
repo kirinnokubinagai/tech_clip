@@ -1,9 +1,11 @@
 #!/bin/bash
 # PreToolUse:Bash hook: git push前にE2E通過を強制
 #
-# E2E影響ファイル（mobile components / maestro yaml / testID / locales）を含む push は
-# .claude/.e2e-passed マーカーと HEAD SHA の一致が必須。
-# 不一致またはマーカー不在なら exit 2 で push をブロックする。
+# .claude/.e2e-passed を JSON として読み:
+#   - head_sha == git HEAD
+#   - skipped == true: skip_reason が allowed list にある
+#   - skipped == false: run_id 必須, completed_at < 24h, flows_passed == flows_total
+# 不在 → evaluate-paths.sh で再判定 (no_e2e_affecting_paths なら自動 skip)
 
 extract_command_from_arguments() {
   local arguments="$1"
@@ -30,7 +32,6 @@ if ! echo "$COMMAND" | grep -q "git push"; then
   exit 0
 fi
 
-# pushコマンドからブランチ名を抽出する（pre-push-review-guard.sh と同じロジック）
 extract_branch_from_push() {
   local cmd="$1"
   local args
@@ -67,65 +68,102 @@ if [ -z "$CURRENT_SHA" ]; then
   exit 0
 fi
 
-# HEAD と origin の差分ファイル一覧を取得
-DIFF_FILES=$(git -C "$WORKTREE_PATH" diff origin/main...HEAD --name-only 2>/dev/null || \
-             git -C "$WORKTREE_PATH" diff HEAD~1...HEAD --name-only 2>/dev/null || echo "")
+MARKER="${WORKTREE_PATH}/.claude/.e2e-passed"
+GATE_SCRIPT="${WORKTREE_PATH}/scripts/gate/evaluate-paths.sh"
 
-if [ -z "$DIFF_FILES" ]; then
-  exit 0
-fi
-
-# E2E影響ファイルパターンに該当するか確認
-E2E_AFFECTED=0
-
-while IFS= read -r file; do
-  [ -z "$file" ] && continue
-  case "$file" in
-    apps/mobile/src/components/*)      E2E_AFFECTED=1; break ;;
-    apps/mobile/app/*)                  E2E_AFFECTED=1; break ;;
-    tests/e2e/maestro/*)                E2E_AFFECTED=1; break ;;
-    apps/mobile/src/locales/*)          E2E_AFFECTED=1; break ;;
-    apps/mobile/app/locales/*)          E2E_AFFECTED=1; break ;;
-    *locales/*)                         E2E_AFFECTED=1; break ;;
-  esac
-done <<< "$DIFF_FILES"
-
-# testID 文字列を含む変更ファイルもチェック
-if [ "$E2E_AFFECTED" -eq 0 ]; then
-  while IFS= read -r file; do
-    [ -z "$file" ] && continue
-    FULL_PATH="$WORKTREE_PATH/$file"
-    if [ -f "$FULL_PATH" ]; then
-      if grep -q "testID" "$FULL_PATH" 2>/dev/null; then
-        E2E_AFFECTED=1
-        break
+# マーカーが存在しない場合 → evaluate-paths.sh で再判定
+if [ ! -f "$MARKER" ]; then
+  if [ -f "$GATE_SCRIPT" ] && command -v jq &>/dev/null; then
+    EVAL_JSON=$(bash "$GATE_SCRIPT" 2>/dev/null || echo "")
+    if [ -n "$EVAL_JSON" ]; then
+      E2E_REQUIRED=$(echo "$EVAL_JSON" | jq -r '.e2e_gate.required')
+      SKIP_REASON=$(echo "$EVAL_JSON" | jq -r '.e2e_gate.skip_reason')
+      if [ "$E2E_REQUIRED" = "false" ] || [ "$SKIP_REASON" = "no_e2e_affecting_paths" ]; then
+        # E2E 影響なし → 通過
+        exit 0
       fi
     fi
-  done <<< "$DIFF_FILES"
-fi
-
-# E2E影響なし → 通過
-if [ "$E2E_AFFECTED" -eq 0 ]; then
-  exit 0
-fi
-
-# E2E影響あり → マーカー確認
-MARKER="${WORKTREE_PATH}/.claude/.e2e-passed"
-
-if [ ! -f "$MARKER" ]; then
+  fi
   echo "DENY: E2E 未確認のため push できません。" >&2
   echo "  このブランチには E2E 影響あり（mobile components / maestro yaml / testID / locales）の変更が含まれています。" >&2
-  echo "  e2e-reviewer に impl-ready を送って e2e-approved を取得してください。" >&2
+  echo "  e2e-reviewer に impl-ready を送るか、bash scripts/gate/run-maestro-and-create-marker.sh --agent <name> を実行してください。" >&2
   echo "  マーカーファイル: ${MARKER}" >&2
   exit 2
 fi
 
-MARKER_SHA=$(cat "$MARKER" | tr -d '[:space:]')
+if ! command -v jq &>/dev/null; then
+  # jq なし → 旧形式 SHA 文字列チェック
+  MARKER_SHA=$(cat "$MARKER" | tr -d '[:space:]')
+  if [ "$MARKER_SHA" != "$CURRENT_SHA" ]; then
+    echo "DENY: .e2e-passed マーカー ($MARKER_SHA) は現在の HEAD ($CURRENT_SHA) と一致しません。" >&2
+    exit 2
+  fi
+  exit 0
+fi
+
+MARKER_TYPE=$(jq -r 'type' "$MARKER" 2>/dev/null || echo "string")
+
+if [ "$MARKER_TYPE" = "object" ]; then
+  MARKER_SHA=$(jq -r '.head_sha // empty' "$MARKER" 2>/dev/null || echo "")
+  SKIPPED=$(jq -r '.skipped // "false"' "$MARKER" 2>/dev/null || echo "false")
+  SKIP_REASON=$(jq -r '.skip_reason // ""' "$MARKER" 2>/dev/null || echo "")
+  RUN_ID=$(jq -r '.run_id // ""' "$MARKER" 2>/dev/null || echo "")
+  FLOWS_PASSED=$(jq -r '.flows_passed // 0' "$MARKER" 2>/dev/null || echo 0)
+  FLOWS_TOTAL=$(jq -r '.flows_total // 0' "$MARKER" 2>/dev/null || echo 0)
+  COMPLETED_AT=$(jq -r '.completed_at // ""' "$MARKER" 2>/dev/null || echo "")
+else
+  # 旧形式 SHA のみ
+  MARKER_SHA=$(cat "$MARKER" | tr -d '[:space:]')
+  SKIPPED="true"
+  SKIP_REASON="legacy_sha_marker"
+fi
 
 if [ "$MARKER_SHA" != "$CURRENT_SHA" ]; then
   echo "DENY: .e2e-passed マーカー ($MARKER_SHA) は現在の HEAD ($CURRENT_SHA) と一致しません。" >&2
   echo "  E2E 確認後に新しい commit があります。再度 e2e-reviewer に impl-ready を送ってください。" >&2
   exit 2
+fi
+
+if [ "$SKIPPED" = "true" ]; then
+  # allowed skip reasons
+  case "$SKIP_REASON" in
+    no_e2e_affecting_paths|test_only_diff_or_infra_only|legacy_sha_marker)
+      exit 0
+      ;;
+    *)
+      echo "DENY: .e2e-passed マーカーの skip_reason が不明です: $SKIP_REASON" >&2
+      exit 2
+      ;;
+  esac
+fi
+
+# skipped == false: run_id 必須、completed_at < 24h、flows_passed == flows_total
+if [ -z "$RUN_ID" ]; then
+  echo "DENY: .e2e-passed マーカーに run_id がありません。" >&2
+  exit 2
+fi
+
+if [ "$FLOWS_PASSED" != "$FLOWS_TOTAL" ] || [ "$FLOWS_TOTAL" = "0" ]; then
+  echo "DENY: E2E テストが全件 PASS していません (passed=$FLOWS_PASSED total=$FLOWS_TOTAL)。" >&2
+  exit 2
+fi
+
+# completed_at < 24h チェック (date -d は GNU only, macOS は date -j)
+if [ -n "$COMPLETED_AT" ]; then
+  NOW_EPOCH=$(date +%s)
+  COMPLETED_EPOCH=0
+  # macOS BSD date
+  COMPLETED_EPOCH=$(date -j -f "%Y-%m-%dT%H:%M:%SZ" "$COMPLETED_AT" +%s 2>/dev/null || \
+                    date -d "$COMPLETED_AT" +%s 2>/dev/null || echo 0)
+  if [ "$COMPLETED_EPOCH" -gt 0 ]; then
+    ELAPSED=$((NOW_EPOCH - COMPLETED_EPOCH))
+    MAX_AGE=$((24 * 3600))
+    if [ "$ELAPSED" -gt "$MAX_AGE" ]; then
+      echo "DENY: .e2e-passed マーカーが 24 時間以上前のものです (completed_at=$COMPLETED_AT)。" >&2
+      echo "  再度 E2E テストを実行してください。" >&2
+      exit 2
+    fi
+  fi
 fi
 
 exit 0
