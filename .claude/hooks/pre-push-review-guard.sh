@@ -88,11 +88,13 @@ if [ "$MARKER_TYPE" = "object" ]; then
   MARKER_SHA=$(jq -r '.head_sha // empty' "$MARKER" 2>/dev/null || echo "")
   LINT_STATUS=$(jq -r '.lint_status // "UNKNOWN"' "$MARKER" 2>/dev/null || echo "UNKNOWN")
   TYPECHECK_STATUS=$(jq -r '.typecheck_status // "UNKNOWN"' "$MARKER" 2>/dev/null || echo "UNKNOWN")
+  TEST_COVERAGE_STATUS=$(jq -r '.test_coverage_status // "UNKNOWN"' "$MARKER" 2>/dev/null || echo "UNKNOWN")
 else
   # 旧形式 (SHA のみ) — 後方互換
   MARKER_SHA=$(cat "$MARKER" | tr -d '[:space:]')
   LINT_STATUS="PASS"
   TYPECHECK_STATUS="PASS"
+  TEST_COVERAGE_STATUS="PASS"
 fi
 
 if [ "$MARKER_SHA" != "$CURRENT_SHA" ]; then
@@ -108,6 +110,12 @@ fi
 
 if [ "$TYPECHECK_STATUS" != "PASS" ]; then
   echo "DENY: review marker の typecheck_status が PASS ではありません: $TYPECHECK_STATUS" >&2
+  exit 2
+fi
+
+if [ "$TEST_COVERAGE_STATUS" != "PASS" ]; then
+  echo "DENY: review marker の test_coverage_status が PASS ではありません: $TEST_COVERAGE_STATUS" >&2
+  echo "  変更ファイルに対応する test ファイルを追加してから create-review-marker.sh を再実行してください。" >&2
   exit 2
 fi
 

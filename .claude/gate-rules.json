@@ -46,5 +46,66 @@
     "e2e_android": ["apps/mobile/**", "tests/e2e/**", "packages/**", ".github/workflows/pr-e2e-android.yml"],
     "lint": ["**/*.ts", "**/*.tsx", "**/*.js", "**/*.jsx", "biome.json"],
     "hooks_test": [".claude/hooks/**", "scripts/**", "tests/hooks/**"]
+  },
+  "test_coverage_gate": {
+    "test_required_paths": [
+      "apps/api/src/**/*.ts",
+      "apps/mobile/src/**/*.ts",
+      "apps/mobile/src/**/*.tsx",
+      "packages/**/src/**/*.ts",
+      "packages/**/src/**/*.tsx",
+      "scripts/gate/*.sh",
+      "scripts/lib/*.sh",
+      ".claude/hooks/*.sh"
+    ],
+    "test_path_mapping": [
+      {
+        "source": "apps/api/src/(.*)\\.ts$",
+        "test": "tests/api/$1.test.ts"
+      },
+      {
+        "source": "apps/mobile/src/(.*)\\.tsx$",
+        "test": "tests/mobile/$1.test.tsx"
+      },
+      {
+        "source": "apps/mobile/src/(.*)\\.ts$",
+        "test": "tests/mobile/$1.test.ts"
+      },
+      {
+        "source": "packages/(.*)/src/(.*)\\.tsx$",
+        "test": "packages/$1/tests/$2.test.tsx"
+      },
+      {
+        "source": "packages/(.*)/src/(.*)\\.ts$",
+        "test": "packages/$1/tests/$2.test.ts"
+      },
+      {
+        "source": "scripts/gate/(.*)\\.sh$",
+        "test": "tests/scripts/gate/$1.bats"
+      },
+      {
+        "source": "scripts/lib/(.*)\\.sh$",
+        "test": "tests/scripts/lib/$1.bats"
+      },
+      {
+        "source": "\\.claude/hooks/(.*)\\.sh$",
+        "test": "tests/hooks/$1.bats"
+      }
+    ],
+    "exempt_paths": [
+      "**/*.d.ts",
+      "**/index.ts",
+      "**/types.ts",
+      "**/*.test.ts",
+      "**/*.test.tsx",
+      "**/*.spec.ts",
+      "**/*.spec.tsx",
+      "**/*.bats",
+      "**/*.config.ts",
+      "**/*.config.tsx",
+      "**/*.config.js",
+      "**/*.config.mjs",
+      "**/migrations/**"
+    ]
   }
 }

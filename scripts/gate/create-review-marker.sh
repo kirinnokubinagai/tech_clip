@@ -80,6 +80,17 @@ if [ "$API_EXIT" -ne 0 ] || [ "$MOBILE_EXIT" -ne 0 ]; then
 fi
 
 TEST_STATUS="PASS"
+
+# test coverage gate
+echo "--- test coverage ---" >&2
+TEST_COVERAGE_STATUS="FAIL"
+if bash "${SCRIPT_DIR}/check-test-coverage.sh" origin/main 2>&1; then
+  TEST_COVERAGE_STATUS="PASS"
+else
+  echo "ERROR: test coverage check failed" >&2
+  exit 1
+fi
+
 COMPLETED_AT=$(date -u +%FT%TZ)
 
 # atomic write
@@ -92,6 +103,7 @@ jq -n \
   --arg lint_status "$LINT_STATUS" \
   --arg typecheck_status "$TYPECHECK_STATUS" \
   --arg test_status "$TEST_STATUS" \
+  --arg test_coverage_status "$TEST_COVERAGE_STATUS" \
   --argjson api_passed "$API_PASSED" \
   --argjson api_total "$API_TOTAL" \
   --argjson mobile_passed "$MOBILE_PASSED" \
@@ -103,6 +115,7 @@ jq -n \
     completed_at: $completed_at,
     lint_status: $lint_status,
     typecheck_status: $typecheck_status,
+    test_coverage_status: $test_coverage_status,
     tests: {
       api: {passed: $api_passed, total: $api_total},
       mobile: {passed: $mobile_passed, total: $mobile_total}
