@@ -26,6 +26,16 @@ jobs:
   android-e2e:
     runs-on: ubuntu-latest
     timeout-minutes: 60
+    strategy:
+      # 1 件 fail しても他 shard を走らせて全体結果を取得する
+      fail-fast: false
+      matrix:
+        # シャード数を増やすと wall-clock が短縮されるが runner 時間は増える。
+        # 18 flow を 2 shard で約半減を狙う。要なら 3-4 shard に拡張可能。
+        shard: [1, 2]
+    env:
+      SHARD_INDEX: ${{ matrix.shard }}
+      SHARD_TOTAL: 2
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v4.2.2
 
@@ -123,7 +133,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v4.6.2
         with:
-          name: pr-e2e-screenshots
+          name: pr-e2e-screenshots-shard${{ matrix.shard }}
           path: screenshots/**/*.png
           retention-days: 7
           if-no-files-found: warn
@@ -132,7 +142,96 @@ jobs:
         if: always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v4.6.2
         with:
-          name: pr-e2e-junit
+          name: pr-e2e-junit-shard${{ matrix.shard }}
+          path: |
+            test-results/junit-shard${{ matrix.shard }}of2.xml
+            test-results/maestro-exit-code-shard${{ matrix.shard }}of2.txt
+          retention-days: 7
+          if-no-files-found: warn
+
+      - name: Fail if Maestro failed
+        if: always()
+        run: |
+          set -eo pipefail
+          EXIT_CODE=$(cat "test-results/maestro-exit-code-shard${{ matrix.shard }}of2.txt" 2>/dev/null || echo 1)
+          if [ "$EXIT_CODE" -ne 0 ]; then
+            echo "Maestro tests failed (shard ${{ matrix.shard }}/2) with exit code $EXIT_CODE"
+            exit 1
+          fi
+
+  e2e-aggregate:
+    needs: android-e2e
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v4.2.2
+
+      - name: Download all shard artifacts
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093  # v4.3.0
+        with:
+          pattern: pr-e2e-junit-shard*
+          merge-multiple: true
+          path: test-results
+
+      - name: Download all screenshot artifacts
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093  # v4.3.0
+        with:
+          pattern: pr-e2e-screenshots-shard*
+          merge-multiple: true
+          path: screenshots
+
+      - name: Aggregate junit results
+        id: aggregate
+        run: |
+          set -eo pipefail
+          mkdir -p test-results
+          # 全 shard の junit を 1 ファイルに連結 (upload-pr-e2e-comment 互換のため)
+          # 簡易的に最初に見つかった file を junit.xml に複製し、合計値を計算
+          SHARD_FILES=$(ls test-results/junit-shard*of2.xml 2>/dev/null || true)
+          if [ -z "$SHARD_FILES" ]; then
+            echo "no shard junit files found" >&2
+            echo "1" > test-results/maestro-exit-code.txt
+            exit 1
+          fi
+          TOTAL=0
+          FAILED=0
+          ERRORS=0
+          for f in $SHARD_FILES; do
+            t=$(grep -oE 'tests="[0-9]+"' "$f" | head -1 | grep -oE '[0-9]+' || echo 0)
+            fa=$(grep -oE 'failures="[0-9]+"' "$f" | head -1 | grep -oE '[0-9]+' || echo 0)
+            er=$(grep -oE 'errors="[0-9]+"' "$f" | head -1 | grep -oE '[0-9]+' || echo 0)
+            TOTAL=$((TOTAL + t))
+            FAILED=$((FAILED + fa))
+            ERRORS=$((ERRORS + er))
+          done
+          echo "Aggregate: tests=$TOTAL failures=$FAILED errors=$ERRORS"
+          # 集約 junit.xml を生成 (testsuite を 1 つにまとめる)
+          {
+            echo '<?xml version="1.0" encoding="UTF-8"?>'
+            echo "<testsuite tests=\"$TOTAL\" failures=\"$FAILED\" errors=\"$ERRORS\">"
+            for f in $SHARD_FILES; do
+              # testsuite の中身 (testcase 等) のみを抽出して連結
+              sed -n '/<testcase/,/<\/testcase>/p' "$f" || true
+            done
+            echo '</testsuite>'
+          } > test-results/junit.xml
+
+          # exit code: 全 shard が 0 (all pass) でなければ 1
+          OVERALL=0
+          for f in $(ls test-results/maestro-exit-code-shard*of2.txt 2>/dev/null); do
+            EC=$(cat "$f" 2>/dev/null || echo 1)
+            if [ "$EC" -ne 0 ]; then
+              OVERALL=$EC
+            fi
+          done
+          echo "$OVERALL" > test-results/maestro-exit-code.txt
+
+      - name: Upload aggregated screenshots & junit
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v4.6.2
+        with:
+          name: pr-e2e-aggregated
           path: |
             test-results/junit.xml
             test-results/maestro-exit-code.txt
@@ -149,12 +248,12 @@ jobs:
           screenshots-dir: screenshots
           junit-path: test-results/junit.xml
 
-      - name: Fail if Maestro failed
+      - name: Fail if any shard failed
         if: always()
         run: |
           set -eo pipefail
           EXIT_CODE=$(cat test-results/maestro-exit-code.txt 2>/dev/null || echo 1)
           if [ "$EXIT_CODE" -ne 0 ]; then
-            echo "Maestro tests failed with exit code $EXIT_CODE"
+            echo "Aggregated Maestro tests failed with exit code $EXIT_CODE"
             exit 1
           fi

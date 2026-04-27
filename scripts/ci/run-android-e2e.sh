@@ -4,6 +4,14 @@ set -euo pipefail
 
 export NODE_OPTIONS="${NODE_OPTIONS:---no-experimental-strip-types}"
 
+# Sharding (CI matrix で複数 runner に flow を分散させる)
+SHARD_INDEX="${SHARD_INDEX:-1}"
+SHARD_TOTAL="${SHARD_TOTAL:-1}"
+SHARD_SUFFIX=""
+if [ "$SHARD_TOTAL" -gt 1 ]; then
+  SHARD_SUFFIX="-shard${SHARD_INDEX}of${SHARD_TOTAL}"
+fi
+
 mkdir -p screenshots test-results
 
 # Start the API server (Wrangler dev) so the mobile app can reach it at 10.0.2.2:18787
@@ -37,7 +45,7 @@ for _ in $(seq 1 "$MAX_WAIT_ITERATIONS"); do
   # expo run:android プロセスが先に死んだら fail-fast（ビルド失敗の可能性）
   if ! kill -0 "$EXPO_PID" 2>/dev/null; then
     echo "ERROR: expo run:android process died before app started"
-    echo "1" > test-results/maestro-exit-code.txt
+    echo "1" > "test-results/maestro-exit-code${SHARD_SUFFIX}.txt"
     exit 1
   fi
   if adb shell pidof com.techclip.app > /dev/null 2>&1; then
@@ -51,16 +59,35 @@ if ! adb shell pidof com.techclip.app > /dev/null 2>&1; then
   echo "ERROR: App failed to start within 30 minutes"
   pkill -P "$EXPO_PID" 2>/dev/null || true
   kill "$EXPO_PID" 2>/dev/null || true
-  echo "1" > test-results/maestro-exit-code.txt
+  echo "1" > "test-results/maestro-exit-code${SHARD_SUFFIX}.txt"
   exit 1
 fi
 
+# Determine which flows to run for this shard
+SHARD_FLOWS=()
+while IFS= read -r f; do
+  [ -n "$f" ] && SHARD_FLOWS+=("$f")
+done < <(bash scripts/ci/shard-flows.sh --shard "${SHARD_INDEX}/${SHARD_TOTAL}" --dir tests/e2e/maestro)
+
+if [ "${#SHARD_FLOWS[@]}" -eq 0 ]; then
+  echo "WARNING: no maestro flows for shard ${SHARD_INDEX}/${SHARD_TOTAL}; skipping" >&2
+  echo "0" > "test-results/maestro-exit-code${SHARD_SUFFIX}.txt"
+  pkill -P "$EXPO_PID" 2>/dev/null || true
+  kill "$EXPO_PID" 2>/dev/null || true
+  exit 0
+fi
+
+echo "[e2e] shard ${SHARD_INDEX}/${SHARD_TOTAL}: ${#SHARD_FLOWS[@]} flows"
+for f in "${SHARD_FLOWS[@]}"; do
+  echo "  - $f"
+done
+
 # Run Maestro tests (continue on failure to upload artifacts)
 set +e
-nix develop --command maestro test tests/e2e/maestro/ \
+nix develop --command maestro test "${SHARD_FLOWS[@]}" \
   --format junit \
-  --output test-results/junit.xml \
-  --debug-output screenshots/debug \
+  --output "test-results/junit${SHARD_SUFFIX}.xml" \
+  --debug-output "screenshots/debug${SHARD_SUFFIX}" \
   --env TEST_EMAIL="${TEST_EMAIL:-test+maestro@techclip.app}" \
   --env TEST_PASSWORD="${TEST_PASSWORD:-TestPassword123!}" \
   --env TEST_NAME="${TEST_NAME:-Maestro Test User}" \
@@ -80,5 +107,5 @@ set -e
 pkill -P "$EXPO_PID" 2>/dev/null || true
 kill "$EXPO_PID" 2>/dev/null || true
 
-echo "$MAESTRO_EXIT" > test-results/maestro-exit-code.txt
+echo "$MAESTRO_EXIT" > "test-results/maestro-exit-code${SHARD_SUFFIX}.txt"
 exit 0
