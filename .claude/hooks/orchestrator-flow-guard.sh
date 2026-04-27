@@ -6,6 +6,10 @@
 #   2. AskUserQuestion なしで gh issue close (Bash tool)
 #   3. reviewer 以外が gh pr merge (Bash tool)
 #   4. force push (Bash tool)
+#   5. mockup 未承認の ui-designer impl-ready 送信 (SendMessage tool) [C-1b]
+#   6. orchestrator が spec: を実装エージェントへ直接送信 (SendMessage tool) [C-3a]
+#   7. git push --no-verify (Bash tool) [C-5b]
+#   8. reviewer 系以外の git push (Bash tool) [C-5c]
 
 set -euo pipefail
 
@@ -107,14 +111,79 @@ if [ "$TOOL_NAME" = "Bash" ]; then
   if echo "$COMMAND" | grep -qE 'git\s+push\s+.*(-f[[:space:]]|--force[[:space:]]|-f$|--force$)'; then
     deny "DENY: force push は禁止されています。CLAUDE.md 絶対ルール参照。"
   fi
+
+  # [C-5b] git push --no-verify は AskUserQuestion で承認後 5 分以内のみ許可
+  # 注意: コマンド先頭が git push で始まる場合のみチェック（commit メッセージ中の --no-verify を誤検知しないよう先頭 anchor）
+  if echo "$COMMAND" | grep -qE '^\s*git\s+push\s+.*--no-verify'; then
+    FLAG_FILE=$(ls "${CLAUDE_USER_ROOT}/projects/"*/memory/tmp-last-askuserquestion.flag 2>/dev/null | head -1 || true)
+    FLAG_VALID=false
+    if [ -n "$FLAG_FILE" ] && [ -f "$FLAG_FILE" ]; then
+      FLAG_TIME=$(cat "$FLAG_FILE" 2>/dev/null || echo "")
+      if [ -n "$FLAG_TIME" ]; then
+        FLAG_EPOCH=$(TZ=UTC date -j -f "%Y-%m-%dT%H:%M:%S" "${FLAG_TIME%Z}" +%s 2>/dev/null \
+          || date -d "$FLAG_TIME" +%s 2>/dev/null \
+          || echo 0)
+        NOW_EPOCH=$(date +%s)
+        ELAPSED=$((NOW_EPOCH - FLAG_EPOCH))
+        if [ "$ELAPSED" -le 300 ]; then
+          FLAG_VALID=true
+        fi
+      fi
+    fi
+    if [ "$FLAG_VALID" != "true" ]; then
+      deny "DENY: 'git push --no-verify' は AskUserQuestion で事前確認してから 5 分以内に実行してください。CLAUDE.md 絶対ルール参照。"
+    fi
+  fi
+
+  # [C-5c] git push は reviewer 系 agent または push-verified.sh 経由のみ許可
+  if echo "$COMMAND" | grep -qE '^\s*git\s+push\s'; then
+    # push-verified.sh 経由は exempt
+    if echo "$COMMAND" | grep -qE 'push-verified\.sh'; then
+      : # exempt
+    else
+      # reviewer 系 agent 以外からの git push をブロック
+      if [ -z "${CLAUDE_AGENT_NAME:-}" ] || \
+         ! echo "${CLAUDE_AGENT_NAME}" | grep -qE '^issue-[0-9]+-(reviewer|infra-reviewer|ui-reviewer)([-]|$)'; then
+        deny "DENY: 'git push' は reviewer 系 agent (reviewer / infra-reviewer / ui-reviewer) のみ直接実行可能です。実装エージェントは 'bash scripts/push-verified.sh' 経由で依頼してください (CLAUDE_AGENT_NAME=${CLAUDE_AGENT_NAME:-unset})。"
+      fi
+    fi
+  fi
 fi
 
-# SendMessage tool intercept: orchestrator が spec 相当の内容を直接送信するのを防止
+# SendMessage tool intercept: orchestrator が spec 相当の内容を直接送信するのを防止 / mockup 未承認ガード
 if [ "$TOOL_NAME" = "SendMessage" ]; then
   MSG_TO=$(echo "$TOOL_INPUT" | jq -r '.to // ""')
   MSG_CONTENT=$(echo "$TOOL_INPUT" | jq -r '.message // ""')
 
-  # analyst 宛 または 補足系プレフィックスは exempt
+  # [C-1b] ui-designer から ui-reviewer への impl-ready は mockup-approved-{N} フラグが必要
+  SENDER_NAME="${CLAUDE_AGENT_NAME:-}"
+  if echo "$SENDER_NAME" | grep -qE '^issue-[0-9]+-ui-designer'; then
+    if echo "$MSG_TO" | grep -qE '^issue-[0-9]+-ui-reviewer'; then
+      if echo "$MSG_CONTENT" | grep -qE '^impl-ready:'; then
+        ISSUE_NUM=$(echo "$SENDER_NAME" | grep -oE '[0-9]+' | head -1)
+        FLAG_PATH=$(ls "${CLAUDE_USER_ROOT}/projects/"*/memory/mockup-approved-${ISSUE_NUM}.flag 2>/dev/null | head -1 || true)
+        FLAG_VALID=false
+        if [ -n "$FLAG_PATH" ] && [ -f "$FLAG_PATH" ]; then
+          FLAG_TIME=$(cat "$FLAG_PATH" 2>/dev/null || echo "")
+          if [ -n "$FLAG_TIME" ]; then
+            FLAG_EPOCH=$(TZ=UTC date -j -f "%Y-%m-%dT%H:%M:%S" "${FLAG_TIME%Z}" +%s 2>/dev/null \
+              || date -d "$FLAG_TIME" +%s 2>/dev/null \
+              || echo 0)
+            NOW_EPOCH=$(date +%s)
+            ELAPSED=$((NOW_EPOCH - FLAG_EPOCH))
+            if [ "$ELAPSED" -le 1800 ]; then
+              FLAG_VALID=true
+            fi
+          fi
+        fi
+        if [ "$FLAG_VALID" != "true" ]; then
+          deny "DENY: ui-designer (Issue #${ISSUE_NUM}) は ui-reviewer に impl-ready を送る前に MOCKUP_REVIEW_REQUEST で orchestrator → user 承認を取得する必要があります。30分以内の mockup-approved-${ISSUE_NUM}.flag が見つかりません。"
+        fi
+      fi
+    fi
+  fi
+
+  # analyst 宛 または 補足系プレフィックスは以降のチェックを exempt
   if echo "$MSG_TO" | grep -qE '^issue-[0-9]+-analyst$'; then
     exit 0
   fi
@@ -127,6 +196,17 @@ if [ "$TOOL_NAME" = "SendMessage" ]; then
   # shutdown_request / shutdown_response / plan_approval_response 等の protocol 構造体は exempt
   if echo "$MSG_CONTENT" | jq -e 'type == "object" and (.type | test("shutdown|plan_approval"))' &>/dev/null 2>&1; then
     exit 0
+  fi
+
+  # [C-3a] orchestrator が実装エージェントへ spec: プレフィックスのメッセージを直接送信するのをブロック
+  # orchestrator (CLAUDE_AGENT_NAME が空) が対象
+  if [ -z "${CLAUDE_AGENT_NAME:-}" ]; then
+    IMPL_AGENT_PATTERN='^issue-[0-9]+-(coder|infra-engineer|ui-designer)([-]|$)'
+    if echo "$MSG_TO" | grep -qE "$IMPL_AGENT_PATTERN"; then
+      if echo "$MSG_CONTENT" | grep -qE '^spec:'; then
+        deny "DENY: orchestrator が実装エージェント (${MSG_TO}) に 'spec:' を直接送信しようとしています。spec の作成は analyst (issue-{N}-analyst) に依頼し、analyst から実装エージェントへ渡してください。CLAUDE.md 絶対ルール参照。"
+      fi
+    fi
   fi
 
   # spec 相当キーワードを検知してブロック

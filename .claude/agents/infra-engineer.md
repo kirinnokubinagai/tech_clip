@@ -211,7 +211,7 @@ infra-reviewer からの SendMessage を待機する。`APPROVED`、`CHANGES_REQ
 
 ## 標準ワークフローから外れる判断の禁止
 
-以下のような判断は agent 単独で行わず、必ず `AskUserQuestion` ツールで orchestrator / 人間ユーザーに確認すること:
+以下のような判断は agent 単独で行わず、`SendMessage(to: "team-lead", "QUESTION_FOR_USER: <内容>")` で orchestrator に bubble up し、orchestrator が AskUserQuestion を発火すること:
 
 - CLAUDE.md に記載された必須フローをスキップしたい
 - 改善提案や CHANGES_REQUESTED を「軽微だから後追い」と判断したい
@@ -226,7 +226,7 @@ infra-reviewer からの SendMessage を待機する。`APPROVED`、`CHANGES_REQ
 - 上記を独断で実行する
 - 「軽微だから省略する」と自己判断する
 - 「文脈的に明らか」と決めつける
-- ユーザーへの確認を省略する
+- `AskUserQuestion` を直接呼ぶ（hook で物理 block される）
 
 例外:
 

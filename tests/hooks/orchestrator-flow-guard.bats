@@ -195,7 +195,8 @@ run_hook() {
     [[ "$output" == *"DENY"* ]]
 }
 
-@test "通常の git push はブロックされないこと" {
+@test "reviewer からの通常の git push はブロックされないこと [C-5c]" {
+    export CLAUDE_AGENT_NAME="issue-100-reviewer"
     local json='{"tool_name":"Bash","tool_input":{"command":"git push origin HEAD"}}'
     run run_hook "$json"
     [ "$status" -eq 0 ]
@@ -364,6 +365,99 @@ POST_HOOK="$(cd "$(dirname "$BATS_TEST_FILENAME")/../.." && pwd)/.claude/hooks/p
 
 @test "orchestrator が短い impl-ready メッセージを reviewer へ送ると許可されること" {
     local json='{"tool_name":"SendMessage","tool_input":{"to":"issue-999-reviewer","message":"impl-ready: abc1234567890"}}'
+    run run_hook "$json"
+    [ "$status" -eq 0 ]
+}
+
+# -------------------------------------------------------------------------
+# C-1b: ui-designer → ui-reviewer impl-ready の mockup-approved フラグチェック
+# -------------------------------------------------------------------------
+
+@test "ui-designer が mockup-approved フラグなしで ui-reviewer に impl-ready を送るとブロックされること [C-1b]" {
+    export CLAUDE_AGENT_NAME="issue-100-ui-designer"
+    local json='{"tool_name":"SendMessage","tool_input":{"to":"issue-100-ui-reviewer","message":"impl-ready: abc1234"}}'
+    run run_hook "$json"
+    [ "$status" -eq 2 ]
+    [[ "$output" == *"DENY"* ]]
+}
+
+@test "ui-designer が有効な mockup-approved フラグありで ui-reviewer に impl-ready を送ると許可されること [C-1b]" {
+    export CLAUDE_AGENT_NAME="issue-100-ui-designer"
+    mkdir -p "$CLAUDE_USER_ROOT/projects/test-project/memory"
+    date -u +%Y-%m-%dT%H:%M:%SZ > "$CLAUDE_USER_ROOT/projects/test-project/memory/mockup-approved-100.flag"
+    local json='{"tool_name":"SendMessage","tool_input":{"to":"issue-100-ui-reviewer","message":"impl-ready: abc1234"}}'
+    run run_hook "$json"
+    [ "$status" -eq 0 ]
+}
+
+# -------------------------------------------------------------------------
+# C-3a: orchestrator が実装エージェントへ spec: 直接送信をブロック
+# -------------------------------------------------------------------------
+
+@test "orchestrator が 'spec:' プレフィックスを coder に直接送るとブロックされること [C-3a]" {
+    unset CLAUDE_AGENT_NAME
+    local json
+    json=$(jq -n --arg to "issue-999-coder" --arg msg "spec: /tmp/spec.md" \
+        '{"tool_name":"SendMessage","tool_input":{"to":$to,"message":$msg}}')
+    run run_hook "$json"
+    [ "$status" -eq 2 ]
+    [[ "$output" == *"DENY"* ]]
+}
+
+@test "orchestrator が 'spec:' プレフィックスを infra-engineer に直接送るとブロックされること [C-3a]" {
+    unset CLAUDE_AGENT_NAME
+    local json
+    json=$(jq -n --arg to "issue-999-infra-engineer" --arg msg "spec: /tmp/spec.md" \
+        '{"tool_name":"SendMessage","tool_input":{"to":$to,"message":$msg}}')
+    run run_hook "$json"
+    [ "$status" -eq 2 ]
+    [[ "$output" == *"DENY"* ]]
+}
+
+# -------------------------------------------------------------------------
+# C-5b: git push --no-verify ブロック
+# -------------------------------------------------------------------------
+
+@test "git push --no-verify はフラグなしでブロックされること [C-5b]" {
+    export CLAUDE_AGENT_NAME="issue-100-reviewer"
+    local json='{"tool_name":"Bash","tool_input":{"command":"git push origin HEAD --no-verify"}}'
+    run run_hook "$json"
+    [ "$status" -eq 2 ]
+    [[ "$output" == *"DENY"* ]]
+}
+
+@test "git push --no-verify は AskUserQuestion フラグありで許可されること [C-5b]" {
+    export CLAUDE_AGENT_NAME="issue-100-reviewer"
+    mkdir -p "$CLAUDE_USER_ROOT/projects/test-project/memory"
+    date -u +%Y-%m-%dT%H:%M:%SZ > "$CLAUDE_USER_ROOT/projects/test-project/memory/tmp-last-askuserquestion.flag"
+    local json='{"tool_name":"Bash","tool_input":{"command":"git push origin HEAD --no-verify"}}'
+    run run_hook "$json"
+    [ "$status" -eq 0 ]
+}
+
+# -------------------------------------------------------------------------
+# C-5c: git push は reviewer 系 agent のみ
+# -------------------------------------------------------------------------
+
+@test "orchestrator (CLAUDE_AGENT_NAME 未設定) からの git push はブロックされること [C-5c]" {
+    unset CLAUDE_AGENT_NAME
+    local json='{"tool_name":"Bash","tool_input":{"command":"git push origin HEAD"}}'
+    run run_hook "$json"
+    [ "$status" -eq 2 ]
+    [[ "$output" == *"DENY"* ]]
+}
+
+@test "coder からの git push はブロックされること [C-5c]" {
+    export CLAUDE_AGENT_NAME="issue-100-coder"
+    local json='{"tool_name":"Bash","tool_input":{"command":"git push origin HEAD"}}'
+    run run_hook "$json"
+    [ "$status" -eq 2 ]
+    [[ "$output" == *"DENY"* ]]
+}
+
+@test "reviewer からの git push は許可されること [C-5c]" {
+    export CLAUDE_AGENT_NAME="issue-100-reviewer"
+    local json='{"tool_name":"Bash","tool_input":{"command":"git push origin HEAD"}}'
     run run_hook "$json"
     [ "$status" -eq 0 ]
 }
