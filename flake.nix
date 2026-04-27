@@ -38,7 +38,11 @@
           includeSystemImages = true;
           systemImageTypes = [ "google_apis" ];
           abiVersions = [ androidAbi ];
-          includeNDK = false;
+          # React Native (expo run:android) が要求する NDK バージョン。
+          # 不一致時は gradle が `com.android.builder.sdk.InstallFailedException` を投げて、
+          # nix store の read-only 領域に NDK を install しようとして失敗する。
+          includeNDK = true;
+          ndkVersions = [ "27.1.12297006" ];
         };
         androidSdk = androidComposition.androidsdk;
         androidHome = "${androidSdk}/libexec/android-sdk";

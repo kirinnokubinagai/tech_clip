@@ -88,15 +88,31 @@ fi
 
 echo "Running maestro tests: shard ${SHARD_SPEC} (${#YAML_FILES[@]} flows)" >&2
 
+# debug-output / screenshot は per-flow に保存して triage を容易にする
+DEBUG_DIR="/tmp/maestro-debug-${HEAD_SHA:0:8}-${TIMESTAMP}-shard${SHARD_INDEX}of${SHARD_TOTAL}"
+mkdir -p "$DEBUG_DIR"
+
 (cd "$REPO_ROOT" && direnv exec "$REPO_ROOT" maestro test \
   --format junit \
   --output "$RESULT_XML" \
+  --debug-output "$DEBUG_DIR" \
   "${YAML_FILES[@]}" 2>&1) || true  # exit code は XML の内容で判定するため無視
 
 if [ ! -f "$RESULT_XML" ]; then
   echo "ERROR: maestro did not produce result XML: $RESULT_XML" >&2
   exit 1
 fi
+
+# debug-output の場所を triage script で参照できるよう metadata に書き出す
+DEBUG_INDEX="${REPO_ROOT}/.claude/.e2e-debug-shard${SHARD_INDEX}of${SHARD_TOTAL}.json"
+mkdir -p "${REPO_ROOT}/.claude"
+jq -n \
+  --arg result_xml "$RESULT_XML" \
+  --arg debug_dir "$DEBUG_DIR" \
+  --argjson shard_index "$SHARD_INDEX" \
+  --argjson shard_total "$SHARD_TOTAL" \
+  '{result_xml: $result_xml, debug_dir: $debug_dir, shard_index: $shard_index, shard_total: $shard_total}' \
+  > "$DEBUG_INDEX"
 
 # 単一シャードならそのまま marker 作成
 if [ "$SHARD_TOTAL" -eq 1 ]; then

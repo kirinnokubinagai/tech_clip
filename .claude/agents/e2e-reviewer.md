@@ -127,10 +127,12 @@ rebuild 必須と判定したら:
 
 ```bash
 # local.properties が存在しない場合は作成
-echo "sdk.dir=/Users/kirinnokubinagaiyo/Library/Android/sdk" > {worktree}/apps/mobile/android/local.properties
-
-# ビルドとインストール
-cd {worktree}/apps/mobile && ANDROID_HOME=/Users/kirinnokubinagaiyo/Library/Android/sdk direnv exec {worktree} npx expo run:android 2>&1
+# ANDROID_HOME は nix devShell が提供する (Android Studio install には依存しない)
+# local.properties は nix の SDK パスを使う
+nix develop {worktree} --command bash -c '
+  echo "sdk.dir=$ANDROID_HOME" > {worktree}/apps/mobile/android/local.properties
+  cd {worktree}/apps/mobile && npx expo run:android 2>&1
+'
 ```
 
 rebuild が失敗した場合は coder に `CHANGES_REQUESTED: rebuild 失敗 - <エラー詳細>` を送信する。
@@ -170,14 +172,43 @@ SendMessage(to: "issue-{N}-reviewer", "e2e-approved: <HEAD_SHA>")
 
 ### FAIL の場合
 
-失敗した yaml を所有する lane の coder を特定し、修正提案を添えて送信する:
+失敗 flow ごとの assertion / screenshot を構造化して取得し、coder への修正指示として送る。
+
+**Step 1: 失敗一覧を triage CLI で取得**
+
+```bash
+# /tmp/e2e-failures-{N}.md に markdown 形式で保存
+nix develop {worktree} --command bash {worktree}/scripts/dev/show-e2e-failures.sh \
+  --format markdown \
+  --out /tmp/e2e-failures-{N}.md
+
+# JSON 形式で機械処理用にも保存 (後段の SendMessage 構築に使う)
+nix develop {worktree} --command bash {worktree}/scripts/dev/show-e2e-failures.sh \
+  --format json \
+  --out /tmp/e2e-failures-{N}.json
+```
+
+triage 出力例 (markdown):
+```
+### 03b-forgot-password (shard 4/4)
+- **失敗 assertion**: Assertion is false: "パスワードを忘れた方" is visible
+- **screenshot dir**: /tmp/maestro-debug-.../03b-forgot-password
+```
+
+**Step 2: 各失敗 flow を所有 lane の coder に送信**
 
 ```
-# 失敗 yaml が属する lane の coder に送る（複数 lane が原因なら複数送信可）
-SendMessage(to: "issue-{N}-coder-{lane}", "CHANGES_REQUESTED: <yaml名> の <コマンド> が失敗。<詳細と修正提案>")
+# 単一 lane の場合
+SendMessage(to: "issue-{N}-coder",
+  "CHANGES_REQUESTED: 以下の E2E flow が失敗しました。各 flow の assertion / screenshot を確認して修正してください。\n\n$(cat /tmp/e2e-failures-{N}.md)")
+
+# 多 lane の場合: failure ごとに該当 lane を特定して送る
+# (例: tests/e2e/maestro/01-onboarding.yaml の所有 lane が "mobile" なら issue-{N}-coder-mobile に送る)
+SendMessage(to: "issue-{N}-coder-{lane}",
+  "CHANGES_REQUESTED: <該当 lane の失敗 flow 一覧 + 抜粋詳細>")
 ```
 
-lane が特定できない場合は全 E2E lane の coder に送る。
+lane が特定できない場合は全 E2E lane の coder に同一 markdown を送る。
 
 修正後に coder から `impl-ready: <new-hash> lane={lane-name}` が再送されたら:
 - 該当 lane の記録を更新する（`/tmp/e2e-impl-ready-{issue_number}.json` の該当エントリを新 hash で上書き）
