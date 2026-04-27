@@ -20,8 +20,7 @@ fi
 
 BASE_REF="${1:-origin/main}"
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-REPO_ROOT="$(git -C "$SCRIPT_DIR" rev-parse --show-toplevel 2>/dev/null || git rev-parse --show-toplevel)"
+REPO_ROOT="$(git rev-parse --show-toplevel)"
 RULES_FILE="${REPO_ROOT}/.claude/gate-rules.json"
 
 if [ ! -f "$RULES_FILE" ]; then
