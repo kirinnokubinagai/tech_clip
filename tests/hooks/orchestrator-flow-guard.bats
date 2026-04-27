@@ -461,3 +461,49 @@ POST_HOOK="$(cd "$(dirname "$BATS_TEST_FILENAME")/../.." && pwd)/.claude/hooks/p
     run run_hook "$json"
     [ "$status" -eq 0 ]
 }
+
+# -------------------------------------------------------------------------
+# C-12: SendMessage sender 判定 — サブエージェント間通信の exempt
+# -------------------------------------------------------------------------
+
+@test "サブエージェント (analyst) は 1500文字超メッセージを送信できること [C-12]" {
+    export CLAUDE_AGENT_NAME="issue-1056-analyst"
+    local long_msg
+    long_msg=$(printf 'x%.0s' $(seq 1 2000))
+    local json
+    json=$(jq -n --arg to "issue-1056-reviewer" --arg msg "$long_msg" \
+        '{"tool_name":"SendMessage","tool_input":{"to":$to,"message":$msg}}')
+    run run_hook "$json"
+    [ "$status" -eq 0 ]
+}
+
+@test "サブエージェント (reviewer) は 'Phase 12:' を含むメッセージを送信できること [C-12]" {
+    export CLAUDE_AGENT_NAME="issue-1056-reviewer"
+    local json
+    json=$(jq -n --arg to "issue-1056-coder" --arg msg "Phase 12: revisions please" \
+        '{"tool_name":"SendMessage","tool_input":{"to":$to,"message":$msg}}')
+    run run_hook "$json"
+    [ "$status" -eq 0 ]
+}
+
+@test "orchestrator は 1500文字超メッセージを送信すると引き続き deny されること [C-12]" {
+    unset CLAUDE_AGENT_NAME
+    local long_msg
+    long_msg=$(printf 'y%.0s' $(seq 1 2000))
+    local json
+    json=$(jq -n --arg to "issue-1056-coder" --arg msg "$long_msg" \
+        '{"tool_name":"SendMessage","tool_input":{"to":$to,"message":$msg}}')
+    run run_hook "$json"
+    [ "$status" -eq 2 ]
+    [[ "$output" == *"1500 文字以上"* ]]
+}
+
+@test "orchestrator は 'Phase 12:' を含むメッセージを送信すると引き続き deny されること [C-12]" {
+    unset CLAUDE_AGENT_NAME
+    local json
+    json=$(jq -n --arg to "issue-1056-coder" --arg msg "Phase 12: please apply changes" \
+        '{"tool_name":"SendMessage","tool_input":{"to":$to,"message":$msg}}')
+    run run_hook "$json"
+    [ "$status" -eq 2 ]
+    [[ "$output" == *"spec を直接書いた可能性"* ]]
+}
