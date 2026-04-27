@@ -11,6 +11,7 @@
     "test": "bash scripts/run-hermetic.sh turbo run test",
     "test:e2e:ios": "bash scripts/maestro-local.sh ios",
     "test:e2e:android": "bash scripts/maestro-local.sh android",
+    "test:e2e:parallel": "bash scripts/dev/run-e2e-parallel.sh",
     "lint": "./scripts/run-biome-check.sh",
     "lint:fix": "./scripts/run-biome-check.sh --write",
     "deploy:staging": "bash scripts/run-hermetic.sh turbo run deploy:staging --filter=@tech-clip/api",
