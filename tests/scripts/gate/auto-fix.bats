@@ -116,6 +116,54 @@ STUB
     [[ "$(cat "$REPO_DIR/tests/hooks/foo.bats")" == *"#!/usr/bin/env bats"* ]]
 }
 
+@test "生成された TS stub は it.todo のみで failing テストを含まないこと [C-6]" {
+    cat > "$REPO_DIR/scripts/gate/check-test-coverage.sh" <<'EOF'
+#!/usr/bin/env bash
+echo "ERROR: 以下の変更に対応する test ファイルが不足しています:" >&2
+echo "  - apps/api/src/bar.ts -> tests/api/bar.test.ts (新規ファイルに test が必要)" >&2
+exit 1
+EOF
+    chmod +x "$REPO_DIR/scripts/gate/check-test-coverage.sh"
+
+    cat > "$TMPDIR/bin/pnpm" <<'STUB'
+#!/usr/bin/env bash
+exit 0
+STUB
+    chmod +x "$TMPDIR/bin/pnpm"
+
+    run run_script "test ファイルが存在しない: tests/api/bar.test.ts"
+    [ "$status" -eq 0 ]
+    [ -f "$REPO_DIR/tests/api/bar.test.ts" ]
+    # it.todo のみ含まれること
+    grep -q 'it\.todo' "$REPO_DIR/tests/api/bar.test.ts"
+    # 実際に実行される it(...) が含まれないこと（non-failing 保証）
+    ! grep -qP '^  it\(' "$REPO_DIR/tests/api/bar.test.ts"
+}
+
+@test "生成された bats stub は skip のみで failing テストを含まないこと [C-6]" {
+    cat > "$REPO_DIR/scripts/gate/check-test-coverage.sh" <<'EOF'
+#!/usr/bin/env bash
+echo "ERROR: test 不足" >&2
+echo "  - .claude/hooks/bar.sh -> tests/hooks/bar.bats (新規ファイルに test が必要)" >&2
+exit 1
+EOF
+    chmod +x "$REPO_DIR/scripts/gate/check-test-coverage.sh"
+
+    cat > "$TMPDIR/bin/pnpm" <<'STUB'
+#!/usr/bin/env bash
+exit 0
+STUB
+    chmod +x "$TMPDIR/bin/pnpm"
+
+    run run_script "test が必要: tests/hooks/bar.bats"
+    [ "$status" -eq 0 ]
+    [ -f "$REPO_DIR/tests/hooks/bar.bats" ]
+    # skip 命令が含まれること
+    grep -q 'skip ' "$REPO_DIR/tests/hooks/bar.bats"
+    # run コマンド（実際の実行テスト）が含まれないこと
+    ! grep -q '^  run ' "$REPO_DIR/tests/hooks/bar.bats"
+}
+
 @test "自動修正できない指摘は exit 1 になること [C-6]" {
     run run_script "ロジックのバグです: getUser() が null を返すケースが未処理"
     [ "$status" -eq 1 ]
