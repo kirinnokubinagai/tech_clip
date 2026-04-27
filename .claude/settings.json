@@ -61,6 +61,17 @@
         ]
       },
       {
+        "matcher": "Agent",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"$(git rev-parse --show-toplevel 2>/dev/null || echo .)/.claude/hooks/no-duplicate-agent-spawn.sh\"",
+            "timeout": 5,
+            "statusMessage": "Checking for duplicate agent spawn..."
+          }
+        ]
+      },
+      {
         "matcher": "Bash",
         "hooks": [
           {

@@ -105,7 +105,7 @@ lane は `[a-zA-Z0-9][a-zA-Z0-9-]*` の英数字ハイフン文字列。
    必須 spawn 順序に沿って worktree 作成 + エージェント spawn を実行する。
    ただし **同時 spawn は最大 3 件まで** とし、それを超える Issue は
    APPROVED 通知受信時に pending_count が減ったタイミングで順次 spawn する（チェーン実行）。
-   なお、生存確認 ping で死亡判定された既存エージェントを再 spawn する場合は「既存 slot の引き継ぎ」とみなし、最大 3 件上限のカウントに含めない。
+   生存確認 ping に応答がなかった既存エージェントを再 spawn したい場合は、必ず `AskUserQuestion` で人間ユーザーに確認してから行うこと。独断での再 spawn は禁止。
    スポーンした Issue 番号はユーザーに事後報告する。
    要人間確認 Issue のみ別枠で一覧提示する。
 2. **APPROVED 通知を受けて pending_count が 0 になったとき**
