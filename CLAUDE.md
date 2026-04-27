@@ -284,6 +284,8 @@ jq が使えない環境では `gh issue list --state open --limit 100 --json nu
 - **ping → 30 分待機プロトコル（C-4b）**: orchestrator が ping を送信した後、30 分以内に返答がない場合は STUCK 判定として `SendMessage(to: "team-lead", "STUCK: issue-{N} — 30分以上応答なし。手動確認が必要です。")` を送信する。reviewer / infra-reviewer / ui-reviewer は ping 受信後 5 分以内に現在の作業状況を 1 行で返答すること。返答なしで 30 分経過した場合は orchestrator が再 spawn を検討する。
 - **production code と test code は同 commit で同梱すること（C-9b）**: `.husky/pre-commit` が `check-test-coverage.sh --staged` で commit 時に物理強制する。test なしで source だけを commit しようとすると hook にブロックされる。
 - **「test は後でまとめて」という mental model は禁止（C-10 教訓）**: 2026-04 以前は commit 時の test gate がなく push 段階の `pre-push-review-guard.sh` でしか弾けなかったため、「source だけ先に commit → test は後回し」が定着し、13 件の orphan tests が累積した。C-9（pre-commit gate）と C-10（orphan 一括 backfill）で根本解消済み。同じ状況を再発させないこと。
+- **stub generator（`auto-fix.sh`）が生成する stub は常に non-failing でなければならない（C-11）**: vitest stub は `it.todo` のみ、bats stub は `skip` のみを含む。実行可能な assertion / `run` / `expect` 等は禁止。`tests/scripts/gate/auto-fix.bats` の `[C-6]` `[C-11]` cases で不変条件を保証する。
+- **stub の実 test 実行（`pnpm test` / `bats`）は commit 前に必ず PASS を確認すること（C-11）**: FAIL する場合は `apps/{api,mobile}/vitest.config.ts` の `passWithNoTests: true` 設定または bats stub 内容を修正してから commit する。
 
 ---
 
