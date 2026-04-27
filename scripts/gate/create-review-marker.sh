@@ -80,7 +80,7 @@ if [ "$API_EXIT" -ne 0 ] || [ "$MOBILE_EXIT" -ne 0 ]; then
 fi
 
 TEST_STATUS="PASS"
-COMPLETED_AT=$(date -u +%Y-%m-%dT%H:%M:%SZ 2>/dev/null || date +%Y-%m-%dT%H:%M:%SZ)
+COMPLETED_AT=$(date -u +%FT%TZ)
 
 # atomic write
 mkdir -p "$CLAUDE_DIR"

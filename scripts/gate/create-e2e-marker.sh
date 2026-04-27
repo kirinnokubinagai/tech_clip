@@ -35,7 +35,7 @@ HEAD_SHA=$(git -C "$REPO_ROOT" rev-parse HEAD)
 MARKER="${REPO_ROOT}/.claude/.e2e-passed"
 TMP_MARKER="${MARKER}.tmp.$$"
 CLAUDE_DIR="${REPO_ROOT}/.claude"
-COMPLETED_AT=$(date -u +%Y-%m-%dT%H:%M:%SZ 2>/dev/null || date +%Y-%m-%dT%H:%M:%SZ)
+COMPLETED_AT=$(date -u +%FT%TZ)
 
 # evaluate-paths.sh で e2e_gate 判定
 EVAL_JSON=$(bash "${SCRIPT_DIR}/evaluate-paths.sh" "$BASE_REF" 2>/dev/null)

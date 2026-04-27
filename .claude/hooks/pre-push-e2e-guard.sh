@@ -148,13 +148,10 @@ if [ "$FLOWS_PASSED" != "$FLOWS_TOTAL" ] || [ "$FLOWS_TOTAL" = "0" ]; then
   exit 2
 fi
 
-# completed_at < 24h チェック (date -d は GNU only, macOS は date -j)
+# completed_at < 24h チェック (nix flake 環境 = GNU coreutils 前提)
 if [ -n "$COMPLETED_AT" ]; then
   NOW_EPOCH=$(date +%s)
-  COMPLETED_EPOCH=0
-  # macOS BSD date
-  COMPLETED_EPOCH=$(date -j -f "%Y-%m-%dT%H:%M:%SZ" "$COMPLETED_AT" +%s 2>/dev/null || \
-                    date -d "$COMPLETED_AT" +%s 2>/dev/null || echo 0)
+  COMPLETED_EPOCH=$(date -d "$COMPLETED_AT" +%s 2>/dev/null || echo 0)
   if [ "$COMPLETED_EPOCH" -gt 0 ]; then
     ELAPSED=$((NOW_EPOCH - COMPLETED_EPOCH))
     MAX_AGE=$((24 * 3600))
