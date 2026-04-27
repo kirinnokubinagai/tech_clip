@@ -38,33 +38,38 @@ function getNotificationIcon(
 ): ReactNode {
   const color = typeIconColors[type];
 
+  // testID は <View> wrapper に付与する必要がある (SVG icon の testID は
+  // Android view tree に伝播しないため Maestro が検出できない)
   switch (type) {
     case "like":
       return (
-        <Heart
-          testID="notification-icon-like"
-          size={NOTIFICATION_ICON_SIZE}
-          color={color}
-          fill={color}
-        />
+        <View testID="notification-icon-like">
+          <Heart size={NOTIFICATION_ICON_SIZE} color={color} fill={color} />
+        </View>
       );
     case "comment":
       return (
-        <MessageCircle
-          testID="notification-icon-comment"
-          size={NOTIFICATION_ICON_SIZE}
-          color={color}
-        />
+        <View testID="notification-icon-comment">
+          <MessageCircle size={NOTIFICATION_ICON_SIZE} color={color} />
+        </View>
       );
     case "follow":
       return (
-        <UserPlus testID="notification-icon-follow" size={NOTIFICATION_ICON_SIZE} color={color} />
+        <View testID="notification-icon-follow">
+          <UserPlus size={NOTIFICATION_ICON_SIZE} color={color} />
+        </View>
       );
     case "system":
-      return <Bell testID="notification-icon-system" size={NOTIFICATION_ICON_SIZE} color={color} />;
+      return (
+        <View testID="notification-icon-system">
+          <Bell size={NOTIFICATION_ICON_SIZE} color={color} />
+        </View>
+      );
     case "article":
       return (
-        <Newspaper testID="notification-icon-article" size={NOTIFICATION_ICON_SIZE} color={color} />
+        <View testID="notification-icon-article">
+          <Newspaper size={NOTIFICATION_ICON_SIZE} color={color} />
+        </View>
       );
   }
 }

@@ -13,9 +13,11 @@ env:
 
 ---
 
-# ログイン済み状態でアプリ起動（無料ユーザー前提）
+# 無料ユーザーとして起動（clearState: true で前テストの premium 状態を引き継がない）
+# 注意: clearState: false だと 15-premium-user の後に走った場合 PREMIUM_USER のセッションが
+# 残ったまま login-helper が早期 return し、AdBanner が isPremium=true で null 返却してしまう
 - launchApp:
-    clearState: false
+    clearState: true
 - runFlow:
     when:
       visible: "Try out your stylus"

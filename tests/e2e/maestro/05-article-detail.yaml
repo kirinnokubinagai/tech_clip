@@ -101,10 +101,10 @@ env:
 - assertVisible:
     id: "favorite-icon-outline"
 
-# 記事カードをタップして詳細へ
+# 記事カードをタップして詳細へ (seed 済み TypeScript 記事を text 指定で確実に選択。
+# 04-article-save が先に走った場合 index:0 は新規 saved 記事になり要約が seed されていないため)
 - tapOn:
-    index: 0
-    id: "article-card"
+    text: "TypeScript の型システムを深く理解する"
 
 # --- 記事詳細画面 ---
 - assertVisible:
