@@ -13,7 +13,7 @@
 #   4. main ブランチチェック（ファイルのリポジトリが main なら全 DENY）
 #      ファイル種類（apps/, packages/, tests/, scripts/, .claude/** 等）に関係なく全てブロック
 #   5. orchestration_file チェック（main 以外なら ALLOW）
-#      - .claude/**, CLAUDE.md, AGENTS.md, flake.nix 等
+#      - .claude/**, CLAUDE.md, flake.nix 等
 #   6. それ以外 ALLOW（worktree 内バックグラウンドエージェントの動作を許可）
 
 TOOL_INPUT=$(cat)
