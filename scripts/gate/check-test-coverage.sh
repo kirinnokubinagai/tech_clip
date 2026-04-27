@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
 # check-test-coverage.sh: 変更ファイルに対応する test ファイルの存在を確認する
 #
-# 使い方: bash scripts/gate/check-test-coverage.sh [base_ref]
-#   base_ref: 比較ベース (default: origin/main)
+# 使い方: bash scripts/gate/check-test-coverage.sh [--staged] [base_ref]
+#   --staged: staging area (git diff --cached) を対象にする (pre-commit 用)
+#   base_ref: 比較ベース (default: origin/main, --staged 時は無視)
 #
 # stdout (PASS 時):
 #   { "covered": true, "checked_files": N, "exempt_files": M }
@@ -10,6 +11,12 @@
 # exit 0: 全件カバー済み
 # exit 1: 不足している test ファイルがある場合 (stderr に詳細)
 set -euo pipefail
+
+STAGED_MODE=false
+if [ "${1:-}" = "--staged" ]; then
+  STAGED_MODE=true
+  shift
+fi
 
 BASE_REF="${1:-origin/main}"
 
@@ -32,13 +39,18 @@ TEST_REQUIRED_PATTERNS=$(jq -c '.test_coverage_gate.test_required_paths' "$RULES
 TEST_PATH_MAPPING=$(jq -c '.test_coverage_gate.test_path_mapping' "$RULES_FILE")
 EXEMPT_PATTERNS=$(jq -c '.test_coverage_gate.exempt_paths' "$RULES_FILE")
 
-# diff 取得（base_ref が存在しない場合は HEAD~1 フォールバック）
+# diff 取得
 CHANGED_FILES=""
-if git -C "$REPO_ROOT" rev-parse "$BASE_REF" &>/dev/null; then
-  CHANGED_FILES=$(git -C "$REPO_ROOT" diff "${BASE_REF}...HEAD" --name-only 2>/dev/null || true)
-fi
-if [ -z "$CHANGED_FILES" ]; then
-  CHANGED_FILES=$(git -C "$REPO_ROOT" diff HEAD~1...HEAD --name-only 2>/dev/null || true)
+if [ "$STAGED_MODE" = "true" ]; then
+  CHANGED_FILES=$(git -C "$REPO_ROOT" diff --cached --name-only 2>/dev/null || true)
+else
+  # base_ref が存在しない場合は HEAD~1 フォールバック
+  if git -C "$REPO_ROOT" rev-parse "$BASE_REF" &>/dev/null; then
+    CHANGED_FILES=$(git -C "$REPO_ROOT" diff "${BASE_REF}...HEAD" --name-only 2>/dev/null || true)
+  fi
+  if [ -z "$CHANGED_FILES" ]; then
+    CHANGED_FILES=$(git -C "$REPO_ROOT" diff HEAD~1...HEAD --name-only 2>/dev/null || true)
+  fi
 fi
 
 # glob パターンマッチ (** 対応)
@@ -111,19 +123,27 @@ _compute_test_path() {
   echo ""
 }
 
-# 新規ファイル判定: base_ref に存在しない = 新規
+# 新規ファイル判定
 _is_new_file() {
   local file="$1"
-  if git -C "$REPO_ROOT" show "${BASE_REF}:${file}" &>/dev/null 2>&1; then
-    return 1  # 既存
+  if [ "$STAGED_MODE" = "true" ]; then
+    # staged モード: HEAD に存在しない = 新規
+    if git -C "$REPO_ROOT" cat-file -e "HEAD:${file}" 2>/dev/null; then return 1; fi
+    return 0
+  else
+    if git -C "$REPO_ROOT" show "${BASE_REF}:${file}" &>/dev/null 2>&1; then return 1; fi
+    return 0
   fi
-  return 0  # 新規
 }
 
 # diff 内に含まれているか
 _in_diff() {
   local file="$1"
-  echo "$CHANGED_FILES" | grep -qxF "$file" 2>/dev/null && return 0 || return 1
+  if [ "$STAGED_MODE" = "true" ]; then
+    git -C "$REPO_ROOT" diff --cached --name-only 2>/dev/null | grep -qxF "$file" && return 0 || return 1
+  else
+    echo "$CHANGED_FILES" | grep -qxF "$file" 2>/dev/null && return 0 || return 1
+  fi
 }
 
 CHECKED=0
@@ -174,7 +194,12 @@ if [ "${#MISSING[@]}" -gt 0 ]; then
     echo "  - $m" >&2
   done
   echo "" >&2
-  echo "修正方法: 対応する test ファイルを追加または更新して git add してください。" >&2
+  if [ "$STAGED_MODE" = "true" ]; then
+    echo "修正方法: 対応する test ファイルを作成して 'git add <test-file>' で staging してから commit してください。" >&2
+    echo "  production code と test code は必ず同じ commit に含める必要があります。" >&2
+  else
+    echo "修正方法: 対応する test ファイルを追加または更新して git add してください。" >&2
+  fi
   exit 1
 fi
 
