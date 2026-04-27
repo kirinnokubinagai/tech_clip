@@ -4,10 +4,14 @@
 # 使い方:
 #   bash scripts/gate/create-e2e-marker.sh --agent <name> [--maestro-result <xml>] [--base-ref <ref>]
 #
-# E2E 不要: skip marker 書き込み → exit 0
-# E2E 必要 && auto_skip: skip marker 書き込み → exit 0
-# E2E 必要 && !auto_skip && --maestro-result なし: exit 1
-# E2E 必要 && !auto_skip && --maestro-result あり: XML parse → PASS なら marker → exit 0 / FAIL なら exit 1
+# 動作:
+#   E2E 不要 (no_e2e_affecting_paths)         → marker 作成しない, exit 0 (skip)
+#   E2E 必要 && auto_skip                     → marker 作成しない, exit 0 (skip)
+#   E2E 必要 && !auto_skip && --maestro-result なし → exit 1
+#   E2E 必要 && !auto_skip && PASS            → marker (HEAD SHA 1 行) atomic write, exit 0
+#   E2E 必要 && !auto_skip && FAIL            → marker 作成しない, exit 1
+#
+# 詳細ログは .claude/last-e2e.log に JSON Lines で append される
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -34,48 +38,44 @@ fi
 HEAD_SHA=$(git -C "$REPO_ROOT" rev-parse HEAD)
 MARKER="${REPO_ROOT}/.claude/.e2e-passed"
 TMP_MARKER="${MARKER}.tmp.$$"
+LOG="${REPO_ROOT}/.claude/last-e2e.log"
 CLAUDE_DIR="${REPO_ROOT}/.claude"
 COMPLETED_AT=$(date -u +%FT%TZ)
+
+_log_jsonl() {
+  if command -v jq &>/dev/null; then
+    jq -nc "$@" >> "$LOG" 2>/dev/null || true
+  fi
+}
 
 # evaluate-paths.sh で e2e_gate 判定
 EVAL_JSON=$(bash "${SCRIPT_DIR}/evaluate-paths.sh" "$BASE_REF" 2>/dev/null)
 E2E_REQUIRED=$(echo "$EVAL_JSON" | jq -r '.e2e_gate.required')
 E2E_AUTO_SKIP=$(echo "$EVAL_JSON" | jq -r '.e2e_gate.auto_skip')
 E2E_SKIP_REASON=$(echo "$EVAL_JSON" | jq -r '.e2e_gate.skip_reason')
-E2E_SKIP_PATHS=$(echo "$EVAL_JSON" | jq -c '.e2e_gate.skip_paths_matched')
 
-_write_skip_marker() {
-  local reason="$1"
-  local skip_paths="${2:-[]}"
+# E2E 不要 → marker 作成しない (pre-push hook が evaluate-paths.sh で再判定する)
+if [ "$E2E_REQUIRED" = "false" ]; then
+  echo "e2e gate: not required (no_e2e_affecting_paths) — marker not created" >&2
   mkdir -p "$CLAUDE_DIR"
-  jq -n \
+  _log_jsonl \
     --arg head_sha "$HEAD_SHA" \
     --arg agent "$AGENT_NAME" \
     --arg completed_at "$COMPLETED_AT" \
-    --arg skip_reason "$reason" \
-    --argjson skip_paths "$skip_paths" \
-    '{
-      schema_version: 1,
-      head_sha: $head_sha,
-      agent: $agent,
-      completed_at: $completed_at,
-      skipped: true,
-      skip_reason: $skip_reason,
-      skip_paths_matched: $skip_paths
-    }' > "$TMP_MARKER"
-  mv "$TMP_MARKER" "$MARKER"
-  echo "e2e marker (skip) created: $MARKER reason=$reason" >&2
-}
-
-# E2E 不要
-if [ "$E2E_REQUIRED" = "false" ]; then
-  _write_skip_marker "no_e2e_affecting_paths" "[]"
+    '{kind: "e2e", head_sha: $head_sha, agent: $agent, completed_at: $completed_at, skipped: true, skip_reason: "no_e2e_affecting_paths"}'
   exit 0
 fi
 
-# E2E 必要 && auto_skip
+# E2E 必要 && auto_skip → marker 作成しない (pre-push hook が再判定で通過する)
 if [ "$E2E_AUTO_SKIP" = "true" ]; then
-  _write_skip_marker "$E2E_SKIP_REASON" "$E2E_SKIP_PATHS"
+  echo "e2e gate: auto_skip ($E2E_SKIP_REASON) — marker not created" >&2
+  mkdir -p "$CLAUDE_DIR"
+  _log_jsonl \
+    --arg head_sha "$HEAD_SHA" \
+    --arg agent "$AGENT_NAME" \
+    --arg completed_at "$COMPLETED_AT" \
+    --arg skip_reason "$E2E_SKIP_REASON" \
+    '{kind: "e2e", head_sha: $head_sha, agent: $agent, completed_at: $completed_at, skipped: true, skip_reason: $skip_reason}'
   exit 0
 fi
 
@@ -99,31 +99,30 @@ FLOWS_PASSED=$((FLOWS_TOTAL - FLOWS_FAILED - FLOWS_ERRORS))
 
 if [ "$FLOWS_FAILED" -ne 0 ] || [ "$FLOWS_ERRORS" -ne 0 ]; then
   echo "ERROR: Maestro tests failed (passed=$FLOWS_PASSED total=$FLOWS_TOTAL failures=$FLOWS_FAILED errors=$FLOWS_ERRORS)" >&2
+  mkdir -p "$CLAUDE_DIR"
+  _log_jsonl \
+    --arg head_sha "$HEAD_SHA" \
+    --arg agent "$AGENT_NAME" \
+    --arg completed_at "$COMPLETED_AT" \
+    --argjson flows_passed "$FLOWS_PASSED" \
+    --argjson flows_total "$FLOWS_TOTAL" \
+    --argjson flows_failed "$FLOWS_FAILED" \
+    --argjson flows_errors "$FLOWS_ERRORS" \
+    '{kind: "e2e", head_sha: $head_sha, agent: $agent, completed_at: $completed_at, status: "FAIL", flows_passed: $flows_passed, flows_total: $flows_total, flows_failed: $flows_failed, flows_errors: $flows_errors}'
   exit 1
 fi
 
-RUN_ID="${HEAD_SHA:0:8}-$(date +%s)"
-
+# 全 flow PASS: marker (HEAD SHA 1 行) を atomic write
 mkdir -p "$CLAUDE_DIR"
-jq -n \
+printf '%s\n' "$HEAD_SHA" > "$TMP_MARKER"
+mv "$TMP_MARKER" "$MARKER"
+echo "e2e marker created: $MARKER (sha=$HEAD_SHA flows=$FLOWS_PASSED/$FLOWS_TOTAL)" >&2
+
+_log_jsonl \
   --arg head_sha "$HEAD_SHA" \
   --arg agent "$AGENT_NAME" \
   --arg completed_at "$COMPLETED_AT" \
-  --arg run_id "$RUN_ID" \
   --arg log_path "$MAESTRO_RESULT" \
   --argjson flows_passed "$FLOWS_PASSED" \
   --argjson flows_total "$FLOWS_TOTAL" \
-  '{
-    schema_version: 1,
-    head_sha: $head_sha,
-    agent: $agent,
-    completed_at: $completed_at,
-    skipped: false,
-    run_id: $run_id,
-    log_path: $log_path,
-    flows_passed: $flows_passed,
-    flows_total: $flows_total
-  }' > "$TMP_MARKER"
-
-mv "$TMP_MARKER" "$MARKER"
-echo "e2e marker created: $MARKER (sha=$HEAD_SHA flows=$FLOWS_PASSED/$FLOWS_TOTAL)" >&2
+  '{kind: "e2e", head_sha: $head_sha, agent: $agent, completed_at: $completed_at, status: "PASS", log_path: $log_path, flows_passed: $flows_passed, flows_total: $flows_total}'

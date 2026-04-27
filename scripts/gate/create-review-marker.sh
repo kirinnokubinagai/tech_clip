@@ -3,7 +3,8 @@
 #
 # 使い方: bash scripts/gate/create-review-marker.sh --agent <agent-name>
 #
-# 成功: .claude/.review-passed に JSON を atomic write して exit 0
+# 成功: .claude/.review-passed に HEAD SHA を 1 行 atomic write して exit 0
+#       詳細ログは .claude/last-review.log に JSON Lines で append される
 # 失敗: exit 1, マーカーなし, stderr に詳細
 set -euo pipefail
 
@@ -26,6 +27,7 @@ fi
 HEAD_SHA=$(git -C "$REPO_ROOT" rev-parse HEAD)
 MARKER="${REPO_ROOT}/.claude/.review-passed"
 TMP_MARKER="${MARKER}.tmp.$$"
+LOG="${REPO_ROOT}/.claude/last-review.log"
 CLAUDE_DIR="${REPO_ROOT}/.claude"
 
 # lint
@@ -93,34 +95,38 @@ fi
 
 COMPLETED_AT=$(date -u +%FT%TZ)
 
-# atomic write
+# atomic write: marker は HEAD SHA を 1 行のみ
 mkdir -p "$CLAUDE_DIR"
-jq -n \
-  --arg schema_version "1" \
-  --arg head_sha "$HEAD_SHA" \
-  --arg agent "$AGENT_NAME" \
-  --arg completed_at "$COMPLETED_AT" \
-  --arg lint_status "$LINT_STATUS" \
-  --arg typecheck_status "$TYPECHECK_STATUS" \
-  --arg test_status "$TEST_STATUS" \
-  --arg test_coverage_status "$TEST_COVERAGE_STATUS" \
-  --argjson api_passed "$API_PASSED" \
-  --argjson api_total "$API_TOTAL" \
-  --argjson mobile_passed "$MOBILE_PASSED" \
-  --argjson mobile_total "$MOBILE_TOTAL" \
-  '{
-    schema_version: 1,
-    head_sha: $head_sha,
-    agent: $agent,
-    completed_at: $completed_at,
-    lint_status: $lint_status,
-    typecheck_status: $typecheck_status,
-    test_coverage_status: $test_coverage_status,
-    tests: {
-      api: {passed: $api_passed, total: $api_total},
-      mobile: {passed: $mobile_passed, total: $mobile_total}
-    }
-  }' > "$TMP_MARKER"
-
+printf '%s\n' "$HEAD_SHA" > "$TMP_MARKER"
 mv "$TMP_MARKER" "$MARKER"
 echo "review marker created: $MARKER (sha=$HEAD_SHA)" >&2
+
+# 詳細ログを JSON Lines で append (デバッグ用、hook はチェックしない)
+if command -v jq &>/dev/null; then
+  jq -nc \
+    --arg head_sha "$HEAD_SHA" \
+    --arg agent "$AGENT_NAME" \
+    --arg completed_at "$COMPLETED_AT" \
+    --arg lint_status "$LINT_STATUS" \
+    --arg typecheck_status "$TYPECHECK_STATUS" \
+    --arg test_status "$TEST_STATUS" \
+    --arg test_coverage_status "$TEST_COVERAGE_STATUS" \
+    --argjson api_passed "$API_PASSED" \
+    --argjson api_total "$API_TOTAL" \
+    --argjson mobile_passed "$MOBILE_PASSED" \
+    --argjson mobile_total "$MOBILE_TOTAL" \
+    '{
+      kind: "review",
+      head_sha: $head_sha,
+      agent: $agent,
+      completed_at: $completed_at,
+      lint_status: $lint_status,
+      typecheck_status: $typecheck_status,
+      test_status: $test_status,
+      test_coverage_status: $test_coverage_status,
+      tests: {
+        api: {passed: $api_passed, total: $api_total},
+        mobile: {passed: $mobile_passed, total: $mobile_total}
+      }
+    }' >> "$LOG"
+fi

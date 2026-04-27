@@ -1,10 +1,10 @@
 #!/bin/bash
 # PreToolUse:Bash hook: git push前にローカルレビュー完了を強制
 #
-# .claude/.review-passed を JSON として読み:
-#   - head_sha == git HEAD
-#   - lint_status / typecheck_status / tests 全 PASS
-# 不一致 / 不在 → exit 2
+# .claude/.review-passed (HEAD SHA 1行) を読み:
+#   - ファイル形式 = 40 文字 hex のみ (空行・JSON・余計な文字は不正)
+#   - 内容 == git HEAD
+# 不一致 / 不在 / 不正形式 → exit 2
 
 extract_command_from_arguments() {
   local arguments="$1"
@@ -76,46 +76,21 @@ if [ ! -f "$MARKER" ]; then
   exit 2
 fi
 
-# JSON マーカー対応 (旧形式 = 40byte SHA 文字列も許容)
-if command -v jq &>/dev/null; then
-  MARKER_TYPE=$(jq -r 'type' "$MARKER" 2>/dev/null || echo "string")
-else
-  MARKER_TYPE="unknown"
+# marker の内容を取得 (空白・改行を除去)
+MARKER_CONTENT=$(tr -d '[:space:]' < "$MARKER")
+
+# 形式検証: 40 文字 hex のみ (JSON / 空 / 余計な文字は弾く)
+if ! echo "$MARKER_CONTENT" | grep -qE '^[a-f0-9]{40}$'; then
+  echo "DENY: .review-passed マーカーの形式が不正です。" >&2
+  echo "  HEAD SHA (40文字 hex) のみを含むファイルが期待されています。" >&2
+  echo "  内容: '${MARKER_CONTENT:0:80}...'" >&2
+  echo "  bash scripts/gate/create-review-marker.sh --agent <your-agent-name> で再生成してください。" >&2
+  exit 2
 fi
 
-if [ "$MARKER_TYPE" = "object" ]; then
-  # 新 JSON 形式
-  MARKER_SHA=$(jq -r '.head_sha // empty' "$MARKER" 2>/dev/null || echo "")
-  LINT_STATUS=$(jq -r '.lint_status // "UNKNOWN"' "$MARKER" 2>/dev/null || echo "UNKNOWN")
-  TYPECHECK_STATUS=$(jq -r '.typecheck_status // "UNKNOWN"' "$MARKER" 2>/dev/null || echo "UNKNOWN")
-  TEST_COVERAGE_STATUS=$(jq -r '.test_coverage_status // "UNKNOWN"' "$MARKER" 2>/dev/null || echo "UNKNOWN")
-else
-  # 旧形式 (SHA のみ) — 後方互換
-  MARKER_SHA=$(cat "$MARKER" | tr -d '[:space:]')
-  LINT_STATUS="PASS"
-  TYPECHECK_STATUS="PASS"
-  TEST_COVERAGE_STATUS="PASS"
-fi
-
-if [ "$MARKER_SHA" != "$CURRENT_SHA" ]; then
-  echo "DENY: review-passed マーカー ($MARKER_SHA) は現在の HEAD ($CURRENT_SHA) と一致しません。" >&2
+if [ "$MARKER_CONTENT" != "$CURRENT_SHA" ]; then
+  echo "DENY: review-passed マーカー (${MARKER_CONTENT:0:12}) は現在の HEAD (${CURRENT_SHA:0:12}) と一致しません。" >&2
   echo "  レビュー以降に新しい commit があります。再度 create-review-marker.sh を実行してください。" >&2
-  exit 2
-fi
-
-if [ "$LINT_STATUS" != "PASS" ]; then
-  echo "DENY: review marker の lint_status が PASS ではありません: $LINT_STATUS" >&2
-  exit 2
-fi
-
-if [ "$TYPECHECK_STATUS" != "PASS" ]; then
-  echo "DENY: review marker の typecheck_status が PASS ではありません: $TYPECHECK_STATUS" >&2
-  exit 2
-fi
-
-if [ "$TEST_COVERAGE_STATUS" != "PASS" ]; then
-  echo "DENY: review marker の test_coverage_status が PASS ではありません: $TEST_COVERAGE_STATUS" >&2
-  echo "  変更ファイルに対応する test ファイルを追加してから create-review-marker.sh を再実行してください。" >&2
   exit 2
 fi
 
