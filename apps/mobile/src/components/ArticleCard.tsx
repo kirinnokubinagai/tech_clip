@@ -103,11 +103,7 @@ export const ArticleCard = memo(function ArticleCard({
             >
               {article.isFavorite ? (
                 <View testID="favorite-icon-filled">
-                  <Heart
-                    size={FAVORITE_ICON_SIZE}
-                    color={colors.favorite}
-                    fill={colors.favorite}
-                  />
+                  <Heart size={FAVORITE_ICON_SIZE} color={colors.favorite} fill={colors.favorite} />
                 </View>
               ) : (
                 <View testID="favorite-icon-outline">
