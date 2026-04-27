@@ -50,7 +50,7 @@ Codex CLI の組み込み `image_gen` ツールを使い、gpt-image-2 で画像
 
 モックアップの場合は `docs/mobile-theme.md` を Read して色・フォント規約を確認してからプロンプトに反映する。
 
-### Step 3: Codex CLI で画像を生成する
+### Step 3: Codex CLI で画像を生成し、すぐに開く
 
 ```bash
 codex "次の画像を生成して <output-path> に保存してください。
@@ -60,6 +60,12 @@ codex "次の画像を生成して <output-path> に保存してください。
 
 **重要**: `組み込みのimage_genツールを直接使って` を必ず末尾に含める。
 省略すると Codex がコードを書こうとする。
+
+生成完了後、すぐに開く:
+
+```bash
+open <output-path>
+```
 
 ---
 
@@ -112,6 +118,9 @@ Flat design icon, teal #14b8a6, <説明>, transparent background,
 matching the minimalist style of the mockup just generated.
 <サイズ>px の正確なサイズで生成してください。
 組み込みのimage_genツールを直接使って生成してください。"
+
+# 生成完了後すぐに開く
+open docs/design/assets/icons/<name>.png
 ```
 
 **重要**: モックアップと同じスタイル・カラー（teal #14b8a6）をプロンプトに含め、一貫性を保つ。
@@ -140,9 +149,19 @@ matching the minimalist style of the mockup just generated.
 
 ### Step 7: 生成結果をすべて確認する
 
-Read ツールでモックアップ・全アセットの画像を表示し、ユーザーに確認する。
+全生成ファイルをまとめて開き、Read ツールでインライン表示してユーザーに確認する。
+
+```bash
+# モックアップのみの場合
+open <output-path>
+
+# モックアップ + アセットがある場合（全ファイルを一括で開く）
+open docs/design/<screen-name>.png docs/design/assets/icons/*.png docs/design/assets/images/*.png
+```
+
+その後 Read ツールで各画像をインライン表示する。
 
 ## 前提条件
 
-- `codex` CLI インストール済み: `npm install -g @openai/codex`
+- `codex` CLI: `flake.nix` の `devShells.default` に組み込み済み（`direnv reload` で自動取得）
 - ChatGPT サブスクリプションで OAuth 認証済み（`codex` 初回起動時に認証）
