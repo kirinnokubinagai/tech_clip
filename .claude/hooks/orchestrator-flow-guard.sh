@@ -204,12 +204,6 @@ if [ "$TOOL_NAME" = "SendMessage" ]; then
     exit 0
   fi
 
-  # sender 判定: CLAUDE_AGENT_NAME が空 = orchestrator
-  IS_ORCHESTRATOR=false
-  if [ -z "${CLAUDE_AGENT_NAME:-}" ]; then
-    IS_ORCHESTRATOR=true
-  fi
-
   # [C-3a] orchestrator が実装エージェントへ spec: プレフィックスのメッセージを直接送信するのをブロック
   # orchestrator (CLAUDE_AGENT_NAME が空) が対象
   if [ "$IS_ORCHESTRATOR" = "true" ]; then
