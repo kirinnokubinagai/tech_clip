@@ -89,7 +89,7 @@ run_script_with_args_and_path() {
     local wt_path="$WORKTREE_BASE/issue-764"
     git -C "$REPO_DIR" worktree add "$wt_path" -b issue/764/test
     mkdir -p "$wt_path/.claude"
-    touch "$wt_path/.claude/.review-passed"
+    git -C "$wt_path" rev-parse HEAD > "$wt_path/.claude/.review-passed"
 
     local args='{"command": "git push origin issue/764/test"}'
 
@@ -118,7 +118,7 @@ run_script_with_args_and_path() {
     local wt_path="$WORKTREE_BASE/issue-764"
     git -C "$REPO_DIR" worktree add "$wt_path" -b issue/764/force-agent-teams-via-hooks
     mkdir -p "$wt_path/.claude"
-    touch "$wt_path/.claude/.review-passed"
+    git -C "$wt_path" rev-parse HEAD > "$wt_path/.claude/.review-passed"
 
     local args='{"command": "git push origin issue/764/force-agent-teams-via-hooks"}'
 
@@ -149,7 +149,7 @@ run_script_with_args_and_path() {
     local wt_path="$WORKTREE_BASE/issue-999"
     git -C "$REPO_DIR" worktree add "$wt_path" -b issue/999/some-feature
     mkdir -p "$wt_path/.claude"
-    touch "$wt_path/.claude/.review-passed"
+    git -C "$wt_path" rev-parse HEAD > "$wt_path/.claude/.review-passed"
 
     local args='{"command": "git push origin issue/999/some-feature"}'
 
@@ -166,7 +166,7 @@ run_script_with_args_and_path() {
     local wt_path="$WORKTREE_BASE/issue-764"
     git -C "$REPO_DIR" worktree add "$wt_path" -b issue/764/foo
     mkdir -p "$wt_path/.claude"
-    touch "$wt_path/.claude/.review-passed"
+    git -C "$wt_path" rev-parse HEAD > "$wt_path/.claude/.review-passed"
 
     local args='{"command": "git push -u origin issue/764/foo"}'
 
@@ -198,7 +198,7 @@ run_script_with_args_and_path() {
     local wt_path="$WORKTREE_BASE/issue-764"
     git -C "$REPO_DIR" worktree add "$wt_path" -b issue/764/foo
     mkdir -p "$wt_path/.claude"
-    touch "$wt_path/.claude/.review-passed"
+    git -C "$wt_path" rev-parse HEAD > "$wt_path/.claude/.review-passed"
 
     local args='{"command": "git push --set-upstream origin issue/764/foo"}'
 

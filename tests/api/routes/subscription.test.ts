@@ -3,6 +3,26 @@ import { createSubscriptionRoute } from "@api/routes/subscription";
 import { Hono } from "hono";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+/**
+ * テスト用 HMAC-SHA256 署名を生成する
+ *
+ * @param secret - シークレットキー
+ * @param body - 署名対象のリクエストボディ文字列
+ * @returns Base64 エンコードされた HMAC-SHA256 署名
+ */
+async function generateTestHmac(secret: string, body: string): Promise<string> {
+  const encoder = new TextEncoder();
+  const key = await crypto.subtle.importKey(
+    "raw",
+    encoder.encode(secret),
+    { name: "HMAC", hash: "SHA-256" },
+    false,
+    ["sign"],
+  );
+  const mac = await crypto.subtle.sign("HMAC", key, encoder.encode(body));
+  return btoa(String.fromCharCode(...new Uint8Array(mac)));
+}
+
 /** テスト用のモックユーザー（無料プラン） */
 const MOCK_FREE_USER = {
   id: "user_01HXYZ",
@@ -535,7 +555,38 @@ describe("POST /api/subscription/webhooks/revenuecat", () => {
   });
 
   describe("認証（Webhook署名検証）", () => {
-    it("Authorizationヘッダーが無い場合401が返ること", async () => {
+    it("webhookSecretが未設定の場合500が返ること", async () => {
+      // Arrange
+      type Vars = Record<string, never>;
+      const app = new Hono<{ Variables: Vars }>();
+      const subscriptionRoute = createSubscriptionRoute({
+        db: mockDb as never,
+        webhookSecret: "",
+      });
+      app.route("/api/subscription", subscriptionRoute);
+
+      const webhookPayload = {
+        event: {
+          type: "INITIAL_PURCHASE",
+          app_user_id: "user_01HXYZ",
+        },
+      };
+
+      // Act
+      const res = await app.request("/api/subscription/webhooks/revenuecat", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "RevenueCat-Signature": "dummy",
+        },
+        body: JSON.stringify(webhookPayload),
+      });
+
+      // Assert
+      expect(res.status).toBe(500);
+    });
+
+    it("RevenueCat-Signatureヘッダーが無い場合401が返ること", async () => {
       // Arrange
       const app = createTestAppWithoutAuth();
       const webhookPayload = {
@@ -570,11 +621,12 @@ describe("POST /api/subscription/webhooks/revenuecat", () => {
       };
 
       // Act
+      // Act
       const res = await app.request("/api/subscription/webhooks/revenuecat", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: "Bearer wrong-secret",
+          "RevenueCat-Signature": "aW52YWxpZC1zaWduYXR1cmU=",
         },
         body: JSON.stringify(webhookPayload),
       });
@@ -606,7 +658,10 @@ describe("POST /api/subscription/webhooks/revenuecat", () => {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${TEST_WEBHOOK_SECRET}`,
+          "RevenueCat-Signature": await generateTestHmac(
+            TEST_WEBHOOK_SECRET,
+            JSON.stringify(webhookPayload),
+          ),
         },
         body: JSON.stringify(webhookPayload),
       });
@@ -639,7 +694,10 @@ describe("POST /api/subscription/webhooks/revenuecat", () => {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${TEST_WEBHOOK_SECRET}`,
+          "RevenueCat-Signature": await generateTestHmac(
+            TEST_WEBHOOK_SECRET,
+            JSON.stringify(webhookPayload),
+          ),
         },
         body: JSON.stringify(webhookPayload),
       });
@@ -674,7 +732,10 @@ describe("POST /api/subscription/webhooks/revenuecat", () => {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${TEST_WEBHOOK_SECRET}`,
+          "RevenueCat-Signature": await generateTestHmac(
+            TEST_WEBHOOK_SECRET,
+            JSON.stringify(webhookPayload),
+          ),
         },
         body: JSON.stringify(webhookPayload),
       });
@@ -710,7 +771,10 @@ describe("POST /api/subscription/webhooks/revenuecat", () => {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${TEST_WEBHOOK_SECRET}`,
+          "RevenueCat-Signature": await generateTestHmac(
+            TEST_WEBHOOK_SECRET,
+            JSON.stringify(webhookPayload),
+          ),
         },
         body: JSON.stringify(webhookPayload),
       });
@@ -746,7 +810,10 @@ describe("POST /api/subscription/webhooks/revenuecat", () => {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${TEST_WEBHOOK_SECRET}`,
+          "RevenueCat-Signature": await generateTestHmac(
+            TEST_WEBHOOK_SECRET,
+            JSON.stringify(webhookPayload),
+          ),
         },
         body: JSON.stringify(webhookPayload),
       });
@@ -769,7 +836,7 @@ describe("POST /api/subscription/webhooks/revenuecat", () => {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${TEST_WEBHOOK_SECRET}`,
+          "RevenueCat-Signature": await generateTestHmac(TEST_WEBHOOK_SECRET, JSON.stringify({})),
         },
         body: JSON.stringify({}),
       });
@@ -790,7 +857,10 @@ describe("POST /api/subscription/webhooks/revenuecat", () => {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${TEST_WEBHOOK_SECRET}`,
+          "RevenueCat-Signature": await generateTestHmac(
+            TEST_WEBHOOK_SECRET,
+            JSON.stringify({ event: {} }),
+          ),
         },
         body: JSON.stringify({ event: {} }),
       });
@@ -811,7 +881,10 @@ describe("POST /api/subscription/webhooks/revenuecat", () => {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${TEST_WEBHOOK_SECRET}`,
+          "RevenueCat-Signature": await generateTestHmac(
+            TEST_WEBHOOK_SECRET,
+            JSON.stringify({ event: { type: "INITIAL_PURCHASE" } }),
+          ),
         },
         body: JSON.stringify({ event: { type: "INITIAL_PURCHASE" } }),
       });
@@ -842,7 +915,10 @@ describe("POST /api/subscription/webhooks/revenuecat", () => {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${TEST_WEBHOOK_SECRET}`,
+          "RevenueCat-Signature": await generateTestHmac(
+            TEST_WEBHOOK_SECRET,
+            JSON.stringify(webhookPayload),
+          ),
         },
         body: JSON.stringify(webhookPayload),
       });
@@ -870,7 +946,10 @@ describe("POST /api/subscription/webhooks/revenuecat", () => {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${TEST_WEBHOOK_SECRET}`,
+          "RevenueCat-Signature": await generateTestHmac(
+            TEST_WEBHOOK_SECRET,
+            JSON.stringify(webhookPayload),
+          ),
         },
         body: JSON.stringify(webhookPayload),
       });
@@ -903,7 +982,10 @@ describe("POST /api/subscription/webhooks/revenuecat", () => {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${TEST_WEBHOOK_SECRET}`,
+          "RevenueCat-Signature": await generateTestHmac(
+            TEST_WEBHOOK_SECRET,
+            JSON.stringify(webhookPayload),
+          ),
         },
         body: JSON.stringify(webhookPayload),
       });
@@ -934,7 +1016,10 @@ describe("POST /api/subscription/webhooks/revenuecat", () => {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${TEST_WEBHOOK_SECRET}`,
+          "RevenueCat-Signature": await generateTestHmac(
+            TEST_WEBHOOK_SECRET,
+            JSON.stringify(webhookPayload),
+          ),
         },
         body: JSON.stringify(webhookPayload),
       });

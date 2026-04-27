@@ -42,7 +42,8 @@ export type SignInResponse = {
 };
 
 export type SignUpParams = {
-  name: string;
+  /** 表示名（省略可。省略時はサーバー側でメールアドレスの local-part を使用する） */
+  name?: string;
   email: string;
   password: string;
 };
@@ -51,7 +52,7 @@ export type SignUpResponse = {
   success: true;
   data: {
     user: User;
-    session: Session;
+    session: Session | null;
   };
 };
 
@@ -60,5 +61,31 @@ export type AuthErrorResponse = {
   error: {
     code: string;
     message: string;
+  };
+};
+
+/** サインアウト API レスポンス（成功時） */
+export type SignOutResponse = {
+  success: true;
+  data: null;
+};
+
+/** アカウント削除 API レスポンス（成功時） */
+export type DeleteAccountResponse = {
+  success: true;
+  data: null;
+};
+
+/** パスワード変更 API レスポンス（成功時） */
+export type ChangePasswordResponse = {
+  success: boolean;
+};
+
+/** セッション確認 API レスポンス（成功時） */
+export type SessionCheckResponse = {
+  success: true;
+  data: {
+    user: User;
+    session: Session;
   };
 };

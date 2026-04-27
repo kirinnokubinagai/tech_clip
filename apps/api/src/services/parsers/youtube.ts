@@ -439,17 +439,29 @@ export async function parseYouTube(url: string): Promise<ParsedArticle> {
   const watchUrl = buildWatchUrl(videoId);
 
   const oembed = await fetchOEmbed(watchUrl);
-  const captionText = await fetchCaptions(watchUrl);
 
-  const excerpt = createExcerpt(captionText);
+  // 字幕があれば本文として使う。字幕がない動画でも記事保存は成功させる（content=null）。
+  // 要約は title + author をコンテキストとして使うことで字幕なしでも動く。
+  let captionText: string | null = null;
+  try {
+    captionText = await fetchCaptions(watchUrl);
+  } catch (error) {
+    if (error instanceof Error && error.message === NO_CAPTIONS_ERROR_CODE) {
+      captionText = null;
+    } else {
+      throw error;
+    }
+  }
+
+  const excerpt = captionText ? createExcerpt(captionText) : null;
 
   return {
     title: oembed.title,
     author: oembed.author_name,
-    content: captionText,
+    content: captionText ?? "",
     excerpt,
     thumbnailUrl: oembed.thumbnail_url ?? null,
-    readingTimeMinutes: calculateReadingTime(captionText),
+    readingTimeMinutes: captionText ? calculateReadingTime(captionText) : 0,
     publishedAt: null,
     source: SOURCE_IDENTIFIER,
   };

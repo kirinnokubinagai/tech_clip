@@ -5,7 +5,8 @@ import {
   VALIDATION_ERROR_CODE,
   VALIDATION_ERROR_MESSAGE,
 } from "../lib/error-codes";
-import { HTTP_NOT_FOUND, HTTP_UNPROCESSABLE_ENTITY } from "../lib/http-status";
+import { HTTP_BAD_REQUEST, HTTP_NOT_FOUND, HTTP_UNPROCESSABLE_ENTITY } from "../lib/http-status";
+import { decodeCursor, encodeCursor } from "../services/parsers/_shared";
 
 /** デフォルトのページサイズ */
 const DEFAULT_LIMIT = 20;
@@ -106,6 +107,23 @@ export function createPublicArticlesRoute(options: PublicArticlesRouteOptions) {
       limit = parsed;
     }
 
+    if (cursor) {
+      try {
+        decodeCursor(cursor);
+      } catch {
+        return c.json(
+          {
+            success: false,
+            error: {
+              code: "INVALID_CURSOR",
+              message: "カーソルが不正です",
+            },
+          },
+          HTTP_BAD_REQUEST,
+        );
+      }
+    }
+
     const isUserExists = await userExistsFn(userId);
     if (!isUserExists) {
       return c.json(
@@ -129,8 +147,18 @@ export function createPublicArticlesRoute(options: PublicArticlesRouteOptions) {
     const hasNext = fetchedArticles.length > limit;
     const sliced = hasNext ? fetchedArticles.slice(0, limit) : fetchedArticles;
     const data = sliced.map(omitContent);
-    const nextCursor = hasNext ? (data[data.length - 1].id as string) : null;
+    const lastItem = sliced[sliced.length - 1];
+    const nextCursor =
+      hasNext && lastItem
+        ? encodeCursor(
+            lastItem.createdAt instanceof Date
+              ? (lastItem.createdAt as Date).toISOString()
+              : String(lastItem.createdAt),
+            lastItem.id as string,
+          )
+        : null;
 
+    c.header("Cache-Control", "public, max-age=60, s-maxage=300");
     return c.json({
       success: true,
       data,

@@ -3,6 +3,7 @@ import { ArrowRight, BookMarked, Sparkles, Tag } from "lucide-react-native";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Pressable, ScrollView, Text, View } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { LIGHT_COLORS, SUPPORTED_SOURCE_COUNT } from "@/lib/constants";
 import { logger } from "@/lib/logger";
@@ -29,6 +30,7 @@ export default function OnboardingScreen() {
   const hasSeenOnboarding = useUIStore((s) => s.hasSeenOnboarding);
   const setHasSeenOnboarding = useUIStore((s) => s.setHasSeenOnboarding);
 
+  const insets = useSafeAreaInsets();
   const [currentIndex, setCurrentIndex] = useState(0);
 
   const isLastPage = currentIndex === PAGE_COUNT - 1;
@@ -41,7 +43,7 @@ export default function OnboardingScreen() {
       logger.warn("トラッキング権限リクエストに失敗しました", { error });
     }
     await setHasSeenOnboarding(true);
-    router.replace("/(auth)/login");
+    router.replace("/(auth)/register");
   };
 
   const handleSkip = async () => {
@@ -77,7 +79,10 @@ export default function OnboardingScreen() {
           >
             {pageTitle}
           </Text>
-          <Text className="text-center text-base leading-relaxed text-stone-500">
+          <Text
+            testID="onboarding-description"
+            className="text-center text-base leading-relaxed text-stone-500"
+          >
             {pageDescription}
           </Text>
         </View>
@@ -106,7 +111,10 @@ export default function OnboardingScreen() {
       </View>
 
       {/* ボタンエリア */}
-      <View className="flex-row items-center justify-between px-6 pb-12 pt-2">
+      <View
+        className="flex-row items-center justify-between px-6 pt-2"
+        style={{ paddingBottom: Math.max(insets.bottom, 24) }}
+      >
         <Pressable
           testID="skip-button"
           onPress={handleSkip}

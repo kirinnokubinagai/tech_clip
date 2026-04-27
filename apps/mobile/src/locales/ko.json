@@ -1,7 +1,7 @@
 {
   "common": {
     "loading": "불러오는 중...",
-    "error": "오류가 발생했습니다",
+    "error": "오류가 발생했습니다.",
     "errorTitle": "오류",
     "retry": "다시 시도",
     "cancel": "취소",
@@ -20,8 +20,8 @@
       "tapToChange": "탭하여 변경",
       "currentValue": "{{label}}, 현재 설정: {{value}}",
       "loading": "불러오는 중",
-      "loadingHint": "콘텐츠를 불러오고 있습니다",
-      "pleaseWait": "잠시 기다려 주세요",
+      "loadingHint": "콘텐츠를 불러오고 있습니다.",
+      "pleaseWait": "잠시 기다려 주세요.",
       "loadingArticleList": "기사 목록을 불러오는 중",
       "loadingProfile": "프로필을 불러오는 중",
       "loadingArticleDetail": "기사 상세 정보를 불러오는 중",
@@ -41,12 +41,12 @@
     "follow": "팔로우",
     "offline": "오프라인",
     "tagInputPlaceholder": "새 태그 추가",
-    "tagLimitMessage": "태그는 최대 {{max}}개까지 선택할 수 있습니다"
+    "tagLimitMessage": "태그는 최대 {{max}}개까지 선택할 수 있습니다."
   },
   "premium": {
     "title": "프리미엄 플랜",
     "monthlyUsage": "이번 달 AI 기능 사용 횟수",
-    "limitReached": "무료 플랜 한도에 도달했습니다",
+    "limitReached": "무료 플랜 한도에 도달했습니다.",
     "featuresTitle": "프리미엄 플랜에서 이용 가능한 기능",
     "purchaseButton": "프리미엄 플랜 구매"
   },
@@ -64,25 +64,27 @@
     "appTagline": "AI로 기술 뉴스 요약",
     "createAccount": "계정 만들기",
     "name": "이름",
-    "namePlaceholder": "이름을 입력하세요",
-    "nameHint": "표시 이름으로 사용할 이름을 입력하세요",
+    "namePlaceholder": "이름을 입력하세요.",
+    "nameHint": "표시 이름으로 사용할 이름을 입력하세요.",
     "emailPlaceholder": "example@domain.com",
-    "emailHint": "이메일 주소를 입력하세요",
+    "emailHint": "이메일 주소를 입력하세요.",
     "passwordPlaceholder": "8자 이상",
-    "passwordHint": "{{min}}자 이상의 비밀번호를 입력하세요",
+    "passwordHint": "{{min}}자 이상의 비밀번호를 입력하세요.",
     "passwordHide": "숨기기",
     "passwordShow": "표시",
     "passwordHideLabel": "비밀번호 숨기기",
     "passwordShowLabel": "비밀번호 표시",
-    "loginHint": "이메일 주소와 비밀번호로 로그인합니다",
+    "loginHint": "이메일 주소와 비밀번호로 로그인합니다.",
     "forgotPasswordTitle": "비밀번호 재설정",
-    "forgotPasswordDescription": "등록된 이메일 주소로 재설정 안내를 전송합니다",
+    "forgotPasswordDescription": "등록된 이메일 주소로 재설정 안내를 전송합니다.",
     "forgotPasswordSubmit": "재설정 이메일 전송",
     "forgotPasswordSuccess": "비밀번호 재설정 이메일을 전송했습니다. 이메일을 확인해 주세요.",
-    "forgotPasswordEmailHint": "비밀번호 재설정 이메일을 받을 이메일 주소를 입력하세요",
+    "forgotPasswordEmailHint": "비밀번호 재설정 이메일을 받을 이메일 주소를 입력하세요.",
     "socialSeparator": "또는",
     "continueWithGoogle": "Google로 로그인",
     "continueWithGithub": "GitHub로 로그인",
+    "signUpWithGoogle": "Google로 가입",
+    "signUpWithGithub": "GitHub로 가입",
     "socialLoginFailed": "소셜 로그인 시작에 실패했습니다. 다시 시도해 주세요.",
     "callback": {
       "signingIn": "로그인 중...",
@@ -90,21 +92,26 @@
       "errorSocialLogin": "소셜 로그인에 실패했습니다. 다시 시도해 주세요.",
       "errorNoToken": "인증 토큰을 찾을 수 없습니다. 다시 시도해 주세요.",
       "errorSaveToken": "인증 정보 저장에 실패했습니다. 다시 시도해 주세요.",
-      "errorCheckSession": "인증 확인에 실패했습니다. 다시 시도해 주세요."
+      "errorCheckSession": "인증 확인에 실패했습니다. 다시 시도해 주세요.",
+      "errorInvalidState": "잘못된 인증 세션입니다. 다시 시도해 주세요."
     },
     "loginToRegister": "회원가입",
     "loginToRegisterPrompt": "계정이 없으신 분은",
     "registerToLoginPrompt": "이미 계정이 있으신가요?",
     "registerHint": "입력한 정보로 새 계정을 만듭니다",
-    "registerFailed": "등록에 실패했습니다",
-    "loginFailed": "로그인에 실패했습니다. 다시 시도해 주세요",
+    "registerFailed": "등록에 실패했습니다.",
+    "loginFailed": "로그인에 실패했습니다. 다시 시도해 주세요.",
     "validation": {
-      "emailRequired": "이메일 주소를 입력해 주세요",
-      "emailInvalid": "이메일 주소 형식이 올바르지 않습니다",
-      "passwordRequired": "비밀번호를 입력해 주세요",
-      "nameRequired": "이름을 입력해 주세요",
-      "passwordMinLength": "{{min}}자 이상의 비밀번호를 입력해 주세요"
-    }
+      "emailRequired": "이메일 주소를 입력해 주세요.",
+      "emailInvalid": "이메일 주소 형식이 올바르지 않습니다.",
+      "passwordRequired": "비밀번호를 입력해 주세요.",
+      "nameRequired": "이름을 입력해 주세요.",
+      "passwordMinLength": "{{min}}자 이상의 비밀번호를 입력해 주세요."
+    },
+    "continueWithApple": "Apple로 계속하기",
+    "signUpWithApple": "Apple로 가입",
+    "nameOptional": "이름 (선택)",
+    "nameOptionalHint": "비워두면 이메일 주소에서 자동 생성됩니다"
   },
   "tabs": {
     "home": "홈",
@@ -119,19 +126,19 @@
     "favoritesFilterLabel": "즐겨찾기만 표시",
     "favoritesFilterClearLabel": "즐겨찾기 필터 해제",
     "loadingArticles": "불러오는 중...",
-    "fetchError": "기사를 불러오는데 실패했습니다",
-    "noArticles": "기사가 없습니다",
+    "fetchError": "기사를 불러오는데 실패했습니다.",
+    "noArticles": "기사가 없습니다.",
     "offlineCachedArticles": "오프라인: 캐시된 기사를 표시 중",
-    "offlineNoCache": "오프라인: 캐시가 없습니다",
+    "offlineNoCache": "오프라인: 캐시가 없습니다.",
     "retryLabel": "다시 시도",
-    "retryHint": "기사 불러오기를 다시 시도합니다",
-    "sourceFilterHint": "{{label}} 기사만 표시합니다"
+    "retryHint": "기사 불러오기를 다시 시도합니다.",
+    "sourceFilterHint": "{{label}} 기사만 표시합니다."
   },
   "article": {
     "save": "기사 저장",
     "share": "공유",
     "readLater": "나중에 읽기",
-    "noArticles": "기사가 없습니다",
+    "noArticles": "기사가 없습니다.",
     "readingTime": "약 {{minutes}}분 소요",
     "summary": "요약",
     "summarized": "요약됨",
@@ -142,10 +149,10 @@
     "openInBrowser": "브라우저에서 열기",
     "addToFavorites": "즐겨찾기 추가",
     "removeFromFavorites": "즐겨찾기 해제",
-    "noContent": "기사 내용을 이용할 수 없습니다",
+    "noContent": "기사 내용을 이용할 수 없습니다.",
     "offlineContentUnavailable": "이 기사는 오프라인에 저장되지 않았습니다. 온라인 상태에서 열면 본문이 저장됩니다.",
     "viewOriginal": "원문 보기",
-    "fetchError": "기사를 불러오는데 실패했습니다",
+    "fetchError": "기사를 불러오는데 실패했습니다.",
     "loadingArticle": "불러오는 중...",
     "saveTitle": "기사 저장",
     "urlLabel": "URL",
@@ -154,100 +161,105 @@
     "saveButton": "저장",
     "fetching": "기사를 가져오는 중...",
     "preview": "미리보기",
-    "saveFailed": "기사 저장에 실패했습니다",
-    "fetchFailed": "기사를 가져오는데 실패했습니다",
-    "savedSuccess": "기사가 저장되었습니다",
+    "saveFailed": "기사 저장에 실패했습니다.",
+    "fetchFailed": "기사를 가져오는데 실패했습니다.",
+    "savedSuccess": "기사가 저장되었습니다.",
     "thumbnailAlt": "기사 썸네일",
-    "urlRequired": "URL을 입력해 주세요",
-    "urlInvalid": "유효한 URL을 입력해 주세요",
-    "noMatch": "「{{query}}」에 일치하는 기사가 없습니다",
+    "urlRequired": "URL을 입력해 주세요.",
+    "urlInvalid": "유효한 URL을 입력해 주세요.",
+    "noMatch": "「{{query}}」에 일치하는 기사가 없습니다.",
     "backA11yLabel": "뒤로",
     "backA11yHint": "이전 화면으로 돌아갑니다",
-    "generating": "생성 중..."
+    "generating": "생성 중...",
+    "premiumFeatures": {
+      "unlimitedAi": "무제한 AI 기능",
+      "noAds": "광고 없음",
+      "offlineAccess": "오프라인 접근"
+    }
   },
   "search": {
     "placeholder": "기사 검색...",
     "clearLabel": "검색 초기화",
     "hint": "키워드로 기사를 검색",
-    "hintSub": "제목이나 내용으로 검색할 수 있습니다",
+    "hintSub": "제목이나 내용으로 검색할 수 있습니다.",
     "searching": "검색 중...",
-    "error": "검색에 실패했습니다"
+    "error": "검색에 실패했습니다."
   },
   "notifications": {
     "markAllRead": "모두 읽음",
     "markAllReadLabel": "모두 읽음으로 표시",
-    "empty": "알림이 없습니다",
-    "emptyDescription": "새 알림이 오면 여기에 표시됩니다",
-    "fetchError": "알림을 불러오는데 실패했습니다",
+    "empty": "알림이 없습니다.",
+    "emptyDescription": "새 알림이 오면 여기에 표시됩니다.",
+    "fetchError": "알림을 불러오는데 실패했습니다.",
     "loadingNotifications": "불러오는 중...",
-    "retryHint": "알림 불러오기를 다시 시도합니다",
+    "retryHint": "알림 불러오기를 다시 시도합니다.",
     "unreadBadgeLabel": "읽지 않은 알림 {{count}}개",
     "unreadBadgeLabelOver": "읽지 않은 알림 {{max}}개 이상"
   },
   "profile": {
     "followersLabel": "팔로워",
     "followingLabel": "팔로잉",
-    "loginPrompt": "로그인하면 저장한 기사와 즐겨찾기를 볼 수 있습니다",
+    "loginPrompt": "로그인하면 저장한 기사와 즐겨찾기를 볼 수 있습니다.",
     "editProfile": "프로필 편집",
     "savedArticles": "저장한 기사",
-    "noPublicArticles": "이 사용자의 공개 기사가 아직 없습니다",
+    "noPublicArticles": "이 사용자의 공개 기사가 아직 없습니다.",
     "guestUser": "게스트 사용자",
     "loadingUser": "불러오는 중...",
-    "fetchError": "사용자 정보를 불러오는데 실패했습니다",
+    "fetchError": "사용자 정보를 불러오는데 실패했습니다.",
     "retryHint": "사용자 정보를 다시 불러옵니다",
     "backHint": "이전 화면으로 돌아갑니다",
-    "loadingHint": "잠시 기다려 주세요",
+    "loadingHint": "잠시 기다려 주세요.",
     "back": "뒤로",
     "edit": {
       "title": "프로필 편집",
       "nameLabel": "이름",
       "usernameLabel": "사용자 이름",
       "bioLabel": "자기소개",
-      "namePlaceholder": "이름을 입력하세요",
+      "namePlaceholder": "이름을 입력하세요.",
       "usernamePlaceholder": "username",
-      "bioPlaceholder": "자기소개를 입력하세요",
+      "bioPlaceholder": "자기소개를 입력하세요.",
       "snsLinks": "SNS 링크",
       "saveButton": "저장",
       "avatarLabel": "아바타 이미지 변경",
-      "saveSuccess": "프로필이 업데이트되었습니다",
-      "saveFailed": "프로필 저장에 실패했습니다",
-      "permissionError": "이미지 라이브러리 접근 권한이 없습니다",
+      "saveSuccess": "프로필이 업데이트되었습니다.",
+      "saveFailed": "프로필 저장에 실패했습니다.",
+      "permissionError": "이미지 라이브러리 접근 권한이 없습니다.",
       "twitterUsernameLabel": "X (Twitter) 사용자 이름",
       "twitterUsernamePlaceholder": "your_handle",
       "githubUsernameLabel": "GitHub 사용자 이름",
       "githubUsernamePlaceholder": "your_handle",
       "websiteUrlLabel": "웹사이트",
       "websiteUrlPlaceholder": "https://example.com",
-      "loadFailed": "프로필을 불러오지 못했습니다",
+      "loadFailed": "프로필을 불러오지 못했습니다.",
       "retryButton": "다시 시도",
       "usernameDuplicate": "이미 사용 중인 사용자 이름입니다",
       "validation": {
-        "nameRequired": "이름을 입력해 주세요",
-        "nameTooLong": "이름은 {{max}}자 이내로 입력해 주세요",
-        "usernameTooLong": "사용자 이름은 {{max}}자 이내로 입력해 주세요",
-        "usernameInvalid": "사용자 이름은 영숫자와 밑줄만 사용할 수 있습니다",
-        "bioTooLong": "자기소개는 {{max}}자 이내로 입력해 주세요",
-        "websiteUrlTooLong": "URL은 {{max}}자 이내로 입력해 주세요",
-        "websiteUrlInvalid": "올바른 URL을 입력해 주세요",
-        "twitterUsernameTooLong": "X (Twitter) 사용자 이름은 {{max}}자 이내로 입력해 주세요",
-        "twitterUsernameInvalid": "X (Twitter) 사용자 이름은 영숫자와 밑줄만 사용할 수 있습니다",
-        "githubUsernameTooLong": "GitHub 사용자 이름은 {{max}}자 이내로 입력해 주세요",
-        "githubUsernameInvalid": "GitHub 사용자 이름은 영숫자와 하이픈만 사용할 수 있습니다"
+        "nameRequired": "이름을 입력해 주세요.",
+        "nameTooLong": "이름은 {{max}}자 이내로 입력해 주세요.",
+        "usernameTooLong": "사용자 이름은 {{max}}자 이내로 입력해 주세요.",
+        "usernameInvalid": "사용자 이름은 영숫자와 밑줄만 사용할 수 있습니다.",
+        "bioTooLong": "자기소개는 {{max}}자 이내로 입력해 주세요.",
+        "websiteUrlTooLong": "URL은 {{max}}자 이내로 입력해 주세요.",
+        "websiteUrlInvalid": "올바른 URL을 입력해 주세요.",
+        "twitterUsernameTooLong": "X (Twitter) 사용자 이름은 {{max}}자 이내로 입력해 주세요.",
+        "twitterUsernameInvalid": "X (Twitter) 사용자 이름은 영숫자와 밑줄만 사용할 수 있습니다.",
+        "githubUsernameTooLong": "GitHub 사용자 이름은 {{max}}자 이내로 입력해 주세요.",
+        "githubUsernameInvalid": "GitHub 사용자 이름은 영숫자와 하이픈만 사용할 수 있습니다."
       }
     },
     "followers": {
       "title": "팔로워",
       "followersTab": "팔로워",
       "followingTab": "팔로잉",
-      "noFollowers": "팔로워가 아직 없습니다",
-      "noFollowing": "팔로잉 중인 사용자가 없습니다",
+      "noFollowers": "팔로워가 아직 없습니다.",
+      "noFollowing": "팔로잉 중인 사용자가 없습니다.",
       "userProfileLabel": "{{name}}의 프로필 보기",
       "loading": "불러오는 중...",
       "retry": "다시 시도",
-      "errorFollowers": "팔로워를 불러오는데 실패했습니다",
-      "errorFollowing": "팔로잉을 불러오는데 실패했습니다",
+      "errorFollowers": "팔로워를 불러오는데 실패했습니다.",
+      "errorFollowing": "팔로잉을 불러오는데 실패했습니다.",
       "unknownUser": "이름 없음",
-      "userNotSpecified": "사용자가 지정되지 않았습니다"
+      "userNotSpecified": "사용자가 지정되지 않았습니다."
     }
   },
   "settings": {
@@ -280,11 +292,11 @@
     },
     "languageSelect": {
       "title": "언어 설정",
-      "prompt": "표시 언어를 선택해 주세요"
+      "prompt": "표시 언어를 선택해 주세요."
     },
     "summaryLanguageSelect": {
       "title": "요약 언어 설정",
-      "prompt": "AI 요약의 출력 언어를 선택해 주세요"
+      "prompt": "AI 요약의 출력 언어를 선택해 주세요."
     },
     "notificationHintOn": "탭하여 알림을 켭니다",
     "notificationHintOff": "탭하여 알림을 끕니다",
@@ -293,8 +305,8 @@
       "message": "로그아웃하시겠습니까?",
       "confirm": "로그아웃"
     },
-    "notificationUpdateError": "알림 설정 업데이트에 실패했습니다",
-    "summaryLanguageUpdateError": "요약 언어 업데이트에 실패했습니다",
+    "notificationUpdateError": "알림 설정 업데이트에 실패했습니다.",
+    "summaryLanguageUpdateError": "요약 언어 업데이트에 실패했습니다.",
     "deleteAccount": {
       "title": "계정 삭제",
       "message": "계정을 삭제하면 모든 데이터가 영구적으로 삭제됩니다. 이 작업은 취소할 수 없습니다.",
@@ -304,39 +316,39 @@
     "changePassword": {
       "title": "비밀번호 변경",
       "currentPassword": "현재 비밀번호",
-      "currentPasswordPlaceholder": "현재 비밀번호를 입력하세요",
+      "currentPasswordPlaceholder": "현재 비밀번호를 입력하세요.",
       "newPassword": "새 비밀번호",
-      "newPasswordPlaceholder": "새 비밀번호를 입력하세요",
+      "newPasswordPlaceholder": "새 비밀번호를 입력하세요.",
       "confirmPassword": "새 비밀번호（확인）",
-      "confirmPasswordPlaceholder": "새 비밀번호를 다시 입력하세요",
+      "confirmPasswordPlaceholder": "새 비밀번호를 다시 입력하세요.",
       "saveButton": "변경",
-      "saveSuccess": "비밀번호가 변경되었습니다",
+      "saveSuccess": "비밀번호가 변경되었습니다.",
       "saveFailed": "비밀번호 변경에 실패했습니다. 현재 비밀번호가 올바른지 확인해 주세요.",
       "validation": {
-        "currentPasswordRequired": "현재 비밀번호를 입력해 주세요",
-        "newPasswordRequired": "새 비밀번호를 입력해 주세요",
-        "newPasswordTooShort": "{{min}}자 이상의 비밀번호를 입력해 주세요",
-        "newPasswordTooLong": "{{max}}자 이내의 비밀번호를 입력해 주세요",
-        "confirmPasswordRequired": "확인용 비밀번호를 입력해 주세요",
-        "passwordMismatch": "비밀번호가 일치하지 않습니다"
+        "currentPasswordRequired": "현재 비밀번호를 입력해 주세요.",
+        "newPasswordRequired": "새 비밀번호를 입력해 주세요.",
+        "newPasswordTooShort": "{{min}}자 이상의 비밀번호를 입력해 주세요.",
+        "newPasswordTooLong": "{{max}}자 이내의 비밀번호를 입력해 주세요.",
+        "confirmPasswordRequired": "확인용 비밀번호를 입력해 주세요.",
+        "passwordMismatch": "비밀번호가 일치하지 않습니다."
       }
     }
   },
   "errorBoundary": {
-    "unexpectedError": "예기치 않은 오류가 발생했습니다",
-    "appError": "애플리케이션에서 오류가 발생했습니다",
+    "unexpectedError": "예기치 않은 오류가 발생했습니다.",
+    "appError": "애플리케이션에서 오류가 발생했습니다.",
     "retry": "다시 시도"
   },
   "errorView": {
     "titles": {
       "network": "네트워크 오류",
       "server": "서버 오류",
-      "generic": "오류가 발생했습니다"
+      "generic": "오류가 발생했습니다."
     },
     "messages": {
-      "network": "인터넷 연결을 확인해 주세요",
-      "server": "서버에 문제가 발생했습니다. 잠시 후 다시 시도해 주세요",
-      "generic": "문제가 발생했습니다. 다시 시도해 주세요"
+      "network": "인터넷 연결을 확인해 주세요.",
+      "server": "서버에 문제가 발생했습니다. 잠시 후 다시 시도해 주세요.",
+      "generic": "문제가 발생했습니다. 다시 시도해 주세요."
     },
     "retry": "다시 시도"
   },
@@ -347,7 +359,7 @@
         "description": "Zenn, Qiita, dev.to 등 {{count}}개 소스를 지원합니다. 관심 있는 기사를 바로 저장하세요."
       },
       "ai": {
-        "title": "AI가 요약하고 번역합니다",
+        "title": "AI가 요약하고 번역합니다.",
         "description": "영어 기사도 한국어로 읽을 수 있습니다. 핵심만 파악하고 싶을 때는 AI 요약으로 시간을 절약하세요."
       },
       "organize": {
@@ -364,9 +376,9 @@
     "start": "시작하기",
     "accessibility": {
       "pageIndicator": "{{current}}페이지（전체 {{total}}페이지）",
-      "nextPageHint": "다음 페이지（{{next}}페이지）로 이동합니다",
-      "skipHint": "온보딩을 건너뛰고 로그인 화면으로 이동합니다",
-      "startHint": "계정 만들기 화면으로 이동합니다"
+      "nextPageHint": "다음 페이지（{{next}}페이지）로 이동합니다.",
+      "skipHint": "온보딩을 건너뛰고 로그인 화면으로 이동합니다.",
+      "startHint": "계정 만들기 화면으로 이동합니다."
     }
   },
   "time": {
@@ -380,31 +392,44 @@
   },
   "api": {
     "errors": {
-      "timeout": "요청이 시간 초과되었습니다",
-      "network": "네트워크에 연결할 수 없습니다",
-      "httpGeneric": "서버 오류가 발생했습니다",
-      "parse": "응답 파싱에 실패했습니다",
+      "timeout": "요청이 시간 초과되었습니다.",
+      "network": "네트워크에 연결할 수 없습니다.",
+      "httpGeneric": "서버 오류가 발생했습니다.",
+      "parse": "응답 파싱에 실패했습니다.",
       "sessionExpired": "세션이 만료되었습니다. 다시 로그인해 주세요.",
       "status": {
-        "400": "요청이 올바르지 않습니다",
-        "403": "이 작업을 수행할 권한이 없습니다",
-        "404": "리소스를 찾을 수 없습니다",
-        "408": "요청이 시간 초과되었습니다",
-        "409": "충돌이 발생했습니다",
+        "400": "요청이 올바르지 않습니다.",
+        "403": "이 작업을 수행할 권한이 없습니다.",
+        "404": "리소스를 찾을 수 없습니다.",
+        "408": "요청이 시간 초과되었습니다.",
+        "409": "충돌이 발생했습니다.",
         "413": "전송 데이터가 너무 큽니다",
-        "422": "입력 내용을 확인해 주세요",
+        "422": "입력 내용을 확인해 주세요.",
         "429": "요청이 너무 많습니다. 잠시 후 다시 시도해 주세요.",
-        "500": "서버 오류가 발생했습니다",
-        "502": "서버에 연결할 수 없습니다",
-        "503": "서비스를 일시적으로 사용할 수 없습니다",
-        "504": "서버 응답이 시간 초과되었습니다"
+        "500": "서버 오류가 발생했습니다.",
+        "502": "서버에 연결할 수 없습니다.",
+        "503": "서비스를 일시적으로 사용할 수 없습니다.",
+        "504": "서버 응답이 시간 초과되었습니다."
       }
     }
   },
   "shareIntent": {
     "loading": "불러오는 중",
-    "error": "공유 데이터를 읽는데 실패했습니다",
-    "notFound": "URL을 찾을 수 없습니다",
+    "error": "공유 데이터를 읽는데 실패했습니다.",
+    "notFound": "URL을 찾을 수 없습니다.",
     "close": "닫기"
+  },
+  "profileSetup": {
+    "title": "프로필 설정",
+    "subtitle": "계정이 생성되었습니다. 표시 이름을 설정해주세요.",
+    "nameLabel": "이름",
+    "namePlaceholder": "이름을 입력하세요",
+    "saveButton": "저장",
+    "skipButton": "건너뛰기",
+    "saveFailed": "프로필 저장에 실패했습니다.",
+    "validation": {
+      "nameRequired": "이름을 입력해주세요.",
+      "nameTooLong": "이름은 {{max}}자 이내로 입력해주세요."
+    }
   }
 }

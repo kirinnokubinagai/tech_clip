@@ -421,10 +421,16 @@ describe("GET /api/auth/session", () => {
   describe("正常系", () => {
     it("有効なトークンでセッションを取得できること", async () => {
       // Arrange
-      mockAuth.api.getSession.mockResolvedValue({
-        user: MOCK_USER,
-        session: { token: MOCK_TOKEN, expiresAt: new Date(Date.now() + 86400000) },
-      });
+      // /session は sessions テーブル → users テーブルを順に select する
+      mockDb.select
+        .mockReturnValueOnce({
+          from: vi.fn().mockReturnThis(),
+          where: vi.fn().mockResolvedValue([MOCK_SESSION_ROW]),
+        })
+        .mockReturnValueOnce({
+          from: vi.fn().mockReturnThis(),
+          where: vi.fn().mockResolvedValue([MOCK_USER]),
+        });
       const app = createTestApp();
 
       // Act
@@ -459,7 +465,10 @@ describe("GET /api/auth/session", () => {
 
     it("セッションが存在しない場合401が返ること", async () => {
       // Arrange
-      mockAuth.api.getSession.mockResolvedValue(null);
+      mockDb.select.mockReturnValue({
+        from: vi.fn().mockReturnThis(),
+        where: vi.fn().mockResolvedValue([]),
+      });
       const app = createTestApp();
 
       // Act
@@ -475,9 +484,12 @@ describe("GET /api/auth/session", () => {
       expect(body.error.code).toBe("AUTH_REQUIRED");
     });
 
-    it("getSession がエラーをスローした場合500が返ること", async () => {
+    it("DB エラー時に 500 が返ること", async () => {
       // Arrange
-      mockAuth.api.getSession.mockRejectedValue(new Error("DBエラー"));
+      mockDb.select.mockReturnValue({
+        from: vi.fn().mockReturnThis(),
+        where: vi.fn().mockRejectedValue(new Error("DBエラー")),
+      });
       const app = createTestApp();
 
       // Act

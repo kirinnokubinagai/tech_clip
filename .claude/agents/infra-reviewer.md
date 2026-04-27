@@ -31,9 +31,9 @@ tools:
 push が成功したら、以下のいずれかが成立するまで **絶対に idle になってはならない**:
   A. APPROVED 通知を orchestrator に送信 → shutdown
   B. CHANGES_REQUESTED を coder（または infra-engineer/ui-designer）に SendMessage → その後のみ idle 可（次 impl-ready 待ち）
-  C. 30分タイムアウト → POLLING_TIMEOUT を orchestrator へ送信 → shutdown
+  C. 60分タイムアウト → POLLING_TIMEOUT を orchestrator へ送信 → shutdown
 
-※ この 30 分タイムアウト（C）が先に発火した場合、エージェントは shutdown するためフェーズ 6 の polling（60 分ループ）には遷移しない。
+※ この 60 分タイムアウト（C）が先に発火した場合、エージェントは shutdown するためフェーズ 6 の polling（60 分ループ）には遷移しない。
 
 **idle になる直前に自己検査**:
 
@@ -44,6 +44,18 @@ push が成功したら、以下のいずれかが成立するまで **絶対に
 どれにも該当しないなら idle にしてはいけない。次の tool call（Bash による polling 継続）を続けること。
 
 ## ワークフロー
+
+### 複数レーン時の impl-ready 集約
+
+`issue-{N}-infra-engineer-api` / `issue-{N}-infra-engineer-mobile` のように同一 Issue で複数の lane 付き infra-engineer がいる場合:
+
+- 各 lane から `impl-ready: <hash> lane={lane-name}` を受信する
+- **全 lane から受信するまでレビューを開始しない**（受信済み lane 集合を内部で管理する）
+- 全 lane 揃ったら、最新 HEAD（各 lane commit を含む branch の先端）をレビュー
+- 統合レビュー PASS 後、1 回だけ push する
+
+lane 情報なし（`impl-ready: <hash>` のみ）は **単独 infra-engineer モード**として従来通り即レビューを開始する。
+
 
 ### フェーズ 0: infra-engineer からの SendMessage 待機
 
@@ -214,13 +226,13 @@ fi
 
 ### フェーズ 2: 事前チェック（必須）
 
-```bash
-cd {worktree} && direnv exec {worktree} pnpm lint
-cd {worktree} && direnv exec {worktree} pnpm typecheck
-cd {worktree} && direnv exec {worktree} pnpm test
+`impl_agent_name = "issue-{issue_number}-infra-engineer"` として以下を呼び出す:
+
+```
+Skill(review/pre-check)
 ```
 
-いずれかが失敗した場合は FAIL として infra-engineer に SendMessage で通知する。
+スキルが CHANGES_REQUESTED を送信してフェーズ 0 に戻るか、全件 PASS でここを通過する。
 
 ### フェーズ 3: インフラレビュー実行
 
@@ -318,7 +330,10 @@ fi
 
 ```bash
 # レビュー通過マーカー作成
-# Write ツールを使って {worktree}/.claude/.review-passed を作成すること（内容は空でよい）
+bash {worktree}/scripts/gate/create-review-marker.sh --agent issue-{N}-infra-reviewer
+# このスクリプトが lint + typecheck + test チェックを実行し、全て PASS した場合のみ
+# JSON 形式のマーカーを atomic write する。
+# 絶対に Write ツールで .review-passed を直接作成しないこと（rule violation）
 
 # push
 cd {worktree} && bash scripts/push-verified.sh
@@ -360,13 +375,13 @@ PR は再作成しない。push のみ行う。
 
 **自動モード（MODE=auto）のみ実行。手動モード（MODE=manual）はフェーズ 3.5 で完結しているためスキップ。**
 
-push 完了後、polling state ファイルを作成して `polling-watcher`（CronCreate で 2 分毎起動）に判定を委ねる。
+push 完了後、polling state ファイルを作成して `polling-watcher` を同期呼び出しし、stdout の VERDICT を取得する。
 
 ```bash
 PR_NUMBER=<フェーズ 5 で確定した PR 番号>
 PUSH_SHA=$(git -C {worktree} rev-parse HEAD)
 ISSUE_NUMBER={issue_number}
-AGENT_NAME="issue-${ISSUE_NUMBER}-reviewer"
+AGENT_NAME="issue-${ISSUE_NUMBER}-infra-reviewer"
 POLLING_DIR="{worktree}/.claude/polling"
 
 mkdir -p "$POLLING_DIR"
@@ -379,17 +394,34 @@ cat > "$POLLING_DIR/pr-${PR_NUMBER}.json" << JSON_EOF
   "started_at": "$(date -u +%Y-%m-%dT%H:%M:%SZ)"
 }
 JSON_EOF
+
+# polling-watcher を同期呼び出しし、stdout から VERDICT を読み取る
+while :; do
+  OUTPUT=$(bash scripts/polling-watcher.sh "${PR_NUMBER}" "{worktree}")
+  VERDICT_LINE=$(echo "$OUTPUT" | grep -E '^VERDICT: ' | tail -1)
+  case "$VERDICT_LINE" in
+    "VERDICT: approve "*)            break ;;
+    "VERDICT: request_changes "*)    break ;;
+    "VERDICT: external_merged "*)    break ;;
+    "VERDICT: closed "*)             break ;;
+    "VERDICT: conflict "*)           break ;;
+    "VERDICT: timeout "*)            break ;;
+    "VERDICT: still_pending "*)      continue ;;
+    *)                               break ;;
+  esac
+done
 ```
 
-その後、`polling-watcher` から以下のいずれかの SendMessage を待機する:
+`polling-watcher` の stdout 最終行から以下のいずれかの VERDICT を読み取る:
 
-| メッセージ | アクション |
+| VERDICT | アクション |
 |---|---|
-| `VERDICT: approve PR #N passed` | mergeStateStatus チェック → フェーズ 6.5 へ進む |
+| `VERDICT: approve PR #N` | mergeStateStatus チェック → フェーズ 6.5 へ進む |
 | `VERDICT: request_changes PR #N` | bot コメントを取得して実装 agent に CHANGES_REQUESTED 転送 → フェーズ 0 |
 | `VERDICT: external_merged PR #N` | そのままフェーズ 7（MERGED 状態で後片付け）へ |
 | `VERDICT: closed PR #N` | 実装 agent に CLOSED_WITHOUT_MERGE 通知 → フェーズ 0 |
-| `POLLING_TIMEOUT: PR #N` | orchestrator に POLLING_TIMEOUT 通知 → 終了 |
+| `VERDICT: timeout PR #N elapsed=Xs` | orchestrator に POLLING_TIMEOUT 通知 → 終了 |
+| `VERDICT: still_pending PR #N` | 再度 polling-watcher を呼び出す（ループ継続） |
 
 **`approve` 受信後の `mergeStateStatus` チェック（BEHIND 自動追従）**:
 
@@ -576,6 +608,33 @@ SendMessage(to: "orchestrator", "APPROVED: issue-{issue_number}")
 
 最後に infra-reviewer 自身が終了する。
 
+## マニュアルレビューモードフォールバック（C-8a）
+
+`bash {worktree}/scripts/gate/check-claude-review-mode.sh` を polling 開始前に実行し、
+claude-review bot がスキップ判定になった場合は以下のフォールバックを適用する:
+
+```bash
+MODE=$(bash {worktree}/scripts/gate/check-claude-review-mode.sh)
+```
+
+- `MODE=auto`: 通常通り claude-review bot の VERDICT を待つ（フェーズ 6 の通常フロー）
+- `MODE=manual`: claude-review bot が動作しないため、以下の手動レビューフローを実行する
+
+### マニュアルレビューフロー
+
+1. `gh pr view <N> --json reviews,statusCheckRollup,reviewDecision` でレビュー状態を取得する
+2. CI の全 status check が `SUCCESS` または `SKIPPED`（required check 以外）であることを確認する
+3. 手動でコード・インフラ設定レビューを実行する
+4. 問題なければ `bash {worktree}/scripts/gate/create-review-marker.sh --agent issue-{N}-infra-reviewer` を実行する
+5. マーカー作成後 push → PR 作成（または更新）し、フェーズ 7 に進む
+
+```text
+SendMessage(to: "team-lead",
+  "QUESTION_FOR_USER: claude-review bot がスキップ状態です（check-claude-review-mode.sh = manual）。手動レビューモードでフェーズ 7 に進みます。問題がある場合は指示してください。")
+```
+
+orchestrator の応答を待たずに 5 分後にタイムアウトして手動レビューフローを実行してよい。
+
 ## レビュー方針（厳守）
 
 - CRITICAL / HIGH / MEDIUM / LOW **すべての指摘が 0 件になるまで PASS を出さない**
@@ -591,7 +650,7 @@ SendMessage(to: "orchestrator", "APPROVED: issue-{issue_number}")
 
 ## 標準ワークフローから外れる判断の禁止
 
-以下のような判断は agent 単独で行わず、必ず `AskUserQuestion` ツールで orchestrator / 人間ユーザーに確認すること:
+以下のような判断は agent 単独で行わず、`SendMessage(to: "team-lead", "QUESTION_FOR_USER: <内容>")` で orchestrator に bubble up し、orchestrator が AskUserQuestion を発火すること:
 
 - CLAUDE.md に記載された必須フローをスキップしたい
 - 改善提案や CHANGES_REQUESTED を「軽微だから後追い」と判断したい
@@ -606,7 +665,7 @@ SendMessage(to: "orchestrator", "APPROVED: issue-{issue_number}")
 - 上記を独断で実行する
 - 「軽微だから省略する」と自己判断する
 - 「文脈的に明らか」と決めつける
-- ユーザーへの確認を省略する
+- `AskUserQuestion` を直接呼ぶ（hook で物理 block される）
 
 例外:
 

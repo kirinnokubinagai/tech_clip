@@ -1,0 +1,246 @@
+# 認証フロー: ログイン
+# clearState: true でアプリ起動後、onboarding → register 画面 → login リンク経由でログイン画面に遷移し、
+# シードユーザーでログインしてホーム画面遷移を確認する
+#
+# tags: smoke, auth
+
+appId: com.techclip.app
+tags:
+  - smoke
+  - auth
+
+env:
+  TEST_EMAIL: ${TEST_EMAIL}
+  TEST_PASSWORD: ${TEST_PASSWORD}
+
+---
+
+# アプリ起動（clearState: true）
+- launchApp:
+    clearState: true
+- runFlow:
+    when:
+      visible: "Try out your stylus"
+    commands:
+      - tapOn: "Cancel"
+      - waitForAnimationToEnd:
+          timeout: 1000
+- waitForAnimationToEnd:
+    timeout: 30000
+- runFlow:
+    when:
+      visible: "Process system isn't responding"
+    commands:
+      - tapOn: "Wait"
+      - waitForAnimationToEnd:
+          timeout: 3000
+- runFlow:
+    when:
+      visible: "Open debugger"
+    commands:
+      - tapOn:
+          point: "92%, 93%"
+      - waitForAnimationToEnd:
+          timeout: 2000
+
+# オンボーディング: 4ページ通過（next-button x3 → finish-button）
+- runFlow:
+    when:
+      visible: "take pictures and record video"
+    commands:
+      - tapOn: "Don't allow"
+      - waitForAnimationToEnd:
+          timeout: 1000
+
+- extendedWaitUntil:
+    visible:
+      text: "技術記事をワンタップで保存"
+    timeout: 60000
+- tapOn:
+    id: "next-button"
+- extendedWaitUntil:
+    visible:
+      text: "AIが要約・翻訳"
+    timeout: 10000
+- tapOn:
+    id: "next-button"
+- extendedWaitUntil:
+    visible:
+      text: "お気に入り・タグで整理"
+    timeout: 10000
+- tapOn:
+    id: "next-button"
+- extendedWaitUntil:
+    visible:
+      id: "finish-button"
+    timeout: 10000
+- tapOn:
+    id: "finish-button"
+- waitForAnimationToEnd:
+    timeout: 3000
+
+# hasAccount=false のため register 画面にリダイレクトされる
+# register-login-link でログイン画面へ移動
+- extendedWaitUntil:
+    visible:
+      text: "アカウントを作成"
+    timeout: 15000
+- takeScreenshot: screenshots/03-auth-login/00-register-screen
+- tapOn:
+    text: "ログイン"
+- waitForAnimationToEnd:
+    timeout: 2000
+
+# --- ログイン画面 ---
+- assertVisible:
+    text: "ログイン"
+- assertVisible: "メールアドレス"
+- takeScreenshot: screenshots/03-auth-login/01-login-screen
+
+# メールアドレス入力
+- tapOn:
+    id: "login-email-input"
+- runFlow:
+    when:
+      visible: "Try out your stylus"
+    commands:
+      - tapOn: "Cancel"
+      - waitForAnimationToEnd:
+          timeout: 1000
+- inputText: ${TEST_EMAIL}
+
+# パスワード入力
+- tapOn:
+    id: "login-password-input"
+- runFlow:
+    when:
+      visible: "Try out your stylus"
+    commands:
+      - tapOn: "Cancel"
+      - waitForAnimationToEnd:
+          timeout: 1000
+- inputText: ${TEST_PASSWORD}
+
+# パスワード表示トグルの確認
+- tapOn:
+    id: "login-toggle-password"
+- runFlow:
+    when:
+      visible: "Try out your stylus"
+    commands:
+      - tapOn: "Cancel"
+      - waitForAnimationToEnd:
+          timeout: 1000
+- assertVisible: "隠す"
+- tapOn:
+    id: "login-toggle-password"
+- assertVisible: "表示"
+
+# キーボードを閉じてからログインボタンをタップ
+- hideKeyboard
+- tapOn:
+    id: "login-submit-button"
+
+# ホーム画面に遷移することを確認
+- waitForAnimationToEnd:
+    timeout: 8000
+- assertVisible:
+    text: "すべて"
+- takeScreenshot: screenshots/03-auth-login/02-home-after-login
+
+# --- バリデーションエラーのテスト（register 画面経由でログイン画面へ）---
+- launchApp:
+    clearState: true
+- runFlow:
+    when:
+      visible: "Try out your stylus"
+    commands:
+      - tapOn: "Cancel"
+      - waitForAnimationToEnd:
+          timeout: 1000
+- waitForAnimationToEnd:
+    timeout: 30000
+- runFlow:
+    when:
+      visible: "Process system isn't responding"
+    commands:
+      - tapOn: "Wait"
+      - waitForAnimationToEnd:
+          timeout: 3000
+- runFlow:
+    when:
+      visible: "Open debugger"
+    commands:
+      - tapOn:
+          point: "92%, 93%"
+      - waitForAnimationToEnd:
+          timeout: 2000
+- extendedWaitUntil:
+    visible:
+      text: "技術記事をワンタップで保存"
+    timeout: 60000
+- tapOn:
+    id: "next-button"
+- extendedWaitUntil:
+    visible:
+      text: "AIが要約・翻訳"
+    timeout: 10000
+- tapOn:
+    id: "next-button"
+- extendedWaitUntil:
+    visible:
+      text: "お気に入り・タグで整理"
+    timeout: 10000
+- tapOn:
+    id: "next-button"
+- extendedWaitUntil:
+    visible:
+      id: "finish-button"
+    timeout: 10000
+- tapOn:
+    id: "finish-button"
+- extendedWaitUntil:
+    visible:
+      text: "アカウントを作成"
+    timeout: 15000
+- tapOn:
+    text: "ログイン"
+- waitForAnimationToEnd:
+    timeout: 2000
+
+# 空のまま送信 → エラー表示
+- tapOn:
+    id: "login-submit-button"
+- assertVisible: "メールアドレスを入力してください。"
+
+# メールのみ入力してパスワード短すぎエラー
+- tapOn:
+    id: "login-email-input"
+- runFlow:
+    when:
+      visible: "Try out your stylus"
+    commands:
+      - tapOn: "Cancel"
+      - waitForAnimationToEnd:
+          timeout: 1000
+- inputText: "test@example.com"
+- tapOn:
+    id: "login-password-input"
+- runFlow:
+    when:
+      visible: "Try out your stylus"
+    commands:
+      - tapOn: "Cancel"
+      - waitForAnimationToEnd:
+          timeout: 1000
+- inputText: "short"
+- hideKeyboard
+- tapOn:
+    id: "login-submit-button"
+- assertVisible: "8文字以上"
+
+# 新規登録リンクへの遷移確認
+- tapOn:
+    text: "新規登録"
+- assertVisible:
+    text: "アカウントを作成"

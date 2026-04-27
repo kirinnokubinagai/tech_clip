@@ -138,7 +138,7 @@ describe("syncManager", () => {
       mockApiFetch.mockResolvedValue(
         asApiFetchResult({
           success: false,
-          error: { code: "AUTH_REQUIRED", message: "ログインが必要です" },
+          error: { code: "AUTH_REQUIRED", message: "ログインが必要です。" },
         }),
       );
 
@@ -253,14 +253,14 @@ describe("syncManager", () => {
 
       // Assert
       expect(mockApiFetch).toHaveBeenCalledWith(
-        expect.stringContaining("/articles/article-001"),
+        "/api/articles/article-001?language=ja&targetLanguage=en",
         expect.any(Object),
       );
       expect(mockUpsertArticle).toHaveBeenCalledWith(
         expect.objectContaining({ id: "article-001" }),
       );
-      expect(mockUpsertSummary).toHaveBeenCalledWith("article-001", "AI要約テキスト");
-      expect(mockUpsertTranslation).toHaveBeenCalledWith("article-001", "翻訳テキスト");
+      expect(mockUpsertSummary).toHaveBeenCalledWith("article-001", "ja", "AI要約テキスト");
+      expect(mockUpsertTranslation).toHaveBeenCalledWith("article-001", "en", "翻訳テキスト");
       expect(result.success).toBe(true);
     });
 

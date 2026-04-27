@@ -1,5 +1,6 @@
 import type { ArticleSource } from "@tech-clip/types";
 
+import { createLogger } from "../lib/logger";
 import { detectSource } from "./source-detector";
 
 /**
@@ -155,7 +156,13 @@ export async function parseArticle(url: string): Promise<ParsedArticle> {
   try {
     const result = await dispatchParser(source, url);
     return { ...result, source };
-  } catch {
+  } catch (error) {
+    const parserLogger = createLogger("article-parser");
+    parserLogger.warn("専用パーサーが失敗しました。汎用パーサーにフォールバックします", {
+      source,
+      url,
+      error: error instanceof Error ? { name: error.name, message: error.message } : error,
+    });
     const { parseGeneric } = await import("./parsers/generic");
     const result = await parseGeneric(url);
     return { ...result, source };

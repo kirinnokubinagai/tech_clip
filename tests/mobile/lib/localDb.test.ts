@@ -71,7 +71,25 @@ describe("localDb", () => {
     jest.clearAllMocks();
     mockExecAsync.mockResolvedValue(undefined);
     mockRunAsync.mockResolvedValue(undefined);
-    mockGetAllAsync.mockResolvedValue([]);
+    mockGetAllAsync.mockImplementation(async (sql: string) => {
+      if (sql.includes("PRAGMA table_info(summaries)")) {
+        return [
+          { name: "article_id" },
+          { name: "language" },
+          { name: "content" },
+          { name: "synced_at" },
+        ];
+      }
+      if (sql.includes("PRAGMA table_info(translations)")) {
+        return [
+          { name: "article_id" },
+          { name: "target_language" },
+          { name: "content" },
+          { name: "synced_at" },
+        ];
+      }
+      return [];
+    });
     mockGetFirstAsync.mockResolvedValue(null);
     mockWithTransactionAsync.mockImplementation(async (fn: () => Promise<void>) => {
       await fn();
@@ -230,12 +248,12 @@ describe("localDb", () => {
 
       // Act
       await initLocalDb();
-      await upsertSummary(articleId, summary);
+      await upsertSummary(articleId, "ja", summary);
 
       // Assert
       expect(mockRunAsync).toHaveBeenCalledWith(
         expect.stringContaining("INSERT OR REPLACE INTO summaries"),
-        expect.arrayContaining([articleId, summary]),
+        expect.arrayContaining([articleId, "ja", summary]),
       );
     });
   });
@@ -248,12 +266,12 @@ describe("localDb", () => {
 
       // Act
       await initLocalDb();
-      await upsertTranslation(articleId, translation);
+      await upsertTranslation(articleId, "en", translation);
 
       // Assert
       expect(mockRunAsync).toHaveBeenCalledWith(
         expect.stringContaining("INSERT OR REPLACE INTO translations"),
-        expect.arrayContaining([articleId, translation]),
+        expect.arrayContaining([articleId, "en", translation]),
       );
     });
   });

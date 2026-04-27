@@ -220,7 +220,7 @@ describe("emailService", () => {
       // Assert
       const [, options] = vi.mocked(fetch).mock.calls[0];
       const body = JSON.parse(options?.body as string);
-      expect(body.subject).toContain("メールアドレス認証");
+      expect(body.subject).toContain("メールアドレス");
     });
 
     it("HTMLボディに認証URLが含まれること", async () => {

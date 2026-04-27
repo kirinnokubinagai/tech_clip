@@ -160,6 +160,7 @@ export default function ChangePasswordScreen() {
       >
         <View className="px-4 pt-6 gap-4">
           <Input
+            testID="change-password-current-input"
             label={t("settings.changePassword.currentPassword")}
             placeholder={t("settings.changePassword.currentPasswordPlaceholder")}
             value={formData.currentPassword}
@@ -170,6 +171,7 @@ export default function ChangePasswordScreen() {
           />
 
           <Input
+            testID="change-password-new-input"
             label={t("settings.changePassword.newPassword")}
             placeholder={t("settings.changePassword.newPasswordPlaceholder")}
             value={formData.newPassword}
@@ -180,6 +182,7 @@ export default function ChangePasswordScreen() {
           />
 
           <Input
+            testID="change-password-confirm-input"
             label={t("settings.changePassword.confirmPassword")}
             placeholder={t("settings.changePassword.confirmPasswordPlaceholder")}
             value={formData.confirmPassword}
@@ -190,7 +193,12 @@ export default function ChangePasswordScreen() {
           />
 
           <View className="pt-4">
-            <Button onPress={handleSave} loading={isSaving} disabled={isSaving}>
+            <Button
+              testID="change-password-save-button"
+              onPress={handleSave}
+              loading={isSaving}
+              disabled={isSaving}
+            >
               {t("settings.changePassword.saveButton")}
             </Button>
           </View>

@@ -13,7 +13,7 @@
 #   4. main ブランチチェック（ファイルのリポジトリが main なら全 DENY）
 #      ファイル種類（apps/, packages/, tests/, scripts/, .claude/** 等）に関係なく全てブロック
 #   5. orchestration_file チェック（main 以外なら ALLOW）
-#      - .claude/**, CLAUDE.md, AGENTS.md, flake.nix 等
+#      - .claude/**, CLAUDE.md, flake.nix 等
 #   6. それ以外 ALLOW（worktree 内バックグラウンドエージェントの動作を許可）
 
 TOOL_INPUT=$(cat)
@@ -42,8 +42,18 @@ if [[ "$FILE_PATH" != /* ]]; then
 fi
 
 # シンボリックリンクや .. を正規化（ファイルが存在しなくても動作）
-# realpath -m が失敗した場合はブロック方向に倒す（未正規化パスを使わない）
-FILE_PATH=$(realpath -m "$FILE_PATH" 2>/dev/null)
+# GNU realpath -m を優先し、macOS realpath にフォールバックする
+_normalize_path() {
+  local p="$1"
+  if realpath -m "$p" 2>/dev/null; then
+    return 0
+  fi
+  if [ -e "$p" ]; then
+    realpath "$p" 2>/dev/null && return 0
+  fi
+  python3 -c "import os,sys; print(os.path.normpath(os.path.abspath(sys.argv[1])))" "$p" 2>/dev/null
+}
+FILE_PATH=$(_normalize_path "$FILE_PATH")
 if [ -z "$FILE_PATH" ]; then
   echo "DENY: パスの正規化に失敗しました（GNU coreutils の realpath が必要です）" >&2
   exit 2
@@ -72,7 +82,7 @@ if [ -z "$REPO_ROOT" ]; then
   echo "DENY: git リポジトリルートが特定できませんでした: $FILE_PATH" >&2
   exit 2
 fi
-REPO_ROOT=$(realpath -m "$REPO_ROOT" 2>/dev/null)
+REPO_ROOT=$(_normalize_path "$REPO_ROOT")
 if [ -z "$REPO_ROOT" ]; then
   echo "DENY: REPO_ROOT のパス正規化に失敗しました" >&2
   exit 2
@@ -146,7 +156,7 @@ if [[ "$SESSION_BRANCH" == "main" || "$SESSION_BRANCH" == "master" ]]; then
   _GIT_COMMON_DIR=$(git rev-parse --git-common-dir 2>/dev/null || true)
   if [[ -n "$_GIT_COMMON_DIR" ]]; then
     _MAIN_REPO_ROOT=$(cd "$_GIT_COMMON_DIR/.." && pwd -P 2>/dev/null || true)
-    _MAIN_REPO_ROOT=$(realpath -m "$_MAIN_REPO_ROOT" 2>/dev/null || echo "")
+    _MAIN_REPO_ROOT=$(_normalize_path "$_MAIN_REPO_ROOT" 2>/dev/null || echo "")
     _WORKTREE_BASE=$(dirname "$_MAIN_REPO_ROOT")
     if [[ -n "$_MAIN_REPO_ROOT" && "$FILE_PATH" == "${_WORKTREE_BASE}/"* && "$FILE_PATH" != "${_MAIN_REPO_ROOT}/"* ]]; then
       echo "DENY: mainブランチのオーケストレーターは兄弟worktreeのファイルを直接編集できません。" >&2

@@ -13,6 +13,9 @@ on:
           - android
         default: all
 
+# デフォルトで全権限を read-only にする
+permissions: read-all
+
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
@@ -21,9 +24,15 @@ jobs:
     if: ${{ inputs.platform == 'all' || inputs.platform == 'ios' }}
     runs-on: ubuntu-latest
     environment: production
+    permissions:
+      contents: read
     steps:
       - uses: actions/checkout@v6
       - uses: ./.github/actions/nix-setup
+      - name: Mask EXPO_TOKEN in logs
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+        run: echo "::add-mask::$EXPO_TOKEN"
       - uses: expo/expo-github-action@v8
         with:
           eas-version: "14.x"
@@ -36,9 +45,15 @@ jobs:
     if: ${{ inputs.platform == 'all' || inputs.platform == 'android' }}
     runs-on: ubuntu-latest
     environment: production
+    permissions:
+      contents: read
     steps:
       - uses: actions/checkout@v6
       - uses: ./.github/actions/nix-setup
+      - name: Mask EXPO_TOKEN in logs
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+        run: echo "::add-mask::$EXPO_TOKEN"
       - uses: expo/expo-github-action@v8
         with:
           eas-version: "14.x"

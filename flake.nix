@@ -12,7 +12,40 @@
         pkgs = import nixpkgs {
           inherit system;
           config.allowUnfree = true;
+          config.android_sdk.accept_license = true;
         };
+
+        # Android SDK + emulator + system image を nix で完全管理する。
+        # ローカルの Android Studio install や CI の reactivecircus action 依存を撤廃し、
+        # local / CI で同一の emulator バイナリ + system image を使う。
+        #
+        # ABI は host のみを取り込んで disk 使用量を抑える (system image は 5GB/ABI)。
+        #   darwin-aarch64 (Apple Silicon Mac) → arm64-v8a
+        #   linux-x86_64 (Ubuntu CI runner)    → x86_64
+        #   darwin-x86_64 (Intel Mac)          → x86_64
+        androidAbi =
+          if system == "aarch64-darwin" then "arm64-v8a"
+          else if system == "x86_64-linux" || system == "x86_64-darwin" then "x86_64"
+          else "x86_64";  # fallback
+
+        androidComposition = pkgs.androidenv.composeAndroidPackages {
+          # platformToolsVersion / buildToolsVersions は nixpkgs-unstable のキャッシュにある
+          # 既知良好版を pin する。デフォルトの 37.0.0 は hash mismatch を起こす場合あり。
+          platformToolsVersion = "36.0.2";
+          buildToolsVersions = [ "34.0.0" ];
+          platformVersions = [ "34" ];
+          includeEmulator = true;
+          includeSystemImages = true;
+          systemImageTypes = [ "google_apis" ];
+          abiVersions = [ androidAbi ];
+          # React Native (expo run:android) が要求する NDK バージョン。
+          # 不一致時は gradle が `com.android.builder.sdk.InstallFailedException` を投げて、
+          # nix store の read-only 領域に NDK を install しようとして失敗する。
+          includeNDK = true;
+          ndkVersions = [ "27.1.12297006" ];
+        };
+        androidSdk = androidComposition.androidsdk;
+        androidHome = "${androidSdk}/libexec/android-sdk";
 
         # OWASP ZAP: クロスプラットフォーム版で macOS/Linux 両対応
         zap = pkgs.stdenv.mkDerivation {
@@ -70,7 +103,7 @@
       in
       {
         devShells.ci = pkgs.mkShell {
-          buildInputs = with pkgs; [
+          buildInputs = (with pkgs; [
             nodejs_22
             pnpm_10
             turbo
@@ -81,15 +114,29 @@
             curl
             openssl
             python3
+            coreutils
+            libxml2
+            turso-cli
+            sqld
+            android-tools
+            sqlite
             zap
             bats
             shellcheck
             actionlint
-          ];
+            jdk17
+            maestro
+          ]) ++ [ androidSdk ];
+
+          # Android SDK / emulator / system image を nix で固定して
+          # ローカルの ~/Library/Android や apt 由来の SDK に依存しない。
+          ANDROID_HOME = androidHome;
+          ANDROID_SDK_ROOT = androidHome;
+          JAVA_HOME = "${pkgs.jdk17}";
         };
 
         devShells.default = pkgs.mkShell {
-          buildInputs = with pkgs; [
+          buildInputs = (with pkgs; [
             nodejs_22
             pnpm_10
             turbo
@@ -98,16 +145,41 @@
             git
             jq
             curl
+            coreutils
+            libxml2
             maestro
             zap
             bats
             mailpit
+            turso-cli
+            sqld
+            android-tools
+            sqlite
             claude-code-bin
             shellcheck
             actionlint
-          ];
+            jdk17
+            wrangler
+            eas-cli
+          ]) ++ [ androidSdk ];
+
+          # Android SDK / emulator / system image を nix で固定して
+          # ローカルの ~/Library/Android install には依存しない。
+          ANDROID_HOME = androidHome;
+          ANDROID_SDK_ROOT = androidHome;
 
           shellHook = ''
+            # Remove homebrew / asdf shim leaks to keep nix store hermetic
+            PATH=$(echo "$PATH" | awk -v RS=: -v ORS=: '!/\/opt\/homebrew/ && !/\/.asdf\/shims/ && !/\/usr\/local\/bin/ {print}' | sed 's/:$//')
+            export PATH
+
+            # Java for Android / Gradle builds (avdmanager needs bin/java directly)
+            export JAVA_HOME="${pkgs.jdk17}"
+
+            # nix Android SDK の bin (wrapped binaries: avdmanager/sdkmanager/emulator/adb 等) を PATH に追加
+            export PATH="${androidSdk}/bin:$PATH"
+
+            export NODE_OPTIONS="--no-experimental-strip-types"
             # CLAUDE_CONFIG_DIR: auth・settings を .claude-user/ に隔離
             CLAUDE_USER_DIR="$PWD/.claude-user"
             export CLAUDE_CONFIG_DIR="$CLAUDE_USER_DIR"
@@ -121,13 +193,6 @@
             if [ -x "$HOME/.local/bin/claude" ]; then
               export PATH="$HOME/.local/bin:$PATH"
             fi
-
-            # wrangler は nixpkgs の nodePackages から削除されたため npx ラッパーで提供
-            wrangler() { npx --yes wrangler@latest "$@"; }
-
-            # eas-cli は nixpkgs にないため npx ラッパーで提供
-            # fish/zsh 互換のため export -f は使用しない（bash 専用構文）
-            eas() { npx --yes eas-cli@latest "$@"; }
 
             # シークレットファイルのセットアップコマンド
             setup-secrets() {
@@ -183,7 +248,7 @@
             echo "  Node:     $(node --version)"
             echo "  pnpm:     $(pnpm --version)"
             echo "  wrangler: $(wrangler --version 2>/dev/null | head -1)"
-            echo "  eas:      via npx (run 'eas --version' to check)"
+            echo "  eas:      $(eas --version 2>/dev/null | head -1)"
             echo "  mailpit:  smtp://localhost:1025  http://localhost:8025"
             echo ""
             echo "Quick start:"

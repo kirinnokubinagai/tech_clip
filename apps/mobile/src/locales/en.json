@@ -1,7 +1,7 @@
 {
   "common": {
     "loading": "Loading...",
-    "error": "An error occurred",
+    "error": "An error occurred.",
     "errorTitle": "Error",
     "retry": "Retry",
     "cancel": "Cancel",
@@ -83,6 +83,8 @@
     "socialSeparator": "Or",
     "continueWithGoogle": "Continue with Google",
     "continueWithGithub": "Continue with GitHub",
+    "signUpWithGoogle": "Sign up with Google",
+    "signUpWithGithub": "Sign up with GitHub",
     "socialLoginFailed": "Failed to start social sign-in. Please try again.",
     "callback": {
       "signingIn": "Signing in...",
@@ -90,21 +92,26 @@
       "errorSocialLogin": "Social login failed. Please try again.",
       "errorNoToken": "Authentication token not found. Please try again.",
       "errorSaveToken": "Failed to save authentication info. Please try again.",
-      "errorCheckSession": "Failed to verify authentication. Please try again."
+      "errorCheckSession": "Failed to verify authentication. Please try again.",
+      "errorInvalidState": "Invalid authentication session. Please try again."
     },
     "loginToRegister": "Sign up",
     "loginToRegisterPrompt": "Don't have an account?",
     "registerToLoginPrompt": "Already have an account?",
     "registerHint": "Create a new account with the entered information.",
-    "registerFailed": "Registration failed",
+    "registerFailed": "Registration failed.",
     "loginFailed": "Login failed. Please try again.",
     "validation": {
       "emailRequired": "Please enter your email address",
       "emailInvalid": "Please enter a valid email address",
       "passwordRequired": "Please enter your password",
       "nameRequired": "Please enter your name",
-      "passwordMinLength": "Password must be at least {{min}} characters"
-    }
+      "passwordMinLength": "Password must be at least {{min}} characters."
+    },
+    "continueWithApple": "Continue with Apple",
+    "signUpWithApple": "Sign up with Apple",
+    "nameOptional": "Name (optional)",
+    "nameOptionalHint": "If left blank, a name will be generated from your email"
   },
   "tabs": {
     "home": "Home",
@@ -144,7 +151,7 @@
     "openInBrowser": "Open in browser",
     "addToFavorites": "Add to favorites",
     "removeFromFavorites": "Remove from favorites",
-    "noContent": "Article content is unavailable",
+    "noContent": "Article content is unavailable.",
     "offlineContentUnavailable": "This article has not been saved for offline use. Open it while online to save the content.",
     "viewOriginal": "View original article",
     "fetchError": "Failed to fetch article",
@@ -163,7 +170,12 @@
     "urlRequired": "Please enter a URL",
     "urlInvalid": "Please enter a valid URL",
     "noMatch": "No articles matching \"{{query}}\"",
-    "generating": "Generating..."
+    "generating": "Generating...",
+    "premiumFeatures": {
+      "unlimitedAi": "Unlimited AI features",
+      "noAds": "No ads",
+      "offlineAccess": "Offline access"
+    }
   },
   "search": {
     "placeholder": "Search articles...",
@@ -171,7 +183,7 @@
     "hint": "Search articles by keyword",
     "hintSub": "You can search by title or content",
     "searching": "Searching...",
-    "error": "Search failed"
+    "error": "Search failed."
   },
   "notifications": {
     "markAllRead": "Mark all read",
@@ -315,7 +327,7 @@
       "validation": {
         "currentPasswordRequired": "Please enter your current password",
         "newPasswordRequired": "Please enter a new password",
-        "newPasswordTooShort": "Password must be at least {{min}} characters",
+        "newPasswordTooShort": "Password must be at least {{min}} characters.",
         "newPasswordTooLong": "Password must be {{max}} characters or less",
         "confirmPasswordRequired": "Please enter the confirmation password",
         "passwordMismatch": "Passwords do not match"
@@ -323,7 +335,7 @@
     }
   },
   "errorBoundary": {
-    "unexpectedError": "An unexpected error occurred",
+    "unexpectedError": "An unexpected error occurred.",
     "appError": "An error occurred in the application",
     "retry": "Retry"
   },
@@ -331,7 +343,7 @@
     "titles": {
       "network": "Network Error",
       "server": "Server Error",
-      "generic": "An error occurred"
+      "generic": "An error occurred."
     },
     "messages": {
       "network": "Please check your internet connection",
@@ -388,21 +400,21 @@
     "errors": {
       "timeout": "Request timed out",
       "network": "No network connection",
-      "httpGeneric": "A server error occurred",
+      "httpGeneric": "A server error occurred.",
       "parse": "Failed to parse response",
       "sessionExpired": "Your session has expired. Please log in again.",
       "status": {
         "400": "Invalid request",
         "403": "You do not have permission to perform this action",
-        "404": "Resource not found",
+        "404": "Resource not found.",
         "408": "Request timed out",
-        "409": "A conflict occurred",
+        "409": "A conflict occurred.",
         "413": "The submitted data is too large",
-        "422": "Please check your input",
+        "422": "Please check your input.",
         "429": "Too many requests. Please wait a moment and try again.",
-        "500": "A server error occurred",
+        "500": "A server error occurred.",
         "502": "Unable to connect to the server",
-        "503": "The service is temporarily unavailable",
+        "503": "The service is temporarily unavailable.",
         "504": "Server response timed out"
       }
     }
@@ -410,7 +422,20 @@
   "shareIntent": {
     "loading": "Loading",
     "error": "Failed to read shared data",
-    "notFound": "URL not found",
+    "notFound": "URL not found.",
     "close": "Close"
+  },
+  "profileSetup": {
+    "title": "Set Up Your Profile",
+    "subtitle": "Your account has been created. Set up your display name to get started.",
+    "nameLabel": "Name",
+    "namePlaceholder": "Enter your name",
+    "saveButton": "Save",
+    "skipButton": "Skip",
+    "saveFailed": "Failed to save profile.",
+    "validation": {
+      "nameRequired": "Please enter your name.",
+      "nameTooLong": "Name must be {{max}} characters or less."
+    }
   }
 }

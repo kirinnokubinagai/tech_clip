@@ -3,10 +3,12 @@ import { Hono } from "hono";
 import { z } from "zod";
 
 import type { Database } from "../db";
+import type { NotificationSettings } from "../db/schema";
 import { notificationSettings } from "../db/schema";
 import {
   AUTH_ERROR_CODE,
   AUTH_ERROR_MESSAGE,
+  INTERNAL_ERROR_CODE,
   VALIDATION_ERROR_CODE,
   VALIDATION_ERROR_MESSAGE,
 } from "../lib/error-codes";
@@ -15,9 +17,9 @@ import {
   HTTP_UNAUTHORIZED,
   HTTP_UNPROCESSABLE_ENTITY,
 } from "../lib/http-status";
+import { createLogger } from "../lib/logger";
 
-/** レスポンスから除外するフィールド */
-const OMIT_FIELDS = ["userId"] as const;
+const logger = createLogger("notification-settings");
 
 /** 通知設定更新スキーマ */
 const UpdateNotificationSettingsSchema = z
@@ -40,12 +42,9 @@ type NotificationSettingsRouteOptions = {
  * @param settings - 通知設定データ
  * @returns userId を除いた通知設定データ
  */
-function omitFields(settings: Record<string, unknown>): Record<string, unknown> {
-  const result = { ...settings };
-  for (const field of OMIT_FIELDS) {
-    delete result[field];
-  }
-  return result;
+function omitFields(settings: NotificationSettings): Record<string, unknown> {
+  const { userId: _userId, ...rest } = settings;
+  return rest;
 }
 
 /**
@@ -86,7 +85,7 @@ export function createNotificationSettingsRoute(options: NotificationSettingsRou
     if (existing) {
       return c.json({
         success: true,
-        data: omitFields(existing as unknown as Record<string, unknown>),
+        data: omitFields(existing),
       });
     }
 
@@ -110,7 +109,7 @@ export function createNotificationSettingsRoute(options: NotificationSettingsRou
 
     return c.json({
       success: true,
-      data: omitFields(created as unknown as Record<string, unknown>),
+      data: omitFields(created),
     });
   });
 
@@ -187,14 +186,18 @@ export function createNotificationSettingsRoute(options: NotificationSettingsRou
 
       return c.json({
         success: true,
-        data: omitFields(updated as unknown as Record<string, unknown>),
+        data: omitFields(updated),
       });
-    } catch {
+    } catch (error) {
+      logger.error("通知設定の更新に失敗しました", {
+        userId,
+        error: error instanceof Error ? { name: error.name, message: error.message } : error,
+      });
       return c.json(
         {
           success: false,
           error: {
-            code: "INTERNAL_ERROR",
+            code: INTERNAL_ERROR_CODE,
             message: "通知設定の更新に失敗しました",
           },
         },

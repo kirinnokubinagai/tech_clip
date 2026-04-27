@@ -80,7 +80,7 @@ describe("validateChangePasswordForm", () => {
       const errors = validateChangePasswordForm(data, t);
 
       // Assert
-      expect(errors.currentPassword).toBe("現在のパスワードを入力してください");
+      expect(errors.currentPassword).toBe("現在のパスワードを入力してください。");
     });
   });
 
@@ -93,7 +93,7 @@ describe("validateChangePasswordForm", () => {
       const errors = validateChangePasswordForm(data, t);
 
       // Assert
-      expect(errors.newPassword).toBe("新しいパスワードを入力してください");
+      expect(errors.newPassword).toBe("新しいパスワードを入力してください。");
     });
 
     it("7文字の場合エラーになること", () => {
@@ -108,7 +108,7 @@ describe("validateChangePasswordForm", () => {
       const errors = validateChangePasswordForm(data, t);
 
       // Assert
-      expect(errors.newPassword).toBe("パスワードは8文字以上で入力してください");
+      expect(errors.newPassword).toBe("パスワードは8文字以上で入力してください。");
     });
 
     it("8文字の場合エラーにならないこと", () => {
@@ -140,7 +140,7 @@ describe("validateChangePasswordForm", () => {
       const errors = validateChangePasswordForm(data, t);
 
       // Assert
-      expect(errors.confirmPassword).toBe("確認用パスワードを入力してください");
+      expect(errors.confirmPassword).toBe("確認用パスワードを入力してください。");
     });
 
     it("新しいパスワードと一致しない場合エラーになること", () => {
@@ -155,7 +155,7 @@ describe("validateChangePasswordForm", () => {
       const errors = validateChangePasswordForm(data, t);
 
       // Assert
-      expect(errors.confirmPassword).toBe("パスワードが一致しません");
+      expect(errors.confirmPassword).toBe("パスワードが一致しません。");
     });
 
     it("新しいパスワードと一致する場合エラーにならないこと", () => {
@@ -204,34 +204,34 @@ describe("ChangePasswordScreen", () => {
 
     it("現在のパスワード入力フィールドが表示されること", async () => {
       // Arrange & Act
-      const { getByPlaceholderText } = await render(<ChangePasswordScreen />);
+      const { getByTestId } = await render(<ChangePasswordScreen />);
 
       // Assert
-      expect(getByPlaceholderText("現在のパスワードを入力")).toBeDefined();
+      expect(getByTestId("change-password-current-input")).toBeDefined();
     });
 
     it("新しいパスワード入力フィールドが表示されること", async () => {
       // Arrange & Act
-      const { getByPlaceholderText } = await render(<ChangePasswordScreen />);
+      const { getByTestId } = await render(<ChangePasswordScreen />);
 
       // Assert
-      expect(getByPlaceholderText("新しいパスワードを入力")).toBeDefined();
+      expect(getByTestId("change-password-new-input")).toBeDefined();
     });
 
     it("確認用パスワード入力フィールドが表示されること", async () => {
       // Arrange & Act
-      const { getByPlaceholderText } = await render(<ChangePasswordScreen />);
+      const { getByTestId } = await render(<ChangePasswordScreen />);
 
       // Assert
-      expect(getByPlaceholderText("新しいパスワードを再入力")).toBeDefined();
+      expect(getByTestId("change-password-confirm-input")).toBeDefined();
     });
 
     it("変更するボタンが表示されること", async () => {
       // Arrange & Act
-      const { getByText } = await render(<ChangePasswordScreen />);
+      const { getByTestId } = await render(<ChangePasswordScreen />);
 
       // Assert
-      expect(getByText("変更する")).toBeDefined();
+      expect(getByTestId("change-password-save-button")).toBeDefined();
     });
   });
 
@@ -260,7 +260,7 @@ describe("ChangePasswordScreen", () => {
 
       // Assert
       await waitFor(() => {
-        expect(getByText("現在のパスワードを入力してください")).toBeDefined();
+        expect(getByText("現在のパスワードを入力してください。")).toBeDefined();
       });
     });
 
@@ -274,7 +274,7 @@ describe("ChangePasswordScreen", () => {
 
       // Assert
       await waitFor(() => {
-        expect(getByText("新しいパスワードを入力してください")).toBeDefined();
+        expect(getByText("新しいパスワードを入力してください。")).toBeDefined();
       });
     });
 
@@ -293,7 +293,7 @@ describe("ChangePasswordScreen", () => {
 
       // Assert
       await waitFor(() => {
-        expect(getByText("パスワードが一致しません")).toBeDefined();
+        expect(getByText("パスワードが一致しません。")).toBeDefined();
       });
     });
 

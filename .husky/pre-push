@@ -25,13 +25,22 @@ fi
 
 cd "${REPO_ROOT}"
 
+# Capture push SHAs for config-only detection after the loop.
+# PUSH_REMOTE_SHA is set to merge-base with origin/main for new-branch pushes.
+PUSH_LOCAL_SHA=""
+PUSH_REMOTE_SHA=""
+
 while read -r _LOCAL_REF LOCAL_SHA _REMOTE_REF REMOTE_SHA; do
   if [ "${LOCAL_SHA}" = "0000000000000000000000000000000000000000" ]; then
     continue
   fi
+  PUSH_LOCAL_SHA="${LOCAL_SHA}"
   if [ "${REMOTE_SHA}" = "0000000000000000000000000000000000000000" ]; then
+    # New branch: use merge-base with origin/main for diff-based change detection.
+    PUSH_REMOTE_SHA="$(git merge-base "${LOCAL_SHA}" "origin/main" 2>/dev/null || true)"
     continue
   fi
+  PUSH_REMOTE_SHA="${REMOTE_SHA}"
   if ! git merge-base --is-ancestor "${REMOTE_SHA}" "${LOCAL_SHA}"; then
     echo "非 fast-forward push は禁止されています。"
     exit 1
@@ -46,58 +55,194 @@ echo "  Executable bits..."
   exit 1
 }
 
-echo "  Lint..."
-pnpm lint || { echo "Lint失敗。修正してからpushしてください。"; exit 1; }
+# Config-only skip: if every changed file is a config/doc path that contains no
+# TypeScript/JavaScript, skip lint / typecheck / audit / test.
+# Covered paths: .claude/** (skills, rules, agents), docs/**, scripts/skills/**,
+# .codex/**, CLAUDE.md, AGENTS.md.
+_SKIP_HEAVY_CHECKS=0
+if [ -n "${PUSH_LOCAL_SHA:-}" ] && [ -n "${PUSH_REMOTE_SHA:-}" ]; then
+  _CHANGED="$(git diff --name-only "${PUSH_REMOTE_SHA}" "${PUSH_LOCAL_SHA}" 2>/dev/null || true)"
+  if [ -n "${_CHANGED}" ]; then
+    _NON_CONFIG="$(echo "${_CHANGED}" | \
+      grep -vE '^(\.claude/|\.husky/|docs/|scripts/skills/|\.codex/)' | \
+      grep -vE '^(CLAUDE\.md|AGENTS\.md)$' || true)"
+    if [ -z "${_NON_CONFIG}" ]; then
+      echo "  設定・ドキュメントのみの変更を検出しました。lint / typecheck / audit / test をスキップします。"
+      _SKIP_HEAVY_CHECKS=1
+    fi
+  fi
+fi
 
-echo "  Typecheck..."
-pnpm typecheck || { echo "Typecheck失敗。修正してからpushしてください。"; exit 1; }
+if [ "${_SKIP_HEAVY_CHECKS}" = "0" ]; then
+  echo "  Lint..."
+  pnpm lint || { echo "Lint失敗。修正してからpushしてください。"; exit 1; }
 
-echo "  Audit..."
-# --ignore-registry-errors: pnpm@10.33.0 の既知バグ (https://github.com/pnpm/pnpm/issues/11265) への暫定対応
-# npm registry の audit エンドポイント廃止に pnpm がまだ追随していないため、
-# registry エラー時は audit を green 扱いにする。pnpm が新 bulk advisory 対応版を
-# リリースしたらこのフラグは削除すること。
-pnpm audit --prod --ignore-registry-errors || { echo "Audit失敗。脆弱性を解消してからpushしてください。"; exit 1; }
+  echo "  Typecheck..."
+  pnpm typecheck || { echo "Typecheck失敗。修正してからpushしてください。"; exit 1; }
 
-echo "  Test..."
-"${REPO_ROOT}/scripts/run-and-fail-on-stderr.sh" pnpm test || {
-  echo "Test失敗。stderr がある場合は内容確認後に TECH_CLIP_ALLOW_TEST_STDERR=1 を付けて再pushしてください。"
-  exit 1
-}
+  echo "  Audit..."
+  # --ignore-registry-errors: pnpm@10.33.0 の既知バグ (https://github.com/pnpm/pnpm/issues/11265) への暫定対応
+  # npm registry の audit エンドポイント廃止に pnpm がまだ追随していないため、
+  # registry エラー時は audit を green 扱いにする。pnpm が新 bulk advisory 対応版を
+  # リリースしたらこのフラグは削除すること。
+  pnpm audit --prod --ignore-registry-errors || { echo "Audit失敗。脆弱性を解消してからpushしてください。"; exit 1; }
+
+  echo "  Test..."
+  "${REPO_ROOT}/scripts/run-and-fail-on-stderr.sh" pnpm test || {
+    echo "Test失敗。stderr がある場合は内容確認後に TECH_CLIP_ALLOW_TEST_STDERR=1 を付けて再pushしてください。"
+    exit 1
+  }
+fi
 
 echo "全チェック通過"
 
-# Maestro smoke test（conditional）
-# emulator が起動していて maestro が使える時だけ実行
-if command -v adb >/dev/null 2>&1 && adb devices 2>/dev/null | grep -q "emulator"; then
-  if command -v maestro >/dev/null 2>&1; then
-    echo "[pre-push] maestro smoke test を実行中..."
-    # 複数 worktree 並列 push 時のポート衝突回避:
-    # worktree パスのハッシュから ANDROID_SERIAL を決定する（起動中エミュレーター一覧からインデックス選択）
-    _WORKTREE_HASH="$(echo "${REPO_ROOT}" | shasum -a 256 | cut -c1-8)"
-    # bash 3.2 互換の配列構築（macOS デフォルト bash は 3.2 のため mapfile 不可）
-    _EMULATORS=()
-    while IFS= read -r _e; do
-      _EMULATORS+=("$_e")
-    done < <(adb devices 2>/dev/null | grep "emulator" | awk '{print $1}')
-    if (( ${#_EMULATORS[@]} == 0 )); then
-      echo "[pre-push] emulator が切断されました。smoke test をスキップ"
-    else
-      _IDX=$(( 16#${_WORKTREE_HASH} % ${#_EMULATORS[@]} ))
-      export ANDROID_SERIAL="${_EMULATORS[${_IDX}]}"
-      if ! timeout 180 maestro test \
-           --include-tags smoke \
-           "${REPO_ROOT}/tests/e2e/maestro/"; then
-        echo ""
-        echo "❌ maestro smoke test 失敗"
-        echo "修正するか、どうしても push したい場合は git push --no-verify"
-        exit 1
-      fi
-      echo "✅ maestro smoke test OK"
-    fi
-  else
-    echo "[pre-push] maestro 未インストール。smoke test をスキップ"
+# Maestro smoke test
+# CI 環境のみスキップ。CI では pr-e2e-android.yml の matrix [shard1, shard2] が並列実行する。
+if [ "${CI:-}" = "true" ] || [ "${GITHUB_ACTIONS:-}" = "true" ]; then
+  echo "[pre-push] CI 環境のため smoke test をスキップ"
+  exit 0
+fi
+
+# 明示的なスキップ (高速 push 用): MAESTRO_PREPUSH=0 git push
+if [ "${MAESTRO_PREPUSH:-1}" = "0" ]; then
+  echo "[pre-push] MAESTRO_PREPUSH=0 のため maestro smoke test をスキップ (CI で全 flow が走ります)"
+  exit 0
+fi
+
+# maestro インストール確認
+if ! command -v maestro >/dev/null 2>&1; then
+  echo "[pre-push] ERROR: maestro がインストールされていません。"
+  echo "  インストール: curl -Ls \"https://get.maestro.mobile.dev\" | bash"
+  echo "  もしくは MAESTRO_PREPUSH=0 git push でスキップ可能"
+  exit 1
+fi
+
+# adb / emulator 確認
+if ! command -v adb >/dev/null 2>&1; then
+  echo "[pre-push] ERROR: adb が見つかりません。Android SDK を確認してください。"
+  exit 1
+fi
+if ! adb devices 2>/dev/null | grep -q "emulator"; then
+  echo "[pre-push] ERROR: Android emulator が起動していません。"
+  echo "  起動例: emulator -avd <avd-name> &"
+  echo "  もしくは MAESTRO_PREPUSH=0 git push でスキップ可能 (CI で走ります)"
+  exit 1
+fi
+
+# Turso が未起動なら自動起動する
+if ! curl -sf -o /dev/null --max-time 3 -X POST \
+     -H "Content-Type: application/json" \
+     -d '{"requests":[]}' \
+     "http://127.0.0.1:8888/v2/pipeline" 2>/dev/null; then
+  echo "[pre-push] Turso dev サーバーが未起動です。自動起動します..."
+  if ! bash "${REPO_ROOT}/scripts/ci/start-turso.sh"; then
+    echo "[pre-push] ERROR: Turso dev サーバーの起動に失敗しました。"
+    echo "  手動起動: turso dev --port 8888 --db-file local.db"
+    exit 1
+  fi
+  echo "[pre-push] Turso dev サーバーが起動しました"
+fi
+
+echo "[pre-push] e2e 環境をリセット中..."
+if ! bash "${REPO_ROOT}/scripts/e2e/reset-e2e-env.sh"; then
+  echo "[pre-push] ERROR: e2e 環境リセットに失敗しました。"
+  exit 1
+fi
+echo "[pre-push] e2e 環境リセット完了"
+
+# 並列度: MAESTRO_SHARDS が指定されればそれを使う。
+# 未指定なら 4 (8 core / 16GB Mac でも安定動作する経験則的デフォルト)
+_TARGET_SHARDS="${MAESTRO_SHARDS:-4}"
+
+# 既存 emulator 数を確認
+_EXISTING_EMU_COUNT=$(adb devices 2>/dev/null | grep -cE '^emulator-[0-9]+\s+device' || echo 0)
+echo "[pre-push] 既存 emulator: ${_EXISTING_EMU_COUNT} 台 (target=${_TARGET_SHARDS})"
+
+# 不足していれば自動起動を試みる (MAESTRO_AUTO_LAUNCH=0 で抑制可能)
+_LAUNCHED_PORTS=()
+if [ "${_EXISTING_EMU_COUNT}" -lt "${_TARGET_SHARDS}" ] && [ "${MAESTRO_AUTO_LAUNCH:-1}" != "0" ]; then
+  echo "[pre-push] emulator が不足しています。${_TARGET_SHARDS} 台になるよう自動起動します..."
+  while IFS= read -r _port; do
+    [ -n "$_port" ] && _LAUNCHED_PORTS+=("$_port")
+  done < <(bash "${REPO_ROOT}/scripts/dev/launch-shard-emulators.sh" "${_TARGET_SHARDS}")
+fi
+
+# 終了時の cleanup: 自動起動した emulator のみ停止 (既存は残す)
+_cleanup_launched_emulators() {
+  for _p in "${_LAUNCHED_PORTS[@]}"; do
+    echo "[pre-push] cleanup: emulator-${_p} を停止" >&2
+    adb -s "emulator-${_p}" emu kill 2>/dev/null || true
+  done
+}
+trap _cleanup_launched_emulators EXIT
+
+# 改めて emulator 数を確認
+_EMULATORS=()
+while IFS= read -r _e; do
+  _EMULATORS+=("$_e")
+done < <(adb devices 2>/dev/null | grep -E '^emulator-[0-9]+\s+device' | awk '{print $1}')
+
+if (( ${#_EMULATORS[@]} == 0 )); then
+  echo "[pre-push] ERROR: emulator リストが空です（adb devices で再確認してください）。"
+  exit 1
+fi
+
+_AVAILABLE_SHARDS="${#_EMULATORS[@]}"
+if [ "$_AVAILABLE_SHARDS" -gt "$_TARGET_SHARDS" ]; then
+  _AVAILABLE_SHARDS="$_TARGET_SHARDS"
+fi
+
+# 対象 flow リスト (.env.yaml と config.yaml は除外)
+_SMOKE_FLOWS=()
+while IFS= read -r _f; do
+  _SMOKE_FLOWS+=("$_f")
+done < <(find "${REPO_ROOT}/tests/e2e/maestro" -maxdepth 1 -name "*.yaml" ! -name ".env.yaml" ! -name "config.yaml" | sort)
+if (( ${#_SMOKE_FLOWS[@]} == 0 )); then
+  echo "[pre-push] ERROR: smoke flow が見つかりません。"
+  exit 1
+fi
+
+# .env.yaml から --env 引数を構築
+_MAESTRO_ENV_ARGS=()
+_ENV_FILE="${REPO_ROOT}/tests/e2e/maestro/.env.yaml"
+if [ -f "$_ENV_FILE" ]; then
+  while IFS= read -r _line; do
+    case "$_line" in
+      ''|'#'*) continue ;;
+    esac
+    _k="${_line%%:*}"
+    _v="${_line#*: }"
+    [ -z "$_k" ] && continue
+    _MAESTRO_ENV_ARGS+=("--env" "${_k}=${_v}")
+  done < "$_ENV_FILE"
+fi
+
+# 並列度に応じた maestro 実行
+if [ "$_AVAILABLE_SHARDS" -ge 2 ]; then
+  echo "[pre-push] maestro --shard-split ${_AVAILABLE_SHARDS} で並列実行 (${#_SMOKE_FLOWS[@]} flow / ${_AVAILABLE_SHARDS} emulator)"
+  if ! timeout 900 maestro test \
+       --shard-split "${_AVAILABLE_SHARDS}" \
+       "${_MAESTRO_ENV_ARGS[@]}" \
+       "${_SMOKE_FLOWS[@]}"; then
+    echo ""
+    echo "❌ maestro test 失敗 (parallel mode)"
+    echo "修正するか、どうしても push したい場合は MAESTRO_PREPUSH=0 git push もしくは git push --no-verify"
+    exit 1
   fi
 else
-  echo "[pre-push] emulator 未起動。maestro smoke test をスキップ"
+  echo "[pre-push] emulator 1 台のみ → 順次実行 (15 分以上かかる可能性あり)"
+  echo "[pre-push] tip: MAESTRO_SHARDS=2 で 2 台目を自動起動して並列化できます"
+  # 単一 emulator に明示的にバインド (worktree 並列 push 時のポート衝突回避)
+  _WORKTREE_HASH="$(echo "${REPO_ROOT}" | shasum -a 256 | cut -c1-8)"
+  _IDX=$(( 16#${_WORKTREE_HASH} % ${#_EMULATORS[@]} ))
+  export ANDROID_SERIAL="${_EMULATORS[${_IDX}]}"
+  if ! timeout 900 maestro test \
+       "${_MAESTRO_ENV_ARGS[@]}" \
+       "${_SMOKE_FLOWS[@]}"; then
+    echo ""
+    echo "❌ maestro test 失敗"
+    echo "修正するか、どうしても push したい場合は MAESTRO_PREPUSH=0 git push もしくは git push --no-verify"
+    exit 1
+  fi
 fi
+echo "✅ maestro test OK"

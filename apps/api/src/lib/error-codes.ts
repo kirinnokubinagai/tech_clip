@@ -39,6 +39,9 @@ export const VALIDATION_ERROR_CODE = "VALIDATION_FAILED";
 /** バリデーションエラーメッセージ */
 export const VALIDATION_ERROR_MESSAGE = "入力内容を確認してください";
 
+/** 無効なリクエストエラーコード */
+export const INVALID_REQUEST_ERROR_CODE = "INVALID_REQUEST";
+
 /** 重複エラーコード */
 export const DUPLICATE_ERROR_CODE = "DUPLICATE";
 
@@ -56,3 +59,9 @@ export const INTERNAL_ERROR_CODE = "INTERNAL_ERROR";
 
 /** 内部エラーメッセージ */
 export const INTERNAL_ERROR_MESSAGE = "サーバーエラーが発生しました";
+
+/** 無効なカーソルエラーコード */
+export const INVALID_CURSOR_ERROR_CODE = "INVALID_CURSOR";
+
+/** レート制限エラーコード */
+export const RATE_LIMIT_EXCEEDED_ERROR_CODE = "RATE_LIMIT_EXCEEDED";

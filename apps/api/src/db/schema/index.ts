@@ -14,6 +14,7 @@ export type { NewNotification, Notification } from "./notifications";
 export { notifications } from "./notifications";
 export type { NewRefreshToken, RefreshToken } from "./refresh-tokens";
 export { refreshTokens } from "./refresh-tokens";
+export { accountsRelations, sessionsRelations, usersRelations } from "./relations";
 export type { NewSession, Session } from "./sessions";
 export { sessions } from "./sessions";
 export type { NewSummary, Summary } from "./summaries";

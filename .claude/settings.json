@@ -44,12 +44,6 @@
             "command": "bash \"$(git rev-parse --show-toplevel 2>/dev/null || echo .)/.claude/hooks/clean-stale-team-members.sh\"",
             "timeout": 30,
             "statusMessage": "Cleaning stale team members..."
-          },
-          {
-            "type": "command",
-            "command": "bash \"$(git rev-parse --show-toplevel 2>/dev/null || echo .)/.claude/hooks/session-start-cron-register.sh\"",
-            "timeout": 10,
-            "statusMessage": "Registering polling cron..."
           }
         ]
       }
@@ -63,6 +57,28 @@
             "command": "bash \"$(git rev-parse --show-toplevel 2>/dev/null || echo .)/.claude/hooks/orchestrator-flow-guard.sh\"",
             "timeout": 10,
             "statusMessage": "Checking orchestrator flow guard..."
+          }
+        ]
+      },
+      {
+        "matcher": "Agent",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"$(git rev-parse --show-toplevel 2>/dev/null || echo .)/.claude/hooks/no-duplicate-agent-spawn.sh\"",
+            "timeout": 5,
+            "statusMessage": "Checking for duplicate agent spawn..."
+          }
+        ]
+      },
+      {
+        "matcher": "AskUserQuestion",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"$(git rev-parse --show-toplevel 2>/dev/null || echo .)/.claude/hooks/agent-askuserquestion-guard.sh\"",
+            "timeout": 5,
+            "statusMessage": "Checking AskUserQuestion permission..."
           }
         ]
       },
@@ -92,6 +108,12 @@
             "command": "bash \"$(git rev-parse --show-toplevel 2>/dev/null || echo .)/.claude/hooks/pre-push-review-guard.sh\"",
             "timeout": 5,
             "statusMessage": "Checking review status..."
+          },
+          {
+            "type": "command",
+            "command": "bash \"$(git rev-parse --show-toplevel 2>/dev/null || echo .)/.claude/hooks/pre-push-e2e-guard.sh\"",
+            "timeout": 10,
+            "statusMessage": "Checking E2E gate..."
           },
           {
             "type": "command",
@@ -231,12 +253,6 @@
             "command": "bash \"$(git rev-parse --show-toplevel 2>/dev/null || echo .)/.claude/hooks/post-push-cleanup.sh\"",
             "timeout": 5,
             "statusMessage": "Cleaning up review marker..."
-          },
-          {
-            "type": "command",
-            "command": "bash \"$(git rev-parse --show-toplevel 2>/dev/null || echo .)/.claude/hooks/post-pr-create-poll.sh\"",
-            "timeout": 15,
-            "statusMessage": "Starting PR review polling..."
           }
         ]
       },
@@ -276,17 +292,11 @@
       "Glob",
       "Agent(coder)",
       "Agent(ui-designer)",
-      "Agent(security-engineer)",
-      "Agent(requirements-analyst)",
+      "Agent(analyst)",
       "Agent(infra-engineer)",
-      "Agent(code-reviewer)",
+      "Agent(reviewer)",
       "Agent(ui-reviewer)",
-      "Agent(security-reviewer)",
-      "Agent(requirements-reviewer)",
       "Agent(infra-reviewer)",
-      "Agent(Explore)",
-      "Agent(Plan)",
-      "Agent(general-purpose)",
       "WebFetch",
       "WebSearch",
       "NotebookEdit",
@@ -306,6 +316,8 @@
       "SendMessage",
       "Edit(.claude/**)",
       "Write(.claude/**)",
+      "Write(.claude/.review-passed)",
+      "Write(**/.claude/.review-passed)",
       "Edit(CLAUDE.md)",
       "Write(CLAUDE.md)"
     ],
@@ -352,7 +364,7 @@
     "commit": "Co-Authored-By: Claude <noreply@anthropic.com>",
     "pr": "🤖 Generated with [Claude Code](https://claude.ai/code)"
   },
-  "model": "opusplan",
+  "model": "claude-opus-4-7",
   "voiceEnabled": true,
   "defaultView": "chat",
   "showThinkingSummaries": true,

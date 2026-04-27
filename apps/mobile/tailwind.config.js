@@ -34,9 +34,6 @@ module.exports = {
           light: "#818cf8",
           dark: "#4f46e5",
         },
-        // ⚠️ この値 (#f59e0b=Amber) は constants.ts の accent (#14b8a6=Teal) と異なる。
-        // TODO(#855): constants.ts と値を合わせたうえで、移行タスク#2 で削除する。
-        accent: "#f59e0b",
         // テキストカラー（ダークテーマ固有）
         text: {
           DEFAULT: "#e2e8f0",

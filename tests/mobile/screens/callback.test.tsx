@@ -31,9 +31,13 @@ jest.mock("@mobile/stores/auth-store", () => ({
 jest.mock("@/lib/secure-store", () => ({
   setAuthToken: jest.fn(),
   setRefreshToken: jest.fn(),
+  getOAuthState: jest.fn(),
+  removeOAuthState: jest.fn(),
 }));
 
 import {
+  getOAuthState as mockGetOAuthState,
+  removeOAuthState as mockRemoveOAuthState,
   setAuthToken as mockSetAuthToken,
   setRefreshToken as mockSetRefreshToken,
 } from "@/lib/secure-store";
@@ -41,13 +45,16 @@ import {
 beforeEach(() => {
   jest.clearAllMocks();
   mockUseLocalSearchParams.mockReturnValue({});
+  (mockGetOAuthState as jest.Mock).mockResolvedValue(null);
+  (mockRemoveOAuthState as jest.Mock).mockResolvedValue(undefined);
 });
 
 describe("AuthCallbackScreen", () => {
   describe("正常系", () => {
     it("tokenがある場合にセキュアストレージへ保存してホーム画面へ遷移できること", async () => {
       // Arrange
-      mockUseLocalSearchParams.mockReturnValue({ token: "access_token_123" });
+      (mockGetOAuthState as jest.Mock).mockResolvedValue("nonce_abc");
+      mockUseLocalSearchParams.mockReturnValue({ token: "access_token_123", state: "nonce_abc" });
       (mockSetAuthToken as jest.Mock).mockResolvedValue(undefined);
       mockCheckSession.mockResolvedValue(undefined);
 
@@ -64,9 +71,11 @@ describe("AuthCallbackScreen", () => {
 
     it("refresh_tokenも含む場合にリフレッシュトークンも保存できること", async () => {
       // Arrange
+      (mockGetOAuthState as jest.Mock).mockResolvedValue("nonce_abc");
       mockUseLocalSearchParams.mockReturnValue({
         token: "access_token_123",
         refresh_token: "refresh_token_456",
+        state: "nonce_abc",
       });
       (mockSetAuthToken as jest.Mock).mockResolvedValue(undefined);
       (mockSetRefreshToken as jest.Mock).mockResolvedValue(undefined);
@@ -82,12 +91,30 @@ describe("AuthCallbackScreen", () => {
         expect(mockReplace).toHaveBeenCalledWith("/(tabs)");
       });
     });
+
+    it("stateが一致する場合にremoveOAuthStateが呼ばれること", async () => {
+      // Arrange
+      (mockGetOAuthState as jest.Mock).mockResolvedValue("nonce_abc");
+      mockUseLocalSearchParams.mockReturnValue({ token: "access_token_123", state: "nonce_abc" });
+      (mockSetAuthToken as jest.Mock).mockResolvedValue(undefined);
+      mockCheckSession.mockResolvedValue(undefined);
+
+      // Act
+      await render(<AuthCallbackScreen />);
+
+      // Assert
+      await waitFor(() => {
+        expect(mockRemoveOAuthState).toHaveBeenCalled();
+        expect(mockReplace).toHaveBeenCalledWith("/(tabs)");
+      });
+    });
   });
 
   describe("ローディング状態", () => {
     it("checkSessionが完了しない間はActivityIndicatorが表示されること", async () => {
       // Arrange
-      mockUseLocalSearchParams.mockReturnValue({ token: "access_token_123" });
+      (mockGetOAuthState as jest.Mock).mockResolvedValue("nonce_abc");
+      mockUseLocalSearchParams.mockReturnValue({ token: "access_token_123", state: "nonce_abc" });
       (mockSetAuthToken as jest.Mock).mockResolvedValue(undefined);
       mockCheckSession.mockReturnValue(new Promise(() => {}));
 
@@ -126,6 +153,50 @@ describe("AuthCallbackScreen", () => {
       expect(mockCheckSession).not.toHaveBeenCalled();
     });
 
+    it("stateパラメータがない場合はエラーになること", async () => {
+      // Arrange
+      (mockGetOAuthState as jest.Mock).mockResolvedValue("nonce_abc");
+      mockUseLocalSearchParams.mockReturnValue({ token: "access_token_123" });
+      (mockSetAuthToken as jest.Mock).mockResolvedValue(undefined);
+      mockCheckSession.mockResolvedValue(undefined);
+
+      // Act
+      const { findByTestId } = await render(<AuthCallbackScreen />);
+
+      // Assert
+      const errorEl = await findByTestId("auth-callback-error");
+      expect(errorEl.props.testID).toBe("auth-callback-error");
+      expect(mockCheckSession).not.toHaveBeenCalled();
+    });
+
+    it("savedStateがnullの場合はエラーになること", async () => {
+      // Arrange
+      (mockGetOAuthState as jest.Mock).mockResolvedValue(null);
+      mockUseLocalSearchParams.mockReturnValue({ token: "access_token_123", state: "nonce_abc" });
+
+      // Act
+      const { findByTestId } = await render(<AuthCallbackScreen />);
+
+      // Assert
+      const errorEl = await findByTestId("auth-callback-error");
+      expect(errorEl.props.testID).toBe("auth-callback-error");
+      expect(mockCheckSession).not.toHaveBeenCalled();
+    });
+
+    it("stateが不一致の場合はエラーになること", async () => {
+      // Arrange
+      (mockGetOAuthState as jest.Mock).mockResolvedValue("nonce_abc");
+      mockUseLocalSearchParams.mockReturnValue({ token: "access_token_123", state: "nonce_WRONG" });
+
+      // Act
+      const { findByTestId } = await render(<AuthCallbackScreen />);
+
+      // Assert
+      const errorEl = await findByTestId("auth-callback-error");
+      expect(errorEl.props.testID).toBe("auth-callback-error");
+      expect(mockCheckSession).not.toHaveBeenCalled();
+    });
+
     it("エラー時にログイン画面に戻るボタンが表示されること", async () => {
       // Arrange
       mockUseLocalSearchParams.mockReturnValue({ error: "access_denied" });
@@ -153,7 +224,8 @@ describe("AuthCallbackScreen", () => {
 
     it("setAuthTokenで例外が発生した場合はエラーメッセージが表示されること", async () => {
       // Arrange
-      mockUseLocalSearchParams.mockReturnValue({ token: "access_token_123" });
+      (mockGetOAuthState as jest.Mock).mockResolvedValue("nonce_abc");
+      mockUseLocalSearchParams.mockReturnValue({ token: "access_token_123", state: "nonce_abc" });
       (mockSetAuthToken as jest.Mock).mockRejectedValue(
         new Error("ストレージへの書き込みに失敗しました"),
       );
@@ -168,7 +240,8 @@ describe("AuthCallbackScreen", () => {
 
     it("checkSessionで例外が発生した場合はエラーメッセージが表示されること", async () => {
       // Arrange
-      mockUseLocalSearchParams.mockReturnValue({ token: "access_token_123" });
+      (mockGetOAuthState as jest.Mock).mockResolvedValue("nonce_abc");
+      mockUseLocalSearchParams.mockReturnValue({ token: "access_token_123", state: "nonce_abc" });
       (mockSetAuthToken as jest.Mock).mockResolvedValue(undefined);
       mockCheckSession.mockRejectedValue(new Error("セッション確認に失敗しました"));
 

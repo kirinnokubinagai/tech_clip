@@ -13,6 +13,7 @@ type InputProps = {
   keyboardType?: TextInputProps["keyboardType"];
   autoCapitalize?: TextInputProps["autoCapitalize"];
   editable?: boolean;
+  testID?: string;
 };
 
 /**
@@ -38,6 +39,7 @@ export function Input({
   keyboardType,
   autoCapitalize = "none",
   editable = true,
+  testID = "input-field",
 }: InputProps) {
   const colors = useColors();
   const borderStyle = error ? "border-error" : "border-border";
@@ -47,7 +49,7 @@ export function Input({
     <View className="gap-1.5">
       {label && <Text className="text-text text-sm font-medium">{label}</Text>}
       <TextInput
-        testID="input-field"
+        testID={testID}
         className={inputStyle}
         placeholder={placeholder}
         placeholderTextColor={colors.textDim}

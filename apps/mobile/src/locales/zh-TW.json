@@ -83,6 +83,8 @@
     "socialSeparator": "或",
     "continueWithGoogle": "透過Google登入",
     "continueWithGithub": "透過GitHub登入",
+    "signUpWithGoogle": "透過Google註冊",
+    "signUpWithGithub": "透過GitHub註冊",
     "socialLoginFailed": "社群登入啟動失敗，請再試一次。",
     "callback": {
       "signingIn": "登入中...",
@@ -90,7 +92,8 @@
       "errorSocialLogin": "社群登入失敗，請再試一次。",
       "errorNoToken": "未找到驗證權杖，請再試一次。",
       "errorSaveToken": "儲存驗證資訊失敗，請再試一次。",
-      "errorCheckSession": "驗證確認失敗，請再試一次。"
+      "errorCheckSession": "驗證確認失敗，請再試一次。",
+      "errorInvalidState": "認證工作階段無效，請重試。"
     },
     "loginToRegister": "註冊",
     "loginToRegisterPrompt": "尚無帳號的用戶",
@@ -104,7 +107,11 @@
       "passwordRequired": "請輸入密碼",
       "nameRequired": "請輸入姓名",
       "passwordMinLength": "請輸入{{min}}個字元以上的密碼"
-    }
+    },
+    "continueWithApple": "使用 Apple 繼續",
+    "signUpWithApple": "使用 Apple 註冊",
+    "nameOptional": "姓名（選填）",
+    "nameOptionalHint": "留空時將從電子郵件地址自動生成"
   },
   "tabs": {
     "home": "首頁",
@@ -163,7 +170,12 @@
     "noMatch": "沒有符合「{{query}}」的文章",
     "backA11yLabel": "返回",
     "backA11yHint": "返回上一個頁面",
-    "generating": "生成中..."
+    "generating": "生成中...",
+    "premiumFeatures": {
+      "unlimitedAi": "無限AI功能",
+      "noAds": "無廣告",
+      "offlineAccess": "離線存取"
+    }
   },
   "search": {
     "placeholder": "搜尋文章...",
@@ -406,5 +418,18 @@
     "error": "讀取分享資料失敗",
     "notFound": "未找到URL",
     "close": "關閉"
+  },
+  "profileSetup": {
+    "title": "設定個人資料",
+    "subtitle": "帳號已建立成功。請設定您的顯示名稱。",
+    "nameLabel": "名稱",
+    "namePlaceholder": "請輸入名稱",
+    "saveButton": "儲存",
+    "skipButton": "跳過",
+    "saveFailed": "儲存個人資料失敗。",
+    "validation": {
+      "nameRequired": "請輸入名稱。",
+      "nameTooLong": "名稱不能超過{{max}}個字元。"
+    }
   }
 }

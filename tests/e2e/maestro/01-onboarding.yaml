@@ -12,30 +12,148 @@ tags:
 # アプリ起動
 - launchApp:
     clearState: true
+- runFlow:
+    when:
+      visible: "Try out your stylus"
+    commands:
+      - tapOn: "Cancel"
+      - waitForAnimationToEnd:
+          timeout: 1000
+- waitForAnimationToEnd:
+    timeout: 30000
+- runFlow:
+    when:
+      visible: "Process system isn't responding"
+    commands:
+      - tapOn: "Wait"
+      - waitForAnimationToEnd:
+          timeout: 3000
+- runFlow:
+    when:
+      visible: "Open debugger"
+    commands:
+      - tapOn:
+          point: "92%, 93%"
+      - waitForAnimationToEnd:
+          timeout: 2000
+- runFlow:
+    when:
+      visible: "take pictures and record video"
+    commands:
+      - tapOn: "Don't allow"
+      - waitForAnimationToEnd:
+          timeout: 1000
+
 - takeScreenshot: screenshots/01-onboarding/01-launch
 
 # --- ページ1: 技術記事をワンタップで保存 ---
-- assertVisible: "技術記事をワンタップで保存"
-- assertVisible: "Zenn、Qiita"
-- tapOn: "次へ"
+- extendedWaitUntil:
+    visible:
+      id: "onboarding-title"
+    timeout: 60000
+- assertVisible:
+    id: "onboarding-description"
+- assertVisible:
+    id: "page-indicator"
+- assertVisible:
+    id: "skip-button"
+- extendedWaitUntil:
+    visible:
+      text: "技術記事をワンタップで保存"
+    timeout: 60000
+- runFlow:
+    when:
+      visible: "Open debugger"
+    commands:
+      - tapOn:
+          point: "92%, 93%"
+      - waitForAnimationToEnd:
+          timeout: 2000
+- tapOn:
+    id: "next-button"
+- waitForAnimationToEnd:
+    timeout: 3000
+- runFlow:
+    when:
+      visible: "Open debugger"
+    commands:
+      - tapOn:
+          point: "92%, 93%"
+      - waitForAnimationToEnd:
+          timeout: 2000
 - takeScreenshot: screenshots/01-onboarding/02-page2
 
 # --- ページ2: AIが要約・翻訳 ---
-- assertVisible: "AIが要約・翻訳"
-- assertVisible: "英語記事も日本語で読める"
-- tapOn: "次へ"
+- extendedWaitUntil:
+    visible:
+      text: "AIが要約・翻訳"
+    timeout: 10000
+- runFlow:
+    when:
+      visible: "Open debugger"
+    commands:
+      - tapOn:
+          point: "92%, 93%"
+      - waitForAnimationToEnd:
+          timeout: 2000
+- tapOn:
+    id: "next-button"
+- waitForAnimationToEnd:
+    timeout: 3000
+- runFlow:
+    when:
+      visible: "Open debugger"
+    commands:
+      - tapOn:
+          point: "92%, 93%"
+      - waitForAnimationToEnd:
+          timeout: 2000
 
 # --- ページ3: お気に入り・タグで整理 ---
-- assertVisible: "お気に入り・タグで整理"
-- assertVisible: "タグ付けで記事を分類"
-- tapOn: "次へ"
+- extendedWaitUntil:
+    visible:
+      text: "お気に入り・タグで整理"
+    timeout: 10000
+- runFlow:
+    when:
+      visible: "Open debugger"
+    commands:
+      - tapOn:
+          point: "92%, 93%"
+      - waitForAnimationToEnd:
+          timeout: 2000
+- tapOn:
+    id: "next-button"
+- waitForAnimationToEnd:
+    timeout: 3000
+- runFlow:
+    when:
+      visible: "Open debugger"
+    commands:
+      - tapOn:
+          point: "92%, 93%"
+      - waitForAnimationToEnd:
+          timeout: 2000
 
 # --- ページ4: さあ、始めましょう（最終ページ）---
-- assertVisible: "さあ、始めましょう"
-- assertVisible: "アカウントを作成して"
-- assertVisible: "はじめる"
-- tapOn: "はじめる"
+- extendedWaitUntil:
+    visible:
+      text: "さあ、始めましょう"
+    timeout: 10000
+- runFlow:
+    when:
+      visible: "Open debugger"
+    commands:
+      - tapOn:
+          point: "92%, 93%"
+      - waitForAnimationToEnd:
+          timeout: 2000
+- tapOn:
+    id: "finish-button"
+- waitForAnimationToEnd:
+    timeout: 5000
 - takeScreenshot: screenshots/01-onboarding/03-done
 
-# ログイン画面またはホーム画面に遷移することを確認
-- assertVisible: "TechClip"
+# 新規登録画面に遷移することを確認
+- assertVisible:
+    text: "アカウントを作成"

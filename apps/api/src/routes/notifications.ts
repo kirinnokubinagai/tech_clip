@@ -7,6 +7,8 @@ import { notifications, users } from "../db/schema";
 import {
   AUTH_ERROR_CODE,
   AUTH_ERROR_MESSAGE,
+  INTERNAL_ERROR_CODE,
+  NOT_FOUND_ERROR_CODE,
   VALIDATION_ERROR_CODE,
   VALIDATION_ERROR_MESSAGE,
 } from "../lib/error-codes";
@@ -17,6 +19,10 @@ import {
   HTTP_UNAUTHORIZED,
   HTTP_UNPROCESSABLE_ENTITY,
 } from "../lib/http-status";
+import { createLogger } from "../lib/logger";
+
+/** 通知ルート用ロガー */
+const logger = createLogger();
 
 /** デフォルトのページサイズ */
 const DEFAULT_LIMIT = 20;
@@ -73,7 +79,7 @@ export function createNotificationsRoute(options: NotificationsRouteOptions) {
   const { db, queryFn } = options;
   const route = new Hono<{ Variables: { user?: Record<string, unknown> } }>();
 
-  route.get("/notifications", async (c) => {
+  route.get("/", async (c) => {
     const user = c.get("user");
     if (!user) {
       return c.json(
@@ -200,12 +206,13 @@ export function createNotificationsRoute(options: NotificationsRouteOptions) {
         },
         HTTP_CREATED,
       );
-    } catch {
+    } catch (error) {
+      logger.warn("プッシュトークンの登録に失敗しました", { error, userId });
       return c.json(
         {
           success: false,
           error: {
-            code: "INTERNAL_ERROR",
+            code: INTERNAL_ERROR_CODE,
             message: "トークンの登録に失敗しました",
           },
         },
@@ -242,7 +249,7 @@ export function createNotificationsRoute(options: NotificationsRouteOptions) {
         {
           success: false,
           error: {
-            code: "NOT_FOUND",
+            code: NOT_FOUND_ERROR_CODE,
             message: "通知が見つかりません",
           },
         },
@@ -261,12 +268,13 @@ export function createNotificationsRoute(options: NotificationsRouteOptions) {
         success: true,
         data: updated,
       });
-    } catch {
+    } catch (error) {
+      logger.warn("通知の既読化に失敗しました", { error, userId, notificationId });
       return c.json(
         {
           success: false,
           error: {
-            code: "INTERNAL_ERROR",
+            code: INTERNAL_ERROR_CODE,
             message: "通知の更新に失敗しました",
           },
         },
@@ -332,12 +340,13 @@ export function createNotificationsRoute(options: NotificationsRouteOptions) {
         success: true,
         data: null,
       });
-    } catch {
+    } catch (error) {
+      logger.warn("通知の一括既読化に失敗しました", { error, userId });
       return c.json(
         {
           success: false,
           error: {
-            code: "INTERNAL_ERROR",
+            code: INTERNAL_ERROR_CODE,
             message: "通知の更新に失敗しました",
           },
         },

@@ -69,6 +69,16 @@ jest.mock("@mobile/hooks/use-articles", () => ({
     mutate: jest.fn(),
     isPending: false,
   }),
+  useCloneArticle: () => ({
+    mutate: jest.fn(),
+    mutateAsync: jest.fn().mockResolvedValue({ success: true }),
+    isPending: false,
+  }),
+  useUpdateArticleContent: () => ({
+    mutate: jest.fn(),
+    mutateAsync: jest.fn().mockResolvedValue({ success: true }),
+    isPending: false,
+  }),
   useRequestSummary: () => ({
     mutate: mockRequestSummaryMutate,
     isPending: false,
@@ -129,7 +139,7 @@ describe("ArticleDetailScreen", () => {
 
       // Assert
       await waitFor(() => {
-        expect(getOfflineArticleById).toHaveBeenCalledWith("article-1");
+        expect(getOfflineArticleById).toHaveBeenCalledWith("article-1", "ja", "ja");
       });
     });
 
@@ -161,7 +171,7 @@ describe("ArticleDetailScreen", () => {
 
       // Assert
       await waitFor(() => {
-        expect(getByText("記事の取得に失敗しました")).not.toBeNull();
+        expect(getByText("記事の取得に失敗しました。")).not.toBeNull();
       });
     });
 
@@ -189,10 +199,10 @@ describe("ArticleDetailScreen", () => {
 
       // Assert
       await waitFor(() => {
-        expect(mockRequestSummaryMutate).toHaveBeenCalledWith({
-          articleId: "article-1",
-          language: "ja",
-        });
+        expect(mockRequestSummaryMutate).toHaveBeenCalledWith(
+          { articleId: "article-1", language: "ja" },
+          expect.objectContaining({ onSuccess: expect.any(Function) }),
+        );
       });
     });
 
@@ -210,10 +220,10 @@ describe("ArticleDetailScreen", () => {
 
       // Assert
       await waitFor(() => {
-        expect(mockRequestSummaryMutate).toHaveBeenCalledWith({
-          articleId: "article-1",
-          language: "en",
-        });
+        expect(mockRequestSummaryMutate).toHaveBeenCalledWith(
+          { articleId: "article-1", language: "en" },
+          expect.objectContaining({ onSuccess: expect.any(Function) }),
+        );
       });
     });
   });
@@ -267,7 +277,7 @@ describe("ArticleDetailScreen", () => {
 
       // Assert
       await waitFor(() => {
-        expect(getByText("5分で読めます")).not.toBeNull();
+        expect(getByText("5分で読めます。")).not.toBeNull();
         expect(getByText("要約")).not.toBeNull();
         expect(getByText("翻訳")).not.toBeNull();
       });

@@ -297,6 +297,16 @@ function createSingleArticleTestAppWithoutAuth() {
   return app;
 }
 
+/**
+ * テスト用 cursor エンコードヘルパー（base64url）
+ */
+function makeTestCursor(createdAt: string, id: string): string {
+  return btoa(JSON.stringify({ createdAt, id }))
+    .replace(/\+/g, "-")
+    .replace(/\//g, "_")
+    .replace(/=/g, "");
+}
+
 describe("GET /api/articles", () => {
   let mockQueryFn: MockQueryFn;
 
@@ -401,7 +411,8 @@ describe("GET /api/articles", () => {
       const app = createGetTestApp(mockQueryFn);
 
       // Act
-      const res = await app.request("/api/articles?cursor=article_020");
+      const validCursor = makeTestCursor("2024-01-20T00:00:00.000Z", "article_020");
+      const res = await app.request(`/api/articles?cursor=${validCursor}`);
 
       // Assert
       expect(res.status).toBe(200);
@@ -410,7 +421,7 @@ describe("GET /api/articles", () => {
       expect(body.meta.hasNext).toBe(false);
     });
 
-    it("nextCursorが最後の記事のIDであること", async () => {
+    it("nextCursorが複合カーソル（createdAt+id）を含むこと", async () => {
       // Arrange
       mockQueryFn.mockResolvedValue(MOCK_ARTICLES.slice(0, 21));
       const app = createGetTestApp(mockQueryFn);
@@ -420,8 +431,13 @@ describe("GET /api/articles", () => {
 
       // Assert
       const body = (await res.json()) as ArticlesResponseBody;
+      expect(body.meta.nextCursor).not.toBeNull();
+      const decoded = JSON.parse(
+        Buffer.from(body.meta.nextCursor as string, "base64url").toString(),
+      ) as { createdAt: string; id: string };
       const lastArticle = body.data[body.data.length - 1];
-      expect(body.meta.nextCursor).toBe(lastArticle.id);
+      expect(decoded.id).toBe(lastArticle.id);
+      expect(decoded.createdAt).toBeDefined();
     });
   });
 
@@ -658,10 +674,11 @@ describe("GET /api/articles", () => {
       const app = createGetTestApp(mockQueryFn);
 
       // Act
-      await app.request("/api/articles?cursor=article_010");
+      const validCursor = makeTestCursor("2024-01-10T00:00:00.000Z", "article_010");
+      await app.request(`/api/articles?cursor=${validCursor}`);
 
       // Assert
-      expect(mockQueryFn).toHaveBeenCalledWith(expect.objectContaining({ cursor: "article_010" }));
+      expect(mockQueryFn).toHaveBeenCalledWith(expect.objectContaining({ cursor: validCursor }));
     });
 
     it("フィルター未指定時はundefinedが渡されること", async () => {
@@ -1069,6 +1086,40 @@ describe("GET /api/articles/:id", () => {
       // Assert
       const body = (await res.json()) as ArticleResponseBody;
       expect(body.data).toHaveProperty("content", "記事本文 1");
+    });
+
+    it("language と targetLanguage を指定すると対応する要約と翻訳を返すこと", async () => {
+      // Arrange
+      const app = createSingleArticleTestApp();
+      mockSelectWhere
+        .mockResolvedValueOnce([MOCK_SINGLE_ARTICLE])
+        .mockResolvedValueOnce([{ summary: "English summary" }])
+        .mockResolvedValueOnce([{ translatedContent: "中文翻訳" }]);
+
+      // Act
+      const res = await app.request("/api/articles/article_001?language=en&targetLanguage=zh-CN");
+
+      // Assert
+      expect(res.status).toBe(HTTP_OK);
+      const body = (await res.json()) as ArticleResponseBody;
+      expect(body.data).toHaveProperty("summary", "English summary");
+      expect(body.data).toHaveProperty("translation", "中文翻訳");
+    });
+  });
+
+  describe("クエリバリデーション", () => {
+    it("不正な targetLanguage を指定すると422が返ること", async () => {
+      // Arrange
+      const app = createSingleArticleTestApp();
+
+      // Act
+      const res = await app.request("/api/articles/article_001?targetLanguage=fr");
+
+      // Assert
+      expect(res.status).toBe(HTTP_UNPROCESSABLE_ENTITY);
+      const body = (await res.json()) as ErrorResponseBody;
+      expect(body.success).toBe(false);
+      expect(body.error.code).toBe("VALIDATION_FAILED");
     });
   });
 

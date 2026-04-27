@@ -1,0 +1,110 @@
+# ログイン state 確保ヘルパー
+# 画面の安定を待ってから onboarding → register → login を適切にナビゲートする
+
+appId: com.techclip.app
+
+env:
+  TEST_EMAIL: ${TEST_EMAIL}
+  TEST_PASSWORD: ${TEST_PASSWORD}
+
+---
+
+# Metro cold-start 待機（アニメーション停止まで最大 60 秒）
+- waitForAnimationToEnd:
+    timeout: 60000
+
+# 既にログイン済みでホームが表示されている場合は何もせず抜ける
+- runFlow:
+    when:
+      visible: "すべて"
+    commands:
+      - waitForAnimationToEnd:
+          timeout: 1000
+
+# いずれかの初期画面が確実に表示されるまで runFlow when: visible で条件分岐
+# 最初に hit する text でループを抜ける
+- runFlow:
+    when:
+      visible: "技術記事をワンタップで保存"
+    commands:
+      - waitForAnimationToEnd:
+          timeout: 1000
+- runFlow:
+    when:
+      visible: "パスワードを忘れた方"
+    commands:
+      - waitForAnimationToEnd:
+          timeout: 1000
+- runFlow:
+    when:
+      visible: "アカウントを作成"
+    commands:
+      - waitForAnimationToEnd:
+          timeout: 1000
+- runFlow:
+    when:
+      visible: "すべて"
+    commands:
+      - waitForAnimationToEnd:
+          timeout: 1000
+
+# onboarding ページ1 検出 → 4 ページ通過 (各ページの text を確認してから次へ)
+- runFlow:
+    when:
+      visible: "技術記事をワンタップで保存"
+    commands:
+      - tapOn:
+          id: "next-button"
+      - extendedWaitUntil:
+          visible:
+            text: "AIが要約・翻訳"
+          timeout: 10000
+      - tapOn:
+          id: "next-button"
+      - extendedWaitUntil:
+          visible:
+            text: "お気に入り・タグで整理"
+          timeout: 10000
+      - tapOn:
+          id: "next-button"
+      - extendedWaitUntil:
+          visible:
+            id: "finish-button"
+          timeout: 10000
+      - tapOn:
+          id: "finish-button"
+      - waitForAnimationToEnd:
+          timeout: 3000
+
+# register 画面 → login リンクをタップ
+- runFlow:
+    when:
+      visible: "アカウントを作成"
+    commands:
+      - tapOn:
+          text: "ログイン"
+      - waitForAnimationToEnd:
+          timeout: 3000
+
+# ログイン画面 → ログイン実行
+- runFlow:
+    when:
+      visible: "パスワードを忘れた方"
+    commands:
+      - tapOn:
+          id: "login-email-input"
+      - inputText: ${TEST_EMAIL}
+      - tapOn:
+          id: "login-password-input"
+      - inputText: ${TEST_PASSWORD}
+      - hideKeyboard
+      - tapOn:
+          id: "login-submit-button"
+      - waitForAnimationToEnd:
+          timeout: 10000
+
+# ホーム画面ロード完了待ち
+- extendedWaitUntil:
+    visible:
+      text: "すべて"
+    timeout: 30000

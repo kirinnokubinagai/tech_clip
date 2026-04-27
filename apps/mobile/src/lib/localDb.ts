@@ -1,6 +1,7 @@
 import type { SQLiteDatabase } from "expo-sqlite";
 import { openDatabaseAsync } from "expo-sqlite";
 
+import type { SummaryLang } from "@/lib/language-code";
 import type { ArticleDetail, ArticleListItem } from "@/types/article";
 
 /** ローカルDBファイル名 */
@@ -14,6 +15,7 @@ let db: SQLiteDatabase | null = null;
  */
 type ArticleRow = {
   id: string;
+  user_id?: string | null;
   title: string;
   author: string | null;
   source: string;
@@ -29,6 +31,10 @@ type ArticleRow = {
   updated_at?: string;
   summary?: string | null;
   translation?: string | null;
+};
+
+type TableInfoRow = {
+  name: string;
 };
 
 /**
@@ -47,6 +53,7 @@ export async function initLocalDb(): Promise<void> {
   await db.execAsync(
     `CREATE TABLE IF NOT EXISTS articles (
       id TEXT PRIMARY KEY,
+      user_id TEXT,
       title TEXT NOT NULL,
       author TEXT,
       source TEXT NOT NULL,
@@ -66,21 +73,28 @@ export async function initLocalDb(): Promise<void> {
 
   await db.execAsync(
     `CREATE TABLE IF NOT EXISTS summaries (
-      article_id TEXT PRIMARY KEY,
+      article_id TEXT NOT NULL,
+      language TEXT NOT NULL,
       content TEXT NOT NULL,
       synced_at TEXT NOT NULL DEFAULT (datetime('now')),
+      PRIMARY KEY (article_id, language),
       FOREIGN KEY (article_id) REFERENCES articles (id) ON DELETE CASCADE
     )`,
   );
 
   await db.execAsync(
     `CREATE TABLE IF NOT EXISTS translations (
-      article_id TEXT PRIMARY KEY,
+      article_id TEXT NOT NULL,
+      target_language TEXT NOT NULL,
       content TEXT NOT NULL,
       synced_at TEXT NOT NULL DEFAULT (datetime('now')),
+      PRIMARY KEY (article_id, target_language),
       FOREIGN KEY (article_id) REFERENCES articles (id) ON DELETE CASCADE
     )`,
   );
+
+  await migrateArticlesAddUserIdColumn(db);
+  await migrateLegacyAiCacheTables(db);
 }
 
 /**
@@ -93,6 +107,64 @@ async function getDb(): Promise<SQLiteDatabase> {
     await initLocalDb();
   }
   return db as SQLiteDatabase;
+}
+
+async function hasColumn(
+  database: SQLiteDatabase,
+  tableName: string,
+  columnName: string,
+): Promise<boolean> {
+  const rows = await database.getAllAsync<TableInfoRow>(`PRAGMA table_info(${tableName})`);
+  return rows.some((row) => row.name === columnName);
+}
+
+async function migrateArticlesAddUserIdColumn(database: SQLiteDatabase): Promise<void> {
+  const hasUserId = await hasColumn(database, "articles", "user_id");
+  if (!hasUserId) {
+    await database.execAsync("ALTER TABLE articles ADD COLUMN user_id TEXT");
+  }
+}
+
+async function migrateLegacyAiCacheTables(database: SQLiteDatabase): Promise<void> {
+  const summariesHaveLanguage = await hasColumn(database, "summaries", "language");
+  if (!summariesHaveLanguage) {
+    await database.execAsync(
+      `CREATE TABLE IF NOT EXISTS summaries_v2 (
+        article_id TEXT NOT NULL,
+        language TEXT NOT NULL,
+        content TEXT NOT NULL,
+        synced_at TEXT NOT NULL DEFAULT (datetime('now')),
+        PRIMARY KEY (article_id, language),
+        FOREIGN KEY (article_id) REFERENCES articles (id) ON DELETE CASCADE
+      );
+      INSERT INTO summaries_v2 (article_id, language, content, synced_at)
+      SELECT article_id, 'ja', content, COALESCE(synced_at, datetime('now')) FROM summaries;
+      DROP TABLE summaries;
+      ALTER TABLE summaries_v2 RENAME TO summaries;`,
+    );
+  }
+
+  const translationsHaveTargetLanguage = await hasColumn(
+    database,
+    "translations",
+    "target_language",
+  );
+  if (!translationsHaveTargetLanguage) {
+    await database.execAsync(
+      `CREATE TABLE IF NOT EXISTS translations_v2 (
+        article_id TEXT NOT NULL,
+        target_language TEXT NOT NULL,
+        content TEXT NOT NULL,
+        synced_at TEXT NOT NULL DEFAULT (datetime('now')),
+        PRIMARY KEY (article_id, target_language),
+        FOREIGN KEY (article_id) REFERENCES articles (id) ON DELETE CASCADE
+      );
+      INSERT INTO translations_v2 (article_id, target_language, content, synced_at)
+      SELECT article_id, 'en', content, COALESCE(synced_at, datetime('now')) FROM translations;
+      DROP TABLE translations;
+      ALTER TABLE translations_v2 RENAME TO translations;`,
+    );
+  }
 }
 
 /**
@@ -114,18 +186,24 @@ export async function getOfflineArticles(): Promise<ArticleListItem[]> {
  * 指定IDのオフライン記事詳細を取得する
  *
  * @param id - 記事ID
+ * @param language - 要約言語
+ * @param targetLanguage - 翻訳言語
  * @returns 記事詳細。存在しない場合はnull
  */
-export async function getOfflineArticleById(id: string): Promise<ArticleDetail | null> {
+export async function getOfflineArticleById(
+  id: string,
+  language: SummaryLang = "ja",
+  targetLanguage: SummaryLang = "en",
+): Promise<ArticleDetail | null> {
   const database = await getDb();
 
   const row = await database.getFirstAsync<ArticleRow>(
     `SELECT a.*, s.content AS summary, t.content AS translation
      FROM articles a
-     LEFT JOIN summaries s ON s.article_id = a.id
-     LEFT JOIN translations t ON t.article_id = a.id
+     LEFT JOIN summaries s ON s.article_id = a.id AND s.language = ?
+     LEFT JOIN translations t ON t.article_id = a.id AND t.target_language = ?
      WHERE a.id = ?`,
-    [id],
+    [language, targetLanguage, id],
   );
 
   if (row === null) {
@@ -147,11 +225,12 @@ export async function upsertArticle(article: ArticleListItem | ArticleDetail): P
 
   await database.runAsync(
     `INSERT OR REPLACE INTO articles
-      (id, title, author, source, published_at, excerpt, thumbnail_url, url,
+      (id, user_id, title, author, source, published_at, excerpt, thumbnail_url, url,
        is_favorite, content, is_read, reading_time_minutes, created_at, updated_at, synced_at)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))`,
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))`,
     [
       article.id,
+      detail.userId ?? null,
       article.title,
       article.author ?? null,
       article.source,
@@ -173,15 +252,20 @@ export async function upsertArticle(article: ArticleListItem | ArticleDetail): P
  * 記事の要約をローカルDBに保存する（存在する場合は上書き）
  *
  * @param articleId - 記事ID
+ * @param language - 要約言語
  * @param summary - 要約テキスト
  */
-export async function upsertSummary(articleId: string, summary: string): Promise<void> {
+export async function upsertSummary(
+  articleId: string,
+  language: SummaryLang,
+  summary: string,
+): Promise<void> {
   const database = await getDb();
 
   await database.runAsync(
-    `INSERT OR REPLACE INTO summaries (article_id, content, synced_at)
-     VALUES (?, ?, datetime('now'))`,
-    [articleId, summary],
+    `INSERT OR REPLACE INTO summaries (article_id, language, content, synced_at)
+     VALUES (?, ?, ?, datetime('now'))`,
+    [articleId, language, summary],
   );
 }
 
@@ -189,15 +273,20 @@ export async function upsertSummary(articleId: string, summary: string): Promise
  * 記事の翻訳をローカルDBに保存する（存在する場合は上書き）
  *
  * @param articleId - 記事ID
+ * @param targetLanguage - 翻訳言語
  * @param translation - 翻訳テキスト
  */
-export async function upsertTranslation(articleId: string, translation: string): Promise<void> {
+export async function upsertTranslation(
+  articleId: string,
+  targetLanguage: SummaryLang,
+  translation: string,
+): Promise<void> {
   const database = await getDb();
 
   await database.runAsync(
-    `INSERT OR REPLACE INTO translations (article_id, content, synced_at)
-     VALUES (?, ?, datetime('now'))`,
-    [articleId, translation],
+    `INSERT OR REPLACE INTO translations (article_id, target_language, content, synced_at)
+     VALUES (?, ?, ?, datetime('now'))`,
+    [articleId, targetLanguage, translation],
   );
 }
 
@@ -267,6 +356,7 @@ function rowToArticleListItem(row: ArticleRow): ArticleListItem {
 function rowToArticleDetail(row: ArticleRow): ArticleDetail {
   return {
     id: row.id,
+    userId: row.user_id ?? "",
     title: row.title,
     author: row.author,
     source: row.source as ArticleDetail["source"],

@@ -57,6 +57,7 @@ const EMPTY_CONTENT_HTML = `
 const mockFetch = vi.fn();
 
 beforeEach(() => {
+  mockFetch.mockReset();
   vi.stubGlobal("fetch", mockFetch);
 });
 
@@ -210,6 +211,101 @@ describe("parseGeneric", () => {
     });
   });
 
+  describe("SSRF ガード", () => {
+    it("0.0.0.0 への fetch は SSRF エラーになること", async () => {
+      // Act & Assert
+      await expect(parseGeneric("http://0.0.0.0/anything")).rejects.toThrow(
+        "内部ネットワークへの fetch は許可されていません",
+      );
+    });
+
+    it("127.0.0.1 への fetch は SSRF エラーになること", async () => {
+      await expect(parseGeneric("http://127.0.0.1/anything")).rejects.toThrow(
+        "内部ネットワークへの fetch は許可されていません",
+      );
+    });
+
+    it("localhost への fetch は SSRF エラーになること", async () => {
+      await expect(parseGeneric("http://localhost/anything")).rejects.toThrow(
+        "内部ネットワークへの fetch は許可されていません",
+      );
+    });
+
+    it("10.x.x.x への fetch は SSRF エラーになること", async () => {
+      await expect(parseGeneric("http://10.1.2.3/anything")).rejects.toThrow(
+        "内部ネットワークへの fetch は許可されていません",
+      );
+    });
+
+    it("192.168.x.x への fetch は SSRF エラーになること", async () => {
+      await expect(parseGeneric("http://192.168.1.1/anything")).rejects.toThrow(
+        "内部ネットワークへの fetch は許可されていません",
+      );
+    });
+
+    it("172.16.x.x への fetch は SSRF エラーになること", async () => {
+      await expect(parseGeneric("http://172.16.0.1/anything")).rejects.toThrow(
+        "内部ネットワークへの fetch は許可されていません",
+      );
+    });
+
+    it("169.254.x.x (link-local) への fetch は SSRF エラーになること", async () => {
+      await expect(parseGeneric("http://169.254.169.254/latest/meta-data/")).rejects.toThrow(
+        "内部ネットワークへの fetch は許可されていません",
+      );
+    });
+
+    it("metadata.google.internal への fetch は SSRF エラーになること", async () => {
+      await expect(
+        parseGeneric("http://metadata.google.internal/computeMetadata/v1/"),
+      ).rejects.toThrow("内部ネットワークへの fetch は許可されていません");
+    });
+
+    it("metadata.azure.com への fetch は SSRF エラーになること", async () => {
+      await expect(parseGeneric("http://metadata.azure.com/metadata/instance")).rejects.toThrow(
+        "内部ネットワークへの fetch は許可されていません",
+      );
+    });
+
+    it("[::1] (IPv6 loopback) への fetch は SSRF エラーになること", async () => {
+      await expect(parseGeneric("http://[::1]/anything")).rejects.toThrow(
+        "内部ネットワークへの fetch は許可されていません",
+      );
+    });
+
+    it("[fe80::1] (IPv6 link-local) への fetch は SSRF エラーになること", async () => {
+      await expect(parseGeneric("http://[fe80::1]/anything")).rejects.toThrow(
+        "内部ネットワークへの fetch は許可されていません",
+      );
+    });
+
+    it("file:// プロトコルは SSRF エラーになること", async () => {
+      await expect(parseGeneric("file:///etc/passwd")).rejects.toThrow(
+        "内部ネットワークへの fetch は許可されていません",
+      );
+    });
+
+    it("ftp:// プロトコルは SSRF エラーになること", async () => {
+      await expect(parseGeneric("ftp://example.com/file")).rejects.toThrow(
+        "内部ネットワークへの fetch は許可されていません",
+      );
+    });
+
+    it("公開アドレス（example.com）は SSRF 判定されないこと", async () => {
+      // Arrange
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        text: () => Promise.resolve(SAMPLE_HTML),
+      });
+
+      // Act
+      const result = await parseGeneric("https://example.com/article");
+
+      // Assert
+      expect(result.title).toBe("テスト記事タイトル");
+    });
+  });
+
   describe("Markdown変換", () => {
     it("変換結果がMarkdown形式であること", async () => {
       // Arrange
@@ -245,5 +341,116 @@ describe("parseGeneric", () => {
       expect(result.content).toContain("**太字**");
       expect(result.content).toContain("_イタリック_");
     });
+  });
+});
+
+describe("SSRF 対策", () => {
+  it("localhost への fetch をブロックすること", async () => {
+    // Act & Assert
+    await expect(parseGeneric("http://localhost/secret")).rejects.toThrow(
+      "内部ネットワークへの fetch は許可されていません",
+    );
+    expect(mockFetch).not.toHaveBeenCalled();
+  });
+
+  it("127.0.0.1 への fetch をブロックすること", async () => {
+    // Act & Assert
+    await expect(parseGeneric("http://127.0.0.1/secret")).rejects.toThrow(
+      "内部ネットワークへの fetch は許可されていません",
+    );
+    expect(mockFetch).not.toHaveBeenCalled();
+  });
+
+  it("10.x.x.x プライベートアドレスへの fetch をブロックすること", async () => {
+    // Act & Assert
+    await expect(parseGeneric("http://10.0.0.1/secret")).rejects.toThrow(
+      "内部ネットワークへの fetch は許可されていません",
+    );
+    expect(mockFetch).not.toHaveBeenCalled();
+  });
+
+  it("192.168.x.x プライベートアドレスへの fetch をブロックすること", async () => {
+    // Act & Assert
+    await expect(parseGeneric("http://192.168.1.1/secret")).rejects.toThrow(
+      "内部ネットワークへの fetch は許可されていません",
+    );
+    expect(mockFetch).not.toHaveBeenCalled();
+  });
+
+  it("metadata.google.internal への fetch をブロックすること", async () => {
+    // Act & Assert
+    await expect(
+      parseGeneric("http://metadata.google.internal/computeMetadata/v1/"),
+    ).rejects.toThrow("内部ネットワークへの fetch は許可されていません");
+    expect(mockFetch).not.toHaveBeenCalled();
+  });
+
+  it("パブリック URL への fetch は許可すること", async () => {
+    // Arrange
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      text: () => Promise.resolve(SAMPLE_HTML),
+    });
+
+    // Act
+    const result = await parseGeneric("https://example.com/article");
+
+    // Assert
+    expect(mockFetch).toHaveBeenCalledOnce();
+    expect(result.source).toBe("example.com");
+  });
+});
+
+describe("SSRF リダイレクト対策", () => {
+  it("302 リダイレクト先がプライベート IP の場合エラーになること", async () => {
+    // Arrange
+    mockFetch.mockResolvedValueOnce({
+      ok: false,
+      status: 302,
+      headers: new Headers({ Location: "http://169.254.169.254/latest/meta-data/" }),
+    });
+
+    // Act & Assert
+    await expect(parseGeneric("https://example.com/redirect")).rejects.toThrow(
+      "プライベート IP へのアクセスは許可されません",
+    );
+  });
+
+  it("リダイレクト回数が上限を超えた場合エラーになること", async () => {
+    // Arrange
+    const redirectResponse = {
+      ok: false,
+      status: 302,
+      headers: new Headers({ Location: "https://example.com/hop" }),
+    };
+    for (let i = 0; i < 6; i++) {
+      mockFetch.mockResolvedValueOnce(redirectResponse);
+    }
+
+    // Act & Assert
+    await expect(parseGeneric("https://example.com/infinite-redirect")).rejects.toThrow(
+      "リダイレクト回数が上限を超えました",
+    );
+  });
+
+  it("正常な 302 リダイレクトはパブリック URL なら follow できること", async () => {
+    // Arrange
+    mockFetch
+      .mockResolvedValueOnce({
+        ok: false,
+        status: 302,
+        headers: new Headers({ Location: "https://example.com/final" }),
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        text: () => Promise.resolve(SAMPLE_HTML),
+      });
+
+    // Act
+    const result = await parseGeneric("https://example.com/redirect");
+
+    // Assert
+    expect(result.title).toBe("テスト記事タイトル");
+    expect(mockFetch).toHaveBeenCalledTimes(2);
   });
 });

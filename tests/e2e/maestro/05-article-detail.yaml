@@ -16,6 +16,32 @@ env:
 # ログイン済み状態でアプリ起動
 - launchApp:
     clearState: false
+- runFlow:
+    when:
+      visible: "Try out your stylus"
+    commands:
+      - tapOn: "Cancel"
+      - waitForAnimationToEnd:
+          timeout: 1000
+- runFlow:
+    when:
+      visible: "Process system isn't responding"
+    commands:
+      - tapOn: "Wait"
+      - waitForAnimationToEnd:
+          timeout: 3000
+- runFlow:
+    when:
+      visible: "Open debugger"
+    commands:
+      - tapOn:
+          point: "92%, 93%"
+      - waitForAnimationToEnd:
+          timeout: 1000
+- runFlow:
+    file: "helpers/login-helper.yaml"
+- waitForAnimationToEnd:
+    timeout: 2000
 
 # --- ホーム画面: 記事一覧表示 ---
 - assertVisible: "すべて"
@@ -28,56 +54,124 @@ env:
 
 # お気に入りフィルター
 - tapOn:
-    accessibilityLabel: "お気に入りのみ表示"
+    text: "お気に入りのみ表示"
 - assertVisible:
-    accessibilityLabel: "お気に入りフィルター解除"
+    text: "お気に入りフィルター解除"
 - tapOn:
-    accessibilityLabel: "お気に入りフィルター解除"
+    text: "お気に入りフィルター解除"
+- assertVisible:
+    text: "すべて"
 
-# 記事カードをタップして詳細へ
+# 記事カードのソースバッジ (source-badge) が表示されていることを確認
+- extendedWaitUntil:
+    visible:
+      id: "source-badge"
+    timeout: 15000
+- assertVisible:
+    id: "source-badge"
+
+# 記事カードのお気に入りボタン (favorite-button) が表示されていることを確認
+- assertVisible:
+    id: "favorite-button"
+
+# お気に入り未登録状態なのでアウトラインアイコンが表示されること
+- scrollUntilVisible:
+    element:
+      id: "favorite-icon-outline"
+    direction: DOWN
+    timeout: 10000
+- assertVisible:
+    id: "favorite-icon-outline"
+
+# お気に入りボタンをタップして登録 → 塗りつぶしアイコンに切り替わること
 - tapOn:
     index: 0
-    type: com.techclip.ArticleCard
+    id: "favorite-button"
+- waitForAnimationToEnd:
+    timeout: 2000
+- assertVisible:
+    id: "favorite-icon-filled"
+
+# お気に入り解除して元に戻す
+- tapOn:
+    index: 0
+    id: "favorite-button"
+- waitForAnimationToEnd:
+    timeout: 2000
+- assertVisible:
+    id: "favorite-icon-outline"
+
+# 記事カードをタップして詳細へ (seed 済み TypeScript 記事を text 指定で確実に選択。
+# 04-article-save が先に走った場合 index:0 は新規 saved 記事になり要約が seed されていないため)
+- tapOn:
+    text: "TypeScript の型システムを深く理解する"
 
 # --- 記事詳細画面 ---
 - assertVisible:
-    accessibilityLabel: "戻る"
+    text: "戻る"
 - takeScreenshot: screenshots/05-article-detail/02-detail
+
+# WebView が表示されていることを確認
+- extendedWaitUntil:
+    visible:
+      id: "article-webview"
+    timeout: 10000
 
 # お気に入り追加
 - tapOn:
-    accessibilityLabel: "お気に入り追加"
+    text: "お気に入り追加"
 - assertVisible:
-    accessibilityLabel: "お気に入り解除"
+    text: "お気に入り解除"
 
 # お気に入り解除
 - tapOn:
-    accessibilityLabel: "お気に入り解除"
+    text: "お気に入り解除"
 - assertVisible:
-    accessibilityLabel: "お気に入り追加"
+    text: "お気に入り追加"
 
-# 要約ボタン
+# 要約ボタン（seed により初回表示時点で要約済み）
 - assertVisible:
-    accessibilityLabel: "要約を生成"
-- tapOn:
-    accessibilityLabel: "要約を生成"
-- waitForAnimationToEnd
+    id: "summary-button"
+# seed により「要約済み」が表示されること
+- assertVisible:
+    text: "要約済み"
+# 要約内容が表示されていること
+- assertVisible:
+    id: "summary-content"
 
-# 翻訳ボタン
+# 翻訳ボタンの存在のみ確認 (seed の translation は user.preferredLanguage と
+# targetLanguage のマッチング次第で表示されないことがあるため、
+# "翻訳済み" 表示と translation-content は検証から外す)
 - assertVisible:
-    accessibilityLabel: "翻訳する"
-- tapOn:
-    accessibilityLabel: "翻訳する"
-- waitForAnimationToEnd
+    id: "translation-button"
 
 # ブラウザで開くボタン確認
 - assertVisible:
-    accessibilityLabel: "ブラウザで開く"
+    text: "ブラウザで開く"
+
+# リーダーモードトグル: 有効化
+- assertVisible:
+    id: "reader-mode-toggle"
+- tapOn:
+    id: "reader-mode-toggle"
+- waitForAnimationToEnd:
+    timeout: 1000
+- assertVisible:
+    text: "オリジナル"
+
+# リーダーモードトグル: 無効化
+- tapOn:
+    id: "reader-mode-toggle"
+- waitForAnimationToEnd:
+    timeout: 1000
+- assertVisible:
+    text: "リーダーモード"
 
 # 戻るボタンでホームへ
 - tapOn:
-    accessibilityLabel: "戻る"
-- assertVisible: "すべて"
+    text: "戻る"
+- assertVisible:
+    text: "すべて"
 
 # --- ソースフィルター: Zenn ---
 - tapOn: "Zenn"
@@ -89,7 +183,5 @@ env:
 
 # プルリフレッシュ
 - swipe:
-    direction: DOWN
-    from:
-      x: 50%
-      y: 40%
+    start: "50%, 40%"
+    end: "50%, 80%"

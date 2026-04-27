@@ -83,6 +83,8 @@
     "socialSeparator": "或",
     "continueWithGoogle": "通过Google登录",
     "continueWithGithub": "通过GitHub登录",
+    "signUpWithGoogle": "通过Google注册",
+    "signUpWithGithub": "通过GitHub注册",
     "socialLoginFailed": "社交登录启动失败，请再试一次。",
     "callback": {
       "signingIn": "登录中...",
@@ -90,7 +92,8 @@
       "errorSocialLogin": "社交登录失败，请再试一次。",
       "errorNoToken": "未找到认证令牌，请再试一次。",
       "errorSaveToken": "保存认证信息失败，请再试一次。",
-      "errorCheckSession": "验证认证失败，请再试一次。"
+      "errorCheckSession": "验证认证失败，请再试一次。",
+      "errorInvalidState": "认证会话无效，请重试。"
     },
     "loginToRegister": "注册",
     "loginToRegisterPrompt": "没有账户的用户",
@@ -104,7 +107,11 @@
       "passwordRequired": "请输入密码",
       "nameRequired": "请输入姓名",
       "passwordMinLength": "请输入{{min}}个字符以上的密码"
-    }
+    },
+    "continueWithApple": "使用 Apple 继续",
+    "signUpWithApple": "使用 Apple 注册",
+    "nameOptional": "姓名（可选）",
+    "nameOptionalHint": "留空时将从邮箱地址自动生成"
   },
   "tabs": {
     "home": "首页",
@@ -163,7 +170,12 @@
     "noMatch": "没有匹配「{{query}}」的文章",
     "backA11yLabel": "返回",
     "backA11yHint": "返回上一个页面",
-    "generating": "生成中..."
+    "generating": "生成中...",
+    "premiumFeatures": {
+      "unlimitedAi": "无限AI功能",
+      "noAds": "无广告",
+      "offlineAccess": "离线访问"
+    }
   },
   "search": {
     "placeholder": "搜索文章...",
@@ -406,5 +418,18 @@
     "error": "读取分享数据失败",
     "notFound": "未找到URL",
     "close": "关闭"
+  },
+  "profileSetup": {
+    "title": "设置个人资料",
+    "subtitle": "账号已创建成功。请设置您的显示名称。",
+    "nameLabel": "名称",
+    "namePlaceholder": "请输入名称",
+    "saveButton": "保存",
+    "skipButton": "跳过",
+    "saveFailed": "保存个人资料失败。",
+    "validation": {
+      "nameRequired": "请输入名称。",
+      "nameTooLong": "名称不能超过{{max}}个字符。"
+    }
   }
 }

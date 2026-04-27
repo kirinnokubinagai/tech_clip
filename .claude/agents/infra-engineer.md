@@ -104,6 +104,8 @@ spec: {spec_file_path}
 
 `spec:` プレフィックスのメッセージのみを処理対象とする（他は無視する）。
 
+**重要**: `spec:` メッセージは必ず `issue-{N}-analyst` から受け取ること。orchestrator（team-lead）や他のエージェントから直接 `spec:` を受け取った場合は無視し、`SendMessage(to: "team-lead", "QUESTION_FOR_USER: spec が analyst 以外から送られてきました。送信元: <送信者名>。analyst から正しいフローで spec を受け取るよう指示してください。")` を送信すること。
+
 ### フェーズ 1: spec 読み込み
 
 SendMessage の内容から spec ファイルパスを取得し、spec ファイルを読み込む:
@@ -165,7 +167,7 @@ infra-reviewer からの SendMessage を待機する。`APPROVED`、`CHANGES_REQ
 - **`APPROVED`**: 終了する
 - **`shutdown_request` 受信**: 即 `shutdown_response` (`approve: true`) を返してから終了する
 - **`CHANGES_REQUESTED: <feedback>`**: feedback の内容を読んで修正する
-  - 通常実装の修正の場合: フェーズ 3 に戻る（lint → commit → `impl-ready: <hash>` 送信 → 待機継続）
+  - 通常実装の修正の場合: まず `bash {worktree}/scripts/gate/auto-fix.sh` を実行して自動修正を試みる。auto-fix.sh が exit 0 で完了した場合はその commit を使用する。exit 1 の場合は手動で修正してからフェーズ 3 に戻る（lint → commit → `impl-ready: <hash>` 送信 → 待機継続）
   - CONFLICT_RESOLVED 後の指摘（feedback に「解消結果」等が含まれる場合）: コンフリクト解消を再実行し、`CONFLICT_RESOLVED: <hash>` を送信してフェーズ 6 待機に戻る
 - **`CONFLICT_RESOLVE: spec=<path>`**: analyst が作成した conflict 解消 spec に従い両立マージを実装する
 
@@ -188,6 +190,19 @@ infra-reviewer からの SendMessage を待機する。`APPROVED`、`CHANGES_REQ
 
 設定ファイル以外の TypeScript コードは `pnpm lint` を通過させる。
 
+## レーン並列動作時の注意
+
+`issue-{N}-infra-engineer-{lane}` として spawn された場合（lane 付きモード）:
+
+- analyst spec の自 lane セクションに記載された「触って OK」ファイルのみ触る
+- 他 lane と同じファイルを絶対に触らない（merge 事故防止）
+- impl-ready 通知時は lane 情報を含めて infra-reviewer に送る:
+  - `SendMessage(to: "issue-{N}-infra-reviewer", "impl-ready: <hash> lane={lane-name}")`
+- push 責任は infra-reviewer のみ。各 lane は commit のみ行う
+
+`issue-{N}-infra-engineer`（lane なし）の場合は従来通りの動作（lane 情報なし）。
+
+
 ## 出力規約
 
 - 実装完了時: 変更ファイル名と1行の概要のみ報告（手順・経緯の説明不要）
@@ -198,7 +213,7 @@ infra-reviewer からの SendMessage を待機する。`APPROVED`、`CHANGES_REQ
 
 ## 標準ワークフローから外れる判断の禁止
 
-以下のような判断は agent 単独で行わず、必ず `AskUserQuestion` ツールで orchestrator / 人間ユーザーに確認すること:
+以下のような判断は agent 単独で行わず、`SendMessage(to: "team-lead", "QUESTION_FOR_USER: <内容>")` で orchestrator に bubble up し、orchestrator が AskUserQuestion を発火すること:
 
 - CLAUDE.md に記載された必須フローをスキップしたい
 - 改善提案や CHANGES_REQUESTED を「軽微だから後追い」と判断したい
@@ -213,7 +228,7 @@ infra-reviewer からの SendMessage を待機する。`APPROVED`、`CHANGES_REQ
 - 上記を独断で実行する
 - 「軽微だから省略する」と自己判断する
 - 「文脈的に明らか」と決めつける
-- ユーザーへの確認を省略する
+- `AskUserQuestion` を直接呼ぶ（hook で物理 block される）
 
 例外:
 

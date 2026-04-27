@@ -16,18 +16,45 @@ env:
 # ログイン済み状態でアプリ起動
 - launchApp:
     clearState: false
+- runFlow:
+    when:
+      visible: "Try out your stylus"
+    commands:
+      - tapOn: "Cancel"
+      - waitForAnimationToEnd:
+          timeout: 1000
+- runFlow:
+    when:
+      visible: "Process system isn't responding"
+    commands:
+      - tapOn: "Wait"
+      - waitForAnimationToEnd:
+          timeout: 3000
+- runFlow:
+    when:
+      visible: "Open debugger"
+    commands:
+      - tapOn:
+          point: "92%, 93%"
+      - waitForAnimationToEnd:
+          timeout: 1000
+- runFlow:
+    file: "helpers/login-helper.yaml"
+- waitForAnimationToEnd:
+    timeout: 2000
 
 # 検索タブへ移動
 - tapOn:
     text: "検索"
 
 # --- 検索画面 ---
-- assertVisible: "検索"
+- assertVisible:
+    text: "検索"
 - takeScreenshot: screenshots/08-search/01-search-screen
 
 # 検索フィールドをタップ
 - tapOn:
-    text: "記事を検索"
+    id: "search-input"
 
 # キーワードを入力
 - inputText: "TypeScript"
@@ -37,24 +64,27 @@ env:
 - assertVisible: "TypeScript"
 
 # --- 検索結果をクリア ---
-- clearText
+- eraseText
 - waitForAnimationToEnd
 
 # 別キーワードで検索
 - inputText: "React"
 - waitForAnimationToEnd
 
-# 検索結果の記事をタップ
+# 検索結果の記事をタップ（結果リストの最初のカード）
 - tapOn:
+    id: "article-card"
     index: 0
-    text: "React"
 
 # 記事詳細画面に遷移することを確認
-- assertVisible:
-    accessibilityLabel: "戻る"
+- extendedWaitUntil:
+    visible:
+      text: "戻る"
+    timeout: 10000
 
 # 戻る
 - tapOn:
-    accessibilityLabel: "戻る"
-- assertVisible: "検索"
+    text: "戻る"
+- assertVisible:
+    text: "検索"
 - takeScreenshot: screenshots/08-search/02-results

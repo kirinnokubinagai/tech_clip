@@ -21,7 +21,18 @@ if [ -z "$ROOT" ]; then
   exit 0
 fi
 
-MARKER="${ROOT}/.claude/.review-passed"
-rm -f "$MARKER"
+# review marker を必ず削除（次回 push 時に再レビューを強制）
+rm -f "${ROOT}/.claude/.review-passed"
+
+# e2e marker は SHA が remote と一致していれば削除する。
+# 不一致 (push できなかった等) の場合は marker を残してデバッグ可能にする。
+E2E_MARKER="${ROOT}/.claude/.e2e-passed"
+if [ -f "$E2E_MARKER" ]; then
+  CURRENT_SHA=$(git rev-parse HEAD 2>/dev/null || echo "")
+  MARKER_SHA=$(tr -d '[:space:]' < "$E2E_MARKER" 2>/dev/null || echo "")
+  if [ -n "$CURRENT_SHA" ] && [ "$CURRENT_SHA" = "$MARKER_SHA" ]; then
+    rm -f "$E2E_MARKER"
+  fi
+fi
 
 exit 0

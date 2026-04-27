@@ -1,11 +1,13 @@
-import { and, desc, eq, lt, sql } from "drizzle-orm";
+import { and, desc, eq, lt, or, type SQL, sql } from "drizzle-orm";
 import { Hono } from "hono";
 
 import type { Auth } from "../auth";
 import type { Database } from "../db";
 import { articles, users } from "../db/schema";
+import type { User } from "../db/schema/users";
 import { resolveGemmaModelTag } from "../lib/ai-model";
 import { toRecordArray } from "../lib/db-cast";
+import { resolveUserFromRequest } from "../lib/resolve-user";
 import { createAiLimitMiddleware } from "../middleware/ai-limit";
 import {
   createKvStore,
@@ -15,10 +17,12 @@ import {
 import { createAiRoute } from "../routes/ai";
 import { createArticlesRoute } from "../routes/articles";
 import { createFavoriteRoute } from "../routes/favorite";
+import { createFeedRoute } from "../routes/feed";
 import { createPublicArticlesRoute } from "../routes/public-articles";
 import { buildFtsMatchExpression, createSearchRoute } from "../routes/search";
 import { createSummaryRoute } from "../routes/summary";
-import { parseArticle } from "../services/article-parser";
+import { fetchArticleMetadata } from "../services/metadata-fetcher";
+import { decodeCursor } from "../services/parsers/_shared";
 import { summarizeArticle } from "../services/summary";
 import { translateArticle } from "../services/translator";
 import type { Bindings } from "../types";
@@ -35,13 +39,20 @@ export async function handlePublicArticles(db: Database, request: Request): Prom
     queryFn: async (params) => {
       const conditions = [eq(articles.userId, params.userId), eq(articles.isPublic, true)];
       if (params.cursor) {
-        conditions.push(lt(articles.id, params.cursor));
+        const cur = decodeCursor(params.cursor);
+        const cursorDate = new Date(cur.createdAt);
+        conditions.push(
+          or(
+            lt(articles.createdAt, cursorDate),
+            and(sql`${articles.createdAt} = ${cursorDate}`, lt(articles.id, cur.id)),
+          ) as SQL,
+        );
       }
       const results = await db
         .select()
         .from(articles)
         .where(and(...conditions))
-        .orderBy(desc(articles.createdAt))
+        .orderBy(desc(articles.createdAt), desc(articles.id))
         .limit(params.limit);
       return toRecordArray(results);
     },
@@ -74,14 +85,21 @@ export async function handleArticles(
 ): Promise<Response> {
   const articlesRoute = createArticlesRoute({
     db,
-    parseArticleFn: parseArticle,
+    parseArticleFn: fetchArticleMetadata,
     queryFn: async (params) => {
       const conditions = [eq(articles.userId, params.userId)];
       if (params.cursor) {
-        conditions.push(lt(articles.id, params.cursor));
+        const cur = decodeCursor(params.cursor);
+        const cursorDate = new Date(cur.createdAt);
+        conditions.push(
+          or(
+            lt(articles.createdAt, cursorDate),
+            and(sql`${articles.createdAt} = ${cursorDate}`, lt(articles.id, cur.id)),
+          ) as SQL,
+        );
       }
       if (params.source !== undefined) {
-        conditions.push(eq(articles.source, params.source as string));
+        conditions.push(eq(articles.source, params.source));
       }
       if (params.isFavorite !== undefined) {
         conditions.push(eq(articles.isFavorite, params.isFavorite));
@@ -93,7 +111,7 @@ export async function handleArticles(
         .select()
         .from(articles)
         .where(and(...conditions))
-        .orderBy(desc(articles.createdAt))
+        .orderBy(desc(articles.createdAt), desc(articles.id))
         .limit(params.limit);
       return toRecordArray(results);
     },
@@ -119,6 +137,8 @@ export async function handleArticles(
 
   const favoriteRoute = createFavoriteRoute({ db });
 
+  const feedRoute = createFeedRoute({ db });
+
   const searchRoute = createSearchRoute({
     searchQueryFn: async (params) => {
       const matchExpr = buildFtsMatchExpression(params.query);
@@ -143,12 +163,12 @@ export async function handleArticles(
   });
 
   const kvStore = createKvStore(env.RATE_LIMIT);
-  const subApp = new Hono<{ Variables: { user?: Record<string, unknown> } }>();
+  const subApp = new Hono<{ Variables: { user?: User } }>();
 
   subApp.use("*", async (ctx, next) => {
-    const result = await auth.api.getSession({ headers: ctx.req.raw.headers });
-    if (result) {
-      ctx.set("user", result.user);
+    const user = await resolveUserFromRequest(db, auth, ctx.req.raw.headers);
+    if (user) {
+      ctx.set("user", user);
     }
     await next();
   });
@@ -169,11 +189,14 @@ export async function handleArticles(
   );
   subApp.use("/api/articles/:id/translate", createAiLimitMiddleware(db));
 
+  subApp.route("/api", feedRoute);
+  // searchRoute は articlesRoute (:id パス) より先にマウント
+  // （/api/articles/search が /api/articles/:id にマッチしてしまう競合回避）
+  subApp.route("/api/articles", searchRoute);
   subApp.route("/api/articles", articlesRoute);
   subApp.route("/api", summaryRoute);
   subApp.route("/api/articles", aiRoute);
   subApp.route("/api/articles", favoriteRoute);
-  subApp.route("/api/articles", searchRoute);
 
   return subApp.fetch(request);
 }

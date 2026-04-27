@@ -213,7 +213,7 @@ describe("LoginScreen", () => {
     await fireEvent.press(getByTestId("login-submit-button"));
 
     // Assert
-    expect(await findByLabelText("メールアドレスを入力してください")).toBeDefined();
+    expect(await findByLabelText("メールアドレスを入力してください。")).toBeDefined();
   });
 
   it("メールアドレス形式が不正な場合にバリデーションエラーを表示すること", async () => {
@@ -226,7 +226,7 @@ describe("LoginScreen", () => {
     await fireEvent.press(getByTestId("login-submit-button"));
 
     // Assert
-    expect(await findByLabelText("メールアドレスの形式が正しくありません")).toBeDefined();
+    expect(await findByLabelText("メールアドレスの形式が正しくありません。")).toBeDefined();
   });
 
   it("パスワードが短い場合にバリデーションエラーを表示すること", async () => {
@@ -239,7 +239,7 @@ describe("LoginScreen", () => {
     await fireEvent.press(getByTestId("login-submit-button"));
 
     // Assert
-    expect(await findByLabelText("パスワードは8文字以上で入力してください")).toBeDefined();
+    expect(await findByLabelText("パスワードは8文字以上で入力してください。")).toBeDefined();
   });
 
   it("メールログイン成功時に認証ストアへ委譲すること", async () => {

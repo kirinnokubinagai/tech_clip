@@ -3,6 +3,7 @@ import * as TaskManager from "expo-task-manager";
 import type { AppStateStatus, NativeEventSubscription } from "react-native";
 import { AppState } from "react-native";
 
+import { logger } from "./logger";
 import { syncAllForOffline } from "./syncManager";
 
 /**
@@ -112,10 +113,13 @@ export function createAppStateHandler(config: BackgroundSyncConfig): AppStateCha
     if (!isSyncDue(state.lastSyncedAt, config.intervalMs)) {
       return;
     }
-    state.lastSyncedAt = Date.now();
-    syncAllForOffline().catch(() => {
-      /* バックグラウンド同期エラーは無視（次回復帰時に再試行） */
-    });
+    syncAllForOffline()
+      .then(() => {
+        state.lastSyncedAt = Date.now();
+      })
+      .catch((error: unknown) => {
+        logger.warn("バックグラウンド同期に失敗しました", { error });
+      });
   };
 }
 

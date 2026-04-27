@@ -18,12 +18,17 @@ if [ ${#TASKS[@]} -eq 0 ]; then
 fi
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+REPO_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
+# shellcheck source=./lib/nix.sh
+source "${SCRIPT_DIR}/lib/nix.sh"
+ensure_nix_shell "${REPO_ROOT}" "$@"
+sanitize_nix_tool_path
 
 for task in "${TASKS[@]}"; do
   echo "==> uncached: turbo run ${task} --force --no-cache"
   if [ "${task}" = "test" ]; then
-    "${SCRIPT_DIR}/run-and-fail-on-stderr.sh" pnpm turbo run "${task}" --force --no-cache
+    "${SCRIPT_DIR}/run-and-fail-on-stderr.sh" turbo run "${task}" --force --no-cache
   else
-    pnpm turbo run "${task}" --force --no-cache
+    turbo run "${task}" --force --no-cache
   fi
 done

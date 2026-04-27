@@ -1,7 +1,7 @@
 import TurndownService from "turndown";
 
 import type { ParsedArticle } from "../../types/article";
-import { calculateReadingTime, TECHCLIP_USER_AGENT } from "./_shared";
+import { calculateReadingTime, htmlFragmentToMarkdown, TECHCLIP_USER_AGENT } from "./_shared";
 
 /** Zenn記事APIのベースURL */
 const ZENN_API_BASE_URL = "https://zenn.dev/api/articles";
@@ -113,7 +113,7 @@ export async function parseZenn(url: string): Promise<ParsedArticle> {
     headingStyle: "atx",
     codeBlockStyle: "fenced",
   });
-  const markdown = turndown.turndown(article.body_html);
+  const markdown = htmlFragmentToMarkdown(article.body_html, turndown);
 
   const plainText = stripHtmlTags(article.body_html);
 

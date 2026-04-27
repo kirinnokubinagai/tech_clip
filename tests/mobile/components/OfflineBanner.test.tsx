@@ -24,7 +24,7 @@ describe("OfflineBanner", () => {
       const { getByLabelText } = await render(<OfflineBanner />);
 
       // Assert
-      expect(getByLabelText("オフライン状態です")).toBeDefined();
+      expect(getByLabelText("オフライン状態です。")).toBeDefined();
     });
 
     it("オフライン時にオフラインメッセージが表示されること", async () => {
@@ -38,7 +38,7 @@ describe("OfflineBanner", () => {
       const { getByLabelText } = await render(<OfflineBanner />);
 
       // Assert
-      expect(getByLabelText("オフライン状態です")).toBeDefined();
+      expect(getByLabelText("オフライン状態です。")).toBeDefined();
     });
   });
 
@@ -54,7 +54,7 @@ describe("OfflineBanner", () => {
       const { queryByLabelText } = await render(<OfflineBanner />);
 
       // Assert
-      expect(queryByLabelText("オフライン状態です")).toBeNull();
+      expect(queryByLabelText("オフライン状態です。")).toBeNull();
     });
   });
 });

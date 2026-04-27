@@ -143,7 +143,7 @@ export async function registerPushTokenOnly(): Promise<void> {
         name: NOTIFICATION_CHANNEL_ID,
         importance: Notifications.AndroidImportance.MAX,
         vibrationPattern: [0, 250, 250, 250],
-        lightColor: LIGHT_COLORS.accent,
+        lightColor: LIGHT_COLORS.primary,
       });
     }
 
