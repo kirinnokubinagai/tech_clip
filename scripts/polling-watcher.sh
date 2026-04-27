@@ -62,10 +62,9 @@ fi
 # state ファイル読み込み
 PUSH_SHA=$(jq -r '.push_sha // ""' "$STATE_FILE" 2>/dev/null || echo "")
 ISSUE_NUMBER=$(jq -r '.issue_number // ""' "$STATE_FILE" 2>/dev/null || echo "")
-AGENT_NAME=$(jq -r '.agent_name // ""' "$STATE_FILE" 2>/dev/null || echo "")
 STARTED_AT=$(jq -r '.started_at // ""' "$STATE_FILE" 2>/dev/null || echo "")
 
-if [ -z "$PUSH_SHA" ] || [ -z "$AGENT_NAME" ]; then
+if [ -z "$PUSH_SHA" ]; then
   echo "VERDICT: error invalid_state_file PR #${PR_NUMBER}"
   exit 0
 fi
@@ -117,13 +116,20 @@ while :; do
     exit 0
   fi
 
-  # 2) mergeStateStatus チェック: DIRTY = conflict with main
+  # 2) mergeStateStatus チェック: DIRTY = conflict, BLOCKED = required check 失敗
   MERGE_STATE=$(gh pr view "$PR_NUMBER" --json mergeStateStatus --jq '.mergeStateStatus' 2>/dev/null || echo "")
   if [ "$MERGE_STATE" = "DIRTY" ]; then
     echo "CONFLICT: PR #$PR_NUMBER conflict with main" >&2
     echo "CONFLICT: issue-${ISSUE_NUMBER} PR #$PR_NUMBER mergeState=DIRTY at=$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> "$LOG_FILE"
     # state は残す（conflict 解消後 reviewer が再呼び出し）
     echo "VERDICT: conflict PR #${PR_NUMBER}"
+    exit 0
+  fi
+  if [ "$MERGE_STATE" = "BLOCKED" ]; then
+    echo "BLOCKED: PR #$PR_NUMBER required check failed" >&2
+    echo "BLOCKED: issue-${ISSUE_NUMBER} PR #$PR_NUMBER mergeState=BLOCKED at=$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> "$LOG_FILE"
+    rm -f "$STATE_FILE"
+    echo "VERDICT: request_changes PR #${PR_NUMBER}"
     exit 0
   fi
 

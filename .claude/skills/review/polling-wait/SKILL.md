@@ -24,24 +24,21 @@ push 完了後に polling state ファイルを作成し、`polling-watcher` を
 WORKTREE={worktree} ISSUE_NUMBER={issue_number} PR_NUMBER={PR_NUMBER} AGENT_NAME="issue-{issue_number}-reviewer" bash scripts/skills/polling-state-create.sh
 ```
 
-### 2. polling-watcher を同期呼び出し（active polling ループ）
+### 2. polling-watcher を同期呼び出し（agent-side ループ）
+
+**重要**: Bash ツールには 10 分のタイムアウトがある。`polling-watcher.sh` は内部で最大 9 分間ループするため、
+bash 側に `while :;` ループを置くと `still_pending` が返るたびに 9 分消費し合計 10 分を超えてしまう。
+**agent 自身がループを制御する**こと（bash コマンドを 1 回呼び出し → 結果に応じて次のアクションを決める）。
+
+各 Bash ツール呼び出しには `timeout: 600000`（10 分）を指定すること。
 
 ```bash
-while :; do
-  OUTPUT=$(bash scripts/polling-watcher.sh "{PR_NUMBER}" "{worktree}")
-  VERDICT_LINE=$(echo "$OUTPUT" | grep -E '^VERDICT: ' | tail -1)
-  case "$VERDICT_LINE" in
-    "VERDICT: approve "*)            break ;;  # ステップ 3 へ
-    "VERDICT: request_changes "*)    break ;;  # ステップ 4 へ
-    "VERDICT: external_merged "*)    break ;;  # フェーズ 7 へ
-    "VERDICT: closed "*)             break ;;  # CLOSED_WITHOUT_MERGE 通知
-    "VERDICT: conflict "*)           break ;;  # ステップ 6 へ
-    "VERDICT: timeout "*)            break ;;  # ステップ 5 へ
-    "VERDICT: still_pending "*)      continue ;;  # 再呼び出し
-    *)                               break ;;  # error — ステップ 5 として扱う
-  esac
-done
+OUTPUT=$(bash scripts/polling-watcher.sh "{PR_NUMBER}" "{worktree}")
+VERDICT_LINE=$(echo "$OUTPUT" | grep -E '^VERDICT: ' | tail -1)
 ```
+
+上記を **1 回** 実行し、`VERDICT_LINE` の値に応じて以下のアクションを取る。
+`still_pending` が返った場合は agent が **再度 bash コマンドを呼び出す**（bash 内 while ループは使わない）。
 
 | VERDICT | アクション |
 |---|---|
@@ -51,7 +48,7 @@ done
 | `VERDICT: closed PR #N` | → `{impl_agent_name}` に `CLOSED_WITHOUT_MERGE` 通知 → フェーズ 0 |
 | `VERDICT: timeout PR #N elapsed=Xs` | → ステップ 5 へ |
 | `VERDICT: conflict PR #N` | → ステップ 6 へ |
-| `VERDICT: still_pending PR #N` | → 再呼び出し（ループ継続） |
+| `VERDICT: still_pending PR #N` | → bash コマンドを再度呼び出す（agent-side ループ継続） |
 | `VERDICT: error ...` | → ステップ 5 として扱い orchestrator に報告 |
 
 **冪等性・再開について:**

@@ -79,11 +79,13 @@ evaluate_verdict() {
     return 0
   fi
 
-  # CI run 自体が failure / timed_out の場合は条件2/3 を見ずに即 request_changes
-  if [ "$RUN_CONCLUSION" = "failure" ] || [ "$RUN_CONCLUSION" = "timed_out" ]; then
-    echo "request_changes"
-    return 0
-  fi
+  # CI run 自体が失敗系の場合は条件2/3 を見ずに即 request_changes
+  case "$RUN_CONCLUSION" in
+    failure|timed_out|startup_failure|action_required)
+      echo "request_changes"
+      return 0
+      ;;
+  esac
 
   if [ -z "$RUN_ID" ]; then
     echo "pending"
