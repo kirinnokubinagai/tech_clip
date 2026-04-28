@@ -112,7 +112,7 @@ describe("buildFtsMatchExpression", () => {
     const result = buildFtsMatchExpression(query);
 
     // Assert
-    expect(result).toBe('"React"*');
+    expect(result).toBe('"React"');
   });
 
   it("複数語をANDで連結したFTS5 MATCH式に変換できること", () => {
@@ -123,7 +123,7 @@ describe("buildFtsMatchExpression", () => {
     const result = buildFtsMatchExpression(query);
 
     // Assert
-    expect(result).toBe('"React"* AND "hooks"*');
+    expect(result).toBe('"React" AND "hooks"');
   });
 
   it("ダブルクォートを含む場合二重クォートでエスケープされること", () => {
@@ -134,7 +134,7 @@ describe("buildFtsMatchExpression", () => {
     const result = buildFtsMatchExpression(query);
 
     // Assert
-    expect(result).toBe('"foo""bar"*');
+    expect(result).toBe('"foo""bar"');
   });
 
   it("FTS5記号（ハイフン）を含む場合ダブルクォートで無効化されること", () => {
@@ -145,7 +145,7 @@ describe("buildFtsMatchExpression", () => {
     const result = buildFtsMatchExpression(query);
 
     // Assert
-    expect(result).toBe('"foo-bar"*');
+    expect(result).toBe('"foo-bar"');
   });
 
   it("FTS5記号（コロン）を含む場合ダブルクォートで無効化されること", () => {
@@ -156,7 +156,7 @@ describe("buildFtsMatchExpression", () => {
     const result = buildFtsMatchExpression(query);
 
     // Assert
-    expect(result).toBe('"foo:bar"*');
+    expect(result).toBe('"foo:bar"');
   });
 
   it("FTS5記号（アスタリスク）を含む場合ダブルクォートで無効化されること", () => {
@@ -167,7 +167,7 @@ describe("buildFtsMatchExpression", () => {
     const result = buildFtsMatchExpression(query);
 
     // Assert
-    expect(result).toBe('"foo*bar"*');
+    expect(result).toBe('"foo*bar"');
   });
 
   it("連続空白はトークンとして無視されること", () => {
@@ -178,7 +178,7 @@ describe("buildFtsMatchExpression", () => {
     const result = buildFtsMatchExpression(query);
 
     // Assert
-    expect(result).toBe('"React"* AND "hooks"*');
+    expect(result).toBe('"React" AND "hooks"');
   });
 
   it("前後の空白はトリムされること", () => {
@@ -189,7 +189,7 @@ describe("buildFtsMatchExpression", () => {
     const result = buildFtsMatchExpression(query);
 
     // Assert
-    expect(result).toBe('"TypeScript"*');
+    expect(result).toBe('"TypeScript"');
   });
 
   it("空文字列の場合nullを返すこと", () => {
@@ -212,6 +212,28 @@ describe("buildFtsMatchExpression", () => {
 
     // Assert
     expect(result).toBeNull();
+  });
+
+  it("3文字未満のトークンのみの場合nullを返すこと", () => {
+    // Arrange: trigram は最低3文字必要なため2文字以下は除外
+    const query = "AI Go";
+
+    // Act
+    const result = buildFtsMatchExpression(query);
+
+    // Assert
+    expect(result).toBeNull();
+  });
+
+  it("3文字未満のトークンは除外して3文字以上のトークンのみ含むこと", () => {
+    // Arrange: "Go"(2文字)は除外、"React"(5文字)は含む
+    const query = "Go React";
+
+    // Act
+    const result = buildFtsMatchExpression(query);
+
+    // Assert
+    expect(result).toBe('"React"');
   });
 });
 

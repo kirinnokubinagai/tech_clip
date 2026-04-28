@@ -257,25 +257,67 @@ describe("FTS5 全文検索 統合テスト", () => {
     });
   });
 
-  describe("部分文字列検索の動作", () => {
-    it("LIKE検索でヒットしていた部分文字列（単語境界なし）がFTSではヒットしないこと", async () => {
+  describe("trigram部分一致検索の動作", () => {
+    it("trigramにより英語の部分文字列でヒットすること", async () => {
       // Arrange
-      const articleId = "article_fts_boundary_01";
+      const articleId = "article_fts_trigram_en_01";
       await db.insert(articles).values({
         ...ARTICLE_BASE,
         id: articleId,
         userId: TEST_USER_1.id,
-        url: "https://example.com/boundary-test",
+        url: "https://example.com/trigram-en-test",
         title: "React Framework",
         content: "Reactの仕組みを解説",
         excerpt: "React解説",
       });
 
-      // Act: "eac" は "React" の部分文字列だが単語ではない
+      // Act: "eac" は "React" の部分文字列（3文字）— trigram でヒットする
       const matchExpr = buildFtsMatchExpression("eac");
       const results = await searchArticlesByFts(db, TEST_USER_1.id, matchExpr);
 
-      // Assert: FTSでは単語境界でトークン化されるため "eac" はヒットしない
+      // Assert: trigram では3文字以上の部分文字列でヒットする
+      expect(results.some((r) => r.id === articleId)).toBe(true);
+    });
+
+    it("trigramにより日本語の部分一致が機能すること", async () => {
+      // Arrange
+      const articleId = "article_fts_trigram_ja_01";
+      await db.insert(articles).values({
+        ...ARTICLE_BASE,
+        id: articleId,
+        userId: TEST_USER_1.id,
+        url: "https://example.com/trigram-ja-test",
+        title: "機械学習フレームワーク入門",
+        content: "機械学習の基礎を解説します",
+        excerpt: "機械学習入門",
+      });
+
+      // Act: "機械学" (3文字) は "機械学習フレームワーク入門" の部分文字列
+      const matchExpr = buildFtsMatchExpression("機械学");
+      const results = await searchArticlesByFts(db, TEST_USER_1.id, matchExpr);
+
+      // Assert: unicode61では不可能だったスペースなし日本語の部分一致がhitする
+      expect(results.some((r) => r.id === articleId)).toBe(true);
+    });
+
+    it("3文字未満のクエリはnullになりヒットしないこと", async () => {
+      // Arrange
+      const articleId = "article_fts_trigram_short_01";
+      await db.insert(articles).values({
+        ...ARTICLE_BASE,
+        id: articleId,
+        userId: TEST_USER_1.id,
+        url: "https://example.com/trigram-short-test",
+        title: "AI技術の最前線",
+        content: "人工知能AIの最新動向",
+        excerpt: "AI解説",
+      });
+
+      // Act: "AI" は2文字のためbuildFtsMatchExpressionがnullを返す
+      const matchExpr = buildFtsMatchExpression("AI");
+      const results = await searchArticlesByFts(db, TEST_USER_1.id, matchExpr);
+
+      // Assert: nullクエリは0件
       expect(results.some((r) => r.id === articleId)).toBe(false);
     });
   });

@@ -10,29 +10,27 @@ import { HTTP_UNAUTHORIZED, HTTP_UNPROCESSABLE_ENTITY } from "../lib/http-status
 import { omitContent } from "../lib/response-utils";
 
 /**
- * 検索クエリをFTS5のMATCH式に変換する
+ * 検索クエリをFTS5のMATCH式に変換する（trigram tokenizer対応）
  *
- * 各トークンをダブルクォートで囲み前方一致（*）を付加し、ANDで連結する。
+ * trigram tokenizer は3文字N-gramでインデックスを構築するため、
+ * 3文字未満のトークンはtrigramを生成できず除外する。
+ * trigramは部分一致を内包するためワイルドカード（*）は不要。
  * ダブルクォートはダブルクォート2連でエスケープする。
- * トークンが存在しない場合はnullを返す（呼び出し元で0件として処理する）。
  *
  * @param query - 検索キーワード（スペース区切り複数語可）
- * @returns FTS5 MATCH 式文字列。トークンが空の場合はnull
- * @note FTS5 の unicode61 tokenizer はスペース・句読点を区切りとするため、
- *       スペースなしの日本語テキスト（例: 「Reactフレームワーク」）は
- *       単一トークンとして扱われ、部分一致検索が効かない場合がある。
+ * @returns FTS5 MATCH 式文字列。有効なトークンが空の場合はnull
  */
 export function buildFtsMatchExpression(query: string): string | null {
   const tokens = query
     .trim()
     .split(/\s+/)
-    .filter((t) => t.length > 0);
+    .filter((t) => t.length >= 3); // trigram には最低3文字必要
 
   if (tokens.length === 0) {
     return null;
   }
 
-  return tokens.map((token) => `"${token.replace(/"/g, '""')}"*`).join(" AND ");
+  return tokens.map((token) => `"${token.replace(/"/g, '""')}"`).join(" AND ");
 }
 
 /** デフォルトのページサイズ */
