@@ -146,14 +146,29 @@ jobs:
         run: |
           set -eo pipefail
           JUNIT="test-results/junit-shard${{ matrix.shard }}of2.xml"
-          EXIT_CODE=$(cat "test-results/maestro-exit-code-shard${{ matrix.shard }}of2.txt" 2>/dev/null || echo 1)
+          EXIT_CODE_FILE="test-results/maestro-exit-code-shard${{ matrix.shard }}of2.txt"
+
+          if [ ! -f "$EXIT_CODE_FILE" ]; then
+            echo "::error::maestro-exit-code file not found: $EXIT_CODE_FILE"
+            exit 1
+          fi
+          EXIT_CODE=$(cat "$EXIT_CODE_FILE")
+
           if [ "$EXIT_CODE" -ne 0 ]; then
             echo "::error::Maestro E2E failed (shard ${{ matrix.shard }}/2)"
-            if [ -f "$JUNIT" ]; then
-              echo ""
-              echo "=== Failed tests ==="
-              # Extract failed test names and failure messages from JUnit XML
-              python3 -c "
+
+            if [ ! -f "$JUNIT" ]; then
+              echo "::error::JUnit XML not found: $JUNIT"
+              exit 1
+            fi
+            if [ ! -s "$JUNIT" ]; then
+              echo "::error::JUnit XML is empty: $JUNIT"
+              exit 1
+            fi
+
+            echo ""
+            echo "=== Failed tests ==="
+            python3 -c "
           import xml.etree.ElementTree as ET, sys
           tree = ET.parse('$JUNIT')
           for tc in tree.iter('testcase'):
@@ -165,17 +180,25 @@ jobs:
                   print(f'  Test: {name}')
                   print(f'  Reason: {msg}')
                   print()
-          " 2>/dev/null || echo "(JUnit parse failed)"
-              echo "=== Summary ==="
-              python3 -c "
+          " || {
+              echo "::error::JUnit XML parse failed for $JUNIT"
+              echo "--- Raw XML (first 50 lines) ---"
+              head -50 "$JUNIT" || true
+              exit 1
+            }
+
+            echo "=== Summary ==="
+            python3 -c "
           import xml.etree.ElementTree as ET
           tree = ET.parse('$JUNIT')
           ts = tree.find('.//testsuite') or tree.getroot()
           total = ts.get('tests', '?')
           fails = ts.get('failures', '?')
           print(f'Total: {total}, Failures: {fails}')
-          " 2>/dev/null || true
-            fi
+          " || {
+              echo "::warning::JUnit summary parse failed (non-fatal)"
+            }
+
             exit 1
           fi
 
@@ -267,14 +290,30 @@ jobs:
         if: always()
         run: |
           set -eo pipefail
-          EXIT_CODE=$(cat test-results/maestro-exit-code.txt 2>/dev/null || echo 1)
+          EXIT_CODE_FILE="test-results/maestro-exit-code.txt"
+
+          if [ ! -f "$EXIT_CODE_FILE" ]; then
+            echo "::error::Aggregated maestro-exit-code.txt not found — aggregate step likely failed"
+            exit 1
+          fi
+          EXIT_CODE=$(cat "$EXIT_CODE_FILE")
+
           if [ "$EXIT_CODE" -ne 0 ]; then
             echo "::error::Maestro E2E failed (aggregated)"
             JUNIT="test-results/junit.xml"
-            if [ -f "$JUNIT" ]; then
-              echo ""
-              echo "=== Failed tests (all shards) ==="
-              python3 -c "
+
+            if [ ! -f "$JUNIT" ]; then
+              echo "::error::Aggregated JUnit XML not found: $JUNIT"
+              exit 1
+            fi
+            if [ ! -s "$JUNIT" ]; then
+              echo "::error::Aggregated JUnit XML is empty: $JUNIT"
+              exit 1
+            fi
+
+            echo ""
+            echo "=== Failed tests (all shards) ==="
+            python3 -c "
           import xml.etree.ElementTree as ET, sys
           tree = ET.parse('$JUNIT')
           for tc in tree.iter('testcase'):
@@ -286,16 +325,24 @@ jobs:
                   print(f'  Test: {name}')
                   print(f'  Reason: {msg}')
                   print()
-          " 2>/dev/null || echo "(JUnit parse failed)"
-              echo "=== Summary ==="
-              python3 -c "
+          " || {
+              echo "::error::JUnit XML parse failed for $JUNIT"
+              echo "--- Raw XML (first 50 lines) ---"
+              head -50 "$JUNIT" || true
+              exit 1
+            }
+
+            echo "=== Summary ==="
+            python3 -c "
           import xml.etree.ElementTree as ET
           tree = ET.parse('$JUNIT')
           ts = tree.find('.//testsuite') or tree.getroot()
           total = ts.get('tests', '?')
           fails = ts.get('failures', '?')
           print(f'Total: {total}, Failures: {fails}')
-          " 2>/dev/null || true
-            fi
+          " || {
+              echo "::warning::JUnit summary parse failed (non-fatal)"
+            }
+
             exit 1
           fi
