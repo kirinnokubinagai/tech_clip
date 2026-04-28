@@ -42,6 +42,83 @@
 
 ---
 
+## 状況別ランブック（このときこうする）
+
+CLAUDE.md だけを読んで「次にどう動くか」が分かるよう、状況→呼び出し skill のマッピングを示す。各 skill の本体は `.claude/skills/` 配下で、description と triggers で auto-invoke される。
+
+### orchestrator が受け取る入力
+
+| 状況 / トリガー | 呼び出す skill（順序） | 結果 |
+|---|---|---|
+| **SessionStart**（毎セッション開始時） | `harness/proactive-issue-triage` → 該当 Issue があれば `harness/spawn-flow` | `gh issue list` で自動着手可能 Issue を検出 → spawn |
+| ユーザー: 「**Issue #N をやって**」 | `harness/orchestrator-self-audit` → `harness/spawn-flow` | 該当 Issue を spawn |
+| ユーザー: 「**次やって**」「**バグ直して**」（番号なし） | `harness/proactive-issue-triage` → `harness/spawn-flow` | 候補から最若番号を自動選択 |
+| ユーザー: 「**〜したい**」「**〜が気になる**」（漠然依頼） | `harness/issue-conversation` → `create-issue` → 着手判断 | 対話で Issue 登録 |
+| ユーザー: 「**Issue を作って**」 | `harness/issue-conversation` → `create-issue` | Issue 登録のみ（spawn は別判断） |
+| reviewer から `**APPROVED: issue-N**` 受信 | カウント更新報告 → `harness/proactive-issue-triage` | pending_count-- → 次バッチ判定 |
+| reviewer から `**POLLING_TIMEOUT** / **STUCK**` 受信 | `orchestrator/pr-state-investigation` で状態確認 → ユーザー報告 | 状況判明後ユーザーに判断仰ぐ |
+| reviewer から `**WORKTREE_REMOVE_FAILED**` 受信 | ユーザーに報告 → 手動削除指示 | - |
+| サブエージェントから `**QUESTION_FOR_USER:**` 受信 | `AskUserQuestion` でユーザーに bubble up | ユーザー回答を該当エージェントに転送 |
+| ユーザー: 「**チームを片付けて**」 | `TeamDelete("active-issues")` を実行 | - |
+| ユーザー: 「**Issue #N をやめて**」 | `harness/agent-cleanup` で `shutdown_request` 送信 + worktree 削除 | spawn 中止 |
+| **標準フロー外の判断が必要** と感じたとき | `harness/orchestrator-self-audit` → 必要なら `AskUserQuestion` | 独断禁止 |
+
+### サブエージェントが受け取る入力
+
+| エージェント | トリガー | 呼び出す skill（順序） |
+|---|---|---|
+| **analyst** | spawn 直後 | `brainstorming` → 必要に応じて `writing-plans` → spec 作成 → coder へ SendMessage |
+| **analyst** | `CONFLICT_INVESTIGATE` 受信 | `harness/conflict-resolution` → `conflict-resolver` → 両立 spec 作成 → coder へ送信 |
+| **coder / infra-engineer / ui-designer** | spawn 直後 | `impl/wait-for-spec` で analyst からの spec 受信待機 |
+| **coder / infra-engineer / ui-designer** | `spec:` 受信 | `test-driven-development` → 実装 → `impl/lint-commit-notify` → reviewer (or e2e-reviewer) へ |
+| **coder / infra-engineer / ui-designer** | `CHANGES_REQUESTED:` 受信 | `auto-fix.sh` → 必要なら手動修正 → `impl/lint-commit-notify` |
+| **coder / infra-engineer / ui-designer** | `CONFLICT_RESOLVE: spec=...` 受信 | `impl/conflict-resolve-loop` → 両立マージ → reviewer へ `CONFLICT_RESOLVED` |
+| **e2e-reviewer** | `impl-ready: ... lane=...` 受信 | 全 lane 揃うまで集約待機 → `harness/e2e-shard-execution`（4-shard / disk 逼迫時 2-shard） |
+| **e2e-reviewer** | 全 shard PASS | aggregator → `.e2e-passed` 生成 → reviewer へ `e2e-approved` |
+| **e2e-reviewer** | shard FAIL | coder へ `CHANGES_REQUESTED:` 送信 |
+| **reviewer / infra-reviewer / ui-reviewer** | `impl-ready:` または `e2e-approved:` 受信 | `review/push-validation` → `review/conflict-check` → `review/pre-check` → `review/code-review` → `review/push-and-pr` → `review/polling-wait` |
+| **reviewer / infra-reviewer / ui-reviewer** | `CONFLICT_RESOLVED:` 受信 | `review/conflict-audit` → 問題なければ通常レビューへ |
+| **reviewer / infra-reviewer / ui-reviewer** | conflict 検知（DIRTY） | `harness/conflict-resolution` → analyst へ `CONFLICT_INVESTIGATE` |
+| **reviewer / infra-reviewer / ui-reviewer** | conflict 検知（BEHIND） | 自動 fetch + merge + re-push（差し戻ししない） |
+| **reviewer / infra-reviewer / ui-reviewer** | `VERDICT: approved` | `review/merged-cleanup` → `harness/agent-cleanup` → orchestrator へ `APPROVED: issue-N` |
+| **reviewer / infra-reviewer / ui-reviewer** | `VERDICT: changes_requested` | coder へ `CHANGES_REQUESTED:` |
+| **reviewer / infra-reviewer / ui-reviewer** | `VERDICT: timeout` | orchestrator へ `POLLING_TIMEOUT:` |
+
+### Issue 完遂までの一本道
+
+```
+[ユーザー] Issue #123 をやって
+   ↓
+[orchestrator] harness/orchestrator-self-audit → harness/spawn-flow
+   ↓
+   bash scripts/create-worktree.sh 123 <desc>
+   Agent(analyst, name="issue-123-analyst", ..., mode="acceptEdits")
+   Agent(coder,   name="issue-123-coder",   ..., mode="acceptEdits")
+   Agent(reviewer,name="issue-123-reviewer",..., mode="acceptEdits")
+   # E2E 影響あり場合のみ:
+   Agent(e2e-reviewer, name="issue-123-e2e-reviewer", shard_total=4, ...)
+   ↓
+[analyst] brainstorming → spec を docs/superpowers/specs/ に保存
+   → SendMessage("spec: <path>") to issue-123-coder
+   ↓
+[coder] impl/wait-for-spec → test-driven-development → impl/lint-commit-notify
+   → SendMessage("impl-ready: <hash>") to issue-123-{e2e-reviewer or reviewer}
+   ↓
+[e2e-reviewer (条件付き)] harness/e2e-shard-execution → 全 shard PASS
+   → SendMessage("e2e-approved: <hash>") to issue-123-reviewer
+   ↓
+[reviewer] review/{push-validation, conflict-check, pre-check, code-review, push-and-pr, polling-wait}
+   → bash scripts/push-verified.sh で push + polling-watcher 同期 wait
+   → VERDICT: approved
+   → review/merged-cleanup → harness/agent-cleanup
+   → SendMessage("APPROVED: issue-123") to team-lead
+   ↓
+[orchestrator] pending_count-- → ユーザー報告
+   → harness/proactive-issue-triage で次バッチ判定
+```
+
+---
+
 ## サブエージェント役割表
 
 | role | 役割 | push | review-passed | e2e-passed |
