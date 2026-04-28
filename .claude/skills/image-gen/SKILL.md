@@ -1,6 +1,6 @@
 ---
 name: image-gen
-description: Codex CLI の image_gen ツール（gpt-image-2）で画像を生成し、用途に応じた正しいパスに保存する
+description: Codex CLI の image_gen ツール（gpt-image-2）で画像を生成し、用途に応じた正しいパスに保存する。複数画像生成は 1 回の codex セッションでまとめて実行し、デザイン統一性を担保する。
 triggers:
   - 画像生成
   - image generation
@@ -15,8 +15,19 @@ triggers:
 
 # image-gen スキル
 
-Codex CLI の組み込み `image_gen` ツールを使い、gpt-image-2 で画像を生成して
+Codex CLI の組み込み `image_gen` ツール（gpt-image-2）で画像を生成して
 プロジェクト内の適切なパスに保存する。ChatGPT サブスクリプション内で完結（API キー不要）。
+
+## 重要原則: 1 セッション 1 codex 呼び出し
+
+**複数画像を生成するときは必ず 1 回の codex 呼び出しでまとめて生成する**（モックアップ + 抽出アセット等）。
+
+理由:
+- 別 codex セッションだと毎回コンテキストが切れ、画風・色・線の太さ・角丸の半径などが揺れる
+- 1 セッション内なら直前の生成をプロンプトで参照させ、統一性を維持できる
+- API/CLI 呼び出しコストも削減
+
+複数 codex 呼び出しに分けて良いのは「モックアップを 1 枚見てから判断する」ようなインタラクティブなフローでユーザーが明示的に追加生成を依頼した場合のみ。
 
 ## 保存先マッピング
 
@@ -37,100 +48,113 @@ Codex CLI の組み込み `image_gen` ツールを使い、gpt-image-2 で画像
 
 ## 必須ワークフロー
 
-### Step 1: 用途とパスを決定する
+### Step 1: 生成対象を全部洗い出す（事前計画）
 
-上記マッピングテーブルに従い、保存先パスとサイズを決定する。
+ユーザーリクエストを解析し、**1 回の codex 呼び出しで生成する全画像を先にリストアップ** する。
+モックアップ単体ならそれだけ、画面 + アイコン群ならそれら全部を 1 リストにする。
 
-### Step 2: プロンプトを構築する
+#### モックアップの場合の追加識別
 
-日本語のリクエストを英語の詳細プロンプトに変換する:
-- 具体的なスタイル（flat design, minimalist, material design 等）
-- 色指定（このプロジェクトのプライマリカラー: teal #14b8a6）
-- 用途に合ったサイズと形状
+モックアップを含む依頼の場合、HTML/CSS で表現できないアセットも同時に識別する:
 
-モックアップの場合は `docs/mobile-theme.md` を Read して色・フォント規約を確認してからプロンプトに反映する。
-
-### Step 3: Codex CLI で画像を生成し、すぐに開く
-
-```bash
-codex "次の画像を生成して <output-path> に保存してください。
-<英語の詳細プロンプト>
-組み込みのimage_genツールを直接使って生成してください。"
-```
-
-**重要**: `組み込みのimage_genツールを直接使って` を必ず末尾に含める。
-省略すると Codex がコードを書こうとする。
-
-生成完了後、すぐに開く:
-
-```bash
-open <output-path>
-```
-
----
-
-## モックアップ生成時の追加ワークフロー
-
-**以下の Step 4-6 は用途が「画面モックアップ」（`docs/design/` への出力）の場合のみ実行する。**
-アイコン・スプラッシュ等の単体生成では Step 7 へスキップする。
-
-### Step 4: HTML/CSS で表現できないアセットを識別する
-
-モックアッププロンプトの内容を解析し、以下の基準で抽出対象をリストアップする（Codex 呼び出しなし、Claude が判断）。
-
-**抽出する（画像ファイルが必要なもの）:**
+**抽出する（画像ファイルが必要なもの）**:
 - アイコン — ボタン・ナビゲーション・ラベルに付く小アイコン
 - アプリロゴ・ブランドマーク — ロゴ・マスコット・ブランド画像
 - イラスト — 空状態・オンボーディング用画像
 - サムネイルプレースホルダー — 記事・ユーザー画像の枠
 - 背景テクスチャ/パターン — CSS グラデーション以外の背景素材
 
-**抽出しない（HTML/CSS で表現可能なもの）:**
+**抽出しない（HTML/CSS で表現可能）**:
 - 色・グラデーション・シャドウ
 - ボーダー・角丸
 - テキスト・フォント
 - レイアウト・余白
 
-識別結果をリストとして整理し、各アセットの保存先パスとサイズを決定する:
+#### 命名規則
 
-**命名規則:**
-- アイコン: `<名詞>.png`（例: `bookmark.png`, `share.png`, `arrow-right.png`）
+- アイコン（UI / モックアップ抽出）: `<名詞>.png`（例: `bookmark.png`, `share.png`, `arrow-right.png`）
 - イラスト: `<用途-説明>.png`（例: `empty-state-article.png`, `onboarding-welcome.png`）
 - プレースホルダー: `placeholder-<種別>.png`（例: `placeholder-article.png`, `placeholder-avatar.png`）
 
-**保存先:**
+#### 保存先（モックアップ抽出物の場合）
+
 - アイコン → `docs/design/assets/icons/<name>.png`（48×48）
 - イラスト・プレースホルダー・ブランドマーク → `docs/design/assets/images/<name>.png`（表示サイズ基準）
 
-### Step 5: 各アセットを個別生成する
-
-まずディレクトリを作成する:
+### Step 2: ディレクトリ作成 + テーマ確認
 
 ```bash
 mkdir -p docs/design/assets/icons docs/design/assets/images
 ```
 
-識別したアセットを順次 Codex で生成する。各アセットに対して以下のパターンを使う:
+モックアップを含む場合は `docs/mobile-theme.md` を Read してカラー・フォント規約を確認し、次の Step 3 のプロンプトに反映する。
+
+### Step 3: 統一プロンプトを構築する（1 セッションで全生成）
+
+英語の詳細プロンプトを **1 つにまとめて** 構築する。具体的なフォーマット:
+
+```
+You will generate <N> images in this single session. Use the same design system
+across all images for visual consistency.
+
+## Design system (apply to ALL images below)
+- Style: <e.g. flat design, minimalist, material design>
+- Primary color: teal #14b8a6
+- Secondary / accent: <if any>
+- Stroke width / corner radius / shadow rules: <if any>
+- Typography (mockup only): <font family, weights>
+
+## Images to generate
+
+1. <output-path-1> (<width>×<height>)
+   <detailed description of image 1>
+
+2. <output-path-2> (<width>×<height>)
+   <detailed description of image 2>
+   IMPORTANT: keep the same icon style and stroke width as image 1.
+
+3. <output-path-3> (<width>×<height>)
+   ...
+
+## Constraints
+- Generate each image with the EXACT pixel size specified.
+- Use transparent background for all icons unless otherwise specified.
+- Save each generated image to its specified path.
+```
+
+**統一感を担保するためのコツ**:
+- 全画像で共通のスタイル指定（"matching the same flat icon style", "consistent stroke width" 等）を冒頭に書く
+- アイコン群は「ボタン上に並べたとき揃って見える」ことを明記する
+- モックアップ + アセット混在のときはモックアップを先に列挙し、後続アセットに「matching the mockup just rendered above」と付ける
+
+### Step 4: Codex CLI を 1 回だけ呼ぶ
 
 ```bash
-codex "次の画像を生成して docs/design/assets/icons/<name>.png に保存してください。
-Flat design icon, teal #14b8a6, <説明>, transparent background,
-matching the minimalist style of the mockup just generated.
-<サイズ>px の正確なサイズで生成してください。
-組み込みのimage_genツールを直接使って生成してください。"
+codex "<Step 3 で構築した統一プロンプト>
 
-# 生成完了後すぐに開く
-open docs/design/assets/icons/<name>.png
+組み込みのimage_genツールを直接使って、上記の <N> 枚すべてをこのセッション内で生成・保存してください。
+別々のコード実行ではなく、image_gen ツールを直接呼び出してください。"
 ```
 
-**重要**: モックアップと同じスタイル・カラー（teal #14b8a6）をプロンプトに含め、一貫性を保つ。
+**必須事項**:
+- プロンプトの末尾に「組み込みのimage_genツールを直接使って…別々のコード実行ではなく」を必ず含める。省略すると Codex がコードを書こうとする
+- 「すべてをこのセッション内で」を明記し、複数セッションに分けないよう指示する
 
-### Step 6: 採用手順をユーザーに伝える
+### Step 5: 全画像をまとめて確認
 
-全アセット生成後、以下の形式で結果を報告する:
+```bash
+# 全ファイルをまとめて open
+open <output-path-1> <output-path-2> ...
+# またはモックアップ + アセットがある場合
+open docs/design/<screen-name>.png docs/design/assets/icons/*.png docs/design/assets/images/*.png
+```
+
+その後 Read ツールで各画像をインライン表示してユーザーに確認する。
+
+### Step 6: 採用手順をユーザーに伝える（モックアップ抽出物がある場合）
 
 ```
-生成完了:
+生成完了 (1 セッションで <N> 枚を統一スタイル生成):
 📱 モックアップ
   - docs/design/<screen-name>.png
 
@@ -145,21 +169,9 @@ open docs/design/assets/icons/<name>.png
 に移動します。
 ```
 
----
+## やり直しが必要なときも 1 セッションで
 
-### Step 7: 生成結果をすべて確認する
-
-全生成ファイルをまとめて開き、Read ツールでインライン表示してユーザーに確認する。
-
-```bash
-# モックアップのみの場合
-open <output-path>
-
-# モックアップ + アセットがある場合（全ファイルを一括で開く）
-open docs/design/<screen-name>.png docs/design/assets/icons/*.png docs/design/assets/images/*.png
-```
-
-その後 Read ツールで各画像をインライン表示する。
+ユーザーが「アイコン群だけスタイル変えて」等の修正依頼をした場合も、**変更対象をまとめて 1 回の codex 呼び出し** で再生成する。修正対象 + 影響を受ける関連画像を全部 Step 3 のプロンプトに入れる。
 
 ## 前提条件
 
