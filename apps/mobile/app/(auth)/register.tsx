@@ -1,10 +1,11 @@
-import { Link } from "expo-router";
+import { useRouter } from "expo-router";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
   Image,
   KeyboardAvoidingView,
   Platform,
+  Pressable,
   ScrollView,
   Text,
   TextInput,
@@ -28,6 +29,7 @@ import { useAuthStore } from "@/stores/auth-store";
 export default function RegisterScreen() {
   const { t } = useTranslation();
   const colors = useColors();
+  const router = useRouter();
   const signUp = useAuthStore((s) => s.signUp);
 
   const [email, setEmail] = useState("");
@@ -166,9 +168,13 @@ export default function RegisterScreen() {
 
         <View className="mt-6 flex-row items-center justify-center">
           <Text className="text-sm text-text-muted">{t("auth.registerToLoginPrompt")}</Text>
-          <Link href="/(auth)/login" testID="register-login-link">
+          <Pressable
+            testID="register-login-link"
+            onPress={() => router.push("/(auth)/login")}
+            hitSlop={8}
+          >
             <Text className="ml-1 text-sm font-semibold text-primary">{t("auth.login")}</Text>
-          </Link>
+          </Pressable>
         </View>
       </ScrollView>
     </KeyboardAvoidingView>

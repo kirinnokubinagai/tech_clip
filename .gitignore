@@ -113,9 +113,12 @@ docs/design-wip/
 # polling state files (runtime, not for PRs)
 .claude/polling/
 
-# Maestro screenshot outputs
+# Maestro screenshot / debug 出力 (run-e2e-parallel.sh が cleanup hook で自動削除)
 tests/e2e/maestro/screenshots/
 screenshots/
+debug-output/
+.maestro/
+.claude/.e2e-debug-shard*.json
 
 local.db-shm
 local.db-wal

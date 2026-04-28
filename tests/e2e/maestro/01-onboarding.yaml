@@ -21,13 +21,8 @@ tags:
           timeout: 1000
 - waitForAnimationToEnd:
     timeout: 30000
-- runFlow:
-    when:
-      visible: "Process system isn't responding"
-    commands:
-      - tapOn: "Wait"
-      - waitForAnimationToEnd:
-          timeout: 3000
+# ANR (Android 36 Pixel Launcher 既知バグ) を dismiss する
+- runFlow: helpers/dismiss-anr.yaml
 - runFlow:
     when:
       visible: "Open debugger"

@@ -1,4 +1,4 @@
-import { Link } from "expo-router";
+import { Link, useRouter } from "expo-router";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
@@ -26,6 +26,7 @@ import { useAuthStore } from "@/stores/auth-store";
 export default function LoginScreen() {
   const { t } = useTranslation();
   const colors = useColors();
+  const router = useRouter();
   const signIn = useAuthStore((s) => s.signIn);
   const sessionExpiredMessage = useAuthStore((s) => s.sessionExpiredMessage);
   const clearSessionExpiredMessage = useAuthStore((s) => s.clearSessionExpiredMessage);
@@ -102,7 +103,7 @@ export default function LoginScreen() {
       className="flex-1 bg-background"
     >
       <ScrollView
-        contentContainerClassName="flex-1 justify-center px-6 py-8"
+        contentContainerClassName="flex-grow justify-center px-6 py-8"
         keyboardShouldPersistTaps="handled"
       >
         <View className="mb-12 items-center">
@@ -213,11 +214,20 @@ export default function LoginScreen() {
 
         <View className="mt-6 flex-row items-center justify-center">
           <Text className="text-sm text-text-muted">{t("auth.loginToRegisterPrompt")}</Text>
-          <Link href="/(auth)/register" testID="login-register-link">
-            <Text className="ml-1 text-sm font-semibold text-primary">
+          <Pressable
+            testID="login-register-link"
+            accessibilityRole="link"
+            accessibilityLabel="login-register-link"
+            onPress={() => router.push("/(auth)/register")}
+            hitSlop={8}
+          >
+            <Text
+              testID="login-register-link-text"
+              className="ml-1 text-sm font-semibold text-primary"
+            >
               {t("auth.loginToRegister")}
             </Text>
-          </Link>
+          </Pressable>
         </View>
       </ScrollView>
     </KeyboardAvoidingView>

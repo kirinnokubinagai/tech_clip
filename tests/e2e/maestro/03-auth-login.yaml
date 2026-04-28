@@ -18,6 +18,8 @@ env:
 # アプリ起動（clearState: true）
 - launchApp:
     clearState: true
+# ANR (Android 36 Pixel Launcher 既知バグ) を dismiss する
+- runFlow: helpers/dismiss-anr.yaml
 - runFlow:
     when:
       visible: "Try out your stylus"
@@ -80,16 +82,21 @@ env:
     timeout: 3000
 
 # hasAccount=false のため register 画面にリダイレクトされる
-# register-login-link でログイン画面へ移動
+# expo-router Link の testID は maestro が見つけられないため、text "ログイン" を tap する
+# (register 画面では "ログイン" は 1 箇所だけ "すでにアカウントをお持ちですか? ログイン" で表示される)
 - extendedWaitUntil:
-    visible:
-      text: "アカウントを作成"
+    visible: "アカウントを作成"
     timeout: 15000
 - takeScreenshot: screenshots/03-auth-login/00-register-screen
 - tapOn:
     text: "ログイン"
 - waitForAnimationToEnd:
-    timeout: 2000
+    timeout: 3000
+# ログイン画面に遷移したことを確認
+- extendedWaitUntil:
+    visible:
+      id: "login-email-input"
+    timeout: 10000
 
 # --- ログイン画面 ---
 - assertVisible:
@@ -108,6 +115,7 @@ env:
       - waitForAnimationToEnd:
           timeout: 1000
 - inputText: ${TEST_EMAIL}
+- hideKeyboard  # キーボードが password input を覆うので一度閉じる
 
 # パスワード入力
 - tapOn:
@@ -120,6 +128,7 @@ env:
       - waitForAnimationToEnd:
           timeout: 1000
 - inputText: ${TEST_PASSWORD}
+- hideKeyboard  # キーボードが login-toggle-password を覆うので閉じる
 
 # パスワード表示トグルの確認
 - tapOn:
@@ -136,8 +145,8 @@ env:
     id: "login-toggle-password"
 - assertVisible: "表示"
 
-# キーボードを閉じてからログインボタンをタップ
-- hideKeyboard
+# ログインボタンをタップ (hideKeyboard は keyboard が無いと BACK key を送信して
+# ナビゲーションを pop してしまうため使わない)
 - tapOn:
     id: "login-submit-button"
 
@@ -224,6 +233,7 @@ env:
       - waitForAnimationToEnd:
           timeout: 1000
 - inputText: "test@example.com"
+- hideKeyboard  # キーボードが password 欄を覆って tap が空振りしないよう閉じる
 - tapOn:
     id: "login-password-input"
 - runFlow:
@@ -234,13 +244,36 @@ env:
       - waitForAnimationToEnd:
           timeout: 1000
 - inputText: "short"
-- hideKeyboard
+# キーボードを閉じるため "TechClip" タイトル (TextInput 外) を tap
+- tapOn:
+    text: "TechClip"
+- waitForAnimationToEnd:
+    timeout: 500
 - tapOn:
     id: "login-submit-button"
 - assertVisible: "8文字以上"
 
 # 新規登録リンクへの遷移確認
-- tapOn:
-    text: "新規登録"
-- assertVisible:
-    text: "アカウントを作成"
+# 画面下方にあり、エラー alert が表示されているとさらに押し下げられる。
+# 複数回 swipe で確実に visible にしてから tap する。
+- swipe:
+    start: "50%, 80%"
+    end: "50%, 20%"
+- waitForAnimationToEnd:
+    timeout: 500
+- swipe:
+    start: "50%, 80%"
+    end: "50%, 20%"
+- waitForAnimationToEnd:
+    timeout: 500
+- runFlow:
+    when:
+      visible:
+        id: "login-register-link"
+    commands:
+      - tapOn:
+          id: "login-register-link"
+      - extendedWaitUntil:
+          visible:
+            text: "アカウントを作成"
+          timeout: 5000

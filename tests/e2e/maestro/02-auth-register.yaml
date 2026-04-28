@@ -9,7 +9,7 @@ tags:
   - auth
 
 env:
-  TEST_EMAIL: ${TIMESTAMP}+maestro@techclip.app
+  TEST_EMAIL: ${TEST_EMAIL}
   TEST_PASSWORD: ${TEST_PASSWORD}
   TEST_NAME: ${TEST_NAME}
 
@@ -18,6 +18,8 @@ env:
 # アプリ起動（clearState でオンボーディング未閲覧状態に）
 - launchApp:
     clearState: true
+# ANR (Android 36 Pixel Launcher 既知バグ) を dismiss する
+- runFlow: helpers/dismiss-anr.yaml
 - runFlow:
     when:
       visible: "Try out your stylus"
@@ -105,6 +107,7 @@ env:
       - waitForAnimationToEnd:
           timeout: 1000
 - inputText: ${TEST_EMAIL}
+- hideKeyboard  # キーボードが submit-button / password-input を覆うので閉じる
 
 # バリデーション: メールのみで送信 → パスワードエラー
 - tapOn:

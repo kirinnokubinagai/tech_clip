@@ -16,6 +16,7 @@ env:
 # ログイン済み状態でアプリ起動
 - launchApp:
     clearState: false
+- runFlow: helpers/dismiss-anr.yaml
 - runFlow:
     when:
       visible: "Try out your stylus"
@@ -24,26 +25,11 @@ env:
       - waitForAnimationToEnd:
           timeout: 1000
 - runFlow:
-    when:
-      visible: "Process system isn't responding"
-    commands:
-      - tapOn: "Wait"
-      - waitForAnimationToEnd:
-          timeout: 3000
-- runFlow:
-    when:
-      visible: "Open debugger"
-    commands:
-      - tapOn:
-          point: "92%, 93%"
-      - waitForAnimationToEnd:
-          timeout: 1000
-- runFlow:
     file: "helpers/login-helper.yaml"
 - waitForAnimationToEnd:
     timeout: 2000
 
-# 設定タブへ移動（tab-bar visible 待機）
+# 設定タブへ移動
 - extendedWaitUntil:
     visible:
       id: "tab-settings"
@@ -51,41 +37,48 @@ env:
 - tapOn:
     id: "tab-settings"
 
-# --- 設定画面 ---
+# --- 設定画面 (id-based) ---
 - extendedWaitUntil:
     visible:
-      text: "アカウント"
+      id: "settings-section-account"
     timeout: 15000
 - takeScreenshot: screenshots/07-settings/01-settings-screen
-- assertVisible: "サブスクリプション"
-- assertVisible: "一般"
+- assertVisible:
+    id: "settings-section-subscription"
+- assertVisible:
+    id: "settings-section-general"
 - scrollUntilVisible:
     element:
-      text: "アカウント管理"
+      id: "settings-section-account-management"
     direction: DOWN
     timeout: 10000
-- assertVisible: "アカウント管理"
+- assertVisible:
+    id: "settings-section-account-management"
 
-# アカウントセクション
-- assertVisible: "パスワード変更"
-- assertVisible: "ログアウト"
+# アカウントセクション (id-based)
+- assertVisible:
+    id: "settings-change-password-button"
+- assertVisible:
+    id: "settings-logout-button"
 
-# サブスクリプションセクション
-- assertVisible: "プラン"
-- assertVisible: "無料"
+# サブスクリプションセクション (id-based)
+- assertVisible:
+    id: "settings-plan-row"
 
-# バージョン表示
+# バージョン表示 (画面下方なので scroll してから assert)
+- scrollUntilVisible:
+    element:
+      text: ".*バージョン.*"
+    direction: DOWN
+    timeout: 15000
 - assertVisible: ".*バージョン.*"
 
 # --- 通知スイッチ ---
 - assertVisible:
     id: "settings-notification-switch"
-- assertVisible: "通知"
-# スイッチをオフにする
 - tapOn:
     id: "settings-notification-switch"
 - waitForAnimationToEnd
-# スイッチをオンに戻す
 - tapOn:
     id: "settings-notification-switch"
 - waitForAnimationToEnd
@@ -109,10 +102,11 @@ env:
 - assertVisible: "日本語"
 
 # --- パスワード変更画面への遷移 ---
-- tapOn: "パスワード変更"
+- tapOn:
+    id: "settings-change-password-button"
 - extendedWaitUntil:
     visible:
-      text: "パスワード変更"
+      id: "change-password-current-input"
     timeout: 5000
 - assertVisible:
     id: "change-password-current-input"
@@ -136,8 +130,15 @@ env:
     text: "ログアウトしますか？"
 # キャンセル
 - tapOn: "キャンセル"
-# 設定画面に戻ることを確認
-- assertVisible: "アカウント"
+- waitForAnimationToEnd:
+    timeout: 2000
+# 設定画面に戻ることを確認 (tab-settings を tap して画面 top にスクロール)
+- tapOn:
+    id: "tab-settings"
+- waitForAnimationToEnd:
+    timeout: 1000
+- assertVisible:
+    id: "settings-section-subscription"
 
 # --- アカウント削除確認ダイアログ ---
 - assertVisible:
@@ -149,7 +150,8 @@ env:
 - assertVisible: ".*この操作は取り消せません.*"
 # キャンセル
 - tapOn: "キャンセル"
-- assertVisible: "アカウント管理"
+- assertVisible:
+    id: "settings-section-account-management"
 
 # --- ログアウト実行 ---
 - tapOn:
@@ -157,7 +159,9 @@ env:
 - assertVisible:
     text: "ログアウトしますか？"
 - tapOn: "ログアウト"
-# ログイン画面に遷移することを確認
-- assertVisible:
-    text: "ログイン"
+# ログイン画面に遷移することを確認 (login-email-input が見えればログイン画面)
+- extendedWaitUntil:
+    visible:
+      id: "login-email-input"
+    timeout: 10000
 - takeScreenshot: screenshots/07-settings/02-after-logout

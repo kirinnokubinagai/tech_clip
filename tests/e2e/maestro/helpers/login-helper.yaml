@@ -9,6 +9,9 @@ env:
 
 ---
 
+# ANR (Android 36 Pixel Launcher 既知バグ) を先に dismiss する
+- runFlow: dismiss-anr.yaml
+
 # Metro cold-start 待機（アニメーション停止まで最大 60 秒）
 - waitForAnimationToEnd:
     timeout: 60000
@@ -94,6 +97,7 @@ env:
       - tapOn:
           id: "login-email-input"
       - inputText: ${TEST_EMAIL}
+      - hideKeyboard  # キーボードが password input を覆うので一度閉じる
       - tapOn:
           id: "login-password-input"
       - inputText: ${TEST_PASSWORD}

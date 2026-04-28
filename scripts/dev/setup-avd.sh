@@ -7,7 +7,7 @@
 # 動作:
 #   - ANDROID_HOME / ANDROID_AVD_HOME を nix devShell から取得
 #   - 既に AVD_NAME が存在すれば何もしない
-#   - 無ければ avdmanager で system-images;android-34;google_apis;<HOST_ABI> から作成
+#   - 無ければ avdmanager で system-images;android-36;google_apis;<HOST_ABI> から作成
 #
 # AVD は ANDROID_AVD_HOME (デフォルト ~/.android-nix/avd) に保存される。
 # Android Studio の ~/.android/avd とは独立しており、nix store の system image を参照する。
@@ -43,10 +43,10 @@ case "$(uname -sm)" in
   *)             ABI="x86_64" ;;
 esac
 
-SYSIMG="system-images;android-34;google_apis;${ABI}"
+SYSIMG="system-images;android-36;google_apis;${ABI}"
 
 # system image が nix store に存在するか確認
-SYSIMG_DIR="${ANDROID_HOME}/system-images/android-34/google_apis/${ABI}"
+SYSIMG_DIR="${ANDROID_HOME}/system-images/android-36/google_apis/${ABI}"
 if [ ! -d "$SYSIMG_DIR" ]; then
   echo "ERROR: nix store に system image が見つかりません: $SYSIMG_DIR" >&2
   echo "       flake.nix の androidComposition に systemImageTypes / abiVersions が正しく設定されているか確認してください。" >&2

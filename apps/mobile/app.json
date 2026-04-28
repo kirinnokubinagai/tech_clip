@@ -97,7 +97,8 @@
         }
       ],
       "./plugins/with-native-build-fixes",
-      "./plugins/with-android-maestro-queries"
+      "./plugins/with-android-maestro-queries",
+      "./plugins/with-android-cleartext-localhost"
     ]
   }
 }

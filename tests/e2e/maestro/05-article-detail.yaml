@@ -117,17 +117,32 @@ env:
       id: "article-webview"
     timeout: 10000
 
-# お気に入り追加
-- tapOn:
-    text: "お気に入り追加"
-- assertVisible:
-    text: "お気に入り解除"
-
-# お気に入り解除
-- tapOn:
-    text: "お気に入り解除"
-- assertVisible:
-    text: "お気に入り追加"
+# お気に入り toggle test (state 適応的: 現在の状態から逆転 → 再逆転で元に戻す)
+# 04-article-save が先に走った場合 favorited 状態で開く可能性があるため、両方の初期状態に対応
+- runFlow:
+    when:
+      visible: "お気に入り追加"
+    commands:
+      - tapOn:
+          text: "お気に入り追加"
+      - assertVisible:
+          text: "お気に入り解除"
+      - tapOn:
+          text: "お気に入り解除"
+      - assertVisible:
+          text: "お気に入り追加"
+- runFlow:
+    when:
+      visible: "お気に入り解除"
+    commands:
+      - tapOn:
+          text: "お気に入り解除"
+      - assertVisible:
+          text: "お気に入り追加"
+      - tapOn:
+          text: "お気に入り追加"
+      - assertVisible:
+          text: "お気に入り解除"
 
 # 要約ボタン（seed により初回表示時点で要約済み）
 - assertVisible:

@@ -128,11 +128,11 @@ clone_avd() {
   fi
 
   echo "[shard-emu] clone 中: $PRIMARY_AVD → $clone_name" >&2
-  # cp -c: APFS clonefile (COW, 瞬時にコピー)。失敗時は通常コピーに fallback。
-  if ! cp -cR "$PRIMARY_AVD_DIR" "$clone_dir" 2>/dev/null; then
-    echo "[shard-emu] clonefile 不可。通常コピー (時間がかかります)..." >&2
-    cp -R "$PRIMARY_AVD_DIR" "$clone_dir"
-  fi
+  # nix GNU coreutils cp の --reflink を使った CoW コピー (nix-pure)。
+  # nixpkgs の coreutils は Darwin patch で APFS clonefile() を呼び、
+  # Linux btrfs/xfs では FICLONE ioctl を呼ぶ。ext4 等 CoW 非対応では通常コピーに fallback。
+  # CI (ubuntu-latest, ext4) では 1 runner = 1 emulator なので clone 不要。
+  cp --reflink=auto -R "$PRIMARY_AVD_DIR" "$clone_dir"
 
   # ini ファイル作成
   cat > "$clone_ini" <<EOF
@@ -153,6 +153,15 @@ EOF
 # 使用可能な port を探す
 USED_PORTS=" ${CURRENT_EMULATORS[*]} "
 NEXT_PORT=5556
+
+# 使用中の shard 番号を adb 経由で取得 (avd_name から shard{N} を抽出)
+USED_SHARDS=" "
+for port in "${CURRENT_EMULATORS[@]}"; do
+  avd_name=$(adb -s "emulator-${port}" emu avd name 2>/dev/null | head -1 | tr -d '\r' || echo "")
+  shard_n=$(echo "$avd_name" | grep -oE "${SHARD_AVD_PREFIX}[0-9]+" | grep -oE '[0-9]+' || echo "")
+  [ -n "$shard_n" ] && USED_SHARDS="${USED_SHARDS}${shard_n} "
+done
+
 LAUNCHED_PORTS=()
 SHARD_INDEX=0
 
@@ -166,7 +175,12 @@ for _ in $(seq 1 "$NEED_LAUNCH"); do
     exit 1
   fi
 
+  # 未使用 shard 番号を探す
   SHARD_INDEX=$((SHARD_INDEX + 1))
+  while echo "$USED_SHARDS" | grep -q " ${SHARD_INDEX} "; do
+    SHARD_INDEX=$((SHARD_INDEX + 1))
+  done
+  USED_SHARDS="${USED_SHARDS}${SHARD_INDEX} "
   CLONE_NAME=$(clone_avd "$SHARD_INDEX")
 
   echo "[shard-emu] emulator-${NEXT_PORT} を起動中 (AVD=${CLONE_NAME})..." >&2

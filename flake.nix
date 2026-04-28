@@ -29,11 +29,14 @@
           else "x86_64";  # fallback
 
         androidComposition = pkgs.androidenv.composeAndroidPackages {
-          # platformToolsVersion / buildToolsVersions は nixpkgs-unstable のキャッシュにある
-          # 既知良好版を pin する。デフォルトの 37.0.0 は hash mismatch を起こす場合あり。
+          # platformToolsVersion は nixpkgs-unstable のキャッシュにある既知良好版を pin する。
+          # デフォルトの 37.0.0 は hash mismatch を起こす場合あり。
           platformToolsVersion = "36.0.2";
-          buildToolsVersions = [ "34.0.0" ];
-          platformVersions = [ "34" ];
+          # build-tools / platform は project の compileSdkVersion (= 36) に合わせる。
+          # 不足すると gradle が nix store (read-only) に install しようとして失敗する。
+          # API 36 に統一 (system image / emulator runtime も 36 を使う)
+          buildToolsVersions = [ "36.0.0" ];
+          platformVersions = [ "36" ];
           includeEmulator = true;
           includeSystemImages = true;
           systemImageTypes = [ "google_apis" ];
