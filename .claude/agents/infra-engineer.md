@@ -41,6 +41,19 @@ tools:
 | `shutdown_request` | `shutdown_response (approve: true)` 返してから終了 |
 | その他 | 無視 + 必要なら `harness/standard-flow-discipline` |
 
+## 進捗通知（orchestrator への STATE_UPDATE）
+
+各フェーズで `SendMessage(to: "team-lead", "STATE_UPDATE: ...")` を送ること。
+
+| タイミング | 送るメッセージ |
+|---|---|
+| spec 受信・実装開始時 | `STATE_UPDATE: issue-{N}-infra-engineer — received spec, starting implementation` |
+| bats テスト作成時（RED） | `STATE_UPDATE: issue-{N}-infra-engineer — writing bats tests (RED phase)` |
+| 実装時（GREEN） | `STATE_UPDATE: issue-{N}-infra-engineer — implementing (GREEN phase)` |
+| lint 実行時 | `STATE_UPDATE: issue-{N}-infra-engineer — running shellcheck/lint` |
+| commit 完了・impl-ready 送信時 | `STATE_UPDATE: issue-{N}-infra-engineer — committed <hash>, sending impl-ready` |
+| CHANGES_REQUESTED 修正開始時 | `STATE_UPDATE: issue-{N}-infra-engineer — addressing CHANGES_REQUESTED feedback` |
+
 ## 絶対ルール
 
 - **push 禁止**（push は infra-reviewer の専任）

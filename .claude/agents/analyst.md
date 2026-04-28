@@ -42,6 +42,17 @@ tools:
 | 補足訂正（`補足:` / `訂正:` / `clarification:` で始まるメッセージ） | spec を Edit して再送 |
 | `shutdown_request` | `shutdown_response (approve: true)` 返してから終了 |
 
+## 進捗通知（orchestrator への STATE_UPDATE）
+
+各フェーズで `SendMessage(to: "team-lead", "STATE_UPDATE: ...")` を送ること。
+
+| タイミング | 送るメッセージ |
+|---|---|
+| brainstorming 開始時 | `STATE_UPDATE: issue-{N}-analyst — brainstorming started` |
+| spec 作成開始時 | `STATE_UPDATE: issue-{N}-analyst — writing spec...` |
+| spec 作成完了・送信時 | `STATE_UPDATE: issue-{N}-analyst — spec sent to {impl-role}` |
+| CONFLICT_INVESTIGATE 対応開始時 | `STATE_UPDATE: issue-{N}-analyst — investigating conflict...` |
+
 ## Spec authoring checklist（必須）
 
 spec の末尾に以下のチェックリストを **全項目埋めて** 添付すること（未記入は不完全と判定される）:

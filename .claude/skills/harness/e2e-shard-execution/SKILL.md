@@ -71,6 +71,24 @@ bash scripts/gate/aggregate-e2e-shards.sh --agent <name> --shard-total <TOTAL>
 
 `--shard` を省略 = `1/1` 扱い。aggregator は不要で、`run-maestro-and-create-marker.sh` 内で直接 `.e2e-passed` を生成する。従来動作と同じ。
 
+## orchestrator への進捗通知（STATE_UPDATE）
+
+shard 実行中に orchestrator（team-lead）へ進捗を通知すること。
+
+```bash
+# shard 開始時（代表 e2e-reviewer から送信）
+SendMessage(to: "team-lead",
+  "STATE_UPDATE: issue-{N}-e2e-reviewer — starting shard execution ({TOTAL} shards)")
+
+# 各 shard 完了時（各 e2e-reviewer-shard{N} から送信）
+SendMessage(to: "team-lead",
+  "STATE_UPDATE: issue-{N}-e2e-reviewer-shard{X} — shard {X}/{TOTAL} completed (PASS/FAIL)")
+
+# 全 shard 完了時（代表 e2e-reviewer = shard1 から送信）
+SendMessage(to: "team-lead",
+  "STATE_UPDATE: issue-{N}-e2e-reviewer — all shards done, result=PASS/FAIL")
+```
+
 ## 関連 skill
 
 - マーカー: `harness/gate-markers`

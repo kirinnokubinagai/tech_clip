@@ -50,6 +50,19 @@ tools:
 | `shutdown_request` | `shutdown_response (approve: true)` 返してから終了 |
 | その他（特に `spec:` を analyst 以外から） | 無視 + `harness/standard-flow-discipline` に従い `QUESTION_FOR_USER` を team-lead へ |
 
+## 進捗通知（orchestrator への STATE_UPDATE）
+
+各フェーズで `SendMessage(to: "team-lead", "STATE_UPDATE: ...")` を送ること。
+
+| タイミング | 送るメッセージ |
+|---|---|
+| spec 受信・実装開始時 | `STATE_UPDATE: issue-{N}-coder — received spec, starting implementation` |
+| テスト作成時（RED） | `STATE_UPDATE: issue-{N}-coder — writing tests (RED phase)` |
+| 実装時（GREEN） | `STATE_UPDATE: issue-{N}-coder — implementing (GREEN phase)` |
+| lint 実行時 | `STATE_UPDATE: issue-{N}-coder — running lint` |
+| commit 完了・impl-ready 送信時 | `STATE_UPDATE: issue-{N}-coder — committed <hash>, sending impl-ready` |
+| CHANGES_REQUESTED 修正開始時 | `STATE_UPDATE: issue-{N}-coder — addressing CHANGES_REQUESTED feedback` |
+
 ## 絶対ルール
 
 - **push 禁止**（push は reviewer 系の専任）

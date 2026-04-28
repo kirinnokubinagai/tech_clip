@@ -51,6 +51,19 @@ B. 通常実行フロー:
 | `shutdown_request` | `shutdown_response (approve: true)` 返してから終了 |
 | その他 | 無視 |
 
+## 進捗通知（orchestrator への STATE_UPDATE）
+
+各フェーズで `SendMessage(to: "team-lead", "STATE_UPDATE: ...")` を送ること。
+
+| タイミング | 送るメッセージ |
+|---|---|
+| `impl-ready` 受信時 | `STATE_UPDATE: issue-{N}-e2e-reviewer — received impl-ready, evaluating paths...` |
+| evaluate-paths.sh 結果 | `STATE_UPDATE: issue-{N}-e2e-reviewer — e2e_required=true/false (reason: <skip_reason または always_required>)` |
+| 短絡時 | `STATE_UPDATE: issue-{N}-e2e-reviewer — e2e short-circuit, sending e2e-approved` |
+| shard 開始時 | `STATE_UPDATE: issue-{N}-e2e-reviewer — starting shard execution (N shards)` |
+| 各 shard 完了時 | `STATE_UPDATE: issue-{N}-e2e-reviewer — shard X/N completed (PASS/FAIL)` |
+| 全 shard 完了時 | `STATE_UPDATE: issue-{N}-e2e-reviewer — all shards done, result=PASS/FAIL` |
+
 ## 短絡条件（フェーズ 0 判定）
 
 `scripts/gate/evaluate-paths.sh origin/main` の出力 JSON が `"e2e_required": false` を含む場合:
