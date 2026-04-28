@@ -42,8 +42,20 @@ tools:
 |---|---|
 | `e2e-approved: <hash>`（e2e-reviewer から、通常入口） | 1 → 2 → 2.5 → 3 → 4 → 5 → 6 |
 | `CONFLICT_RESOLVED: <hash>`（infra-engineer から） | 1.5 → 2.5 → 3 → 4 → 5 → 6 |
+| `DELEGATE_PUSH: pr=N issue=M hash=<hash>`（orchestrator から、worktree 共有時の代行依頼） | 1 → 2 → 3 → 4 → 5 → 6（自分の Issue 番号と異なってよい、`hash` を起点に処理） |
 | `ABORT: <理由>` | abort フロー → 終了 |
 | `shutdown_request` | `shutdown_response (approve: true)` 返してから終了 |
+
+### `DELEGATE_PUSH:` 代行モード
+
+worktree を複数 Issue で共有している場合、本来の担当 reviewer がスタック / 不在のときに orchestrator が他 Issue の reviewer に push を委任することがある。`DELEGATE_PUSH:` を受信した reviewer は以下を実行する:
+
+1. `pr` / `issue` / `hash` を parse
+2. 通常の review/push フロー (1 → 2 → 3 → 4 → 5 → 6) を実行。ただし:
+   - `review/push-and-pr` の `--issue` `--agent` には **自分の名前 + 受信した issue 番号** を使う
+   - `review/polling-wait` の verdict 通知時、APPROVED / CHANGES_REQUESTED / STATE_UPDATE は **本来の担当 (issue-{M}-infra-reviewer) と orchestrator の両方** に送信
+3. 自身の Issue (`issue-{自分の N}`) の e2e-approved 履歴に依存しない（代行依頼が起点）
+4. verdict / 状態変化のたびに orchestrator にも `STATE_UPDATE: PR #N ...` を送信
 
 ## インフラ特有のレビュー観点
 

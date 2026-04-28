@@ -90,6 +90,21 @@ SendMessage(to: "orchestrator",
   "POLLING_TIMEOUT: issue-{issue_number} は 60 分以内に解決しませんでした。PR: {PR_URL}")
 ```
 
+### 進捗通知（orchestrator への STATE_UPDATE、必須）
+
+polling-watcher を呼んで verdict / state を取得するたびに、**orchestrator (team-lead) にも必ず以下を送信** すること:
+
+```
+SendMessage(to: "team-lead",
+  "STATE_UPDATE: PR #{PR_NUMBER} verdict=<approve|request_changes|still_pending|conflict|timeout|...> failed=[<failed checks>] success=[<succeeded checks>] in_progress=[<in_progress checks>]")
+```
+
+- still_pending で再 polling する場合も、**前回 iteration から状態に変化があれば** 毎回送信する
+- 全 check が COMPLETED かつ全 SUCCESS で initial approve に至ったら、その旨も明記
+- failed のみならず success / in_progress も含めて通知する（orchestrator が CI 進捗を可視化できるよう）
+
+**意図**: skill 設計上 reviewer → coder のみに verdict が伝わる構造を、orchestrator にも見えるようにするため。本暫定運用は将来 polling-watcher の snapshot mode が完成したら自動化される予定。
+
 ### 6. conflict 受信時
 
 analyst に通知する（polling state ファイルはそのまま残す）:

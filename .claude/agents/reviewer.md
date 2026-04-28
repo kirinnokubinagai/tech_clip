@@ -46,8 +46,18 @@ tools:
 |---|---|
 | `e2e-approved: <hash>`（e2e-reviewer から、通常入口） | 1 → 2 → 3 → 4 → 5 → 6 → 7 |
 | `CONFLICT_RESOLVED: <hash>`（coder から） | 2.5 → 3 → 4 → 5 → 6 → 7 |
+| `DELEGATE_PUSH: pr=N issue=M hash=<hash>`（orchestrator、worktree 共有時の代行依頼） | 1 → 2 → 3 → 4 → 5 → 6 → 7（自身の e2e-approved 履歴に依存しない） |
 | `ABORT: <理由>` | abort フロー → 終了 |
 | `shutdown_request` | `shutdown_response (approve: true)` 返してから終了 |
+
+### `DELEGATE_PUSH:` 代行モード
+
+worktree を複数 Issue で共有していて本来の reviewer がスタック / 不在のときに orchestrator が代行依頼するために使う。受信者は自分の Issue 番号と異なっても処理する。
+
+- `review/push-and-pr` の `--issue` `--agent` には **受信した issue 番号 + 自分の名前** を指定
+- verdict 通知時、APPROVED / CHANGES_REQUESTED は **本来の担当 (issue-{M}-reviewer) と orchestrator (team-lead) の両方** に送信
+- 自身の Issue (`issue-{自分の N}`) の e2e-approved 履歴に依存しない
+- verdict / 状態変化のたびに orchestrator にも `STATE_UPDATE: PR #N ...` を送信
 
 ## 絶対ルール
 
