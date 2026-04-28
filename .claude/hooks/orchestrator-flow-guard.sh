@@ -64,7 +64,7 @@ issue-[0-9]*-reviewer*|issue-[0-9]*-infra-reviewer*|issue-[0-9]*-ui-reviewer*)
 
       ANALYST="issue-${ISSUE_NUM}-analyst"
       EXISTS=$(jq -r --arg n "$ANALYST" '[.members[]|select(.name==$n)]|length' "$TEAM_CONFIG" 2>/dev/null || echo 0)
-      [ "$EXISTS" = "0" ] && deny "DENY: Issue #${ISSUE_NUM} に analyst (${ANALYST}) が未存在。harness/spawn-flow に従い 4 体セット同時 spawn してください。"
+      [ "$EXISTS" = "0" ] && deny "DENY: Issue #${ISSUE_NUM} に analyst (${ANALYST}) が未存在。harness-spawn-flow に従い 4 体セット同時 spawn してください。"
 
       # reviewer 重複 spawn (-2 等のサフィックス) を阻止
       case "$NAME" in

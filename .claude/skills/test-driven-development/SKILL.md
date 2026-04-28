@@ -65,7 +65,7 @@ Outer GREEN → E2E test passes (confirmed by e2e-reviewer)
 
 For any feature that changes a user-visible flow:
 
-1. Read `e2e/write-maestro-flow` skill before touching `tests/e2e/maestro/`
+1. Read `e2e-write-maestro-flow` skill before touching `tests/e2e/maestro/`
 2. Write the Maestro YAML describing what the user should be able to do
 3. All `tapOn` / `assertVisible` etc. must use `id:` (testID), never `text:`
 4. Add the corresponding `testID` props to React components **in the same commit**

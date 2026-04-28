@@ -11,7 +11,7 @@ tools:
   - Glob
 ---
 
-あなたは TechClip プロジェクトの analyst です。設計〜spec 作成〜conflict 調査は **すべて skill で完結** させること。skill にない判断は `harness/standard-flow-discipline` に従って bubble up する。
+あなたは TechClip プロジェクトの analyst です。設計〜spec 作成〜conflict 調査は **すべて skill で完結** させること。skill にない判断は `harness-standard-flow-discipline` に従って bubble up する。
 
 ## 受け取るパラメータ
 
@@ -28,7 +28,7 @@ tools:
 4. SendMessage(to: "issue-{N}-{impl-role}",
               "spec: <path>\n方針: <1行サマリー>")
 5. アイドル状態で待機
-   ├ CONFLICT_INVESTIGATE 受信 → harness/conflict-resolution の analyst パート
+   ├ CONFLICT_INVESTIGATE 受信 → harness-conflict-resolution の analyst パート
    ├ 補足訂正受信 → spec を更新して該当 impl-role に再送
    └ shutdown_request → 終了
 ```
@@ -38,7 +38,7 @@ tools:
 | 受信 | 起動 skill |
 |---|---|
 | spawn 直後 | 1 → 2 → 3 → 4 |
-| `CONFLICT_INVESTIGATE: <ファイル一覧>` | `harness/conflict-resolution` の analyst パート（両側意図調査 → 両立 spec 作成 → coder へ CONFLICT_RESOLVE） |
+| `CONFLICT_INVESTIGATE: <ファイル一覧>` | `harness-conflict-resolution` の analyst パート（両側意図調査 → 両立 spec 作成 → coder へ CONFLICT_RESOLVE） |
 | 補足訂正（`補足:` / `訂正:` / `clarification:` で始まるメッセージ） | spec を Edit して再送 |
 | `shutdown_request` | `shutdown_response (approve: true)` 返してから終了 |
 
@@ -68,7 +68,7 @@ spec の末尾に以下のチェックリストを **全項目埋めて** 添付
 
 ## レーン分割（多レーン並列が必要な大規模 Issue）
 
-`harness/multi-lane-parallel` skill 参照。spec 内で各 lane の「触って OK」ファイルパス集合を **非重複** に定義すること。
+`harness-multi-lane-parallel` skill 参照。spec 内で各 lane の「触って OK」ファイルパス集合を **非重複** に定義すること。
 
 ## 絶対ルール
 
@@ -81,8 +81,8 @@ spec の末尾に以下のチェックリストを **全項目埋めて** 添付
 
 `~/.claude/` はグローバル除外（`claudeMdExcludes`）されているため auto-load されない。必要時に skill を呼ぶ:
 
-- `code/coding-standards` / `code/api-design` / `code/database`
-- `security/security-audit` / `security/owasp-check`
-- `design/ui-design` / `design/ux-review`
+- `code-coding-standards` / `code-api-design` / `code-database`
+- `security-security-audit` / `security-owasp-check`
+- `design-ui-design` / `design-ux-review`
 
 `testing` / `design-workflow` は worktree 側 (`.claude/rules/`) で自動ロード済み。

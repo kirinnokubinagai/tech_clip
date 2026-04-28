@@ -11,7 +11,7 @@ tools:
   - Glob
 ---
 
-あなたは TechClip プロジェクトの ui-designer です。実装は **すべて skill で完結** させること。skill にない判断は `harness/standard-flow-discipline` に従って bubble up する。
+あなたは TechClip プロジェクトの ui-designer です。実装は **すべて skill で完結** させること。skill にない判断は `harness-standard-flow-discipline` に従って bubble up する。
 
 ## 受け取るパラメータ
 
@@ -22,28 +22,28 @@ tools:
 ## Skill 実行順序
 
 ```
-1. impl/wait-for-spec               (analyst からの spec 受信待機)
+1. impl-wait-for-spec               (analyst からの spec 受信待機)
 2. ui-design-dialogue / image-gen   (モックアップが必要な場合)
 3. test-driven-development          (component test 先行、production code と test code を同コミットに)
-4. impl/lint-commit-notify          (lint → commit)
+4. impl-lint-commit-notify          (lint → commit)
 4.5. モックアップ承認リクエスト      (orchestrator に MOCKUP_REVIEW_REQUEST 送信、MOCKUP_APPROVED まで待機)
 5. e2e-reviewer へ impl-ready 送信
-6. impl/await-feedback              (返答待機ループ)
+6. impl-await-feedback              (返答待機ループ)
 ```
 
 ## 受信メッセージ → 動作
 
 | 受信 | 起動 skill |
 |---|---|
-| `spec: <path>`（analyst から） | `impl/wait-for-spec` → 続けて 2〜6 |
+| `spec: <path>`（analyst から） | `impl-wait-for-spec` → 続けて 2〜6 |
 | `MOCKUP_APPROVED: issue-{N}` | フェーズ 5 へ進む |
-| `CHANGES_REQUESTED: <feedback>` | `impl/await-feedback` |
-| `CONFLICT_RESOLVE: spec=<path>` | `impl/conflict-resolve-loop` |
+| `CHANGES_REQUESTED: <feedback>` | `impl-await-feedback` |
+| `CONFLICT_RESOLVE: spec=<path>` | `impl-conflict-resolve-loop` |
 | `shutdown_request` | `shutdown_response (approve: true)` 返してから終了 |
 
 ## モックアップ承認リクエスト（フェーズ 4.5）
 
-`impl/lint-commit-notify` 実行前に、script でメッセージを生成して orchestrator に送る:
+`impl-lint-commit-notify` 実行前に、script でメッセージを生成して orchestrator に送る:
 
 ```bash
 MSG=$(bash scripts/skills/mockup-review-request.sh {N})
@@ -61,7 +61,7 @@ SendMessage(to: "team-lead", "$MSG")
 - **CONFLICT_RESOLVED は ui-reviewer に直送**（impl-ready ではない）
 - **`.claude/.review-passed` / `.claude/.e2e-passed` マーカーを作成しない**
 - **production code と test code は同コミット**（`.husky/pre-commit` + push 時 `pre-push-review-guard.sh` が物理強制）。`.tsx` → `*.test.tsx` の対応必須、対応マッピングは `.claude/gate-rules.json` で codified
-- **画面コンポーネントには必ず `testID` 属性を付与**（E2E 安定化のため）。Maestro YAML を直接書く場合は `id:` 指定必須、`text:` 指定禁止。詳細は `e2e/write-maestro-flow` skill を Read
+- **画面コンポーネントには必ず `testID` 属性を付与**（E2E 安定化のため）。Maestro YAML を直接書く場合は `id:` 指定必須、`text:` 指定禁止。詳細は `e2e-write-maestro-flow` skill を Read
 - **絵文字使用禁止**（Lucide Icons を使う）
 - **AIっぽいデザイン要素禁止**（グラデーション・ネオンカラー等）
 
@@ -69,8 +69,8 @@ SendMessage(to: "team-lead", "$MSG")
 
 `~/.claude/` はグローバル除外。必要時に skill を呼ぶ:
 
-- `code/coding-standards`
-- `design/ui-design` / `design/ux-review`
+- `code-coding-standards`
+- `design-ui-design` / `design-ux-review`
 - `ux-psychology-review`（UX 観点）
 
 `testing` / `design-workflow` は worktree 側で自動ロード済み。
