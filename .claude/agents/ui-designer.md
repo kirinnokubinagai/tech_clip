@@ -62,12 +62,9 @@ SendMessage(to: "team-lead",
 - **絵文字使用禁止**（Lucide Icons を使う）
 - **AIっぽいデザイン要素禁止**（グラデーション・ネオンカラー等）
 
-## 参照する rules（必要時のみ Read）
+## 参照する rules
 
-- `.claude/rules/coding-standards.md`
-- `.claude/rules/testing.md`
-- `.claude/rules/frontend-design.md`
-- `.claude/rules/design-workflow.md`
+`coding-standards` / `frontend-design` は `~/.claude/rules/` で自動ロード済み。`testing` / `design-workflow` は worktree 側で自動ロード済み。追加 Read 不要。
 
 ## レーン並列モード
 

@@ -1,36 +1,17 @@
 #!/usr/bin/env bash
-# SessionStart hook: CLAUDE と .claude/rules を additionalContext として再注入する
+# SessionStart hook: ワークフローリマインダーのみ注入（CLAUDE.md / rules の内容は Claude Code が自動ロード済みのため再注入しない）
 
 set -euo pipefail
 
-REPO_ROOT=$(git rev-parse --show-toplevel 2>/dev/null || echo ".")
-CLAUDE_MD="${REPO_ROOT}/CLAUDE.md"
-RULES_DIR="${REPO_ROOT}/.claude/rules"
-
-if [[ ! -f "${CLAUDE_MD}" ]]; then
-  exit 0
-fi
-
-MESSAGE=$'⚠️ CRITICAL WORKFLOW REMINDER ⚠️\n必ずこのフローを守ること（違反は全フックでブロックされる）:\n  コード変更依頼 → Issue確認/作成 → Worktree作成 → TeamCreate → エージェント起動\n  直接ファイル編集禁止 / Agent(coder) 直接呼び出し禁止\n\n'
-
-if [[ -f "${CLAUDE_MD}" ]]; then
-  CLAUDE_CONTENT=$(cat "${CLAUDE_MD}")
-  MESSAGE+=$'=== CLAUDE.md 再確認 ===\n'"${CLAUDE_CONTENT}"$'\n\n'
-fi
-
-if [[ -d "${RULES_DIR}" ]]; then
-  while IFS= read -r rule_file; do
-    rule_name=$(basename "${rule_file}")
-    rule_content=$(cat "${rule_file}")
-    MESSAGE+=$'=== .claude/rules/'"${rule_name}"$' ===\n'"${rule_content}"$'\n\n'
-  done < <(find "${RULES_DIR}" -maxdepth 1 -type f -name "*.md" | sort)
-fi
+MESSAGE='⚠️ ワークフロー必須:
+- Issue 確認/作成 → Worktree 作成 → 4 体セット spawn (analyst + 実装系 + e2e-reviewer + reviewer)
+- 実装系 → impl-ready は **必ず e2e-reviewer に**送る (reviewer 直送禁止)
+- 詳細は CLAUDE.md の「状況別ランブック」と harness/* skill を参照'
 
 if command -v jq >/dev/null 2>&1; then
-  jq -n --arg msg "${MESSAGE}" \
+  jq -n --arg msg "$MESSAGE" \
     '{hookSpecificOutput:{hookEventName:"SessionStart",additionalContext:$msg}}'
   exit 0
 fi
 
-SANITIZED_MESSAGE=$(printf '%s' "${MESSAGE}" | tr -d '\000-\037' | sed 's/\\/\\\\/g; s/"/\\"/g')
-printf '{"hookSpecificOutput":{"hookEventName":"SessionStart","additionalContext":"%s"}}\n' "${SANITIZED_MESSAGE}"
+echo "{\"hookSpecificOutput\":{\"hookEventName\":\"SessionStart\",\"additionalContext\":\"${MESSAGE//$'\n'/\\n}\"}}"

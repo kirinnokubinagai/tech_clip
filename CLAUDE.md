@@ -275,9 +275,7 @@ orchestrator・サブエージェントは状況に応じて以下の skill を 
 | `conflict-resolver` | analyst の conflict 調査 |
 | `subagent-driven-development` | spec から子タスク並列実行 |
 | `verification-before-completion` | 完了主張前の検証 |
-| `using-git-worktrees` | worktree 作成 |
 | `git-workflow` | Git/GitHub 一般操作 |
-| `sync` | main 同期 |
 
 ### 個別領域
 
@@ -295,15 +293,15 @@ orchestrator・サブエージェントは状況に応じて以下の skill を 
 
 ### コード規約（rules）
 
-| ファイル | 用途 |
-|---|---|
-| [`.claude/rules/coding-standards.md`](.claude/rules/coding-standards.md) | コーディング規約 |
-| [`.claude/rules/testing.md`](.claude/rules/testing.md) | テスト規約 |
-| [`.claude/rules/api-design.md`](.claude/rules/api-design.md) | API 設計 |
-| [`.claude/rules/database.md`](.claude/rules/database.md) | DB 操作 |
-| [`.claude/rules/security.md`](.claude/rules/security.md) | セキュリティ |
-| [`.claude/rules/frontend-design.md`](.claude/rules/frontend-design.md) | フロントエンドデザイン |
-| [`.claude/rules/design-workflow.md`](.claude/rules/design-workflow.md) | デザインワークフロー |
+| ファイル | 用途 | 場所 |
+|---|---|---|
+| coding-standards.md | コーディング規約 | `~/.claude/rules/`（全プロジェクト共通、自動ロード） |
+| api-design.md | API 設計 | `~/.claude/rules/`（自動ロード） |
+| database.md | DB 操作 | `~/.claude/rules/`（自動ロード） |
+| security.md | セキュリティ | `~/.claude/rules/`（自動ロード） |
+| frontend-design.md | フロントエンドデザイン | `~/.claude/rules/`（自動ロード） |
+| testing.md | テスト規約（プロジェクト固有 `tests/` 構造） | `.claude/rules/`（worktree 側） |
+| design-workflow.md | デザインワークフロー（プロジェクト固有） | `.claude/rules/`（worktree 側） |
 
 ---
 

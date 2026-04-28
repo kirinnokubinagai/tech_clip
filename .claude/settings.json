@@ -5,12 +5,6 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash \"$(git rev-parse --show-toplevel 2>/dev/null || echo .)/.claude/hooks/session-start.sh\"",
-            "timeout": 15,
-            "statusMessage": "Syncing with remote..."
-          },
-          {
-            "type": "command",
             "command": "bash \"$(git rev-parse --show-toplevel 2>/dev/null || echo .)/.claude/hooks/auto-sync-main.sh\"",
             "timeout": 15,
             "statusMessage": "Auto-syncing with origin/main..."

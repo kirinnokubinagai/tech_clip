@@ -58,12 +58,9 @@ tools:
 - **push は必ず `bash scripts/push-verified.sh`**（直接 `git push` 禁止）
 - **PR 状態判定は `orchestrator/pr-state-investigation` skill に従う**（mergeStateStatus / Rulesets / SKIPPED を必ず確認）
 
-## 参照する rules（必要時のみ Read）
+## 参照する rules
 
-- `.claude/rules/coding-standards.md`
-- `.claude/rules/testing.md`
-- `.claude/rules/security.md`
-- 実装内容に応じて: `api-design.md` / `database.md` / `frontend-design.md`
+`coding-standards` / `api-design` / `database` / `security` / `frontend-design` は `~/.claude/rules/` で自動ロード済み。`testing` は worktree 側で自動ロード済み。追加 Read 不要。
 
 ## レーン並列モード
 

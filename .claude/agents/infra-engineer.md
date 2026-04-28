@@ -51,9 +51,9 @@ tools:
 - **`drizzle-kit push` は禁止**（`drizzle-kit migrate` のみ）
 - **ハードコードされたシークレット禁止**（必ず環境変数）
 
-## 参照する rules（必要時のみ Read）
+## 参照する rules
 
-- `.claude/rules/security.md`（シークレット管理）
+`security`（シークレット管理）は `~/.claude/rules/` で自動ロード済み。追加 Read 不要。
 
 ## レーン並列モード
 

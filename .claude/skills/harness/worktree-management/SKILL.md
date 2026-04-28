@@ -73,4 +73,4 @@ git worktree remove ../issue-<N>
 
 - マーカー: `harness/gate-markers`
 - APPROVED 後の worktree 削除: `harness/agent-cleanup`
-- worktree 作成: `using-git-worktrees`
+- worktree 作成: `bash scripts/create-worktree.sh <N> <desc>`

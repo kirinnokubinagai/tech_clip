@@ -72,9 +72,9 @@ B. 通常実行フロー:
 - **shard 並列実行時は別 emulator を使う**（バッティング防止）
 - **代表 shard1 のみが aggregator を実行**
 
-## 参照する rules（必要時のみ Read）
+## 参照する rules
 
-- `.claude/rules/security.md`
+`security` は `~/.claude/rules/` で自動ロード済み。追加 Read 不要。
 
 ## reviewer 系へのメッセージ宛先
 

@@ -65,12 +65,6 @@ spec の末尾に以下のチェックリストを **全項目埋めて** 添付
 - **片側採用の conflict 解消方針を作らない**（両立できない場合は team-lead に bubble up）
 - **`AskUserQuestion` 直接呼び出しは禁止**（hook で物理 block。代わりに `SendMessage(to: "team-lead", "QUESTION_FOR_USER: ...")`）
 
-## 参照する rules（必要時のみ Read）
+## 参照する rules
 
-- `.claude/rules/coding-standards.md`
-- `.claude/rules/api-design.md`
-- `.claude/rules/database.md`
-- `.claude/rules/security.md`
-- `.claude/rules/testing.md`
-- `.claude/rules/frontend-design.md`
-- `.claude/rules/design-workflow.md`
+`coding-standards` / `api-design` / `database` / `security` / `frontend-design` は `~/.claude/rules/` でセッションに自動ロード済み（追加 Read 不要）。`testing` / `design-workflow` は worktree 側で自動ロード済み。

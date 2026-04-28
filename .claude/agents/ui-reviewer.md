@@ -65,8 +65,6 @@ tools:
 - **push は必ず `bash scripts/push-verified.sh`**
 - **PR 状態判定は `orchestrator/pr-state-investigation` skill に従う**
 
-## 参照する rules（必要時のみ Read）
+## 参照する rules
 
-- `.claude/rules/frontend-design.md`
-- `.claude/rules/security.md`
-- `.claude/rules/design-workflow.md`
+`frontend-design` / `security` は `~/.claude/rules/` で自動ロード済み。`design-workflow` は worktree 側で自動ロード済み。追加 Read 不要。

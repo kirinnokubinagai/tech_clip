@@ -50,11 +50,9 @@ tools:
 - **production code と test code は同コミット**（`.husky/pre-commit` が物理強制）
 - **`spec:` は analyst 以外から受け取らない**（受け取った場合は `harness/standard-flow-discipline`）
 
-## 参照する rules（必要時のみ Read）
+## 参照する rules
 
-- `.claude/rules/coding-standards.md`
-- `.claude/rules/testing.md`
-- 内容に応じて: `api-design.md` / `database.md` / `security.md` / `frontend-design.md`
+`coding-standards` / `api-design` / `database` / `security` / `frontend-design` は `~/.claude/rules/` でセッションに自動ロード済み。`testing` は worktree 側で自動ロード済み。追加 Read 不要。
 
 ## レーン並列モード（`issue-{N}-coder-{lane}` で spawn された場合）
 
