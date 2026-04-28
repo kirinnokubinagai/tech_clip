@@ -245,16 +245,21 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
 
   /**
    * セッション期限切れを処理する
-   * トークンをクリアし、ログイン画面へ誘導するためのメッセージを設定する
+   * トークンをクリアし、ログイン画面へ誘導するためのメッセージを設定する。
+   *
+   * 「以前ログイン済み (isAuthenticated=true) の状態から 401 を受けた」場合のみ
+   * メッセージを表示する。未ログイン状態 (=token 無し) で background API が 401 を
+   * 受けるケース (cold start 直後で session 確立前) では、メッセージは出さない。
    */
   handleSessionExpired: async () => {
+    const wasAuthenticated = get().isAuthenticated;
     await clearAuthTokens();
 
     set({
       user: null,
       session: null,
       isAuthenticated: false,
-      sessionExpiredMessage: SESSION_EXPIRED_MESSAGE,
+      sessionExpiredMessage: wasAuthenticated ? SESSION_EXPIRED_MESSAGE : null,
     });
   },
 
