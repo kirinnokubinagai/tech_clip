@@ -175,5 +175,6 @@ open docs/design/<screen-name>.png docs/design/assets/icons/*.png docs/design/as
 
 ## 前提条件
 
-- `codex` CLI: `flake.nix` の `devShells.default` に組み込み済み（`direnv reload` で自動取得）
+- `codex` CLI: ローカルに別途インストール（`npm install -g @openai/codex` または `brew install --cask codex`）。nix devShell には組み込まない（バージョン更新が頻繁で、古い nixpkgs revision の codex は gpt-5.5 model 非対応のため）
 - ChatGPT サブスクリプションで OAuth 認証済み（`codex` 初回起動時に認証）
+- `codex --version` が 0.125 以上であることを確認
