@@ -10,7 +10,7 @@ on:
       - '.omc/**'
       - 'tests/e2e/maestro/**'
   pull_request:
-    branches: [main, 'issue/**']
+    branches: [main, stage, 'issue/**']
 
 # デフォルトで全権限を read-only にし、各ジョブで必要な権限のみを上書きする
 permissions: read-all
@@ -170,13 +170,15 @@ jobs:
       - name: hooksテスト
         run: nix develop .#ci --command bats tests/hooks/
 
-  # ── Step 5（並列）: ZAP セキュリティスキャン（コード変更時のみ）─────────
+  # ── Step 5（並列）: ZAP セキュリティスキャン（stage→main の PR / コード変更時のみ）─────────
+  # feature→stage PR では skip (CI が軽量に保たれる)。security gate は stage→main の 1 か所で十分。
   zap:
     needs: [claude-review, changes]
     if: |
       always() &&
       needs.changes.outputs.code == 'true' &&
-      needs.claude-review.outputs.needs_work != 'true'
+      needs.claude-review.outputs.needs_work != 'true' &&
+      github.base_ref == 'main'
     runs-on: ubuntu-latest
     timeout-minutes: 45
     permissions:

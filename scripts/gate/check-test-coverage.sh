@@ -18,7 +18,21 @@ if [ "${1:-}" = "--staged" ]; then
   shift
 fi
 
-BASE_REF="${1:-origin/main}"
+# base_ref 解決: 引数 > 環境変数 > 自動判定 (evaluate-paths.sh と同パターン)
+if [ -n "${1:-}" ]; then
+  BASE_REF="$1"
+elif [ -n "${BASE_REF:-}" ]; then
+  : # 環境変数をそのまま使う
+else
+  CURRENT_BRANCH=$(git rev-parse --abbrev-ref HEAD 2>/dev/null || echo "")
+  if [ "$CURRENT_BRANCH" = "stage" ]; then
+    BASE_REF="origin/main"
+  elif git rev-parse --verify origin/stage >/dev/null 2>&1; then
+    BASE_REF="origin/stage"
+  else
+    BASE_REF="origin/main"
+  fi
+fi
 
 REPO_ROOT="$(git rev-parse --show-toplevel)"
 RULES_FILE="${REPO_ROOT}/.claude/gate-rules.json"

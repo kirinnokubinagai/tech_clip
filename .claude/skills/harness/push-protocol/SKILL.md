@@ -12,6 +12,13 @@ triggers:
 
 reviewer / infra-reviewer / ui-reviewer の push は **必ず `bash scripts/push-verified.sh` を経由** する。`git push origin HEAD` の直接実行は禁止。
 
+## marker 必須範囲 (#1138 branch 戦略)
+
+- feature/* / issue/* → stage の PR: marker 不要 (CI gate が check)
+- stage → main の PR: `.review-passed` + `.e2e-passed` 必須 (reviewer 系のみ作成可)
+
+`pre-push-review-guard.sh` / `pre-push-e2e-guard.sh` は `stage` / `main` branch 以外からの push を自動 skip する。
+
 ## push-verified.sh の動作（1 コマンド完遂）
 
 1. lint / typecheck / test を実行

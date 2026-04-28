@@ -2,6 +2,9 @@ name: PR E2E (Android)
 
 on:
   pull_request:
+    # stage→main の PR のみ e2e を実行する (#1138)
+    # feature→stage PR では e2e は skip される (CI が軽量)
+    branches: [main]
     # gate-rules.json の ci_path_filters.e2e_android と同期させること
     paths:
       - "apps/mobile/**"

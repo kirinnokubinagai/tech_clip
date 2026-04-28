@@ -15,10 +15,26 @@
 #   }
 set -euo pipefail
 
-BASE_REF="${1:-origin/main}"
-
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-REPO_ROOT="$(git -C "$SCRIPT_DIR" rev-parse --show-toplevel 2>/dev/null || git rev-parse --show-toplevel)"
+# REPO_ROOT env var override allows tests to point to a temp repo
+REPO_ROOT="${REPO_ROOT:-$(git -C "$SCRIPT_DIR" rev-parse --show-toplevel 2>/dev/null || git rev-parse --show-toplevel)}"
+
+# base_ref 解決: 引数 > 環境変数 > 自動判定
+if [ -n "${1:-}" ]; then
+  BASE_REF="$1"
+elif [ -n "${BASE_REF:-}" ]; then
+  : # 環境変数をそのまま使う
+else
+  # 自動判定: 現在 branch が stage → origin/main、それ以外 → origin/stage (存在すれば)
+  CURRENT_BRANCH=$(git -C "$REPO_ROOT" rev-parse --abbrev-ref HEAD 2>/dev/null || echo "")
+  if [ "$CURRENT_BRANCH" = "stage" ]; then
+    BASE_REF="origin/main"
+  elif git -C "$REPO_ROOT" rev-parse --verify origin/stage >/dev/null 2>&1; then
+    BASE_REF="origin/stage"
+  else
+    BASE_REF="origin/main"  # fallback (stage が未作成なら main 比較)
+  fi
+fi
 RULES_FILE="${REPO_ROOT}/.claude/gate-rules.json"
 
 if [ ! -f "$RULES_FILE" ]; then

@@ -35,6 +35,7 @@ teardown() {
 }
 
 # ヘルパー: ファイルを追加してコミットし evaluate-paths.sh を実行する
+# REPO_ROOT を temp repo に override して高速に実行する
 add_and_run() {
   local file="$1"
   local content="${2:-content}"
@@ -42,7 +43,7 @@ add_and_run() {
   echo "$content" > "$REPO_DIR/$file"
   git -C "$REPO_DIR" add "$file"
   git -C "$REPO_DIR" commit -m "add $file" --quiet
-  (cd "$REPO_DIR" && bash "$SCRIPT" origin/main)
+  (cd "$REPO_DIR" && REPO_ROOT="$REPO_DIR" bash "$SCRIPT" origin/main)
 }
 
 # ─────────────────────────────────────────────────────────
@@ -52,7 +53,7 @@ add_and_run() {
   # HEAD == origin/main なので diff がない
   git -C "$REPO_DIR" push origin main --quiet
   local out
-  out=$(cd "$REPO_DIR" && bash "$SCRIPT" origin/main)
+  out=$(cd "$REPO_DIR" && REPO_ROOT="$REPO_DIR" bash "$SCRIPT" origin/main)
   echo "$out" | jq -e '.review_gate.required == false'
   echo "$out" | jq -e '.e2e_gate.auto_skip == true'
   echo "$out" | jq -e '.e2e_gate.skip_reason == "no_e2e_affecting_paths"'
@@ -93,10 +94,12 @@ add_and_run() {
 # ─────────────────────────────────────────────────────────
 # 5. docs のみ変更 → review auto_pass=true
 # ─────────────────────────────────────────────────────────
-@test "docs-only diff: review_gate.auto_pass=true" {
+@test "docs-only diff: review_gate.required=false, e2e_gate.auto_skip=true" {
+  # docs/** は review_required_paths に含まれないため review_required=false
+  # (auto_pass_paths は review_required=true の場合に影響する)
   local out
   out=$(add_and_run "docs/design/overview.md")
-  echo "$out" | jq -e '.review_gate.auto_pass == true'
+  echo "$out" | jq -e '.review_gate.required == false'
   echo "$out" | jq -e '.e2e_gate.auto_skip == true'
 }
 
@@ -140,7 +143,7 @@ add_and_run() {
   git -C "$REPO_DIR" add .
   git -C "$REPO_DIR" commit -m "mixed" --quiet
   local out
-  out=$(cd "$REPO_DIR" && bash "$SCRIPT" origin/main)
+  out=$(cd "$REPO_DIR" && REPO_ROOT="$REPO_DIR" bash "$SCRIPT" origin/main)
   echo "$out" | jq -e '.e2e_gate.required == true'
   echo "$out" | jq -e '[.ci_jobs_needed[] | select(. == "mobile_test")] | length > 0'
   echo "$out" | jq -e '[.ci_jobs_needed[] | select(. == "api_test")] | length > 0'
@@ -153,4 +156,74 @@ add_and_run() {
   local out
   out=$(add_and_run "apps/mobile/src/locales/ja.json")
   echo "$out" | jq -e '.e2e_gate.required == true'
+}
+
+# ─────────────────────────────────────────────────────────
+# 11. (#1138) stage branch での base_ref 自動判定が origin/main になること
+# REPO_ROOT env var で temp repo を指定して高速に検証する。
+# ─────────────────────────────────────────────────────────
+@test "stage branch 上で base_ref 自動判定が origin/main になること" {
+  # Arrange: origin を持つ temp repo を stage branch に設定
+  git -C "$REPO_DIR" push origin main --quiet
+  # stage branch を origin に push
+  git -C "$REPO_DIR" checkout -b stage main 2>/dev/null
+  git -C "$REPO_DIR" push origin stage:stage --quiet
+  git -C "$REPO_DIR" fetch origin --quiet
+
+  # Act: REPO_ROOT を temp repo に override して引数なしで実行
+  local out
+  out=$(REPO_ROOT="$REPO_DIR" bash "$SCRIPT")
+
+  # Assert: stage branch → base_ref が origin/main になること
+  echo "$out" | jq -e '.base_ref == "origin/main"'
+}
+
+# ─────────────────────────────────────────────────────────
+# 12. (#1138) feature branch 上で origin/stage がある場合 base_ref が origin/stage になること
+# ─────────────────────────────────────────────────────────
+@test "feature branch 上で base_ref 自動判定が origin/stage になること" {
+  # Arrange: origin/stage を作成してから feature branch に移動
+  git -C "$REPO_DIR" push origin main --quiet
+  git -C "$REPO_DIR" checkout -b stage main 2>/dev/null
+  git -C "$REPO_DIR" push origin stage:stage --quiet
+  git -C "$REPO_DIR" fetch origin --quiet
+  git -C "$REPO_DIR" checkout -b feature/test-auto main 2>/dev/null
+
+  # Act: REPO_ROOT を temp repo に override して引数なしで実行
+  local out
+  out=$(REPO_ROOT="$REPO_DIR" bash "$SCRIPT")
+
+  # Assert: origin/stage が存在 → base_ref が origin/stage になること
+  echo "$out" | jq -e '.base_ref == "origin/stage"'
+}
+
+# ─────────────────────────────────────────────────────────
+# 13. (#1138) feature branch 上で origin/stage がない場合 origin/main にフォールバックすること
+# ─────────────────────────────────────────────────────────
+@test "feature branch 上で origin/stage が存在しない場合 origin/main にフォールバックすること" {
+  # Arrange: origin/stage を作らずに feature branch で作業
+  git -C "$REPO_DIR" push origin main --quiet
+  git -C "$REPO_DIR" checkout -b feature/no-stage main 2>/dev/null
+
+  # Act: REPO_ROOT を temp repo に override (origin/stage が存在しない)
+  local out
+  out=$(REPO_ROOT="$REPO_DIR" bash "$SCRIPT")
+
+  # Assert: origin/main にフォールバック
+  echo "$out" | jq -e '.base_ref == "origin/main"'
+}
+
+# ─────────────────────────────────────────────────────────
+# 14. (#1138) BASE_REF 環境変数で base_ref を override できること
+# ─────────────────────────────────────────────────────────
+@test "BASE_REF 環境変数で base_ref を override できること" {
+  # Arrange: temp repo を push して empty diff にする
+  git -C "$REPO_DIR" push origin main --quiet
+
+  # Act: BASE_REF 環境変数で origin/main を明示 (引数なし)
+  local out
+  out=$(REPO_ROOT="$REPO_DIR" BASE_REF=origin/main bash "$SCRIPT")
+
+  # Assert: base_ref が override された値になること
+  echo "$out" | jq -e '.base_ref == "origin/main"'
 }

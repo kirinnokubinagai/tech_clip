@@ -67,6 +67,13 @@ if [ -z "$CURRENT_SHA" ]; then
   exit 0
 fi
 
+# branch 戦略 (#1138): marker 必須は stage → main の経路のみ
+# feature/* / issue/* 等の通常開発 branch は CI gate に委譲 → push hook を緩める
+CURRENT_BRANCH=$(git -C "$WORKTREE_PATH" rev-parse --abbrev-ref HEAD 2>/dev/null || echo "")
+if [ "$CURRENT_BRANCH" != "stage" ] && [ "$CURRENT_BRANCH" != "main" ]; then
+  exit 0
+fi
+
 MARKER="${WORKTREE_PATH}/.claude/.review-passed"
 
 if [ ! -f "$MARKER" ]; then

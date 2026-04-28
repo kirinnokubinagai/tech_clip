@@ -25,6 +25,7 @@ bash scripts/skills/spawn-prepare.sh <issue-number> <kebab-case-desc>
 スクリプトが以下を自動で行う:
 
 - worktree 作成（既存ならスキップ、`scripts/create-worktree.sh` 内部で `direnv allow` + `pnpm install`）
+  - **branch 戦略 (#1138)**: worktree は `origin/stage` を base に作成（`BASE_REF=origin/stage`。stage branch 未存在時は `origin/main` にフォールバック）
 - `shard_total` 判定（disk 30GB 以上 → 4、未満 → 2、CI 環境 → 4）
 - Issue body / labels から `impl_role` / `reviewer_role` を推定（coder|infra-engineer|ui-designer / reviewer|infra-reviewer|ui-reviewer）
 
