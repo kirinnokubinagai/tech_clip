@@ -29,6 +29,7 @@ if [ ! -f "apps/api/.dev.vars" ]; then
   echo "[api-ci] apps/api/.dev.vars が見つかりません。CI 用に生成します"
   cat > apps/api/.dev.vars << EOF
 ENVIRONMENT=development
+IS_E2E_ENV=1
 TURSO_DATABASE_URL=${TURSO_DATABASE_URL:-http://127.0.0.1:8888}
 TURSO_AUTH_TOKEN=${TURSO_AUTH_TOKEN:-dummy}
 BETTER_AUTH_SECRET=ci-e2e-better-auth-secret-for-testing-only-32chars
