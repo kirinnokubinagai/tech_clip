@@ -1,30 +1,30 @@
+import fs from "node:fs";
+import os from "node:os";
+import path from "node:path";
+
 import { createClient } from "@libsql/client";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
-/** Turso dev サーバーの接続先 URL */
-const TURSO_DATABASE_URL = process.env.TURSO_DATABASE_URL ?? "http://127.0.0.1:8888";
-
-/** Turso dev サーバーの認証トークン */
-const TURSO_AUTH_TOKEN = process.env.TURSO_AUTH_TOKEN ?? "dummy";
-
 /**
- * sqld/sqld 互換サーバーが起動しているかどうかを確認する
+ * テストごとに独立した一時 SQLite ファイルを返す
+ *
+ * reset-db は DROP ALL TABLES という破壊的操作のため、共有 sqld（:8888）を
+ * 使うと並列実行中の他テストを壊す。各テストで独自の一時ファイル DB を使うことで
+ * 完全に隔離する。
  */
-async function isTursoAvailable(): Promise<boolean> {
-  try {
-    const client = createClient({ url: TURSO_DATABASE_URL, authToken: TURSO_AUTH_TOKEN });
-    await client.execute("SELECT 1");
-    client.close();
-    return true;
-  } catch {
-    return false;
-  }
+function makeTempDbUrl(): { url: string; filePath: string } {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "reset-db-test-"));
+  const filePath = path.join(dir, "test.db");
+  return { url: `file:${filePath}`, filePath: dir };
 }
 
 /**
  * reset-db スクリプトを node で実行し stdout/stderr/exitCode を返す
  */
-async function runResetDb(): Promise<{ stdout: string; stderr: string; exitCode: number }> {
+async function runResetDb(
+  dbUrl: string,
+  authToken = "",
+): Promise<{ stdout: string; stderr: string; exitCode: number }> {
   const { execFile } = await import("node:child_process");
   const { promisify } = await import("node:util");
   const execFileAsync = promisify(execFile);
@@ -38,8 +38,8 @@ async function runResetDb(): Promise<{ stdout: string; stderr: string; exitCode:
       {
         env: {
           ...process.env,
-          TURSO_DATABASE_URL,
-          TURSO_AUTH_TOKEN,
+          TURSO_DATABASE_URL: dbUrl,
+          TURSO_AUTH_TOKEN: authToken,
           ALLOW_DB_RESET: "1",
         },
         timeout: 30_000,
@@ -58,61 +58,52 @@ async function runResetDb(): Promise<{ stdout: string; stderr: string; exitCode:
 
 describe("reset-db スクリプト", () => {
   let client: ReturnType<typeof createClient>;
-  let available: boolean;
+  let tempDbUrl: string;
+  let tempDir: string;
 
-  beforeEach(async () => {
-    available = await isTursoAvailable();
-    if (!available) return;
-    client = createClient({ url: TURSO_DATABASE_URL, authToken: TURSO_AUTH_TOKEN });
+  beforeEach(() => {
+    const { url, filePath } = makeTempDbUrl();
+    tempDbUrl = url;
+    tempDir = filePath;
+    client = createClient({ url: tempDbUrl });
   });
 
-  afterEach(async () => {
-    if (!available) return;
+  afterEach(() => {
     client?.close();
-  });
-
-  it("Turso が起動していない場合はスキップできること", async () => {
-    if (available) {
-      expect(available).toBe(true);
-      return;
+    try {
+      fs.rmSync(tempDir, { recursive: true, force: true });
+    } catch {
+      // 削除失敗は無視
     }
-    expect(available).toBe(false);
   });
 
   it("空のデータベースに対して正常終了できること", async () => {
-    if (!available) return;
-
-    const { exitCode, stdout } = await runResetDb();
+    const { exitCode, stdout } = await runResetDb(tempDbUrl);
 
     expect(exitCode).toBe(0);
     expect(stdout).toContain("[reset-db] All tables dropped");
   });
 
   it("2 回連続実行しても正常終了できること（idempotent）", async () => {
-    if (!available) return;
-
-    const first = await runResetDb();
+    const first = await runResetDb(tempDbUrl);
     expect(first.exitCode).toBe(0);
 
-    const second = await runResetDb();
+    const second = await runResetDb(tempDbUrl);
     expect(second.exitCode).toBe(0);
     expect(second.stdout).toContain("[reset-db] All tables dropped");
   });
 
   it("ALLOW_DB_RESET=1 が未設定の場合はプロセスが終了コード1で終了すること", async () => {
-    if (!available) return;
-
     const { execFile } = await import("node:child_process");
     const { promisify } = await import("node:util");
     const execFileAsync = promisify(execFile);
     const scriptPath = new URL("../../../apps/api/scripts/reset-db.ts", import.meta.url).pathname;
 
-    // Arrange: ALLOW_DB_RESET を未設定にして実行
     const result = await execFileAsync("node", ["--experimental-strip-types", scriptPath], {
       env: {
         ...process.env,
-        TURSO_DATABASE_URL,
-        TURSO_AUTH_TOKEN,
+        TURSO_DATABASE_URL: tempDbUrl,
+        TURSO_AUTH_TOKEN: "",
         ALLOW_DB_RESET: undefined,
       },
       timeout: 10_000,
@@ -124,7 +115,6 @@ describe("reset-db スクリプト", () => {
       }),
     );
 
-    // Assert
     expect(result.exitCode).toBe(1);
     expect(result.stderr).toContain("ALLOW_DB_RESET=1");
   });
@@ -135,7 +125,6 @@ describe("reset-db スクリプト", () => {
     const execFileAsync = promisify(execFile);
     const scriptPath = new URL("../../../apps/api/scripts/reset-db.ts", import.meta.url).pathname;
 
-    // Arrange: 本番相当の URL を設定して実行
     const result = await execFileAsync("node", ["--experimental-strip-types", scriptPath], {
       env: {
         ...process.env,
@@ -152,14 +141,11 @@ describe("reset-db スクリプト", () => {
       }),
     );
 
-    // Assert
     expect(result.exitCode).toBe(1);
     expect(result.stderr).toContain("non-local URL");
   });
 
   it("FTS virtual table と shadow tables を持つ DB でも正常終了できること", async () => {
-    if (!available) return;
-
     await client.execute("PRAGMA foreign_keys = OFF");
     await client.execute(
       "CREATE TABLE IF NOT EXISTS articles (id TEXT PRIMARY KEY, title TEXT, body TEXT)",
@@ -188,7 +174,7 @@ describe("reset-db スクリプト", () => {
     `);
     await client.execute("PRAGMA foreign_keys = ON");
 
-    const { exitCode, stdout, stderr } = await runResetDb();
+    const { exitCode, stdout, stderr } = await runResetDb(tempDbUrl);
 
     expect(exitCode, `stderr: ${stderr}`).toBe(0);
     expect(stdout).toContain("[reset-db] All tables dropped");
@@ -200,8 +186,6 @@ describe("reset-db スクリプト", () => {
   });
 
   it("FK 参照を持つテーブル群でも正常終了できること", async () => {
-    if (!available) return;
-
     await client.execute("PRAGMA foreign_keys = OFF");
     await client.execute(
       "CREATE TABLE IF NOT EXISTS users (id TEXT PRIMARY KEY, email TEXT NOT NULL)",
@@ -214,7 +198,7 @@ describe("reset-db スクリプト", () => {
     );
     await client.execute("PRAGMA foreign_keys = ON");
 
-    const { exitCode, stderr } = await runResetDb();
+    const { exitCode, stderr } = await runResetDb(tempDbUrl);
 
     expect(exitCode, `stderr: ${stderr}`).toBe(0);
 
