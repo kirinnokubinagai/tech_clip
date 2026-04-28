@@ -21,12 +21,14 @@ REPO_ROOT="$(git -C "$SCRIPT_DIR" rev-parse --show-toplevel 2>/dev/null || git r
 AGENT_NAME=""
 BASE_REF="origin/main"
 SHARD_SPEC=""
+DEVICE=""
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --agent)    AGENT_NAME="$2"; shift 2 ;;
     --base-ref) BASE_REF="$2";   shift 2 ;;
     --shard)    SHARD_SPEC="$2"; shift 2 ;;
+    --device)   DEVICE="$2";     shift 2 ;;
     *) echo "Unknown arg: $1" >&2; exit 1 ;;
   esac
 done
@@ -155,6 +157,31 @@ fi
 DEBUG_DIR="/tmp/maestro-debug-${HEAD_SHA:0:8}-${TIMESTAMP}-shard${SHARD_INDEX}of${SHARD_TOTAL}"
 mkdir -p "$DEBUG_DIR"
 
+# --device 未指定かつ emulator が 1 台のみなら自動選択
+if [ -z "$DEVICE" ]; then
+  AUTO_DEVICE=$(adb devices 2>/dev/null | grep -E '^emulator-[0-9]+\s+device' | awk '{print $1}' | head -1 || true)
+  if [ -n "$AUTO_DEVICE" ]; then
+    DEVICE="$AUTO_DEVICE"
+    echo "[gate] --device not specified, auto-selected: $DEVICE" >&2
+  fi
+fi
+
+# maestro ドライバーが起動していなければ再起動する
+if [ -n "$DEVICE" ]; then
+  if ! adb -s "$DEVICE" shell "ps -A 2>/dev/null | grep -q dev.mobile.maestro" 2>/dev/null; then
+    echo "[gate] maestro driver not running on $DEVICE, starting..." >&2
+    adb -s "$DEVICE" shell "am force-stop dev.mobile.maestro" 2>/dev/null || true
+    adb -s "$DEVICE" forward tcp:7001 tcp:7001 2>/dev/null || true
+    adb -s "$DEVICE" shell "am instrument -w dev.mobile.maestro.test/androidx.test.runner.AndroidJUnitRunner" \
+      > "/tmp/maestro-driver-${DEVICE}.log" 2>&1 &
+    sleep 8
+    echo "[gate] maestro driver started on $DEVICE" >&2
+  else
+    adb -s "$DEVICE" forward tcp:7001 tcp:7001 2>/dev/null || true
+    echo "[gate] maestro driver already running on $DEVICE" >&2
+  fi
+fi
+
 # 全 emulator で app の cache + Keystore を完全消去する (前回テストの auth token が
 # Android Keystore = expo-secure-store に残ると「セッション期限切れ」エラーで
 # login が阻害されるため。maestro `clearState: true` は app data のみで Keystore は
@@ -174,7 +201,11 @@ if [ "$SHARD_MODE" = "all" ] && [ "$SHARD_TOTAL" -gt 1 ]; then
   SHARD_SPLIT_ARGS+=("--shard-split" "$SHARD_TOTAL")
 fi
 
+DEVICE_ARGS=()
+[ -n "$DEVICE" ] && DEVICE_ARGS+=("--device" "$DEVICE")
+
 (cd "$REPO_ROOT" && direnv exec "$REPO_ROOT" maestro test \
+  "${DEVICE_ARGS[@]}" \
   "${SHARD_SPLIT_ARGS[@]}" \
   --format junit \
   --output "$RESULT_XML" \

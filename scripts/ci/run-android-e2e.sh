@@ -36,32 +36,36 @@ export EXPO_PUBLIC_API_URL_ANDROID="http://10.0.2.2:${API_CI_PORT:-18787}"
 nix develop --command bash -c "cd apps/mobile && pnpm expo run:android --variant debug" &
 EXPO_PID=$!
 
-# Wait for app to be installed and running
-# 360 iterations × 5s = 30 min (native modules like react-native-webview extend build time)
-readonly MAX_WAIT_ITERATIONS=360
-readonly WAIT_INTERVAL_SECONDS=5
+# Wait for expo run:android to COMPLETE (build + install + Metro start).
+# Rationale: `pidof com.techclip.app` becomes true as soon as the native process
+# is created, but the JS bundle has not yet been delivered by Metro at that point.
+# Starting Maestro against a blank/loading screen causes 100% flow failures.
+# Waiting for the expo process to exit guarantees the full build pipeline is done.
+echo "[e2e] expo run:android の完了を待機中..."
+EXPO_EXIT_CODE=0
+wait "$EXPO_PID" || EXPO_EXIT_CODE=$?
 
-for _ in $(seq 1 "$MAX_WAIT_ITERATIONS"); do
-  # expo run:android プロセスが先に死んだら fail-fast（ビルド失敗の可能性）
-  if ! kill -0 "$EXPO_PID" 2>/dev/null; then
-    echo "ERROR: expo run:android process died before app started"
-    echo "1" > "test-results/maestro-exit-code${SHARD_SUFFIX}.txt"
-    exit 1
-  fi
-  if adb shell pidof com.techclip.app > /dev/null 2>&1; then
-    echo "App is running"
-    break
-  fi
-  sleep "$WAIT_INTERVAL_SECONDS"
-done
-
-if ! adb shell pidof com.techclip.app > /dev/null 2>&1; then
-  echo "ERROR: App failed to start within 30 minutes"
-  pkill -P "$EXPO_PID" 2>/dev/null || true
-  kill "$EXPO_PID" 2>/dev/null || true
+if [ "$EXPO_EXIT_CODE" -ne 0 ]; then
+  echo "ERROR: expo run:android failed with exit code $EXPO_EXIT_CODE"
   echo "1" > "test-results/maestro-exit-code${SHARD_SUFFIX}.txt"
   exit 1
 fi
+echo "[e2e] expo run:android 完了 (exit code 0)"
+
+# Verify the app process is running after expo finished.
+# If not running, attempt to launch it explicitly.
+if ! adb shell pidof com.techclip.app > /dev/null 2>&1; then
+  echo "[e2e] app process not found after expo exit, attempting explicit launch..."
+  adb shell am start -n com.techclip.app/.MainActivity > /dev/null 2>&1 || true
+  sleep 5
+fi
+
+if ! adb shell pidof com.techclip.app > /dev/null 2>&1; then
+  echo "ERROR: App is not running after expo build completed"
+  echo "1" > "test-results/maestro-exit-code${SHARD_SUFFIX}.txt"
+  exit 1
+fi
+echo "App is running"
 
 # Determine which flows to run for this shard
 SHARD_FLOWS=()
