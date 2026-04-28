@@ -60,14 +60,15 @@ fi
 
 # APK hash 計算
 APK_HASH=$(shasum -a 256 "$APK_PATH" | awk '{print $1}' | head -c 16)
-CACHE_MARKER="${AVD_DIR}/.apk-baked-${APK_HASH}"
+# app-state suffix で旧 marker (install のみ状態) と区別する (#1137)
+CACHE_MARKER="${AVD_DIR}/.apk-baked-app-state-${APK_HASH}"
 
 if [ -f "$CACHE_MARKER" ]; then
   echo "[bake] cache hit (apk hash ${APK_HASH}) → skip" >&2
   exit 0
 fi
 
-# 古い marker を削除 (apk hash が変わった = apk を更新した)
+# 旧 marker を全削除 (install-only 形式 .apk-baked-HASH も含む)
 rm -f "${AVD_DIR}/.apk-baked-"*
 
 PORT="${BAKE_PORT:-5598}"  # 通常運用 port (5554-5562) と被らないよう高めに
@@ -113,18 +114,61 @@ adb -s "emulator-${PORT}" push "$APK_PATH" "/data/local/tmp/baked-${APP_ID}.apk"
 adb -s "emulator-${PORT}" shell pm install -r "/data/local/tmp/baked-${APP_ID}.apk" >/dev/null
 echo "[bake] install 完了" >&2
 
-# snapshot 保存して emulator 停止
-# emulator emu avd snapshot save <name> でスナップショット保存
-adb -s "emulator-${PORT}" emu avd snapshot save default_boot 2>/dev/null || true
+# === [#1137] app 起動 → snapshot 焼き込み ===
+APP_LAUNCH_TIMEOUT="${BAKE_APP_LAUNCH_TIMEOUT:-30}"
+APP_SETTLE_SECONDS="${BAKE_APP_SETTLE_SECONDS:-15}"
+APP_LAUNCH_OK=1
+
+echo "[bake] app 起動 (${APP_ID}/.MainActivity)..." >&2
+adb -s "emulator-${PORT}" shell am start -W -n "${APP_ID}/.MainActivity" >/dev/null 2>&1 || {
+  echo "[bake] WARN: am start に失敗。snapshot 保存は install のみ状態で続行します。" >&2
+  APP_LAUNCH_OK=0
+}
+
+if [ "$APP_LAUNCH_OK" = "1" ]; then
+  # mCurrentFocus / mFocusedApp で foreground 確認 (最大 APP_LAUNCH_TIMEOUT 秒)
+  LAUNCH_DEADLINE=$(($(date +%s) + APP_LAUNCH_TIMEOUT))
+  while true; do
+    if [ "$(date +%s)" -ge "$LAUNCH_DEADLINE" ]; then
+      echo "[bake] WARN: app foreground 確認 timeout (${APP_LAUNCH_TIMEOUT}s)。snapshot 保存は process 生存のみで続行" >&2
+      break
+    fi
+    FOCUS=$(adb -s "emulator-${PORT}" shell dumpsys window windows 2>/dev/null \
+            | grep -E 'mCurrentFocus|mFocusedApp' | head -2)
+    if echo "$FOCUS" | grep -q "${APP_ID}/.MainActivity"; then
+      echo "[bake] app foreground 到達" >&2
+      break
+    fi
+    sleep 1
+  done
+
+  # onboarding 1 ページ目の描画完了を待つ (固定 sleep)
+  echo "[bake] onboarding 描画待機 (${APP_SETTLE_SECONDS}s)..." >&2
+  sleep "$APP_SETTLE_SECONDS"
+
+  # process 生存最終確認
+  if ! adb -s "emulator-${PORT}" shell pidof "$APP_ID" >/dev/null 2>&1; then
+    echo "[bake] WARN: app process が死んでいます。snapshot は install のみ状態で保存" >&2
+  else
+    echo "[bake] app 起動済み state を確認" >&2
+  fi
+fi
+
+# snapshot 保存 (失敗時は exit 1、cache marker は作らない)
+adb -s "emulator-${PORT}" emu avd snapshot save default_boot 2>/dev/null || {
+  echo "[bake] ERROR: snapshot save に失敗" >&2
+  adb -s "emulator-${PORT}" emu kill 2>/dev/null || true
+  kill -9 "$EMU_PID" 2>/dev/null || true
+  exit 1
+}
 sleep 2
 
-# 通常停止 (snapshot 保存込み)
+# 通常停止
 adb -s "emulator-${PORT}" emu kill 2>/dev/null || true
-# 念のため process kill (タイムアウト時のため)
 sleep 5
 kill -9 "$EMU_PID" 2>/dev/null || true
 
 # cache marker 書き込み
 printf '%s\n' "$APK_HASH" > "$CACHE_MARKER"
 echo "[bake] cache marker 作成: $CACHE_MARKER" >&2
-echo "[bake] 完了。以降 launch-shard-emulators.sh は app install を skip できます" >&2
+echo "[bake] 完了。以降 launch-shard-emulators.sh は app 起動済み snapshot から clone できます" >&2
