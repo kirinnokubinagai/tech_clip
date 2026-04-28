@@ -9,7 +9,9 @@ tags:
   - auth
 
 env:
-  TEST_EMAIL: ${TEST_EMAIL}
+  # 02-auth-register は新規アカウント作成テスト。inputText には直接 register-only
+  # メールを書く (config.yaml/--env で指定される TEST_EMAIL は seed 済 user で
+  # 既登録エラーになる + 並列実行時に他 flow の session を侵害する)
   TEST_PASSWORD: ${TEST_PASSWORD}
   TEST_NAME: ${TEST_NAME}
 
@@ -106,7 +108,8 @@ env:
       - tapOn: "Cancel"
       - waitForAnimationToEnd:
           timeout: 1000
-- inputText: ${TEST_EMAIL}
+# register 専用メール (seed 済 user とは別。DB reset で消えるので毎回新規扱い)
+- inputText: "register-only@techclip.app"
 - hideKeyboard  # キーボードが submit-button / password-input を覆うので閉じる
 
 # バリデーション: メールのみで送信 → パスワードエラー
