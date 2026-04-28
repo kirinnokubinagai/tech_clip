@@ -164,6 +164,7 @@
             jdk17
             wrangler
             eas-cli
+            codex
           ]) ++ [ androidSdk ];
 
           # Android SDK / emulator / system image を nix で固定して
