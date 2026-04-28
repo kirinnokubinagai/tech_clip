@@ -117,6 +117,21 @@ if [ "$SHARDS" -lt 1 ]; then
   exit 1
 fi
 
+# 全 emulator で app state を完全クリア (Android Keystore = expo-secure-store の
+# 認証トークンも含む)。maestro `clearState: true` は app data のみ消すので、前回
+# テストで保存された auth token が Keystore に残り「セッション期限切れ」エラーを
+# 引き起こすケースに対応する。
+APP_PACKAGE="${SHARD_APP_ID:-com.techclip.app}"
+echo "[e2e:parallel] 全 emulator の ${APP_PACKAGE} cache + Keystore を消去..."
+while IFS= read -r line; do
+  port=$(echo "$line" | grep -oE 'emulator-[0-9]+' || true)
+  [ -z "$port" ] && continue
+  adb -s "$port" shell pm clear "$APP_PACKAGE" >/dev/null 2>&1 &
+done < <(adb devices 2>/dev/null | grep -E '^emulator-[0-9]+\s+device')
+wait
+echo "[e2e:parallel] cache 消去完了"
+
+
 # e2e 環境 reset
 echo "[e2e:parallel] e2e 環境をリセット中..."
 bash "${REPO_ROOT}/scripts/e2e/reset-e2e-env.sh"

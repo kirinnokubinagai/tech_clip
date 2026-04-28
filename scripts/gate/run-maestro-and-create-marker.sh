@@ -155,6 +155,19 @@ fi
 DEBUG_DIR="/tmp/maestro-debug-${HEAD_SHA:0:8}-${TIMESTAMP}-shard${SHARD_INDEX}of${SHARD_TOTAL}"
 mkdir -p "$DEBUG_DIR"
 
+# 全 emulator で app の cache + Keystore を完全消去する (前回テストの auth token が
+# Android Keystore = expo-secure-store に残ると「セッション期限切れ」エラーで
+# login が阻害されるため。maestro `clearState: true` は app data のみで Keystore は
+# 消えない)。本 script は CI も同経路で使うため、ここで一律 clear する。
+APP_PACKAGE="${SHARD_APP_ID:-com.techclip.app}"
+echo "[gate] 全 emulator の ${APP_PACKAGE} cache + Keystore を消去..." >&2
+while IFS= read -r line; do
+  port=$(echo "$line" | grep -oE 'emulator-[0-9]+' || true)
+  [ -z "$port" ] && continue
+  adb -s "$port" shell pm clear "$APP_PACKAGE" >/dev/null 2>&1 &
+done < <(adb devices 2>/dev/null | grep -E '^emulator-[0-9]+\s+device' || true)
+wait
+
 # all mode は --shard-split で maestro 内部並列、single mode は全 flow を順次実行
 SHARD_SPLIT_ARGS=()
 if [ "$SHARD_MODE" = "all" ] && [ "$SHARD_TOTAL" -gt 1 ]; then
