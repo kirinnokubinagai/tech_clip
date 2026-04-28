@@ -34,13 +34,22 @@ A. 短絡フロー（maestro なし）:
    2. shutdown_response → 即終了
 
 B. 通常実行フロー:
-   1. harness/e2e-shard-execution    (shard 分割 + maestro 実行 + aggregator)
-   2. 全 shard PASS:
-      → SendMessage(to: "issue-{N}-{reviewer-role}", "e2e-approved: <hash>")
-      → review/merged-cleanup or shutdown
-   3. 1 shard でも FAIL:
-      → SendMessage(to: "issue-{N}-{coder-role}", "CHANGES_REQUESTED: <内容>")
-      → 再 impl-ready を待機
+   1. SendMessage(to: "team-lead", "STATE_UPDATE: ... starting shard execution")
+   2. Bash(run_in_background=true):
+        bash scripts/gate/run-maestro-and-create-marker.sh --agent <name> --shard <N>/<TOTAL>
+   3. 監視ループ（~30秒おき）:
+      a. Read /tmp/maestro-result-*.xml を試みる
+      b. Read .claude/.e2e-shard-<N>of<TOTAL>.json を試みる
+      c. 新 testcase 要素を検出するたびに STATE_UPDATE (flow名 PASS/FAIL) を送信
+      d. shard JSON の "status" キー確定 → STATE_UPDATE (shard X/N completed)
+   4. 全 shard 完了:
+      a. 代表 shard1 が aggregate-e2e-shards.sh を実行
+      b. 全 shard PASS:
+         → SendMessage(to: "issue-{N}-{reviewer-role}", "e2e-approved: <hash>")
+         → shutdown
+      c. 1 shard でも FAIL:
+         → SendMessage(to: "issue-{N}-{coder-role}", "CHANGES_REQUESTED: <内容>")
+         → 再 impl-ready を待機
 ```
 
 ## 受信メッセージ → 動作
@@ -61,8 +70,31 @@ B. 通常実行フロー:
 | evaluate-paths.sh 結果 | `STATE_UPDATE: issue-{N}-e2e-reviewer — e2e_required=true/false (reason: <skip_reason または always_required>)` |
 | 短絡時 | `STATE_UPDATE: issue-{N}-e2e-reviewer — e2e short-circuit, sending e2e-approved` |
 | shard 開始時 | `STATE_UPDATE: issue-{N}-e2e-reviewer — starting shard execution (N shards)` |
-| 各 shard 完了時 | `STATE_UPDATE: issue-{N}-e2e-reviewer — shard X/N completed (PASS/FAIL)` |
+| 各 flow 完了時（監視ループ内、RESULT_XML から検出） | `STATE_UPDATE: issue-{N}-e2e-reviewer-shard{X} — flow <flow_name> PASS/FAIL` |
+| 各 shard 完了時（shard JSON の status 確定時） | `STATE_UPDATE: issue-{N}-e2e-reviewer-shard{X} — shard X/N completed (PASS/FAIL, passed=P/total=T)` |
 | 全 shard 完了時 | `STATE_UPDATE: issue-{N}-e2e-reviewer — all shards done, result=PASS/FAIL` |
+
+### Maestro バックグラウンド実行と監視手順
+
+Maestro をブロッキング実行すると SendMessage が送れないため、**必ず `run_in_background=true`** で起動する。
+
+```
+1. Bash(run_in_background=true):
+     bash scripts/gate/run-maestro-and-create-marker.sh --agent <name> --shard <N>/<TOTAL>
+   → background_task_id を受け取る
+
+2. RESULT_XML パスを計算（スクリプト内で生成される名前と同じ規則）:
+     /tmp/maestro-result-<HEAD_SHA8>-<TIMESTAMP>-shard<N>of<TOTAL>.xml
+
+3. 監視ループ（完了まで繰り返す）:
+   a. Read(<RESULT_XML>) を試みる（ファイルが存在しなければスキップ）
+   b. 前回確認時より増えた <testcase> 要素ごとに STATE_UPDATE (flow PASS/FAIL) を送信
+   c. Read(.claude/.e2e-shard-<N>of<TOTAL>.json) を試みる
+   d. "status" キーが存在すれば完了 → STATE_UPDATE (shard X/N completed) を送信してループを抜ける
+   e. 次のチェックまで ~30 秒待つ（Bash: sleep 30）
+
+4. 完了後は次ステップ（aggregate または reviewer 通知）へ進む
+```
 
 ## 短絡条件（フェーズ 0 判定）
 
