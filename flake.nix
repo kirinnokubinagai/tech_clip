@@ -35,7 +35,9 @@
           # build-tools / platform は project の compileSdkVersion (= 36) に合わせる。
           # 不足すると gradle が nix store (read-only) に install しようとして失敗する。
           # API 36 に統一 (system image / emulator runtime も 36 を使う)
-          buildToolsVersions = [ "36.0.0" ];
+          # 35.0.0 も含める: expo モジュールが build-tools 35 を要求する場合があり、
+          # Nix store は read-only なので CI で install 失敗する (#1138 fix)
+          buildToolsVersions = [ "35.0.0" "36.0.0" ];
           platformVersions = [ "36" ];
           includeEmulator = true;
           includeSystemImages = true;
