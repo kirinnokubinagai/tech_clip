@@ -25,11 +25,11 @@ tools:
 
 ## 絶対ルール
 
-- **push を実行しない**。実装 commit のみを行い、infra-reviewer に `impl-ready: <commit-hash>` を通知する
-- **conflict-resolver として動作する場合も push 禁止**。解消 commit のみを作り、infra-reviewer に `CONFLICT_RESOLVED: <commit-hash>` を通知する（`impl-ready` ではない）
+- **push を実行しない**。実装 commit のみを行い、e2e-reviewer に `impl-ready: <commit-hash>` を通知する
+- **conflict-resolver として動作する場合も push 禁止**。解消 commit のみを作り、infra-reviewer に `CONFLICT_RESOLVED: <commit-hash>` を通知する（`impl-ready` ではない、CONFLICT_RESOLVED は infra-reviewer 直送）
 - **`.claude/.review-passed` マーカーを作成しない**（reviewer 系エージェントの専任）
 - **production code と test code は同 commit で同梱**（`.husky/pre-commit` が物理強制）
-- **E2E 影響あり**（CI workflow / app config / native module 変更などで Maestro 結果に影響する場合）は **e2e-reviewer に impl-ready を通知**
+- **impl-ready は必ず e2e-reviewer に送る**（infra-reviewer に直接送らない）。E2E 影響なしの判定は e2e-reviewer 側が `evaluate-paths.sh` で行い、不要なら短絡してすぐ infra-reviewer に転送する
 
 ## 作業開始前の必須手順
 
@@ -161,10 +161,12 @@ COMMIT_HASH=$(git -C {worktree} rev-parse HEAD)
 echo "self-check OK: local HEAD = $COMMIT_HASH"
 ```
 
-self-check が通過したら、infra-reviewer に SendMessage を送信する:
+self-check が通過したら、**e2e-reviewer に SendMessage を送信する**:
 
-- **to**: `"issue-{issue_number}-infra-reviewer"`
+- **to**: `"issue-{issue_number}-e2e-reviewer"`
 - **message**: `impl-ready: <commit-hash>`
+
+infra-reviewer に直送してはならない。e2e-reviewer がフェーズ 0 で `evaluate-paths.sh` を実行し、E2E 影響なしなら自動的に infra-reviewer に `e2e-approved` を転送する。
 
 コミットハッシュは以下で取得する:
 
@@ -172,9 +174,11 @@ self-check が通過したら、infra-reviewer に SendMessage を送信する:
 git -C {worktree} rev-parse HEAD
 ```
 
-### フェーズ 6: infra-reviewer からの返答待機ループ
+### フェーズ 6: e2e-reviewer / infra-reviewer からの返答待機ループ
 
-infra-reviewer からの SendMessage を待機する。`APPROVED`、`CHANGES_REQUESTED:`、`CONFLICT_RESOLVE:` プレフィックスのメッセージを処理する。
+e2e-reviewer または infra-reviewer からの SendMessage を待機する。`APPROVED`、`CHANGES_REQUESTED:`、`CONFLICT_RESOLVE:` プレフィックスのメッセージを処理する。
+
+`CHANGES_REQUESTED:` は e2e-reviewer 由来（E2E shard で fail）と infra-reviewer 由来（コードレビューで指摘）の両方がありうるが、対応は同じ（修正 → 再 commit → e2e-reviewer に impl-ready 再送）。
 
 - **`APPROVED`**: 終了する
 - **`shutdown_request` 受信**: 即 `shutdown_response` (`approve: true`) を返してから終了する
@@ -208,8 +212,8 @@ infra-reviewer からの SendMessage を待機する。`APPROVED`、`CHANGES_REQ
 
 - analyst spec の自 lane セクションに記載された「触って OK」ファイルのみ触る
 - 他 lane と同じファイルを絶対に触らない（merge 事故防止）
-- impl-ready 通知時は lane 情報を含めて infra-reviewer に送る:
-  - `SendMessage(to: "issue-{N}-infra-reviewer", "impl-ready: <hash> lane={lane-name}")`
+- impl-ready 通知時は lane 情報を含めて **e2e-reviewer に送る**:
+  - `SendMessage(to: "issue-{N}-e2e-reviewer", "impl-ready: <hash> lane={lane-name}")`
 - push 責任は infra-reviewer のみ。各 lane は commit のみ行う
 
 `issue-{N}-infra-engineer`（lane なし）の場合は従来通りの動作（lane 情報なし）。

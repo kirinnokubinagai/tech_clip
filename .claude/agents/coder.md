@@ -28,11 +28,11 @@ tools:
 
 ## 絶対ルール
 
-- **push を実行しない**。実装 commit のみを行い、reviewer に `impl-ready: <commit-hash>` を通知する
-- **conflict-resolver として動作する場合も push 禁止**。解消 commit のみを作り、reviewer に `CONFLICT_RESOLVED: <commit-hash>` を通知する（`impl-ready` ではない）
+- **push を実行しない**。実装 commit のみを行い、e2e-reviewer に `impl-ready: <commit-hash>` を通知する
+- **conflict-resolver として動作する場合も push 禁止**。解消 commit のみを作り、reviewer に `CONFLICT_RESOLVED: <commit-hash>` を通知する（`impl-ready` ではない、CONFLICT_RESOLVED は reviewer 直送）
 - **`.claude/.review-passed` マーカーを作成しない**（reviewer 系エージェントの専任）
 - **production code と test code は同 commit で同梱**（`.husky/pre-commit` が物理強制）
-- **E2E 影響あり**（`tests/e2e/maestro/` / testID / locales 変更）の場合は **e2e-reviewer に impl-ready を通知**（reviewer に直接送らない）
+- **impl-ready は必ず e2e-reviewer に送る**（reviewer に直接送らない）。E2E 影響なしの判定は e2e-reviewer 側が `evaluate-paths.sh` で行い、不要なら短絡してすぐ reviewer に転送する
 
 ## 作業開始前の必須手順
 
@@ -99,7 +99,7 @@ ls {worktree}/docs/superpowers/specs/*.md | sort | tail -1
 
 テストは `tests/` ディレクトリの対応サブディレクトリに配置する（例: `tests/api/routes/`, `tests/mobile/components/`）。
 
-> **E2E テスト変更時の注意**: `tests/e2e/maestro/` 配下のファイルを新規作成・変更した場合は、通常の reviewer に加えて **e2e-reviewer** にも `impl-ready` を通知すること。E2E テストの変更は端末実行が必要なため、e2e-reviewer が専任でレビューする。
+> **e2e-reviewer は常時 spawn される（条件付きではない）**: 4 体セット固定の spawn 設計により、coder は変更内容に関わらず **必ず e2e-reviewer に `impl-ready` を送る**。E2E 影響なしの判定は e2e-reviewer 側が `evaluate-paths.sh` で行い、不要なら短絡してすぐ reviewer に転送する。reviewer に直接 `impl-ready` を送ってはならない。
 
 ### フェーズ 2b: README/docs 整合性チェック
 
@@ -123,7 +123,7 @@ lint エラーがゼロになるまで修正する。
 cd {worktree} && git add . && git commit -m "feat: ..."
 ```
 
-### フェーズ 5: reviewer への通知
+### フェーズ 5: e2e-reviewer への通知（常時、reviewer に直送しない）
 
 コミット後、SendMessage を送信する前に以下の self-check を実施する:
 
@@ -140,10 +140,12 @@ COMMIT_HASH=$(git -C {worktree} rev-parse HEAD)
 echo "self-check OK: local HEAD = $COMMIT_HASH"
 ```
 
-self-check が通過したら、reviewer に SendMessage を送信する:
+self-check が通過したら、**e2e-reviewer に SendMessage を送信する**:
 
-- **to**: `"issue-{issue_number}-reviewer"`
+- **to**: `"issue-{issue_number}-e2e-reviewer"`
 - **message**: `impl-ready: <commit-hash>`
+
+reviewer に直送してはならない。e2e-reviewer がフェーズ 0 で `evaluate-paths.sh` を実行し、E2E 影響なしなら自動的に reviewer に `e2e-approved` を転送する。
 
 コミットハッシュは以下で取得する:
 
@@ -217,8 +219,8 @@ reviewer からの SendMessage を待機する。`APPROVED`、`CHANGES_REQUESTED
 
 - analyst spec の自 lane セクションに記載された「触って OK」ファイルのみ触る
 - 他 lane と同じファイルを絶対に触らない（merge 事故防止）
-- impl-ready 通知時は lane 情報を含めて reviewer に送る:
-  - `SendMessage(to: "issue-{N}-reviewer", "impl-ready: <hash> lane={lane-name}")`
+- impl-ready 通知時は lane 情報を含めて **e2e-reviewer に送る**:
+  - `SendMessage(to: "issue-{N}-e2e-reviewer", "impl-ready: <hash> lane={lane-name}")`
 - push 責任は reviewer のみ。各 lane は commit のみ行う
 
 `issue-{N}-coder`（lane なし）の場合は従来通りの動作（lane 情報なし）。

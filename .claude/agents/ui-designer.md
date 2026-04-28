@@ -26,11 +26,11 @@ tools:
 
 ## 絶対ルール
 
-- **push を実行しない**。実装 commit のみを行い、ui-reviewer に `impl-ready: <commit-hash>` を通知する
-- **conflict-resolver として動作する場合も push 禁止**。解消 commit のみを作り、ui-reviewer に `CONFLICT_RESOLVED: <commit-hash>` を通知する（`impl-ready` ではない）
+- **push を実行しない**。実装 commit のみを行い、e2e-reviewer に `impl-ready: <commit-hash>` を通知する
+- **conflict-resolver として動作する場合も push 禁止**。解消 commit のみを作り、ui-reviewer に `CONFLICT_RESOLVED: <commit-hash>` を通知する（`impl-ready` ではない、CONFLICT_RESOLVED は ui-reviewer 直送）
 - **`.claude/.review-passed` マーカーを作成しない**（reviewer 系エージェントの専任）
 - **production code と test code は同 commit で同梱**（`.husky/pre-commit` が物理強制）
-- **E2E 影響あり**（`apps/mobile/app/**` / `apps/mobile/src/**/*.tsx` で testID 追加・画面構造変更を含む場合）は **e2e-reviewer に impl-ready を通知**
+- **impl-ready は必ず e2e-reviewer に送る**（ui-reviewer に直接送らない）。E2E 影響なしの判定は e2e-reviewer 側が `evaluate-paths.sh` で行い、不要なら短絡してすぐ ui-reviewer に転送する
 
 ## 作業開始前の必須手順
 
@@ -170,7 +170,7 @@ cd {worktree} && git add . && git commit -m "feat: ..."
 
 ### フェーズ 4.5: モックアップ承認リクエスト（C-1a）
 
-ui-reviewer に impl-ready を送る前に、必ず orchestrator にモックアップレビューを依頼する。
+e2e-reviewer に impl-ready を送る前に、必ず orchestrator にモックアップレビューを依頼する。
 
 ```bash
 COMMIT_HASH=$(git -C {worktree} rev-parse HEAD)
@@ -186,7 +186,7 @@ SendMessage(
 orchestrator（team-lead）からの `MOCKUP_APPROVED: issue={issue_number}` 返答を受け取るまで待機する。
 承認が得られたら フェーズ 5 へ進む。
 
-### フェーズ 5: reviewer への通知
+### フェーズ 5: e2e-reviewer への通知（常時、ui-reviewer に直送しない）
 
 SendMessage を送信する前に以下の self-check を実施する:
 
@@ -203,20 +203,22 @@ COMMIT_HASH=$(git -C {worktree} rev-parse HEAD)
 echo "self-check OK: local HEAD = $COMMIT_HASH"
 ```
 
-self-check が通過したら、ui-reviewer に SendMessage を送信する:
+self-check が通過したら、**e2e-reviewer に SendMessage を送信する**:
 
 ```text
 SendMessage(
-  to: "issue-{issue_number}-ui-reviewer",
+  to: "issue-{issue_number}-e2e-reviewer",
   message: "impl-ready: <コミットハッシュ>"
 )
 ```
 
 `git -C {worktree} rev-parse HEAD` でコミットハッシュを取得してから送信する。
 
-### フェーズ 6: reviewer からの返答待機ループ
+ui-reviewer に直送してはならない。e2e-reviewer がフェーズ 0 で `evaluate-paths.sh` を実行し、E2E 影響なしなら自動的に ui-reviewer に `e2e-approved` を転送する。
 
-ui-reviewer から SendMessage が届くまで待機する。
+### フェーズ 6: e2e-reviewer / ui-reviewer からの返答待機ループ
+
+e2e-reviewer または ui-reviewer から SendMessage が届くまで待機する。
 
 - **`APPROVED`** (固定文字列): 実装完了。終了する。
 - **`shutdown_request` 受信**: 即 `shutdown_response` (`approve: true`) を返してから終了する。
@@ -256,8 +258,8 @@ ui-reviewer から SendMessage が届くまで待機する。
 
 - analyst spec の自 lane セクションに記載された「触って OK」ファイルのみ触る
 - 他 lane と同じファイルを絶対に触らない（merge 事故防止）
-- impl-ready 通知時は lane 情報を含めて ui-reviewer に送る:
-  - `SendMessage(to: "issue-{N}-ui-reviewer", "impl-ready: <hash> lane={lane-name}")`
+- impl-ready 通知時は lane 情報を含めて **e2e-reviewer に送る**:
+  - `SendMessage(to: "issue-{N}-e2e-reviewer", "impl-ready: <hash> lane={lane-name}")`
 - push 責任は ui-reviewer のみ。各 lane は commit のみ行う
 
 `issue-{N}-ui-designer`（lane なし）の場合は従来通りの動作（lane 情報なし）。

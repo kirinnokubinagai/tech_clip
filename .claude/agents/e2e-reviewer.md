@@ -73,29 +73,53 @@ RECEIVED=$(jq 'length' "$E2E_READY_FILE")
 
 `$RECEIVED == $expected_e2e_lanes` になったらフェーズ 0 へ進む。それまでは次の impl-ready を待つ。
 
-### diff 確認対象
+### 常時 spawn + 短絡設計
 
-全 E2E lane の変更を合算した diff で以下が含まれる場合は **必須通過**:
+e2e-reviewer は coder / infra-engineer / ui-designer を伴うすべての Issue で **必ず spawn される**（条件付きではない）。実装系は **常に impl-ready を e2e-reviewer に送る**（reviewer に直接送らない）。
+
+E2E 影響がない場合は e2e-reviewer がフェーズ 0 で **短絡** する:
+
+- `evaluate-paths.sh` 実行 → `e2e_required: false` → `e2e-approved: <hash>` を reviewer に転送 + shutdown
+- maestro は一切起動しない
+
+これにより orchestrator 側の判定ロジックが不要になり、`evaluate-paths.sh` という単一の真実源で判定が一元化される。
+
+### diff 確認対象（E2E 必須通過パス）
+
+`.claude/gate-rules.json` の `e2e_gate.always_required_paths` で codified。代表例:
+
 - `tests/e2e/maestro/**`
 - `apps/mobile/app/**/*.tsx`（testID 追加を含む）
 - `apps/mobile/src/**/*.tsx`（testID 追加を含む）
-- `apps/mobile/app.json`
-- `apps/mobile/metro.config.js`
-- `apps/mobile/src/locales/**`
+- `apps/mobile/app.json` / `apps/mobile/metro.config.*` / `apps/mobile/babel.config.*`
+- `apps/mobile/src/components/**` / `apps/mobile/src/screens/**` / `apps/mobile/src/hooks/**` / `apps/mobile/src/lib/**`
+- `**/locales/**`
 
-含まれない場合は reviewer に直接転送（スキップ可）。
+これらにマッチする変更が 1 件もなければ短絡（`auto_skip_paths` のみへの変更も短絡）。
 
-## フェーズ 0: diff 確認
+## フェーズ 0: diff 確認 + 短絡判定
+
+全 E2E lane の `impl-ready` が揃った時点で以下を実行する:
 
 ```bash
-git -C {worktree} diff origin/main --name-only
+cd {worktree}
+RESULT=$(bash scripts/gate/evaluate-paths.sh origin/main)
+E2E_REQUIRED=$(echo "$RESULT" | jq -r '.e2e_required')
+HEAD_SHA=$(git rev-parse HEAD)
 ```
 
-e2e 影響ファイルが含まれない場合は reviewer に直接転送:
+### 短絡条件: `e2e_required == false`
 
+```text
+SendMessage(to: "issue-{N}-reviewer", "e2e-approved: $HEAD_SHA")
+→ shutdown_response(approve: true) → 即終了
 ```
-SendMessage(to: "issue-{N}-reviewer", "impl-ready: <hash>")
-```
+
+`.claude/.e2e-passed` マーカーは作成しない（マーカーは E2E 必要時のみ作成、`pre-push-e2e-guard.sh` は `evaluate-paths.sh` の結果で skip 判定する）。
+
+### 通常実行: `e2e_required == true`
+
+フェーズ 1 以降に進む（Maestro YAML 静的検証 → shard 実行 → aggregator → `.e2e-passed` 作成 → `e2e-approved` 送信）。
 
 ## フェーズ 1: Maestro YAML 静的検証
 

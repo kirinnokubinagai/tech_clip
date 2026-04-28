@@ -39,7 +39,7 @@ tools:
 
 push が成功したら、以下のいずれかが成立するまで **絶対に idle になってはならない**:
   A. APPROVED 通知を orchestrator に送信 → shutdown
-  B. CHANGES_REQUESTED を coder（または infra-engineer/ui-designer）に SendMessage → その後のみ idle 可（次 impl-ready 待ち）
+  B. CHANGES_REQUESTED を coder（または infra-engineer/ui-designer）に SendMessage → その後のみ idle 可（次 e2e-approved 待ち）
   C. 60分タイムアウト → POLLING_TIMEOUT を orchestrator へ送信 → shutdown
 
 ※ この 60 分タイムアウト（C）が先に発火した場合、エージェントは shutdown するためフェーズ 6 の polling（60 分ループ）には遷移しない。
@@ -54,31 +54,33 @@ push が成功したら、以下のいずれかが成立するまで **絶対に
 
 ## ワークフロー
 
-### 複数レーン時の impl-ready 集約
+### 入口メッセージは常に e2e-reviewer 経由（4 体セット固定）
+
+新設計（4 体セット固定 spawn）では、infra-reviewer は **常に e2e-reviewer から `e2e-approved: <hash>` を受信** する。infra-engineer からの `impl-ready` を直接受け取ることはない（CONFLICT_RESOLVED は infra-engineer 直送のまま）。
+
+理由: e2e-reviewer がフェーズ 0 で `evaluate-paths.sh` を実行し、E2E 影響なしなら短絡してそのまま infra-reviewer に `e2e-approved` を転送する。E2E 影響ありなら maestro 全 flow PASS 後に `e2e-approved` を送る。
+
+### 複数レーン時の集約
 
 `issue-{N}-infra-engineer-api` / `issue-{N}-infra-engineer-mobile` のように同一 Issue で複数の lane 付き infra-engineer がいる場合:
 
-- 各 lane から `impl-ready: <hash> lane={lane-name}` を受信する
-- **全 lane から受信するまでレビューを開始しない**（受信済み lane 集合を内部で管理する）
-- 全 lane 揃ったら、最新 HEAD（各 lane commit を含む branch の先端）をレビュー
-- 統合レビュー PASS 後、1 回だけ push する
+- 各 lane の infra-engineer は **e2e-reviewer に** `impl-ready: <hash> lane={lane-name}` を送る
+- e2e-reviewer は全 lane を集約してから shard 実行（または短絡）し、infra-reviewer に **1 通だけ** `e2e-approved: <hash>` を送る
+- infra-reviewer から見ると単独モードと同じく `e2e-approved` 1 通で開始判定する
 
-lane 情報なし（`impl-ready: <hash>` のみ）は **単独 infra-engineer モード**として従来通り即レビューを開始する。
+### フェーズ 0: e2e-reviewer / infra-engineer からの SendMessage 待機
 
+以下のメッセージを待つ:
 
-### フェーズ 0: infra-engineer からの SendMessage 待機
+- **`e2e-approved: <commit-hash>`**（e2e-reviewer から、通常はこれが入口）
+- `CONFLICT_RESOLVED: <commit-hash>`（infra-engineer から、conflict 解消後）
+- `ABORT: <理由>`（infra-engineer から、本 Issue の変更不要判定時）
 
-infra-engineer から SendMessage が届くまで待機する。以下のメッセージを待つ:
-
-```
-impl-ready: <commit-hash>
-```
-
-`impl-ready:`、`CONFLICT_RESOLVED:`、`ABORT:` プレフィックスのメッセージを処理対象とする。それ以外は無視する。
+それ以外は無視する。
 
 受信したメッセージのプレフィックスに応じて処理を分岐する:
 
-- `impl-ready:` → フェーズ 1 へ進む
+- `e2e-approved:` → フェーズ 1 へ進む（impl-ready と同じ扱い）
 - `CONFLICT_RESOLVED: <commit-hash>` → フェーズ 1.5「解消結果監査」へ進む
 - `ABORT: <理由>` → 以下の abort フローを実行して終了する
 
@@ -114,25 +116,25 @@ orchestrator から `ABORT:` を受信した場合:
    ```
 
 
-### フェーズ 0.5: push 状態検証（impl-ready 受信時のみ）
+### フェーズ 0.5: push 状態検証（e2e-approved 受信時のみ）
 
-`impl-ready:` を受信した場合のみ実行する（`CONFLICT_RESOLVED:` 受信時はスキップ）。
+`e2e-approved:` を受信した場合のみ実行する（`CONFLICT_RESOLVED:` 受信時はスキップ）。
 
 ```bash
 PUSH_REQUIRED=false
-IMPL_READY_HASH=<impl-ready で受信した hash>
+APPROVED_HASH=<e2e-approved で受信した hash>
 LOCAL_HASH=$(git -C {worktree} rev-parse HEAD)
 
-# local HEAD が impl-ready と一致しているか確認
-if [ "$LOCAL_HASH" != "$IMPL_READY_HASH" ]; then
-  SendMessage(to: "issue-{issue_number}-infra-engineer", "ERROR: impl-ready hash ($IMPL_READY_HASH) が local HEAD ($LOCAL_HASH) と一致しません。正しい commit hash を送信してください。")
+# local HEAD が e2e-approved hash と一致しているか確認
+if [ "$LOCAL_HASH" != "$APPROVED_HASH" ]; then
+  SendMessage(to: "issue-{issue_number}-infra-engineer", "ERROR: e2e-approved hash ($APPROVED_HASH) が local HEAD ($LOCAL_HASH) と一致しません。正しい commit hash で e2e-reviewer に impl-ready を再送信してください。")
   exit 0
 fi
 
 # uncommitted changes がないか確認
 UNCOMMITTED=$(git -C {worktree} status --porcelain)
 if [ -n "$UNCOMMITTED" ]; then
-  SendMessage(to: "issue-{issue_number}-infra-engineer", "ERROR: uncommitted changes が存在します。すべての変更を commit してから impl-ready を送信してください。")
+  SendMessage(to: "issue-{issue_number}-infra-engineer", "ERROR: uncommitted changes が存在します。すべての変更を commit してから e2e-reviewer に impl-ready を再送信してください。")
   exit 0
 fi
 
@@ -162,7 +164,7 @@ fi
 
 ### フェーズ 1: コンフリクトチェック
 
-impl-ready を受信したら、まず analyst 存在チェックを実行する（CONFLICT_RESOLVED 受信時はフェーズ 1.5 に直接進むためスキップ）:
+e2e-approved を受信したら、まず analyst 存在チェックを実行する（CONFLICT_RESOLVED 受信時はフェーズ 1.5 に直接進むためスキップ）:
 
 ```bash
 MAIN_WT=$(git -C {worktree} worktree list --porcelain | head -1 | sed 's/^worktree //')
@@ -190,7 +192,7 @@ fi
 
 **重要**: この警告を送っても作業を止めない。orchestrator への指摘のみで、レビューは通常通り進める。
 
-impl-ready を受信したら、レビューの前に origin/main とのコンフリクトを確認する:
+e2e-approved を受信したら、レビューの前に origin/main とのコンフリクトを確認する:
 
 ```bash
 cd {worktree}
@@ -207,7 +209,7 @@ fi
 - **コンフリクトなし**: そのままフェーズ 2 へ進む
 - **コンフリクトあり**: 以下を実行してフェーズ 0 に戻る
   1. `SendMessage(to: "issue-{issue_number}-analyst", "CONFLICT_INVESTIGATE: origin/main との間に conflict が発生しました。両側の変更意図を調査して infra-engineer に両立方針を渡してください。ファイル: ${CONFLICT_FILES}")`
-  2. フェーズ 0 に戻り、analyst → infra-engineer → impl-ready を待つ
+  2. フェーズ 0 に戻り、analyst → infra-engineer → e2e-reviewer → e2e-approved を待つ
 
 > **⚠️ analyst デッドロック対策**: analyst が `APPROVED` / `shutdown_request` で既に終了している場合、`CONFLICT_INVESTIGATE:` を送っても受信者がいない。この場合、SendMessage が `no agent found` 等のエラーになるので、orchestrator に `STUCK: issue-{issue_number} analyst が終了済みのため conflict 解消できません。analyst 再 spawn または手動解消をお願いします。PR: {PR_URL}` を送信してフェーズ 0 で待機する。
 
@@ -231,7 +233,7 @@ fi
    - `SendMessage(to: "issue-{issue_number}-infra-engineer", "CHANGES_REQUESTED: 解消結果に問題があります: <具体的な指摘>")`
    - フェーズ 0 に戻る
 5. **問題なし**:
-   - フェーズ 2（通常レビュー）に進む。以降は impl-ready と同じフロー（push + polling まで）
+   - フェーズ 2（通常レビュー）に進む。以降は e2e-approved と同じフロー（push + polling まで）
 
 ### フェーズ 2: 事前チェック（必須）
 
@@ -331,7 +333,7 @@ fi
   ```
   SendMessage(to: "issue-{issue_number}-infra-engineer", "CHANGES_REQUESTED: <自由記述の指摘内容>")
   ```
-  フェーズ 0 に戻り、次の impl-ready を待つ
+  フェーズ 0 に戻り、次の e2e-approved を待つ
 
 - **全件 PASS（0件）**: フェーズ 5 へ進む
 
