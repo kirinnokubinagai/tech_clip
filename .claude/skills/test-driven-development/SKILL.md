@@ -44,6 +44,55 @@ Write code before the test? Delete it. Start over.
 
 Implement fresh from tests. Period.
 
+## Outside-In TDD (Default Approach)
+
+**Outside-In TDD** starts from the user's perspective and works inward.
+For user-facing features, always write the E2E test (Maestro YAML) **before** unit tests.
+
+```
+Outer RED  → Write failing E2E test (Maestro YAML)
+              ↓ Identifies missing units
+Inner RED  → Write failing unit/integration test
+              ↓
+Inner GREEN → Implement minimal code to pass unit test
+              ↓
+Inner REFACTOR → Clean up
+              ↓ Repeat inner cycle until E2E passes
+Outer GREEN → E2E test passes (confirmed by e2e-reviewer)
+```
+
+### Step 0: Write E2E Test First (Maestro YAML)
+
+For any feature that changes a user-visible flow:
+
+1. Read `e2e/write-maestro-flow` skill before touching `tests/e2e/maestro/`
+2. Write the Maestro YAML describing what the user should be able to do
+3. All `tapOn` / `assertVisible` etc. must use `id:` (testID), never `text:`
+4. Add the corresponding `testID` props to React components **in the same commit**
+5. Verify the E2E test **would** fail (the feature doesn't exist yet)
+
+```yaml
+# Example: tests/e2e/maestro/article-save.yaml
+appId: com.techclip.app
+---
+- launchApp
+- tapOn:
+    id: "save-article-button"
+- assertVisible:
+    id: "save-success-toast"
+```
+
+Then proceed to the inner Red-Green-Refactor cycle for unit/integration tests.
+
+### When to skip Step 0
+
+Skip E2E-first only when:
+- Pure internal refactoring (no user-visible behavior change)
+- API-only changes with no mobile UI impact
+- Fixing a pure logic bug with no new user flow
+
+If in doubt, write the E2E test.
+
 ## Red-Green-Refactor
 
 ```dot

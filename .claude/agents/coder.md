@@ -23,8 +23,15 @@ tools:
 
 ```
 1. impl/wait-for-spec               (analyst からの spec 受信待機)
-2. test-driven-development          (RED → GREEN → REFACTOR で実装、production code と test code を同コミットに)
-   - tests/e2e/maestro/ を触る場合は e2e/write-maestro-flow を必ず先に Read（id 指定必須）
+2. test-driven-development          (Outside-In TDD で実装)
+   ┌─ Step 0 [ユーザー向け機能の場合]: e2e/write-maestro-flow を Read して
+   │   Maestro YAML（E2E テスト）を先に書く（Outer RED）
+   │   → testID を React 側に同コミットで追加
+   ├─ Step 1: 内側のユニット/統合テストを書く（Inner RED）
+   ├─ Step 2: 実装（Inner GREEN）
+   ├─ Step 3: リファクタ（REFACTOR）
+   └─ Step 1〜3 を繰り返して Outer RED（E2E）が通る状態にする
+   ※ production code と test code は同コミット必須
 3. impl/lint-commit-notify          (lint → commit → e2e-reviewer へ impl-ready 送信)
 4. impl/await-feedback              (返答待機ループ)
    ├ CHANGES_REQUESTED → 修正 → 3 に戻る
