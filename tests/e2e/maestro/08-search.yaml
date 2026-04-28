@@ -88,3 +88,14 @@ env:
 - assertVisible:
     text: "検索"
 - takeScreenshot: screenshots/08-search/02-results
+
+# --- 2文字キーワード "Go" で検索（fts5vocab vocab lookup 経由） ---
+- tapOn:
+    id: "search-input"
+- eraseText
+- inputText: "Go"
+- waitForAnimationToEnd
+
+# "Go" を含む記事が検索結果に表示されることを確認
+- assertVisible: "Go"
+- takeScreenshot: screenshots/08-search/03-go-results
