@@ -73,8 +73,8 @@ fi
 TIMEOUT_MINUTES=$(jq -r '.polling_timeout_minutes // 60' "$CONFIG" 2>/dev/null || echo "60")
 TIMEOUT_SECONDS=$((TIMEOUT_MINUTES * 60))
 
-# 内部ループ設定（最大 9 分）
-INTERNAL_LOOP_DEADLINE_SEC=540
+# 内部ループ設定（最大 9 分）。テスト時は環境変数でオーバーライド可能。
+INTERNAL_LOOP_DEADLINE_SEC="${POLLING_INTERNAL_DEADLINE_SEC:-540}"
 INTERVAL_SEC=$(( $(jq -r '.polling_interval_minutes // 2' "$CONFIG" 2>/dev/null || echo "2") * 60 ))
 
 LOG_FILE="$POLLING_DIR/watcher-results.log"
@@ -126,11 +126,20 @@ while :; do
     exit 0
   fi
   if [ "$MERGE_STATE" = "BLOCKED" ]; then
-    echo "BLOCKED: PR #$PR_NUMBER required check failed" >&2
-    echo "BLOCKED: issue-${ISSUE_NUMBER} PR #$PR_NUMBER mergeState=BLOCKED at=$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> "$LOG_FILE"
-    rm -f "$STATE_FILE"
-    echo "VERDICT: request_changes PR #${PR_NUMBER}"
-    exit 0
+    # BLOCKED は (a) CI 失敗 / (b) CI 進行中 / (c) review 未承認 のいずれも含む。
+    # IN_PROGRESS / QUEUED な check が残っているうちは判定を保留する（still_pending 扱い）。
+    IN_PROGRESS_COUNT=$(gh pr view "$PR_NUMBER" --json statusCheckRollup \
+      --jq '[.statusCheckRollup[] | select(.status == "IN_PROGRESS" or .status == "QUEUED" or .status == "PENDING")] | length' 2>/dev/null || echo 0)
+    if [ "$IN_PROGRESS_COUNT" -gt 0 ]; then
+      echo "BLOCKED but ${IN_PROGRESS_COUNT} check(s) still IN_PROGRESS/QUEUED; treating as pending" >&2
+      # fall through to evaluate_verdict / 内部 deadline 判定
+    else
+      echo "BLOCKED: PR #$PR_NUMBER required check failed (no remaining in-progress checks)" >&2
+      echo "BLOCKED: issue-${ISSUE_NUMBER} PR #$PR_NUMBER mergeState=BLOCKED at=$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> "$LOG_FILE"
+      rm -f "$STATE_FILE"
+      echo "VERDICT: request_changes PR #${PR_NUMBER}"
+      exit 0
+    fi
   fi
 
   # 3) TIMEOUT 確認（state.started_at + polling_timeout_minutes）
