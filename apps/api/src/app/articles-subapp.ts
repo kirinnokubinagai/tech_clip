@@ -19,7 +19,7 @@ import { createArticlesRoute } from "../routes/articles";
 import { createFavoriteRoute } from "../routes/favorite";
 import { createFeedRoute } from "../routes/feed";
 import { createPublicArticlesRoute } from "../routes/public-articles";
-import { buildFtsMatchExpression, createSearchRoute } from "../routes/search";
+import { buildFtsMatchExpression, createSearchRoute, getShortTokens } from "../routes/search";
 import { createSummaryRoute } from "../routes/summary";
 import { fetchArticleMetadata } from "../services/metadata-fetcher";
 import { decodeCursor } from "../services/parsers/_shared";
@@ -141,10 +141,26 @@ export async function handleArticles(
 
   const searchRoute = createSearchRoute({
     searchQueryFn: async (params) => {
-      const matchExpr = buildFtsMatchExpression(params.query);
-      if (matchExpr === null) {
+      const longExpr = buildFtsMatchExpression(params.query);
+      const shortTokens = getShortTokens(params.query);
+
+      // 2文字以下のトークンは fts5vocab から対応 trigram を列挙して OR 式に変換
+      const shortExprs: string[] = [];
+      for (const token of shortTokens) {
+        const row = await db.get<{ terms: string | null }>(
+          sql`SELECT GROUP_CONCAT('"' || REPLACE(term, '"', '""') || '"', ' OR ') AS terms FROM articles_fts_vocab WHERE term LIKE ${token + "%"}`,
+        );
+        if (row?.terms) {
+          shortExprs.push(`(${row.terms})`);
+        }
+      }
+
+      const allExprs = [longExpr, ...shortExprs].filter(Boolean);
+      if (allExprs.length === 0) {
         return [];
       }
+
+      const matchExpr = allExprs.join(" AND ");
       const conditions = [
         eq(articles.userId, params.userId),
         sql`articles.rowid IN (SELECT rowid FROM articles_fts WHERE articles_fts MATCH ${matchExpr})`,

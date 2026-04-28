@@ -2,7 +2,7 @@ import path from "node:path";
 
 import { articles } from "@api/db/schema/articles";
 import { users } from "@api/db/schema/users";
-import { buildFtsMatchExpression } from "@api/routes/search";
+import { buildFtsMatchExpression, getShortTokens } from "@api/routes/search";
 import { createClient } from "@libsql/client";
 import { and, desc, eq, lt, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/libsql";
@@ -54,12 +54,7 @@ const ARTICLE_BASE = {
 };
 
 /**
- * FTS MATCH クエリを実行し、ユーザースコープで絞り込む
- *
- * @param db - Drizzle DBインスタンス
- * @param userId - 検索対象ユーザーID
- * @param matchExpr - FTS5 MATCH 式。nullの場合は空配列を返す
- * @returns 記事一覧
+ * FTS MATCH クエリを実行し、ユーザースコープで絞り込む（3文字以上のトークン向け）
  */
 async function searchArticlesByFts(
   db: ReturnType<typeof drizzle>,
@@ -69,6 +64,44 @@ async function searchArticlesByFts(
   if (matchExpr === null) {
     return [];
   }
+  return await db
+    .select()
+    .from(articles)
+    .where(
+      and(
+        eq(articles.userId, userId),
+        sql`articles.rowid IN (SELECT rowid FROM articles_fts WHERE articles_fts MATCH ${matchExpr})`,
+      ),
+    )
+    .orderBy(desc(articles.createdAt));
+}
+
+/**
+ * 短いトークン（2文字以下）を含むクエリのフル FTS 検索
+ * articles-subapp の searchQueryFn と同等のロジック
+ */
+async function searchArticlesFullFts(
+  db: ReturnType<typeof drizzle>,
+  userId: string,
+  query: string,
+) {
+  const longExpr = buildFtsMatchExpression(query);
+  const shortTokens = getShortTokens(query);
+
+  const shortExprs: string[] = [];
+  for (const token of shortTokens) {
+    const row = await db.get<{ terms: string | null }>(
+      sql`SELECT GROUP_CONCAT('"' || REPLACE(term, '"', '""') || '"', ' OR ') AS terms FROM articles_fts_vocab WHERE term LIKE ${token + "%"}`,
+    );
+    if (row?.terms) {
+      shortExprs.push(`(${row.terms})`);
+    }
+  }
+
+  const allExprs = [longExpr, ...shortExprs].filter(Boolean);
+  if (allExprs.length === 0) return [];
+
+  const matchExpr = allExprs.join(" AND ");
   return await db
     .select()
     .from(articles)
@@ -300,25 +333,44 @@ describe("FTS5 全文検索 統合テスト", () => {
       expect(results.some((r) => r.id === articleId)).toBe(true);
     });
 
-    it("3文字未満のクエリはnullになりヒットしないこと", async () => {
+    it("AI(2文字)でvocab lookup経由でヒットすること", async () => {
       // Arrange
-      const articleId = "article_fts_trigram_short_01";
+      const articleId = "article_fts_trigram_ai_01";
       await db.insert(articles).values({
         ...ARTICLE_BASE,
         id: articleId,
         userId: TEST_USER_1.id,
-        url: "https://example.com/trigram-short-test",
+        url: "https://example.com/trigram-ai-test",
         title: "AI技術の最前線",
         content: "人工知能AIの最新動向",
         excerpt: "AI解説",
       });
 
-      // Act: "AI" は2文字のためbuildFtsMatchExpressionがnullを返す
-      const matchExpr = buildFtsMatchExpression("AI");
-      const results = await searchArticlesByFts(db, TEST_USER_1.id, matchExpr);
+      // Act: "AI" は2文字 → vocab lookup → fts5vocab で "AI技" などを取得して MATCH
+      const results = await searchArticlesFullFts(db, TEST_USER_1.id, "AI");
 
-      // Assert: nullクエリは0件
-      expect(results.some((r) => r.id === articleId)).toBe(false);
+      // Assert: パディング付き trigram 経由でヒット
+      expect(results.some((r) => r.id === articleId)).toBe(true);
+    });
+
+    it("Go(2文字)でGo言語の記事がヒットすること", async () => {
+      // Arrange
+      const articleId = "article_fts_trigram_go_01";
+      await db.insert(articles).values({
+        ...ARTICLE_BASE,
+        id: articleId,
+        userId: TEST_USER_1.id,
+        url: "https://example.com/trigram-go-test",
+        title: "Go言語入門",
+        content: "Goプログラミング言語の基礎を解説します",
+        excerpt: "Go入門",
+      });
+
+      // Act: "Go" は2文字 → vocab lookup → "Go言" など → MATCH
+      const results = await searchArticlesFullFts(db, TEST_USER_1.id, "Go");
+
+      // Assert
+      expect(results.some((r) => r.id === articleId)).toBe(true);
     });
   });
 

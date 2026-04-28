@@ -1,6 +1,6 @@
 import { HTTP_UNAUTHORIZED, HTTP_UNPROCESSABLE_ENTITY } from "@api/lib/http-status";
 import type { SearchQueryFn } from "@api/routes/search";
-import { buildFtsMatchExpression, createSearchRoute } from "@api/routes/search";
+import { buildFtsMatchExpression, createSearchRoute, getShortTokens } from "@api/routes/search";
 import { Hono } from "hono";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -234,6 +234,63 @@ describe("buildFtsMatchExpression", () => {
 
     // Assert
     expect(result).toBe('"React"');
+  });
+});
+
+describe("getShortTokens", () => {
+  it("2文字のトークンを返すこと", () => {
+    // Arrange
+    const query = "Go";
+
+    // Act
+    const result = getShortTokens(query);
+
+    // Assert
+    expect(result).toEqual(["Go"]);
+  });
+
+  it("1文字のトークンを返すこと", () => {
+    // Arrange
+    const query = "A";
+
+    // Act
+    const result = getShortTokens(query);
+
+    // Assert
+    expect(result).toEqual(["A"]);
+  });
+
+  it("3文字以上のトークンは含まないこと", () => {
+    // Arrange
+    const query = "React";
+
+    // Act
+    const result = getShortTokens(query);
+
+    // Assert
+    expect(result).toEqual([]);
+  });
+
+  it("混在クエリで短いトークンのみ返すこと", () => {
+    // Arrange: "Go"(2文字)と"AI"(2文字)のみ返し"React"(5文字)は除外
+    const query = "Go React AI";
+
+    // Act
+    const result = getShortTokens(query);
+
+    // Assert
+    expect(result).toEqual(["Go", "AI"]);
+  });
+
+  it("空文字列の場合空配列を返すこと", () => {
+    // Arrange
+    const query = "";
+
+    // Act
+    const result = getShortTokens(query);
+
+    // Assert
+    expect(result).toEqual([]);
   });
 });
 
