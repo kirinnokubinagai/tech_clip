@@ -310,6 +310,7 @@ orchestrator・サブエージェントは状況に応じて以下の skill を 
 | UI / デザイン | `design/ui-design` / `design/ux-review` skill |
 | テスト規約（プロジェクト固有 `tests/` 構造） | `.claude/rules/testing.md`（worktree 側、自動ロード） |
 | デザインワークフロー（プロジェクト固有） | `.claude/rules/design-workflow.md`（worktree 側、自動ロード） |
+| 曖昧仕様の一次情報確認（全 agent 共通） | `.claude/rules/fact-check.md`（worktree 側、自動ロード） |
 
 詳細が欲しいときは `~/.claude/rules/<name>.md` を Read ツールで手動読み込みも可能（除外設定は auto-load のみに影響、Read 自体は使える）。
 
