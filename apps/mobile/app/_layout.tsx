@@ -6,6 +6,7 @@ import { Redirect, Stack, useSegments } from "expo-router";
 import { useEffect } from "react";
 import { ActivityIndicator, LogBox, View } from "react-native";
 
+import { ConfirmDialogHost } from "../src/components/ConfirmDialog";
 import { OfflineBanner } from "../src/components/OfflineBanner";
 import {
   DEFAULT_BACKGROUND_SYNC_CONFIG,
@@ -109,6 +110,7 @@ export default function RootLayout() {
   return (
     <QueryClientProvider client={queryClient}>
       <OfflineBanner />
+      <ConfirmDialogHost />
       <Stack screenOptions={{ headerShown: false }}>
         <Stack.Screen name="(tabs)" />
         <Stack.Screen name="(auth)" />

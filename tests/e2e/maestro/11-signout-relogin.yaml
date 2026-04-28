@@ -71,10 +71,16 @@ env:
 - tapOn:
     id: "login-email-input"
 - inputText: ${TEST_EMAIL}
+- hideKeyboard  # password input が keyboard に隠れないよう一旦閉じる
 - tapOn:
     id: "login-password-input"
 - inputText: ${TEST_PASSWORD}
-- hideKeyboard
+# keyboard を閉じるため画面上部 "TechClip" タイトル (TextInput 外) を tap
+# (hideKeyboard は keyboard 不在時 BACK key を送って画面を pop してしまう)
+- tapOn:
+    text: "TechClip"
+- waitForAnimationToEnd:
+    timeout: 500
 - tapOn:
     id: "login-submit-button"
 - waitForAnimationToEnd:

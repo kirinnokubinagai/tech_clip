@@ -69,8 +69,11 @@ const ICON_SIZE = 20;
 function SettingsRow({ icon, label, value, onPress, trailing, testID }: SettingsRowProps) {
   const { t } = useTranslation();
   const colors = useColors();
+  // testID は Pressable 化されない非クリック行 (no onPress) のときのみ inner View に付与する。
+  // onPress あり時は Pressable に付くため inner View には付けない (重複防止)。
+  const innerTestID = onPress ? undefined : testID;
   const content = (
-    <View testID={testID} className="flex-row items-center px-4 py-3">
+    <View testID={innerTestID} className="flex-row items-center px-4 py-3">
       <View className="mr-3">{icon}</View>
       <Text className="flex-1 text-base text-text">{label}</Text>
       {value ? <Text className="text-sm text-text-muted mr-2">{value}</Text> : null}

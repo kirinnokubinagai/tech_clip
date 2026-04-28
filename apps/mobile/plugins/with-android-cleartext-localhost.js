@@ -5,6 +5,9 @@
  *
  * 本番環境では HTTPS のみ許可、E2E/開発時のみ 10.0.2.2 / 127.0.0.1 / localhost を
  * cleartext で許可する設計。
+ *
+ * Production build では何もしない (security)。EXPO_PUBLIC_E2E_MODE=1 もしくは
+ * NODE_ENV !== "production" のときのみ plugin が effect する。
  */
 const fs = require("node:fs");
 const path = require("node:path");
@@ -36,7 +39,25 @@ const NETWORK_SECURITY_CONFIG = `<?xml version="1.0" encoding="utf-8"?>
 </network-security-config>
 `;
 
+/**
+ * production build では plugin を no-op にする。
+ * E2E_MODE=1 もしくは NODE_ENV !== "production" のときのみ cleartext config を適用。
+ */
+function shouldApply() {
+  if (process.env.EXPO_PUBLIC_E2E_MODE === "1") {
+    return true;
+  }
+  if (process.env.NODE_ENV === "production") {
+    return false;
+  }
+  return true;
+}
+
 function withAndroidCleartextLocalhost(config) {
+  if (!shouldApply()) {
+    return config;
+  }
+
   // 1) network_security_config.xml を res/xml に書き出す
   config = withDangerousMod(config, [
     "android",
@@ -50,10 +71,7 @@ function withAndroidCleartextLocalhost(config) {
         "xml",
       );
       fs.mkdirSync(resPath, { recursive: true });
-      fs.writeFileSync(
-        path.join(resPath, "network_security_config.xml"),
-        NETWORK_SECURITY_CONFIG,
-      );
+      fs.writeFileSync(path.join(resPath, "network_security_config.xml"), NETWORK_SECURITY_CONFIG);
       return config;
     },
   ]);

@@ -121,45 +121,57 @@ env:
 - waitForAnimationToEnd:
     timeout: 1000
 
-# --- ログアウト確認ダイアログ ---
+# --- ログアウト確認ダイアログ (custom modal、id-based) ---
 - assertVisible:
     id: "settings-logout-button"
 - tapOn:
     id: "settings-logout-button"
+- extendedWaitUntil:
+    visible:
+      id: "confirm-dialog"
+    timeout: 5000
 - assertVisible:
-    text: "ログアウトしますか？"
+    id: "confirm-dialog-title"
+- assertVisible:
+    id: "confirm-dialog-message"
 # キャンセル
-- tapOn: "キャンセル"
-- waitForAnimationToEnd:
-    timeout: 2000
-# 設定画面に戻ることを確認 (tab-settings を tap して画面 top にスクロール)
 - tapOn:
-    id: "tab-settings"
+    id: "confirm-dialog-cancel-button"
 - waitForAnimationToEnd:
     timeout: 1000
+# 設定画面に戻ることを確認
 - assertVisible:
     id: "settings-section-subscription"
 
-# --- アカウント削除確認ダイアログ ---
+# --- アカウント削除確認ダイアログ (custom modal、id-based) ---
 - assertVisible:
     id: "settings-delete-account-button"
 - tapOn:
     id: "settings-delete-account-button"
+- extendedWaitUntil:
+    visible:
+      id: "confirm-dialog"
+    timeout: 5000
 - assertVisible:
-    text: "アカウントを削除する"
-- assertVisible: ".*この操作は取り消せません.*"
+    id: "confirm-dialog-title"
 # キャンセル
-- tapOn: "キャンセル"
+- tapOn:
+    id: "confirm-dialog-cancel-button"
+- waitForAnimationToEnd:
+    timeout: 1000
 - assertVisible:
     id: "settings-section-account-management"
 
 # --- ログアウト実行 ---
 - tapOn:
     id: "settings-logout-button"
-- assertVisible:
-    text: "ログアウトしますか？"
-- tapOn: "ログアウト"
-# ログイン画面に遷移することを確認 (login-email-input が見えればログイン画面)
+- extendedWaitUntil:
+    visible:
+      id: "confirm-dialog"
+    timeout: 5000
+- tapOn:
+    id: "confirm-dialog-confirm-button"
+# ログイン画面に遷移することを確認
 - extendedWaitUntil:
     visible:
       id: "login-email-input"
