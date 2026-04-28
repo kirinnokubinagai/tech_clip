@@ -28,11 +28,20 @@ reviewer → SendMessage(to: "issue-{N}-analyst",
 
 ### analyst の調査プロトコル
 
-#### Step A: 両側の変更意図を把握する
+#### Step A: 両側の変更意図を 1 コマンドで把握する
 
-1. `git log --oneline HEAD ^origin/main` で自分側の commit 履歴を取得
-2. `git log --oneline origin/main ^HEAD` で main 側に入った commit 履歴を取得
-3. 各 conflict ファイルの両側の差分を読む（`git show HEAD:{file}` と `git show origin/main:{file}`）
+```bash
+bash scripts/skills/conflict-investigate.sh
+```
+
+スクリプトが自動で:
+
+1. dry-run merge で conflict files を特定
+2. HEAD 側 commit 履歴 (`git log HEAD ^origin/main`)
+3. origin/main 側 commit 履歴 (`git log origin/main ^HEAD`)
+4. ファイルごとに両側で触ったコミットと diff
+
+を Markdown で stdout に出力する。analyst はこれを Read してそのまま使える。
 
 #### Step B: 両立解消方針を決める
 

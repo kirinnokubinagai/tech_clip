@@ -43,14 +43,16 @@ tools:
 
 ## モックアップ承認リクエスト（フェーズ 4.5）
 
-`impl/lint-commit-notify` 実行前に、orchestrator にモックアップ確認を依頼する:
+`impl/lint-commit-notify` 実行前に、script でメッセージを生成して orchestrator に送る:
 
-```
-SendMessage(to: "team-lead",
-  "MOCKUP_REVIEW_REQUEST: issue={N} commit={hash} モックアップの確認をお願いします。")
+```bash
+MSG=$(bash scripts/skills/mockup-review-request.sh {N})
+SendMessage(to: "team-lead", "$MSG")
 ```
 
-`MOCKUP_APPROVED: issue-{N}` 受信後にフェーズ 5 へ。
+スクリプトが直近 7 日の design ファイル（`docs/design/`, `apps/mobile/assets/`, `apps/mobile/src/`）を自動収集してメッセージに含める。
+
+`MOCKUP_APPROVED: issue-{N}` 受信後にフェーズ 5 へ。orchestrator 側はユーザー承認を得たら `bash scripts/skills/mockup-approve.sh {N}` で flag を書き込む（`orchestrator-flow-guard.sh` の C-1b でチェックされる 30 分有効 flag）。
 
 ## 絶対ルール
 
