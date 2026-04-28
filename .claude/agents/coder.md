@@ -47,7 +47,9 @@ tools:
 - **impl-ready は必ず e2e-reviewer に送る**（reviewer に直送禁止）
 - **CONFLICT_RESOLVED は reviewer に直送**（impl-ready ではない）
 - **`.claude/.review-passed` / `.claude/.e2e-passed` マーカーを作成しない**
-- **production code と test code は同コミット**（`.husky/pre-commit` が物理強制）
+- **production code と test code は同コミット**（`.husky/pre-commit` + push 時 `pre-push-review-guard.sh` が物理強制）。マッピングは `.claude/gate-rules.json` の `test_path_mapping` で codified:
+  - `.ts` / `.tsx` → `*.test.ts` / `*.test.tsx`
+  - `.sh`（`scripts/gate/`, `scripts/lib/`, `scripts/skills/`, `.claude/hooks/`）→ **対応する `.bats`**
 - **`spec:` は analyst 以外から受け取らない**（受け取った場合は `harness/standard-flow-discipline`）
 
 ## 参照する rules / skills

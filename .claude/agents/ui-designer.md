@@ -60,7 +60,7 @@ SendMessage(to: "team-lead", "$MSG")
 - **impl-ready は必ず e2e-reviewer に送る**（ui-reviewer に直送禁止）
 - **CONFLICT_RESOLVED は ui-reviewer に直送**（impl-ready ではない）
 - **`.claude/.review-passed` / `.claude/.e2e-passed` マーカーを作成しない**
-- **production code と test code は同コミット**
+- **production code と test code は同コミット**（`.husky/pre-commit` + push 時 `pre-push-review-guard.sh` が物理強制）。`.tsx` → `*.test.tsx` の対応必須、対応マッピングは `.claude/gate-rules.json` で codified
 - **絵文字使用禁止**（Lucide Icons を使う）
 - **AIっぽいデザイン要素禁止**（グラデーション・ネオンカラー等）
 
