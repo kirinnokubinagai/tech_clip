@@ -66,29 +66,67 @@ describe("検索APIエンドポイント HTTP 統合テスト（local Turso）",
 
       // テスト記事を事前投入
       const testArticles = [
-        { id: "hs_react_01", title: "React hooks完全ガイド", content: "useStateとuseEffectの使い方", excerpt: "React hooksの基本", url: "https://example.com/hs-react" },
-        { id: "hs_go_01", title: "Go言語入門", content: "Goプログラミング言語の基礎を解説します", excerpt: "Go入門", url: "https://example.com/hs-go" },
-        { id: "hs_ai_01", title: "AI技術の最前線", content: "人工知能AIの最新動向を解説", excerpt: "AI解説", url: "https://example.com/hs-ai" },
-        { id: "hs_ts_01", title: "TypeScript実践入門", content: "TypeScriptの型システムと応用", excerpt: "TypeScript解説", url: "https://example.com/hs-ts" },
-        { id: "hs_ja3_01", title: "機械学習フレームワーク入門", content: "機械学習の基礎を解説", excerpt: "機械学習入門", url: "https://example.com/hs-ml" },
+        {
+          id: "hs_react_01",
+          title: "React hooks完全ガイド",
+          content: "useStateとuseEffectの使い方",
+          excerpt: "React hooksの基本",
+          url: "https://example.com/hs-react",
+        },
+        {
+          id: "hs_go_01",
+          title: "Go言語入門",
+          content: "Goプログラミング言語の基礎を解説します",
+          excerpt: "Go入門",
+          url: "https://example.com/hs-go",
+        },
+        {
+          id: "hs_ai_01",
+          title: "AI技術の最前線",
+          content: "人工知能AIの最新動向を解説",
+          excerpt: "AI解説",
+          url: "https://example.com/hs-ai",
+        },
+        {
+          id: "hs_ts_01",
+          title: "TypeScript実践入門",
+          content: "TypeScriptの型システムと応用",
+          excerpt: "TypeScript解説",
+          url: "https://example.com/hs-ts",
+        },
+        {
+          id: "hs_ja3_01",
+          title: "機械学習フレームワーク入門",
+          content: "機械学習の基礎を解説",
+          excerpt: "機械学習入門",
+          url: "https://example.com/hs-ml",
+        },
       ];
       for (const a of testArticles) {
-        await db.insert(articles).values({
-          ...ARTICLE_BASE,
-          ...a,
-          userId: TEST_USER.id,
-        }).onConflictDoNothing();
+        await db
+          .insert(articles)
+          .values({
+            ...ARTICLE_BASE,
+            ...a,
+            userId: TEST_USER.id,
+          })
+          .onConflictDoNothing();
       }
 
       // searchQueryFn: articles-subapp.ts と同等の実装
-      const searchQueryFn = async (params: { userId: string; query: string; limit: number; cursor?: string }) => {
+      const searchQueryFn = async (params: {
+        userId: string;
+        query: string;
+        limit: number;
+        cursor?: string;
+      }) => {
         const longExpr = buildFtsMatchExpression(params.query);
         const shortTokens = getShortTokens(params.query);
 
         const shortExprs: string[] = [];
         for (const token of shortTokens) {
           const row = await db.get<{ terms: string | null }>(
-            sql`SELECT GROUP_CONCAT('"' || REPLACE(term, '"', '""') || '"', ' OR ') AS terms FROM articles_fts_vocab WHERE term LIKE ${token + "%"}`,
+            sql`SELECT GROUP_CONCAT('"' || REPLACE(term, '"', '""') || '"', ' OR ') AS terms FROM articles_fts_vocab WHERE term LIKE ${`${token}%`}`,
           );
           if (row?.terms) {
             shortExprs.push(`(${row.terms})`);
@@ -154,7 +192,9 @@ describe("検索APIエンドポイント HTTP 統合テスト（local Turso）",
       if (!sqldAvailable) return ctx.skip();
 
       // Act
-      const res = await app.fetch(new Request("http://localhost/api/articles/search?q=%E6%A9%9F%E6%A2%B0%E5%AD%A6"));
+      const res = await app.fetch(
+        new Request("http://localhost/api/articles/search?q=%E6%A9%9F%E6%A2%B0%E5%AD%A6"),
+      );
 
       // Assert
       expect(res.status).toBe(200);
@@ -218,7 +258,9 @@ describe("検索APIエンドポイント HTTP 統合テスト（local Turso）",
       if (!sqldAvailable) return ctx.skip();
 
       // Act: limit=2 で検索（テスト記事は複数ある想定）
-      const res = await app.fetch(new Request("http://localhost/api/articles/search?q=入門&limit=2"));
+      const res = await app.fetch(
+        new Request("http://localhost/api/articles/search?q=入門&limit=2"),
+      );
 
       // Assert
       expect(res.status).toBe(200);
@@ -240,7 +282,9 @@ describe("検索APIエンドポイント HTTP 統合テスト（local Turso）",
       otherUserApp.route("/api/articles", otherSearchRoute);
 
       // Act
-      const res = await otherUserApp.fetch(new Request("http://localhost/api/articles/search?q=React"));
+      const res = await otherUserApp.fetch(
+        new Request("http://localhost/api/articles/search?q=React"),
+      );
 
       // Assert: 他ユーザースコープでは0件
       expect(res.status).toBe(200);

@@ -7,7 +7,7 @@ import { createClient } from "@libsql/client";
 import { and, desc, eq, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/libsql";
 import { migrate } from "drizzle-orm/libsql/migrator";
-import { afterAll, beforeAll, describe, it, expect } from "vitest";
+import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
 const SQLD_URL = process.env.SQLD_URL ?? "http://127.0.0.1:8888";
 const SQLD_AUTH_TOKEN = process.env.SQLD_AUTH_TOKEN ?? "dummy";
@@ -52,7 +52,7 @@ async function searchArticlesFullFts(
   const shortExprs: string[] = [];
   for (const token of shortTokens) {
     const row = await db.get<{ terms: string | null }>(
-      sql`SELECT GROUP_CONCAT('"' || REPLACE(term, '"', '""') || '"', ' OR ') AS terms FROM articles_fts_vocab WHERE term LIKE ${token + "%"}`,
+      sql`SELECT GROUP_CONCAT('"' || REPLACE(term, '"', '""') || '"', ' OR ') AS terms FROM articles_fts_vocab WHERE term LIKE ${`${token}%`}`,
     );
     if (row?.terms) {
       shortExprs.push(`(${row.terms})`);
@@ -91,10 +91,7 @@ describe("Local Turso (sqld) FTS5 trigram + padding 統合テスト", () => {
       sqldAvailable = true;
 
       // テスト用ユーザーが存在しなければ挿入（既存なら無視）
-      await db
-        .insert(users)
-        .values(TEST_USER)
-        .onConflictDoNothing();
+      await db.insert(users).values(TEST_USER).onConflictDoNothing();
     } catch (e) {
       console.warn(`sqld (${SQLD_URL}) に接続できません。Local Turso テストをスキップします。`);
       console.warn(String(e));
@@ -115,15 +112,18 @@ describe("Local Turso (sqld) FTS5 trigram + padding 統合テスト", () => {
 
       // Arrange
       const articleId = "lt_article_react_01";
-      await db.insert(articles).values({
-        ...ARTICLE_BASE,
-        id: articleId,
-        userId: TEST_USER.id,
-        url: "https://example.com/lt-react",
-        title: "React hooks完全ガイド",
-        content: "useStateとuseEffectの使い方",
-        excerpt: "React hooksの基本",
-      }).onConflictDoNothing();
+      await db
+        .insert(articles)
+        .values({
+          ...ARTICLE_BASE,
+          id: articleId,
+          userId: TEST_USER.id,
+          url: "https://example.com/lt-react",
+          title: "React hooks完全ガイド",
+          content: "useStateとuseEffectの使い方",
+          excerpt: "React hooksの基本",
+        })
+        .onConflictDoNothing();
 
       // Act
       const results = await searchArticlesFullFts(db, TEST_USER.id, "React");
@@ -137,15 +137,18 @@ describe("Local Turso (sqld) FTS5 trigram + padding 統合テスト", () => {
 
       // Arrange
       const articleId = "lt_article_ja3_01";
-      await db.insert(articles).values({
-        ...ARTICLE_BASE,
-        id: articleId,
-        userId: TEST_USER.id,
-        url: "https://example.com/lt-ml",
-        title: "機械学習フレームワーク入門",
-        content: "機械学習の基礎を解説",
-        excerpt: "機械学習入門",
-      }).onConflictDoNothing();
+      await db
+        .insert(articles)
+        .values({
+          ...ARTICLE_BASE,
+          id: articleId,
+          userId: TEST_USER.id,
+          url: "https://example.com/lt-ml",
+          title: "機械学習フレームワーク入門",
+          content: "機械学習の基礎を解説",
+          excerpt: "機械学習入門",
+        })
+        .onConflictDoNothing();
 
       // Act: "機械学"（3文字）で部分一致
       const results = await searchArticlesFullFts(db, TEST_USER.id, "機械学");
@@ -161,15 +164,18 @@ describe("Local Turso (sqld) FTS5 trigram + padding 統合テスト", () => {
 
       // Arrange
       const articleId = "lt_article_go_01";
-      await db.insert(articles).values({
-        ...ARTICLE_BASE,
-        id: articleId,
-        userId: TEST_USER.id,
-        url: "https://example.com/lt-go",
-        title: "Go言語入門",
-        content: "Goプログラミング言語の基礎を解説します",
-        excerpt: "Go入門",
-      }).onConflictDoNothing();
+      await db
+        .insert(articles)
+        .values({
+          ...ARTICLE_BASE,
+          id: articleId,
+          userId: TEST_USER.id,
+          url: "https://example.com/lt-go",
+          title: "Go言語入門",
+          content: "Goプログラミング言語の基礎を解説します",
+          excerpt: "Go入門",
+        })
+        .onConflictDoNothing();
 
       // Act: vocab lookup → "Go言" などの trigram を OR 連結 → MATCH
       const results = await searchArticlesFullFts(db, TEST_USER.id, "Go");
@@ -183,15 +189,18 @@ describe("Local Turso (sqld) FTS5 trigram + padding 統合テスト", () => {
 
       // Arrange
       const articleId = "lt_article_ai_01";
-      await db.insert(articles).values({
-        ...ARTICLE_BASE,
-        id: articleId,
-        userId: TEST_USER.id,
-        url: "https://example.com/lt-ai",
-        title: "AI技術の最前線",
-        content: "人工知能AIの最新動向を解説",
-        excerpt: "AI解説",
-      }).onConflictDoNothing();
+      await db
+        .insert(articles)
+        .values({
+          ...ARTICLE_BASE,
+          id: articleId,
+          userId: TEST_USER.id,
+          url: "https://example.com/lt-ai",
+          title: "AI技術の最前線",
+          content: "人工知能AIの最新動向を解説",
+          excerpt: "AI解説",
+        })
+        .onConflictDoNothing();
 
       // Act
       const results = await searchArticlesFullFts(db, TEST_USER.id, "AI");
@@ -205,15 +214,18 @@ describe("Local Turso (sqld) FTS5 trigram + padding 統合テスト", () => {
 
       // Arrange
       const articleId = "lt_article_js_01";
-      await db.insert(articles).values({
-        ...ARTICLE_BASE,
-        id: articleId,
-        userId: TEST_USER.id,
-        url: "https://example.com/lt-js",
-        title: "JS最新動向2024",
-        content: "JavaScriptとJSエコシステムの解説",
-        excerpt: "JS解説",
-      }).onConflictDoNothing();
+      await db
+        .insert(articles)
+        .values({
+          ...ARTICLE_BASE,
+          id: articleId,
+          userId: TEST_USER.id,
+          url: "https://example.com/lt-js",
+          title: "JS最新動向2024",
+          content: "JavaScriptとJSエコシステムの解説",
+          excerpt: "JS解説",
+        })
+        .onConflictDoNothing();
 
       // Act
       const results = await searchArticlesFullFts(db, TEST_USER.id, "JS");

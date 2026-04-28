@@ -91,7 +91,7 @@ async function searchArticlesFullFts(
   const shortExprs: string[] = [];
   for (const token of shortTokens) {
     const row = await db.get<{ terms: string | null }>(
-      sql`SELECT GROUP_CONCAT('"' || REPLACE(term, '"', '""') || '"', ' OR ') AS terms FROM articles_fts_vocab WHERE term LIKE ${token + "%"}`,
+      sql`SELECT GROUP_CONCAT('"' || REPLACE(term, '"', '""') || '"', ' OR ') AS terms FROM articles_fts_vocab WHERE term LIKE ${`${token}%`}`,
     );
     if (row?.terms) {
       shortExprs.push(`(${row.terms})`);

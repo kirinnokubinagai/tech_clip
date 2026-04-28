@@ -8,12 +8,9 @@ appId: com.techclip.app
 tags:
   - auth
 
-env:
-  # 02-auth-register は新規アカウント作成テスト。inputText には直接 register-only
-  # メールを書く (config.yaml/--env で指定される TEST_EMAIL は seed 済 user で
-  # 既登録エラーになる + 並列実行時に他 flow の session を侵害する)
-  TEST_PASSWORD: ${TEST_PASSWORD}
-  TEST_NAME: ${TEST_NAME}
+# env: は宣言しない。--env 経由で渡される TEST_PASSWORD / TEST_NAME を
+# 直接参照する (env block の `${VAR}: ${VAR}` 自己参照は解決失敗してリテラル化する)。
+# 02 では register 専用に inputText に直接 register-only@techclip.app を書く。
 
 ---
 

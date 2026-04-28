@@ -439,7 +439,7 @@ const TEST_USER_ARTICLES: Array<{
     title: "Go言語入門：はじめての Go プログラム",
     source: "other",
     content:
-      "# Go言語入門：はじめての Go プログラム\n\nGo（Golang）はGoogleが開発したオープンソースのプログラミング言語です。\n\n## Go の特徴\n\n- シンプルな構文\n- 高速なコンパイル\n- 並行処理のサポート（goroutine）\n- 静的型付け\n\n## Hello World\n\n```go\npackage main\n\nimport \"fmt\"\n\nfunc main() {\n    fmt.Println(\"Hello, World!\")\n}\n```\n\n## Go のインストール\n\n公式サイト（go.dev）からインストーラーをダウンロードして実行します。\n\n## まとめ\n\nGo は並行処理とシンプルさを重視した言語で、バックエンド開発に広く使われています。",
+      '# Go言語入門：はじめての Go プログラム\n\nGo（Golang）はGoogleが開発したオープンソースのプログラミング言語です。\n\n## Go の特徴\n\n- シンプルな構文\n- 高速なコンパイル\n- 並行処理のサポート（goroutine）\n- 静的型付け\n\n## Hello World\n\n```go\npackage main\n\nimport "fmt"\n\nfunc main() {\n    fmt.Println("Hello, World!")\n}\n```\n\n## Go のインストール\n\n公式サイト（go.dev）からインストーラーをダウンロードして実行します。\n\n## まとめ\n\nGo は並行処理とシンプルさを重視した言語で、バックエンド開発に広く使われています。',
     excerpt: "Go（Golang）の基礎を学ぶ入門記事。インストールから Hello World まで解説します。",
     author: "test_user",
     publishedAt: "2026-03-25T10:00:00.000Z",
