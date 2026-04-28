@@ -1,6 +1,23 @@
 #!/usr/bin/env bats
-# auto-generated stub - TODO: 実装に対応するテストを追加すること
 
-@test "TODO: 実装に対応するテストを追加すること" {
-  skip "auto-generated stub"
+@test "shard index ごとに異なるポートフォワードを使う (shard 1 → 7001, shard 2 → 7002)" {
+  grep -E 'MAESTRO_PORT=\$\(\(7000 \+ SHARD_INDEX\)\)' scripts/gate/run-maestro-and-create-marker.sh
+}
+
+@test "ポートフォワードに MAESTRO_PORT 変数を使っている" {
+  grep -E 'forward tcp:\$MAESTRO_PORT tcp:7001' scripts/gate/run-maestro-and-create-marker.sh
+}
+
+@test "maestro 実行時に --port \$MAESTRO_PORT を渡している" {
+  grep -E -- '--port \$MAESTRO_PORT' scripts/gate/run-maestro-and-create-marker.sh
+}
+
+@test "DEVICE 指定時は自分の emulator のみ pm clear する" {
+  grep -E 'if \[ -n "\$DEVICE" \]' scripts/gate/run-maestro-and-create-marker.sh
+  grep -E 'adb -s "\$DEVICE" shell pm clear' scripts/gate/run-maestro-and-create-marker.sh
+}
+
+@test "DEVICE 未指定時（シングル実行）は全 emulator を pm clear する（後方互換）" {
+  grep -E 'else' scripts/gate/run-maestro-and-create-marker.sh
+  grep -E "# device 未指定時のみ全 emulator をクリア" scripts/gate/run-maestro-and-create-marker.sh
 }

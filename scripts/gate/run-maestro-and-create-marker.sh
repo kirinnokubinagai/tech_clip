@@ -166,34 +166,49 @@ if [ -z "$DEVICE" ]; then
   fi
 fi
 
+# shard ごとに独立したローカルポートを割り当て（並列実行時のポート衝突防止）
+# shard 1 → 7001, shard 2 → 7002, ... シングル実行 (SHARD_INDEX=1/1) も 7001 で統一
+MAESTRO_PORT=$((7000 + SHARD_INDEX))
+# SHARD_INDEX が "all" の場合（all mode）はデフォルト 7001
+if [ "$SHARD_INDEX" = "all" ]; then
+  MAESTRO_PORT=7001
+fi
+
 # maestro ドライバーが起動していなければ再起動する
 if [ -n "$DEVICE" ]; then
   if ! adb -s "$DEVICE" shell "ps -A 2>/dev/null | grep -q dev.mobile.maestro" 2>/dev/null; then
     echo "[gate] maestro driver not running on $DEVICE, starting..." >&2
     adb -s "$DEVICE" shell "am force-stop dev.mobile.maestro" 2>/dev/null || true
-    adb -s "$DEVICE" forward tcp:7001 tcp:7001 2>/dev/null || true
+    adb -s "$DEVICE" forward tcp:$MAESTRO_PORT tcp:7001 2>/dev/null || true
     adb -s "$DEVICE" shell "am instrument -w dev.mobile.maestro.test/androidx.test.runner.AndroidJUnitRunner" \
       > "/tmp/maestro-driver-${DEVICE}.log" 2>&1 &
     sleep 8
-    echo "[gate] maestro driver started on $DEVICE" >&2
+    echo "[gate] maestro driver started on $DEVICE (port=$MAESTRO_PORT)" >&2
   else
-    adb -s "$DEVICE" forward tcp:7001 tcp:7001 2>/dev/null || true
-    echo "[gate] maestro driver already running on $DEVICE" >&2
+    adb -s "$DEVICE" forward tcp:$MAESTRO_PORT tcp:7001 2>/dev/null || true
+    echo "[gate] maestro driver already running on $DEVICE (port=$MAESTRO_PORT)" >&2
   fi
 fi
 
-# 全 emulator で app の cache + Keystore を完全消去する (前回テストの auth token が
+# app の cache + Keystore を消去する (前回テストの auth token が
 # Android Keystore = expo-secure-store に残ると「セッション期限切れ」エラーで
 # login が阻害されるため。maestro `clearState: true` は app data のみで Keystore は
-# 消えない)。本 script は CI も同経路で使うため、ここで一律 clear する。
+# 消えない)。
 APP_PACKAGE="${SHARD_APP_ID:-com.techclip.app}"
-echo "[gate] 全 emulator の ${APP_PACKAGE} cache + Keystore を消去..." >&2
-while IFS= read -r line; do
-  port=$(echo "$line" | grep -oE 'emulator-[0-9]+' || true)
-  [ -z "$port" ] && continue
-  adb -s "$port" shell pm clear "$APP_PACKAGE" >/dev/null 2>&1 &
-done < <(adb devices 2>/dev/null | grep -E '^emulator-[0-9]+\s+device' || true)
-wait
+if [ -n "$DEVICE" ]; then
+  # device 指定時は自分の emulator のみクリア（並列実行時に他 shard のデータを消さない）
+  echo "[gate] ${DEVICE} の ${APP_PACKAGE} cache + Keystore を消去..." >&2
+  adb -s "$DEVICE" shell pm clear "$APP_PACKAGE" >/dev/null 2>&1
+else
+  # device 未指定時のみ全 emulator をクリア（シングル実行 = 安全）
+  echo "[gate] 全 emulator の ${APP_PACKAGE} cache + Keystore を消去..." >&2
+  while IFS= read -r line; do
+    port=$(echo "$line" | grep -oE 'emulator-[0-9]+' || true)
+    [ -z "$port" ] && continue
+    adb -s "$port" shell pm clear "$APP_PACKAGE" >/dev/null 2>&1 &
+  done < <(adb devices 2>/dev/null | grep -E '^emulator-[0-9]+\s+device' || true)
+  wait
+fi
 
 # all mode は --shard-split で maestro 内部並列、single mode は全 flow を順次実行
 SHARD_SPLIT_ARGS=()
@@ -206,6 +221,7 @@ DEVICE_ARGS=()
 
 (cd "$REPO_ROOT" && direnv exec "$REPO_ROOT" maestro test \
   "${DEVICE_ARGS[@]}" \
+  --port $MAESTRO_PORT \
   "${SHARD_SPLIT_ARGS[@]}" \
   --format junit \
   --output "$RESULT_XML" \
