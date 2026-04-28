@@ -202,8 +202,32 @@ if (( ${#_SMOKE_FLOWS[@]} == 0 )); then
   exit 1
 fi
 
-# .env.yaml から --env 引数を構築
+# config.yaml の env: ブロックを --env 引数に展開する。
+# (--shard-split / 多 yaml 渡しでは maestro が config.yaml の env を自動マージしない)
 _MAESTRO_ENV_ARGS=()
+_CONFIG_FILE="${REPO_ROOT}/tests/e2e/maestro/config.yaml"
+if [ -f "$_CONFIG_FILE" ]; then
+  _in_env=0
+  while IFS= read -r _line; do
+    case "$_line" in
+      env:) _in_env=1; continue ;;
+      [a-zA-Z]*:) _in_env=0; continue ;;
+    esac
+    if [ "$_in_env" -eq 1 ]; then
+      case "$_line" in
+        ''|'#'*) continue ;;
+        ' '*)
+          _stripped="${_line#"${_line%%[![:space:]]*}"}"
+          _k="${_stripped%%:*}"
+          _v="${_stripped#*: }"
+          [ -z "$_k" ] && continue
+          _MAESTRO_ENV_ARGS+=("--env" "${_k}=${_v}")
+          ;;
+      esac
+    fi
+  done < "$_CONFIG_FILE"
+fi
+# .env.yaml が存在すれば追加で上書き
 _ENV_FILE="${REPO_ROOT}/tests/e2e/maestro/.env.yaml"
 if [ -f "$_ENV_FILE" ]; then
   while IFS= read -r _line; do
@@ -216,6 +240,14 @@ if [ -f "$_ENV_FILE" ]; then
     _MAESTRO_ENV_ARGS+=("--env" "${_k}=${_v}")
   done < "$_ENV_FILE"
 fi
+
+# 全 emulator で app の cache + Keystore を完全消去 (前回 token 残留対策)
+_APP_PACKAGE="com.techclip.app"
+echo "[pre-push] 全 emulator の ${_APP_PACKAGE} cache + Keystore を消去..."
+for _emu in "${_EMULATORS[@]}"; do
+  adb -s "$_emu" shell pm clear "$_APP_PACKAGE" >/dev/null 2>&1 &
+done
+wait
 
 # 並列度に応じた maestro 実行
 if [ "$_AVAILABLE_SHARDS" -ge 2 ]; then
