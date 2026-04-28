@@ -10,7 +10,7 @@ tags:
 
 # env: は宣言しない。--env 経由で渡される TEST_PASSWORD / TEST_NAME を
 # 直接参照する (env block の `${VAR}: ${VAR}` 自己参照は解決失敗してリテラル化する)。
-# 02 では register 専用に inputText に直接 register-only@techclip.app を書く。
+# 02 では register 専用に inputText に直接 e2e-register+maestro@techclip.app を書く。
 
 ---
 
@@ -106,7 +106,7 @@ tags:
       - waitForAnimationToEnd:
           timeout: 1000
 # register 専用メール (seed 済 user とは別。DB reset で消えるので毎回新規扱い)
-- inputText: "register-only@techclip.app"
+- inputText: "e2e-register+maestro@techclip.app"
 - hideKeyboard  # キーボードが submit-button / password-input を覆うので閉じる
 
 # バリデーション: メールのみで送信 → パスワードエラー
