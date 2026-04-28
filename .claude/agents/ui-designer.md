@@ -64,9 +64,15 @@ SendMessage(to: "team-lead", "$MSG")
 - **絵文字使用禁止**（Lucide Icons を使う）
 - **AIっぽいデザイン要素禁止**（グラデーション・ネオンカラー等）
 
-## 参照する rules
+## 参照する skills / rules
 
-`coding-standards` / `frontend-design` は `~/.claude/rules/` で自動ロード済み。`testing` / `design-workflow` は worktree 側で自動ロード済み。追加 Read 不要。
+`~/.claude/` はグローバル除外。必要時に skill を呼ぶ:
+
+- `code/coding-standards`
+- `design/ui-design` / `design/ux-review`
+- `ux-psychology-review`（UX 観点）
+
+`testing` / `design-workflow` は worktree 側で自動ロード済み。
 
 ## レーン並列モード
 

@@ -291,17 +291,21 @@ orchestrator・サブエージェントは状況に応じて以下の skill を 
 | `code/coding-standards` | コーディング規約 |
 | `code/database` | DB 操作規約 |
 
-### コード規約（rules）
+### コード規約
 
-| ファイル | 用途 | 場所 |
-|---|---|---|
-| coding-standards.md | コーディング規約 | `~/.claude/rules/`（全プロジェクト共通、自動ロード） |
-| api-design.md | API 設計 | `~/.claude/rules/`（自動ロード） |
-| database.md | DB 操作 | `~/.claude/rules/`（自動ロード） |
-| security.md | セキュリティ | `~/.claude/rules/`（自動ロード） |
-| frontend-design.md | フロントエンドデザイン | `~/.claude/rules/`（自動ロード） |
-| testing.md | テスト規約（プロジェクト固有 `tests/` 構造） | `.claude/rules/`（worktree 側） |
-| design-workflow.md | デザインワークフロー（プロジェクト固有） | `.claude/rules/`（worktree 側） |
+`.claude/settings.local.json` の `claudeMdExcludes` で `~/.claude/` 配下をセッション自動ロードから除外している（プロジェクトを self-contained に保つため）。代わりに以下の skill / プロジェクト rules を使う:
+
+| 用途 | アクセス方法 |
+|---|---|
+| コーディング規約 | `code/coding-standards` skill |
+| API 設計 | `code/api-design` skill |
+| DB 操作 | `code/database` skill |
+| セキュリティ | `security/security-audit` / `security/owasp-check` skill |
+| UI / デザイン | `design/ui-design` / `design/ux-review` skill |
+| テスト規約（プロジェクト固有 `tests/` 構造） | `.claude/rules/testing.md`（worktree 側、自動ロード） |
+| デザインワークフロー（プロジェクト固有） | `.claude/rules/design-workflow.md`（worktree 側、自動ロード） |
+
+詳細が欲しいときは `~/.claude/rules/<name>.md` を Read ツールで手動読み込みも可能（除外設定は auto-load のみに影響、Read 自体は使える）。
 
 ---
 

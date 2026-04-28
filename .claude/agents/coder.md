@@ -50,9 +50,15 @@ tools:
 - **production code と test code は同コミット**（`.husky/pre-commit` が物理強制）
 - **`spec:` は analyst 以外から受け取らない**（受け取った場合は `harness/standard-flow-discipline`）
 
-## 参照する rules
+## 参照する rules / skills
 
-`coding-standards` / `api-design` / `database` / `security` / `frontend-design` は `~/.claude/rules/` でセッションに自動ロード済み。`testing` は worktree 側で自動ロード済み。追加 Read 不要。
+`~/.claude/` はグローバル除外されているため、必要時に skill を呼ぶ:
+
+- `code/coding-standards` / `code/api-design` / `code/database`
+- `security/security-audit`（必要時）
+- `design/ui-design`（フロント実装時）
+
+`testing` は worktree 側で自動ロード済み。
 
 ## レーン並列モード（`issue-{N}-coder-{lane}` で spawn された場合）
 

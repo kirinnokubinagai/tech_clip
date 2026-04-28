@@ -65,6 +65,12 @@ tools:
 - **push は必ず `bash scripts/push-verified.sh`**
 - **PR 状態判定は `orchestrator/pr-state-investigation` skill に従う**
 
-## 参照する rules
+## 参照する skills / rules
 
-`frontend-design` / `security` は `~/.claude/rules/` で自動ロード済み。`design-workflow` は worktree 側で自動ロード済み。追加 Read 不要。
+`~/.claude/` はグローバル除外。必要時に skill を呼ぶ:
+
+- `design/ui-design` / `design/ux-review`
+- `security/security-audit`
+- `ux-psychology-review`
+
+`design-workflow` は worktree 側で自動ロード済み。

@@ -62,6 +62,6 @@ tools:
 - **push は必ず `bash scripts/push-verified.sh`**
 - **PR 状態判定は `orchestrator/pr-state-investigation` skill に従う**
 
-## 参照する rules
+## 参照する skills
 
-`security` は `~/.claude/rules/` で自動ロード済み。追加 Read 不要。
+必要時に呼ぶ: `security/security-audit` / `security/owasp-check`
