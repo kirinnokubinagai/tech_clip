@@ -2,9 +2,7 @@ name: PR E2E (Android)
 
 on:
   pull_request:
-    # stage→main の PR のみ e2e を実行する (#1138)
-    # feature→stage PR では e2e は skip される (CI が軽量)
-    branches: [main]
+    branches: [main, stage]
     # gate-rules.json の ci_path_filters.e2e_android と同期させること
     paths:
       - "apps/mobile/**"
@@ -147,9 +145,37 @@ jobs:
         if: always()
         run: |
           set -eo pipefail
+          JUNIT="test-results/junit-shard${{ matrix.shard }}of2.xml"
           EXIT_CODE=$(cat "test-results/maestro-exit-code-shard${{ matrix.shard }}of2.txt" 2>/dev/null || echo 1)
           if [ "$EXIT_CODE" -ne 0 ]; then
-            echo "Maestro tests failed (shard ${{ matrix.shard }}/2) with exit code $EXIT_CODE"
+            echo "::error::Maestro E2E failed (shard ${{ matrix.shard }}/2)"
+            if [ -f "$JUNIT" ]; then
+              echo ""
+              echo "=== Failed tests ==="
+              # Extract failed test names and failure messages from JUnit XML
+              python3 -c "
+          import xml.etree.ElementTree as ET, sys
+          tree = ET.parse('$JUNIT')
+          for tc in tree.iter('testcase'):
+              fail = tc.find('failure')
+              if fail is not None:
+                  name = tc.get('name', 'unknown')
+                  msg = fail.text or fail.get('message', '(no message)')
+                  print(f'::error::FAIL: {name} — {msg}')
+                  print(f'  Test: {name}')
+                  print(f'  Reason: {msg}')
+                  print()
+          " 2>/dev/null || echo "(JUnit parse failed)"
+              echo "=== Summary ==="
+              python3 -c "
+          import xml.etree.ElementTree as ET
+          tree = ET.parse('$JUNIT')
+          ts = tree.find('.//testsuite') or tree.getroot()
+          total = ts.get('tests', '?')
+          fails = ts.get('failures', '?')
+          print(f'Total: {total}, Failures: {fails}')
+          " 2>/dev/null || true
+            fi
             exit 1
           fi
 
@@ -243,6 +269,33 @@ jobs:
           set -eo pipefail
           EXIT_CODE=$(cat test-results/maestro-exit-code.txt 2>/dev/null || echo 1)
           if [ "$EXIT_CODE" -ne 0 ]; then
-            echo "Aggregated Maestro tests failed with exit code $EXIT_CODE"
+            echo "::error::Maestro E2E failed (aggregated)"
+            JUNIT="test-results/junit.xml"
+            if [ -f "$JUNIT" ]; then
+              echo ""
+              echo "=== Failed tests (all shards) ==="
+              python3 -c "
+          import xml.etree.ElementTree as ET, sys
+          tree = ET.parse('$JUNIT')
+          for tc in tree.iter('testcase'):
+              fail = tc.find('failure')
+              if fail is not None:
+                  name = tc.get('name', 'unknown')
+                  msg = fail.text or fail.get('message', '(no message)')
+                  print(f'::error::FAIL: {name} — {msg}')
+                  print(f'  Test: {name}')
+                  print(f'  Reason: {msg}')
+                  print()
+          " 2>/dev/null || echo "(JUnit parse failed)"
+              echo "=== Summary ==="
+              python3 -c "
+          import xml.etree.ElementTree as ET
+          tree = ET.parse('$JUNIT')
+          ts = tree.find('.//testsuite') or tree.getroot()
+          total = ts.get('tests', '?')
+          fails = ts.get('failures', '?')
+          print(f'Total: {total}, Failures: {fails}')
+          " 2>/dev/null || true
+            fi
             exit 1
           fi

@@ -19,20 +19,26 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # REPO_ROOT env var override allows tests to point to a temp repo
 REPO_ROOT="${REPO_ROOT:-$(git -C "$SCRIPT_DIR" rev-parse --show-toplevel 2>/dev/null || git rev-parse --show-toplevel)}"
 
-# base_ref 解決: 引数 > 環境変数 > 自動判定
+# base_ref 解決: 引数 > 環境変数 > PR ターゲット自動検出 > ブランチ名推定
 if [ -n "${1:-}" ]; then
   BASE_REF="$1"
 elif [ -n "${BASE_REF:-}" ]; then
   : # 環境変数をそのまま使う
 else
-  # 自動判定: 現在 branch が stage → origin/main、それ以外 → origin/stage (存在すれば)
   CURRENT_BRANCH=$(git -C "$REPO_ROOT" rev-parse --abbrev-ref HEAD 2>/dev/null || echo "")
-  if [ "$CURRENT_BRANCH" = "stage" ]; then
+  # PR が存在すればそのターゲットブランチを使う（CI と判定を一致させる）
+  PR_BASE=""
+  if command -v gh &>/dev/null; then
+    PR_BASE=$(gh pr view "$CURRENT_BRANCH" --json baseRefName --jq '.baseRefName' 2>/dev/null || true)
+  fi
+  if [ -n "$PR_BASE" ]; then
+    BASE_REF="origin/${PR_BASE}"
+  elif [ "$CURRENT_BRANCH" = "stage" ]; then
     BASE_REF="origin/main"
   elif git -C "$REPO_ROOT" rev-parse --verify origin/stage >/dev/null 2>&1; then
     BASE_REF="origin/stage"
   else
-    BASE_REF="origin/main"  # fallback (stage が未作成なら main 比較)
+    BASE_REF="origin/main"
   fi
 fi
 RULES_FILE="${REPO_ROOT}/.claude/gate-rules.json"
