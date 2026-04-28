@@ -38,6 +38,9 @@
           # 35.0.0 も含める: expo モジュールが build-tools 35 を要求する場合があり、
           # Nix store は read-only なので CI で install 失敗する (#1138 fix)
           buildToolsVersions = [ "35.0.0" "36.0.0" ];
+          # CMake 3.22.1: react-native-worklets / react-native-screens が要求する。
+          # Nix store は read-only なので事前プロビジョンが必要 (#1138 fix)
+          cmakeVersions = [ "3.22.1" ];
           platformVersions = [ "36" ];
           includeEmulator = true;
           includeSystemImages = true;
