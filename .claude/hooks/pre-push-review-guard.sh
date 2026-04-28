@@ -105,10 +105,10 @@ fi
 # .sh → .bats 等のマッピング漏れ・後付け追加を防ぐため push 直前にも再確認する)
 COVERAGE_SCRIPT="${WORKTREE_PATH}/scripts/gate/check-test-coverage.sh"
 if [ -f "$COVERAGE_SCRIPT" ]; then
-  if ! (cd "$WORKTREE_PATH" && bash "$COVERAGE_SCRIPT" origin/main >/dev/null 2>&1); then
+  if ! (cd "$WORKTREE_PATH" && bash "$COVERAGE_SCRIPT" >/dev/null 2>&1); then
     echo "DENY: test coverage gate に違反する変更が含まれています。" >&2
     echo "  実装ファイル (.sh / .ts / .tsx) に対応する test ファイル (.bats / .test.ts) が必要です。" >&2
-    echo "  詳細: bash scripts/gate/check-test-coverage.sh origin/main" >&2
+    echo "  詳細: bash scripts/gate/check-test-coverage.sh" >&2
     exit 2
   fi
 fi

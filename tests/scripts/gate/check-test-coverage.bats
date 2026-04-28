@@ -204,3 +204,52 @@ run_script_staged() {
   [ "$status" -eq 0 ]
   echo "$output" | grep -q '"covered": true'
 }
+
+# ─────────────────────────────────────────────────────────
+# (#1138) base_ref 自動判定テスト
+# ─────────────────────────────────────────────────────────
+
+# テスト 10: stage branch 上での auto base_ref 判定 → origin/main と diff を取る
+@test "stage branch 上では引数なしで origin/main を base_ref として使うこと" {
+  # Arrange: origin/main に push してから stage branch に切り替え
+  git -C "$REPO_DIR" push origin main --quiet
+  git -C "$REPO_DIR" checkout -b stage main 2>/dev/null
+  git -C "$REPO_DIR" push origin stage:stage --quiet
+  git -C "$REPO_DIR" fetch origin --quiet
+
+  # stage branch でファイルを追加 (test あり)
+  add_file "scripts/gate/new-tool.sh" "#!/bin/bash\necho hi"
+  add_file "tests/scripts/gate/new-tool.bats" "#!/usr/bin/env bats\n@test 'works' { true; }"
+  commit_all
+
+  # Act: 引数なしで実行 (auto-detect)
+  cd "$REPO_DIR"
+  run bash "$SCRIPT"
+
+  # Assert: origin/main ベースで diff が取れて PASS すること
+  [ "$status" -eq 0 ]
+  echo "$output" | grep -q '"covered": true'
+}
+
+# テスト 11: feature branch 上で origin/stage がある場合 → origin/stage を base_ref として使う
+@test "feature branch 上で origin/stage がある場合は引数なしで origin/stage を base_ref として使うこと" {
+  # Arrange: origin/stage を作成してから feature branch に移動
+  git -C "$REPO_DIR" push origin main --quiet
+  git -C "$REPO_DIR" checkout -b stage main 2>/dev/null
+  git -C "$REPO_DIR" push origin stage:stage --quiet
+  git -C "$REPO_DIR" fetch origin --quiet
+  git -C "$REPO_DIR" checkout -b feature/test-coverage main 2>/dev/null
+
+  # feature branch でファイルを追加 (test あり)
+  add_file "scripts/gate/feat-tool.sh" "#!/bin/bash\necho hi"
+  add_file "tests/scripts/gate/feat-tool.bats" "#!/usr/bin/env bats\n@test 'works' { true; }"
+  commit_all
+
+  # Act: 引数なしで実行 (auto-detect → origin/stage 基準)
+  cd "$REPO_DIR"
+  run bash "$SCRIPT"
+
+  # Assert: origin/stage ベースで diff が取れて PASS すること
+  [ "$status" -eq 0 ]
+  echo "$output" | grep -q '"covered": true'
+}
