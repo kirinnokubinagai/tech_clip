@@ -557,3 +557,102 @@ run_script_with_file() {
     # Assert
     [ "$status" -eq 0 ]
 }
+
+# --- サブエージェント pass-through (priority 0) ---
+
+@test "CLAUDE_AGENT_NAME が設定されたサブエージェントはmainブランチのapps/配下も許可されること [Phase 0]" {
+    # Arrange: mainブランチ上でサブエージェント名を設定
+    local file_path="$REPO_DIR/apps/api/src/index.ts"
+    local input
+    input=$(jq -n --arg p "$file_path" '{"tool_input":{"file_path":$p}}')
+
+    # Act: CLAUDE_AGENT_NAME をエクスポートしてスクリプト実行
+    export CLAUDE_AGENT_NAME="issue-100-coder"
+    run bash -c "cd '$REPO_DIR' && printf '%s' '$input' | bash '$SCRIPT'"
+    unset CLAUDE_AGENT_NAME
+
+    # Assert: サブエージェントなら即 exit 0
+    [ "$status" -eq 0 ]
+}
+
+@test "CLAUDE_AGENT_NAME が設定されたサブエージェントはmainブランチの.claude/配下も許可されること [Phase 0]" {
+    # Arrange
+    local file_path="$REPO_DIR/.claude/hooks/some-hook.sh"
+    local input
+    input=$(jq -n --arg p "$file_path" '{"tool_input":{"file_path":$p}}')
+
+    # Act
+    export CLAUDE_AGENT_NAME="issue-100-reviewer"
+    run bash -c "cd '$REPO_DIR' && printf '%s' '$input' | bash '$SCRIPT'"
+    unset CLAUDE_AGENT_NAME
+
+    # Assert
+    [ "$status" -eq 0 ]
+}
+
+@test "_CLAUDE_DETECTED_AGENT_NAME が設定されたサブエージェントはmainブランチのソースファイルも許可されること [Phase 0]" {
+    # Arrange: テスト用の注入変数でサブエージェントをシミュレート
+    local file_path="$REPO_DIR/apps/mobile/src/App.tsx"
+    local input
+    input=$(jq -n --arg p "$file_path" '{"tool_input":{"file_path":$p}}')
+
+    # Act
+    unset CLAUDE_AGENT_NAME
+    export _CLAUDE_DETECTED_AGENT_NAME="issue-200-infra-engineer"
+    run bash -c "cd '$REPO_DIR' && printf '%s' '$input' | bash '$SCRIPT'"
+    unset _CLAUDE_DETECTED_AGENT_NAME
+
+    # Assert
+    [ "$status" -eq 0 ]
+}
+
+@test "_CLAUDE_DETECTED_AGENT_NAME が設定されたサブエージェントはdetached HEAD状態でも許可されること [Phase 0]" {
+    # Arrange: detached HEAD でもサブエージェントはブロックされない
+    local commit_hash
+    commit_hash=$(git -C "$REPO_DIR" rev-parse HEAD)
+    git -C "$REPO_DIR" checkout --detach "$commit_hash"
+    local file_path="$REPO_DIR/apps/api/src/index.ts"
+    local input
+    input=$(jq -n --arg p "$file_path" '{"tool_input":{"file_path":$p}}')
+
+    # Act
+    unset CLAUDE_AGENT_NAME
+    export _CLAUDE_DETECTED_AGENT_NAME="issue-300-ui-designer"
+    run bash -c "cd '$REPO_DIR' && printf '%s' '$input' | bash '$SCRIPT'"
+    unset _CLAUDE_DETECTED_AGENT_NAME
+
+    # Assert
+    [ "$status" -eq 0 ]
+}
+
+@test "オーケストレーター（両変数未設定）はmainブランチでブロックされること [Phase 0]" {
+    # Arrange: CLAUDE_AGENT_NAME・_CLAUDE_DETECTED_AGENT_NAME 両方未設定 = orchestrator
+    local file_path="$REPO_DIR/apps/api/src/index.ts"
+    local input
+    input=$(jq -n --arg p "$file_path" '{"tool_input":{"file_path":$p}}')
+
+    # Act
+    unset CLAUDE_AGENT_NAME
+    unset _CLAUDE_DETECTED_AGENT_NAME
+    run bash -c "cd '$REPO_DIR' && printf '%s' '$input' | bash '$SCRIPT'"
+
+    # Assert: orchestrator は mainブランチでブロックされる
+    [ "$status" -eq 2 ]
+    [[ "${output}" == *"DENY"* ]]
+}
+
+@test ".omc/state/配下はサブエージェント（CLAUDE_AGENT_NAME設定）でも pass-through されること [Phase 0]" {
+    # NOTE: サブエージェント check は priority 0 = 最初に exit 0 するので .omc/state/ check より先に終わる
+    # サブエージェントは .omc/state/ 編集も許可（is_blocked_file は orchestrator 専用ガード）
+    local file_path="$REPO_DIR/.omc/state/autopilot-state.json"
+    local input
+    input=$(jq -n --arg p "$file_path" '{"tool_input":{"file_path":$p}}')
+
+    # Act
+    export CLAUDE_AGENT_NAME="issue-100-coder"
+    run bash -c "cd '$REPO_DIR' && printf '%s' '$input' | bash '$SCRIPT'"
+    unset CLAUDE_AGENT_NAME
+
+    # Assert: サブエージェントは priority 0 で即 exit 0（.omc/state/ check より先）
+    [ "$status" -eq 0 ]
+}

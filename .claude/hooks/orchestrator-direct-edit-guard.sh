@@ -1,7 +1,9 @@
 #!/usr/bin/env bash
-# PreToolUse:Edit/Write hook: mainブランチおよび detached HEAD 上での直接編集をブロック
+# PreToolUse:Edit/Write hook: orchestrator および main ブランチ上での直接編集をブロック
 #
 # ブロックロジックの優先順位:
+#   0. sub-agent 判定（CLAUDE_AGENT_NAME または process tree で agent 確認）→ 即 ALLOW
+#      サブエージェントの Edit/Write は絶対にブロックしない
 #   1. blocked_file チェック（ブランチ問わず DENY）
 #      - .omc/state/**:          実行フロー状態ファイル（直接編集によるフロー操作を防止）
 #   2. meta_file チェック（main 上でも ALLOW）
@@ -15,6 +17,30 @@
 #   5. orchestration_file チェック（main 以外なら ALLOW）
 #      - .claude/**, CLAUDE.md, flake.nix 等
 #   6. それ以外 ALLOW（worktree 内バックグラウンドエージェントの動作を許可）
+
+# 0. sub-agent 判定: CLAUDE_AGENT_NAME が設定されているか、process tree で claude --agent-name を検出
+#    → サブエージェントなら即パス（以降のブランチチェックは不要）
+_detect_agent_name_for_edit_guard() {
+  local current_pid=$$
+  local parent_pid parent_comm parent_args
+  for _ in $(seq 1 20); do
+    parent_pid=$(ps -p "$current_pid" -o ppid= 2>/dev/null | tr -d " ")
+    [ -z "$parent_pid" ] || [ "$parent_pid" = "0" ] || [ "$parent_pid" = "1" ] && break
+    parent_comm=$(ps -p "$parent_pid" -o comm= 2>/dev/null || echo "")
+    if echo "$parent_comm" | grep -qE "^claude$"; then
+      parent_args=$(ps -p "$parent_pid" -o args= 2>/dev/null || echo "")
+      echo "$parent_args" | grep -oE -- '--agent-name[= ][^ ]+' | sed 's/^--agent-name[= ]//' | head -1
+      return 0
+    fi
+    current_pid=$parent_pid
+  done
+  echo ""
+}
+
+_EDIT_GUARD_AGENT_NAME="${CLAUDE_AGENT_NAME:-${_CLAUDE_DETECTED_AGENT_NAME:-$(_detect_agent_name_for_edit_guard)}}"
+if [ -n "$_EDIT_GUARD_AGENT_NAME" ]; then
+  exit 0
+fi
 
 TOOL_INPUT=$(cat)
 
