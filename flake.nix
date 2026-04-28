@@ -3,16 +3,23 @@
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
+    # codex CLI 専用に新しい nixpkgs revision を使う（codex 0.125+ で gpt-5.5 対応）
+    # 2026-04-27 時点の unstable revision では codex 0.125.0
+    nixpkgs-codex.url = "github:NixOS/nixpkgs/6368eda62c9775c38ef7f714b2555a741c20c72d";
     flake-utils.url = "github:numtide/flake-utils";
   };
 
-  outputs = { self, nixpkgs, flake-utils }:
+  outputs = { self, nixpkgs, nixpkgs-codex, flake-utils }:
     flake-utils.lib.eachDefaultSystem (system:
       let
         pkgs = import nixpkgs {
           inherit system;
           config.allowUnfree = true;
           config.android_sdk.accept_license = true;
+        };
+        pkgsCodex = import nixpkgs-codex {
+          inherit system;
+          config.allowUnfree = true;
         };
 
         # Android SDK + emulator + system image を nix で完全管理する。
@@ -164,8 +171,7 @@
             jdk17
             wrangler
             eas-cli
-            codex
-          ]) ++ [ androidSdk ];
+          ]) ++ [ androidSdk pkgsCodex.codex ];
 
           # Android SDK / emulator / system image を nix で固定して
           # ローカルの ~/Library/Android install には依存しない。
