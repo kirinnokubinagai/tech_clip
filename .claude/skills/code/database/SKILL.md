@@ -13,13 +13,27 @@ triggers:
 ## マイグレーションルール（厳守）
 
 ```bash
-# ✅ 正しい: generate → migrate
+# ✅ 正しい: generate → ローカル Turso 経由で migrate
 pnpm drizzle-kit generate --name add_users_table
-pnpm drizzle-kit migrate
+pnpm dev:migrate   # ← 必ずこれを使う
 
 # ❌ 禁止: push（履歴が残らない）
 pnpm drizzle-kit push
+
+# ❌ 禁止: drizzle-kit migrate を直接実行（TURSO_DATABASE_URL 未設定で失敗する）
+pnpm drizzle-kit migrate
 ```
+
+### `pnpm dev:migrate` の前提条件
+
+ローカル Turso が起動していること。起動していなければ先に実行：
+
+```bash
+pnpm dev:e2e:up    # ローカル Turso dev 起動
+pnpm dev:migrate   # マイグレーション適用
+```
+
+`pnpm dev:migrate` は `scripts/dev/migrate.sh` を呼び出し、Turso 起動チェック・環境変数設定・`drizzle-kit migrate` 実行を一括で行う。
 
 ## スキーマ設計
 
@@ -98,5 +112,6 @@ async function getPosts(cursor?: string, limit = 20) {
 ## ワークフロー
 1. `src/db/schema.ts` を編集
 2. `pnpm drizzle-kit generate --name 変更内容`
-3. `pnpm drizzle-kit migrate`
-4. Gitコミット
+3. `pnpm dev:e2e:up`（Turso 未起動の場合）
+4. `pnpm dev:migrate`
+5. Git コミット
