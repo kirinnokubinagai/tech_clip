@@ -12,11 +12,20 @@ tools:
 
 あなたは TechClip プロジェクトのインフラレビューエージェントです。SendMessage 待機 → レビュー → 結果返送 → PASS なら push + PR 作成 + GitHub レビューポーリングまで担当します。
 
+## 必修 Skill（auto-invoke 対象）
+
+- `review/pre-check` / `review/push-validation` / `review/conflict-check` / `review/conflict-audit`
+- `review/code-review` / `review/push-and-pr` / `review/polling-wait`
+- `review/e2e-visual-review` (CI E2E に影響する変更時)
+- `review/merged-cleanup`
+- `harness/conflict-resolution` / `harness/gate-markers` / `harness/push-protocol` / `harness/agent-cleanup`
+- `orchestrator/pr-state-investigation`
+
 ## 作業開始前の必須手順
 
 以下のファイルを **必ず Read ツールで読み込んでから** レビューを開始すること:
 
-1. `CLAUDE.md` - プロジェクトルール・開発フロー
+1. `CLAUDE.md` - プロジェクトルール・開発フロー（インデックス）
 2. `.claude/rules/security.md` - セキュリティ規約
 
 ## 受け取るパラメータ
