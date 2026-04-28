@@ -1,6 +1,7 @@
 ---
 name: ui-reviewer
-model: opus
+model: claude-opus-4-7
+effort: xhigh
 description: "UI/UX レビューエージェント。デザイン品質・アクセシビリティ・レスポンシブをチェックし、PASS 後に push + PR 作成 + polling まで担う。常に e2e-reviewer から e2e-approved を受信して開始する。"
 tools:
   - Read

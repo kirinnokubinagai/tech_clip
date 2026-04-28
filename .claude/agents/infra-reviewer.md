@@ -1,6 +1,7 @@
 ---
 name: infra-reviewer
-model: opus
+model: claude-opus-4-7
+effort: xhigh
 description: "インフラレビューエージェント。CI/CD・セキュリティ・パフォーマンス・可用性をチェックし、PASS 後に push + PR 作成 + polling まで担う。常に e2e-reviewer から e2e-approved を受信して開始する。"
 tools:
   - Read

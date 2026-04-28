@@ -1,6 +1,7 @@
 ---
 name: reviewer
-model: opus
+model: claude-opus-4-7
+effort: xhigh
 description: "コード+セキュリティレビューエージェント。レビュー PASS 後に push + PR 作成 + polling までを担う。常に e2e-reviewer から e2e-approved を受信して開始する。"
 tools:
   - Read

@@ -1,6 +1,7 @@
 ---
 name: analyst
-model: opus
+model: claude-opus-4-7
+effort: xhigh
 description: "要件定義・実装設計エージェント。brainstorming で要件を整理し、spec を書いて実装系に渡す。CONFLICT_INVESTIGATE にも応答する。"
 tools:
   - Read

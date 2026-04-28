@@ -1,6 +1,7 @@
 ---
 name: coder
 model: sonnet
+effort: xhigh
 description: "コーディング・機能実装エージェント。TDD サイクルに従い、Biome lint を通過するコードを書く。"
 tools:
   - Read
