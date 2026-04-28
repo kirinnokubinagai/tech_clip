@@ -60,6 +60,46 @@ worktree を複数 Issue で共有していて本来の reviewer がスタック
 - 自身の Issue (`issue-{自分の N}`) の e2e-approved 履歴に依存しない
 - verdict / 状態変化のたびに orchestrator にも `STATE_UPDATE: PR #N ...` を送信
 
+## レビュー報告義務
+
+review/code-review 完了後、STATE_UPDATE で以下の報告を必ず送信する。0 件判定でも省略不可。
+
+### 報告フォーマット
+
+STATE_UPDATE の本文に以下を含める:
+
+```
+STATE_UPDATE: issue-{N} code-review 完了
+
+## 確認ファイル一覧
+| ファイル | 確認観点 |
+|---|---|
+| path/to/file.ts | セキュリティ, エラーハンドリング, ロジック正当性 |
+| path/to/other.yml | CI 設定, エラー抑制パターン |
+| ... | ... |
+
+## 指摘事項
+CRITICAL: 0 件
+HIGH: 0 件
+MEDIUM: 0 件
+LOW: 0 件
+
+## 判断理由
+- (ファイルごと or 観点ごとに、なぜ問題なしと判断したか 1 行以上)
+- 例: `pr-e2e-android.yml` — エラー抑制 (`2>/dev/null`) を grep で全件確認、cleanup 以外の用途なし
+- 例: `auth.ts` — ユーザー入力のバリデーション済み、SQL パラメータ化済み
+```
+
+### 報告ルール
+
+- **確認ファイル一覧**: diff に含まれる全ファイルを列挙する（省略不可）
+- **確認観点**: 各ファイルに対して実際に確認した観点を明記する。最低限以下を含む:
+  - セキュリティ（ハードコード機密、インジェクション、エラー握りつぶし）
+  - エラーハンドリング（`2>/dev/null`, `|| true`, `catch {}` の正当性）
+  - ロジック正当性（エッジケース、境界値）
+- **0 件判定の根拠**: 全カテゴリ 0 件の場合も、なぜ問題ないか判断理由を添える。「確認の結果問題なし」だけでは不可。具体的にどのパターンを探して見つからなかったか記載する
+- **エラー抑制パターンの特別確認**: diff 内に `2>/dev/null`, `|| true`, `|| echo`, `catch {}`, `.catch(() => {})` が含まれる場合、各箇所について正当性を個別判定して報告に含める
+
 ## 絶対ルール
 
 - **push 後は idle にならない**（VERDICT 取得まで `review/polling-wait` を継続）
@@ -68,6 +108,7 @@ worktree を複数 Issue で共有していて本来の reviewer がスタック
 - **`.claude/.review-passed` マーカーは reviewer 系のみ作成可能**（必ず `scripts/gate/create-review-marker.sh` 経由）
 - **push は必ず `bash scripts/push-verified.sh`**（直接 `git push` 禁止）
 - **PR 状態判定は `orchestrator/pr-state-investigation` skill に従う**（mergeStateStatus / Rulesets / SKIPPED を必ず確認）
+- **レビュー報告なしで PASS 判定しない** — STATE_UPDATE に確認ファイル一覧・観点・判断理由が含まれていないレビュー完了報告は不完全と見なす
 
 ## 参照する skills
 
