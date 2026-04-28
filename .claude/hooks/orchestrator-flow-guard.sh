@@ -22,6 +22,30 @@ INPUT=$(cat)
 TOOL_NAME=$(echo "$INPUT" | jq -r '.tool_name // ""')
 TOOL_INPUT=$(echo "$INPUT" | jq -r '.tool_input // {}')
 
+# Walk the process tree to find the invoking claude binary and extract --agent-name.
+# The SDK passes --agent-name <name> when spawning sub-agents but not for the orchestrator.
+# CLAUDE_AGENT_NAME env var is NOT injected by the SDK; this is the only reliable source.
+_detect_claude_agent_name() {
+  local current_pid=$$
+  local parent_pid parent_comm parent_args
+  for _ in $(seq 1 20); do
+    parent_pid=$(ps -p "$current_pid" -o ppid= 2>/dev/null | tr -d " ")
+    [ -z "$parent_pid" ] || [ "$parent_pid" = "0" ] || [ "$parent_pid" = "1" ] && break
+    parent_comm=$(ps -p "$parent_pid" -o comm= 2>/dev/null || echo "")
+    if echo "$parent_comm" | grep -qE "^claude$"; then
+      parent_args=$(ps -p "$parent_pid" -o args= 2>/dev/null || echo "")
+      echo "$parent_args" | grep -oE -- '--agent-name[= ][^ ]+' | sed 's/^--agent-name[= ]//' | head -1
+      return 0
+    fi
+    current_pid=$parent_pid
+  done
+  echo ""
+}
+
+# Prefer env var (explicit override / test injection) then fall back to process tree.
+# Tests can also set _CLAUDE_DETECTED_AGENT_NAME to bypass ps-based detection.
+DETECTED_AGENT_NAME="${CLAUDE_AGENT_NAME:-${_CLAUDE_DETECTED_AGENT_NAME:-$(_detect_claude_agent_name)}}"
+
 deny() {
   local msg="$1"
   echo "$msg" >&2
@@ -67,8 +91,8 @@ if [ "$TOOL_NAME" = "Bash" ]; then
 
   # gh pr merge: reviewer 系のみ
   if echo "$CMD" | grep -qE '^\s*gh\s+pr\s+merge\s'; then
-    echo "${CLAUDE_AGENT_NAME:-}" | grep -qE '(reviewer|infra-reviewer|ui-reviewer)' \
-      || deny "DENY: 'gh pr merge' は reviewer 系のみ実行可 (CLAUDE_AGENT_NAME=${CLAUDE_AGENT_NAME:-unset})。"
+    echo "${DETECTED_AGENT_NAME}" | grep -qE '(reviewer|infra-reviewer|ui-reviewer)' \
+      || deny "DENY: 'gh pr merge' は reviewer 系のみ実行可 (agent=${DETECTED_AGENT_NAME:-unset})。"
   fi
 
   # force push: 完全禁止
@@ -83,7 +107,7 @@ if [ "$TOOL_NAME" = "Bash" ]; then
 
   # git push: reviewer 系 or push-verified.sh 経由のみ
   if echo "$CMD" | grep -qE '^\s*git\s+push\s' && ! echo "$CMD" | grep -q 'push-verified\.sh'; then
-    echo "${CLAUDE_AGENT_NAME:-}" | grep -qE '^issue-[0-9]+-(reviewer|infra-reviewer|ui-reviewer)([-]|$)' \
+    echo "${DETECTED_AGENT_NAME}" | grep -qE '^issue-[0-9]+-(reviewer|infra-reviewer|ui-reviewer)([-]|$)' \
       || deny "DENY: 'git push' は reviewer 系のみ。実装系は 'bash scripts/push-verified.sh' 経由で。"
   fi
 fi
@@ -92,7 +116,7 @@ fi
 if [ "$TOOL_NAME" = "SendMessage" ]; then
   TO=$(echo "$TOOL_INPUT" | jq -r '.to // ""')
   CONTENT=$(echo "$TOOL_INPUT" | jq -r '.message // ""')
-  SENDER="${CLAUDE_AGENT_NAME:-}"
+  SENDER="${DETECTED_AGENT_NAME}"
   IS_ORCHESTRATOR=false
   [ -z "$SENDER" ] && IS_ORCHESTRATOR=true
 

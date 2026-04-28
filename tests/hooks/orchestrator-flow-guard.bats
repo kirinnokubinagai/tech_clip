@@ -507,3 +507,65 @@ POST_HOOK="$(cd "$(dirname "$BATS_TEST_FILENAME")/../.." && pwd)/.claude/hooks/p
     [ "$status" -eq 2 ]
     [[ "$output" == *"spec を直接書いた可能性"* ]]
 }
+
+# -------------------------------------------------------------------------
+# Phase F: process tree による agent 検出
+# CLAUDE_AGENT_NAME が空でも、_CLAUDE_DETECTED_AGENT_NAME 経由で agent として扱う。
+# 実際の SDK は claude --agent-name <name> で起動するため process tree から取得するが、
+# テストでは _CLAUDE_DETECTED_AGENT_NAME でモックする（CLAUDE_AGENT_NAME が空の場合のみ有効）。
+# -------------------------------------------------------------------------
+
+@test "CLAUDE_AGENT_NAME 空でも _CLAUDE_DETECTED_AGENT_NAME があれば agent として扱われること [Phase F]" {
+    unset CLAUDE_AGENT_NAME
+    export _CLAUDE_DETECTED_AGENT_NAME="issue-100-coder"
+    local json
+    json=$(jq -n --arg to "issue-100-analyst" --arg msg "Phase 12: changes requested" \
+        '{"tool_name":"SendMessage","tool_input":{"to":$to,"message":$msg}}')
+    run run_hook "$json"
+    # analyst 宛は exempt → 0
+    [ "$status" -eq 0 ]
+    unset _CLAUDE_DETECTED_AGENT_NAME
+}
+
+@test "CLAUDE_AGENT_NAME 空で _CLAUDE_DETECTED_AGENT_NAME=reviewer なら 1500文字超でも DENY されないこと [Phase F]" {
+    unset CLAUDE_AGENT_NAME
+    export _CLAUDE_DETECTED_AGENT_NAME="issue-100-reviewer"
+    local long_msg
+    long_msg=$(printf 'z%.0s' $(seq 1 2000))
+    local json
+    json=$(jq -n --arg to "issue-100-coder" --arg msg "$long_msg" \
+        '{"tool_name":"SendMessage","tool_input":{"to":$to,"message":$msg}}')
+    run run_hook "$json"
+    # reviewer (agent) → IS_ORCHESTRATOR=false → 1500字チェックをスキップ → 0
+    [ "$status" -eq 0 ]
+    unset _CLAUDE_DETECTED_AGENT_NAME
+}
+
+@test "CLAUDE_AGENT_NAME 空で _CLAUDE_DETECTED_AGENT_NAME=reviewer なら git push が許可されること [Phase F]" {
+    unset CLAUDE_AGENT_NAME
+    export _CLAUDE_DETECTED_AGENT_NAME="issue-100-reviewer"
+    local json='{"tool_name":"Bash","tool_input":{"command":"git push origin HEAD"}}'
+    run run_hook "$json"
+    [ "$status" -eq 0 ]
+    unset _CLAUDE_DETECTED_AGENT_NAME
+}
+
+@test "CLAUDE_AGENT_NAME 空で _CLAUDE_DETECTED_AGENT_NAME=coder なら git push がブロックされること [Phase F]" {
+    unset CLAUDE_AGENT_NAME
+    export _CLAUDE_DETECTED_AGENT_NAME="issue-100-coder"
+    local json='{"tool_name":"Bash","tool_input":{"command":"git push origin HEAD"}}'
+    run run_hook "$json"
+    [ "$status" -eq 2 ]
+    [[ "$output" == *"DENY"* ]]
+    unset _CLAUDE_DETECTED_AGENT_NAME
+}
+
+@test "CLAUDE_AGENT_NAME が設定されていれば _CLAUDE_DETECTED_AGENT_NAME より優先されること [Phase F]" {
+    export CLAUDE_AGENT_NAME="issue-100-reviewer"
+    export _CLAUDE_DETECTED_AGENT_NAME="issue-100-coder"
+    local json='{"tool_name":"Bash","tool_input":{"command":"git push origin HEAD"}}'
+    run run_hook "$json"
+    # CLAUDE_AGENT_NAME=reviewer が優先 → 許可
+    [ "$status" -eq 0 ]
+    unset _CLAUDE_DETECTED_AGENT_NAME
+}
