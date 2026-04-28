@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# PreToolUse:Edit/Write hook: orchestrator および main ブランチ上での直接編集をブロック
+# PreToolUse:Edit/Write hook: orchestrator・reviewer 系エージェントおよび main ブランチ上での直接編集をブロック
 #
 # ブロックロジックの優先順位:
 #   0. sub-agent 判定（CLAUDE_AGENT_NAME または process tree で agent 確認）→ 即 ALLOW
@@ -37,8 +37,49 @@ _detect_agent_name_for_edit_guard() {
   echo ""
 }
 
+# reviewer 系エージェント判定: "reviewer" を含むが "e2e-reviewer" は除外
+_is_reviewer_agent() {
+  local name="$1"
+  case "$name" in
+    *e2e-reviewer*) return 1 ;;
+  esac
+  case "$name" in
+    *reviewer*) return 0 ;;
+  esac
+  return 1
+}
+
 _EDIT_GUARD_AGENT_NAME="${CLAUDE_AGENT_NAME:-${_CLAUDE_DETECTED_AGENT_NAME:-$(_detect_agent_name_for_edit_guard)}}"
 if [ -n "$_EDIT_GUARD_AGENT_NAME" ]; then
+  if _is_reviewer_agent "$_EDIT_GUARD_AGENT_NAME"; then
+    _REVIEWER_INPUT=$(cat)
+    if [ -z "$_REVIEWER_INPUT" ]; then
+      exit 0
+    fi
+    if command -v jq &> /dev/null; then
+      _REVIEWER_FILE_PATH=$(echo "$_REVIEWER_INPUT" | jq -r '.tool_input.file_path // empty' 2>/dev/null)
+    else
+      echo "DENY: jq コマンドが必要です。" >&2
+      exit 2
+    fi
+    if [ -z "$_REVIEWER_FILE_PATH" ]; then
+      exit 0
+    fi
+    # メタファイル（.claude-user/, .omc/）は reviewer でも許可（インラインマッチ）
+    case "$_REVIEWER_FILE_PATH" in
+      */.claude-user/*) exit 0 ;;
+      */.omc/*) exit 0 ;;
+    esac
+    echo "DENY: reviewer 系エージェントは Edit/Write ツールでファイルを編集できません。" >&2
+    echo "  エージェント: $_EDIT_GUARD_AGENT_NAME" >&2
+    echo "  対象ファイル: $_REVIEWER_FILE_PATH" >&2
+    echo "" >&2
+    echo "  reviewer の書き込み操作は全て Bash ツール経由で行ってください:" >&2
+    echo "  - マーカー作成: bash scripts/gate/create-review-marker.sh" >&2
+    echo "  - push: bash scripts/push-verified.sh" >&2
+    echo "  - PR 作成: gh pr create" >&2
+    exit 2
+  fi
   exit 0
 fi
 

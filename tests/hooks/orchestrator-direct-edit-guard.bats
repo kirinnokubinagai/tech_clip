@@ -575,14 +575,14 @@ run_script_with_file() {
     [ "$status" -eq 0 ]
 }
 
-@test "CLAUDE_AGENT_NAME が設定されたサブエージェントはmainブランチの.claude/配下も許可されること [Phase 0]" {
+@test "CLAUDE_AGENT_NAME が設定されたサブエージェント(reviewer以外)はmainブランチの.claude/配下も許可されること [Phase 0]" {
     # Arrange
     local file_path="$REPO_DIR/.claude/hooks/some-hook.sh"
     local input
     input=$(jq -n --arg p "$file_path" '{"tool_input":{"file_path":$p}}')
 
     # Act
-    export CLAUDE_AGENT_NAME="issue-100-reviewer"
+    export CLAUDE_AGENT_NAME="issue-100-coder"
     run bash -c "cd '$REPO_DIR' && printf '%s' '$input' | bash '$SCRIPT'"
     unset CLAUDE_AGENT_NAME
 
@@ -654,5 +654,211 @@ run_script_with_file() {
     unset CLAUDE_AGENT_NAME
 
     # Assert: サブエージェントは priority 0 で即 exit 0（.omc/state/ check より先）
+    [ "$status" -eq 0 ]
+}
+
+# --- reviewer 系ブロックテスト ---
+
+@test "reviewer エージェントは非mainブランチのソースファイル編集がブロックされること" {
+    # Arrange
+    git -C "$REPO_DIR" checkout -b feature/test-branch
+    local file_path="$REPO_DIR/apps/api/src/index.ts"
+    local input
+    input=$(jq -n --arg p "$file_path" '{"tool_input":{"file_path":$p}}')
+
+    # Act
+    export CLAUDE_AGENT_NAME="issue-100-reviewer"
+    run bash -c "cd '$REPO_DIR' && printf '%s' '$input' | bash '$SCRIPT'"
+    unset CLAUDE_AGENT_NAME
+
+    # Assert
+    [ "$status" -eq 2 ]
+    [[ "${output}" == *"DENY"* ]]
+    [[ "${output}" == *"reviewer"* ]]
+}
+
+@test "infra-reviewer エージェントはソースファイル編集がブロックされること" {
+    # Arrange
+    git -C "$REPO_DIR" checkout -b feature/test-branch
+    local file_path="$REPO_DIR/apps/api/src/index.ts"
+    local input
+    input=$(jq -n --arg p "$file_path" '{"tool_input":{"file_path":$p}}')
+
+    # Act
+    export CLAUDE_AGENT_NAME="issue-100-infra-reviewer"
+    run bash -c "cd '$REPO_DIR' && printf '%s' '$input' | bash '$SCRIPT'"
+    unset CLAUDE_AGENT_NAME
+
+    # Assert
+    [ "$status" -eq 2 ]
+    [[ "${output}" == *"DENY"* ]]
+}
+
+@test "ui-reviewer エージェントはソースファイル編集がブロックされること" {
+    # Arrange
+    git -C "$REPO_DIR" checkout -b feature/test-branch
+    local file_path="$REPO_DIR/apps/api/src/index.ts"
+    local input
+    input=$(jq -n --arg p "$file_path" '{"tool_input":{"file_path":$p}}')
+
+    # Act
+    export CLAUDE_AGENT_NAME="issue-100-ui-reviewer"
+    run bash -c "cd '$REPO_DIR' && printf '%s' '$input' | bash '$SCRIPT'"
+    unset CLAUDE_AGENT_NAME
+
+    # Assert
+    [ "$status" -eq 2 ]
+    [[ "${output}" == *"DENY"* ]]
+}
+
+@test "reviewer エージェントは .claude/hooks/ 編集もブロックされること" {
+    # Arrange
+    git -C "$REPO_DIR" checkout -b feature/test-branch
+    local file_path="$REPO_DIR/.claude/hooks/some-hook.sh"
+    local input
+    input=$(jq -n --arg p "$file_path" '{"tool_input":{"file_path":$p}}')
+
+    # Act
+    export CLAUDE_AGENT_NAME="issue-100-reviewer"
+    run bash -c "cd '$REPO_DIR' && printf '%s' '$input' | bash '$SCRIPT'"
+    unset CLAUDE_AGENT_NAME
+
+    # Assert
+    [ "$status" -eq 2 ]
+    [[ "${output}" == *"DENY"* ]]
+}
+
+@test "reviewer エージェントは .claude/.review-passed 編集もブロックされること" {
+    # Arrange
+    git -C "$REPO_DIR" checkout -b feature/test-branch
+    local file_path="$REPO_DIR/.claude/.review-passed"
+    local input
+    input=$(jq -n --arg p "$file_path" '{"tool_input":{"file_path":$p}}')
+
+    # Act
+    export CLAUDE_AGENT_NAME="issue-100-reviewer"
+    run bash -c "cd '$REPO_DIR' && printf '%s' '$input' | bash '$SCRIPT'"
+    unset CLAUDE_AGENT_NAME
+
+    # Assert
+    [ "$status" -eq 2 ]
+    [[ "${output}" == *"DENY"* ]]
+}
+
+@test "reviewer のブロックメッセージに代替手段が表示されること" {
+    # Arrange
+    git -C "$REPO_DIR" checkout -b feature/test-branch
+    local file_path="$REPO_DIR/apps/api/src/index.ts"
+    local input
+    input=$(jq -n --arg p "$file_path" '{"tool_input":{"file_path":$p}}')
+
+    # Act
+    export CLAUDE_AGENT_NAME="issue-100-reviewer"
+    run bash -c "cd '$REPO_DIR' && printf '%s' '$input' | bash '$SCRIPT'"
+    unset CLAUDE_AGENT_NAME
+
+    # Assert
+    [ "$status" -eq 2 ]
+    [[ "${output}" == *"create-review-marker.sh"* ]]
+    [[ "${output}" == *"push-verified.sh"* ]]
+}
+
+# --- e2e-reviewer 非ブロックテスト ---
+
+@test "e2e-reviewer エージェントはソースファイル編集が許可されること" {
+    # Arrange
+    git -C "$REPO_DIR" checkout -b feature/test-branch
+    local file_path="$REPO_DIR/apps/api/src/index.ts"
+    local input
+    input=$(jq -n --arg p "$file_path" '{"tool_input":{"file_path":$p}}')
+
+    # Act
+    export CLAUDE_AGENT_NAME="issue-100-e2e-reviewer"
+    run bash -c "cd '$REPO_DIR' && printf '%s' '$input' | bash '$SCRIPT'"
+    unset CLAUDE_AGENT_NAME
+
+    # Assert
+    [ "$status" -eq 0 ]
+}
+
+@test "e2e-reviewer エージェントは .claude/ 配下編集が許可されること" {
+    # Arrange
+    git -C "$REPO_DIR" checkout -b feature/test-branch
+    local file_path="$REPO_DIR/.claude/hooks/some-hook.sh"
+    local input
+    input=$(jq -n --arg p "$file_path" '{"tool_input":{"file_path":$p}}')
+
+    # Act
+    export CLAUDE_AGENT_NAME="issue-100-e2e-reviewer"
+    run bash -c "cd '$REPO_DIR' && printf '%s' '$input' | bash '$SCRIPT'"
+    unset CLAUDE_AGENT_NAME
+
+    # Assert
+    [ "$status" -eq 0 ]
+}
+
+# --- reviewer メタファイル例外テスト ---
+
+@test "reviewer エージェントは .claude-user/ 配下の編集が許可されること" {
+    # Arrange
+    git -C "$REPO_DIR" checkout -b feature/test-branch
+    local file_path="$REPO_DIR/.claude-user/memory/some-memory.md"
+    local input
+    input=$(jq -n --arg p "$file_path" '{"tool_input":{"file_path":$p}}')
+
+    # Act
+    export CLAUDE_AGENT_NAME="issue-100-reviewer"
+    run bash -c "cd '$REPO_DIR' && printf '%s' '$input' | bash '$SCRIPT'"
+    unset CLAUDE_AGENT_NAME
+
+    # Assert
+    [ "$status" -eq 0 ]
+}
+
+@test "reviewer エージェントは .omc/ 配下の編集が許可されること" {
+    # Arrange
+    git -C "$REPO_DIR" checkout -b feature/test-branch
+    local file_path="$REPO_DIR/.omc/notepad.md"
+    local input
+    input=$(jq -n --arg p "$file_path" '{"tool_input":{"file_path":$p}}')
+
+    # Act
+    export CLAUDE_AGENT_NAME="issue-100-reviewer"
+    run bash -c "cd '$REPO_DIR' && printf '%s' '$input' | bash '$SCRIPT'"
+    unset CLAUDE_AGENT_NAME
+
+    # Assert
+    [ "$status" -eq 0 ]
+}
+
+# --- coder 等の非 reviewer サブエージェントの非ブロック確認 ---
+
+@test "coder エージェントは引き続きソースファイル編集が許可されること" {
+    # Arrange（reviewer 変更後の regression 確認）
+    local file_path="$REPO_DIR/apps/api/src/index.ts"
+    local input
+    input=$(jq -n --arg p "$file_path" '{"tool_input":{"file_path":$p}}')
+
+    # Act
+    export CLAUDE_AGENT_NAME="issue-100-coder"
+    run bash -c "cd '$REPO_DIR' && printf '%s' '$input' | bash '$SCRIPT'"
+    unset CLAUDE_AGENT_NAME
+
+    # Assert
+    [ "$status" -eq 0 ]
+}
+
+@test "analyst エージェントは引き続きソースファイル編集が許可されること" {
+    # Arrange
+    local file_path="$REPO_DIR/apps/api/src/index.ts"
+    local input
+    input=$(jq -n --arg p "$file_path" '{"tool_input":{"file_path":$p}}')
+
+    # Act
+    export CLAUDE_AGENT_NAME="issue-100-analyst"
+    run bash -c "cd '$REPO_DIR' && printf '%s' '$input' | bash '$SCRIPT'"
+    unset CLAUDE_AGENT_NAME
+
+    # Assert
     [ "$status" -eq 0 ]
 }
