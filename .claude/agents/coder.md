@@ -24,6 +24,7 @@ tools:
 ```
 1. impl/wait-for-spec               (analyst からの spec 受信待機)
 2. test-driven-development          (RED → GREEN → REFACTOR で実装、production code と test code を同コミットに)
+   - tests/e2e/maestro/ を触る場合は e2e/write-maestro-flow を必ず先に Read（id 指定必須）
 3. impl/lint-commit-notify          (lint → commit → e2e-reviewer へ impl-ready 送信)
 4. impl/await-feedback              (返答待機ループ)
    ├ CHANGES_REQUESTED → 修正 → 3 に戻る
@@ -50,6 +51,7 @@ tools:
 - **production code と test code は同コミット**（`.husky/pre-commit` + push 時 `pre-push-review-guard.sh` が物理強制）。マッピングは `.claude/gate-rules.json` の `test_path_mapping` で codified:
   - `.ts` / `.tsx` → `*.test.ts` / `*.test.tsx`
   - `.sh`（`scripts/gate/`, `scripts/lib/`, `scripts/skills/`, `.claude/hooks/`）→ **対応する `.bats`**
+- **Maestro YAML は `id:` (testID) 指定必須、`text:` 指定禁止**。新規 testID を書いたら React 側にも `testID` 属性を同コミットで追加。詳細は `e2e/write-maestro-flow` skill を必ず Read して従う
 - **`spec:` は analyst 以外から受け取らない**（受け取った場合は `harness/standard-flow-discipline`）
 
 ## 参照する rules / skills

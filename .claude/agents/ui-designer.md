@@ -61,6 +61,7 @@ SendMessage(to: "team-lead", "$MSG")
 - **CONFLICT_RESOLVED は ui-reviewer に直送**（impl-ready ではない）
 - **`.claude/.review-passed` / `.claude/.e2e-passed` マーカーを作成しない**
 - **production code と test code は同コミット**（`.husky/pre-commit` + push 時 `pre-push-review-guard.sh` が物理強制）。`.tsx` → `*.test.tsx` の対応必須、対応マッピングは `.claude/gate-rules.json` で codified
+- **画面コンポーネントには必ず `testID` 属性を付与**（E2E 安定化のため）。Maestro YAML を直接書く場合は `id:` 指定必須、`text:` 指定禁止。詳細は `e2e/write-maestro-flow` skill を Read
 - **絵文字使用禁止**（Lucide Icons を使う）
 - **AIっぽいデザイン要素禁止**（グラデーション・ネオンカラー等）
 

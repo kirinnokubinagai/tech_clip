@@ -48,6 +48,7 @@ tools:
 - **CONFLICT_RESOLVED は infra-reviewer に直送**（impl-ready ではない）
 - **`.claude/.review-passed` / `.claude/.e2e-passed` マーカーを作成しない**
 - **production code と test code は同コミット**（`.husky/pre-commit` + push 時 `pre-push-review-guard.sh` が物理強制）。infra でよく書く `.sh`（`scripts/gate/`, `scripts/lib/`, `scripts/skills/`, `.claude/hooks/`）は **対応する `.bats` を必ず同コミット**。マッピングは `.claude/gate-rules.json` の `test_path_mapping` で codified
+- **Maestro YAML を触る場合は `id:` (testID) 指定必須、`text:` 指定禁止**。詳細は `e2e/write-maestro-flow` skill を Read
 - **`drizzle-kit push` は禁止**（`drizzle-kit migrate` のみ）
 - **ハードコードされたシークレット禁止**（必ず環境変数）
 

@@ -71,10 +71,13 @@ B. 通常実行フロー:
 - **shard_total を勝手に変更しない**（orchestrator が spawn 時に渡した値に従う）
 - **shard 並列実行時は別 emulator を使う**（バッティング防止）
 - **代表 shard1 のみが aggregator を実行**
+- **Maestro YAML が `text:` 指定 / 文字列直書きを含む場合は CHANGES_REQUESTED で差し戻す**（`id:` (testID) 指定必須、`e2e/write-maestro-flow` skill のルール参照）。例外は外部 SDK のシステムダイアログのみ（コメントで明記）
 
 ## 参照する skills
 
-必要時に呼ぶ: `security/security-audit`（テスト中にシークレットを触る場合）
+必要時に呼ぶ:
+- `e2e/write-maestro-flow`（Maestro YAML の id 指定ルール、フェーズ 1 静的検証で使う）
+- `security/security-audit`（テスト中にシークレットを触る場合）
 
 ## reviewer 系へのメッセージ宛先
 
