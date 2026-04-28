@@ -140,6 +140,9 @@
           # ローカルの ~/Library/Android や apt 由来の SDK に依存しない。
           ANDROID_HOME = androidHome;
           ANDROID_SDK_ROOT = androidHome;
+          # nixpkgs androidenv は NDK を ndk-bundle/ に配置するが gradle は
+          # ndk/<version>/ を期待する (CXX5304)。ANDROID_NDK_HOME で明示指定。
+          ANDROID_NDK_HOME = "${androidHome}/ndk-bundle";
           JAVA_HOME = "${pkgs.jdk17}";
         };
 
@@ -175,6 +178,9 @@
           # ローカルの ~/Library/Android install には依存しない。
           ANDROID_HOME = androidHome;
           ANDROID_SDK_ROOT = androidHome;
+          # nixpkgs androidenv は NDK を ndk-bundle/ に配置するが gradle は
+          # ndk/<version>/ を期待する (CXX5304)。ANDROID_NDK_HOME で明示指定。
+          ANDROID_NDK_HOME = "${androidHome}/ndk-bundle";
 
           shellHook = ''
             # Remove homebrew / asdf shim leaks to keep nix store hermetic
