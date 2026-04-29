@@ -38,6 +38,12 @@
             "command": "bash \"$(git rev-parse --show-toplevel 2>/dev/null || echo .)/.claude/hooks/clean-stale-team-members.sh\"",
             "timeout": 30,
             "statusMessage": "Cleaning stale team members..."
+          },
+          {
+            "type": "command",
+            "command": "bash \"$(git rev-parse --show-toplevel 2>/dev/null || echo .)/.claude/hooks/auto-issue-triage.sh\"",
+            "timeout": 30,
+            "statusMessage": "Auto-triaging open issues..."
           }
         ]
       }

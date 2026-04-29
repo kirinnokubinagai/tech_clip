@@ -55,11 +55,42 @@ evaluate_verdict() {
     return 0
   fi
 
-  # --- 条件1: CI workflow run が completed ---
-  local RUN_JSON RUN RUN_ID RUN_STATUS RUN_CONCLUSION
-  RUN_JSON=$(gh api "repos/$OWNER/$REPO/actions/runs?head_sha=$PUSH_SHA&per_page=20" 2>/dev/null || echo '{"workflow_runs":[]}')
-  RUN=$(echo "$RUN_JSON" | jq -r "[.workflow_runs[] | select(.name == \"$CI_NAME\") | select(.event == \"pull_request\")] | .[0]" 2>/dev/null || echo "null")
+  # --- 条件1: 対象 commit の全 workflow run が completed かつ全件 success ---
+  local RUN_JSON ALL_RUNS RUN RUN_ID RUN_STATUS RUN_CONCLUSION
+  RUN_JSON=$(gh api "repos/$OWNER/$REPO/actions/runs?head_sha=$PUSH_SHA&per_page=100" 2>/dev/null || echo '{"workflow_runs":[]}')
 
+  # PR に紐づく全 run を取得
+  ALL_RUNS=$(echo "$RUN_JSON" | jq -c '[.workflow_runs[] | select(.event == "pull_request")]' 2>/dev/null || echo "[]")
+
+  if [ "$ALL_RUNS" = "[]" ] || [ -z "$ALL_RUNS" ]; then
+    echo "pending"
+    return 0
+  fi
+
+  # 未完了の run が 1 件でもあれば pending
+  local IN_PROGRESS_RUNS
+  IN_PROGRESS_RUNS=$(echo "$ALL_RUNS" | jq -r '[.[] | select(.status != "completed")] | length' 2>/dev/null || echo "0")
+  if [ "$IN_PROGRESS_RUNS" -gt 0 ]; then
+    echo "pending"
+    return 0
+  fi
+
+  # 失敗・キャンセル系の run があれば即判定
+  local CANCELLED_RUNS FAILED_RUNS
+  CANCELLED_RUNS=$(echo "$ALL_RUNS" | jq -r '[.[] | select(.conclusion == "cancelled")] | length' 2>/dev/null || echo "0")
+  if [ "$CANCELLED_RUNS" -gt 0 ]; then
+    echo "pending"
+    return 0
+  fi
+
+  FAILED_RUNS=$(echo "$ALL_RUNS" | jq -r '[.[] | select(.conclusion | . == "failure" or . == "timed_out" or . == "startup_failure" or . == "action_required")] | length' 2>/dev/null || echo "0")
+  if [ "$FAILED_RUNS" -gt 0 ]; then
+    echo "request_changes"
+    return 0
+  fi
+
+  # CI ワークフロー run の ID を取得（条件2のジョブ確認に使用）
+  RUN=$(echo "$ALL_RUNS" | jq -r "[.[] | select(.name == \"$CI_NAME\")] | .[0]" 2>/dev/null || echo "null")
   if [ "$RUN" = "null" ] || [ -z "$RUN" ]; then
     echo "pending"
     return 0
@@ -68,24 +99,6 @@ evaluate_verdict() {
   RUN_ID=$(echo "$RUN" | jq -r '.id // empty' 2>/dev/null || echo "")
   RUN_STATUS=$(echo "$RUN" | jq -r '.status // empty' 2>/dev/null || echo "")
   RUN_CONCLUSION=$(echo "$RUN" | jq -r '.conclusion // empty' 2>/dev/null || echo "")
-
-  if [ "$RUN_STATUS" != "completed" ]; then
-    echo "pending"
-    return 0
-  fi
-
-  if [ "$RUN_CONCLUSION" = "cancelled" ]; then
-    echo "pending"
-    return 0
-  fi
-
-  # CI run 自体が失敗系の場合は条件2/3 を見ずに即 request_changes
-  case "$RUN_CONCLUSION" in
-    failure|timed_out|startup_failure|action_required)
-      echo "request_changes"
-      return 0
-      ;;
-  esac
 
   if [ -z "$RUN_ID" ]; then
     echo "pending"

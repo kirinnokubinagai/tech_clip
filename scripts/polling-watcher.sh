@@ -155,10 +155,17 @@ while :; do
 
   case "$V" in
     approve)
-      echo "POLLING_WATCHER_APPROVE: issue-${ISSUE_NUMBER} PR #$PR_NUMBER at=$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> "$LOG_FILE"
-      rm -f "$STATE_FILE"
-      echo "VERDICT: approve PR #${PR_NUMBER}"
-      exit 0
+      # 全 workflow PASS 後も mergeStateStatus が CLEAN/UNSTABLE/HAS_HOOKS でなければ pending 継続
+      FINAL_MERGE_STATE=$(gh pr view "$PR_NUMBER" --json mergeStateStatus --jq '.mergeStateStatus' 2>/dev/null || echo "")
+      if [ "$FINAL_MERGE_STATE" != "CLEAN" ] && [ "$FINAL_MERGE_STATE" != "UNSTABLE" ] && [ "$FINAL_MERGE_STATE" != "HAS_HOOKS" ]; then
+        echo "INFO: evaluate_verdict=approve but mergeStateStatus=$FINAL_MERGE_STATE; treating as pending" >&2
+        # fall through to sleep/retry
+      else
+        echo "POLLING_WATCHER_APPROVE: issue-${ISSUE_NUMBER} PR #$PR_NUMBER at=$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> "$LOG_FILE"
+        rm -f "$STATE_FILE"
+        echo "VERDICT: approve PR #${PR_NUMBER}"
+        exit 0
+      fi
       ;;
     request_changes)
       echo "POLLING_WATCHER_CHANGES: issue-${ISSUE_NUMBER} PR #$PR_NUMBER at=$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> "$LOG_FILE"

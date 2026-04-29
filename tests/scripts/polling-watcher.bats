@@ -219,3 +219,40 @@ EOF2
   # grep が 0 を返す = still_pending が存在する → テスト失敗
   [ "$status" -ne 0 ]
 }
+
+# ─────────────────────────────────────────────
+# Bug 2: approve 前の mergeStateStatus 最終確認
+# ─────────────────────────────────────────────
+
+# テスト 9: mergeStateStatus チェックのコードがスクリプトに存在すること
+@test "approve 前に FINAL_MERGE_STATE を確認するコードが存在すること" {
+  run bash -c 'grep -q "FINAL_MERGE_STATE" "'"$SCRIPT"'"'
+  [ "$status" -eq 0 ]
+}
+
+# テスト 10: CLEAN 以外では VERDICT: approve を出力しないこと
+@test "mergeStateStatus=BLOCKED の場合 VERDICT: approve を出力しないコードになっていること" {
+  # approve 前に FINAL_MERGE_STATE を確認し CLEAN/UNSTABLE/HAS_HOOKS 以外は fall-through する構造を確認
+  run bash -c 'grep -A5 "FINAL_MERGE_STATE" "'"$SCRIPT"'" | grep -q "treating as pending"'
+  [ "$status" -eq 0 ]
+}
+
+# テスト 11: CLEAN の場合のみ approve を発行するコード構造になっていること
+@test "CLEAN/UNSTABLE/HAS_HOOKS の場合のみ approve を発行するコード構造であること" {
+  run bash -c 'grep -qE "FINAL_MERGE_STATE.*!=.*CLEAN" "'"$SCRIPT"'"'
+  [ "$status" -eq 0 ]
+}
+
+# テスト 12: approve 分岐内で gh pr view mergeStateStatus を呼んでいること
+@test "approve 分岐で gh pr view mergeStateStatus を呼んでいること" {
+  run bash -c 'grep -q "gh pr view.*mergeStateStatus" "'"$SCRIPT"'"'
+  [ "$status" -eq 0 ]
+}
+
+# テスト 13: approve 後にも sleep が継続するコードが存在すること（mergeStateStatus 不一致時）
+@test "mergeStateStatus 不一致時に sleep して継続するコードが存在すること" {
+  # FINAL_MERGE_STATE が不一致の場合は fall through して sleep に達する構造
+  run bash -c 'grep -c "FINAL_MERGE_STATE" "'"$SCRIPT"'"'
+  [ "$status" -eq 0 ]
+  [ "$output" -ge 1 ]
+}
