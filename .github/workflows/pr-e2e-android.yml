@@ -39,6 +39,8 @@ jobs:
     env:
       SHARD_INDEX: ${{ matrix.shard }}
       SHARD_TOTAL: 2
+      # CI x86_64 only: transitive native modules も x86_64 に制限する
+      ORG_GRADLE_PROJECT_reactNativeArchitectures: x86_64
       # nix が ANDROID_HOME を提供するので暫定: nix shell 経由で実行する
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v4.2.2
