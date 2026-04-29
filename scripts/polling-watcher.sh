@@ -15,7 +15,6 @@
 #   VERDICT: closed PR #<N>
 #   VERDICT: conflict PR #<N>
 #   VERDICT: timeout PR #<N> elapsed=<sec>s
-#   VERDICT: still_pending PR #<N>
 #   VERDICT: error <reason>
 #
 # stderr には逐次の進捗 / debug を出す。
@@ -73,9 +72,9 @@ fi
 TIMEOUT_MINUTES=$(jq -r '.polling_timeout_minutes // 60' "$CONFIG" 2>/dev/null || echo "60")
 TIMEOUT_SECONDS=$((TIMEOUT_MINUTES * 60))
 
-# 内部ループ設定（最大 9 分）。テスト時は環境変数でオーバーライド可能。
-INTERNAL_LOOP_DEADLINE_SEC="${POLLING_INTERNAL_DEADLINE_SEC:-540}"
-INTERVAL_SEC=$(( $(jq -r '.polling_interval_minutes // 2' "$CONFIG" 2>/dev/null || echo "2") * 60 ))
+# Fix F: 連続ポーリング — TIMEOUT まで内部ループを継続（still_pending 廃止）
+# polling_interval_seconds を優先し、未設定なら 30 秒固定（polling_interval_minutes は廃止）
+INTERVAL_SEC=$(jq -r '.polling_interval_seconds // 30' "$CONFIG" 2>/dev/null || echo "30")
 
 LOG_FILE="$POLLING_DIR/watcher-results.log"
 
@@ -93,8 +92,6 @@ elapsed_since_started() {
   NOW_EPOCH=$(date +%s)
   echo $((NOW_EPOCH - STARTED_EPOCH))
 }
-
-LOOP_START=$(date +%s)
 
 echo "INFO: polling PR #${PR_NUMBER} (issue: ${ISSUE_NUMBER}, sha: ${PUSH_SHA})" >&2
 
@@ -173,16 +170,6 @@ while :; do
       echo "PENDING: PR #$PR_NUMBER verdict 未確定" >&2
       ;;
   esac
-
-  # 5) 9 分の内部 deadline チェック
-  NOW=$(date +%s)
-  if [ $((NOW - LOOP_START)) -ge "$INTERNAL_LOOP_DEADLINE_SEC" ]; then
-    echo "STILL_PENDING: PR #$PR_NUMBER 9min internal loop exceeded" >&2
-    echo "STILL_PENDING: issue-${ISSUE_NUMBER} PR #$PR_NUMBER at=$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> "$LOG_FILE"
-    # state は残して再呼び出しを促す
-    echo "VERDICT: still_pending PR #${PR_NUMBER}"
-    exit 0
-  fi
 
   sleep "$INTERVAL_SEC"
 done

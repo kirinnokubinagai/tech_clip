@@ -95,22 +95,35 @@ STUB
   chmod +x "$FAKE_BIN/gh"
 }
 
-# テスト 1: BLOCKED + IN_PROGRESS check あり → fall through して still_pending で抜けること
-# POLLING_INTERNAL_DEADLINE_SEC=0 で内部 deadline を即発動させる
-@test "BLOCKED + IN_PROGRESS check ありの場合は fall through して still_pending で抜けること" {
-  # Arrange
+# テスト 1: BLOCKED + IN_PROGRESS check あり → timeout まで回り続けて timeout で抜けること (Fix F)
+# started_at を古い時刻に設定して timeout を即発動させる
+@test "BLOCKED + IN_PROGRESS check ありの場合は timeout になるまでループし timeout で抜けること" {
+  # Arrange: started_at を1時間前に設定してタイムアウト即発動
+  local old_start
+  old_start=$(date -u -v-3601S "+%Y-%m-%dT%H:%M:%SZ" 2>/dev/null \
+    || date -u -d "1 hour ago" "+%Y-%m-%dT%H:%M:%SZ" 2>/dev/null \
+    || date -u "+%Y-%m-%dT%H:%M:%SZ")
+  cat > "$TEST_DIR/.claude/polling/pr-42.json" <<EOF2
+{
+  "pr_number": 42,
+  "push_sha": "abc1234",
+  "issue_number": 999,
+  "agent_name": "issue-999-reviewer",
+  "started_at": "${old_start}"
+}
+EOF2
+
   local rollup='[{"name":"ci","status":"IN_PROGRESS","conclusion":null}]'
   make_gh_stub "OPEN" "BLOCKED" "$rollup"
 
-  # Act: POLLING_INTERNAL_DEADLINE_SEC=0 → evaluate_verdict(pending)後即 still_pending
+  # Act: POLLING_INTERNAL_DEADLINE_SEC=0 は無視され、timeout で抜けること
   cd "$TEST_DIR"
   POLLING_INTERNAL_DEADLINE_SEC=0 run bash "$SCRIPT" 42 "$TEST_DIR"
 
-  # Assert: request_changes ではなく still_pending で抜けること
+  # Assert: timeout で抜けること（still_pending は返さない）
   [ "$status" -eq 0 ]
-  echo "$output" | grep -q "VERDICT: still_pending"
-  # BLOCKED 直接の request_changes は出ない
-  ! echo "$output" | grep -q "BLOCKED: PR #"
+  echo "$output" | grep -q "VERDICT: timeout"
+  ! echo "$output" | grep -q "VERDICT: still_pending"
 }
 
 # テスト 2: BLOCKED + 全 check COMPLETED → request_changes を返すこと
@@ -157,4 +170,52 @@ STUB
 
   [ "$status" -eq 0 ]
   echo "$output" | grep -q "VERDICT: conflict"
+}
+
+# ─────────────────────────────────────────────
+# Fix F: 連続ポーリング — still_pending 廃止テスト
+# ─────────────────────────────────────────────
+
+# テスト 6: BLOCKED + IN_PROGRESS check ありでも TIMEOUT まで回り続けること
+# (POLLING_INTERNAL_DEADLINE_SEC を設定しても still_pending を返さない)
+@test "Fix F: BLOCKED+IN_PROGRESS で POLLING_INTERNAL_DEADLINE_SEC を設定しても still_pending を返さないこと" {
+  # Arrange: timeout を即発動させる（started_at を1時間前に設定）
+  local old_start
+  old_start=$(date -u -v-3601S "+%Y-%m-%dT%H:%M:%SZ" 2>/dev/null \
+    || date -u -d "1 hour ago" "+%Y-%m-%dT%H:%M:%SZ" 2>/dev/null \
+    || date -u "+%Y-%m-%dT%H:%M:%SZ")
+  cat > "$TEST_DIR/.claude/polling/pr-42.json" <<EOF2
+{
+  "pr_number": 42,
+  "push_sha": "abc1234",
+  "issue_number": 999,
+  "agent_name": "issue-999-reviewer",
+  "started_at": "${old_start}"
+}
+EOF2
+
+  local rollup='[{"name":"ci","status":"IN_PROGRESS","conclusion":null}]'
+  make_gh_stub "OPEN" "BLOCKED" "$rollup"
+
+  cd "$TEST_DIR"
+  # POLLING_INTERNAL_DEADLINE_SEC=0 を渡しても still_pending ではなく timeout を返す
+  POLLING_INTERNAL_DEADLINE_SEC=0 run bash "$SCRIPT" 42 "$TEST_DIR"
+
+  [ "$status" -eq 0 ]
+  # timeout を返すこと（still_pending ではない）
+  echo "$output" | grep -q "VERDICT: timeout"
+  ! echo "$output" | grep -q "VERDICT: still_pending"
+}
+
+# テスト 7: ポーリング間隔のデフォルトが 30 秒であること（config に interval 指定なし）
+@test "Fix F: デフォルトのポーリング間隔は 30 秒であること" {
+  run bash -c 'grep -E "INTERVAL_SEC.*30|30.*INTERVAL" "'"$SCRIPT"'"'
+  [ "$status" -eq 0 ]
+}
+
+# テスト 8: still_pending の分岐が削除されていること
+@test "Fix F: スクリプトに still_pending の VERDICT 出力が存在しないこと" {
+  run bash -c 'grep -q "VERDICT: still_pending" "'"$SCRIPT"'"'
+  # grep が 0 を返す = still_pending が存在する → テスト失敗
+  [ "$status" -ne 0 ]
 }
