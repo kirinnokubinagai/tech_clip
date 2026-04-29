@@ -32,40 +32,70 @@ export EXPO_PUBLIC_E2E_MODE="1"
 export EXPO_PUBLIC_REVENUECAT_ANDROID_API_KEY="your-revenuecat-android-api-key"
 export EXPO_PUBLIC_API_URL_ANDROID="http://10.0.2.2:${API_CI_PORT:-18787}"
 
-# Build and install development build
-nix develop --command bash -c "cd apps/mobile && pnpm expo run:android --variant debug" &
+# Build and install development build.
+# Hybrid approach:
+#  1. Start expo run:android in background (Metro + build)
+#  2. Poll pidof to detect app startup
+#  3. Wait for "Bundled" log (Metro bundle delivery complete)
+#  4. Start Maestro tests
+EXPO_LOG="/tmp/expo-run-android-$$.log"
+nix develop --command bash -c "cd apps/mobile && pnpm expo run:android --variant debug" 2>&1 | tee "$EXPO_LOG" &
 EXPO_PID=$!
 
-# Wait for expo run:android to COMPLETE (build + install + Metro start).
-# Rationale: `pidof com.techclip.app` becomes true as soon as the native process
-# is created, but the JS bundle has not yet been delivered by Metro at that point.
-# Starting Maestro against a blank/loading screen causes 100% flow failures.
-# Waiting for the expo process to exit guarantees the full build pipeline is done.
-echo "[e2e] expo run:android の完了を待機中..."
-EXPO_EXIT_CODE=0
-wait "$EXPO_PID" || EXPO_EXIT_CODE=$?
+# Wait for app to be running (pidof check)
+echo "[e2e] アプリ起動を待機中..."
+MAX_WAIT=120  # 2 minutes max
+WAITED=0
+while [ $WAITED -lt $MAX_WAIT ]; do
+  if adb shell pidof com.techclip.app > /dev/null 2>&1; then
+    echo "[e2e] アプリプロセス起動完了"
+    break
+  fi
+  sleep 1
+  WAITED=$((WAITED + 1))
+done
 
-if [ "$EXPO_EXIT_CODE" -ne 0 ]; then
-  echo "ERROR: expo run:android failed with exit code $EXPO_EXIT_CODE"
+if [ $WAITED -ge $MAX_WAIT ]; then
+  echo "ERROR: App process did not start within ${MAX_WAIT}s"
   echo "1" > "test-results/maestro-exit-code${SHARD_SUFFIX}.txt"
+  kill "$EXPO_PID" 2>/dev/null || true
+  rm -f "$EXPO_LOG"
   exit 1
 fi
-echo "[e2e] expo run:android 完了 (exit code 0)"
 
-# Verify the app process is running after expo finished.
-# If not running, attempt to launch it explicitly.
-if ! adb shell pidof com.techclip.app > /dev/null 2>&1; then
-  echo "[e2e] app process not found after expo exit, attempting explicit launch..."
-  adb shell am start -n com.techclip.app/.MainActivity > /dev/null 2>&1 || true
-  sleep 5
-fi
+# Wait for Metro to finish bundling (watch for "Bundled" in log)
+echo "[e2e] Metro バンドル配信を待機中..."
+MAX_BUNDLE_WAIT=180  # 3 minutes max
+BUNDLE_WAITED=0
+while [ $BUNDLE_WAITED -lt $MAX_BUNDLE_WAIT ]; do
+  if grep -q "Bundled" "$EXPO_LOG" 2>/dev/null; then
+    echo "[e2e] Metro バンドル配信完了"
+    break
+  fi
+  sleep 1
+  BUNDLE_WAITED=$((BUNDLE_WAITED + 1))
+done
 
-if ! adb shell pidof com.techclip.app > /dev/null 2>&1; then
-  echo "ERROR: App is not running after expo build completed"
+if [ $BUNDLE_WAITED -ge $MAX_BUNDLE_WAIT ]; then
+  echo "ERROR: Metro bundling did not complete within ${MAX_BUNDLE_WAIT}s"
+  echo "[e2e] 最終 20 行のログ:"
+  tail -20 "$EXPO_LOG" || true
   echo "1" > "test-results/maestro-exit-code${SHARD_SUFFIX}.txt"
+  kill "$EXPO_PID" 2>/dev/null || true
+  rm -f "$EXPO_LOG"
   exit 1
 fi
-echo "App is running"
+
+rm -f "$EXPO_LOG"
+
+# Verify the app process is still running
+if ! adb shell pidof com.techclip.app > /dev/null 2>&1; then
+  echo "ERROR: App process exited unexpectedly"
+  echo "1" > "test-results/maestro-exit-code${SHARD_SUFFIX}.txt"
+  kill "$EXPO_PID" 2>/dev/null || true
+  exit 1
+fi
+echo "App is running and Metro bundling complete"
 
 # Determine which flows to run for this shard
 SHARD_FLOWS=()
