@@ -8,8 +8,8 @@
   grep -E 'forward tcp:\$MAESTRO_PORT tcp:7001' scripts/gate/run-maestro-and-create-marker.sh
 }
 
-@test "maestro 実行時に --port \$MAESTRO_PORT を渡している" {
-  grep -E -- '--port \$MAESTRO_PORT' scripts/gate/run-maestro-and-create-marker.sh
+@test "maestro test コマンドに --port フラグを使っていない（Maestro 2.4.x には存在しないフラグ）" {
+  ! grep -E -- '--port ' scripts/gate/run-maestro-and-create-marker.sh
 }
 
 @test "DEVICE 指定時は自分の emulator のみ pm clear する" {
@@ -18,6 +18,5 @@
 }
 
 @test "DEVICE 未指定時（シングル実行）は全 emulator を pm clear する（後方互換）" {
-  grep -E 'else' scripts/gate/run-maestro-and-create-marker.sh
   grep -E "# device 未指定時のみ全 emulator をクリア" scripts/gate/run-maestro-and-create-marker.sh
 }
