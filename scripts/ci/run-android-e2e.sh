@@ -32,6 +32,9 @@ export EXPO_PUBLIC_E2E_MODE="1"
 export EXPO_PUBLIC_REVENUECAT_ANDROID_API_KEY="your-revenuecat-android-api-key"
 export EXPO_PUBLIC_API_URL_ANDROID="http://10.0.2.2:${API_CI_PORT:-18787}"
 
+# CI emulator は x86_64 のみ。全 ABI ビルドは OOM の原因。
+export ORG_GRADLE_PROJECT_reactNativeArchitectures=x86_64
+
 # Build and install development build.
 # Hybrid approach:
 #  1. Start expo run:android in background (Metro + build)

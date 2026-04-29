@@ -39,6 +39,13 @@ SCRIPT="$(cd "$(dirname "$BATS_TEST_FILENAME")/../../.." && pwd)/scripts/ci/run-
   grep -E 'grep.*Bundled.*EXPO_LOG|grep.*Bundled.*log' "$SCRIPT"
 }
 
+@test "x86_64 アーキテクチャのみビルドすること" {
+  # Arrange: CI エミュレーターは x86_64 のみサポート
+  # Act: grep で ORG_GRADLE_PROJECT_reactNativeArchitectures の存在確認
+  # Assert: x86_64 に絞るエクスポートが存在すること
+  grep -E 'ORG_GRADLE_PROJECT_reactNativeArchitectures' "$SCRIPT"
+}
+
 @test "アプリ起動タイムアウト時に exit 1 する" {
   grep -E 'App process did not start|アプリプロセス.*start' "$SCRIPT"
 }
