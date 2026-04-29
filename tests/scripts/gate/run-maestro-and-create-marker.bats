@@ -17,7 +17,7 @@
   grep -E '_cleanup_maestro_processes\(\)' scripts/gate/run-maestro-and-create-marker.sh
 }
 
-@test "pm clear の前に _cleanup_maestro_processes を呼ぶ" {
+@test "E2E 実行前に _cleanup_maestro_processes を呼んで gRPC 接続を解放する" {
   grep -E '_cleanup_maestro_processes' scripts/gate/run-maestro-and-create-marker.sh | head -1 | grep -v "trap"
 }
 
@@ -142,4 +142,15 @@
 @test "gate スクリプトが backend を起動した場合のみ EXIT 時に down.sh を呼ぶ（trap EXIT）" {
   grep -E 'trap.*EXIT|trap.*down' scripts/gate/run-maestro-and-create-marker.sh
   grep -E 'down\.sh|dev/down' scripts/gate/run-maestro-and-create-marker.sh
+}
+
+@test "aggregate-e2e-shards.sh を呼ばない（--shard-split は単一 XML を生成）" {
+  ! grep -E 'aggregate-e2e-shards' scripts/gate/run-maestro-and-create-marker.sh
+}
+
+@test "multi-device の PROGRESS_FILE に per_shard_logs を含まない（シンプル化）" {
+  local start_line
+  start_line=$(grep -n 'multi-device:' scripts/gate/run-maestro-and-create-marker.sh | head -1 | cut -d: -f1)
+  [ -n "$start_line" ]
+  ! tail -n +"$start_line" scripts/gate/run-maestro-and-create-marker.sh | grep -F 'per_shard_logs'
 }
