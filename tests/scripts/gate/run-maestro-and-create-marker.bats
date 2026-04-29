@@ -52,3 +52,22 @@
 @test "--shard all/N の N が DEVICE_COUNT と一致しない場合エラー終了する" {
   grep -E 'SHARD_TOTAL.*DEVICE_COUNT|DEVICE_COUNT.*SHARD_TOTAL' scripts/gate/run-maestro-and-create-marker.sh
 }
+
+@test "Maestro stdout をログファイルに tee する" {
+  grep -E 'tee "\$LOG_FILE"' scripts/gate/run-maestro-and-create-marker.sh
+}
+
+@test ".e2e-progress.json を Maestro 起動前に status=running で書き出す" {
+  grep -F '"running"' scripts/gate/run-maestro-and-create-marker.sh
+  grep -F '.e2e-progress.json' scripts/gate/run-maestro-and-create-marker.sh
+}
+
+@test ".e2e-progress.json に log_file / result_xml / flow_count を含む" {
+  grep -F 'log_file' scripts/gate/run-maestro-and-create-marker.sh
+  grep -F 'result_xml' scripts/gate/run-maestro-and-create-marker.sh
+  grep -F 'flow_count' scripts/gate/run-maestro-and-create-marker.sh
+}
+
+@test "Maestro 完了後に .e2e-progress.json を status=completed に更新する" {
+  grep -F '"completed"' scripts/gate/run-maestro-and-create-marker.sh
+}

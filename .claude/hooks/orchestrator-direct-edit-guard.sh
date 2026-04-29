@@ -16,7 +16,7 @@
 #      ファイル種類（apps/, packages/, tests/, scripts/, .claude/** 等）に関係なく全てブロック
 #   5. orchestration_file チェック（main 以外なら ALLOW）
 #      - .claude/**, CLAUDE.md, flake.nix 等
-#   6. それ以外 ALLOW（worktree 内バックグラウンドエージェントの動作を許可）
+#   6. それ以外 DENY（orchestrator はソースファイルを直接編集できない。実装系に委譲）
 
 # 0. sub-agent 判定: CLAUDE_AGENT_NAME が設定されているか、process tree で claude --agent-name を検出
 #    → サブエージェントなら即パス（以降のブランチチェックは不要）
@@ -259,5 +259,11 @@ if is_orchestration_file "$FILE_PATH"; then
   exit 0
 fi
 
-# 6. それ以外（worktree 内ソースファイル等）は許可
-exit 0
+# 6. worktree 上でも orchestrator はソースファイルを直接編集できない
+#    実装系サブエージェント（coder / infra-engineer / ui-designer）に委譲すること
+echo "DENY: orchestrator は worktree 上でもソースファイルを直接編集できません。" >&2
+echo "  対象ファイル: $FILE_PATH" >&2
+echo "" >&2
+echo "  ❌ 「修正が小さいから直接編集する」は禁止です。必ず以下のフローに従うこと:" >&2
+echo "  → Agent(coder, mode=\"acceptEdits\") で実装系サブエージェントに委譲してください。" >&2
+exit 2

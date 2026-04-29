@@ -154,9 +154,23 @@ if [ -f "$ENV_FILE" ]; then
   done < "$ENV_FILE"
 fi
 
-# debug-output ディレクトリ
-DEBUG_DIR="/tmp/maestro-debug-${HEAD_SHA:0:8}-${TIMESTAMP}-shard_allof${DEVICE_COUNT}"
+# debug-output / log ディレクトリ
+DEBUG_DIR="/tmp/maestro-debug-${HEAD_SHA:0:8}-${TIMESTAMP}"
+LOG_FILE="/tmp/maestro-log-${HEAD_SHA:0:8}-${TIMESTAMP}.log"
 mkdir -p "$DEBUG_DIR"
+
+# progress JSON を先に書き出す（e2e-reviewer の監視ループが参照する）
+mkdir -p "${REPO_ROOT}/.claude"
+PROGRESS_FILE="${REPO_ROOT}/.claude/.e2e-progress.json"
+jq -n \
+  --arg log_file "$LOG_FILE" \
+  --arg result_xml "$RESULT_XML" \
+  --arg debug_dir "$DEBUG_DIR" \
+  --argjson device_count "$DEVICE_COUNT" \
+  --argjson flow_count "${#YAML_FILES[@]}" \
+  --arg status "running" \
+  '{log_file: $log_file, result_xml: $result_xml, debug_dir: $debug_dir, device_count: $device_count, flow_count: $flow_count, status: $status}' \
+  > "$PROGRESS_FILE"
 
 # --shard-split: DEVICE_COUNT > 1 のときのみ付ける
 SHARD_SPLIT_ARGS=()
@@ -164,6 +178,7 @@ if [ "$DEVICE_COUNT" -gt 1 ]; then
   SHARD_SPLIT_ARGS+=("--shard-split" "$DEVICE_COUNT")
 fi
 
+# maestro の stdout/stderr をログファイルに tee する（監視ループが per-flow 進捗を読み取る）
 (cd "$REPO_ROOT" && direnv exec "$REPO_ROOT" maestro test \
   --device "$DEVICE" \
   "${SHARD_SPLIT_ARGS[@]}" \
@@ -171,7 +186,18 @@ fi
   --output "$RESULT_XML" \
   --debug-output "$DEBUG_DIR" \
   "${ENV_ARGS[@]}" \
-  "${YAML_FILES[@]}" 2>&1) || true  # exit code は XML の内容で判定するため無視
+  "${YAML_FILES[@]}" 2>&1) | tee "$LOG_FILE" || true
+
+# progress JSON を更新
+jq -n \
+  --arg log_file "$LOG_FILE" \
+  --arg result_xml "$RESULT_XML" \
+  --arg debug_dir "$DEBUG_DIR" \
+  --argjson device_count "$DEVICE_COUNT" \
+  --argjson flow_count "${#YAML_FILES[@]}" \
+  --arg status "completed" \
+  '{log_file: $log_file, result_xml: $result_xml, debug_dir: $debug_dir, device_count: $device_count, flow_count: $flow_count, status: $status}' \
+  > "$PROGRESS_FILE"
 
 if [ ! -f "$RESULT_XML" ]; then
   echo "ERROR: maestro did not produce result XML: $RESULT_XML" >&2
@@ -179,14 +205,13 @@ if [ ! -f "$RESULT_XML" ]; then
 fi
 
 # debug-index を show-e2e-failures.sh 互換の形式で書き出す
-mkdir -p "${REPO_ROOT}/.claude"
-DEBUG_INDEX="${REPO_ROOT}/.claude/.e2e-debug-shard_allof${DEVICE_COUNT}.json"
+DEBUG_INDEX="${REPO_ROOT}/.claude/.e2e-debug.json"
 jq -n \
   --arg result_xml "$RESULT_XML" \
   --arg debug_dir "$DEBUG_DIR" \
-  --arg shard_index "all" \
-  --argjson shard_total "$DEVICE_COUNT" \
-  '{result_xml: $result_xml, debug_dir: $debug_dir, shard_index: $shard_index, shard_total: $shard_total}' \
+  --arg log_file "$LOG_FILE" \
+  --argjson device_count "$DEVICE_COUNT" \
+  '{result_xml: $result_xml, debug_dir: $debug_dir, log_file: $log_file, device_count: $device_count}' \
   > "$DEBUG_INDEX"
 
 bash "${SCRIPT_DIR}/create-e2e-marker.sh" \

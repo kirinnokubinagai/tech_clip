@@ -1,110 +1,140 @@
 ---
 name: harness-e2e-shard-execution
-description: E2E (Maestro) を 4 shard 並列実行する手順。disk 空き容量が逼迫している場合は 2 shard に自動 fallback する。各 shard は別 emulator で flow 集合を実行し、代表 e2e-reviewer が aggregator スクリプトで `.e2e-passed` を生成する。
+description: E2E (Maestro) を native parallel で実行し、per-flow 進捗を監視ループで報告する。Maestro の --device + --shard-split を使い、手動ポート管理は不要。
 triggers:
   - "harness-e2e-shard-execution"
-  - "shard"
-  - "shard-flows"
-  - "run-maestro-and-create-marker"
-  - "aggregate-e2e-shards"
   - "e2e shard"
+  - "run-maestro-and-create-marker"
+  - "e2e execution"
+  - "maestro run"
 ---
 
-# E2E shard 並列実行（4 shard デフォルト・disk 逼迫時 2 shard）
+# E2E Maestro 実行 + per-flow 進捗監視
 
-E2E (Maestro) を flow shard 単位で並列実行することで、フィードバックを高速化する。
+Maestro native parallel (`--device` + `--shard-split`) で E2E を実行し、ログファイルから per-flow 完了を検出して STATE_UPDATE を送信する。
 
-## デフォルト shard 数
+## 前提パラメータ（呼び出し元が提供）
 
-- **shard_total = 4**（標準）
-- disk 空き容量が逼迫している場合は **shard_total = 2** に fallback
-- 単一 emulator しかない場合は **shard_total = 1**（aggregator 不要、従来動作）
+- `{worktree}`: worktree の絶対パス
+- `{issue_number}`: Issue 番号
+- `{agent_name}`: 自分の名前（`issue-{N}-e2e-reviewer`）
+- `{reviewer_role}`: reviewer / infra-reviewer / ui-reviewer
+- `{coder_role}`: coder / infra-engineer / ui-designer
 
-shard_total の決定は orchestrator が spawn 時に行う（spawn プロンプトの `shard_total: N` で渡す）。判定基準は次のとおり:
+## 手順
+
+### 1. emulator 検出
 
 ```bash
-# disk 空き判定の参考（df 系コマンドで $HOME を確認）
-AVAIL_GB=$(df -g "$HOME" | awk 'NR==2 {print $4}')
-if [ "$AVAIL_GB" -lt 30 ]; then
-  echo "shard_total=2"  # 30GB 未満は 2 shard
-else
-  echo "shard_total=4"  # 30GB 以上は 4 shard
-fi
+adb devices 2>/dev/null | grep -E '^emulator-[0-9]+\s+device' | awk '{print $1}'
 ```
 
-## CI 側（`.github/workflows/pr-e2e-android.yml`）
+カンマ区切りに変換して `DEVICE_LIST` とする。0 台ならエラー報告。
 
-`pr-e2e-android.yml` は matrix 戦略で N shard を並列実行する:
+### 2. STATE_UPDATE 送信（開始）
 
+```
+SendMessage(to: "team-lead", "STATE_UPDATE: {agent_name} — starting E2E (N devices, M flows)")
+```
+
+### 3. Maestro バックグラウンド起動
+
+```bash
+# run_in_background=true で起動（ブロッキングしない）
+cd {worktree} && bash scripts/gate/run-maestro-and-create-marker.sh \
+  --agent {agent_name} --device "$DEVICE_LIST"
+```
+
+**重要:**
+- `run_in_background=true` で起動する。ブロッキング実行すると SendMessage が送れない
+- `--device` にカンマ区切りで全 emulator を渡す。emulator が 2 台以上なら Maestro が自動で `--shard-split` する
+- 旧形式の `--shard INDEX/TOTAL` は廃止済み。使わないこと
+- ポート管理・driver 起動は Maestro が内部で自動処理する。`adb forward` は不要
+
+### 4. 監視ループ（per-flow 進捗報告）
+
+スクリプトが `.claude/.e2e-progress.json` を作成する:
+```json
+{
+  "log_file": "/tmp/maestro-log-<sha8>-<timestamp>.log",
+  "result_xml": "/tmp/maestro-result-<sha8>-<timestamp>.xml",
+  "debug_dir": "/tmp/maestro-debug-<sha8>-<timestamp>",
+  "device_count": 2,
+  "flow_count": 8,
+  "status": "running"  // → 完了後 "completed" に更新される
+}
+```
+
+**agent 制御フローでループする（Bash の while/until は禁止）:**
+
+```
+reported_lines = 0
+
+for i in 1..60:
+  1. Read({worktree}/.claude/.e2e-progress.json)
+     → log_file, result_xml, status を取得
+  
+  2. Read(<log_file>)
+     → ログ全文を取得
+  
+  3. reported_lines 以降の新しい行を走査:
+     - YAML ファイル名を含む行に以下のパターンがあれば flow 完了と判定:
+       ✅ / ❌ / PASSED / FAILED / passed / failed
+     - 検出した flow ごとに:
+       SendMessage(to: "team-lead",
+         "STATE_UPDATE: {agent_name} — flow <flow_name> PASS/FAIL")
+     - reported_lines を更新
+  
+  4. status == "completed" → ステップ 5 へ
+  
+  5. Bash(`sleep 30`, run_in_background=false) で 30 秒待機
+     ※ 必ず単発コマンド。SendMessage は skill ループ側で発行する
+  
+  6. 次 iteration へ
+
+60 iteration でも完了しない場合:
+  SendMessage(to: "team-lead", "STATE_UPDATE: {agent_name} — TIMEOUT (30 min)")
+  → 失敗扱いで CHANGES_REQUESTED へ
+```
+
+### 5. 完了処理
+
+```
+1. Read(<result_xml>) で JUnit XML を確認
+   - tests="N" failures="N" errors="N" を抽出
+
+2. 全 flow PASS (failures=0, errors=0):
+   → SendMessage(to: "team-lead",
+       "STATE_UPDATE: {agent_name} — E2E done, result=PASS (passed=P/total=T)")
+   → SendMessage(to: "issue-{issue_number}-{reviewer_role}",
+       "e2e-approved: <hash>")
+   → shutdown
+
+3. FAIL あり:
+   → SendMessage(to: "team-lead",
+       "STATE_UPDATE: {agent_name} — E2E done, result=FAIL (passed=P/total=T)")
+   → 失敗した flow 名と failure message を RESULT_XML から抽出
+   → SendMessage(to: "issue-{issue_number}-{coder_role}",
+       "CHANGES_REQUESTED: E2E failures:\n- <flow_name>: <failure_message>\n...")
+   → impl-ready 再待機
+```
+
+## 監視ループの実装制約
+
+- **Bash の `until` / `while` ループ内に監視ロジックを書かない** — Bash がブロッキングのため SendMessage が打てなくなる
+- **agent は監視ループ 1 iteration ごとに skill ツールに戻り**、Read + SendMessage を発行する
+- **`sleep 30` は単発 Bash コマンド** として呼ぶ。sleep 中に他のツール呼び出しをしない
+
+## Maestro native parallel のしくみ
+
+- `maestro test --device "emu1,emu2" --shard-split 2 ./flows/` で Maestro が flow を自動分配
+- ポートは Maestro が内部で管理（`--port` フラグは存在しない）
+- `--shard-split N`: N 台の device に flow を均等分配
+- JUnit XML は全 flow 完了後に単一ファイルとして出力される
+- ログ（stdout）にはflow ごとの PASS/FAIL が逐次出力される
+
+## CI 側（参考）
+
+`.github/workflows/pr-e2e-android.yml` は matrix 戦略で N shard を並列実行:
 - `SHARD_INDEX/SHARD_TOTAL` 環境変数を `scripts/ci/run-android-e2e.sh` に渡す
-- shard 分配は `scripts/ci/shard-flows.sh` がラウンドロビンで決定
-- 各 shard は `test-results/junit-shard{N}of{TOTAL}.xml` を出力
-- `e2e-aggregate` ジョブが集約 junit + 失敗判定を行う
-
-GitHub Actions 上のリソースは潤沢なため、CI では基本 4 shard を使用する。
-
-## ローカル側
-
-orchestrator は利用可能 emulator 数 + disk 空きを確認した上で、必要なら `Agent` で `issue-{N}-e2e-reviewer-shard1`, `-shard2`, `-shard3`, `-shard4` を spawn する。
-
-各 e2e-reviewer は Maestro を **`run_in_background`** で起動し、出力ファイルを定期 Read して進捗を監視する:
-
-```
-1. run_in_background: bash scripts/gate/run-maestro-and-create-marker.sh --agent <name> --shard <N>/<TOTAL>
-   → background_task_id を受け取る（ブロックしない）
-
-2. 監視ループ（~30 秒おきに以下を繰り返す）:
-   a. RESULT_XML を Read（/tmp/maestro-result-<sha8>-<ts>-shard<N>of<TOTAL>.xml）
-      - ファイルが存在しない間はまだ実行中
-   b. shard JSON を Read（.claude/.e2e-shard-<N>of<TOTAL>.json）
-      - "status" キーが存在すれば完了
-   c. 新しい <testcase> 要素を検出するたびに STATE_UPDATE を送信
-
-3. 完了検知: .claude/.e2e-shard-<N>of<TOTAL>.json の "status" = "PASS" or "FAIL"
-```
-
-shard 単位の結果は `.claude/.e2e-shard-{N}of{TOTAL}.json` に書き出される。
-
-## 集約処理（代表 e2e-reviewer = shard1）
-
-全 shard の `.claude/.e2e-shard-{N}of{TOTAL}.json` が揃ったら、代表 e2e-reviewer (shard1) が aggregator を実行する:
-
-```bash
-bash scripts/gate/aggregate-e2e-shards.sh --agent <name> --shard-total <TOTAL>
-```
-
-- 全 shard PASS かつ HEAD SHA 一致時に `.claude/.e2e-passed`（HEAD SHA 1 行）を生成
-- その後 reviewer へ `e2e-approved: <hash>` を送信
-- 1 shard でも FAIL なら aggregator が exit 1 → 代表 e2e-reviewer が CHANGES_REQUESTED を coder に返す
-
-## shard_total = 1 の場合
-
-`--shard` を省略 = `1/1` 扱い。aggregator は不要で、`run-maestro-and-create-marker.sh` 内で直接 `.e2e-passed` を生成する。`run_in_background` で起動して RESULT_XML を監視する動作は同じ。
-
-## orchestrator への進捗通知（STATE_UPDATE）
-
-Maestro バックグラウンド実行中に orchestrator（team-lead）へ進捗を通知すること。
-
-```
-# shard 開始時（代表 e2e-reviewer から送信）
-SendMessage(to: "team-lead",
-  "STATE_UPDATE: issue-{N}-e2e-reviewer — starting shard execution ({TOTAL} shards)")
-
-# 各 flow 完了時（RESULT_XML の新 testcase 検出時に各 shard e2e-reviewer から送信）
-SendMessage(to: "team-lead",
-  "STATE_UPDATE: issue-{N}-e2e-reviewer-shard{X} — flow <flow_name> PASS/FAIL")
-
-# 各 shard 完了時（shard JSON の status 確定時に各 shard e2e-reviewer から送信）
-SendMessage(to: "team-lead",
-  "STATE_UPDATE: issue-{N}-e2e-reviewer-shard{X} — shard {X}/{TOTAL} completed (PASS/FAIL, passed=P/total=T)")
-
-# 全 shard 完了時（代表 e2e-reviewer = shard1 から送信）
-SendMessage(to: "team-lead",
-  "STATE_UPDATE: issue-{N}-e2e-reviewer — all shards done, result=PASS/FAIL")
-```
-
-## 関連 skill
-
-- マーカー: `harness-gate-markers`
-- 多レーン並列: `harness-multi-lane-parallel`
-- spawn フロー: `harness-spawn-flow`
+- CI 側は GitHub Actions runner 上の単一 emulator 実行のため、ローカルの native parallel とは別のしくみ
