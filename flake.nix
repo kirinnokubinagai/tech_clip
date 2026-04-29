@@ -108,6 +108,16 @@
             platforms = pkgs.lib.platforms.unix;
           };
         };
+
+        # Maestro wrapper: Netty (gRPC client) が IPv6 で接続しようとするが ADB forwarding は
+        # IPv4 のみのため全フローが 0s で FAIL する。preferIPv4Stack=true で恒久修正する。
+        maestroWithIPv4 = pkgs.maestro.overrideAttrs (_: {
+          postInstall = ''
+            wrapProgram "$out/bin/maestro" \
+              --set-default JAVA_TOOL_OPTIONS "-Djava.net.preferIPv4Stack=true"
+          '';
+          nativeBuildInputs = (pkgs.maestro.nativeBuildInputs or []) ++ [ pkgs.makeWrapper ];
+        });
       in
       {
         devShells.ci = pkgs.mkShell {
@@ -133,8 +143,7 @@
             shellcheck
             actionlint
             jdk17
-            maestro
-          ]) ++ [ androidSdk ];
+          ]) ++ [ androidSdk maestroWithIPv4 ];
 
           # Android SDK / emulator / system image を nix で固定して
           # ローカルの ~/Library/Android や apt 由来の SDK に依存しない。
@@ -158,7 +167,6 @@
             curl
             coreutils
             libxml2
-            maestro
             zap
             bats
             mailpit
@@ -172,7 +180,7 @@
             jdk17
             wrangler
             eas-cli
-          ]) ++ [ androidSdk ];
+          ]) ++ [ androidSdk maestroWithIPv4 ];
 
           # Android SDK / emulator / system image を nix で固定して
           # ローカルの ~/Library/Android install には依存しない。

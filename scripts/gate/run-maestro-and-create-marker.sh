@@ -178,6 +178,9 @@ if [ "$DEVICE_COUNT" -gt 1 ]; then
   SHARD_SPLIT_ARGS+=("--shard-split" "$DEVICE_COUNT")
 fi
 
+# Netty (Maestro の gRPC クライアント) が IPv6 で接続しようとするが ADB forwarding は IPv4 のみ。
+export JAVA_TOOL_OPTIONS="${JAVA_TOOL_OPTIONS:-} -Djava.net.preferIPv4Stack=true"
+
 # maestro の stdout/stderr をログファイルに tee する（監視ループが per-flow 進捗を読み取る）
 (cd "$REPO_ROOT" && direnv exec "$REPO_ROOT" maestro test \
   --device "$DEVICE" \

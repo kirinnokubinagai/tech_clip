@@ -71,3 +71,7 @@
 @test "Maestro 完了後に .e2e-progress.json を status=completed に更新する" {
   grep -F '"completed"' scripts/gate/run-maestro-and-create-marker.sh
 }
+
+@test "maestro test 実行前に JAVA_TOOL_OPTIONS で preferIPv4Stack=true を設定する" {
+  grep -E 'JAVA_TOOL_OPTIONS.*preferIPv4Stack=true' scripts/gate/run-maestro-and-create-marker.sh
+}
