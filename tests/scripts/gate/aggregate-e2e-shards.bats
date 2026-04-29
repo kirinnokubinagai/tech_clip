@@ -69,6 +69,7 @@ XML
     --shard-xmls "${xml1},${xml2}" \
     --output-xml "$out"
   [ "$status" -ne 0 ]
+  [ -f "$out" ]
 }
 
 @test "shard XML ファイルが存在しない場合は exit 1 を返す" {
