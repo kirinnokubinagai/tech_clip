@@ -42,13 +42,24 @@ EXPO_LOG="/tmp/expo-run-android-$$.log"
 nix develop --command bash -c "cd apps/mobile && pnpm expo run:android --variant debug" 2>&1 | tee "$EXPO_LOG" &
 EXPO_PID=$!
 
-# Wait for app to be running (pidof check)
-echo "[e2e] アプリ起動を待機中..."
-MAX_WAIT=120  # 2 minutes max
+# Wait for Metro to finish bundling (single combined loop)
+# "Bundled" in the log is a strictly stronger signal than pidof:
+# it implies the app is already running AND has received the JS bundle.
+echo "[e2e] ビルド完了・Metro バンドル配信を待機中..."
+MAX_WAIT=600  # 10 minutes — enough for cold Gradle build + Metro bundle
 WAITED=0
 while [ $WAITED -lt $MAX_WAIT ]; do
-  if adb shell pidof com.techclip.app > /dev/null 2>&1; then
-    echo "[e2e] アプリプロセス起動完了"
+  # If the build process crashed, exit early instead of waiting 600s
+  if ! kill -0 "$EXPO_PID" 2>/dev/null; then
+    echo "ERROR: Expo build process exited unexpectedly"
+    echo "[e2e] 最終 20 行のログ:"
+    tail -20 "$EXPO_LOG" || true
+    echo "1" > "test-results/maestro-exit-code${SHARD_SUFFIX}.txt"
+    rm -f "$EXPO_LOG"
+    exit 1
+  fi
+  if grep -q "Bundled" "$EXPO_LOG" 2>/dev/null; then
+    echo "[e2e] Metro バンドル配信完了"
     break
   fi
   sleep 1
@@ -57,27 +68,6 @@ done
 
 if [ $WAITED -ge $MAX_WAIT ]; then
   echo "ERROR: App process did not start within ${MAX_WAIT}s"
-  echo "1" > "test-results/maestro-exit-code${SHARD_SUFFIX}.txt"
-  kill "$EXPO_PID" 2>/dev/null || true
-  rm -f "$EXPO_LOG"
-  exit 1
-fi
-
-# Wait for Metro to finish bundling (watch for "Bundled" in log)
-echo "[e2e] Metro バンドル配信を待機中..."
-MAX_BUNDLE_WAIT=180  # 3 minutes max
-BUNDLE_WAITED=0
-while [ $BUNDLE_WAITED -lt $MAX_BUNDLE_WAIT ]; do
-  if grep -q "Bundled" "$EXPO_LOG" 2>/dev/null; then
-    echo "[e2e] Metro バンドル配信完了"
-    break
-  fi
-  sleep 1
-  BUNDLE_WAITED=$((BUNDLE_WAITED + 1))
-done
-
-if [ $BUNDLE_WAITED -ge $MAX_BUNDLE_WAIT ]; then
-  echo "ERROR: Metro bundling did not complete within ${MAX_BUNDLE_WAIT}s"
   echo "[e2e] 最終 20 行のログ:"
   tail -20 "$EXPO_LOG" || true
   echo "1" > "test-results/maestro-exit-code${SHARD_SUFFIX}.txt"

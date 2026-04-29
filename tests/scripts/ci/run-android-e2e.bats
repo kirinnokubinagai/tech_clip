@@ -16,7 +16,17 @@ SCRIPT="$(cd "$(dirname "$BATS_TEST_FILENAME")/../../.." && pwd)/scripts/ci/run-
   ! grep -E '^wait "\$EXPO_PID"' "$SCRIPT"
 }
 
-@test "pidof com.techclip.app でアプリ起動をポーリングする" {
+@test "600 秒の統合タイムアウトを持つこと" {
+  # Arrange: スクリプトに MAX_WAIT=600 が存在すること
+  # Act: grep でパターンを検索
+  # Assert: 該当行が存在すること
+  grep -E 'MAX_WAIT=600' "$SCRIPT"
+}
+
+@test "pidof com.techclip.app でアプリ起動後の安全確認をすること" {
+  # Arrange: スクリプトに安全確認の pidof チェックが存在すること
+  # Act: grep でパターンを検索
+  # Assert: 該当行が存在すること（ループ外の安全確認）
   grep -E 'pidof com\.techclip\.app' "$SCRIPT"
 }
 
