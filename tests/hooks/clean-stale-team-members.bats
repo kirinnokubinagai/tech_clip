@@ -1,6 +1,11 @@
 #!/usr/bin/env bats
 # clean-stale-team-members.sh のテスト
 #
+# 方針（Fix D 改訂版）:
+# - session 不一致 or leadSessionId 欠落 → config.json を rm して exit 0
+# - session 一致 → suffix 付き agent を jq で除去 + PR ベース判定
+# - config.json の個別フィールド編集は行わない（削除が公式ワークアラウンド）
+#
 # session_id フィールド名: Claude Code 公式ドキュメントで確認済み (snake_case)
 # ref: https://docs.anthropic.com/en/docs/claude-code/hooks (common input fields)
 
@@ -43,22 +48,31 @@ GHEOF
 
 teardown() { rm -rf "$TMPDIR"; }
 
+TEAM_CONFIG_PATH() {
+  echo "$REPO_ROOT/.claude-user/teams/active-issues/config.json"
+}
+
 write_config() {
   local json="$1"
-  printf '%s' "$json" > "$REPO_ROOT/.claude-user/teams/active-issues/config.json"
+  printf '%s' "$json" > "$(TEAM_CONFIG_PATH)"
+}
+
+config_exists() {
+  [ -f "$(TEAM_CONFIG_PATH)" ]
 }
 
 read_config() {
-  cat "$REPO_ROOT/.claude-user/teams/active-issues/config.json"
+  cat "$(TEAM_CONFIG_PATH)"
 }
 
 run_hook() {
   local stdin_data="${1:-}"
-  printf '%s' "$stdin_data" |     REPO_ROOT="$REPO_ROOT" bash "$SCRIPT"
+  printf '%s' "$stdin_data" | \
+    REPO_ROOT="$REPO_ROOT" bash "$SCRIPT"
 }
 
 # ─────────────────────────────────────────────
-# 既存テスト (smoke)
+# smoke: スクリプト構造チェック
 # ─────────────────────────────────────────────
 
 @test "clean-stale-team-members.sh: TEAM_CONFIG を参照する仕様" {
@@ -77,11 +91,10 @@ run_hook() {
 }
 
 # ─────────────────────────────────────────────
-# Fix D: session boundary tests (RED → GREEN)
+# Fix D: session boundary — rm アプローチ
 # ─────────────────────────────────────────────
 
-# テスト 1: session 一致 → wipe しない
-@test "session 一致のとき members は変化しない" {
+@test "session 一致のとき config.json は削除されない" {
   write_config '{
     "leadSessionId": "abc-123",
     "members": [
@@ -92,16 +105,11 @@ run_hook() {
 
   run_hook '{"session_id": "abc-123"}'
 
-  local after
-  after=$(read_config)
-  # issue-100-coder が残っていること
-  [[ "$after" == *"issue-100-coder"* ]]
-  # leadSessionId が変化していないこと
-  [[ "$after" == *'"abc-123"'* ]]
+  # config.json が残っていること
+  config_exists
 }
 
-# テスト 2: session 不一致 → team-lead 以外をすべて wipe、leadSessionId を更新
-@test "session 不一致のとき team-lead 以外を全除去し leadSessionId を更新する" {
+@test "session 不一致のとき config.json が削除される" {
   write_config '{
     "leadSessionId": "abc-123",
     "members": [
@@ -113,20 +121,37 @@ run_hook() {
 
   run_hook '{"session_id": "xyz-789"}'
 
-  local after
-  after=$(read_config)
-  # team-lead が残ること
-  [[ "$after" == *'"team-lead"'* ]]
-  # issue-100-coder が除去されること
-  [[ "$after" != *"issue-100-coder"* ]]
-  # issue-200-reviewer が除去されること
-  [[ "$after" != *"issue-200-reviewer"* ]]
-  # leadSessionId が新 session ID に更新されること
-  [[ "$after" == *'"xyz-789"'* ]]
+  # config.json が削除されていること
+  run config_exists
+  [ "$status" -ne 0 ]
 }
 
-# テスト 3: suffix 付き agent は session 一致でも無条件除去
-@test "suffix 付き agent は session 一致でも除去される" {
+@test "session 不一致のとき exit 0 で終了する" {
+  write_config '{
+    "leadSessionId": "abc-123",
+    "members": [{"name": "team-lead", "agentType": "team-lead"}]
+  }'
+
+  run run_hook '{"session_id": "xyz-789"}'
+  [ "$status" -eq 0 ]
+}
+
+@test "leadSessionId がない旧 config は session 不一致扱いで config.json が削除される" {
+  write_config '{
+    "members": [
+      {"name": "team-lead", "agentType": "team-lead"},
+      {"name": "issue-100-coder", "agentType": "coder"}
+    ]
+  }'
+
+  run_hook '{"session_id": "xyz-new"}'
+
+  # config.json が削除されていること（leadSessionId なし = session 比較不可 → 削除）
+  run config_exists
+  [ "$status" -ne 0 ]
+}
+
+@test "session 一致 + suffix 付き agent は jq で除去される" {
   write_config '{
     "leadSessionId": "abc-123",
     "members": [
@@ -139,20 +164,36 @@ run_hook() {
 
   run_hook '{"session_id": "abc-123"}'
 
+  # config.json が残っていること
+  config_exists
   local after
   after=$(read_config)
   # suffix なし coder は残ること
   [[ "$after" == *'"issue-100-coder"'* ]]
-  # suffix 付き coder-2 は除去されること
+  # suffix 付きは除去されること
   [[ "$after" != *"issue-100-coder-2"* ]]
-  # suffix 付き ui-designer-3 は除去されること
   [[ "$after" != *"issue-200-ui-designer-3"* ]]
-  # leadSessionId は不変
-  [[ "$after" == *'"abc-123"'* ]]
 }
 
-# テスト 4: session 不一致 + suffix 付き混在 → team-lead 以外全除去
-@test "session 不一致 + suffix 付きの混在: team-lead のみ残る" {
+@test "session 一致 + suffix なし → config.json は変化しない" {
+  local original='{
+    "leadSessionId": "abc-123",
+    "members": [
+      {"name": "team-lead", "agentType": "team-lead"},
+      {"name": "issue-100-coder", "agentType": "coder"}
+    ]
+  }'
+  write_config "$original"
+
+  run_hook '{"session_id": "abc-123"}'
+
+  config_exists
+  local after
+  after=$(read_config)
+  [[ "$after" == *"issue-100-coder"* ]]
+}
+
+@test "session 不一致 + suffix 付き混在でも config.json は削除される" {
   write_config '{
     "leadSessionId": "abc-123",
     "members": [
@@ -164,15 +205,11 @@ run_hook() {
 
   run_hook '{"session_id": "new-session-001"}'
 
-  local after
-  after=$(read_config)
-  [[ "$after" == *'"team-lead"'* ]]
-  [[ "$after" != *"issue-100-coder"* ]]
-  [[ "$after" == *'"new-session-001"'* ]]
+  run config_exists
+  [ "$status" -ne 0 ]
 }
 
-# テスト 5: stdin に session_id なし → PR ベース判定のみ
-@test "stdin に session_id がない場合 PR ベース判定で除去される" {
+@test "stdin に session_id なし (空 JSON) → session 比較 skip、PR ベース判定のみ" {
   write_config '{
     "leadSessionId": "abc-123",
     "members": [
@@ -181,7 +218,7 @@ run_hook() {
     ]
   }'
 
-  # gh が MERGED を返す mock に差し替え
+  # gh が MERGED を返す mock
   cat > "$FAKE_BIN/gh" << 'GHEOF'
 #!/usr/bin/env bash
 case "$1" in
@@ -195,15 +232,14 @@ GHEOF
 
   run_hook '{}'
 
+  # config.json が残っていること（削除はしない）
+  config_exists
   local after
   after=$(read_config)
-  # leadSessionId は変化しない
-  [[ "$after" == *'"abc-123"'* ]]
   # PR MERGED で issue-100-coder が除去される
   [[ "$after" != *"issue-100-coder"* ]]
 }
 
-# テスト 6a: stdin が空 → session 比較 skip、exit 0
 @test "stdin が空のとき session 比較をスキップして exit 0" {
   write_config '{
     "leadSessionId": "abc-123",
@@ -215,13 +251,9 @@ GHEOF
 
   run run_hook ""
   [ "$status" -eq 0 ]
-  # leadSessionId は不変
-  local after
-  after=$(read_config)
-  [[ "$after" == *'"abc-123"'* ]]
+  config_exists
 }
 
-# テスト 6b: stdin が不正 JSON → session 比較 skip、exit 0
 @test "stdin が不正 JSON のとき session 比較をスキップして exit 0" {
   write_config '{
     "leadSessionId": "abc-123",
@@ -232,25 +264,6 @@ GHEOF
   [ "$status" -eq 0 ]
 }
 
-# テスト 7: leadSessionId が config に存在しない (旧 config)
-@test "leadSessionId がない旧 config でも session 比較 skip し exit 0" {
-  write_config '{
-    "members": [
-      {"name": "team-lead", "agentType": "team-lead"},
-      {"name": "issue-100-coder", "agentType": "coder"}
-    ]
-  }'
-
-  run_hook '{"session_id": "xyz-new"}'
-
-  local after
-  after=$(read_config)
-  # 比較 skip → メンバーは変化しない (PR 判定のみ)
-  # leadSessionId が補完されていること
-  [[ "$after" == *'"xyz-new"'* ]]
-}
-
-# テスト 8: config.json 不在 → exit 0
 @test "config.json が存在しないとき exit 0" {
   rm -rf "$REPO_ROOT/.claude-user/teams/active-issues"
 
@@ -258,8 +271,7 @@ GHEOF
   [ "$status" -eq 0 ]
 }
 
-# テスト 9: gh network エラーでも session 比較は独立して動作
-@test "gh がエラーでも session 不一致なら wipe される" {
+@test "gh がエラーでも session 不一致なら config.json が削除される" {
   write_config '{
     "leadSessionId": "abc-123",
     "members": [
@@ -268,14 +280,16 @@ GHEOF
     ]
   }'
 
-  # gh が全コマンドで exit 1 返す
+  # gh auth 失敗
   cat > "$FAKE_BIN/gh" << 'GHEOF'
 #!/usr/bin/env bash
 exit 1
 GHEOF
   chmod +x "$FAKE_BIN/gh"
 
-  # gh auth 失敗 → 既存の exit 0 フォールバック
-  run run_hook '{"session_id": "new-abc"}'
-  [ "$status" -eq 0 ]
+  # gh auth 失敗で PR 判定 skip → session 不一致なら削除だけ行う
+  run_hook '{"session_id": "new-abc"}'
+
+  run config_exists
+  [ "$status" -ne 0 ]
 }
