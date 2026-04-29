@@ -1,15 +1,12 @@
 #!/usr/bin/env bash
-# aggregate-e2e-shards.sh: 多シャード E2E 結果を集約して .claude/.e2e-passed marker を生成する
+# aggregate-e2e-shards.sh: 多シャード E2E 結果を集約する
 #
-# 使い方:
+# モード 1（新: XML 直接集約）:
+#   bash scripts/gate/aggregate-e2e-shards.sh --agent <name> \
+#     --shard-xmls <xml1,xml2,...> --output-xml <out.xml> [--base-ref <ref>]
+#
+# モード 2（従来: .e2e-shard-NofTOTAL.json 集約）:
 #   bash scripts/gate/aggregate-e2e-shards.sh --agent <name> --shard-total <TOTAL> [--base-ref <ref>]
-#
-# 動作:
-#   .claude/.e2e-shard-{1..TOTAL}of<TOTAL>.json をすべて読む
-#   - 全件 PASS かつ全 shard の HEAD SHA が一致 → .e2e-passed (HEAD SHA 1 行) 生成 → exit 0
-#   - 1 件でも FAIL or 不在 → marker 生成しない → exit 1
-#   - HEAD SHA 不一致（途中で commit が進んだ）→ marker 生成しない → exit 1
-#   - shard 結果ファイルは集約後に削除する
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -18,18 +15,106 @@ REPO_ROOT="$(git -C "$SCRIPT_DIR" rev-parse --show-toplevel 2>/dev/null || git r
 AGENT_NAME=""
 SHARD_TOTAL=""
 BASE_REF="origin/main"
+SHARD_XMLS=""
+OUTPUT_XML=""
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --agent)       AGENT_NAME="$2";    shift 2 ;;
     --shard-total) SHARD_TOTAL="$2";   shift 2 ;;
-    --base-ref)    BASE_REF="$2";       shift 2 ;;
+    --base-ref)    BASE_REF="$2";      shift 2 ;;
+    --shard-xmls)  SHARD_XMLS="$2";    shift 2 ;;
+    --output-xml)  OUTPUT_XML="$2";    shift 2 ;;
     *) echo "Unknown arg: $1" >&2; exit 1 ;;
   esac
 done
 
-if [ -z "$AGENT_NAME" ] || [ -z "$SHARD_TOTAL" ]; then
-  echo "ERROR: --agent <name> and --shard-total <N> are required" >&2
+if [ -z "$AGENT_NAME" ]; then
+  echo "ERROR: --agent <name> is required" >&2
+  exit 1
+fi
+
+# ── モード 1: XML 直接集約 ──────────────────────────────────────────────────
+if [ -n "$SHARD_XMLS" ] || [ -n "$OUTPUT_XML" ]; then
+  if [ -z "$SHARD_XMLS" ] || [ -z "$OUTPUT_XML" ]; then
+    echo "ERROR: --shard-xmls and --output-xml must be used together" >&2
+    exit 1
+  fi
+
+  IFS=',' read -ra XML_LIST <<< "$SHARD_XMLS"
+  MISSING=()
+  for xml in "${XML_LIST[@]}"; do
+    if [ ! -f "$xml" ]; then
+      MISSING+=("$xml")
+    fi
+  done
+  if [ "${#MISSING[@]}" -gt 0 ]; then
+    echo "ERROR: shard XML files not found:" >&2
+    for m in "${MISSING[@]}"; do
+      echo "  - $m" >&2
+    done
+    exit 1
+  fi
+
+  TMP_OUT="${OUTPUT_XML}.tmp.$$"
+  python3 - "$TMP_OUT" "${XML_LIST[@]}" <<'XMLPY'
+import sys
+try:
+    import xml.etree.ElementTree as ET
+except ImportError:
+    print("ERROR: python3 xml.etree.ElementTree not available", file=sys.stderr)
+    sys.exit(1)
+
+out_path = sys.argv[1]
+xml_files = sys.argv[2:]
+root = ET.Element("testsuites")
+total_tests = 0
+total_failures = 0
+
+for xml_path in xml_files:
+    try:
+        tree = ET.parse(xml_path)
+        src = tree.getroot()
+    except Exception as e:
+        print(f"ERROR parsing {xml_path}: {e}", file=sys.stderr)
+        sys.exit(1)
+    if src.tag == "testsuites":
+        for ts in src:
+            total_tests += int(ts.get("tests", 0))
+            total_failures += int(ts.get("failures", 0))
+            root.append(ts)
+    elif src.tag == "testsuite":
+        total_tests += int(src.get("tests", 0))
+        total_failures += int(src.get("failures", 0))
+        root.append(src)
+
+root.set("tests", str(total_tests))
+root.set("failures", str(total_failures))
+tree_out = ET.ElementTree(root)
+try:
+    ET.indent(tree_out, space="  ")
+except AttributeError:
+    pass
+
+with open(out_path, "wb") as f:
+    f.write(b'<?xml version="1.0" encoding="UTF-8"?>\n')
+    tree_out.write(f, encoding="utf-8", xml_declaration=False)
+
+sys.exit(1 if total_failures > 0 else 0)
+XMLPY
+  PY_EXIT=$?
+  mv "$TMP_OUT" "$OUTPUT_XML"
+  if [ "$PY_EXIT" -ne 0 ]; then
+    echo "ERROR: shard XML aggregation found failures (see $OUTPUT_XML)" >&2
+    exit 1
+  fi
+  echo "aggregate-e2e-shards: merged ${#XML_LIST[@]} XML files -> $OUTPUT_XML" >&2
+  exit 0
+fi
+
+# ── モード 2: .e2e-shard-NofTOTAL.json 集約（従来互換） ────────────────────
+if [ -z "$SHARD_TOTAL" ]; then
+  echo "ERROR: --agent <name> and --shard-total <N> are required (or use --shard-xmls / --output-xml)" >&2
   exit 1
 fi
 
@@ -101,17 +186,14 @@ if [ "${#FAILURES[@]}" -gt 0 ]; then
   exit 1
 fi
 
-# 全 shard PASS: marker (HEAD SHA 1 行) を atomic write
 printf '%s\n' "$HEAD_SHA" > "$TMP_MARKER"
 mv "$TMP_MARKER" "$MARKER"
 echo "e2e marker created: $MARKER (sha=$HEAD_SHA shards=$SHARD_TOTAL flows=$TOTAL_PASSED/$TOTAL_FLOWS)" >&2
 
-# shard 結果ファイルを cleanup
 for i in $(seq 1 "$SHARD_TOTAL"); do
   rm -f "${CLAUDE_DIR}/.e2e-shard-${i}of${SHARD_TOTAL}.json"
 done
 
-# 詳細ログを JSON Lines で append
 if command -v jq &>/dev/null; then
   jq -nc \
     --arg head_sha "$HEAD_SHA" \

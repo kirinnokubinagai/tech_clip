@@ -9,12 +9,14 @@
 #   省略時は adb devices で自動検出:
 #     0 台 → エラー終了
 #     1 台 → シングル実行
-#     2 台以上 → --shard-split N の並列実行
+#     2 台以上 → round-robin 並列実行（--shard-split は使用しない）
 #
 # --shard all/N: N 台での並列実行を明示指定。N が DEVICE_COUNT と一致しない場合エラー終了。
 #   省略時は auto-detect で決定。
 #
-# ポート管理・driver 起動は Maestro が内部で処理するため手動 adb forward 不要。
+# 自前並列方式:
+#   flow を device 数で round-robin に分割し、device ごとに独立した maestro test プロセスを背景起動。
+#   --shard-split は使用しない（Maestro の gRPC UNAVAILABLE バグ回避）。
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -76,13 +78,49 @@ if [ -z "$DEVICE" ]; then
   echo "[gate] --device not specified, auto-detected: $DEVICE" >&2
 fi
 
-# DEVICE_COUNT 算出（カンマ区切りの数 + 1）
+# DEVICE_COUNT 算出（カンマ区切りの数）
 DEVICE_COUNT=$(awk -F, '{print NF}' <<< "$DEVICE")
 
 # --shard all/N 明示時: N と DEVICE_COUNT の整合性チェック（SHARD_TOTAL vs DEVICE_COUNT）
 if [ -n "$SHARD_SPEC" ] && [ "$SHARD_TOTAL" -ne "$DEVICE_COUNT" ]; then
   echo "ERROR: --shard all/$SHARD_TOTAL specified but DEVICE_COUNT=$DEVICE_COUNT (mismatch)" >&2
   echo "  DEVICE=$DEVICE" >&2
+  exit 1
+fi
+
+# ── バックエンド起動チェック（Fix B） ──────────────────────────────────────
+# turso (8888) が LISTEN しているか確認。未起動なら up.sh + seed.sh を呼ぶ。
+# gate スクリプトが起動したものだけ EXIT 時に down する（開発者の手元 dev shell を kill しない）。
+_BACKEND_STARTED_BY_GATE=0
+
+_check_port_listen() {
+  lsof -i:"$1" -sTCP:LISTEN >/dev/null 2>&1
+}
+
+_backend_down_if_gate_started() {
+  if [ "$_BACKEND_STARTED_BY_GATE" -eq 1 ]; then
+    echo "[gate] backend を停止します (gate が起動したため)..." >&2
+    bash "${REPO_ROOT}/scripts/dev/down.sh" >/dev/null 2>&1 || true
+  fi
+}
+
+trap '_backend_down_if_gate_started' EXIT
+
+if ! _check_port_listen 8888; then
+  echo "[gate] backend が未起動です。起動します..." >&2
+  if ! bash "${REPO_ROOT}/scripts/dev/up.sh"; then
+    echo "[gate] ERROR: backend (up.sh) の起動に失敗しました。ログを確認してください:" >&2
+    tail -50 /tmp/techclip-dev/api.log 2>/dev/null || true
+    exit 1
+  fi
+  _BACKEND_STARTED_BY_GATE=1
+else
+  echo "[gate] backend already up, skipping bring-up" >&2
+fi
+
+echo "[gate] seed を実行します..." >&2
+if ! bash "${REPO_ROOT}/scripts/dev/seed.sh"; then
+  echo "[gate] ERROR: seed.sh に失敗しました。" >&2
   exit 1
 fi
 
@@ -113,8 +151,6 @@ if [ "${#YAML_FILES[@]}" -eq 0 ]; then
 fi
 
 RESULT_XML="/tmp/maestro-result-${HEAD_SHA:0:8}-${TIMESTAMP}.xml"
-
-echo "Running maestro tests: device=$DEVICE count=$DEVICE_COUNT (${#YAML_FILES[@]} flows)" >&2
 
 # config.yaml の env: ブロックを --env 引数に展開する
 ENV_ARGS=()
@@ -154,67 +190,187 @@ if [ -f "$ENV_FILE" ]; then
   done < "$ENV_FILE"
 fi
 
-# debug-output / log ディレクトリ
-DEBUG_DIR="/tmp/maestro-debug-${HEAD_SHA:0:8}-${TIMESTAMP}"
-LOG_FILE="/tmp/maestro-log-${HEAD_SHA:0:8}-${TIMESTAMP}.log"
-mkdir -p "$DEBUG_DIR"
-
-# progress JSON を先に書き出す（e2e-reviewer の監視ループが参照する）
-mkdir -p "${REPO_ROOT}/.claude"
-PROGRESS_FILE="${REPO_ROOT}/.claude/.e2e-progress.json"
-jq -n \
-  --arg log_file "$LOG_FILE" \
-  --arg result_xml "$RESULT_XML" \
-  --arg debug_dir "$DEBUG_DIR" \
-  --argjson device_count "$DEVICE_COUNT" \
-  --argjson flow_count "${#YAML_FILES[@]}" \
-  --arg status "running" \
-  '{log_file: $log_file, result_xml: $result_xml, debug_dir: $debug_dir, device_count: $device_count, flow_count: $flow_count, status: $status}' \
-  > "$PROGRESS_FILE"
-
-# --shard-split: DEVICE_COUNT > 1 のときのみ付ける
-SHARD_SPLIT_ARGS=()
-if [ "$DEVICE_COUNT" -gt 1 ]; then
-  SHARD_SPLIT_ARGS+=("--shard-split" "$DEVICE_COUNT")
-fi
-
 # Netty (Maestro の gRPC クライアント) が IPv6 で接続しようとするが ADB forwarding は IPv4 のみ。
 export JAVA_TOOL_OPTIONS="${JAVA_TOOL_OPTIONS:-} -Djava.net.preferIPv4Stack=true"
 
-# maestro の stdout/stderr をログファイルに tee する（監視ループが per-flow 進捗を読み取る）
-(cd "$REPO_ROOT" && direnv exec "$REPO_ROOT" maestro test \
-  --device "$DEVICE" \
-  "${SHARD_SPLIT_ARGS[@]}" \
-  --format junit \
-  --output "$RESULT_XML" \
-  --debug-output "$DEBUG_DIR" \
-  "${ENV_ARGS[@]}" \
-  "${YAML_FILES[@]}" 2>&1) | tee "$LOG_FILE" || true
+mkdir -p "${REPO_ROOT}/.claude"
+PROGRESS_FILE="${REPO_ROOT}/.claude/.e2e-progress.json"
 
-# progress JSON を更新
+if [ "$DEVICE_COUNT" -eq 1 ]; then
+  # ── single device: 並列化しない（従来互換）──────────────────────────────
+  echo "Running maestro tests: device=$DEVICE count=1 (${#YAML_FILES[@]} flows)" >&2
+
+  DEBUG_DIR="/tmp/maestro-debug-${HEAD_SHA:0:8}-${TIMESTAMP}"
+  LOG_FILE="/tmp/maestro-log-${HEAD_SHA:0:8}-${TIMESTAMP}.log"
+  mkdir -p "$DEBUG_DIR"
+
+  jq -n \
+    --arg log_file "$LOG_FILE" \
+    --arg result_xml "$RESULT_XML" \
+    --arg debug_dir "$DEBUG_DIR" \
+    --argjson device_count "$DEVICE_COUNT" \
+    --argjson flow_count "${#YAML_FILES[@]}" \
+    --arg status "running" \
+    '{log_file: $log_file, result_xml: $result_xml, debug_dir: $debug_dir,
+      device_count: $device_count, flow_count: $flow_count, status: $status,
+      per_shard_logs: [{device: $log_file, log_file: $log_file, result_xml: $result_xml}]}' \
+    > "$PROGRESS_FILE"
+
+  (cd "$REPO_ROOT" && direnv exec "$REPO_ROOT" maestro test \
+    --device "$DEVICE" \
+    --format junit \
+    --output "$RESULT_XML" \
+    --debug-output "$DEBUG_DIR" \
+    "${ENV_ARGS[@]}" \
+    "${YAML_FILES[@]}" 2>&1) | tee "$LOG_FILE" || true
+
+  jq -n \
+    --arg log_file "$LOG_FILE" \
+    --arg result_xml "$RESULT_XML" \
+    --arg debug_dir "$DEBUG_DIR" \
+    --argjson device_count "$DEVICE_COUNT" \
+    --argjson flow_count "${#YAML_FILES[@]}" \
+    --arg status "completed" \
+    '{log_file: $log_file, result_xml: $result_xml, debug_dir: $debug_dir,
+      device_count: $device_count, flow_count: $flow_count, status: $status,
+      per_shard_logs: [{device: $log_file, log_file: $log_file, result_xml: $result_xml}]}' \
+    > "$PROGRESS_FILE"
+
+  if [ ! -f "$RESULT_XML" ]; then
+    echo "ERROR: maestro did not produce result XML: $RESULT_XML" >&2
+    exit 1
+  fi
+
+  DEBUG_INDEX="${REPO_ROOT}/.claude/.e2e-debug.json"
+  jq -n \
+    --arg result_xml "$RESULT_XML" \
+    --arg debug_dir "$DEBUG_DIR" \
+    --arg log_file "$LOG_FILE" \
+    --argjson device_count "$DEVICE_COUNT" \
+    '{result_xml: $result_xml, debug_dir: $debug_dir, log_file: $log_file, device_count: $device_count}' \
+    > "$DEBUG_INDEX"
+
+  bash "${SCRIPT_DIR}/create-e2e-marker.sh" \
+    --agent "$AGENT_NAME" \
+    --maestro-result "$RESULT_XML" \
+    --base-ref "$BASE_REF"
+  exit $?
+fi
+
+# ── multi-device: round-robin 自前並列（--shard-split 不使用） ──────────────
+echo "Running maestro tests: devices=$DEVICE count=$DEVICE_COUNT (${#YAML_FILES[@]} flows) [parallel, round-robin]" >&2
+
+# round-robin でフローを device ごとに分割
+declare -a SHARD_FLOWS_0 SHARD_FLOWS_1 SHARD_FLOWS_2 SHARD_FLOWS_3 SHARD_FLOWS_4
+SHARD_FLOWS_0=(); SHARD_FLOWS_1=(); SHARD_FLOWS_2=(); SHARD_FLOWS_3=(); SHARD_FLOWS_4=()
+for i in "${!YAML_FILES[@]}"; do
+  SHARD_IDX=$(( i % DEVICE_COUNT ))
+  eval "SHARD_FLOWS_${SHARD_IDX}+=(\"${YAML_FILES[$i]}\")"
+done
+
+# per-shard ログ・XML・debug dir パス
+declare -a SHARD_LOG_FILES SHARD_RESULT_XMLS SHARD_DEBUG_DIRS
+for (( N=0; N<DEVICE_COUNT; N++ )); do
+  SHARD_LOG_FILES[$N]="/tmp/maestro-log-${HEAD_SHA:0:8}-${TIMESTAMP}-shard${N}.log"
+  SHARD_RESULT_XMLS[$N]="/tmp/maestro-result-${HEAD_SHA:0:8}-${TIMESTAMP}-shard${N}.xml"
+  SHARD_DEBUG_DIRS[$N]="/tmp/maestro-debug-${HEAD_SHA:0:8}-${TIMESTAMP}-shard${N}"
+  mkdir -p "${SHARD_DEBUG_DIRS[$N]}"
+done
+
+# per_shard_logs JSON 配列を構築
+PER_SHARD_JSON="["
+for (( N=0; N<DEVICE_COUNT; N++ )); do
+  DEV="${DEVICE_LIST[$N]}"
+  [ "$N" -gt 0 ] && PER_SHARD_JSON+=","
+  PER_SHARD_JSON+="{\"device\":\"${DEV}\",\"log_file\":\"${SHARD_LOG_FILES[$N]}\",\"result_xml\":\"${SHARD_RESULT_XMLS[$N]}\"}"
+done
+PER_SHARD_JSON+="]"
+
 jq -n \
-  --arg log_file "$LOG_FILE" \
+  --arg log_file "${SHARD_LOG_FILES[0]}" \
   --arg result_xml "$RESULT_XML" \
-  --arg debug_dir "$DEBUG_DIR" \
+  --argjson device_count "$DEVICE_COUNT" \
+  --argjson flow_count "${#YAML_FILES[@]}" \
+  --arg status "running" \
+  --argjson per_shard_logs "$PER_SHARD_JSON" \
+  '{log_file: $log_file, result_xml: $result_xml,
+    device_count: $device_count, flow_count: $flow_count, status: $status,
+    per_shard_logs: $per_shard_logs}' \
+  > "$PROGRESS_FILE"
+
+# 各 device で maestro test を背景起動（--shard-split 不使用: 独立 JVM/gRPC driver）
+declare -a SHARD_PIDS
+for (( N=0; N<DEVICE_COUNT; N++ )); do
+  DEV="${DEVICE_LIST[$N]}"
+  SHARD_FLOWS_VAR="SHARD_FLOWS_${N}[@]"
+  FLOWS=("${!SHARD_FLOWS_VAR}")
+  if [ "${#FLOWS[@]}" -eq 0 ]; then
+    echo "[gate] shard${N} (${DEV}): no flows assigned, skipping" >&2
+    ( exit 0 ) &
+    SHARD_PIDS[$N]=$!
+    continue
+  fi
+  (
+    cd "$REPO_ROOT" && direnv exec "$REPO_ROOT" maestro test \
+      --device "$DEV" \
+      --format junit \
+      --output "${SHARD_RESULT_XMLS[$N]}" \
+      --debug-output "${SHARD_DEBUG_DIRS[$N]}" \
+      "${ENV_ARGS[@]}" \
+      "${FLOWS[@]}" 2>&1
+  ) | tee "${SHARD_LOG_FILES[$N]}" &
+  SHARD_PIDS[$N]=$!
+  echo "[gate] shard${N} (${DEV}): started pid=${SHARD_PIDS[$N]} flows=${#FLOWS[@]}" >&2
+done
+
+# 全 shard を wait して exit code を集計（1 つでも非ゼロなら OVERALL_EXIT=1）
+OVERALL_EXIT=0
+for (( N=0; N<DEVICE_COUNT; N++ )); do
+  wait "${SHARD_PIDS[$N]}" || OVERALL_EXIT=1
+  echo "[gate] shard${N}: pid=${SHARD_PIDS[$N]} exited" >&2
+done
+
+# progress JSON を完了状態に更新
+jq -n \
+  --arg log_file "${SHARD_LOG_FILES[0]}" \
+  --arg result_xml "$RESULT_XML" \
   --argjson device_count "$DEVICE_COUNT" \
   --argjson flow_count "${#YAML_FILES[@]}" \
   --arg status "completed" \
-  '{log_file: $log_file, result_xml: $result_xml, debug_dir: $debug_dir, device_count: $device_count, flow_count: $flow_count, status: $status}' \
+  --argjson per_shard_logs "$PER_SHARD_JSON" \
+  '{log_file: $log_file, result_xml: $result_xml,
+    device_count: $device_count, flow_count: $flow_count, status: $status,
+    per_shard_logs: $per_shard_logs}' \
   > "$PROGRESS_FILE"
 
-if [ ! -f "$RESULT_XML" ]; then
-  echo "ERROR: maestro did not produce result XML: $RESULT_XML" >&2
+# shard XML を集約して単一 RESULT_XML に結合する
+SHARD_XMLS="$(IFS=,; echo "${SHARD_RESULT_XMLS[*]}")"
+if ! bash "${SCRIPT_DIR}/aggregate-e2e-shards.sh" \
+  --agent "$AGENT_NAME" \
+  --base-ref "$BASE_REF" \
+  --shard-xmls "$SHARD_XMLS" \
+  --output-xml "$RESULT_XML"; then
+  echo "[gate] ERROR: shard XML aggregation failed" >&2
+  OVERALL_EXIT=1
+fi
+
+if [ "$OVERALL_EXIT" -ne 0 ]; then
+  echo "[gate] ERROR: one or more shards FAILED" >&2
   exit 1
 fi
 
-# debug-index を show-e2e-failures.sh 互換の形式で書き出す
+if [ ! -f "$RESULT_XML" ]; then
+  echo "ERROR: maestro did not produce aggregated result XML: $RESULT_XML" >&2
+  exit 1
+fi
+
 DEBUG_INDEX="${REPO_ROOT}/.claude/.e2e-debug.json"
 jq -n \
   --arg result_xml "$RESULT_XML" \
-  --arg debug_dir "$DEBUG_DIR" \
-  --arg log_file "$LOG_FILE" \
+  --arg log_file "${SHARD_LOG_FILES[0]}" \
   --argjson device_count "$DEVICE_COUNT" \
-  '{result_xml: $result_xml, debug_dir: $debug_dir, log_file: $log_file, device_count: $device_count}' \
+  --argjson per_shard_logs "$PER_SHARD_JSON" \
+  '{result_xml: $result_xml, log_file: $log_file, device_count: $device_count, per_shard_logs: $per_shard_logs}' \
   > "$DEBUG_INDEX"
 
 bash "${SCRIPT_DIR}/create-e2e-marker.sh" \

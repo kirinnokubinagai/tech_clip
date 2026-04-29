@@ -1,6 +1,6 @@
 ---
 name: harness-e2e-shard-execution
-description: E2E (Maestro) を native parallel で実行し、per-flow 進捗を監視ループで報告する。Maestro の --device + --shard-split を使い、手動ポート管理は不要。
+description: E2E (Maestro) を自前並列方式で実行し、per-flow 進捗を監視ループで報告する。--shard-split は使用しない（gRPC UNAVAILABLE 回避）。round-robin でフローを device ごとに分割し独立 maestro test プロセスを起動する。
 triggers:
   - "harness-e2e-shard-execution"
   - "e2e shard"
@@ -11,7 +11,7 @@ triggers:
 
 # E2E Maestro 実行 + per-flow 進捗監視
 
-Maestro native parallel (`--device` + `--shard-split`) で E2E を実行し、ログファイルから per-flow 完了を検出して STATE_UPDATE を送信する。
+自前並列方式（`--device` 個別起動 + round-robin flow 分割）で E2E を実行し、ログファイルから per-flow 完了を検出して STATE_UPDATE を送信する。`--shard-split` は使用しない（Maestro の gRPC UNAVAILABLE バグ回避）。
 
 ## 前提パラメータ（呼び出し元が提供）
 
@@ -47,7 +47,8 @@ cd {worktree} && bash scripts/gate/run-maestro-and-create-marker.sh \
 
 **重要:**
 - `run_in_background=true` で起動する。ブロッキング実行すると SendMessage が送れない
-- `--device` にカンマ区切りで全 emulator を渡す。emulator が 2 台以上なら Maestro が自動で `--shard-split` する
+- `--device` にカンマ区切りで全 emulator を渡す。`run-maestro-and-create-marker.sh` がラウンドロビンで flow を分割し、各 device に独立した `maestro test` プロセスを背景起動する
+- `--shard-split` は使用しない（gRPC UNAVAILABLE バグ回避のため）
 - 旧形式の `--shard INDEX/TOTAL` は廃止済み。使わないこと
 - ポート管理・driver 起動は Maestro が内部で自動処理する。`adb forward` は不要
 
@@ -56,14 +57,19 @@ cd {worktree} && bash scripts/gate/run-maestro-and-create-marker.sh \
 スクリプトが `.claude/.e2e-progress.json` を作成する:
 ```json
 {
-  "log_file": "/tmp/maestro-log-<sha8>-<timestamp>.log",
-  "result_xml": "/tmp/maestro-result-<sha8>-<timestamp>.xml",
-  "debug_dir": "/tmp/maestro-debug-<sha8>-<timestamp>",
+  "log_file": "/tmp/maestro-log-<sha8>-<ts>-shard0.log",
+  "result_xml": "/tmp/maestro-result-<sha8>-<ts>.xml",
   "device_count": 2,
   "flow_count": 8,
-  "status": "running"  // → 完了後 "completed" に更新される
+  "status": "running",
+  "per_shard_logs": [
+    {"device": "emulator-5556", "log_file": "/tmp/...shard0.log", "result_xml": "/tmp/...shard0.xml"},
+    {"device": "emulator-5558", "log_file": "/tmp/...shard1.log", "result_xml": "/tmp/...shard1.xml"}
+  ]
 }
 ```
+
+`per_shard_logs` が存在する場合は配列の各エントリを読む。存在しない場合は従来の `log_file` を読む（後方互換）。
 
 **agent 制御フローでループする（Bash の while/until は禁止）:**
 
@@ -125,13 +131,13 @@ for i in 1..60:
 - **agent は監視ループ 1 iteration ごとに skill ツールに戻り**、Read + SendMessage を発行する
 - **`sleep 30` は単発 Bash コマンド** として呼ぶ。sleep 中に他のツール呼び出しをしない
 
-## Maestro native parallel のしくみ
+## 自前並列方式のしくみ
 
-- `maestro test --device "emu1,emu2" --shard-split 2 ./flows/` で Maestro が flow を自動分配
-- ポートは Maestro が内部で管理（`--port` フラグは存在しない）
-- `--shard-split N`: N 台の device に flow を均等分配
-- JUnit XML は全 flow 完了後に単一ファイルとして出力される
-- ログ（stdout）にはflow ごとの PASS/FAIL が逐次出力される
+- `run-maestro-and-create-marker.sh` が YAML ファイルを round-robin で分割し、device ごとに `maestro test --device <single_device> <flows...>` を背景起動
+- `--shard-split` は使用しない（Maestro の gRPC UNAVAILABLE バグ回避）
+- 各 shard は独立した JUnit XML `/tmp/maestro-result-<sha8>-<ts>-shard${N}.xml` に出力
+- `aggregate-e2e-shards.sh --shard-xmls ... --output-xml ...` で shard XML を結合して単一 RESULT_XML を生成
+- ログ（stdout）は各 shard ごとに `/tmp/maestro-log-<sha8>-<ts>-shard${N}.log` に出力
 
 ## CI 側（参考）
 
