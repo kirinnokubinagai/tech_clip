@@ -57,7 +57,8 @@ if [ -n "$SHARD_XMLS" ] || [ -n "$OUTPUT_XML" ]; then
   fi
 
   TMP_OUT="${OUTPUT_XML}.tmp.$$"
-  python3 - "$TMP_OUT" "${XML_LIST[@]}" <<'XMLPY'
+  PY_EXIT=0
+  python3 - "$TMP_OUT" "${XML_LIST[@]}" <<'XMLPY' || PY_EXIT=$?
 import sys
 try:
     import xml.etree.ElementTree as ET
@@ -102,8 +103,9 @@ with open(out_path, "wb") as f:
 
 sys.exit(1 if total_failures > 0 else 0)
 XMLPY
-  PY_EXIT=$?
-  mv "$TMP_OUT" "$OUTPUT_XML"
+  if [ -f "$TMP_OUT" ]; then
+    mv "$TMP_OUT" "$OUTPUT_XML"
+  fi
   if [ "$PY_EXIT" -ne 0 ]; then
     echo "ERROR: shard XML aggregation found failures (see $OUTPUT_XML)" >&2
     exit 1

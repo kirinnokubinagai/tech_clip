@@ -123,3 +123,5 @@ debug-output/
 local.db-shm
 local.db-wal
 .claude/tmp-*
+.claude/.e2e-debug.json
+.claude/.e2e-progress.json
