@@ -33,45 +33,66 @@ export EXPO_PUBLIC_REVENUECAT_ANDROID_API_KEY="your-revenuecat-android-api-key"
 export EXPO_PUBLIC_API_URL_ANDROID="http://10.0.2.2:${API_CI_PORT:-18787}"
 
 # Build and install development build.
-# Hybrid approach:
-#  1. Start expo run:android in background (Metro + build)
-#  2. Poll pidof to detect app startup
-#  3. Wait for "Bundled" log (Metro bundle delivery complete)
-#  4. Start Maestro tests
-# CI emulator は x86_64 のみ。ORG_GRADLE_PROJECT_reactNativeArchitectures を nix develop 内で
-# 直接指定しないと transitive native modules (reanimated, expo-modules-core 等) にも効かない。
+# Two-phase approach:
+#  1. Wait for Gradle build to complete + app to be installed
+#     (detect via Gradle "BUILD SUCCESSFUL" or pidof verification)
+#  2. Wait for Metro to deliver the JS bundle (log "Bundled")
+#  3. Start Maestro tests
+echo "[e2e] Gradle ビルド + アプリインストール + Metro バンドルを待機中..."
 EXPO_LOG="/tmp/expo-run-android-$$.log"
 nix develop --command bash -c "cd apps/mobile && ORG_GRADLE_PROJECT_reactNativeArchitectures=x86_64 pnpm expo run:android --variant debug" 2>&1 | tee "$EXPO_LOG" &
 EXPO_PID=$!
 
-# Wait for Metro to finish bundling (single combined loop)
-# "Bundled" in the log is a strictly stronger signal than pidof:
-# it implies the app is already running AND has received the JS bundle.
-echo "[e2e] ビルド完了・Metro バンドル配信を待機中..."
-MAX_WAIT=600  # 10 minutes — enough for cold Gradle build + Metro bundle
-WAITED=0
-while [ $WAITED -lt $MAX_WAIT ]; do
-  # If the build process crashed, exit early instead of waiting 600s
+# Phase 1: Wait for Gradle build to complete (watch for "BUILD SUCCESSFUL" in log)
+echo "[e2e] Phase 1: Gradle ビルド完了を待機中..."
+MAX_GRADLE_WAIT=1200  # 20 minutes for cold Gradle build + CMake compilation
+GRADLE_WAITED=0
+while [ $GRADLE_WAITED -lt $MAX_GRADLE_WAIT ]; do
+  # Check if build process is still running
   if ! kill -0 "$EXPO_PID" 2>/dev/null; then
-    echo "ERROR: Expo build process exited unexpectedly"
-    echo "[e2e] 最終 20 行のログ:"
-    tail -20 "$EXPO_LOG" || true
+    echo "ERROR: Expo build process exited unexpectedly during Gradle build"
+    echo "[e2e] 最終 30 行のログ:"
+    tail -30 "$EXPO_LOG" || true
     echo "1" > "test-results/maestro-exit-code${SHARD_SUFFIX}.txt"
     rm -f "$EXPO_LOG"
     exit 1
   fi
-  if grep -q "Bundled" "$EXPO_LOG" 2>/dev/null; then
-    echo "[e2e] Metro バンドル配信完了"
+  # Check for Gradle build completion markers
+  if grep -qE "BUILD SUCCESSFUL|Bundled" "$EXPO_LOG" 2>/dev/null; then
+    echo "[e2e] Phase 1: Gradle ビルド + Metro バンドル完了"
     break
   fi
   sleep 1
-  WAITED=$((WAITED + 1))
+  GRADLE_WAITED=$((GRADLE_WAITED + 1))
 done
 
-if [ $WAITED -ge $MAX_WAIT ]; then
-  echo "ERROR: App process did not start within ${MAX_WAIT}s"
-  echo "[e2e] 最終 20 行のログ:"
-  tail -20 "$EXPO_LOG" || true
+if [ $GRADLE_WAITED -ge $MAX_GRADLE_WAIT ]; then
+  echo "ERROR: Gradle build did not complete within ${MAX_GRADLE_WAIT}s"
+  echo "[e2e] 最終 30 行のログ:"
+  tail -30 "$EXPO_LOG" || true
+  echo "1" > "test-results/maestro-exit-code${SHARD_SUFFIX}.txt"
+  kill "$EXPO_PID" 2>/dev/null || true
+  rm -f "$EXPO_LOG"
+  exit 1
+fi
+
+# Phase 2: Verify app is running (pidof check with shorter timeout)
+echo "[e2e] Phase 2: アプリプロセス確認..."
+MAX_PIDOF_WAIT=60  # Should be quick now that build is done
+PIDOF_WAITED=0
+while [ $PIDOF_WAITED -lt $MAX_PIDOF_WAIT ]; do
+  if adb shell pidof com.techclip.app > /dev/null 2>&1; then
+    echo "[e2e] Phase 2: アプリプロセス確認完了"
+    break
+  fi
+  sleep 1
+  PIDOF_WAITED=$((PIDOF_WAITED + 1))
+done
+
+if [ $PIDOF_WAITED -ge $MAX_PIDOF_WAIT ]; then
+  echo "ERROR: App process not found within ${MAX_PIDOF_WAIT}s after build completed"
+  echo "[e2e] 最終 30 行のログ:"
+  tail -30 "$EXPO_LOG" || true
   echo "1" > "test-results/maestro-exit-code${SHARD_SUFFIX}.txt"
   kill "$EXPO_PID" 2>/dev/null || true
   rm -f "$EXPO_LOG"
@@ -80,14 +101,16 @@ fi
 
 rm -f "$EXPO_LOG"
 
-# Verify the app process is still running
+# Verify app is still running
 if ! adb shell pidof com.techclip.app > /dev/null 2>&1; then
   echo "ERROR: App process exited unexpectedly"
   echo "1" > "test-results/maestro-exit-code${SHARD_SUFFIX}.txt"
   kill "$EXPO_PID" 2>/dev/null || true
   exit 1
 fi
-echo "App is running and Metro bundling complete"
+
+echo "[e2e] ビルド・インストール・Metro バンドル配信完了"
+echo "App is running, ready to start Maestro tests"
 
 # Determine which flows to run for this shard
 SHARD_FLOWS=()
