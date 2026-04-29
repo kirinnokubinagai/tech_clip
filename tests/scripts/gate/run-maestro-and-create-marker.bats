@@ -12,7 +12,7 @@
   ! grep -E 'am instrument -w dev\.mobile\.maestro' scripts/gate/run-maestro-and-create-marker.sh
 }
 
-@test "shard-flows.sh を呼び出さない（自前並列方式で内部分配する）" {
+@test "shard-flows.sh を呼び出さない（--shard-split に委ねる）" {
   ! grep -E 'scripts/ci/shard-flows\.sh' scripts/gate/run-maestro-and-create-marker.sh
 }
 
@@ -25,29 +25,28 @@
   grep -E 'IFS=,' scripts/gate/run-maestro-and-create-marker.sh
 }
 
-@test "DEVICE_COUNT > 1 のとき --shard-split を使わない（自前並列方式）" {
-  ! grep -E '"--shard-split"' scripts/gate/run-maestro-and-create-marker.sh
+@test "DEVICE_COUNT > 1 のとき --shard-split を使う（JAVA_TOOL_OPTIONS IPv4 修正済みのため）" {
+  grep -E -- '--shard-split' scripts/gate/run-maestro-and-create-marker.sh
 }
 
-@test "DEVICE_COUNT > 1 のとき round-robin でフローを分割して各デバイスに振る" {
-  grep -E 'round.robin|ROUND_ROBIN|SHARD_IDX|flow_idx|FLOW_IDX' scripts/gate/run-maestro-and-create-marker.sh
+@test "DEVICE_COUNT > 1 のとき round-robin フロー分割を行わない（--shard-split に委ねる）" {
+  ! grep -E 'SHARD_IDX|ROUND_ROBIN' scripts/gate/run-maestro-and-create-marker.sh
 }
 
-@test "DEVICE_COUNT > 1 のとき各デバイスに独立した maestro test プロセスを並列起動する" {
-  grep -E '& $|&$' scripts/gate/run-maestro-and-create-marker.sh
-  grep -E '\bwait\b' scripts/gate/run-maestro-and-create-marker.sh
+@test "DEVICE_COUNT > 1 のとき独立した maestro test プロセスを並列起動しない（--shard-split に委ねる）" {
+  ! grep -E 'SHARD_PIDS' scripts/gate/run-maestro-and-create-marker.sh
 }
 
-@test "各 shard に独立した JUnit XML ファイルを出力する（shard\${N}.xml）" {
-  grep -E 'shard\${N}|shard\${[A-Z_]' scripts/gate/run-maestro-and-create-marker.sh
+@test "Maestro が単一 JUnit XML を出力する（--shard-split は単一 XML を生成）" {
+  grep -E 'RESULT_XML' scripts/gate/run-maestro-and-create-marker.sh
 }
 
-@test "各 shard に独立した debug-output ディレクトリを使用する" {
-  grep -E 'shard\${N}|DEBUG_DIR.*shard|shard.*debug' scripts/gate/run-maestro-and-create-marker.sh
+@test "DEBUG_DIR を maestro test に渡す" {
+  grep -E 'debug-output|DEBUG_DIR' scripts/gate/run-maestro-and-create-marker.sh
 }
 
-@test "全 shard の exit code を集計して 1 つでも非ゼロなら全体 FAIL" {
-  grep -E 'exit_codes|EXIT_CODES|FAIL_COUNT|fail_count|SHARD_FAIL|OVERALL_EXIT' scripts/gate/run-maestro-and-create-marker.sh
+@test "--shard-split では maestro コマンドの exit code をそのまま使う（手動集計なし）" {
+  ! grep -E 'OVERALL_EXIT|exit_code|FAIL_COUNT' scripts/gate/run-maestro-and-create-marker.sh
 }
 
 @test "maestro test に --device を必ず渡す" {
