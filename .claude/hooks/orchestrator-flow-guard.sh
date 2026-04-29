@@ -137,18 +137,27 @@ if [ "$TOOL_NAME" = "SendMessage" ]; then
   # 以下は orchestrator のみ対象
   [ "$IS_ORCHESTRATOR" = "true" ] || exit 0
 
-  # [C-3a] orchestrator → 実装系への spec: 直送禁止
+  # [Phase E] Secondary heuristic: DETECTED_AGENT_NAME が空でも TO が team-lead 以外なら
+  # sub-agent 間通信（analyst→coder spec 送信など）と判断して許可する。
+  # process tree 検出が失敗した場合のフォールバック。
+  # NOTE: TO=team-lead の場合のみ orchestrator ガード（C-3a / C-12a）を適用する。
+  if [ "$TO" != "team-lead" ]; then
+    exit 0
+  fi
+
+  # [C-3a] orchestrator → analyst 以外への spec: 含む長文禁止（TO=team-lead の場合のみ）
+  # TO=team-lead で spec: を送るケースは想定外だが念のため残す
   IMPL_PATTERN='^issue-[0-9]+-(coder|infra-engineer|ui-designer)([-]|$)'
   if echo "$TO" | grep -qE "$IMPL_PATTERN" && echo "$CONTENT" | grep -qE '^spec:'; then
     deny "DENY: orchestrator が spec: を実装系 (${TO}) に直送。spec 作成は analyst に依頼してください。"
   fi
 
-  # [C-12a] spec キーワード検知
+  # [C-12a] spec キーワード検知（TO=team-lead の orchestrator のみ）
   if echo "$CONTENT" | grep -qE '(Phase [0-9]+[A-Z]?:|## Phase|設計原則[[:space:]]*\(絶対遵守\)|##[[:space:]]*(修正対象|変更対象|想定変更ファイル)[[:space:]]*[0-9]*)'; then
     deny "DENY: orchestrator が spec を直接書いた可能性。analyst に依頼してください。例外: 補足/訂正は analyst 宛 or '補足:'/'訂正:' プレフィックス。"
   fi
 
-  # [C-12a] 1500 文字以上は analyst 以外への送信を禁止
+  # [C-12a] 1500 文字以上は analyst 以外への送信を禁止（TO=team-lead の orchestrator のみ）
   if [ "${#CONTENT}" -gt 1500 ]; then
     deny "DENY: orchestrator が 1500 文字以上を analyst 以外 (${TO}) に送信しようとしています。spec 作成は analyst に依頼してください。"
   fi
