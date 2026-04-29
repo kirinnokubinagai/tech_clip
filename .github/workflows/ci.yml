@@ -155,6 +155,8 @@ jobs:
         run: nix develop .#ci --command pnpm typecheck
       - name: Test
         run: nix develop .#ci --command ./scripts/run-and-fail-on-stderr.sh pnpm test
+      - name: Bats
+        run: nix develop .#ci --command bats tests/scripts/ tests/hooks/
       # Audit ステップは npm が audit エンドポイント (quick / bulk) を 410 Gone に
       # したため pnpm audit が CI 上で常に失敗するようになった。pnpm 側が新 bulk
       # advisory API に追従するまで一時無効化する。

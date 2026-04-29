@@ -92,6 +92,10 @@ if [ "${_SKIP_HEAVY_CHECKS}" = "0" ]; then
     echo "Test失敗。stderr がある場合は内容確認後に TECH_CLIP_ALLOW_TEST_STDERR=1 を付けて再pushしてください。"
     exit 1
   }
+
+  echo "  bats..."
+  command -v bats >/dev/null || { echo "ERROR: bats not found. nix develop で環境に入ってから実行してください。"; exit 1; }
+  bats tests/scripts/ tests/hooks/ || { echo "bats失敗。修正してからpushしてください。"; exit 1; }
 fi
 
 echo "全チェック通過 (e2e は CI/stage→main で実行されます)"
