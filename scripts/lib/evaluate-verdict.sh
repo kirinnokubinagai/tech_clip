@@ -56,7 +56,7 @@ evaluate_verdict() {
   fi
 
   # --- 条件1: 対象 commit の全 workflow run が completed かつ全件 success ---
-  local RUN_JSON ALL_RUNS RUN RUN_ID RUN_STATUS RUN_CONCLUSION
+  local RUN_JSON ALL_RUNS RUN RUN_ID
   RUN_JSON=$(gh api "repos/$OWNER/$REPO/actions/runs?head_sha=$PUSH_SHA&per_page=100" 2>/dev/null || echo '{"workflow_runs":[]}')
 
   # PR に紐づく全 run を取得
@@ -97,8 +97,6 @@ evaluate_verdict() {
   fi
 
   RUN_ID=$(echo "$RUN" | jq -r '.id // empty' 2>/dev/null || echo "")
-  RUN_STATUS=$(echo "$RUN" | jq -r '.status // empty' 2>/dev/null || echo "")
-  RUN_CONCLUSION=$(echo "$RUN" | jq -r '.conclusion // empty' 2>/dev/null || echo "")
 
   if [ -z "$RUN_ID" ]; then
     echo "pending"
