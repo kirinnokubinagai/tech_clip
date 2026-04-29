@@ -2,17 +2,19 @@
 # run-maestro-and-create-marker.sh: Maestro E2E 実行 → create-e2e-marker.sh 呼び出し
 #
 # 使い方:
-#   bash scripts/gate/run-maestro-and-create-marker.sh --agent <name> [--base-ref <ref>] [--shard <N>/<TOTAL>]
+#   bash scripts/gate/run-maestro-and-create-marker.sh --agent <name> [--base-ref <ref>] \
+#     [--shard all/<N>] [--device <DEVICE_LIST>]
 #
-# --shard を指定した場合:
-#   - 該当 shard の flow のみ実行
-#   - 結果は /tmp/maestro-result-${SHA8}-${TS}-shard${N}of${TOTAL}.xml として保存
-#   - .claude/.e2e-shard-${N}of${TOTAL}.json に shard 単位の結果を書き出す（aggregate-e2e-shards.sh で集約）
-#   - 全 shard が揃うのを待つのは呼び出し側の責任
+# --device: 単一 (emulator-5554) またはカンマ区切り (emulator-5554,emulator-5556)
+#   省略時は adb devices で自動検出:
+#     0 台 → エラー終了
+#     1 台 → シングル実行
+#     2 台以上 → --shard-split N の並列実行
 #
-# --shard 省略時 (= --shard 1/1):
-#   - 全 flow を実行
-#   - 直接 .claude/.e2e-passed marker を生成 (create-e2e-marker.sh 経由)
+# --shard all/N: N 台での並列実行を明示指定。N が DEVICE_COUNT と一致しない場合エラー終了。
+#   省略時は auto-detect で決定。
+#
+# ポート管理・driver 起動は Maestro が内部で処理するため手動 adb forward 不要。
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -38,8 +40,16 @@ if [ -z "$AGENT_NAME" ]; then
   exit 1
 fi
 
-HEAD_SHA=$(git -C "$REPO_ROOT" rev-parse HEAD)
-TIMESTAMP=$(date +%Y%m%d-%H%M%S)
+# --shard 検証: all/N のみ許容（INDEX/TOTAL 形式は廃止）
+SHARD_TOTAL=1
+if [ -n "$SHARD_SPEC" ]; then
+  if echo "$SHARD_SPEC" | grep -qE '^all/[1-9][0-9]*$'; then
+    SHARD_TOTAL="${SHARD_SPEC#*/}"
+  else
+    echo "ERROR: invalid --shard spec: '$SHARD_SPEC' (only 'all/N' or omit is accepted)" >&2
+    exit 1
+  fi
+fi
 
 # emulator 確認
 if ! command -v maestro &>/dev/null; then
@@ -53,69 +63,60 @@ if [ ! -d "$MAESTRO_DIR" ]; then
   exit 1
 fi
 
-# shard 指定なし → emulator 数を自動検出して maestro --shard-split で並列実行する
-# (CI matrix では --shard 1/2 + --shard 2/2 のように呼び出し側が分散させるが、
-#  ローカル開発者は本 script を 1 回呼んだだけで全 emulator を活用したい)
-if [ -z "$SHARD_SPEC" ]; then
-  EMU_COUNT=$(adb devices 2>/dev/null | grep -cE '^emulator-[0-9]+\s+device' || echo 0)
-  if [ "$EMU_COUNT" -gt 1 ]; then
-    SHARD_SPEC="all/${EMU_COUNT}"
-    echo "[gate] no --shard; auto-detected ${EMU_COUNT} emulators → using --shard-split ${EMU_COUNT}" >&2
-  else
-    SHARD_SPEC="1/1"
+# DEVICE 自動検出（空のとき）
+if [ -z "$DEVICE" ]; then
+  mapfile -t DETECTED < <(adb devices 2>/dev/null \
+    | grep -E '^emulator-[0-9]+\s+device' \
+    | awk '{print $1}')
+  if [ "${#DETECTED[@]}" -eq 0 ]; then
+    echo "ERROR: no emulator detected. Start an AVD first." >&2
+    exit 1
   fi
+  DEVICE="$(IFS=,; echo "${DETECTED[*]}")"
+  echo "[gate] --device not specified, auto-detected: $DEVICE" >&2
 fi
 
-SHARD_MODE="single"  # "single" | "all"
-if echo "$SHARD_SPEC" | grep -qE '^all/[1-9][0-9]*$'; then
-  SHARD_MODE="all"
-  SHARD_INDEX="all"
-  SHARD_TOTAL="${SHARD_SPEC#*/}"
-elif echo "$SHARD_SPEC" | grep -qE '^[1-9][0-9]*/[1-9][0-9]*$'; then
-  SHARD_INDEX="${SHARD_SPEC%/*}"
-  SHARD_TOTAL="${SHARD_SPEC#*/}"
-else
-  echo "ERROR: invalid --shard spec: $SHARD_SPEC (expected: <INDEX>/<TOTAL> or all/<TOTAL>)" >&2
+# DEVICE_COUNT 算出（カンマ区切りの数 + 1）
+DEVICE_COUNT=$(awk -F, '{print NF}' <<< "$DEVICE")
+
+# --shard all/N 明示時: N と DEVICE_COUNT の整合性チェック（SHARD_TOTAL vs DEVICE_COUNT）
+if [ -n "$SHARD_SPEC" ] && [ "$SHARD_TOTAL" -ne "$DEVICE_COUNT" ]; then
+  echo "ERROR: --shard all/$SHARD_TOTAL specified but DEVICE_COUNT=$DEVICE_COUNT (mismatch)" >&2
+  echo "  DEVICE=$DEVICE" >&2
   exit 1
 fi
 
-# 担当 yaml を取得 (all mode は全 yaml、maestro が --shard-split で内部分割)
+HEAD_SHA=$(git -C "$REPO_ROOT" rev-parse HEAD)
+TIMESTAMP=$(date +%Y%m%d-%H%M%S)
+
+# app の cache + Keystore を消去する (前回テストの auth token が
+# Android Keystore = expo-secure-store に残ると「セッション期限切れ」エラーで
+# login が阻害されるため。maestro `clearState: true` は app data のみで Keystore は消えない)
+APP_PACKAGE="${SHARD_APP_ID:-com.techclip.app}"
+echo "[gate] ${APP_PACKAGE} cache + Keystore を消去 (devices: $DEVICE)..." >&2
+IFS=',' read -ra DEVICE_LIST <<< "$DEVICE"
+for dev in "${DEVICE_LIST[@]}"; do
+  adb -s "$dev" shell pm clear "$APP_PACKAGE" >/dev/null 2>&1 &
+done
+wait
+
+# YAML ファイル一覧（全 flow）
 YAML_FILES=()
-if [ "$SHARD_MODE" = "all" ]; then
-  while IFS= read -r f; do
-    YAML_FILES+=("$f")
-  done < <(find "$MAESTRO_DIR" -maxdepth 1 -name "*.yaml" ! -name ".env.yaml" ! -name "config.yaml" | sort)
-else
-  while IFS= read -r f; do
-    [ -n "$f" ] && YAML_FILES+=("$f")
-  done < <(bash "${REPO_ROOT}/scripts/ci/shard-flows.sh" --shard "$SHARD_SPEC" --dir "$MAESTRO_DIR")
-fi
+while IFS= read -r f; do
+  YAML_FILES+=("$f")
+done < <(find "$MAESTRO_DIR" -maxdepth 1 -name "*.yaml" ! -name ".env.yaml" ! -name "config.yaml" | sort)
 
 if [ "${#YAML_FILES[@]}" -eq 0 ]; then
-  echo "WARNING: no maestro yaml files for shard $SHARD_SPEC" >&2
-  if [ "$SHARD_TOTAL" -eq 1 ]; then
-    # 全 shard で 0 件 → e2e gate を skip 扱い
-    bash "${SCRIPT_DIR}/create-e2e-marker.sh" --agent "$AGENT_NAME" --base-ref "$BASE_REF"
-    exit 0
-  fi
-  # 多シャードでこの shard だけ 0 件 (例: TOTAL > flow 数) は意味なしだが PASS 扱いで続行
+  echo "WARNING: no maestro yaml files found in $MAESTRO_DIR" >&2
+  bash "${SCRIPT_DIR}/create-e2e-marker.sh" --agent "$AGENT_NAME" --base-ref "$BASE_REF"
+  exit 0
 fi
 
-if [ "$SHARD_TOTAL" -eq 1 ] || [ "$SHARD_MODE" = "all" ]; then
-  RESULT_XML="/tmp/maestro-result-${HEAD_SHA:0:8}-${TIMESTAMP}.xml"
-else
-  RESULT_XML="/tmp/maestro-result-${HEAD_SHA:0:8}-${TIMESTAMP}-shard${SHARD_INDEX}of${SHARD_TOTAL}.xml"
-fi
+RESULT_XML="/tmp/maestro-result-${HEAD_SHA:0:8}-${TIMESTAMP}.xml"
 
-if [ "$SHARD_MODE" = "all" ]; then
-  echo "Running maestro tests: --shard-split ${SHARD_TOTAL} (${#YAML_FILES[@]} flows in parallel)" >&2
-else
-  echo "Running maestro tests: shard ${SHARD_SPEC} (${#YAML_FILES[@]} flows)" >&2
-fi
+echo "Running maestro tests: device=$DEVICE count=$DEVICE_COUNT (${#YAML_FILES[@]} flows)" >&2
 
-# config.yaml の env: ブロックを --env 引数に展開する。
-# (--shard-split / 多 yaml 渡しでは maestro が config.yaml の env を自動マージ
-#  しないため、各 flow yaml の `${TEST_EMAIL}` 等を解決するために明示渡し必要)
+# config.yaml の env: ブロックを --env 引数に展開する
 ENV_ARGS=()
 CONFIG_FILE="${MAESTRO_DIR}/config.yaml"
 if [ -f "$CONFIG_FILE" ]; then
@@ -139,7 +140,7 @@ if [ -f "$CONFIG_FILE" ]; then
     fi
   done < "$CONFIG_FILE"
 fi
-# .env.yaml が存在すれば追加で展開 (機密情報の上書き用)
+# .env.yaml が存在すれば追加で展開（機密情報の上書き用）
 ENV_FILE="${MAESTRO_DIR}/.env.yaml"
 if [ -f "$ENV_FILE" ]; then
   while IFS= read -r line; do
@@ -153,75 +154,18 @@ if [ -f "$ENV_FILE" ]; then
   done < "$ENV_FILE"
 fi
 
-# debug-output / screenshot は per-flow に保存して triage を容易にする
-DEBUG_DIR="/tmp/maestro-debug-${HEAD_SHA:0:8}-${TIMESTAMP}-shard${SHARD_INDEX}of${SHARD_TOTAL}"
+# debug-output ディレクトリ
+DEBUG_DIR="/tmp/maestro-debug-${HEAD_SHA:0:8}-${TIMESTAMP}-shard_allof${DEVICE_COUNT}"
 mkdir -p "$DEBUG_DIR"
 
-# --device 未指定かつ emulator が 1 台のみなら自動選択
-if [ -z "$DEVICE" ]; then
-  AUTO_DEVICE=$(adb devices 2>/dev/null | grep -E '^emulator-[0-9]+\s+device' | awk '{print $1}' | head -1 || true)
-  if [ -n "$AUTO_DEVICE" ]; then
-    DEVICE="$AUTO_DEVICE"
-    echo "[gate] --device not specified, auto-selected: $DEVICE" >&2
-  fi
-fi
-
-# shard ごとに独立したローカルポートを割り当て（並列実行時のポート衝突防止）
-# shard 1 → 7001, shard 2 → 7002, ... シングル実行 (SHARD_INDEX=1/1) も 7001 で統一
-MAESTRO_PORT=$((7000 + SHARD_INDEX))
-# SHARD_INDEX が "all" の場合（all mode）はデフォルト 7001
-if [ "$SHARD_INDEX" = "all" ]; then
-  MAESTRO_PORT=7001
-fi
-
-# maestro ドライバーが起動していなければ再起動する
-if [ -n "$DEVICE" ]; then
-  if ! adb -s "$DEVICE" shell "ps -A 2>/dev/null | grep -q dev.mobile.maestro" 2>/dev/null; then
-    echo "[gate] maestro driver not running on $DEVICE, starting..." >&2
-    adb -s "$DEVICE" shell "am force-stop dev.mobile.maestro" 2>/dev/null || true
-    adb -s "$DEVICE" forward tcp:$MAESTRO_PORT tcp:7001 2>/dev/null || true
-    adb -s "$DEVICE" shell "am instrument -w dev.mobile.maestro.test/androidx.test.runner.AndroidJUnitRunner" \
-      > "/tmp/maestro-driver-${DEVICE}.log" 2>&1 &
-    sleep 8
-    echo "[gate] maestro driver started on $DEVICE (port=$MAESTRO_PORT)" >&2
-  else
-    adb -s "$DEVICE" forward tcp:$MAESTRO_PORT tcp:7001 2>/dev/null || true
-    echo "[gate] maestro driver already running on $DEVICE (port=$MAESTRO_PORT)" >&2
-  fi
-fi
-
-# app の cache + Keystore を消去する (前回テストの auth token が
-# Android Keystore = expo-secure-store に残ると「セッション期限切れ」エラーで
-# login が阻害されるため。maestro `clearState: true` は app data のみで Keystore は
-# 消えない)。
-APP_PACKAGE="${SHARD_APP_ID:-com.techclip.app}"
-if [ -n "$DEVICE" ]; then
-  # device 指定時は自分の emulator のみクリア（並列実行時に他 shard のデータを消さない）
-  echo "[gate] ${DEVICE} の ${APP_PACKAGE} cache + Keystore を消去..." >&2
-  adb -s "$DEVICE" shell pm clear "$APP_PACKAGE" >/dev/null 2>&1
-else
-  # device 未指定時のみ全 emulator をクリア（シングル実行 = 安全）
-  echo "[gate] 全 emulator の ${APP_PACKAGE} cache + Keystore を消去..." >&2
-  while IFS= read -r line; do
-    port=$(echo "$line" | grep -oE 'emulator-[0-9]+' || true)
-    [ -z "$port" ] && continue
-    adb -s "$port" shell pm clear "$APP_PACKAGE" >/dev/null 2>&1 &
-  done < <(adb devices 2>/dev/null | grep -E '^emulator-[0-9]+\s+device' || true)
-  wait
-fi
-
-# all mode は --shard-split で maestro 内部並列、single mode は全 flow を順次実行
+# --shard-split: DEVICE_COUNT > 1 のときのみ付ける
 SHARD_SPLIT_ARGS=()
-if [ "$SHARD_MODE" = "all" ] && [ "$SHARD_TOTAL" -gt 1 ]; then
-  SHARD_SPLIT_ARGS+=("--shard-split" "$SHARD_TOTAL")
+if [ "$DEVICE_COUNT" -gt 1 ]; then
+  SHARD_SPLIT_ARGS+=("--shard-split" "$DEVICE_COUNT")
 fi
-
-DEVICE_ARGS=()
-[ -n "$DEVICE" ] && DEVICE_ARGS+=("--device" "$DEVICE")
 
 (cd "$REPO_ROOT" && direnv exec "$REPO_ROOT" maestro test \
-  "${DEVICE_ARGS[@]}" \
-  --port $MAESTRO_PORT \
+  --device "$DEVICE" \
   "${SHARD_SPLIT_ARGS[@]}" \
   --format junit \
   --output "$RESULT_XML" \
@@ -234,73 +178,19 @@ if [ ! -f "$RESULT_XML" ]; then
   exit 1
 fi
 
-# debug-output の場所を triage script で参照できるよう metadata に書き出す
+# debug-index を show-e2e-failures.sh 互換の形式で書き出す
 mkdir -p "${REPO_ROOT}/.claude"
-DEBUG_INDEX_NAME="${SHARD_INDEX}of${SHARD_TOTAL}"
-DEBUG_INDEX="${REPO_ROOT}/.claude/.e2e-debug-shard${DEBUG_INDEX_NAME}.json"
-SHARD_INDEX_JSON="$SHARD_INDEX"
-[ "$SHARD_INDEX" = "all" ] && SHARD_INDEX_JSON='"all"' || SHARD_INDEX_JSON="$SHARD_INDEX"
+DEBUG_INDEX="${REPO_ROOT}/.claude/.e2e-debug-shard_allof${DEVICE_COUNT}.json"
 jq -n \
   --arg result_xml "$RESULT_XML" \
   --arg debug_dir "$DEBUG_DIR" \
-  --arg shard_index "$SHARD_INDEX" \
-  --argjson shard_total "$SHARD_TOTAL" \
+  --arg shard_index "all" \
+  --argjson shard_total "$DEVICE_COUNT" \
   '{result_xml: $result_xml, debug_dir: $debug_dir, shard_index: $shard_index, shard_total: $shard_total}' \
   > "$DEBUG_INDEX"
 
-# 単一シャード or all mode (= 内部 --shard-split 並列) はそのまま marker 作成
-if [ "$SHARD_TOTAL" -eq 1 ] || [ "$SHARD_MODE" = "all" ]; then
-  bash "${SCRIPT_DIR}/create-e2e-marker.sh" \
-    --agent "$AGENT_NAME" \
-    --maestro-result "$RESULT_XML" \
-    --base-ref "$BASE_REF"
-  exit $?
-fi
-
-# 多シャード: shard 単位の結果を JSON で .claude/ に書き出す
-SHARD_JSON="${REPO_ROOT}/.claude/.e2e-shard-${SHARD_INDEX}of${SHARD_TOTAL}.json"
-mkdir -p "${REPO_ROOT}/.claude"
-
-FLOWS_TOTAL=$(grep -oE 'tests="[0-9]+"' "$RESULT_XML" | head -1 | grep -oE '[0-9]+' || echo 0)
-FLOWS_FAILED=$(grep -oE 'failures="[0-9]+"' "$RESULT_XML" | head -1 | grep -oE '[0-9]+' || echo 0)
-FLOWS_ERRORS=$(grep -oE 'errors="[0-9]+"' "$RESULT_XML" | head -1 | grep -oE '[0-9]+' || echo 0)
-FLOWS_PASSED=$((FLOWS_TOTAL - FLOWS_FAILED - FLOWS_ERRORS))
-COMPLETED_AT=$(date -u +%FT%TZ)
-
-if [ "$FLOWS_FAILED" -ne 0 ] || [ "$FLOWS_ERRORS" -ne 0 ]; then
-  STATUS="FAIL"
-else
-  STATUS="PASS"
-fi
-
-jq -n \
-  --arg head_sha "$HEAD_SHA" \
-  --arg agent "$AGENT_NAME" \
-  --arg completed_at "$COMPLETED_AT" \
-  --arg log_path "$RESULT_XML" \
-  --arg status "$STATUS" \
-  --argjson shard_index "$SHARD_INDEX" \
-  --argjson shard_total "$SHARD_TOTAL" \
-  --argjson flows_passed "$FLOWS_PASSED" \
-  --argjson flows_total "$FLOWS_TOTAL" \
-  --argjson flows_failed "$FLOWS_FAILED" \
-  --argjson flows_errors "$FLOWS_ERRORS" \
-  '{
-    head_sha: $head_sha,
-    agent: $agent,
-    completed_at: $completed_at,
-    log_path: $log_path,
-    status: $status,
-    shard_index: $shard_index,
-    shard_total: $shard_total,
-    flows_passed: $flows_passed,
-    flows_total: $flows_total,
-    flows_failed: $flows_failed,
-    flows_errors: $flows_errors
-  }' > "$SHARD_JSON"
-
-echo "shard result written: $SHARD_JSON (status=$STATUS flows=$FLOWS_PASSED/$FLOWS_TOTAL)" >&2
-
-if [ "$STATUS" != "PASS" ]; then
-  exit 1
-fi
+bash "${SCRIPT_DIR}/create-e2e-marker.sh" \
+  --agent "$AGENT_NAME" \
+  --maestro-result "$RESULT_XML" \
+  --base-ref "$BASE_REF"
+exit $?

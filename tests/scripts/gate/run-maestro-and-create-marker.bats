@@ -1,22 +1,54 @@
 #!/usr/bin/env bats
 
-@test "shard index ごとに異なるポートフォワードを使う (shard 1 → 7001, shard 2 → 7002)" {
-  grep -E 'MAESTRO_PORT=\$\(\(7000 \+ SHARD_INDEX\)\)' scripts/gate/run-maestro-and-create-marker.sh
+@test "MAESTRO_PORT 変数を使っていない（Maestro 内部のポート管理に委ねる）" {
+  ! grep -E '^\s*MAESTRO_PORT=' scripts/gate/run-maestro-and-create-marker.sh
 }
 
-@test "ポートフォワードに MAESTRO_PORT 変数を使っている" {
-  grep -E 'forward tcp:\$MAESTRO_PORT tcp:7001' scripts/gate/run-maestro-and-create-marker.sh
+@test "手動 adb forward を行わない（Maestro が内部で処理）" {
+  ! grep -E 'adb (-s "\$DEVICE" )?forward tcp:' scripts/gate/run-maestro-and-create-marker.sh
 }
 
-@test "maestro test コマンドに --port フラグを使っていない（Maestro 2.4.x には存在しないフラグ）" {
-  ! grep -E -- '--port ' scripts/gate/run-maestro-and-create-marker.sh
+@test "am instrument による maestro driver 手動起動を行わない" {
+  ! grep -E 'am instrument -w dev\.mobile\.maestro' scripts/gate/run-maestro-and-create-marker.sh
 }
 
-@test "DEVICE 指定時は自分の emulator のみ pm clear する" {
-  grep -E 'if \[ -n "\$DEVICE" \]' scripts/gate/run-maestro-and-create-marker.sh
-  grep -E 'adb -s "\$DEVICE" shell pm clear' scripts/gate/run-maestro-and-create-marker.sh
+@test "shard-flows.sh を呼び出さない（Maestro --shard-split が内部分配する）" {
+  ! grep -E 'scripts/ci/shard-flows\.sh' scripts/gate/run-maestro-and-create-marker.sh
 }
 
-@test "DEVICE 未指定時（シングル実行）は全 emulator を pm clear する（後方互換）" {
-  grep -E "# device 未指定時のみ全 emulator をクリア" scripts/gate/run-maestro-and-create-marker.sh
+@test "--shard all/N 形式が受け入れられる仕様を持つ" {
+  grep -F 'all/N' scripts/gate/run-maestro-and-create-marker.sh
+}
+
+@test "DEVICE が空のとき adb devices で全 emulator を自動検出してカンマ結合する" {
+  grep -E 'adb devices' scripts/gate/run-maestro-and-create-marker.sh
+  grep -E 'IFS=,' scripts/gate/run-maestro-and-create-marker.sh
+}
+
+@test "DEVICE_COUNT > 1 のとき --shard-split を付ける" {
+  grep -E 'SHARD_SPLIT_ARGS\+=\("--shard-split"' scripts/gate/run-maestro-and-create-marker.sh
+}
+
+@test "maestro test に --device を必ず渡す" {
+  grep -F -- '--device "$DEVICE"' scripts/gate/run-maestro-and-create-marker.sh
+}
+
+@test "DEVICE 指定時は自分の emulator のみ pm clear する（並列実行で他 shard に影響を与えない）" {
+  grep -E 'pm clear' scripts/gate/run-maestro-and-create-marker.sh
+}
+
+@test "create-e2e-marker.sh を呼び出して .e2e-passed を生成する（all モード共通）" {
+  grep -E 'create-e2e-marker\.sh' scripts/gate/run-maestro-and-create-marker.sh
+}
+
+@test ".claude/.e2e-shard-<N>of<TOTAL>.json の手動書き出しを行わない（Maestro 1 プロセス内並列のため）" {
+  ! grep -E '\.claude/\.e2e-shard-' scripts/gate/run-maestro-and-create-marker.sh
+}
+
+@test "adb devices で 0 台のときエラー終了する" {
+  grep -E 'no emulator detected|ERROR.*emulator' scripts/gate/run-maestro-and-create-marker.sh
+}
+
+@test "--shard all/N の N が DEVICE_COUNT と一致しない場合エラー終了する" {
+  grep -E 'SHARD_TOTAL.*DEVICE_COUNT|DEVICE_COUNT.*SHARD_TOTAL' scripts/gate/run-maestro-and-create-marker.sh
 }
