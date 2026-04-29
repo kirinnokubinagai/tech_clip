@@ -7,7 +7,7 @@
 SCRIPT="$(cd "$(dirname "$BATS_TEST_FILENAME")/../.." && pwd)/.claude/hooks/dangerous-command-guard.sh"
 
 setup() {
-    TMPDIR=$(mktemp -d)
+    TMPDIR="$BATS_TEST_TMPDIR"
     REPO_DIR="$TMPDIR/main"
 
     mkdir -p "$REPO_DIR"
@@ -19,9 +19,6 @@ setup() {
     git -C "$REPO_DIR" commit -m "initial commit"
 }
 
-teardown() {
-    rm -rf "$TMPDIR"
-}
 
 # ARGUMENTS JSON を組み立てて hook を実行するヘルパー
 run_hook() {

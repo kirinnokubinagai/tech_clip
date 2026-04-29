@@ -7,7 +7,7 @@
 SCRIPT="$(cd "$(dirname "$BATS_TEST_FILENAME")/../.." && pwd)/.claude/hooks/pre-push-review-guard.sh"
 
 setup() {
-    TMPDIR=$(mktemp -d)
+    TMPDIR="$BATS_TEST_TMPDIR"
     REPO_DIR="$TMPDIR/main"
     WORKTREE_BASE="$TMPDIR"
 
@@ -20,9 +20,6 @@ setup() {
     git -C "$REPO_DIR" commit -m "initial commit"
 }
 
-teardown() {
-    rm -rf "$TMPDIR"
-}
 
 # ARGUMENTSを設定してスクリプトをworktreeから実行するヘルパー
 run_script_with_args() {

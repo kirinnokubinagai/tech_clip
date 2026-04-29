@@ -8,7 +8,7 @@ SCRIPT="$(cd "$(dirname "$BATS_TEST_FILENAME")/../.." && pwd)/.claude/hooks/pre-
 RULES="$(cd "$(dirname "$BATS_TEST_FILENAME")/../.." && pwd)/.claude/gate-rules.json"
 
 setup() {
-    TMPDIR=$(mktemp -d)
+    TMPDIR="$BATS_TEST_TMPDIR"
     REPO_DIR="$TMPDIR/main"
     WORKTREE_BASE="$TMPDIR"
 
@@ -21,9 +21,6 @@ setup() {
     git -C "$REPO_DIR" commit -m "initial commit"
 }
 
-teardown() {
-    rm -rf "$TMPDIR"
-}
 
 run_script_with_args() {
     local args_json="$1"

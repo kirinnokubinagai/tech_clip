@@ -7,7 +7,7 @@
 SCRIPT="$(cd "$(dirname "$BATS_TEST_FILENAME")/../.." && pwd)/scripts/check-executable-shell-files.sh"
 
 setup() {
-    TMPDIR=$(mktemp -d)
+    TMPDIR="$BATS_TEST_TMPDIR"
     REPO_DIR="$TMPDIR/repo"
 
     mkdir -p "$REPO_DIR/scripts"
@@ -16,9 +16,6 @@ setup() {
     git -C "$REPO_DIR" config user.name "Test User"
 }
 
-teardown() {
-    rm -rf "$TMPDIR"
-}
 
 run_checker() {
     (cd "$REPO_DIR" && bash "$SCRIPT")

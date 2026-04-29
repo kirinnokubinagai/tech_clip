@@ -7,7 +7,7 @@
 SCRIPT="$(cd "$(dirname "$BATS_TEST_FILENAME")/../.." && pwd)/.claude/hooks/orchestrator-direct-edit-guard.sh"
 
 setup() {
-    TMPDIR=$(mktemp -d)
+    TMPDIR="$BATS_TEST_TMPDIR"
     REPO_DIR="$TMPDIR/main"
 
     mkdir -p "$REPO_DIR"
@@ -19,9 +19,6 @@ setup() {
     git -C "$REPO_DIR" commit -m "initial commit"
 }
 
-teardown() {
-    rm -rf "$TMPDIR"
-}
 
 # stdin に tool_input.file_path 形式の JSON を渡してスクリプトを実行するヘルパー
 # 注意: このヘルパーは内部で `run bash -c ...` を呼ぶため、
