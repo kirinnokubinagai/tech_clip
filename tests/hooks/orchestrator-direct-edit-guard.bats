@@ -467,7 +467,59 @@ run_script_with_file() {
 
 # --- ブランチ判定ロジック ---
 
-@test "worktreeの非mainブランチではapps/配下のソースファイル編集が許可されること" {
+@test "orchestratorは非mainブランチ（worktree）でもapps/配下のソースファイル編集がブロックされること [step 6]" {
+    # Arrange: step 6 の DENY を確認 — orchestrator はソースファイルを直接編集できない
+    git -C "$REPO_DIR" checkout -b feature/test-branch
+    local file_path="$REPO_DIR/apps/api/src/index.ts"
+
+    # Act
+    run_script_with_file "$file_path"
+
+    # Assert
+    [ "$status" -eq 2 ]
+    [[ "${output}" == *"DENY"* ]]
+}
+
+@test "orchestratorは非mainブランチ（worktree）でもpackages/配下の編集がブロックされること [step 6]" {
+    # Arrange: step 6 の DENY を確認 — packages/ もソースファイルとして扱われる
+    git -C "$REPO_DIR" checkout -b feature/packages-branch
+    local file_path="$REPO_DIR/packages/shared/src/index.ts"
+
+    # Act
+    run_script_with_file "$file_path"
+
+    # Assert
+    [ "$status" -eq 2 ]
+    [[ "${output}" == *"DENY"* ]]
+}
+
+@test "orchestratorは非mainブランチ（worktree）でもtests/配下の編集がブロックされること [step 6]" {
+    # Arrange
+    git -C "$REPO_DIR" checkout -b feature/test-branch
+    local file_path="$REPO_DIR/tests/api/routes/articles.test.ts"
+
+    # Act
+    run_script_with_file "$file_path"
+
+    # Assert
+    [ "$status" -eq 2 ]
+    [[ "${output}" == *"DENY"* ]]
+}
+
+@test "orchestratorは非mainブランチ（worktree）でもscripts/配下の編集がブロックされること [step 6]" {
+    # Arrange
+    git -C "$REPO_DIR" checkout -b feature/test-branch
+    local file_path="$REPO_DIR/scripts/gate/check-test-coverage.sh"
+
+    # Act
+    run_script_with_file "$file_path"
+
+    # Assert
+    [ "$status" -eq 2 ]
+    [[ "${output}" == *"DENY"* ]]
+}
+
+@test "step 6 ブロック時に coder への委譲メッセージが出ること [step 6]" {
     # Arrange
     git -C "$REPO_DIR" checkout -b feature/test-branch
     local file_path="$REPO_DIR/apps/api/src/index.ts"
@@ -476,19 +528,8 @@ run_script_with_file() {
     run_script_with_file "$file_path"
 
     # Assert
-    [ "$status" -eq 0 ]
-}
-
-@test "worktreeの非mainブランチでもpackages/配下の編集が許可されること" {
-    # Arrange
-    git -C "$REPO_DIR" checkout -b feature/packages-branch
-    local file_path="$REPO_DIR/packages/shared/src/index.ts"
-
-    # Act
-    run_script_with_file "$file_path"
-
-    # Assert
-    [ "$status" -eq 0 ]
+    [ "$status" -eq 2 ]
+    [[ "${output}" == *"coder"* ]]
 }
 
 @test "detached HEAD状態ではapps/配下のソースファイル編集がブロックされること" {
