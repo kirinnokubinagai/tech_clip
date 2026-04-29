@@ -97,7 +97,7 @@ _cleanup_maestro_processes() {
   local my_pid=$$
   pgrep -f "maestro.cli.AppKt" 2>/dev/null | while read -r pid; do
     [ "$pid" != "$my_pid" ] && kill "$pid" 2>/dev/null || true
-  done
+  done || true
   # ADB forwarding クリア
   local devs
   devs=$(adb devices 2>/dev/null | grep -E '^emulator-[0-9]+\s+device' | awk '{print $1}')
