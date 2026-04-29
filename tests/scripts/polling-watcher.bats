@@ -6,7 +6,7 @@
 SCRIPT="$(cd "$(dirname "$BATS_TEST_FILENAME")/../.." && pwd)/scripts/polling-watcher.sh"
 
 setup() {
-  TEST_DIR=$(mktemp -d)
+  TEST_DIR="$BATS_TEST_TMPDIR"
   FAKE_BIN="$TEST_DIR/fake_bin"
   mkdir -p "$FAKE_BIN" "$TEST_DIR/.claude/polling"
 

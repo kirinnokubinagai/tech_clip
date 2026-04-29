@@ -2,7 +2,7 @@
 SCRIPT="$(cd "$(dirname "$BATS_TEST_FILENAME")/../.." && pwd)/.claude/hooks/auto-sync-main.sh"
 
 setup() {
-  TEST_DIR=$(mktemp -d)
+  TEST_DIR="$BATS_TEST_TMPDIR"
   FAKE_BIN="$TEST_DIR/fake_bin"
   mkdir -p "$FAKE_BIN"
   cat > "$FAKE_BIN/git" << 'EOF'
@@ -17,7 +17,6 @@ EOF
   export PATH="$FAKE_BIN:$PATH"
 }
 
-teardown() { rm -rf "$TEST_DIR"; }
 
 @test "auto-sync-main.sh: uncommitted changes があるときスキップする仕様" {
   run bash -c 'grep -q "uncommitted" "'"$SCRIPT"'"'

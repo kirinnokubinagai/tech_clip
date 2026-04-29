@@ -7,7 +7,7 @@
 REAL_SCRIPT="$(cd "$(dirname "$BATS_TEST_FILENAME")/../.." && pwd)/../scripts/dev/bake-apk-into-avd.sh"
 
 setup() {
-  TEST_TMP="$(mktemp -d)"
+  TEST_TMP="$BATS_TEST_TMPDIR"
   export TEST_TMP
   export ANDROID_AVD_HOME="$TEST_TMP/avd"
   mkdir -p "$ANDROID_AVD_HOME/techclip-test.avd"

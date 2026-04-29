@@ -8,7 +8,7 @@ SCRIPT="$REAL_SCRIPT"
 RULES="$(cd "$(dirname "$BATS_TEST_FILENAME")/../../.." && pwd)/.claude/gate-rules.json"
 
 setup() {
-  TMPDIR=$(mktemp -d)
+  TMPDIR="$BATS_TEST_TMPDIR"
   REPO_DIR="$TMPDIR/repo"
   mkdir -p "$REPO_DIR"
   git -C "$REPO_DIR" init -b main
@@ -28,9 +28,7 @@ setup() {
   git -C "$REPO_DIR" branch --set-upstream-to=origin/main main 2>/dev/null || true
 }
 
-teardown() {
-  rm -rf "$TMPDIR"
-}
+
 
 # ヘルパー: ファイルを追加してコミットする
 add_file() {

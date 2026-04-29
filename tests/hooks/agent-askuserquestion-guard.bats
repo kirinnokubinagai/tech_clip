@@ -7,15 +7,13 @@
 HOOK="$(cd "$(dirname "$BATS_TEST_FILENAME")/../.." && pwd)/.claude/hooks/agent-askuserquestion-guard.sh"
 
 setup() {
-    TMPDIR=$(mktemp -d)
+    TMPDIR="$BATS_TEST_TMPDIR"
     export HOME="$TMPDIR/home"
     mkdir -p "$HOME"
     unset CLAUDE_AGENT_NAME
 }
 
-teardown() {
-    rm -rf "$TMPDIR"
-}
+
 
 run_hook() {
     local json="${1:-{}}"

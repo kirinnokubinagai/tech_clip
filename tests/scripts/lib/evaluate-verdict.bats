@@ -8,7 +8,7 @@
 LIB="$(cd "$(dirname "$BATS_TEST_FILENAME")/../../.." && pwd)/scripts/lib/evaluate-verdict.sh"
 
 setup() {
-  TEST_DIR=$(mktemp -d)
+  TEST_DIR="$BATS_TEST_TMPDIR"
   FAKE_BIN="$TEST_DIR/fake_bin"
   DATA_DIR="$TEST_DIR/data"
   mkdir -p "$FAKE_BIN" "$DATA_DIR"

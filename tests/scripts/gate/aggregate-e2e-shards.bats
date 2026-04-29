@@ -4,7 +4,7 @@
 SCRIPT="$(cd "$(dirname "$BATS_TEST_FILENAME")/../../.." && pwd)/scripts/gate/aggregate-e2e-shards.sh"
 
 setup() {
-  TMPDIR=$(mktemp -d)
+  TMPDIR="$BATS_TEST_TMPDIR"
   REPO_DIR="$TMPDIR/repo"
   mkdir -p "$REPO_DIR/.claude"
   git -C "$REPO_DIR" init -b main >/dev/null 2>&1
@@ -14,9 +14,7 @@ setup() {
   git -C "$REPO_DIR" add . && git -C "$REPO_DIR" commit -m "init" >/dev/null 2>&1
 }
 
-teardown() {
-  rm -rf "$TMPDIR"
-}
+
 
 # ヘルパー: 最小限の JUnit XML を生成
 _make_junit_xml() {

@@ -2,7 +2,7 @@
 SCRIPT="$(cd "$(dirname "$BATS_TEST_FILENAME")/../../.." && pwd)/scripts/ci/shard-flows.sh"
 
 setup() {
-  TEST_DIR=$(mktemp -d)
+  TEST_DIR="$BATS_TEST_TMPDIR"
   FAKE_BIN="$TEST_DIR/fake_bin"
   mkdir -p "$FAKE_BIN"
   cat > "$FAKE_BIN/git" << 'EOF'
@@ -15,7 +15,6 @@ EOF
   export PATH="$FAKE_BIN:$PATH"
 }
 
-teardown() { rm -rf "$TEST_DIR"; }
 
 @test "shard-flows.sh: 引数なしでエラー終了する" {
   run bash "$SCRIPT"

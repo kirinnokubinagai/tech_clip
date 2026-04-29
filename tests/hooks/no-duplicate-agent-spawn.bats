@@ -7,14 +7,12 @@
 HOOK="$(cd "$(dirname "$BATS_TEST_FILENAME")/../.." && pwd)/.claude/hooks/no-duplicate-agent-spawn.sh"
 
 setup() {
-    TMPDIR=$(mktemp -d)
+    TMPDIR="$BATS_TEST_TMPDIR"
     REPO_DIR="$TMPDIR/repo"
     mkdir -p "$REPO_DIR"
 }
 
-teardown() {
-    rm -rf "$TMPDIR"
-}
+
 
 run_hook() {
     local json="$1"

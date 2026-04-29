@@ -7,7 +7,7 @@
 REAL_SCRIPT="$(cd "$(dirname "$BATS_TEST_FILENAME")/../.." && pwd)/../scripts/gate/auto-fix.sh"
 
 setup() {
-    TMPDIR=$(mktemp -d)
+    TMPDIR="$BATS_TEST_TMPDIR"
     export REPO_DIR="$TMPDIR/repo"
     mkdir -p "$REPO_DIR"
     git -C "$REPO_DIR" init -b main
@@ -43,9 +43,7 @@ STUB
     chmod +x "$TMPDIR/bin/direnv"
 }
 
-teardown() {
-    rm -rf "$TMPDIR"
-}
+
 
 # REPO_DIR の auto-fix.sh を実行するヘルパー
 run_script() {

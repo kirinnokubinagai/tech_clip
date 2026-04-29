@@ -7,7 +7,7 @@
 HOOK="$(cd "$(dirname "$BATS_TEST_FILENAME")/../.." && pwd)/.claude/hooks/orchestrator-flow-guard.sh"
 
 setup() {
-    TMPDIR=$(mktemp -d)
+    TMPDIR="$BATS_TEST_TMPDIR"
     export HOME="$TMPDIR/home"
     mkdir -p "$HOME"
     # CLAUDE_USER_ROOT をテスト用ディレクトリに設定（git rev-parse に依存しない）
@@ -17,9 +17,7 @@ setup() {
     echo '{"members":[]}' > "$CLAUDE_USER_ROOT/teams/active-issues/config.json"
 }
 
-teardown() {
-    rm -rf "$TMPDIR"
-}
+
 
 # hook に JSON を渡して実行するヘルパー
 run_hook() {
