@@ -49,3 +49,8 @@ SCRIPT="$(cd "$(dirname "$BATS_TEST_FILENAME")/../../.." && pwd)/scripts/ci/run-
 @test "アプリ起動タイムアウト時に exit 1 する" {
   grep -E 'App process did not start|アプリプロセス.*start' "$SCRIPT"
 }
+
+@test "ORG_GRADLE_PROJECT_reactNativeArchitectures=x86_64 を nix develop 内に直接指定する" {
+  # export だけでは nix develop --command bash -c に伝播しないため、bash -c 文字列内に含める必要がある
+  grep -E "nix develop.*ORG_GRADLE_PROJECT_reactNativeArchitectures=x86_64" "$SCRIPT"
+}

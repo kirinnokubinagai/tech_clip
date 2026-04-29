@@ -32,17 +32,16 @@ export EXPO_PUBLIC_E2E_MODE="1"
 export EXPO_PUBLIC_REVENUECAT_ANDROID_API_KEY="your-revenuecat-android-api-key"
 export EXPO_PUBLIC_API_URL_ANDROID="http://10.0.2.2:${API_CI_PORT:-18787}"
 
-# CI emulator は x86_64 のみ。全 ABI ビルドは OOM の原因。
-export ORG_GRADLE_PROJECT_reactNativeArchitectures=x86_64
-
 # Build and install development build.
 # Hybrid approach:
 #  1. Start expo run:android in background (Metro + build)
 #  2. Poll pidof to detect app startup
 #  3. Wait for "Bundled" log (Metro bundle delivery complete)
 #  4. Start Maestro tests
+# CI emulator は x86_64 のみ。ORG_GRADLE_PROJECT_reactNativeArchitectures を nix develop 内で
+# 直接指定しないと transitive native modules (reanimated, expo-modules-core 等) にも効かない。
 EXPO_LOG="/tmp/expo-run-android-$$.log"
-nix develop --command bash -c "cd apps/mobile && pnpm expo run:android --variant debug" 2>&1 | tee "$EXPO_LOG" &
+nix develop --command bash -c "cd apps/mobile && ORG_GRADLE_PROJECT_reactNativeArchitectures=x86_64 pnpm expo run:android --variant debug" 2>&1 | tee "$EXPO_LOG" &
 EXPO_PID=$!
 
 # Wait for Metro to finish bundling (single combined loop)
