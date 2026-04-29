@@ -16,11 +16,12 @@ SCRIPT="$(cd "$(dirname "$BATS_TEST_FILENAME")/../../.." && pwd)/scripts/ci/run-
   ! grep -E '^wait "\$EXPO_PID"' "$SCRIPT"
 }
 
-@test "600 秒の統合タイムアウトを持つこと" {
-  # Arrange: スクリプトに MAX_WAIT=600 が存在すること
+@test "Gradle ビルド + pidof の 2 フェーズタイムアウトを持つこと" {
+  # Arrange: スクリプトに MAX_GRADLE_WAIT (Gradle build phase) と MAX_PIDOF_WAIT (app startup phase) が存在すること
   # Act: grep でパターンを検索
-  # Assert: 該当行が存在すること
-  grep -E 'MAX_WAIT=600' "$SCRIPT"
+  # Assert: 両タイムアウト変数が存在すること
+  grep -E 'MAX_GRADLE_WAIT=' "$SCRIPT"
+  grep -E 'MAX_PIDOF_WAIT=' "$SCRIPT"
 }
 
 @test "pidof com.techclip.app でアプリ起動後の安全確認をすること" {
@@ -47,7 +48,7 @@ SCRIPT="$(cd "$(dirname "$BATS_TEST_FILENAME")/../../.." && pwd)/scripts/ci/run-
 }
 
 @test "アプリ起動タイムアウト時に exit 1 する" {
-  grep -E 'App process did not start|アプリプロセス.*start' "$SCRIPT"
+  grep -E 'App process not found|did not complete within|did not start' "$SCRIPT"
 }
 
 @test "ORG_GRADLE_PROJECT_reactNativeArchitectures=x86_64 を nix develop 内に直接指定する" {
