@@ -16,7 +16,7 @@
 #
 # Maestro --shard-split 方式:
 #   単一の maestro test コマンドで --shard-split を使用し、全 flow を並列実行。
-#   gRPC ポート衝突を回避（JAVA_TOOL_OPTIONS で IPv4 強制）。
+#   Maestro Studio / stale CLI を事前に cleanup してから実行。
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -88,6 +88,25 @@ if [ -n "$SHARD_SPEC" ] && [ "$SHARD_TOTAL" -ne "$DEVICE_COUNT" ]; then
   exit 1
 fi
 
+# ── Maestro Studio / stale CLI プロセス cleanup ──────────────────────────────
+_cleanup_maestro_processes() {
+  echo "[gate] Maestro Studio / stale CLI を cleanup します..." >&2
+  # Maestro Studio server (studio-server.jar)
+  pkill -f "studio-server.jar" 2>/dev/null || true
+  # stale maestro CLI プロセス（自プロセスは除外）
+  local my_pid=$$
+  pgrep -f "maestro.cli.AppKt" 2>/dev/null | while read -r pid; do
+    [ "$pid" != "$my_pid" ] && kill "$pid" 2>/dev/null || true
+  done
+  # ADB forwarding クリア
+  local devs
+  devs=$(adb devices 2>/dev/null | grep -E '^emulator-[0-9]+\s+device' | awk '{print $1}')
+  for dev in $devs; do
+    adb -s "$dev" forward --remove-all 2>/dev/null || true
+  done
+  sleep 1
+}
+
 # ── バックエンド起動チェック（Fix B） ──────────────────────────────────────
 # turso (8888) が LISTEN しているか確認。未起動なら up.sh + seed.sh を呼ぶ。
 # gate スクリプトが起動したものだけ EXIT 時に down する（開発者の手元 dev shell を kill しない）。
@@ -104,7 +123,7 @@ _backend_down_if_gate_started() {
   fi
 }
 
-trap '_backend_down_if_gate_started' EXIT
+trap '_backend_down_if_gate_started; _cleanup_maestro_processes' EXIT
 
 if ! _check_port_listen 8888; then
   echo "[gate] backend が未起動です。起動します..." >&2
@@ -126,6 +145,9 @@ fi
 
 HEAD_SHA=$(git -C "$REPO_ROOT" rev-parse HEAD)
 TIMESTAMP=$(date +%Y%m%d-%H%M%S)
+
+# Maestro cleanup（pm clear 前に実行）
+_cleanup_maestro_processes
 
 # app の cache + Keystore を消去する (前回テストの auth token が
 # Android Keystore = expo-secure-store に残ると「セッション期限切れ」エラーで
@@ -212,8 +234,7 @@ if [ "$DEVICE_COUNT" -eq 1 ]; then
     --argjson flow_count "${#YAML_FILES[@]}" \
     --arg status "running" \
     '{log_file: $log_file, result_xml: $result_xml, debug_dir: $debug_dir,
-      device_count: $device_count, flow_count: $flow_count, status: $status,
-      per_shard_logs: [{device: $log_file, log_file: $log_file, result_xml: $result_xml}]}' \
+      device_count: $device_count, flow_count: $flow_count, status: $status}' \
     > "$PROGRESS_FILE"
 
   (cd "$REPO_ROOT" && direnv exec "$REPO_ROOT" maestro test \
@@ -232,8 +253,7 @@ if [ "$DEVICE_COUNT" -eq 1 ]; then
     --argjson flow_count "${#YAML_FILES[@]}" \
     --arg status "completed" \
     '{log_file: $log_file, result_xml: $result_xml, debug_dir: $debug_dir,
-      device_count: $device_count, flow_count: $flow_count, status: $status,
-      per_shard_logs: [{device: $log_file, log_file: $log_file, result_xml: $result_xml}]}' \
+      device_count: $device_count, flow_count: $flow_count, status: $status}' \
     > "$PROGRESS_FILE"
 
   if [ ! -f "$RESULT_XML" ]; then
@@ -257,14 +277,13 @@ if [ "$DEVICE_COUNT" -eq 1 ]; then
   exit $?
 fi
 
-# ── multi-device: Maestro --shard-split 並列 ───────────────────────────────
-echo "Running maestro tests: devices=$DEVICE count=$DEVICE_COUNT (${#YAML_FILES[@]} flows) [parallel, maestro --shard-split]" >&2
+# ── multi-device: --shard-split（Maestro native 並列）──────────────────────────
+echo "Running maestro tests: devices=$DEVICE count=$DEVICE_COUNT (${#YAML_FILES[@]} flows) [shard-split]" >&2
 
 DEBUG_DIR="/tmp/maestro-debug-${HEAD_SHA:0:8}-${TIMESTAMP}"
 LOG_FILE="/tmp/maestro-log-${HEAD_SHA:0:8}-${TIMESTAMP}.log"
 mkdir -p "$DEBUG_DIR"
 
-# progress JSON を初期化（per_shard_logs は単一エントリ）
 jq -n \
   --arg log_file "$LOG_FILE" \
   --arg result_xml "$RESULT_XML" \
@@ -273,11 +292,9 @@ jq -n \
   --argjson flow_count "${#YAML_FILES[@]}" \
   --arg status "running" \
   '{log_file: $log_file, result_xml: $result_xml, debug_dir: $debug_dir,
-    device_count: $device_count, flow_count: $flow_count, status: $status,
-    per_shard_logs: [{devices: $log_file, log_file: $log_file, result_xml: $result_xml}]}' \
+    device_count: $device_count, flow_count: $flow_count, status: $status}' \
   > "$PROGRESS_FILE"
 
-# 単一の maestro test コマンドで --shard-split を使用
 (cd "$REPO_ROOT" && direnv exec "$REPO_ROOT" maestro test \
   --device "$DEVICE" \
   --shard-split "$DEVICE_COUNT" \
@@ -287,7 +304,7 @@ jq -n \
   "${ENV_ARGS[@]}" \
   "${YAML_FILES[@]}" 2>&1) | tee "$LOG_FILE" || true
 
-# progress JSON を完了状態に更新
+# progress 更新
 jq -n \
   --arg log_file "$LOG_FILE" \
   --arg result_xml "$RESULT_XML" \
@@ -296,8 +313,7 @@ jq -n \
   --argjson flow_count "${#YAML_FILES[@]}" \
   --arg status "completed" \
   '{log_file: $log_file, result_xml: $result_xml, debug_dir: $debug_dir,
-    device_count: $device_count, flow_count: $flow_count, status: $status,
-    per_shard_logs: [{devices: $log_file, log_file: $log_file, result_xml: $result_xml}]}' \
+    device_count: $device_count, flow_count: $flow_count, status: $status}' \
   > "$PROGRESS_FILE"
 
 if [ ! -f "$RESULT_XML" ]; then

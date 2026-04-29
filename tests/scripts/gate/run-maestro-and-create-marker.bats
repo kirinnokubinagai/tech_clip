@@ -1,5 +1,30 @@
 #!/usr/bin/env bats
 
+@test "Maestro Studio (studio-server.jar) を事前に kill する" {
+  grep -E 'pkill.*studio-server\.jar' scripts/gate/run-maestro-and-create-marker.sh
+}
+
+@test "stale maestro CLI プロセスを kill する（自プロセス除外）" {
+  grep -E 'pgrep.*maestro\.cli\.AppKt' scripts/gate/run-maestro-and-create-marker.sh
+  grep -E 'my_pid.*\$\$' scripts/gate/run-maestro-and-create-marker.sh
+}
+
+@test "adb forward --remove-all で ADB forwarding をクリアする" {
+  grep -E 'adb.*forward --remove-all' scripts/gate/run-maestro-and-create-marker.sh
+}
+
+@test "_cleanup_maestro_processes 関数が定義されている" {
+  grep -E '_cleanup_maestro_processes\(\)' scripts/gate/run-maestro-and-create-marker.sh
+}
+
+@test "pm clear の前に _cleanup_maestro_processes を呼ぶ" {
+  grep -E '_cleanup_maestro_processes' scripts/gate/run-maestro-and-create-marker.sh | head -1 | grep -v "trap"
+}
+
+@test "EXIT trap に _cleanup_maestro_processes を含める" {
+  grep -E 'trap.*_cleanup_maestro_processes' scripts/gate/run-maestro-and-create-marker.sh
+}
+
 @test "MAESTRO_PORT 変数を使っていない（Maestro 内部のポート管理に委ねる）" {
   ! grep -E '^\s*MAESTRO_PORT=' scripts/gate/run-maestro-and-create-marker.sh
 }
@@ -25,7 +50,7 @@
   grep -E 'IFS=,' scripts/gate/run-maestro-and-create-marker.sh
 }
 
-@test "DEVICE_COUNT > 1 のとき --shard-split を使う（JAVA_TOOL_OPTIONS IPv4 修正済みのため）" {
+@test "DEVICE_COUNT > 1 のとき --shard-split を使う" {
   grep -E -- '--shard-split' scripts/gate/run-maestro-and-create-marker.sh
 }
 
@@ -45,8 +70,8 @@
   grep -E 'debug-output|DEBUG_DIR' scripts/gate/run-maestro-and-create-marker.sh
 }
 
-@test "--shard-split では maestro コマンドの exit code をそのまま使う（手動集計なし）" {
-  ! grep -E 'OVERALL_EXIT|exit_code|FAIL_COUNT' scripts/gate/run-maestro-and-create-marker.sh
+@test "aggregate-e2e-shards.sh を呼び出さない（--shard-split では単一 XML）" {
+  ! grep -E 'aggregate-e2e-shards\.sh' scripts/gate/run-maestro-and-create-marker.sh
 }
 
 @test "maestro test に --device を必ず渡す" {
@@ -61,12 +86,9 @@
   grep -E 'create-e2e-marker\.sh' scripts/gate/run-maestro-and-create-marker.sh
 }
 
-@test ".e2e-progress.json に per_shard_logs 配列フィールドが含まれる（複数 shard 時）" {
-  grep -E 'per_shard_logs' scripts/gate/run-maestro-and-create-marker.sh
-}
-
-@test ".e2e-progress.json に後方互換のため log_file フィールドも含まれる" {
-  grep -F 'log_file' scripts/gate/run-maestro-and-create-marker.sh
+@test ".e2e-progress.json に status フィールドが含まれる" {
+  grep -F '"running"' scripts/gate/run-maestro-and-create-marker.sh
+  grep -F '"completed"' scripts/gate/run-maestro-and-create-marker.sh
 }
 
 @test "adb devices で 0 台のときエラー終了する" {
