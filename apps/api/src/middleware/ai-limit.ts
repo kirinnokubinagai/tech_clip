@@ -30,7 +30,7 @@ const AI_LIMIT_ERROR_MESSAGE =
   "無料のAI使用回数の上限に達しました。プレミアムプランにアップグレードしてください";
 
 /** 無料ユーザーの月間AI使用上限回数 */
-const FREE_AI_USES_PER_MONTH = 5;
+export const FREE_AI_USES_PER_MONTH = 5;
 
 /** 1ヶ月のミリ秒数（30日） */
 const ONE_MONTH_MS = 30 * 24 * 60 * 60 * 1000;

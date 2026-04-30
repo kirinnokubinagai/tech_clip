@@ -1,4 +1,5 @@
 import type { createLogger } from "../lib/logger";
+import { FREE_AI_USES_PER_MONTH } from "../middleware/ai-limit";
 
 /** ロールバック失敗補正バッチの依存注入インターフェース */
 export type ReconcileFailedRollbacksDeps = {
@@ -83,7 +84,7 @@ export function createReconcileFailedRollbacksDeps(
         }
       )
         .set({
-          freeAiUsesRemaining: sql`MIN(${users.freeAiUsesRemaining} + 1, 5)`,
+          freeAiUsesRemaining: sql`MIN(${users.freeAiUsesRemaining} + 1, ${FREE_AI_USES_PER_MONTH})`,
           updatedAt: new Date().toISOString(),
         })
         .where(eq(users.id, userId));
