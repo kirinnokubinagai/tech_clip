@@ -10,6 +10,10 @@ import { handleTags } from "./app/tags-subapp";
 import { handlePublicProfile, handleUsers } from "./app/users-subapp";
 import { createAuth } from "./auth";
 import {
+  cleanupExpiredOauthExchangeCodes,
+  createOauthExchangeCodeCleanupDeps,
+} from "./cron/cleanupExpiredOauthExchangeCodes";
+import {
   cleanupExpiredRefreshTokens,
   createRefreshTokenCleanupDeps,
 } from "./cron/cleanupExpiredRefreshTokens";
@@ -81,6 +85,10 @@ app.get("/api/auth/session", async (c) => {
 });
 
 app.post("/api/auth/refresh", async (c) => {
+  return handleAuthRoute(c.get("db"), c.get("auth")(), c.req.raw);
+});
+
+app.post("/api/auth/mobile-exchange", async (c) => {
   return handleAuthRoute(c.get("db"), c.get("auth")(), c.req.raw);
 });
 
@@ -196,6 +204,20 @@ const scheduled: ExportedHandlerScheduledHandler<Bindings> = async (_event, env,
       } catch (error) {
         logger.error("cron refreshTokenCleanup 失敗", {
           job: "refreshTokenCleanup",
+          error: error instanceof Error ? error.message : String(error),
+        });
+      }
+      try {
+        const result = await cleanupExpiredOauthExchangeCodes(
+          createOauthExchangeCodeCleanupDeps(dbForCron),
+        );
+        logger.info("cron oauthExchangeCodeCleanup 完了", {
+          job: "oauthExchangeCodeCleanup",
+          result,
+        });
+      } catch (error) {
+        logger.error("cron oauthExchangeCodeCleanup 失敗", {
+          job: "oauthExchangeCodeCleanup",
           error: error instanceof Error ? error.message : String(error),
         });
       }

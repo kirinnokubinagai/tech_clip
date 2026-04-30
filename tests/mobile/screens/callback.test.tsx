@@ -4,6 +4,8 @@ import { fireEvent, render, waitFor } from "@testing-library/react-native";
 const mockReplace = jest.fn();
 const mockCheckSession = jest.fn();
 const mockUseLocalSearchParams = jest.fn(() => ({}));
+const mockFetchWithTimeout = jest.fn();
+const mockGetBaseUrl = jest.fn(() => "https://api.example.com");
 
 jest.mock("react-i18next", () => ({
   useTranslation: () => ({
@@ -35,6 +37,11 @@ jest.mock("@/lib/secure-store", () => ({
   removeOAuthState: jest.fn(),
 }));
 
+jest.mock("@/lib/api", () => ({
+  fetchWithTimeout: (...args: unknown[]) => mockFetchWithTimeout(...args),
+  getBaseUrl: () => mockGetBaseUrl(),
+}));
+
 import {
   getOAuthState as mockGetOAuthState,
   removeOAuthState as mockRemoveOAuthState,
@@ -42,80 +49,70 @@ import {
   setRefreshToken as mockSetRefreshToken,
 } from "@/lib/secure-store";
 
+/** 有効な exchange API レスポンス */
+function makeExchangeResponse(overrides: Partial<{ token: string; refreshToken: string }> = {}) {
+  return {
+    json: jest.fn().mockResolvedValue({
+      success: true,
+      data: {
+        session: {
+          token: overrides.token ?? "session-token-abc",
+          expiresAt: "2099-01-01T00:00:00.000Z",
+        },
+        refreshToken: overrides.refreshToken ?? "refresh-token-xyz",
+      },
+    }),
+    status: 200,
+  };
+}
+
 beforeEach(() => {
   jest.clearAllMocks();
   mockUseLocalSearchParams.mockReturnValue({});
   (mockGetOAuthState as jest.Mock).mockResolvedValue(null);
   (mockRemoveOAuthState as jest.Mock).mockResolvedValue(undefined);
+  mockFetchWithTimeout.mockResolvedValue(makeExchangeResponse());
+  mockCheckSession.mockResolvedValue(undefined);
 });
 
 describe("AuthCallbackScreen", () => {
   describe("正常系", () => {
-    it("tokenがある場合にセキュアストレージへ保存してホーム画面へ遷移できること", async () => {
+    it("code 受信後に /mobile-exchange を呼んでトークン保存し tabs へ遷移できること", async () => {
       // Arrange
+      const validCode = "a".repeat(64);
       (mockGetOAuthState as jest.Mock).mockResolvedValue("nonce_abc");
-      mockUseLocalSearchParams.mockReturnValue({ token: "access_token_123", state: "nonce_abc" });
-      (mockSetAuthToken as jest.Mock).mockResolvedValue(undefined);
-      mockCheckSession.mockResolvedValue(undefined);
-
-      // Act
-      await render(<AuthCallbackScreen />);
-
-      // Assert
-      await waitFor(() => {
-        expect(mockSetAuthToken).toHaveBeenCalledWith("access_token_123");
-        expect(mockCheckSession).toHaveBeenCalled();
-        expect(mockReplace).toHaveBeenCalledWith("/(tabs)");
-      });
-    });
-
-    it("refresh_tokenも含む場合にリフレッシュトークンも保存できること", async () => {
-      // Arrange
-      (mockGetOAuthState as jest.Mock).mockResolvedValue("nonce_abc");
-      mockUseLocalSearchParams.mockReturnValue({
-        token: "access_token_123",
-        refresh_token: "refresh_token_456",
-        state: "nonce_abc",
-      });
+      mockUseLocalSearchParams.mockReturnValue({ code: validCode, state: "nonce_abc" });
       (mockSetAuthToken as jest.Mock).mockResolvedValue(undefined);
       (mockSetRefreshToken as jest.Mock).mockResolvedValue(undefined);
-      mockCheckSession.mockResolvedValue(undefined);
 
       // Act
       await render(<AuthCallbackScreen />);
 
       // Assert
       await waitFor(() => {
-        expect(mockSetAuthToken).toHaveBeenCalledWith("access_token_123");
-        expect(mockSetRefreshToken).toHaveBeenCalledWith("refresh_token_456");
-        expect(mockReplace).toHaveBeenCalledWith("/(tabs)");
-      });
-    });
-
-    it("stateが一致する場合にremoveOAuthStateが呼ばれること", async () => {
-      // Arrange
-      (mockGetOAuthState as jest.Mock).mockResolvedValue("nonce_abc");
-      mockUseLocalSearchParams.mockReturnValue({ token: "access_token_123", state: "nonce_abc" });
-      (mockSetAuthToken as jest.Mock).mockResolvedValue(undefined);
-      mockCheckSession.mockResolvedValue(undefined);
-
-      // Act
-      await render(<AuthCallbackScreen />);
-
-      // Assert
-      await waitFor(() => {
-        expect(mockRemoveOAuthState).toHaveBeenCalled();
+        expect(mockFetchWithTimeout).toHaveBeenCalledWith(
+          "https://api.example.com/api/auth/mobile-exchange",
+          expect.objectContaining({
+            method: "POST",
+            body: JSON.stringify({ code: validCode }),
+          }),
+        );
+        expect(mockSetAuthToken).toHaveBeenCalledWith("session-token-abc");
+        expect(mockSetRefreshToken).toHaveBeenCalledWith("refresh-token-xyz");
+        expect(mockCheckSession).toHaveBeenCalled();
         expect(mockReplace).toHaveBeenCalledWith("/(tabs)");
       });
     });
   });
 
   describe("ローディング状態", () => {
-    it("checkSessionが完了しない間はActivityIndicatorが表示されること", async () => {
+    it("checkSession が完了しない間は ActivityIndicator が表示されること", async () => {
       // Arrange
+      const validCode = "a".repeat(64);
       (mockGetOAuthState as jest.Mock).mockResolvedValue("nonce_abc");
-      mockUseLocalSearchParams.mockReturnValue({ token: "access_token_123", state: "nonce_abc" });
+      mockUseLocalSearchParams.mockReturnValue({ code: validCode, state: "nonce_abc" });
       (mockSetAuthToken as jest.Mock).mockResolvedValue(undefined);
+      (mockSetRefreshToken as jest.Mock).mockResolvedValue(undefined);
       mockCheckSession.mockReturnValue(new Promise(() => {}));
 
       // Act
@@ -127,7 +124,7 @@ describe("AuthCallbackScreen", () => {
   });
 
   describe("異常系", () => {
-    it("errorパラメータがある場合はエラーメッセージが表示されること", async () => {
+    it("error パラメータがある場合はエラーメッセージが表示されること", async () => {
       // Arrange
       mockUseLocalSearchParams.mockReturnValue({ error: "access_denied" });
 
@@ -137,10 +134,10 @@ describe("AuthCallbackScreen", () => {
       // Assert
       const errorEl = await findByTestId("auth-callback-error");
       expect(errorEl.props.testID).toBe("auth-callback-error");
-      expect(mockCheckSession).not.toHaveBeenCalled();
+      expect(mockFetchWithTimeout).not.toHaveBeenCalled();
     });
 
-    it("tokenがない場合はエラーメッセージが表示されること", async () => {
+    it("code がない場合はエラーメッセージが表示されること", async () => {
       // Arrange
       mockUseLocalSearchParams.mockReturnValue({});
 
@@ -150,15 +147,14 @@ describe("AuthCallbackScreen", () => {
       // Assert
       const errorEl = await findByTestId("auth-callback-error");
       expect(errorEl.props.testID).toBe("auth-callback-error");
-      expect(mockCheckSession).not.toHaveBeenCalled();
+      expect(mockFetchWithTimeout).not.toHaveBeenCalled();
     });
 
-    it("stateパラメータがない場合はエラーになること", async () => {
+    it("state が不一致の場合はエラーになること", async () => {
       // Arrange
+      const validCode = "a".repeat(64);
       (mockGetOAuthState as jest.Mock).mockResolvedValue("nonce_abc");
-      mockUseLocalSearchParams.mockReturnValue({ token: "access_token_123" });
-      (mockSetAuthToken as jest.Mock).mockResolvedValue(undefined);
-      mockCheckSession.mockResolvedValue(undefined);
+      mockUseLocalSearchParams.mockReturnValue({ code: validCode, state: "nonce_WRONG" });
 
       // Act
       const { findByTestId } = await render(<AuthCallbackScreen />);
@@ -166,27 +162,21 @@ describe("AuthCallbackScreen", () => {
       // Assert
       const errorEl = await findByTestId("auth-callback-error");
       expect(errorEl.props.testID).toBe("auth-callback-error");
-      expect(mockCheckSession).not.toHaveBeenCalled();
+      expect(mockFetchWithTimeout).not.toHaveBeenCalled();
     });
 
-    it("savedStateがnullの場合はエラーになること", async () => {
+    it("exchange API が 401 を返した場合はエラーになること", async () => {
       // Arrange
-      (mockGetOAuthState as jest.Mock).mockResolvedValue(null);
-      mockUseLocalSearchParams.mockReturnValue({ token: "access_token_123", state: "nonce_abc" });
-
-      // Act
-      const { findByTestId } = await render(<AuthCallbackScreen />);
-
-      // Assert
-      const errorEl = await findByTestId("auth-callback-error");
-      expect(errorEl.props.testID).toBe("auth-callback-error");
-      expect(mockCheckSession).not.toHaveBeenCalled();
-    });
-
-    it("stateが不一致の場合はエラーになること", async () => {
-      // Arrange
+      const validCode = "a".repeat(64);
       (mockGetOAuthState as jest.Mock).mockResolvedValue("nonce_abc");
-      mockUseLocalSearchParams.mockReturnValue({ token: "access_token_123", state: "nonce_WRONG" });
+      mockUseLocalSearchParams.mockReturnValue({ code: validCode, state: "nonce_abc" });
+      mockFetchWithTimeout.mockResolvedValue({
+        json: jest.fn().mockResolvedValue({
+          success: false,
+          error: { code: "AUTH_INVALID", message: "認証コードが無効または期限切れです" },
+        }),
+        status: 401,
+      });
 
       // Act
       const { findByTestId } = await render(<AuthCallbackScreen />);
@@ -209,7 +199,7 @@ describe("AuthCallbackScreen", () => {
       expect(backBtn.props.testID).toBe("auth-callback-back-button");
     });
 
-    it("ログイン画面に戻るボタンを押すとlogin画面へ遷移すること", async () => {
+    it("ログイン画面に戻るボタンを押すと login 画面へ遷移すること", async () => {
       // Arrange
       mockUseLocalSearchParams.mockReturnValue({ error: "access_denied" });
       const { findByTestId } = await render(<AuthCallbackScreen />);
@@ -220,37 +210,6 @@ describe("AuthCallbackScreen", () => {
 
       // Assert
       expect(mockReplace).toHaveBeenCalledWith("/(auth)/login");
-    });
-
-    it("setAuthTokenで例外が発生した場合はエラーメッセージが表示されること", async () => {
-      // Arrange
-      (mockGetOAuthState as jest.Mock).mockResolvedValue("nonce_abc");
-      mockUseLocalSearchParams.mockReturnValue({ token: "access_token_123", state: "nonce_abc" });
-      (mockSetAuthToken as jest.Mock).mockRejectedValue(
-        new Error("ストレージへの書き込みに失敗しました"),
-      );
-
-      // Act
-      const { findByTestId } = await render(<AuthCallbackScreen />);
-
-      // Assert
-      const errorEl = await findByTestId("auth-callback-error");
-      expect(errorEl.props.testID).toBe("auth-callback-error");
-    });
-
-    it("checkSessionで例外が発生した場合はエラーメッセージが表示されること", async () => {
-      // Arrange
-      (mockGetOAuthState as jest.Mock).mockResolvedValue("nonce_abc");
-      mockUseLocalSearchParams.mockReturnValue({ token: "access_token_123", state: "nonce_abc" });
-      (mockSetAuthToken as jest.Mock).mockResolvedValue(undefined);
-      mockCheckSession.mockRejectedValue(new Error("セッション確認に失敗しました"));
-
-      // Act
-      const { findByTestId } = await render(<AuthCallbackScreen />);
-
-      // Assert
-      const errorEl = await findByTestId("auth-callback-error");
-      expect(errorEl.props.testID).toBe("auth-callback-error");
     });
   });
 });

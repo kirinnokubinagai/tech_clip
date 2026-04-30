@@ -39,7 +39,7 @@ const mockSessionWhere = vi.fn();
 const mockSessionFrom = vi.fn().mockReturnValue({ where: mockSessionWhere });
 const mockSelect = vi.fn().mockReturnValue({ from: mockSessionFrom });
 
-/** DB refresh_tokens 挿入モック */
+/** DB insert モック */
 const mockInsertValues = vi.fn().mockResolvedValue([]);
 const mockInsert = vi.fn().mockReturnValue({ values: mockInsertValues });
 
@@ -89,10 +89,9 @@ describe("handleMobileOAuthCallback", () => {
       const location = response.headers.get("Location");
       expect(location).toBeTruthy();
       expect(location).toMatch(/^techclip:\/\/auth\/callback\?/);
-      expect(location).toContain("token=");
     });
 
-    it("リダイレクト先 URL に refresh_token が含まれること", async () => {
+    it("リダイレクト先 URL に code パラメータが含まれること", async () => {
       // Arrange
       const auth = createMockAuth(MOCK_BA_SESSION);
       const request = new Request("https://api.techclip.app/api/auth/mobile-callback", {
@@ -107,7 +106,70 @@ describe("handleMobileOAuthCallback", () => {
 
       // Assert
       const location = response.headers.get("Location");
-      expect(location).toContain("refresh_token=");
+      expect(location).toBeTruthy();
+      const url = new URL(location ?? "");
+      expect(url.searchParams.get("code")).toBeTruthy();
+      expect(url.searchParams.get("code")).toHaveLength(64);
+    });
+
+    it("リダイレクト先 URL に token が含まれないこと", async () => {
+      // Arrange
+      const auth = createMockAuth(MOCK_BA_SESSION);
+      const request = new Request("https://api.techclip.app/api/auth/mobile-callback", {
+        method: "GET",
+        headers: {
+          Cookie: "better-auth.session_token=signed-token-here",
+        },
+      });
+
+      // Act
+      const response = await handleMobileOAuthCallback(mockDb, auth, request);
+
+      // Assert
+      const location = response.headers.get("Location");
+      expect(location).not.toContain("token=");
+      expect(location).not.toContain("refresh_token=");
+    });
+
+    it("state パラメータが引き継がれること", async () => {
+      // Arrange
+      const auth = createMockAuth(MOCK_BA_SESSION);
+      const request = new Request(
+        "https://api.techclip.app/api/auth/mobile-callback?state=nonce_abc",
+        {
+          method: "GET",
+          headers: {
+            Cookie: "better-auth.session_token=signed-token-here",
+          },
+        },
+      );
+
+      // Act
+      const response = await handleMobileOAuthCallback(mockDb, auth, request);
+
+      // Assert
+      const location = response.headers.get("Location");
+      expect(location).toBeTruthy();
+      const url = new URL(location ?? "");
+      expect(url.searchParams.get("state")).toBe("nonce_abc");
+    });
+
+    it("oauth_exchange_codes テーブルに行が insert されること", async () => {
+      // Arrange
+      const auth = createMockAuth(MOCK_BA_SESSION);
+      const request = new Request("https://api.techclip.app/api/auth/mobile-callback", {
+        method: "GET",
+        headers: {
+          Cookie: "better-auth.session_token=signed-token-here",
+        },
+      });
+
+      // Act
+      await handleMobileOAuthCallback(mockDb, auth, request);
+
+      // Assert: refresh_tokens + oauth_exchange_codes の 2 回 insert
+      expect(mockInsert).toHaveBeenCalledTimes(2);
+      expect(mockInsertValues).toHaveBeenCalledTimes(2);
     });
 
     it("セッションが存在しない場合は error パラメータ付きで deep link にリダイレクトすること", async () => {
@@ -146,44 +208,6 @@ describe("handleMobileOAuthCallback", () => {
       const location = response.headers.get("Location");
       expect(location).toMatch(/^techclip:\/\/auth\/callback\?/);
       expect(location).toContain("error=");
-    });
-
-    it("リダイレクト先 URL の token が sessions テーブルのセッショントークンと一致すること", async () => {
-      // Arrange
-      const auth = createMockAuth(MOCK_BA_SESSION);
-      const request = new Request("https://api.techclip.app/api/auth/mobile-callback", {
-        method: "GET",
-        headers: {
-          Cookie: "better-auth.session_token=signed-token-here",
-        },
-      });
-
-      // Act
-      const response = await handleMobileOAuthCallback(mockDb, auth, request);
-
-      // Assert
-      const location = response.headers.get("Location");
-      expect(location).toBeTruthy();
-      const url = new URL(location ?? "");
-      expect(url.searchParams.get("token")).toBe(MOCK_SESSION_ROW.token);
-    });
-
-    it("refresh_token が sessions テーブルに挿入されること", async () => {
-      // Arrange
-      const auth = createMockAuth(MOCK_BA_SESSION);
-      const request = new Request("https://api.techclip.app/api/auth/mobile-callback", {
-        method: "GET",
-        headers: {
-          Cookie: "better-auth.session_token=signed-token-here",
-        },
-      });
-
-      // Act
-      await handleMobileOAuthCallback(mockDb, auth, request);
-
-      // Assert
-      expect(mockInsert).toHaveBeenCalledOnce();
-      expect(mockInsertValues).toHaveBeenCalledOnce();
     });
   });
 });

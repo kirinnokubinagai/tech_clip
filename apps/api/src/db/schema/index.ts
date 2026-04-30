@@ -12,6 +12,8 @@ export type { NewNotificationSettings, NotificationSettings } from "./notificati
 export { notificationSettings } from "./notification-settings";
 export type { NewNotification, Notification } from "./notifications";
 export { notifications } from "./notifications";
+export type { NewOauthExchangeCode, OauthExchangeCode } from "./oauth-exchange-codes";
+export { oauthExchangeCodes } from "./oauth-exchange-codes";
 export type { NewRefreshToken, RefreshToken } from "./refresh-tokens";
 export { refreshTokens } from "./refresh-tokens";
 export { accountsRelations, sessionsRelations, usersRelations } from "./relations";
