@@ -68,9 +68,9 @@ jq -n \
     impl_role: $impl_role,
     reviewer_role: $reviewer_role,
     agents: [
-      {role: "analyst",      name: "issue-\($issue)-analyst"},
-      {role: $impl_role,     name: "issue-\($issue)-\($impl_role)"},
-      {role: "e2e-reviewer", name: "issue-\($issue)-e2e-reviewer"},
-      {role: $reviewer_role, name: "issue-\($issue)-\($reviewer_role)"}
+      {role: "analyst",      name: "analyst-\($issue)"},
+      {role: $impl_role,     name: "\($impl_role)-\($issue)"},
+      {role: "e2e-reviewer", name: "e2e-reviewer-\($issue)"},
+      {role: $reviewer_role, name: "\($reviewer_role)-\($issue)"}
     ]
   }'
