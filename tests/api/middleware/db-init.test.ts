@@ -51,6 +51,7 @@ function createTestApp(env: Partial<TestBindings> = {}) {
     TURSO_DATABASE_URL: "libsql://test.turso.io",
     TURSO_AUTH_TOKEN: "test-token",
     BETTER_AUTH_SECRET: "test-secret-min-32-chars-long-enough!!",
+    APP_URL: "https://app.example.com",
     ...env,
   };
 
@@ -156,6 +157,7 @@ describe("createDbInitMiddleware", () => {
         TURSO_DATABASE_URL: "libsql://test.turso.io",
         TURSO_AUTH_TOKEN: "test-token",
         BETTER_AUTH_SECRET: "test-secret-min-32-chars-long-enough!!",
+        APP_URL: "https://app.example.com",
       };
 
       // Act
@@ -189,6 +191,7 @@ describe("createDbInitMiddleware", () => {
         TURSO_DATABASE_URL: "libsql://test.turso.io",
         TURSO_AUTH_TOKEN: "test-token",
         BETTER_AUTH_SECRET: "test-secret-min-32-chars-long-enough!!",
+        APP_URL: "https://app.example.com",
       };
 
       // Act
@@ -228,6 +231,7 @@ describe("createDbInitMiddleware", () => {
         TURSO_DATABASE_URL: "libsql://test.turso.io",
         TURSO_AUTH_TOKEN: "test-token",
         BETTER_AUTH_SECRET: "test-secret-min-32-chars-long-enough!!",
+        APP_URL: "https://app.example.com",
         GOOGLE_CLIENT_ID: "google-client-id",
         GOOGLE_CLIENT_SECRET: "google-client-secret",
       };
@@ -274,6 +278,7 @@ describe("createDbInitMiddleware", () => {
         TURSO_DATABASE_URL: "libsql://test.turso.io",
         TURSO_AUTH_TOKEN: "test-token",
         BETTER_AUTH_SECRET: "test-secret-min-32-chars-long-enough!!",
+        APP_URL: "https://app.example.com",
         API_BASE_URL: "https://api.techclip.app",
       };
 
@@ -314,6 +319,7 @@ describe("createDbInitMiddleware", () => {
         TURSO_DATABASE_URL: "libsql://test.turso.io",
         TURSO_AUTH_TOKEN: "test-token",
         BETTER_AUTH_SECRET: "test-secret-min-32-chars-long-enough!!",
+        APP_URL: "https://app.example.com",
         TRUSTED_ORIGINS: "https://staging.techclip.app,https://dev.techclip.app",
       };
 
@@ -354,6 +360,7 @@ describe("createDbInitMiddleware", () => {
         TURSO_DATABASE_URL: "libsql://test.turso.io",
         TURSO_AUTH_TOKEN: "test-token",
         BETTER_AUTH_SECRET: "test-secret-min-32-chars-long-enough!!",
+        APP_URL: "https://app.example.com",
       };
 
       // Act
@@ -393,6 +400,7 @@ describe("createDbInitMiddleware", () => {
         TURSO_DATABASE_URL: "libsql://test.turso.io",
         TURSO_AUTH_TOKEN: "test-token",
         BETTER_AUTH_SECRET: "test-secret-min-32-chars-long-enough!!",
+        APP_URL: "https://app.example.com",
       };
 
       // Act
@@ -444,6 +452,7 @@ describe("createDbInitMiddleware", () => {
         TURSO_DATABASE_URL: "libsql://test.turso.io",
         TURSO_AUTH_TOKEN: "test-token",
         BETTER_AUTH_SECRET: "test-secret-min-32-chars-long-enough!!",
+        APP_URL: "https://app.example.com",
         MAILPIT_URL: "http://localhost:8025/api/v1/send",
         FROM_EMAIL: "noreply@techclip.app",
       };
@@ -487,6 +496,7 @@ describe("createDbInitMiddleware", () => {
         TURSO_DATABASE_URL: "libsql://test.turso.io",
         TURSO_AUTH_TOKEN: "test-token",
         BETTER_AUTH_SECRET: "test-secret-min-32-chars-long-enough!!",
+        APP_URL: "https://app.example.com",
         RESEND_API_KEY: "re_test_key",
         FROM_EMAIL: "noreply@techclip.app",
       };
@@ -530,6 +540,7 @@ describe("createDbInitMiddleware", () => {
         TURSO_DATABASE_URL: "libsql://test.turso.io",
         TURSO_AUTH_TOKEN: "test-token",
         BETTER_AUTH_SECRET: "test-secret-min-32-chars-long-enough!!",
+        APP_URL: "https://app.example.com",
       };
 
       // Act
@@ -569,6 +580,7 @@ describe("createDbInitMiddleware", () => {
         TURSO_DATABASE_URL: "libsql://test.turso.io",
         TURSO_AUTH_TOKEN: "test-token",
         BETTER_AUTH_SECRET: "test-secret-min-32-chars-long-enough!!",
+        APP_URL: "https://app.example.com",
         IS_E2E_ENV: "1",
         ENVIRONMENT: "production",
       };
@@ -602,6 +614,7 @@ describe("createDbInitMiddleware", () => {
         TURSO_DATABASE_URL: "libsql://test.turso.io",
         TURSO_AUTH_TOKEN: "test-token",
         BETTER_AUTH_SECRET: "test-secret-min-32-chars-long-enough!!",
+        APP_URL: "https://app.example.com",
         IS_E2E_ENV: "1",
         ENVIRONMENT: "development",
       };
@@ -635,6 +648,7 @@ describe("createDbInitMiddleware", () => {
         TURSO_DATABASE_URL: "libsql://test.turso.io",
         TURSO_AUTH_TOKEN: "test-token",
         BETTER_AUTH_SECRET: "test-secret-min-32-chars-long-enough!!",
+        APP_URL: "https://app.example.com",
         ENVIRONMENT: "development",
       };
 
@@ -652,6 +666,51 @@ describe("createDbInitMiddleware", () => {
     it("ミドルウェアが next を呼び出して後続処理が実行されること", async () => {
       // Arrange
       const { app, defaultEnv } = createTestApp();
+
+      // Act
+      const res = await app.request("/api/test", {}, defaultEnv);
+
+      // Assert
+      expect(res.status).toBe(200);
+    });
+  });
+
+  describe("APP_URL の必須チェック", () => {
+    it("APP_URL が未設定の場合、ミドルウェアが 500 エラーを返すこと", async () => {
+      // Arrange
+      const app = new Hono<{ Bindings: TestBindings; Variables: TestVariables }>();
+      app.use(
+        "/api/*",
+        createDbInitMiddleware({
+          createDatabaseFn: mockCreateDatabase,
+          createAuthFn: mockCreateAuth,
+        }),
+      );
+      app.get("/api/test", (c) => c.json({ ok: true }));
+      app.onError((err, c) => {
+        return c.text(err.message, 500);
+      });
+
+      const envWithoutAppUrl: TestBindings = {
+        TURSO_DATABASE_URL: "libsql://test.turso.io",
+        TURSO_AUTH_TOKEN: "test-token",
+        BETTER_AUTH_SECRET: "test-secret-min-32-chars-long-enough!!",
+      };
+
+      // Act
+      const res = await app.request("/api/test", {}, envWithoutAppUrl);
+      const body = await res.text();
+
+      // Assert
+      expect(res.status).toBe(500);
+      expect(body).toContain("環境変数 APP_URL が設定されていません");
+    });
+
+    it("APP_URL が設定されている場合、ミドルウェアが正常に動作すること", async () => {
+      // Arrange
+      const { app, defaultEnv } = createTestApp({
+        APP_URL: "https://app.example.com",
+      });
 
       // Act
       const res = await app.request("/api/test", {}, defaultEnv);

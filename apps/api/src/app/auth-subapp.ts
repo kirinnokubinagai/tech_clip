@@ -12,9 +12,6 @@ import { createPasswordResetRoute } from "../routes/password-reset";
 import type { EmailEnv } from "../services/emailService";
 import type { Bindings } from "../types";
 
-/** デフォルトのアプリ URL（ローカル開発用） */
-const DEFAULT_APP_URL = "http://localhost:8081";
-
 /** モバイルアプリの deep link スキーム */
 const MOBILE_CALLBACK_URL = "techclip://auth/callback";
 
@@ -55,7 +52,7 @@ export async function handleEmailVerification(
   auth: Auth,
   request: Request,
 ): Promise<Response> {
-  const appUrl = env.APP_URL ?? DEFAULT_APP_URL;
+  const appUrl = env.APP_URL;
   const emailEnv: EmailEnv = {
     RESEND_API_KEY: env.RESEND_API_KEY,
     FROM_EMAIL: env.FROM_EMAIL,
@@ -179,7 +176,7 @@ export async function handleAuthCatchAll(
     };
     const passwordResetRoute = createPasswordResetRoute({
       db,
-      appUrl: env.APP_URL ?? DEFAULT_APP_URL,
+      appUrl: env.APP_URL,
       emailEnv,
       auth,
     });

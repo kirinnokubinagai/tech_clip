@@ -25,8 +25,8 @@ export type Bindings = {
   AVATARS_BUCKET: R2Bucket;
   /** アバター画像の公開 URL（末尾スラッシュなし） */
   R2_PUBLIC_URL: string;
-  /** アプリのベースURL（パスワードリセット・OAuth deep link 用） */
-  APP_URL?: string;
+  /** アプリのベースURL（パスワードリセット・OAuth deep link 用、必須） */
+  APP_URL: string;
   /** API 自身のベース URL（Better Auth baseURL 用） */
   API_BASE_URL?: string;
   /** Mailpit API エンドポイント（ローカル開発用。設定時は Resend の代わりにメール送信） */

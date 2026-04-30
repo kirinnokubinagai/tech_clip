@@ -16,7 +16,7 @@ type DbInitBindings = {
   BETTER_AUTH_SECRET: string;
   RESEND_API_KEY?: string;
   FROM_EMAIL?: string;
-  APP_URL?: string;
+  APP_URL: string;
   /** API 自身のベース URL（Better Auth baseURL に渡す。省略時は auth/index.ts の DEFAULT_API_BASE_URL を使用） */
   API_BASE_URL?: string;
   /** カンマ区切りの追加 trustedOrigins（例: "https://staging.example.com,https://dev.example.com"） */
@@ -53,6 +53,12 @@ export function createDbInitMiddleware(
   const { createDatabaseFn, createAuthFn } = options;
 
   return async (c, next) => {
+    if (!c.env.APP_URL) {
+      throw new Error(
+        "環境変数 APP_URL が設定されていません。wrangler.toml の [env.<environment>.vars] に APP_URL を設定してください",
+      );
+    }
+
     const db = createDatabaseFn({
       TURSO_DATABASE_URL: c.env.TURSO_DATABASE_URL,
       TURSO_AUTH_TOKEN: c.env.TURSO_AUTH_TOKEN,

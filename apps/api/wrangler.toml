@@ -5,6 +5,7 @@ compatibility_flags = ["nodejs_compat"]
 
 [vars]
 ENVIRONMENT = "development"
+APP_URL = "http://localhost:8081"
 R2_PUBLIC_URL = "http://localhost:8787/avatars"
 
 [[kv_namespaces]]
