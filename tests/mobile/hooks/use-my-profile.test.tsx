@@ -95,14 +95,14 @@ describe("useMyProfile", () => {
   describe("異常系", () => {
     it("APIエラー時にエラー状態になること", async () => {
       // Arrange
-      mockedApiFetch.mockRejectedValue(new Error("プロフィールの取得に失敗しました"));
+      mockedApiFetch.mockRejectedValue(new Error("プロフィールの取得に失敗しました。"));
 
       // Act
       const { result } = await renderHook(() => useMyProfile(), { wrapper: Wrapper });
 
       // Assert
       await waitFor(() => expect(result.current.isError).toBe(true));
-      expect(result.current.error?.message).toBe("プロフィールの取得に失敗しました");
+      expect(result.current.error?.message).toBe("プロフィールの取得に失敗しました。");
     });
   });
 });

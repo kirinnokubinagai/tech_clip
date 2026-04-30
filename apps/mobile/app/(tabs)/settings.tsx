@@ -33,9 +33,12 @@ function SectionDivider() {
 }
 
 /** セクションタイトル */
-function SectionTitle({ title }: { title: string }) {
+function SectionTitle({ title, testID }: { title: string; testID?: string }) {
   return (
-    <Text className="text-xs font-semibold text-text-dim uppercase tracking-wider px-4 pt-4 pb-2">
+    <Text
+      testID={testID}
+      className="text-xs font-semibold text-text-dim uppercase tracking-wider px-4 pt-4 pb-2"
+    >
       {title}
     </Text>
   );
@@ -66,8 +69,11 @@ const ICON_SIZE = 20;
 function SettingsRow({ icon, label, value, onPress, trailing, testID }: SettingsRowProps) {
   const { t } = useTranslation();
   const colors = useColors();
+  // testID は Pressable 化されない非クリック行 (no onPress) のときのみ inner View に付与する。
+  // onPress あり時は Pressable に付くため inner View には付けない (重複防止)。
+  const innerTestID = onPress ? undefined : testID;
   const content = (
-    <View className="flex-row items-center px-4 py-3">
+    <View testID={innerTestID} className="flex-row items-center px-4 py-3">
       <View className="mr-3">{icon}</View>
       <Text className="flex-1 text-base text-text">{label}</Text>
       {value ? <Text className="text-sm text-text-muted mr-2">{value}</Text> : null}
@@ -207,7 +213,7 @@ export default function SettingsScreen() {
 
   return (
     <ScrollView className="flex-1 bg-background">
-      <SectionTitle title={t("settings.sections.account")} />
+      <SectionTitle testID="settings-section-account" title={t("settings.sections.account")} />
       <View className="bg-surface mx-4 rounded-xl border border-border">
         <SettingsRow
           icon={<User size={ICON_SIZE} color={colors.textMuted} />}
@@ -216,6 +222,7 @@ export default function SettingsScreen() {
         />
         <SectionDivider />
         <SettingsRow
+          testID="settings-change-password-button"
           icon={<KeyRound size={ICON_SIZE} color={colors.textMuted} />}
           label={t("settings.items.changePassword")}
           onPress={() => router.push("/settings/change-password")}
@@ -230,16 +237,20 @@ export default function SettingsScreen() {
         />
       </View>
 
-      <SectionTitle title={t("settings.sections.subscription")} />
+      <SectionTitle
+        testID="settings-section-subscription"
+        title={t("settings.sections.subscription")}
+      />
       <View className="bg-surface mx-4 rounded-xl border border-border">
         <SettingsRow
+          testID="settings-plan-row"
           icon={<CreditCard size={ICON_SIZE} color={colors.textMuted} />}
           label={t("settings.items.plan")}
           value={isSubscribed ? t("settings.plan.premium") : t("settings.plan.free")}
         />
       </View>
 
-      <SectionTitle title={t("settings.sections.general")} />
+      <SectionTitle testID="settings-section-general" title={t("settings.sections.general")} />
       <View className="bg-surface mx-4 rounded-xl border border-border">
         <SettingsRow
           testID="settings-language-button"
@@ -279,7 +290,10 @@ export default function SettingsScreen() {
         />
       </View>
 
-      <SectionTitle title={t("settings.sections.accountManagement")} />
+      <SectionTitle
+        testID="settings-section-account-management"
+        title={t("settings.sections.accountManagement")}
+      />
       <View className="bg-surface mx-4 rounded-xl border border-border">
         <SettingsRow
           testID="settings-delete-account-button"

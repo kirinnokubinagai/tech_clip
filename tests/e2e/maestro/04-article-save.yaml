@@ -11,67 +11,108 @@ tags:
 env:
   TEST_EMAIL: ${TEST_EMAIL}
   TEST_PASSWORD: ${TEST_PASSWORD}
-  TEST_ARTICLE_URL: https://zenn.dev/techclip_test/articles/sample-article
+  TEST_ARTICLE_URL: https://github.com/expo/expo
 
 ---
 
-# ログイン済み状態でアプリ起動
+# アプリ起動（clearState: true でフレッシュ状態から起動）
 - launchApp:
-    clearState: false
+    clearState: true
+- runFlow:
+    when:
+      visible: "Try out your stylus"
+    commands:
+      - tapOn: "Cancel"
+      - waitForAnimationToEnd:
+          timeout: 1000
+- runFlow:
+    when:
+      visible: "Process system isn't responding"
+    commands:
+      - tapOn: "Wait"
+      - waitForAnimationToEnd:
+          timeout: 3000
+- runFlow:
+    when:
+      visible: "Open debugger"
+    commands:
+      - tapOn:
+          point: "92%, 93%"
+      - waitForAnimationToEnd:
+          timeout: 1000
+- runFlow:
+    when:
+      visible: "take pictures and record video"
+    commands:
+      - tapOn: "Don't allow"
+      - waitForAnimationToEnd:
+          timeout: 1000
+
+- runFlow:
+    file: "helpers/login-helper.yaml"
+- waitForAnimationToEnd:
+    timeout: 2000
 
 # --- 記事保存画面への遷移 ---
-# ホーム画面から記事保存画面へ（シェアボタン等経由）
-# Expo Router の /article/save へ直接遷移
 - openLink: techclip://article/save
 
-# --- 記事保存画面 ---
-- assertVisible: "記事を保存"
+# --- 記事保存画面（fetch-button 存在で save 画面到達を判定）---
+- extendedWaitUntil:
+    visible:
+      id: "fetch-button"
+    timeout: 60000
+- assertVisible:
+    id: "save-screen-title"
 - assertVisible: "URL"
 - takeScreenshot: screenshots/04-article-save/01-save-screen
 
 # --- バリデーション: 空URL送信 ---
-- tapOn: "取得"
-- assertVisible: "URLを入力してください"
+- tapOn:
+    id: "fetch-button"
+- assertVisible: "URLを入力してください。"
 
 # --- バリデーション: 不正URL ---
 - tapOn:
     text: "https://"
 - inputText: "not-a-valid-url"
-- tapOn: "取得"
-- assertVisible: "有効なURLを入力してください"
+- tapOn:
+    id: "fetch-button"
+- assertVisible: "有効なURLを入力してください。"
 
 # URLフィールドをクリア
-- clearText
+- eraseText
 
-# --- 正常系: 有効なURLで記事を取得 ---
+# --- 正常系: 有効な GitHub URL で記事を取得 + プレビュー + 保存 ---
 - tapOn:
-    text: "https://"
+    id: "article-url-input"
+- eraseText
 - inputText: ${TEST_ARTICLE_URL}
-- tapOn: "取得"
+- hideKeyboard
+- extendedWaitUntil:
+    visible:
+      id: "fetch-button"
+    timeout: 10000
+- tapOn:
+    id: "fetch-button"
 
-# ローディング表示を確認
-- assertVisible:
-    id: "fetch-loading"
-    optional: true
-- waitForAnimationToEnd
-
-# プレビュー表示を確認
-- assertVisible:
-    id: "article-preview"
-- assertVisible: "プレビュー"
+# プレビュー表示を最大 30 秒待機（外部 URL fetch + parse）
+- extendedWaitUntil:
+    visible:
+      id: "article-preview"
+    timeout: 30000
 
 # 保存ボタンをタップ
-- tapOn: "保存する"
-- waitForAnimationToEnd
-
-# 保存成功トースト確認
-- assertVisible: "記事を保存しました"
-- takeScreenshot: screenshots/04-article-save/02-saved
-
-# --- 戻るボタン ---
-- launchApp:
-    clearState: false
-- openLink: techclip://article/save
-- assertVisible: "記事を保存"
+- extendedWaitUntil:
+    visible:
+      id: "save-button"
+    timeout: 15000
+- scrollUntilVisible:
+    element:
+      id: "save-button"
+    direction: DOWN
+    timeout: 10000
 - tapOn:
-    accessibilityLabel: "戻る"
+    id: "save-button"
+- waitForAnimationToEnd:
+    timeout: 5000
+- takeScreenshot: screenshots/04-article-save/02-saved

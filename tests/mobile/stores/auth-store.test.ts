@@ -2,7 +2,7 @@ jest.mock("@/lib/api", () => ({
   apiFetch: jest.fn(),
   SessionExpiredError: class SessionExpiredError extends Error {
     constructor() {
-      super("セッションの有効期限が切れました。再度ログインしてください");
+      super("セッションの有効期限が切れました。再度ログインしてください。");
       this.name = "SessionExpiredError";
     }
   },
@@ -53,6 +53,7 @@ describe("useAuthStore", () => {
       isAuthenticated: false,
       isLoading: true,
       sessionExpiredMessage: null,
+      hasAccount: false,
     });
     mockSetAuthToken.mockResolvedValue(undefined);
     mockSetRefreshToken.mockResolvedValue(undefined);
@@ -100,13 +101,13 @@ describe("useAuthStore", () => {
       // Arrange
       mockApiFetch.mockResolvedValue({
         success: false,
-        error: { code: "AUTH_INVALID", message: "認証情報が正しくありません" },
+        error: { code: "AUTH_INVALID", message: "認証情報が正しくありません。" },
       });
 
       // Act & Assert
       await expect(
         useAuthStore.getState().signIn({ email: "wrong@example.com", password: "wrong" }),
-      ).rejects.toThrow("認証情報が正しくありません");
+      ).rejects.toThrow("認証情報が正しくありません。");
 
       expect(useAuthStore.getState().isAuthenticated).toBe(false);
     });
@@ -116,8 +117,9 @@ describe("useAuthStore", () => {
     it("有効なデータで新規登録できること", async () => {
       // Arrange
       mockApiFetch.mockResolvedValue({
-        success: true,
-        data: { user: TEST_USER, session: TEST_SESSION },
+        token: TEST_SESSION.token,
+        user: TEST_USER,
+        session: TEST_SESSION,
       });
 
       // Act
@@ -137,8 +139,9 @@ describe("useAuthStore", () => {
     it("新規登録時にaccessTokenとrefreshTokenを別々に保存すること", async () => {
       // Arrange
       mockApiFetch.mockResolvedValue({
-        success: true,
-        data: { user: TEST_USER, session: TEST_SESSION },
+        token: TEST_SESSION.token,
+        user: TEST_USER,
+        session: TEST_SESSION,
       });
 
       // Act
@@ -249,6 +252,19 @@ describe("useAuthStore", () => {
       expect(state.isAuthenticated).toBe(false);
       expect(state.isLoading).toBe(false);
     });
+
+    it("getAuthTokenがSecureStoreエラーをスローした場合にisLoadingがfalseになること", async () => {
+      // Arrange: pm clear 後の Android Keystore 不整合を模倣
+      mockGetAuthToken.mockRejectedValue(new Error("SecureStore error after pm clear"));
+
+      // Act
+      await useAuthStore.getState().checkSession();
+
+      // Assert
+      const state = useAuthStore.getState();
+      expect(state.isAuthenticated).toBe(false);
+      expect(state.isLoading).toBe(false);
+    });
   });
 
   describe("セッション期限切れハンドリング", () => {
@@ -273,7 +289,7 @@ describe("useAuthStore", () => {
       expect(state.user).toBeNull();
       expect(state.session).toBeNull();
       expect(state.sessionExpiredMessage).toBe(
-        "セッションの有効期限が切れました。再度ログインしてください",
+        "セッションの有効期限が切れました。再度ログインしてください。",
       );
       expect(mockClearAuthTokens).toHaveBeenCalledTimes(1);
     });
@@ -281,7 +297,7 @@ describe("useAuthStore", () => {
     it("clearSessionExpiredMessageを呼ぶとsessionExpiredMessageがnullになること", async () => {
       // Arrange
       useAuthStore.setState({
-        sessionExpiredMessage: "セッションの有効期限が切れました。再度ログインしてください",
+        sessionExpiredMessage: "セッションの有効期限が切れました。再度ログインしてください。",
       });
 
       // Act
@@ -291,7 +307,7 @@ describe("useAuthStore", () => {
       expect(useAuthStore.getState().sessionExpiredMessage).toBeNull();
     });
 
-    it("checkSession時にSessionExpiredErrorがスローされたらhandleSessionExpiredが呼ばれること", async () => {
+    it("checkSession時にSessionExpiredErrorがスローされた場合は未認証状態になること", async () => {
       // Arrange
       mockGetAuthToken.mockResolvedValue("expired-token");
       mockApiFetch.mockRejectedValue(new SessionExpiredError());
@@ -302,9 +318,163 @@ describe("useAuthStore", () => {
       // Assert
       const state = useAuthStore.getState();
       expect(state.isAuthenticated).toBe(false);
-      expect(state.sessionExpiredMessage).toBe(
-        "セッションの有効期限が切れました。再度ログインしてください",
-      );
+      expect(state.sessionExpiredMessage).toBeNull();
     });
+  });
+});
+
+describe("hasAccount フラグ", () => {
+  it("初期状態でhasAccountがfalseであること", () => {
+    // Arrange & Act
+    const state = useAuthStore.getState();
+
+    // Assert
+    expect(state.hasAccount).toBe(false);
+  });
+
+  it("signIn成功後にhasAccountがtrueになること", async () => {
+    // Arrange
+    mockApiFetch.mockResolvedValue({
+      success: true,
+      data: { user: TEST_USER, session: TEST_SESSION },
+    });
+
+    // Act
+    await useAuthStore.getState().signIn({ email: "test@example.com", password: "Password123" });
+
+    // Assert
+    expect(useAuthStore.getState().hasAccount).toBe(true);
+  });
+
+  it("signUp成功後にhasAccountがtrueになること", async () => {
+    // Arrange
+    mockApiFetch.mockResolvedValue({
+      token: TEST_SESSION.token,
+      user: TEST_USER,
+      session: TEST_SESSION,
+    });
+
+    // Act
+    await useAuthStore.getState().signUp({
+      email: "test@example.com",
+      password: "Password123",
+      name: "テストユーザー",
+    });
+
+    // Assert
+    expect(useAuthStore.getState().hasAccount).toBe(true);
+  });
+
+  it("signOut後もhasAccountがtrueのままであること", async () => {
+    // Arrange
+    useAuthStore.setState({ isAuthenticated: true, hasAccount: true });
+    mockApiFetch.mockResolvedValue({ success: true, data: null });
+
+    // Act
+    await useAuthStore.getState().signOut();
+
+    // Assert
+    expect(useAuthStore.getState().hasAccount).toBe(true);
+    expect(useAuthStore.getState().isAuthenticated).toBe(false);
+  });
+
+  it("loadAccountFlagでSecureStoreの値を読み込めること", async () => {
+    // Arrange（SecureStoreに保存済みの想定）
+    const mockGetItemAsync = jest.fn().mockResolvedValue(JSON.stringify(true));
+    jest.spyOn(require("expo-secure-store"), "getItemAsync").mockImplementation(mockGetItemAsync);
+
+    // Act
+    await useAuthStore.getState().loadAccountFlag();
+
+    // Assert
+    expect(useAuthStore.getState().hasAccount).toBe(true);
+  });
+
+  it("loadAccountFlagでSecureStoreがエラーをスローした場合にhasAccountがfalseになること", async () => {
+    // Arrange: pm clear 後の Android Keystore 不整合を模倣
+    const mockGetItemAsync = jest
+      .fn()
+      .mockRejectedValue(new Error("SecureStore error after pm clear"));
+    jest.spyOn(require("expo-secure-store"), "getItemAsync").mockImplementation(mockGetItemAsync);
+
+    // Act
+    await useAuthStore.getState().loadAccountFlag();
+
+    // Assert
+    expect(useAuthStore.getState().hasAccount).toBe(false);
+  });
+});
+
+describe("signUp - メール確認必須時の自動サインイン", () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    useAuthStore.setState({
+      user: null,
+      session: null,
+      isAuthenticated: false,
+      isLoading: true,
+      sessionExpiredMessage: null,
+      hasAccount: false,
+    });
+    mockSetAuthToken.mockResolvedValue(undefined);
+    mockSetRefreshToken.mockResolvedValue(undefined);
+    mockClearAuthTokens.mockResolvedValue(undefined);
+  });
+
+  it("sign-up でtoken=nullの場合、自動的にsignInを呼び出して認証状態になること", async () => {
+    // Arrange
+    mockApiFetch
+      .mockResolvedValueOnce({
+        token: null,
+        user: TEST_USER,
+      })
+      .mockResolvedValueOnce({
+        success: true,
+        data: { user: TEST_USER, session: TEST_SESSION },
+      });
+
+    // Act
+    await useAuthStore.getState().signUp({
+      name: "テストユーザー",
+      email: "test+maestro@techclip.app",
+      password: "Password123",
+    });
+
+    // Assert
+    const state = useAuthStore.getState();
+    expect(state.isAuthenticated).toBe(true);
+    expect(state.user).toEqual(TEST_USER);
+    expect(mockApiFetch).toHaveBeenCalledTimes(2);
+    expect(mockApiFetch).toHaveBeenNthCalledWith(
+      2,
+      "/api/auth/sign-in",
+      expect.objectContaining({ method: "POST" }),
+    );
+    expect(mockSetAuthToken).toHaveBeenCalledWith(TEST_SESSION.token);
+    expect(mockSetRefreshToken).toHaveBeenCalledWith(TEST_SESSION.refreshToken);
+  });
+
+  it("sign-up でtoken=nullかつsignInも失敗した場合、エラーをスローすること", async () => {
+    // Arrange
+    mockApiFetch
+      .mockResolvedValueOnce({
+        token: null,
+        user: TEST_USER,
+      })
+      .mockResolvedValueOnce({
+        success: false,
+        error: { code: "EMAIL_NOT_VERIFIED", message: "メールアドレスが確認されていません" },
+      });
+
+    // Act & Assert
+    await expect(
+      useAuthStore.getState().signUp({
+        name: "テストユーザー",
+        email: "test@example.com",
+        password: "Password123",
+      }),
+    ).rejects.toThrow("メールアドレスが確認されていません");
+
+    expect(useAuthStore.getState().isAuthenticated).toBe(false);
   });
 });

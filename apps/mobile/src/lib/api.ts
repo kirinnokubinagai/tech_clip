@@ -1,4 +1,5 @@
 import Constants from "expo-constants";
+import { Platform } from "react-native";
 
 import i18n from "./i18n";
 import {
@@ -24,11 +25,11 @@ const HTTP_STATUS_SUCCESS_MIN = 200;
 /** HTTPステータスコード: 成功範囲の上限（未満） */
 const HTTP_STATUS_SUCCESS_MAX = 300;
 
+/** HTTPステータスコード: コンテンツなし */
+const HTTP_STATUS_NO_CONTENT = 204;
+
 /** JSONのContent-Type判定用の文字列 */
 const JSON_CONTENT_TYPE_HINT = "json";
-
-/** getBaseUrl のフォールバックURL */
-const DEFAULT_API_BASE_URL = "http://localhost:8787";
 
 /** Abortエラーの識別名 */
 const ABORT_ERROR_NAME = "AbortError";
@@ -152,16 +153,34 @@ function isRefreshTokenResponse(value: unknown): value is RefreshTokenResponse {
  * APIのベースURLを取得する
  *
  * @returns Workers APIのベースURL
+ * @throws Error - EXPO_PUBLIC_API_BASE_URL（app.config の extra.apiUrl）が未設定の場合
  */
 export function getBaseUrl(): string {
   const extra = Constants.expoConfig?.extra;
-  if (extra && typeof extra === "object" && "apiUrl" in extra) {
-    const apiUrl = (extra as { apiUrl?: unknown }).apiUrl;
-    if (typeof apiUrl === "string") {
-      return apiUrl;
+  if (extra && typeof extra === "object") {
+    const apiConfig = extra as {
+      apiUrl?: unknown;
+      apiUrlIos?: unknown;
+      apiUrlAndroid?: unknown;
+    };
+    const platformApiUrl =
+      Platform.OS === "ios"
+        ? apiConfig.apiUrlIos
+        : Platform.OS === "android"
+          ? apiConfig.apiUrlAndroid
+          : undefined;
+
+    if (typeof platformApiUrl === "string" && platformApiUrl.length > 0) {
+      return platformApiUrl;
+    }
+
+    if (typeof apiConfig.apiUrl === "string" && apiConfig.apiUrl.length > 0) {
+      return apiConfig.apiUrl;
     }
   }
-  return DEFAULT_API_BASE_URL;
+  throw new Error(
+    "APIのベースURLが設定されていません。EXPO_PUBLIC_API_BASE_URL を設定してください",
+  );
 }
 
 /**
@@ -262,6 +281,9 @@ async function tryParseJson(response: Response): Promise<unknown> {
  * @throws ApiParseError - Content-TypeがJSON以外、またはJSONパース失敗時
  */
 async function parseSuccessBody<T>(response: Response): Promise<T> {
+  if (response.status === HTTP_STATUS_NO_CONTENT) {
+    return undefined as T;
+  }
   if (!shouldParseAsJson(response)) {
     throw new ApiParseError(response.status, i18n.t("api.errors.parse"));
   }
@@ -417,7 +439,21 @@ async function interpretResponse<T>(response: Response): Promise<T> {
  * @returns 新しいアクセストークン
  * @throws SessionExpiredError - リフレッシュに失敗した場合
  */
+/** 同時に複数の refresh が走らないよう in-flight Promise を共有 */
+let refreshInFlight: Promise<string> | null = null;
+
 async function refreshAccessToken(baseUrl: string): Promise<string> {
+  // 既に走っている refresh があればそれを待つ (token reuse detected 401 を防ぐ)
+  if (refreshInFlight) {
+    return refreshInFlight;
+  }
+  refreshInFlight = doRefreshAccessToken(baseUrl).finally(() => {
+    refreshInFlight = null;
+  });
+  return refreshInFlight;
+}
+
+async function doRefreshAccessToken(baseUrl: string): Promise<string> {
   const refreshToken = await getRefreshToken();
 
   if (!refreshToken) {
@@ -425,35 +461,67 @@ async function refreshAccessToken(baseUrl: string): Promise<string> {
     throw new SessionExpiredError();
   }
 
+  let response: Response;
   try {
-    const response = await fetchWithTimeout(`${baseUrl}${REFRESH_TOKEN_PATH}`, {
+    response = await fetchWithTimeout(`${baseUrl}${REFRESH_TOKEN_PATH}`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ refreshToken }),
     });
+  } catch (networkErr) {
+    // ネットワーク不通・タイムアウト: トークンは保持してそのまま投げる
+    throw new ApiNetworkError(
+      "トークンリフレッシュ中にネットワークエラーが発生しました",
+      networkErr,
+    );
+  }
 
-    if (!isSuccessStatus(response.status)) {
-      await clearAuthTokens();
-      throw new SessionExpiredError();
-    }
-
-    const parsed = await tryParseJson(response);
-    if (!isRefreshTokenResponse(parsed)) {
-      await clearAuthTokens();
-      throw new SessionExpiredError();
-    }
-
-    await setAuthToken(parsed.data.token);
-    await setRefreshToken(parsed.data.refreshToken);
-    return parsed.data.token;
-  } catch (error) {
-    if (error instanceof SessionExpiredError) {
-      throw error;
-    }
+  if (response.status === HTTP_STATUS_UNAUTHORIZED) {
     await clearAuthTokens();
     throw new SessionExpiredError();
   }
+
+  if (!isSuccessStatus(response.status)) {
+    // 5xx などサーバー一時エラー: トークンは保持して上位に伝える
+    throw new ApiHttpError(response.status, response.statusText);
+  }
+
+  const parsed = await tryParseJson(response);
+  if (!isRefreshTokenResponse(parsed)) {
+    await clearAuthTokens();
+    throw new SessionExpiredError();
+  }
+
+  await setAuthToken(parsed.data.token);
+  await setRefreshToken(parsed.data.refreshToken);
+  return parsed.data.token;
 }
+
+/**
+ * リフレッシュトークンの in-flight Promise を管理するクロージャ
+ * 複数の 401 応答から同時に refreshAccessToken が呼ばれても 1 回の refresh に集約する
+ */
+const createRefreshCoordinator = () => {
+  let inFlight: Promise<string> | null = null;
+
+  const runOrJoin = async (baseUrl: string): Promise<string> => {
+    if (inFlight !== null) {
+      return inFlight;
+    }
+    inFlight = (async () => {
+      try {
+        return await refreshAccessToken(baseUrl);
+      } finally {
+        inFlight = null;
+      }
+    })();
+    return inFlight;
+  };
+
+  return { runOrJoin };
+};
+
+const refreshCoordinator = createRefreshCoordinator();
 
 /**
  * Workers APIへのfetchラッパー
@@ -486,7 +554,7 @@ export async function apiFetch<T>(path: string, options: RequestInit = {}): Prom
     return interpretResponse<T>(response);
   }
 
-  const newToken = await refreshAccessToken(baseUrl);
+  const newToken = await refreshCoordinator.runOrJoin(baseUrl);
 
   const retryHeaders = buildHeaders(newToken, headersWithoutContentType);
   const retryResponse = await fetchWithTimeout(`${baseUrl}${path}`, {

@@ -12,6 +12,7 @@ import {
   SUPPORTED_UI_LANGUAGES,
   type SummaryLanguage,
 } from "@/lib/language-code";
+import { logger } from "@/lib/logger";
 
 export type { Language, SummaryLanguage };
 
@@ -189,16 +190,20 @@ export const useSettingsStore = create<SettingsStore>((set, get) => ({
    * アプリ起動時に呼び出す
    */
   loadLanguage: async () => {
-    const stored = await SecureStore.getItemAsync(LANGUAGE_KEY);
-    if (stored === null) {
+    try {
+      const stored = await SecureStore.getItemAsync(LANGUAGE_KEY);
+      if (stored === null) {
+        set({ language: DEFAULT_LANGUAGE, isLanguageLoaded: true });
+        return;
+      }
+      const { language, needsMigration } = normalizeStoredLanguage(stored);
+      if (needsMigration) {
+        await SecureStore.setItemAsync(LANGUAGE_KEY, JSON.stringify(language));
+      }
+      set({ language, isLanguageLoaded: true });
+    } catch {
       set({ language: DEFAULT_LANGUAGE, isLanguageLoaded: true });
-      return;
     }
-    const { language, needsMigration } = normalizeStoredLanguage(stored);
-    if (needsMigration) {
-      await SecureStore.setItemAsync(LANGUAGE_KEY, JSON.stringify(language));
-    }
-    set({ language, isLanguageLoaded: true });
   },
 
   /**
@@ -218,25 +223,27 @@ export const useSettingsStore = create<SettingsStore>((set, get) => ({
    * パース失敗時や不正値の場合はデバイス言語にフォールバックし、SecureStoreを修復する
    */
   loadSummaryLanguage: async () => {
-    const stored = await SecureStore.getItemAsync(SUMMARY_LANGUAGE_KEY);
-    if (stored === null) {
-      set({ summaryLanguage: resolveDeviceSummaryLanguage(), isSummaryLanguageLoaded: true });
-      return;
-    }
     try {
-      const parsed = JSON.parse(stored) as unknown;
-      if (typeof parsed === "string" && isSupportedSummaryLanguage(parsed)) {
-        set({ summaryLanguage: parsed, isSummaryLanguageLoaded: true });
+      const stored = await SecureStore.getItemAsync(SUMMARY_LANGUAGE_KEY);
+      if (stored === null) {
+        set({ summaryLanguage: resolveDeviceSummaryLanguage(), isSummaryLanguageLoaded: true });
         return;
       }
+      try {
+        const parsed = JSON.parse(stored) as unknown;
+        if (typeof parsed === "string" && isSupportedSummaryLanguage(parsed)) {
+          set({ summaryLanguage: parsed, isSummaryLanguageLoaded: true });
+          return;
+        }
+      } catch {
+        // パース失敗時はデバイス言語にフォールバックする（期待される挙動のためログ不要）
+      }
+      const fallback = resolveDeviceSummaryLanguage();
+      await SecureStore.setItemAsync(SUMMARY_LANGUAGE_KEY, JSON.stringify(fallback));
+      set({ summaryLanguage: fallback, isSummaryLanguageLoaded: true });
     } catch {
-      console.warn(
-        "SecureStore の要約言語設定のパースに失敗しました。デバイス言語にフォールバックします",
-      );
+      set({ summaryLanguage: resolveDeviceSummaryLanguage(), isSummaryLanguageLoaded: true });
     }
-    const fallback = resolveDeviceSummaryLanguage();
-    await SecureStore.setItemAsync(SUMMARY_LANGUAGE_KEY, JSON.stringify(fallback));
-    set({ summaryLanguage: fallback, isSummaryLanguageLoaded: true });
   },
 
   /**
@@ -259,7 +266,10 @@ export const useSettingsStore = create<SettingsStore>((set, get) => ({
         "/api/users/me/notification-settings",
       );
       set({ notificationSettings: data.data, isNotificationSettingsLoaded: true });
-    } catch {
+    } catch (error) {
+      logger.warn("通知設定の取得に失敗しました", {
+        error: error instanceof Error ? { name: error.name, message: error.message } : error,
+      });
       set({ isNotificationSettingsLoaded: true });
     }
   },
@@ -292,7 +302,7 @@ export const useSettingsStore = create<SettingsStore>((set, get) => ({
       set({ notificationSettings: data.data });
     } catch {
       set({ notificationSettings: previous });
-      throw new Error("通知設定の更新に失敗しました");
+      throw new Error("通知設定の更新に失敗しました。");
     }
   },
 }));

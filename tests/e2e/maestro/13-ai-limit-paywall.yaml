@@ -1,0 +1,96 @@
+# AI 制限 paywall フロー
+# 無料ユーザーが AI 要約を複数回実行して制限超過時に paywall が表示されることを確認する
+# 事前条件: freeAiUsesRemaining=0 の状態を API 経由でセットする
+#
+# tags: premium, ai
+
+appId: com.techclip.app
+tags:
+  - premium
+  - ai
+
+env:
+  TEST_EMAIL: ${FOLLOWEE_EMAIL}
+  TEST_PASSWORD: ${FOLLOWEE_PASSWORD}
+  API_BASE_URL: ${API_BASE_URL}
+
+---
+
+# ログイン済み状態でアプリ起動
+- launchApp:
+    clearState: true
+- runFlow:
+    when:
+      visible: "Try out your stylus"
+    commands:
+      - tapOn: "Cancel"
+      - waitForAnimationToEnd:
+          timeout: 1000
+- runFlow:
+    when:
+      visible: "Process system isn't responding"
+    commands:
+      - tapOn: "Wait"
+      - waitForAnimationToEnd:
+          timeout: 3000
+- runFlow:
+    when:
+      visible: "Open debugger"
+    commands:
+      - tapOn:
+          point: "92%, 93%"
+      - waitForAnimationToEnd:
+          timeout: 1000
+- runFlow:
+    when:
+      visible: "take pictures and record video"
+    commands:
+      - tapOn: "Don't allow"
+      - waitForAnimationToEnd:
+          timeout: 1000
+
+- runFlow:
+    file: "helpers/login-helper.yaml"
+- waitForAnimationToEnd:
+    timeout: 2000
+
+# freeAiUsesRemaining=0 の状態で AI 要約をタップすると paywall が表示されることを確認
+# Note: テスト用 seed ユーザーは freeAiUsesRemaining=0 に設定されている想定
+
+# --- ホーム画面から記事詳細へ ---
+- assertVisible: "すべて"
+- tapOn:
+    index: 0
+    id: "article-card"
+- assertVisible:
+    text: "戻る"
+
+# AI 要約ボタンをタップ
+- tapOn:
+    text: "要約"
+- waitForAnimationToEnd:
+    timeout: 3000
+
+# paywall モーダルが表示されることを確認
+- assertVisible:
+    id: "premium-gate-container"
+- takeScreenshot: screenshots/13-ai-limit-paywall/01-paywall-shown
+
+# 閉じるボタンでモーダルを閉じる
+- tapOn:
+    id: "close-button"
+- waitForAnimationToEnd:
+    timeout: 1000
+
+# paywall が閉じて記事詳細に戻ることを確認
+- assertVisible:
+    text: "戻る"
+- assertNotVisible:
+    id: "premium-gate-container"
+- takeScreenshot: screenshots/13-ai-limit-paywall/02-paywall-closed
+
+# 戻るボタンでホームへ
+- tapOn:
+    text: "戻る"
+- assertVisible:
+    text: "すべて"

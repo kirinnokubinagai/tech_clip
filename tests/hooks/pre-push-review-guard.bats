@@ -7,7 +7,7 @@
 SCRIPT="$(cd "$(dirname "$BATS_TEST_FILENAME")/../.." && pwd)/.claude/hooks/pre-push-review-guard.sh"
 
 setup() {
-    TMPDIR=$(mktemp -d)
+    TMPDIR="$BATS_TEST_TMPDIR"
     REPO_DIR="$TMPDIR/main"
     WORKTREE_BASE="$TMPDIR"
 
@@ -20,9 +20,6 @@ setup() {
     git -C "$REPO_DIR" commit -m "initial commit"
 }
 
-teardown() {
-    rm -rf "$TMPDIR"
-}
 
 # ARGUMENTSを設定してスクリプトをworktreeから実行するヘルパー
 run_script_with_args() {
@@ -89,7 +86,7 @@ run_script_with_args_and_path() {
     local wt_path="$WORKTREE_BASE/issue-764"
     git -C "$REPO_DIR" worktree add "$wt_path" -b issue/764/test
     mkdir -p "$wt_path/.claude"
-    touch "$wt_path/.claude/.review-passed"
+    git -C "$wt_path" rev-parse HEAD > "$wt_path/.claude/.review-passed"
 
     local args='{"command": "git push origin issue/764/test"}'
 
@@ -118,7 +115,7 @@ run_script_with_args_and_path() {
     local wt_path="$WORKTREE_BASE/issue-764"
     git -C "$REPO_DIR" worktree add "$wt_path" -b issue/764/force-agent-teams-via-hooks
     mkdir -p "$wt_path/.claude"
-    touch "$wt_path/.claude/.review-passed"
+    git -C "$wt_path" rev-parse HEAD > "$wt_path/.claude/.review-passed"
 
     local args='{"command": "git push origin issue/764/force-agent-teams-via-hooks"}'
 
@@ -129,8 +126,9 @@ run_script_with_args_and_path() {
     [ "$status" -eq 0 ]
 }
 
-@test "worktreeからpushする際にマーカーがない場合はブロックされること" {
+@test "worktreeからpushする際にissue/* branchはマーカーなしでも許可されること (branch 短絡)" {
     # Arrange: worktreeを作成するがマーカーは作成しない
+    # branch 戦略 (#1138): issue/* は CI gate に委譲するため marker 不要
     local wt_path="$WORKTREE_BASE/issue-764"
     git -C "$REPO_DIR" worktree add "$wt_path" -b issue/764/force-agent-teams-via-hooks
     mkdir -p "$wt_path/.claude"
@@ -140,8 +138,8 @@ run_script_with_args_and_path() {
     # Act: worktreeから実行
     run run_script_with_args "$args" "$wt_path"
 
-    # Assert
-    [ "$status" -eq 2 ]
+    # Assert: issue/* は短絡 exit 0
+    [ "$status" -eq 0 ]
 }
 
 @test "pushコマンドからブランチ名を正しく抽出してworktreeのマーカーを確認できること" {
@@ -149,7 +147,7 @@ run_script_with_args_and_path() {
     local wt_path="$WORKTREE_BASE/issue-999"
     git -C "$REPO_DIR" worktree add "$wt_path" -b issue/999/some-feature
     mkdir -p "$wt_path/.claude"
-    touch "$wt_path/.claude/.review-passed"
+    git -C "$wt_path" rev-parse HEAD > "$wt_path/.claude/.review-passed"
 
     local args='{"command": "git push origin issue/999/some-feature"}'
 
@@ -166,7 +164,7 @@ run_script_with_args_and_path() {
     local wt_path="$WORKTREE_BASE/issue-764"
     git -C "$REPO_DIR" worktree add "$wt_path" -b issue/764/foo
     mkdir -p "$wt_path/.claude"
-    touch "$wt_path/.claude/.review-passed"
+    git -C "$wt_path" rev-parse HEAD > "$wt_path/.claude/.review-passed"
 
     local args='{"command": "git push -u origin issue/764/foo"}'
 
@@ -177,8 +175,8 @@ run_script_with_args_and_path() {
     [ "$status" -eq 0 ]
 }
 
-@test "git push -u originでマーカーがない場合はブロックされること" {
-    # Arrange: awk '{print $NF}' でブランチ名 issue/764/foo を取得し、worktreeのマーカー不在を検出できることを検証
+@test "git push -u originでissue/* branchはマーカーなしでも許可されること (branch 短絡)" {
+    # Arrange: branch 戦略 (#1138): issue/* は CI gate に委譲するため marker 不要
     local wt_path="$WORKTREE_BASE/issue-764"
     git -C "$REPO_DIR" worktree add "$wt_path" -b issue/764/foo
     mkdir -p "$wt_path/.claude"
@@ -188,9 +186,8 @@ run_script_with_args_and_path() {
     # Act
     run run_script_with_args "$args" "$wt_path"
 
-    # Assert
-    [ "$status" -eq 2 ]
-    [[ "$output" == *"DENY"* ]] || [[ "${lines[*]}" == *"DENY"* ]]
+    # Assert: issue/* は短絡 exit 0
+    [ "$status" -eq 0 ]
 }
 
 @test "git push --set-upstream originでマーカーがある場合はpushが許可されること" {
@@ -198,7 +195,7 @@ run_script_with_args_and_path() {
     local wt_path="$WORKTREE_BASE/issue-764"
     git -C "$REPO_DIR" worktree add "$wt_path" -b issue/764/foo
     mkdir -p "$wt_path/.claude"
-    touch "$wt_path/.claude/.review-passed"
+    git -C "$wt_path" rev-parse HEAD > "$wt_path/.claude/.review-passed"
 
     local args='{"command": "git push --set-upstream origin issue/764/foo"}'
 
@@ -209,8 +206,8 @@ run_script_with_args_and_path() {
     [ "$status" -eq 0 ]
 }
 
-@test "git push --set-upstream originでマーカーがない場合はブロックされること" {
-    # Arrange
+@test "git push --set-upstream originでissue/* branchはマーカーなしでも許可されること (branch 短絡)" {
+    # Arrange: branch 戦略 (#1138): issue/* は CI gate に委譲するため marker 不要
     local wt_path="$WORKTREE_BASE/issue-764"
     git -C "$REPO_DIR" worktree add "$wt_path" -b issue/764/foo
     mkdir -p "$wt_path/.claude"
@@ -220,9 +217,8 @@ run_script_with_args_and_path() {
     # Act
     run run_script_with_args "$args" "$wt_path"
 
-    # Assert
-    [ "$status" -eq 2 ]
-    [[ "$output" == *"DENY"* ]] || [[ "${lines[*]}" == *"DENY"* ]]
+    # Assert: issue/* は短絡 exit 0
+    [ "$status" -eq 0 ]
 }
 
 @test "mainブランチへのpushはブランチ抽出できない場合にCWDのマーカーを参照すること" {
@@ -236,4 +232,66 @@ run_script_with_args_and_path() {
     # Assert: mainへのpushは設定でブロックされるが、ここではガード自体のロジックをテスト
     # マーカーがなければブロックされること
     [ "$status" -eq 2 ]
+}
+
+@test "issue/* branch からの push はマーカーなしでも許可されること (branch 短絡)" {
+    # Arrange: issue/* branch worktree を作成するがマーカーは作成しない
+    local wt_path="$WORKTREE_BASE/issue-1138"
+    git -C "$REPO_DIR" worktree add "$wt_path" -b issue/1138/branch-strategy
+    mkdir -p "$wt_path/.claude"
+
+    local args='{"command": "git push origin issue/1138/branch-strategy"}'
+
+    # Act: issue/* は短絡で exit 0 (marker 不要)
+    run run_script_with_args "$args" "$wt_path"
+
+    # Assert
+    [ "$status" -eq 0 ]
+}
+
+@test "feature/* branch からの push はマーカーなしでも許可されること (branch 短絡)" {
+    # Arrange: feature/* branch worktree を作成するがマーカーは作成しない
+    local wt_path="$WORKTREE_BASE/feature-test"
+    git -C "$REPO_DIR" worktree add "$wt_path" -b feature/new-ui
+    mkdir -p "$wt_path/.claude"
+
+    local args='{"command": "git push origin feature/new-ui"}'
+
+    # Act
+    run run_script_with_args "$args" "$wt_path"
+
+    # Assert
+    [ "$status" -eq 0 ]
+}
+
+@test "stage branch からの push はマーカーが必要なこと (短絡なし)" {
+    # Arrange: stage branch worktree を作成してマーカーなし
+    local wt_path="$WORKTREE_BASE/stage-wt"
+    git -C "$REPO_DIR" worktree add "$wt_path" -b stage
+    mkdir -p "$wt_path/.claude"
+
+    local args='{"command": "git push origin stage"}'
+
+    # Act
+    run run_script_with_args "$args" "$wt_path"
+
+    # Assert: stage branch はマーカー必須 → ブロック
+    [ "$status" -eq 2 ]
+    [[ "$output" == *"DENY"* ]] || [[ "${lines[*]}" == *"DENY"* ]]
+}
+
+@test "stage branch からの push はマーカーがあれば許可されること" {
+    # Arrange: stage branch worktree を作成してマーカーを配置
+    local wt_path="$WORKTREE_BASE/stage-wt"
+    git -C "$REPO_DIR" worktree add "$wt_path" -b stage
+    mkdir -p "$wt_path/.claude"
+    git -C "$wt_path" rev-parse HEAD > "$wt_path/.claude/.review-passed"
+
+    local args='{"command": "git push origin stage"}'
+
+    # Act
+    run run_script_with_args "$args" "$wt_path"
+
+    # Assert
+    [ "$status" -eq 0 ]
 }

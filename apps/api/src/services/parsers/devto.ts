@@ -1,7 +1,7 @@
 import TurndownService from "turndown";
 
 import type { ParsedArticle } from "../../types/article";
-import { calculateReadingTime, TECHCLIP_USER_AGENT } from "./_shared";
+import { calculateReadingTime, htmlFragmentToMarkdown, TECHCLIP_USER_AGENT } from "./_shared";
 
 /** Dev.toのホスト名 */
 const DEVTO_HOSTNAME = "dev.to";
@@ -101,7 +101,7 @@ export async function parseDevto(url: string): Promise<ParsedArticle> {
       headingStyle: "atx",
       codeBlockStyle: "fenced",
     });
-    content = turndown.turndown(data.body_html);
+    content = htmlFragmentToMarkdown(data.body_html, turndown);
   }
 
   const plainText = content.replace(/[#*`[\]()>\-_~|]/g, "").replace(/\n+/g, " ");

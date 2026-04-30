@@ -10,7 +10,11 @@
 
 set -euo pipefail
 
-FLAG_DIR="${HOME}/.claude-user/projects"
+# orchestrator-flow-guard.sh と同じパス解決ロジックを使用する
+# CLAUDE_USER_ROOT はテスト時にオーバーライド可能（デフォルト: REPO_ROOT/.claude-user）
+REPO_ROOT=$(git rev-parse --show-toplevel 2>/dev/null || pwd)
+CLAUDE_USER_ROOT="${CLAUDE_USER_ROOT:-${REPO_ROOT}/.claude-user}"
+FLAG_DIR="${CLAUDE_USER_ROOT}/projects"
 
 # プロジェクトメモリディレクトリを探す
 PROJECT_MEMORY_DIR=$(ls -d "${FLAG_DIR}"/*/memory 2>/dev/null | head -1)

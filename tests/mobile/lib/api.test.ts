@@ -1,4 +1,5 @@
 import Constants from "expo-constants";
+import { Platform } from "react-native";
 
 jest.mock("expo-constants", () => ({
   __esModule: true,
@@ -23,6 +24,7 @@ import {
   ApiNetworkError,
   ApiParseError,
   apiFetch,
+  getBaseUrl,
   SessionExpiredError,
 } from "@mobile/lib/api";
 import i18n from "@mobile/lib/i18n";
@@ -157,6 +159,26 @@ describe("apiFetch", () => {
       const headers = callArgs.headers as Record<string, string>;
       expect(headers["Content-Type"]).toBe("application/json");
     });
+
+    it("204 No Content を成功として扱い undefined を返すこと", async () => {
+      // Arrange
+      mockFetch.mockResolvedValue(
+        createFetchResponse("", {
+          status: 204,
+          contentType: null,
+          jsonImpl: () => Promise.reject(new Error("No body")),
+          textImpl: () => Promise.resolve(""),
+        }),
+      );
+
+      // Act
+      const result = await apiFetch<undefined>("/api/auth/sign-out", {
+        method: "POST",
+      });
+
+      // Assert
+      expect(result).toBeUndefined();
+    });
   });
 
   describe("トークンリフレッシュ", () => {
@@ -267,7 +289,7 @@ describe("apiFetch", () => {
         createFetchResponse(
           {
             success: false,
-            error: { code: "INTERNAL_ERROR", message: "サーバーエラーが発生しました" },
+            error: { code: "INTERNAL_ERROR", message: "サーバーエラーが発生しました。" },
           },
           { status: 500 },
         ),
@@ -279,7 +301,7 @@ describe("apiFetch", () => {
       // Assert
       expect(result).toEqual({
         success: false,
-        error: { code: "INTERNAL_ERROR", message: "サーバーエラーが発生しました" },
+        error: { code: "INTERNAL_ERROR", message: "サーバーエラーが発生しました。" },
       });
     });
 
@@ -440,8 +462,41 @@ describe("apiFetch", () => {
     });
   });
 
+  describe("refreshCoordinator（in-flight 管理）", () => {
+    it("2つの apiFetch が同時に 401 を受けた場合にリフレッシュAPIへの呼び出しが1回だけになること", async () => {
+      // Arrange
+      const newToken = "new-access-token";
+      const refreshResponse = {
+        success: true,
+        data: { token: newToken, refreshToken: "new-refresh-token" },
+      };
+
+      let refreshResolve!: (value: Response) => void;
+      const refreshPromise = new Promise<Response>((resolve) => {
+        refreshResolve = resolve;
+      });
+
+      mockFetch
+        .mockResolvedValueOnce(createFetchResponse({}, { status: 401 }))
+        .mockResolvedValueOnce(createFetchResponse({}, { status: 401 }))
+        .mockImplementationOnce(() => refreshPromise)
+        .mockResolvedValue(createFetchResponse({ success: true, data: {} }));
+
+      const [p1, p2] = [apiFetch("/first"), apiFetch("/second")];
+
+      refreshResolve(createFetchResponse(refreshResponse, { status: 200 }));
+
+      await Promise.all([p1, p2]);
+
+      const refreshCalls = mockFetch.mock.calls.filter(
+        ([url]: [string]) => typeof url === "string" && url.includes("/api/auth/refresh"),
+      );
+      expect(refreshCalls).toHaveLength(1);
+    });
+  });
+
   describe("リフレッシュAPIの耐性", () => {
-    it("リフレッシュAPIが非JSONを返した場合はSessionExpiredErrorにラップされること", async () => {
+    it("リフレッシュAPIが非JSONを返した場合はApiHttpErrorをスローすること", async () => {
       // Arrange
       mockFetch
         .mockResolvedValueOnce(
@@ -455,11 +510,11 @@ describe("apiFetch", () => {
         );
 
       // Act & Assert
-      await expect(apiFetch("/articles")).rejects.toThrow(SessionExpiredError);
-      expect(mockClearAuthTokens).toHaveBeenCalledTimes(1);
+      await expect(apiFetch("/articles")).rejects.toThrow(ApiHttpError);
+      expect(mockClearAuthTokens).not.toHaveBeenCalled();
     });
 
-    it("リフレッシュAPIがネットワークエラーになった場合はSessionExpiredErrorにラップされること", async () => {
+    it("リフレッシュAPIがネットワークエラーになった場合はApiNetworkErrorをスローすること", async () => {
       // Arrange
       mockFetch
         .mockResolvedValueOnce(
@@ -468,8 +523,8 @@ describe("apiFetch", () => {
         .mockRejectedValueOnce(new TypeError("Network request failed"));
 
       // Act & Assert
-      await expect(apiFetch("/articles")).rejects.toThrow(SessionExpiredError);
-      expect(mockClearAuthTokens).toHaveBeenCalledTimes(1);
+      await expect(apiFetch("/articles")).rejects.toThrow(ApiNetworkError);
+      expect(mockClearAuthTokens).not.toHaveBeenCalled();
     });
   });
 
@@ -482,21 +537,21 @@ describe("apiFetch", () => {
       expect(error).toBeInstanceOf(Error);
       expect(error).toBeInstanceOf(ApiError);
       expect(error).toBeInstanceOf(SessionExpiredError);
-      expect(error.message).toBe("セッションの有効期限が切れました。再度ログインしてください");
+      expect(error.message).toBe("セッションの有効期限が切れました。再度ログインしてください。");
     });
   });
 
   describe("ApiHttpError", () => {
     it("statusプロパティとメッセージを保持すること", () => {
       // Arrange & Act
-      const error = new ApiHttpError(500, "サーバーエラーが発生しました");
+      const error = new ApiHttpError(500, "サーバーエラーが発生しました。");
 
       // Assert
       expect(error).toBeInstanceOf(Error);
       expect(error).toBeInstanceOf(ApiError);
       expect(error).toBeInstanceOf(ApiHttpError);
       expect(error.status).toBe(500);
-      expect(error.message).toBe("サーバーエラーが発生しました");
+      expect(error.message).toBe("サーバーエラーが発生しました。");
       expect(error.name).toBe("ApiHttpError");
     });
   });
@@ -507,13 +562,13 @@ describe("apiFetch", () => {
       const cause = new TypeError("Network request failed");
 
       // Act
-      const error = new ApiNetworkError("ネットワークに接続できません", cause);
+      const error = new ApiNetworkError("ネットワークに接続できません。", cause);
 
       // Assert
       expect(error).toBeInstanceOf(Error);
       expect(error).toBeInstanceOf(ApiError);
       expect(error).toBeInstanceOf(ApiNetworkError);
-      expect(error.message).toBe("ネットワークに接続できません");
+      expect(error.message).toBe("ネットワークに接続できません。");
       expect(error.name).toBe("ApiNetworkError");
       expect(error.cause).toBe(cause);
     });
@@ -522,14 +577,14 @@ describe("apiFetch", () => {
   describe("ApiParseError", () => {
     it("statusとメッセージを保持すること", () => {
       // Arrange & Act
-      const error = new ApiParseError(200, "レスポンスの解析に失敗しました");
+      const error = new ApiParseError(200, "レスポンスの解析に失敗しました。");
 
       // Assert
       expect(error).toBeInstanceOf(Error);
       expect(error).toBeInstanceOf(ApiError);
       expect(error).toBeInstanceOf(ApiParseError);
       expect(error.status).toBe(200);
-      expect(error.message).toBe("レスポンスの解析に失敗しました");
+      expect(error.message).toBe("レスポンスの解析に失敗しました。");
       expect(error.name).toBe("ApiParseError");
     });
   });
@@ -676,7 +731,7 @@ describe("apiFetch", () => {
 
       // Assert
       expect(caughtError).toBeInstanceOf(ApiHttpError);
-      expect((caughtError as ApiHttpError).message).toBe("リソースが見つかりません");
+      expect((caughtError as ApiHttpError).message).toBe("リソースが見つかりません。");
     });
 
     it("429の非業務エラー応答でApiHttpError.messageが'リクエストが多すぎます...'になること", async () => {
@@ -699,7 +754,7 @@ describe("apiFetch", () => {
       // Assert
       expect(caughtError).toBeInstanceOf(ApiHttpError);
       expect((caughtError as ApiHttpError).message).toBe(
-        "リクエストが多すぎます。しばらく待ってから再度お試しください",
+        "リクエストが多すぎます。しばらく待ってから再度お試しください。",
       );
     });
 
@@ -790,7 +845,79 @@ describe("apiFetch", () => {
       );
     });
 
-    it("extra.apiUrlが未設定の場合はlocalhost:8787をフォールバックとして使用すること", async () => {
+    it("iOSではextra.apiUrlIosを優先して使用すること", () => {
+      // Arrange
+      const originalPlatform = Platform.OS;
+      const originalConfig = Constants.expoConfig;
+      Object.defineProperty(Platform, "OS", {
+        value: "ios",
+        writable: true,
+        configurable: true,
+      });
+      Object.defineProperty(Constants, "expoConfig", {
+        value: {
+          extra: {
+            apiUrl: "http://fallback-api.example.com",
+            apiUrlIos: "http://ios-api.example.com",
+          },
+        },
+        writable: true,
+        configurable: true,
+      });
+
+      // Act & Assert
+      expect(getBaseUrl()).toBe("http://ios-api.example.com");
+
+      // Cleanup
+      Object.defineProperty(Platform, "OS", {
+        value: originalPlatform,
+        writable: true,
+        configurable: true,
+      });
+      Object.defineProperty(Constants, "expoConfig", {
+        value: originalConfig,
+        writable: true,
+        configurable: true,
+      });
+    });
+
+    it("Androidではextra.apiUrlAndroidを優先して使用すること", () => {
+      // Arrange
+      const originalPlatform = Platform.OS;
+      const originalConfig = Constants.expoConfig;
+      Object.defineProperty(Platform, "OS", {
+        value: "android",
+        writable: true,
+        configurable: true,
+      });
+      Object.defineProperty(Constants, "expoConfig", {
+        value: {
+          extra: {
+            apiUrl: "http://fallback-api.example.com",
+            apiUrlAndroid: "http://android-api.example.com",
+          },
+        },
+        writable: true,
+        configurable: true,
+      });
+
+      // Act & Assert
+      expect(getBaseUrl()).toBe("http://android-api.example.com");
+
+      // Cleanup
+      Object.defineProperty(Platform, "OS", {
+        value: originalPlatform,
+        writable: true,
+        configurable: true,
+      });
+      Object.defineProperty(Constants, "expoConfig", {
+        value: originalConfig,
+        writable: true,
+        configurable: true,
+      });
+    });
+
+    it("extra.apiUrlが未設定の場合はエラーをスローすること", () => {
       // Arrange
       const originalConfig = Constants.expoConfig;
       Object.defineProperty(Constants, "expoConfig", {
@@ -798,14 +925,55 @@ describe("apiFetch", () => {
         writable: true,
         configurable: true,
       });
-      mockGetAuthToken.mockResolvedValue(null);
-      mockFetch.mockResolvedValue(createFetchResponse({ success: true, data: [] }));
 
-      // Act
-      await apiFetch("/test");
+      // Act & Assert
+      expect(() => getBaseUrl()).toThrow(
+        "APIのベースURLが設定されていません。EXPO_PUBLIC_API_BASE_URL を設定してください",
+      );
 
-      // Assert
-      expect(mockFetch).toHaveBeenCalledWith("http://localhost:8787/test", expect.any(Object));
+      // Cleanup
+      Object.defineProperty(Constants, "expoConfig", {
+        value: originalConfig,
+        writable: true,
+        configurable: true,
+      });
+    });
+
+    it("extra.apiUrlが空文字の場合はエラーをスローすること", () => {
+      // Arrange
+      const originalConfig = Constants.expoConfig;
+      Object.defineProperty(Constants, "expoConfig", {
+        value: { extra: { apiUrl: "" } },
+        writable: true,
+        configurable: true,
+      });
+
+      // Act & Assert
+      expect(() => getBaseUrl()).toThrow(
+        "APIのベースURLが設定されていません。EXPO_PUBLIC_API_BASE_URL を設定してください",
+      );
+
+      // Cleanup
+      Object.defineProperty(Constants, "expoConfig", {
+        value: originalConfig,
+        writable: true,
+        configurable: true,
+      });
+    });
+
+    it("expoConfigがnullの場合はエラーをスローすること", () => {
+      // Arrange
+      const originalConfig = Constants.expoConfig;
+      Object.defineProperty(Constants, "expoConfig", {
+        value: null,
+        writable: true,
+        configurable: true,
+      });
+
+      // Act & Assert
+      expect(() => getBaseUrl()).toThrow(
+        "APIのベースURLが設定されていません。EXPO_PUBLIC_API_BASE_URL を設定してください",
+      );
 
       // Cleanup
       Object.defineProperty(Constants, "expoConfig", {

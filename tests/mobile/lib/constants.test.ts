@@ -80,7 +80,7 @@ describe("constants", () => {
       expect(LIGHT_COLORS.text).toBe("#1c1917");
       expect(LIGHT_COLORS.textMuted).toBe("#57534e");
       expect(LIGHT_COLORS.textDim).toBe("#78716c");
-      expect(LIGHT_COLORS.accent).toBe("#14b8a6");
+      expect("accent" in LIGHT_COLORS).toBe(false);
       expect(LIGHT_COLORS.border).toBe("#e7e5e4");
       expect(LIGHT_COLORS.white).toBe("#ffffff");
       expect(LIGHT_COLORS.info).toBe("#3b82f6");
@@ -101,7 +101,7 @@ describe("constants", () => {
       expect(DARK_COLORS.card).toBe("#1a1a2e");
       expect(DARK_COLORS.border).toBe("#2d2d44");
       expect(DARK_COLORS.primary).toBe("#6366f1");
-      expect(DARK_COLORS.accent).toBe("#14b8a6");
+      expect("accent" in DARK_COLORS).toBe(false);
       expect(DARK_COLORS.primaryLight).toBe("#818cf8");
       expect(DARK_COLORS.text).toBe("#e2e8f0");
       expect(DARK_COLORS.textMuted).toBe("#94a3b8");

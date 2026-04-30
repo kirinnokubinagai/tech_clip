@@ -32,6 +32,7 @@ export function AuthAlert({ message, variant = "error" }: AuthAlertProps) {
 
   return (
     <View
+      testID={variant === "success" ? "auth-alert-success" : "auth-alert-error"}
       className={styles.containerClassName}
       accessibilityRole="alert"
       accessibilityLabel={message}

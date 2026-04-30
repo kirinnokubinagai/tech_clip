@@ -7,6 +7,8 @@ import { articles, articleTags, tags } from "../db/schema";
 import {
   AUTH_ERROR_CODE,
   AUTH_ERROR_MESSAGE,
+  DUPLICATE_ERROR_CODE,
+  NOT_FOUND_ERROR_CODE,
   VALIDATION_ERROR_CODE,
   VALIDATION_ERROR_MESSAGE,
 } from "../lib/error-codes";
@@ -56,7 +58,7 @@ export function createTagsRoute(options: TagsRouteOptions) {
   const { db } = options;
   const route = new Hono<{ Variables: { user?: Record<string, unknown> } }>();
 
-  route.post("/tags", async (c) => {
+  route.post("/", async (c) => {
     const user = c.get("user");
     if (!user?.id) {
       return c.json(
@@ -105,7 +107,7 @@ export function createTagsRoute(options: TagsRouteOptions) {
         {
           success: false,
           error: {
-            code: "DUPLICATE",
+            code: DUPLICATE_ERROR_CODE,
             message: "このタグはすでに登録されています",
           },
         },
@@ -135,7 +137,7 @@ export function createTagsRoute(options: TagsRouteOptions) {
     );
   });
 
-  route.get("/tags", async (c) => {
+  route.get("/", async (c) => {
     const user = c.get("user");
     if (!user?.id) {
       return c.json(
@@ -160,7 +162,7 @@ export function createTagsRoute(options: TagsRouteOptions) {
     });
   });
 
-  route.delete("/tags/:id", async (c) => {
+  route.delete("/:id", async (c) => {
     const user = c.get("user");
     if (!user?.id) {
       return c.json(
@@ -188,7 +190,7 @@ export function createTagsRoute(options: TagsRouteOptions) {
         {
           success: false,
           error: {
-            code: "NOT_FOUND",
+            code: NOT_FOUND_ERROR_CODE,
             message: "タグが見つかりません",
           },
         },
@@ -201,7 +203,21 @@ export function createTagsRoute(options: TagsRouteOptions) {
     return c.body(null, HTTP_NO_CONTENT);
   });
 
-  route.put("/articles/:id/tags", async (c) => {
+  return route;
+}
+/**
+ * 記事タグ更新ルートを生成する
+ *
+ * PUT /:id/tags: 記事へのタグ付け（置換方式）
+ *
+ * @param options - DB インスタンス
+ * @returns Hono ルーターインスタンス
+ */
+export function createArticleTagsRoute(options: TagsRouteOptions) {
+  const { db } = options;
+  const route = new Hono<{ Variables: { user?: Record<string, unknown> } }>();
+
+  route.put("/:id/tags", async (c) => {
     const user = c.get("user");
     if (!user?.id) {
       return c.json(
@@ -251,7 +267,7 @@ export function createTagsRoute(options: TagsRouteOptions) {
         {
           success: false,
           error: {
-            code: "NOT_FOUND",
+            code: NOT_FOUND_ERROR_CODE,
             message: "記事が見つかりません",
           },
         },
@@ -269,8 +285,11 @@ export function createTagsRoute(options: TagsRouteOptions) {
 
       await db.delete(articleTags).where(eq(articleTags.articleId, articleId));
 
-      for (const tagId of validTagIds) {
-        await db.insert(articleTags).values({ articleId, tagId }).onConflictDoNothing();
+      if (validTagIds.length > 0) {
+        await db
+          .insert(articleTags)
+          .values(validTagIds.map((tagId) => ({ articleId, tagId })))
+          .onConflictDoNothing();
       }
 
       return c.json({

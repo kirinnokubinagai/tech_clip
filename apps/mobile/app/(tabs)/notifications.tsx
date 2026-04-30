@@ -1,3 +1,4 @@
+import { useRouter } from "expo-router";
 import { BellOff, CheckCheck, RefreshCw } from "lucide-react-native";
 import { useCallback, useMemo } from "react";
 import { useTranslation } from "react-i18next";
@@ -24,6 +25,7 @@ const EMPTY_ICON_SIZE = 48;
 export default function NotificationsScreen() {
   const { t } = useTranslation();
   const colors = useColors();
+  const router = useRouter();
   const {
     data,
     fetchNextPage,
@@ -45,8 +47,11 @@ export default function NotificationsScreen() {
       if (!notification.isRead) {
         markAsRead.mutate(notification.id);
       }
+      if (notification.articleId) {
+        router.push(`/article/${notification.articleId}`);
+      }
     },
-    [markAsRead],
+    [markAsRead, router],
   );
 
   const handleLoadMore = useCallback(() => {

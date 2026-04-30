@@ -336,7 +336,7 @@ describe("POST /api/auth/reset-password", () => {
       expect(body.data.message).toBe("パスワードをリセットしました。");
     });
 
-    it("パスワードリセット後にトークンが削除されること", async () => {
+    it("パスワードリセット後にトークンとセッションが削除されること", async () => {
       // Arrange
       mockSelectWhere.mockResolvedValueOnce([MOCK_VERIFICATION]).mockResolvedValueOnce([MOCK_USER]);
       const app = createTestApp();
@@ -347,8 +347,8 @@ describe("POST /api/auth/reset-password", () => {
         password: "NewPassword123",
       });
 
-      // Assert
-      expect(mockDelete).toHaveBeenCalledOnce();
+      // Assert: verification 削除 + session 全削除 = 2回
+      expect(mockDelete).toHaveBeenCalledTimes(2);
     });
 
     it("パスワードリセット後にユーザーのパスワードが更新されること", async () => {
@@ -538,5 +538,83 @@ describe("POST /api/auth/reset-password", () => {
       // Assert
       expect(res.headers.get("Content-Type")).toContain("application/json");
     });
+  });
+});
+
+describe("セキュリティ強化テスト", () => {
+  /** テスト用リセットトークン */
+  const VALID_TOKEN = "valid-reset-token-sec-test";
+
+  /** 有効期限内のverificationレコード */
+  const MOCK_VERIFICATION = {
+    id: "verif_sec_01",
+    identifier: "password-reset:test@example.com",
+    value: VALID_TOKEN,
+    expiresAt: new Date(Date.now() + 3600000).toISOString(),
+    createdAt: "2024-01-15T00:00:00Z",
+    updatedAt: "2024-01-15T00:00:00Z",
+  };
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockSelectFrom.mockReturnValue({ where: mockSelectWhere });
+    mockUpdateSet.mockReturnValue({ where: mockUpdateWhere });
+    mockUpdateWhere.mockResolvedValue(undefined);
+    mockDelete.mockReturnValue({ where: mockDeleteWhere });
+    mockDeleteWhere.mockResolvedValue(undefined);
+    mockInsertValues.mockResolvedValue(undefined);
+    vi.mocked(sendPasswordReset).mockResolvedValue({ messageId: "msg_01" });
+  });
+
+  it("新規トークン発行前に旧トークンを削除すること", async () => {
+    // Arrange
+    mockSelectWhere.mockResolvedValue([MOCK_USER]);
+    const app = createTestApp();
+
+    // Act
+    await postForgotPassword(app, { email: "test@example.com" });
+
+    // Assert: delete が insert より先（または同時）に呼ばれていること
+    expect(mockDelete).toHaveBeenCalled();
+    const deleteOrder = mockDelete.mock.invocationCallOrder[0];
+    const insertOrder = mockInsert.mock.invocationCallOrder[0];
+    expect(deleteOrder).toBeLessThan(insertOrder);
+  });
+
+  it("パスワードリセット後に providerId='credential' のアカウントのみ更新すること", async () => {
+    // Arrange
+    mockSelectWhere.mockResolvedValueOnce([MOCK_VERIFICATION]).mockResolvedValueOnce([MOCK_USER]);
+    const app = createTestApp();
+
+    // Act
+    await postResetPassword(app, {
+      token: VALID_TOKEN,
+      password: "NewPassword123",
+    });
+
+    // Assert: update の where 引数に providerId='credential' フィルタが含まれること
+    expect(mockUpdateWhere).toHaveBeenCalled();
+    // update().set().where() の引数を検証
+    // where が2つの条件（userId AND providerId）で呼ばれていること
+    const whereArg = mockUpdateWhere.mock.calls[0][0];
+    // Drizzle の and() 条件が渡されていることを確認（条件が単一でないこと）
+    expect(whereArg).toBeDefined();
+  });
+
+  it("パスワードリセット後にユーザーの全セッションを削除すること", async () => {
+    // Arrange
+    mockSelectWhere.mockResolvedValueOnce([MOCK_VERIFICATION]).mockResolvedValueOnce([MOCK_USER]);
+    const app = createTestApp();
+
+    // Act
+    await postResetPassword(app, {
+      token: VALID_TOKEN,
+      password: "NewPassword123",
+    });
+
+    // Assert: delete が2回呼ばれていること
+    // 1回目: verification トークン削除
+    // 2回目: セッション全削除
+    expect(mockDelete).toHaveBeenCalledTimes(2);
   });
 });

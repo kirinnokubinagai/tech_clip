@@ -1,3 +1,7 @@
+import { createLogger } from "../lib/logger";
+
+const uploadLogger = createLogger("imageUpload");
+
 /** R2バケットへのアップロード設定 */
 export type ImageUploadConfig = {
   r2Bucket: R2Bucket;
@@ -363,7 +367,11 @@ export async function uploadAvatarToR2(params: UploadAvatarParams): Promise<Avat
     await config.r2Bucket.put(fileName, image.buffer, {
       httpMetadata: { contentType: image.contentType },
     });
-  } catch {
+  } catch (error) {
+    uploadLogger.error("R2 へのアバター画像アップロードに失敗しました", {
+      fileName,
+      error: error instanceof Error ? { name: error.name, message: error.message } : error,
+    });
     throw new Error("アバター画像のアップロードに失敗しました");
   }
 

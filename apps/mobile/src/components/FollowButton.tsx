@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 import { ActivityIndicator, Pressable, Text } from "react-native";
 
 import { useColors } from "@/hooks/use-colors";
+import { logger } from "@/lib/logger";
 
 /** フォローボタンのアイコンサイズ（px） */
 const ICON_SIZE = 16;
@@ -44,7 +45,11 @@ export function FollowButton({
       if (onToggle) {
         await onToggle(userId, prevFollowing);
       }
-    } catch {
+    } catch (error) {
+      logger.warn("フォロー状態の変更に失敗しました", {
+        userId,
+        error: error instanceof Error ? { name: error.name, message: error.message } : error,
+      });
       setIsFollowing(prevFollowing);
     } finally {
       setIsLoading(false);

@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import { CallbackErrorView, CallbackLoadingView } from "@/components/auth/CallbackViews";
-import { setAuthToken, setRefreshToken } from "@/lib/secure-store";
+import { getOAuthState, removeOAuthState, setAuthToken, setRefreshToken } from "@/lib/secure-store";
 import { useAuthStore } from "@/stores/auth-store";
 
 /** コールバック状態 */
@@ -20,7 +20,12 @@ type CallbackState = "loading" | "error";
  * ユーザーが明示的に操作できるUXを提供する。
  */
 export default function AuthCallbackScreen() {
-  const params = useLocalSearchParams<{ token?: string; refresh_token?: string; error?: string }>();
+  const params = useLocalSearchParams<{
+    token?: string;
+    refresh_token?: string;
+    error?: string;
+    state?: string;
+  }>();
   const router = useRouter();
   const checkSession = useAuthStore((s) => s.checkSession);
   const { t } = useTranslation();
@@ -40,6 +45,14 @@ export default function AuthCallbackScreen() {
 
       if (!params.token || params.token.trim().length === 0) {
         setErrorMessage(t("auth.callback.errorNoToken"));
+        setState("error");
+        return;
+      }
+
+      const savedState = await getOAuthState();
+      await removeOAuthState();
+      if (!savedState || !params.state || savedState !== params.state) {
+        setErrorMessage(t("auth.callback.errorInvalidState"));
         setState("error");
         return;
       }
@@ -74,7 +87,7 @@ export default function AuthCallbackScreen() {
     return () => {
       cancelled = true;
     };
-  }, [params.error, params.token, params.refresh_token, checkSession, router, t]);
+  }, [params.error, params.token, params.refresh_token, params.state, checkSession, router, t]);
 
   if (state === "error") {
     return (

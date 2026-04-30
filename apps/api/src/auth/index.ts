@@ -1,7 +1,11 @@
 import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
+import { eq } from "drizzle-orm";
 
 import type { Database } from "../db";
+import * as schema from "../db/schema";
+import { users } from "../db/schema";
+import { type EmailEnv, sendEmailVerification } from "../services/emailService";
 
 /** OAuthプロバイダーの認証情報 */
 type OAuthCredentials = {
@@ -25,6 +29,12 @@ const PRODUCTION_API_URL = "https://api.techclip.app";
 /** ローカル開発用のアプリURL */
 const LOCAL_APP_URL = "http://localhost:8081";
 
+/** ローカル開発用のAPI URL（Better Auth baseURL のデフォルト） */
+const DEFAULT_API_BASE_URL = "http://localhost:18787/api/auth";
+
+/** ローカル開発用のAPI オリジン（mobile-callback の callbackURL として使用） */
+const LOCAL_API_ORIGIN = "http://localhost:18787";
+
 /** モバイルアプリのカスタムスキーム */
 const MOBILE_APP_SCHEME = "techclip://";
 
@@ -37,8 +47,10 @@ export type Auth = ReturnType<typeof createAuth>;
  * @param db - Drizzle ORM データベースインスタンス
  * @param secret - Better Auth 暗号化用シークレットキー
  * @param oauthProviders - OAuthプロバイダー設定（省略可）
- * @param baseURL - Better Auth のベースURL（省略時はLOCAL_APP_URLを使用）
+ * @param baseURL - Better Auth のベースURL（API 自身の URL を渡す。省略時は DEFAULT_API_BASE_URL を使用）
  * @param additionalTrustedOrigins - 環境変数から追加するtrustedOrigins（省略可）
+ * @param emailEnv - メール送信環境変数（省略可）
+ * @param isE2eEnv - E2E テスト環境フラグ（Workers Binding の IS_E2E_ENV === "1" で有効化）
  * @returns Better Auth インスタンス
  */
 export function createAuth(
@@ -47,21 +59,83 @@ export function createAuth(
   oauthProviders?: OAuthProviderConfig,
   baseURL?: string,
   additionalTrustedOrigins?: string[],
+  emailEnv?: EmailEnv,
+  isE2eEnv?: boolean,
 ) {
   const trustedOrigins = [
     MOBILE_APP_SCHEME,
     LOCAL_APP_URL,
+    LOCAL_API_ORIGIN,
     PRODUCTION_APP_URL,
     PRODUCTION_API_URL,
     ...(additionalTrustedOrigins ?? []),
   ];
 
   return betterAuth({
-    database: drizzleAdapter(db, { provider: "sqlite" }),
+    database: drizzleAdapter(db, {
+      provider: "sqlite",
+      schema,
+      usePlural: true,
+      experimental: { joins: true },
+    } as Parameters<typeof drizzleAdapter>[1]),
     secret,
-    baseURL: baseURL ?? LOCAL_APP_URL,
+    baseURL: baseURL ?? DEFAULT_API_BASE_URL,
     emailAndPassword: {
       enabled: true,
+      requireEmailVerification: true,
+    },
+    emailVerification: {
+      sendOnSignUp: true,
+      autoSignInAfterVerification: true,
+      sendVerificationEmail: async ({
+        user,
+        url,
+      }: {
+        user: { email: string; name?: string };
+        url: string;
+      }) => {
+        if (!emailEnv) {
+          return;
+        }
+        await sendEmailVerification(emailEnv, user.email, user.name ?? "", url);
+      },
+    },
+    databaseHooks: {
+      user: {
+        create: {
+          before: async (user) => {
+            if (!user.name || user.name.trim() === "") {
+              const localPart = user.email.split("@")[0] ?? user.email;
+              return {
+                data: { ...user, name: localPart },
+              };
+            }
+            return { data: user };
+          },
+          after: async (user) => {
+            /**
+             * E2E テスト用アカウントに自動で emailVerified を付与する
+             *
+             * 呼び出し側（db-init.ts）で以下の 2 条件を AND 評価し true の場合のみ
+             * isE2eEnv=true が渡される:
+             *   1. Workers Binding IS_E2E_ENV === "1"
+             *   2. Workers Binding ENVIRONMENT !== "production"
+             *
+             * さらにこの関数内で以下の条件を AND する:
+             *   3. email が "+maestro@techclip.app" で終わる（独自ドメインに限定）
+             *
+             * これにより本番環境で万一 IS_E2E_ENV=1 が設定されても、
+             * または attacker+maestro@gmail.com など任意ドメインでも、検証バイパスを防ぐ。
+             */
+            if (isE2eEnv === true && user.email.endsWith("+maestro@techclip.app")) {
+              await db
+                .update(users)
+                .set({ isTestAccount: true, emailVerified: true })
+                .where(eq(users.id, user.id));
+            }
+          },
+        },
+      },
     },
     socialProviders: {
       ...(oauthProviders?.google && {

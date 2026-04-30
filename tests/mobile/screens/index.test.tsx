@@ -116,7 +116,7 @@ describe("HomeScreen", () => {
     const { getByText } = await render(<HomeScreen />);
 
     await waitFor(() => {
-      expect(getByText("オフライン：キャッシュがありません")).not.toBeNull();
+      expect(getByText("オフライン：キャッシュがありません。")).not.toBeNull();
     });
   });
 
@@ -143,7 +143,7 @@ describe("HomeScreen", () => {
     const { getByText } = await render(<HomeScreen />);
 
     await waitFor(() => {
-      expect(getByText("記事の取得に失敗しました")).not.toBeNull();
+      expect(getByText("記事の取得に失敗しました。")).not.toBeNull();
       expect(getByText("再試行")).not.toBeNull();
     });
   });
@@ -269,7 +269,7 @@ describe("HomeScreen", () => {
 
       // Assert: "すべて" ソースフィルタの hint が補間されること
       await waitFor(() => {
-        expect(getAllByHintText("すべての記事のみ表示します")).not.toHaveLength(0);
+        expect(getAllByHintText("すべての記事のみ表示します。")).not.toHaveLength(0);
       });
     });
 

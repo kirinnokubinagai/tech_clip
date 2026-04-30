@@ -1,19 +1,26 @@
+import * as SecureStore from "expo-secure-store";
 import { create } from "zustand";
 
-import { apiFetch, SessionExpiredError } from "@/lib/api";
+import { apiFetch } from "@/lib/api";
 import { clearAuthTokens, getAuthToken, setAuthToken, setRefreshToken } from "@/lib/secure-store";
 import type {
   AuthErrorResponse,
+  ChangePasswordResponse,
+  DeleteAccountResponse,
   Session,
+  SessionCheckResponse,
   SignInParams,
   SignInResponse,
+  SignOutResponse,
   SignUpParams,
-  SignUpResponse,
   User,
 } from "@/types/auth";
 
+/** SecureStoreキー: アカウント作成済みフラグ */
+const HAS_ACCOUNT_KEY = "hasAccount";
+
 /** セッション期限切れメッセージ */
-const SESSION_EXPIRED_MESSAGE = "セッションの有効期限が切れました。再度ログインしてください";
+const SESSION_EXPIRED_MESSAGE = "セッションの有効期限が切れました。再度ログインしてください。";
 
 type AuthStore = {
   user: User | null;
@@ -22,6 +29,12 @@ type AuthStore = {
   isLoading: boolean;
   /** セッション期限切れ時に表示するメッセージ。nullの場合は表示しない */
   sessionExpiredMessage: string | null;
+  /** 一度でもサインインまたはサインアップに成功したことを示すフラグ */
+  hasAccount: boolean;
+  /** メール登録後のプロフィール設定が必要かどうか */
+  needsProfileSetup: boolean;
+  /** SecureStoreからhasAccountフラグを読み込む */
+  loadAccountFlag: () => Promise<void>;
   signIn: (params: SignInParams) => Promise<void>;
   signUp: (params: SignUpParams) => Promise<void>;
   signOut: () => Promise<void>;
@@ -35,14 +48,18 @@ type AuthStore = {
   changePassword: (currentPassword: string, newPassword: string) => Promise<void>;
   /** ユーザーのプロフィール情報を部分更新する */
   updateUserProfile: (patch: Partial<User>) => void;
+  /** プロフィール設定完了フラグをクリアする */
+  clearNeedsProfileSetup: () => void;
 };
 
-export const useAuthStore = create<AuthStore>((set) => ({
+export const useAuthStore = create<AuthStore>((set, get) => ({
   user: null,
   session: null,
   isAuthenticated: false,
   isLoading: true,
   sessionExpiredMessage: null,
+  hasAccount: false,
+  needsProfileSetup: false,
 
   /**
    * メールとパスワードでサインインする
@@ -63,10 +80,12 @@ export const useAuthStore = create<AuthStore>((set) => ({
     await setAuthToken(data.data.session.token);
     await setRefreshToken(data.data.session.refreshToken);
 
+    await SecureStore.setItemAsync(HAS_ACCOUNT_KEY, JSON.stringify(true));
     set({
       user: data.data.user,
       session: data.data.session,
       isAuthenticated: true,
+      hasAccount: true,
     });
   },
 
@@ -77,22 +96,42 @@ export const useAuthStore = create<AuthStore>((set) => ({
    * @throws Error - 登録失敗時
    */
   signUp: async (params: SignUpParams) => {
-    const data = await apiFetch<SignUpResponse | AuthErrorResponse>("/api/auth/sign-up/email", {
+    // Better Auth の sign-up/email は raw response を返す:
+    // 成功時: { token: string | null, user: {...}, session?: {...} }
+    // 失敗時: 4xx で apiFetch が ApiHttpError を throw
+    type BetterAuthSignUpResponse = {
+      token: string | null;
+      user: User;
+      session?: { token: string; refreshToken: string; expiresAt: string };
+    };
+    const data = await apiFetch<BetterAuthSignUpResponse>("/api/auth/sign-up/email", {
       method: "POST",
       body: JSON.stringify(params),
     });
 
-    if (!data.success) {
-      throw new Error(data.error.message);
+    if (!data.user) {
+      throw new Error("登録に失敗しました。");
     }
 
-    await setAuthToken(data.data.session.token);
-    await setRefreshToken(data.data.session.refreshToken);
+    // requireEmailVerification=true で session が返らない場合、
+    // 直ちに signIn を試みる（+maestro@ test users は emailVerified=true 自動設定されているので成功、
+    // それ以外は EMAIL_NOT_VERIFIED エラーが throw されて UI に表示される）
+    if (!data.session) {
+      await get().signIn({ email: params.email, password: params.password });
+      set({ needsProfileSetup: true });
+      return;
+    }
 
+    await setAuthToken(data.session.token);
+    await setRefreshToken(data.session.refreshToken);
+
+    await SecureStore.setItemAsync(HAS_ACCOUNT_KEY, JSON.stringify(true));
     set({
-      user: data.data.user,
-      session: data.data.session,
+      user: data.user,
+      session: data.session,
       isAuthenticated: true,
+      hasAccount: true,
+      needsProfileSetup: true,
     });
   },
 
@@ -103,7 +142,7 @@ export const useAuthStore = create<AuthStore>((set) => ({
    */
   signOut: async () => {
     try {
-      await apiFetch<{ success: true; data: null }>("/api/auth/sign-out", {
+      await apiFetch<SignOutResponse>("/api/auth/sign-out", {
         method: "POST",
       });
     } catch {
@@ -124,7 +163,7 @@ export const useAuthStore = create<AuthStore>((set) => ({
    * サーバー側のユーザーデータを全削除後、ローカル状態をクリアする
    */
   deleteAccount: async () => {
-    await apiFetch<{ success: true; data: null }>("/api/users/me", {
+    await apiFetch<DeleteAccountResponse>("/api/users/me", {
       method: "DELETE",
     });
 
@@ -145,7 +184,7 @@ export const useAuthStore = create<AuthStore>((set) => ({
    * @throws Error - 現在のパスワードが不正または変更失敗時
    */
   changePassword: async (currentPassword: string, newPassword: string) => {
-    const data = await apiFetch<{ success: boolean } | AuthErrorResponse>(
+    const data = await apiFetch<ChangePasswordResponse | AuthErrorResponse>(
       "/api/users/me/password",
       {
         method: "PATCH",
@@ -163,9 +202,15 @@ export const useAuthStore = create<AuthStore>((set) => ({
    * アプリ起動時に呼び出す
    */
   checkSession: async () => {
-    set({ isLoading: true });
+    set({ isLoading: true, sessionExpiredMessage: null });
 
-    const token = await getAuthToken();
+    let token: string | null;
+    try {
+      token = await getAuthToken();
+    } catch {
+      set({ isLoading: false, isAuthenticated: false });
+      return;
+    }
 
     if (!token) {
       set({ isLoading: false, isAuthenticated: false });
@@ -173,9 +218,7 @@ export const useAuthStore = create<AuthStore>((set) => ({
     }
 
     try {
-      const data = await apiFetch<
-        { success: true; data: { user: User; session: Session } } | AuthErrorResponse
-      >("/api/auth/session");
+      const data = await apiFetch<SessionCheckResponse | AuthErrorResponse>("/api/auth/session");
 
       if (!data.success) {
         await clearAuthTokens();
@@ -189,19 +232,7 @@ export const useAuthStore = create<AuthStore>((set) => ({
         isAuthenticated: true,
         isLoading: false,
       });
-    } catch (error) {
-      if (error instanceof SessionExpiredError) {
-        await clearAuthTokens();
-        set({
-          user: null,
-          session: null,
-          isAuthenticated: false,
-          isLoading: false,
-          sessionExpiredMessage: SESSION_EXPIRED_MESSAGE,
-        });
-        return;
-      }
-
+    } catch {
       await clearAuthTokens();
       set({
         user: null,
@@ -214,16 +245,21 @@ export const useAuthStore = create<AuthStore>((set) => ({
 
   /**
    * セッション期限切れを処理する
-   * トークンをクリアし、ログイン画面へ誘導するためのメッセージを設定する
+   * トークンをクリアし、ログイン画面へ誘導するためのメッセージを設定する。
+   *
+   * 「以前ログイン済み (isAuthenticated=true) の状態から 401 を受けた」場合のみ
+   * メッセージを表示する。未ログイン状態 (=token 無し) で background API が 401 を
+   * 受けるケース (cold start 直後で session 確立前) では、メッセージは出さない。
    */
   handleSessionExpired: async () => {
+    const wasAuthenticated = get().isAuthenticated;
     await clearAuthTokens();
 
     set({
       user: null,
       session: null,
       isAuthenticated: false,
-      sessionExpiredMessage: SESSION_EXPIRED_MESSAGE,
+      sessionExpiredMessage: wasAuthenticated ? SESSION_EXPIRED_MESSAGE : null,
     });
   },
 
@@ -245,5 +281,31 @@ export const useAuthStore = create<AuthStore>((set) => ({
     set((state) => ({
       user: state.user ? { ...state.user, ...patch } : state.user,
     }));
+  },
+
+  /**
+   * プロフィール設定完了フラグをクリアする
+   * プロフィール設定画面での保存またはスキップ後に呼び出す
+   */
+  clearNeedsProfileSetup: () => {
+    set({ needsProfileSetup: false });
+  },
+
+  /**
+   * SecureStoreからhasAccountフラグを読み込む
+   * アプリ起動時に呼び出す
+   *
+   * `pm clear` (Maestro clearState) で SharedPreferences が消えても
+   * Android Keystore のキーが残るため SecureStore が throw する場合がある。
+   * その場合はアカウントなし扱いにする。
+   */
+  loadAccountFlag: async () => {
+    try {
+      const stored = await SecureStore.getItemAsync(HAS_ACCOUNT_KEY);
+      const hasAccount = stored !== null ? (JSON.parse(stored) as boolean) : false;
+      set({ hasAccount });
+    } catch {
+      set({ hasAccount: false });
+    }
   },
 }));

@@ -7,8 +7,10 @@ import { articles, summaries, translations } from "../db/schema";
 import {
   AUTH_ERROR_CODE,
   AUTH_ERROR_MESSAGE,
+  DUPLICATE_ERROR_CODE,
   FORBIDDEN_ERROR_CODE,
   FORBIDDEN_ERROR_MESSAGE,
+  INTERNAL_ERROR_CODE,
   NOT_FOUND_ERROR_CODE,
   VALIDATION_ERROR_CODE,
   VALIDATION_ERROR_MESSAGE,
@@ -24,8 +26,11 @@ import {
   HTTP_UNAUTHORIZED,
   HTTP_UNPROCESSABLE_ENTITY,
 } from "../lib/http-status";
+import { createLogger } from "../lib/logger";
 import { omitContent } from "../lib/response-utils";
 import type { ParsedArticle } from "../services/article-parser";
+import { decodeCursor, encodeCursor as encodeCursorBase64url } from "../services/parsers/_shared";
+import { SUPPORTED_LANGUAGES } from "../validators/ai";
 
 /** デフォルトのページサイズ */
 const DEFAULT_LIMIT = 20;
@@ -75,10 +80,18 @@ const UpdateArticleSchema = z
     isRead: z.boolean({ error: "isReadはブール値で指定してください" }).optional(),
     isFavorite: z.boolean({ error: "isFavoriteはブール値で指定してください" }).optional(),
     isPublic: z.boolean({ error: "isPublicはブール値で指定してください" }).optional(),
+    content: z
+      .string({ error: "contentは文字列で指定してください" })
+      .min(1, "contentは1文字以上で指定してください")
+      .max(500_000)
+      .optional(),
   })
   .refine(
     (data) =>
-      data.isRead !== undefined || data.isFavorite !== undefined || data.isPublic !== undefined,
+      data.isRead !== undefined ||
+      data.isFavorite !== undefined ||
+      data.isPublic !== undefined ||
+      data.content !== undefined,
     {
       message: "更新するフィールドを1つ以上指定してください",
     },
@@ -102,6 +115,11 @@ export type ArticlesQueryFn = (
 /** parseArticle関数の型 */
 type ParseArticleFn = (url: string) => Promise<ParsedArticle>;
 
+const ArticleDetailQuerySchema = z.object({
+  language: z.enum(SUPPORTED_LANGUAGES).optional(),
+  targetLanguage: z.enum(SUPPORTED_LANGUAGES).optional(),
+});
+
 /** createArticlesRouteのオプション */
 type ArticlesRouteOptions = {
   db: Database;
@@ -119,13 +137,16 @@ function isNoCaptionsError(error: unknown): boolean {
   return error instanceof Error && error.message === NO_CAPTIONS_ERROR_CODE;
 }
 
+/** parseBooleanParam の結果型 */
+type BooleanParamResult = boolean | undefined | "invalid";
+
 /**
  * ブール値クエリパラメータをパースする
  *
  * @param value - クエリパラメータの文字列値
- * @returns パース結果。無効な値の場合はエラー文字列
+ * @returns パース結果。無効な値の場合は "invalid"
  */
-function parseBooleanParam(value: string | undefined): boolean | undefined | string {
+function parseBooleanParam(value: string | undefined): BooleanParamResult {
   if (value === undefined) {
     return undefined;
   }
@@ -253,8 +274,26 @@ export function createArticlesRoute(options: ArticlesRouteOptions) {
       );
     }
 
+    if (cursor) {
+      try {
+        decodeCursor(cursor);
+      } catch {
+        return c.json(
+          {
+            success: false,
+            error: {
+              code: "INVALID_CURSOR",
+              message: "カーソルが不正です",
+            },
+          },
+          400,
+        );
+      }
+    }
+
+    const userId = user.id as string;
     const fetchedArticles = await queryFn({
-      userId: user.id as string,
+      userId,
       limit: limit + 1,
       cursor: cursor || undefined,
       source: source || undefined,
@@ -265,7 +304,16 @@ export function createArticlesRoute(options: ArticlesRouteOptions) {
     const hasNext = fetchedArticles.length > limit;
     const sliced = hasNext ? fetchedArticles.slice(0, limit) : fetchedArticles;
     const data = sliced.map(omitContent);
-    const nextCursor = hasNext ? (data[data.length - 1].id as string) : null;
+    const lastItem = sliced[sliced.length - 1];
+    const nextCursor =
+      hasNext && lastItem
+        ? encodeCursorBase64url(
+            lastItem.createdAt instanceof Date
+              ? (lastItem.createdAt as Date).toISOString()
+              : String(lastItem.createdAt),
+            lastItem.id as string,
+          )
+        : null;
 
     return c.json({
       success: true,
@@ -345,17 +393,97 @@ export function createArticlesRoute(options: ArticlesRouteOptions) {
           HTTP_UNPROCESSABLE_ENTITY,
         );
       }
+      createLogger().error("parseArticle failed", {
+        error: error instanceof Error ? error : new Error(String(error)),
+      });
       return c.json(
         {
           success: false,
           error: {
-            code: "INTERNAL_ERROR",
+            code: INTERNAL_ERROR_CODE,
             message: "記事の解析に失敗しました",
           },
         },
         HTTP_INTERNAL_SERVER_ERROR,
       );
     }
+  });
+
+  route.post("/:id/clone", async (c) => {
+    const user = c.get("user");
+    if (!user?.id) {
+      return c.json(
+        {
+          success: false,
+          error: { code: AUTH_ERROR_CODE, message: AUTH_ERROR_MESSAGE },
+        },
+        HTTP_UNAUTHORIZED,
+      );
+    }
+
+    const userId = user.id as string;
+    const sourceId = c.req.param("id");
+
+    const [source] = await db.select().from(articles).where(eq(articles.id, sourceId));
+    if (!source) {
+      return c.json(
+        {
+          success: false,
+          error: { code: NOT_FOUND_ERROR_CODE, message: NOT_FOUND_ERROR_MESSAGE },
+        },
+        HTTP_NOT_FOUND,
+      );
+    }
+
+    if (source.userId !== userId && !source.isPublic) {
+      return c.json(
+        {
+          success: false,
+          error: { code: FORBIDDEN_ERROR_CODE, message: FORBIDDEN_ERROR_MESSAGE },
+        },
+        HTTP_FORBIDDEN,
+      );
+    }
+
+    const existing = await db
+      .select()
+      .from(articles)
+      .where(and(eq(articles.userId, userId), eq(articles.url, source.url)));
+    if (existing.length > 0) {
+      return c.json(
+        {
+          success: false,
+          error: { code: "DUPLICATE", message: "この記事はすでに保存されています" },
+        },
+        HTTP_CONFLICT,
+      );
+    }
+
+    const now = new Date();
+    const id = crypto.randomUUID();
+    const [inserted] = await db
+      .insert(articles)
+      .values({
+        id,
+        userId,
+        url: source.url,
+        source: source.source,
+        title: source.title,
+        author: source.author,
+        content: source.content,
+        excerpt: source.excerpt,
+        thumbnailUrl: source.thumbnailUrl,
+        readingTimeMinutes: source.readingTimeMinutes,
+        isRead: false,
+        isFavorite: false,
+        isPublic: false,
+        publishedAt: source.publishedAt,
+        createdAt: now,
+        updatedAt: now,
+      })
+      .returning();
+
+    return c.json({ success: true, data: inserted }, HTTP_CREATED);
   });
 
   route.post("/", async (c) => {
@@ -407,7 +535,7 @@ export function createArticlesRoute(options: ArticlesRouteOptions) {
         {
           success: false,
           error: {
-            code: "DUPLICATE",
+            code: DUPLICATE_ERROR_CODE,
             message: "この記事はすでに保存されています",
           },
         },
@@ -469,7 +597,7 @@ export function createArticlesRoute(options: ArticlesRouteOptions) {
         {
           success: false,
           error: {
-            code: "INTERNAL_ERROR",
+            code: INTERNAL_ERROR_CODE,
             message: "記事の取得・保存に失敗しました",
           },
         },
@@ -493,7 +621,30 @@ export function createArticlesRoute(options: ArticlesRouteOptions) {
       );
     }
 
+    const detailQuery = ArticleDetailQuerySchema.safeParse({
+      language: c.req.query("language"),
+      targetLanguage: c.req.query("targetLanguage"),
+    });
+    if (!detailQuery.success) {
+      return c.json(
+        {
+          success: false,
+          error: {
+            code: VALIDATION_ERROR_CODE,
+            message: VALIDATION_ERROR_MESSAGE,
+            details: detailQuery.error.issues.map((e) => ({
+              field: e.path.join("."),
+              message: e.message,
+            })),
+          },
+        },
+        HTTP_UNPROCESSABLE_ENTITY,
+      );
+    }
+
     const articleId = c.req.param("id");
+    const summaryLanguage = detailQuery.data.language ?? "ja";
+    const translationLanguage = detailQuery.data.targetLanguage ?? "en";
 
     const results = await db.select().from(articles).where(eq(articles.id, articleId));
 
@@ -512,7 +663,7 @@ export function createArticlesRoute(options: ArticlesRouteOptions) {
 
     const article = results[0];
 
-    if (article.userId !== (user.id as string)) {
+    if (article.userId !== (user.id as string) && !article.isPublic) {
       return c.json(
         {
           success: false,
@@ -528,11 +679,16 @@ export function createArticlesRoute(options: ArticlesRouteOptions) {
     const [summary] = await db
       .select()
       .from(summaries)
-      .where(and(eq(summaries.articleId, articleId), eq(summaries.language, "ja")));
+      .where(and(eq(summaries.articleId, articleId), eq(summaries.language, summaryLanguage)));
     const [translation] = await db
       .select()
       .from(translations)
-      .where(and(eq(translations.articleId, articleId), eq(translations.targetLanguage, "en")));
+      .where(
+        and(
+          eq(translations.articleId, articleId),
+          eq(translations.targetLanguage, translationLanguage),
+        ),
+      );
 
     return c.json(
       {
@@ -623,6 +779,9 @@ export function createArticlesRoute(options: ArticlesRouteOptions) {
     }
     if (validation.data.isPublic !== undefined) {
       updateData.isPublic = validation.data.isPublic;
+    }
+    if (validation.data.content !== undefined) {
+      updateData.content = validation.data.content;
     }
 
     await db.update(articles).set(updateData).where(eq(articles.id, articleId));

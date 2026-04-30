@@ -1,10 +1,9 @@
-import { Link } from "expo-router";
-import { useState } from "react";
+import { Link, useRouter } from "expo-router";
+import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
-  ActivityIndicator,
+  Image,
   KeyboardAvoidingView,
-  Linking,
   Platform,
   Pressable,
   ScrollView,
@@ -15,35 +14,10 @@ import {
 
 import { AuthAlert } from "@/components/auth/AuthAlert";
 import { AuthSubmitButton } from "@/components/auth/AuthSubmitButton";
+import { OAuthButtons, type SocialProvider } from "@/components/auth/OAuthButtons";
 import { useColors } from "@/hooks/use-colors";
-import { fetchWithTimeout, getBaseUrl } from "@/lib/api";
-import { APP_SCHEME } from "@/lib/constants";
 import { EMAIL_SIMPLE_REGEX, PASSWORD_MIN_LENGTH } from "@/lib/validation";
 import { useAuthStore } from "@/stores/auth-store";
-
-/** ソーシャルサインインAPIのパス */
-const SOCIAL_SIGN_IN_PATH = "/api/auth/sign-in/social";
-/** ソーシャルログイン後のコールバックURL。deep link path が必要になったら constants 側へ移す。 */
-const SOCIAL_CALLBACK_URL = `${APP_SCHEME}://auth/callback`;
-
-/**
- * ソーシャルログインAPIレスポンスにリダイレクトURLが含まれるか判定する
- */
-function hasSocialRedirectUrl(value: unknown): value is { url: string } {
-  return (
-    typeof value === "object" &&
-    value !== null &&
-    "url" in value &&
-    typeof (value as { url?: unknown }).url === "string"
-  );
-}
-
-type SocialProvider = "google" | "github";
-
-const SOCIAL_PROVIDERS: ReadonlyArray<{ provider: SocialProvider; translationKey: string }> = [
-  { provider: "google", translationKey: "auth.continueWithGoogle" },
-  { provider: "github", translationKey: "auth.continueWithGithub" },
-];
 
 /**
  * ログイン画面
@@ -52,18 +26,27 @@ const SOCIAL_PROVIDERS: ReadonlyArray<{ provider: SocialProvider; translationKey
 export default function LoginScreen() {
   const { t } = useTranslation();
   const colors = useColors();
+  const router = useRouter();
   const signIn = useAuthStore((s) => s.signIn);
+  const sessionExpiredMessage = useAuthStore((s) => s.sessionExpiredMessage);
+  const clearSessionExpiredMessage = useAuthStore((s) => s.clearSessionExpiredMessage);
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isEmailSubmitting, setIsEmailSubmitting] = useState(false);
-  const [socialSigningInProvider, setSocialSigningInProvider] = useState<SocialProvider | null>(
-    null,
-  );
+  const [socialLoadingProvider, setSocialLoadingProvider] = useState<SocialProvider | null>(null);
   const [errorMessage, setErrorMessage] = useState("");
   const [isPasswordVisible, setIsPasswordVisible] = useState(false);
-  const isSocialSubmitting = socialSigningInProvider !== null;
-  const isAnySubmitting = isEmailSubmitting || isSocialSubmitting;
+
+  useEffect(() => {
+    if (!sessionExpiredMessage) {
+      return;
+    }
+    setErrorMessage(sessionExpiredMessage);
+    clearSessionExpiredMessage();
+  }, [sessionExpiredMessage, clearSessionExpiredMessage]);
+
+  const isAnySubmitting = isEmailSubmitting || socialLoadingProvider !== null;
 
   /**
    * フォームのバリデーションを実行する
@@ -114,55 +97,22 @@ export default function LoginScreen() {
     }
   };
 
-  /**
-   * ソーシャルログインを開始する
-   *
-   * @param provider - 利用するソーシャルプロバイダー
-   */
-  const handleSocialSignIn = async (provider: SocialProvider) => {
-    setErrorMessage("");
-    setSocialSigningInProvider(provider);
-
-    try {
-      const response = await fetchWithTimeout(`${getBaseUrl()}${SOCIAL_SIGN_IN_PATH}`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          provider,
-          callbackURL: SOCIAL_CALLBACK_URL,
-          disableRedirect: true,
-        }),
-      });
-
-      if (!response.ok) {
-        setErrorMessage(t("auth.socialLoginFailed"));
-        return;
-      }
-
-      const responseBody: unknown = await response.json();
-      if (!hasSocialRedirectUrl(responseBody) || !responseBody.url.startsWith("https://")) {
-        setErrorMessage(t("auth.socialLoginFailed"));
-        return;
-      }
-
-      await Linking.openURL(responseBody.url);
-    } catch {
-      setErrorMessage(t("auth.socialLoginFailed"));
-    } finally {
-      setSocialSigningInProvider(null);
-    }
-  };
-
   return (
     <KeyboardAvoidingView
       behavior={Platform.OS === "ios" ? "padding" : "height"}
       className="flex-1 bg-background"
     >
       <ScrollView
-        contentContainerClassName="flex-1 justify-center px-6 py-8"
+        contentContainerClassName="flex-grow justify-center px-6 py-8"
         keyboardShouldPersistTaps="handled"
       >
         <View className="mb-12 items-center">
+          <Image
+            source={require("../../assets/images/icon.png")}
+            style={{ width: 80, height: 80, marginBottom: 16 }}
+            resizeMode="contain"
+            accessibilityLabel="TechClip logo"
+          />
           <Text className="text-4xl font-bold text-text">TechClip</Text>
           <Text className="mt-2 text-base text-text-muted">{t("auth.appTagline")}</Text>
         </View>
@@ -226,14 +176,13 @@ export default function LoginScreen() {
             </View>
           </View>
 
-          <Link href="/(auth)/forgot-password" asChild>
-            <Pressable
-              className="mb-6 self-start"
-              accessibilityRole="link"
-              accessibilityLabel={t("auth.forgotPassword")}
-            >
-              <Text className="text-sm font-medium text-primary">{t("auth.forgotPassword")}</Text>
-            </Pressable>
+          <Link
+            href="/(auth)/forgot-password"
+            testID="login-forgot-password-link"
+            className="mb-6 self-start"
+            accessibilityLabel={t("auth.forgotPassword")}
+          >
+            <Text className="text-sm font-medium text-primary">{t("auth.forgotPassword")}</Text>
           </Link>
 
           <AuthSubmitButton
@@ -254,44 +203,31 @@ export default function LoginScreen() {
             <View className="h-px flex-1 bg-border" />
           </View>
 
-          <View className="gap-3">
-            {SOCIAL_PROVIDERS.map(({ provider, translationKey }) => (
-              <Pressable
-                key={provider}
-                onPress={() => handleSocialSignIn(provider)}
-                disabled={isAnySubmitting}
-                className="items-center rounded-lg border border-border bg-card py-3.5"
-                style={({ pressed }) => ({
-                  opacity: pressed || isAnySubmitting ? 0.7 : 1,
-                })}
-                accessibilityRole="button"
-                accessibilityLabel={t(translationKey)}
-                accessibilityState={{ disabled: isAnySubmitting }}
-                testID={`social-signin-${provider}`}
-              >
-                {socialSigningInProvider === provider ? (
-                  <ActivityIndicator
-                    color={colors.text}
-                    size="small"
-                    testID={`social-signin-${provider}-loading`}
-                  />
-                ) : (
-                  <Text className="text-base font-medium text-text">{t(translationKey)}</Text>
-                )}
-              </Pressable>
-            ))}
-          </View>
+          <OAuthButtons
+            mode="login"
+            isAnySubmitting={isAnySubmitting}
+            onError={setErrorMessage}
+            onLoadingChange={setSocialLoadingProvider}
+            loadingProvider={socialLoadingProvider}
+          />
         </View>
 
         <View className="mt-6 flex-row items-center justify-center">
           <Text className="text-sm text-text-muted">{t("auth.loginToRegisterPrompt")}</Text>
-          <Link href="/(auth)/register" asChild>
-            <Pressable testID="login-register-link">
-              <Text className="ml-1 text-sm font-semibold text-primary">
-                {t("auth.loginToRegister")}
-              </Text>
-            </Pressable>
-          </Link>
+          <Pressable
+            testID="login-register-link"
+            accessibilityRole="link"
+            accessibilityLabel="login-register-link"
+            onPress={() => router.push("/(auth)/register")}
+            hitSlop={8}
+          >
+            <Text
+              testID="login-register-link-text"
+              className="ml-1 text-sm font-semibold text-primary"
+            >
+              {t("auth.loginToRegister")}
+            </Text>
+          </Pressable>
         </View>
       </ScrollView>
     </KeyboardAvoidingView>

@@ -20,8 +20,16 @@ jest.mock("@mobile/stores/auth-store", () => ({
   ),
 }));
 
+jest.mock("@mobile/hooks/use-my-profile", () => ({
+  useMyProfile: jest.fn(() => ({ data: undefined, isLoading: false })),
+}));
+
 const { useAuthStore } = jest.requireMock("@mobile/stores/auth-store") as {
   useAuthStore: jest.Mock;
+};
+
+const { useMyProfile } = jest.requireMock("@mobile/hooks/use-my-profile") as {
+  useMyProfile: jest.Mock;
 };
 
 /** テスト用ユーザーオブジェクト */
@@ -76,12 +84,31 @@ function mockLoadingState() {
   );
 }
 
+/** APIプロフィールデータ */
+const MOCK_PROFILE = {
+  id: "user_01",
+  email: "test@example.com",
+  name: "テストユーザー",
+  image: null,
+  avatarUrl: null,
+  username: "test_user",
+  bio: "テストのbioです",
+  websiteUrl: null,
+  githubUsername: null,
+  twitterUsername: null,
+  isProfilePublic: true,
+  preferredLanguage: null,
+  createdAt: "2024-01-01T00:00:00Z",
+  updatedAt: "2024-01-01T00:00:00Z",
+};
+
 // NOTE: @testing-library/react-native v13+ では render() が Promise を返す
 describe("ProfileScreen", () => {
   beforeEach(() => {
     jest.clearAllMocks();
     mockPush.mockReset();
     mockCheckSession.mockResolvedValue(undefined);
+    useMyProfile.mockReturnValue({ data: undefined, isLoading: false });
   });
   describe("未ログイン時", () => {
     it("ログイン誘導メッセージが表示されること", async () => {
@@ -156,6 +183,7 @@ describe("ProfileScreen", () => {
     it("ProfileHeaderにユーザー名が表示されること", async () => {
       // Arrange
       mockAuthenticatedState();
+      useMyProfile.mockReturnValue({ data: MOCK_PROFILE, isLoading: false });
 
       // Act
       const { getByTestId } = await render(<ProfileScreen />);
@@ -167,9 +195,27 @@ describe("ProfileScreen", () => {
       });
     });
 
+    it("APIから取得したbioが表示されること", async () => {
+      // Arrange
+      mockAuthenticatedState();
+      useMyProfile.mockReturnValue({ data: MOCK_PROFILE, isLoading: false });
+
+      // Act
+      const { queryByTestId } = await render(<ProfileScreen />);
+
+      // Assert
+      await waitFor(() => {
+        expect(queryByTestId("profile-bio")).not.toBeNull();
+      });
+    });
+
     it("ProfileHeaderにアバターが表示されること（avatarUrl がある場合）", async () => {
       // Arrange
       mockAuthenticatedState({ image: "https://example.com/avatar.png" });
+      useMyProfile.mockReturnValue({
+        data: { ...MOCK_PROFILE, avatarUrl: "https://example.com/avatar.png" },
+        isLoading: false,
+      });
 
       // Act
       const { queryByTestId } = await render(<ProfileScreen />);
@@ -183,6 +229,7 @@ describe("ProfileScreen", () => {
     it("avatarUrl がない場合はフォールバックアバターが表示されること", async () => {
       // Arrange
       mockAuthenticatedState();
+      useMyProfile.mockReturnValue({ data: MOCK_PROFILE, isLoading: false });
 
       // Act
       const { queryByTestId } = await render(<ProfileScreen />);
@@ -193,9 +240,24 @@ describe("ProfileScreen", () => {
       });
     });
 
+    it("プロフィールローディング中はローディングインジケータが表示されること", async () => {
+      // Arrange
+      mockAuthenticatedState();
+      useMyProfile.mockReturnValue({ data: undefined, isLoading: true });
+
+      // Act
+      const { queryByTestId } = await render(<ProfileScreen />);
+
+      // Assert
+      await waitFor(() => {
+        expect(queryByTestId("profile-loading")).not.toBeNull();
+      });
+    });
+
     it("設定ボタンを押すと設定画面に遷移すること", async () => {
       // Arrange
       mockAuthenticatedState();
+      useMyProfile.mockReturnValue({ data: MOCK_PROFILE, isLoading: false });
       const { getByTestId } = await render(<ProfileScreen />);
 
       // Act
@@ -208,6 +270,7 @@ describe("ProfileScreen", () => {
     it("設定ボタン押下後に router.push が1度だけ呼ばれること", async () => {
       // Arrange
       mockAuthenticatedState();
+      useMyProfile.mockReturnValue({ data: MOCK_PROFILE, isLoading: false });
       const { getByTestId } = await render(<ProfileScreen />);
 
       // Act

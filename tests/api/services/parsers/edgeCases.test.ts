@@ -222,7 +222,7 @@ describe("パーサー エッジケース", () => {
       expect(result.content).toContain("リダイレクトを経由");
     });
 
-    it("fetchにfollowオプションが設定されること", async () => {
+    it("fetchにmanualリダイレクトオプションが設定されること", async () => {
       // Arrange
       const html = `
 <!DOCTYPE html>
@@ -248,11 +248,11 @@ describe("パーサー エッジケース", () => {
       // Act
       await parseGeneric("https://example.com/follow-test");
 
-      // Assert: redirectオプションを含むオブジェクトでfetchが呼ばれること
+      // Assert: SSRF対策のためredirect: "manual"でfetchが呼ばれること
       expect(mockFetch).toHaveBeenCalledWith(
         "https://example.com/follow-test",
         expect.objectContaining({
-          redirect: "follow",
+          redirect: "manual",
         }),
       );
     });

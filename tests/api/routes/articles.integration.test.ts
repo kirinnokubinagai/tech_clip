@@ -5,10 +5,10 @@
  * インメモリ SQLite + 実 Hono アプリ (app.request) で検証する。
  */
 
-import { articles, sessions, users } from "@api/db/schema/index";
+import { articles, sessions, summaries, translations, users } from "@api/db/schema/index";
 import { createArticlesRoute } from "@api/routes/articles";
 import { createClient } from "@libsql/client";
-import { and, desc, eq, lt } from "drizzle-orm";
+import { and, desc, eq, lt, or, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/libsql";
 import { Hono } from "hono";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -38,7 +38,7 @@ function createTestDb() {
 /** DDL 文を実行してテーブルを初期化する */
 async function initTables(db: ReturnType<typeof createTestDb>) {
   await db.run(
-    "CREATE TABLE IF NOT EXISTS users (id TEXT PRIMARY KEY, email TEXT NOT NULL UNIQUE, name TEXT, image TEXT, email_verified INTEGER DEFAULT 0, username TEXT UNIQUE, bio TEXT, website_url TEXT, github_username TEXT, twitter_username TEXT, avatar_url TEXT, is_profile_public INTEGER DEFAULT 1, preferred_language TEXT DEFAULT 'ja', is_premium INTEGER DEFAULT 0, premium_expires_at TEXT, free_ai_uses_remaining INTEGER DEFAULT 5, free_ai_reset_at TEXT, push_token TEXT, push_enabled INTEGER DEFAULT 1, created_at TEXT NOT NULL DEFAULT (datetime('now')), updated_at TEXT NOT NULL DEFAULT (datetime('now')))",
+    "CREATE TABLE IF NOT EXISTS users (id TEXT PRIMARY KEY, email TEXT NOT NULL UNIQUE, name TEXT, image TEXT, email_verified INTEGER DEFAULT 0, username TEXT UNIQUE, bio TEXT, website_url TEXT, github_username TEXT, twitter_username TEXT, avatar_url TEXT, is_profile_public INTEGER DEFAULT 1, preferred_language TEXT DEFAULT 'ja', is_premium INTEGER DEFAULT 0, premium_expires_at TEXT, free_ai_uses_remaining INTEGER DEFAULT 5, free_ai_reset_at TEXT, push_token TEXT, push_enabled INTEGER DEFAULT 1, is_test_account INTEGER DEFAULT 0, created_at TEXT NOT NULL DEFAULT (datetime('now')), updated_at TEXT NOT NULL DEFAULT (datetime('now')))",
   );
   await db.run(
     "CREATE TABLE IF NOT EXISTS sessions (id TEXT PRIMARY KEY, user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE, token TEXT NOT NULL UNIQUE, expires_at TEXT NOT NULL, ip_address TEXT, user_agent TEXT, created_at TEXT NOT NULL DEFAULT (datetime('now')), updated_at TEXT NOT NULL DEFAULT (datetime('now')))",
@@ -107,13 +107,27 @@ function buildTestApp(
     queryFn: async (params) => {
       const conditions = [eq(articles.userId, params.userId)];
       if (params.cursor) {
-        conditions.push(lt(articles.id, params.cursor));
+        try {
+          const cur = JSON.parse(Buffer.from(params.cursor, "base64url").toString()) as {
+            createdAt: string;
+            id: string;
+          };
+          const cursorDate = new Date(cur.createdAt);
+          conditions.push(
+            or(
+              lt(articles.createdAt, cursorDate),
+              and(sql`${articles.createdAt} = ${cursorDate}`, lt(articles.id, cur.id)),
+            ) as ReturnType<typeof and>,
+          );
+        } catch {
+          conditions.push(lt(articles.id, params.cursor));
+        }
       }
       const results = await (db as never as ReturnType<typeof drizzle>)
         .select()
         .from(articles)
         .where(and(...conditions))
-        .orderBy(desc(articles.createdAt))
+        .orderBy(desc(articles.createdAt), desc(articles.id))
         .limit(params.limit);
       return results as unknown as Array<Record<string, unknown>>;
     },
@@ -409,6 +423,60 @@ describe("E2E: 記事クリティカルパス", () => {
         expect(body.data.id).toBe("article_e2e_detail_01");
         expect(body.data.title).toBe("詳細テスト記事");
         expect(body.data.content).toBe("詳細記事の本文");
+      });
+
+      it("language と targetLanguage に対応する要約と翻訳を取得できること", async () => {
+        // Arrange
+        const now = new Date();
+        await db.insert(articles).values({
+          id: "article_e2e_detail_lang_01",
+          userId: TEST_USER_ID,
+          url: `${TEST_URL}/lang`,
+          source: "example.com",
+          title: "多言語記事",
+          content: "多言語記事の本文",
+          isRead: false,
+          isFavorite: false,
+          isPublic: false,
+          createdAt: now,
+          updatedAt: now,
+        });
+        await db.insert(summaries).values({
+          id: "summary_e2e_lang_01",
+          articleId: "article_e2e_detail_lang_01",
+          language: "en",
+          summary: "English summary",
+          model: "gemma-4-27b-it",
+          createdAt: now,
+        });
+        await db.insert(translations).values({
+          id: "translation_e2e_lang_01",
+          articleId: "article_e2e_detail_lang_01",
+          targetLanguage: "ko",
+          translatedTitle: "다국어 기사",
+          translatedContent: "한국어 번역 본문",
+          model: "gemma-4-27b-it",
+          createdAt: now,
+        });
+        const app = buildTestApp(db, createMockParser());
+
+        // Act
+        const res = await app.request(
+          "/api/articles/article_e2e_detail_lang_01?language=en&targetLanguage=ko",
+          {
+            method: "GET",
+          },
+        );
+
+        // Assert
+        expect(res.status).toBe(HTTP_OK);
+        const body = (await res.json()) as {
+          success: true;
+          data: { summary: string | null; translation: string | null };
+        };
+        expect(body.success).toBe(true);
+        expect(body.data.summary).toBe("English summary");
+        expect(body.data.translation).toBe("한국어 번역 본문");
       });
     });
 

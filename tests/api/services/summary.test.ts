@@ -310,3 +310,33 @@ describe("sanitizeArticleContent", () => {
     expect(result).not.toMatch(/\s{2}/);
   });
 });
+
+describe("sanitizeArticleContent - ReDoS 対策", () => {
+  it("大量の script タグを含む入力で処理時間が線形に収まること", () => {
+    // Arrange: 多数の script タグを含む入力（旧 regex では exponential になる）
+    const scripts = "<script>alert(1)</script>".repeat(500);
+    const malicious = `${scripts}<p>本文</p>`;
+
+    // Act
+    const start = Date.now();
+    const result = sanitizeArticleContent(malicious);
+    const elapsed = Date.now() - start;
+
+    // Assert: 1秒以内に完了すること（ReDoS なら数十秒かかる）
+    expect(elapsed).toBeLessThan(1000);
+    expect(result).toContain("本文");
+    expect(result).not.toContain("alert");
+  });
+
+  it("ネストされた複雑な script パターンを安全に除去できること", () => {
+    // Arrange
+    const input = '<script type="text/javascript">var x = "</script>"; </script><p>本文</p>';
+
+    // Act
+    const result = sanitizeArticleContent(input);
+
+    // Assert
+    expect(result).toContain("本文");
+    expect(result).not.toContain("<script");
+  });
+});

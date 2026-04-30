@@ -22,6 +22,10 @@ import {
  * @returns サポートされている言語コード
  */
 function resolveDeviceLanguage(): UiLanguage {
+  // E2E tests are written in Japanese; force ja regardless of emulator locale
+  if (process.env.EXPO_PUBLIC_E2E_MODE === "1") {
+    return DEFAULT_UI_LANGUAGE;
+  }
   const locales = getLocales();
   if (locales.length === 0) {
     return DEFAULT_UI_LANGUAGE;

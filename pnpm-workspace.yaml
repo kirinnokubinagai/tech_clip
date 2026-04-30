@@ -1,3 +1,6 @@
 packages:
   - "apps/*"
   - "packages/*"
+
+# Supply chain security: 3日以内に公開されたバージョンはインストールしない
+minimumReleaseAge: 4320

@@ -153,7 +153,7 @@ cp apps/mobile/.env.example apps/mobile/.env
 cd apps/api && pnpm db:migrate && cd ../..
 
 # 6. 開発サーバー起動
-pnpm dev:api     # API サーバー (http://localhost:8787)
+pnpm dev:api     # API サーバー (http://localhost:18787)
 pnpm dev:mobile  # Expo 開発サーバー
 ```
 
@@ -179,7 +179,7 @@ pnpm dev:mobile  # Expo 開発サーバー
 
 ```bash
 pnpm dev:mobile          # Expo 開発サーバー起動
-pnpm dev:api             # API サーバー起動 (localhost:8787)
+pnpm dev:api             # API サーバー起動 (localhost:18787)
 ```
 
 ### テスト
@@ -236,7 +236,7 @@ eas build --platform android          # Android ビルド (EAS)
 
 | 変数名 | 説明 | 取得元 |
 |--------|------|--------|
-| `EXPO_PUBLIC_API_URL` | API 接続先 URL | ローカル: `http://localhost:8787` |
+| `EXPO_PUBLIC_API_URL` | API 接続先 URL | ローカル: `http://localhost:18787` |
 | `EXPO_PUBLIC_REVENUECAT_IOS_API_KEY` | RevenueCat iOS キー | [RevenueCat](https://app.revenuecat.com) |
 | `EXPO_PUBLIC_REVENUECAT_ANDROID_API_KEY` | RevenueCat Android キー | [RevenueCat](https://app.revenuecat.com) |
 | `EXPO_PUBLIC_ADMOB_BANNER_ID` | AdMob バナー広告 ID | [Google AdMob](https://admob.google.com) |

@@ -1,3 +1,4 @@
+import { useQueryClient } from "@tanstack/react-query";
 import * as Haptics from "expo-haptics";
 import { router, useLocalSearchParams } from "expo-router";
 import { AlertCircle, ArrowLeft, ExternalLink, Loader2 } from "lucide-react-native";
@@ -6,16 +7,17 @@ import { useTranslation } from "react-i18next";
 import { Image, Pressable, ScrollView, Text, View } from "react-native";
 
 import { Button, Card, Input, SourceBadge, Toast } from "@/components/ui";
+import { ARTICLES_QUERY_KEY } from "@/hooks/use-articles";
 import { useColors } from "@/hooks/use-colors";
 import { useToast } from "@/hooks/use-toast";
 import { apiFetch } from "@/lib/api";
+import { ARTICLE_THUMBNAIL_HEIGHT } from "@/lib/constants";
 import type { ArticlePreview, ParseArticleResponse, SaveArticleResponse } from "@/types/article";
 
 /** URL正規表現パターン */
 const URL_PATTERN = /^https?:\/\/.+/;
 
 /** サムネイル画像の高さ */
-const THUMBNAIL_HEIGHT = 160;
 
 /** ソースバッジのアイコンサイズ */
 const ICON_SIZE_SM = 14;
@@ -51,6 +53,7 @@ function validateUrl(url: string): "article.urlRequired" | "article.urlInvalid" 
 export default function SaveScreen() {
   const { t } = useTranslation();
   const colors = useColors();
+  const queryClient = useQueryClient();
   const { url: sharedUrl } = useLocalSearchParams<{ url?: string }>();
   const [url, setUrl] = useState(sharedUrl ?? "");
   const [preview, setPreview] = useState<ArticlePreview | null>(null);
@@ -119,13 +122,14 @@ export default function SaveScreen() {
       }
 
       showToast(t("article.savedSuccess"), "success");
+      queryClient.invalidateQueries({ queryKey: [ARTICLES_QUERY_KEY] });
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     } catch {
       setErrorMessage(t("article.saveFailed"));
     } finally {
       setIsSaving(false);
     }
-  }, [preview, url, showToast, t]);
+  }, [preview, url, showToast, t, queryClient]);
 
   return (
     <View className="flex-1">
@@ -136,10 +140,11 @@ export default function SaveScreen() {
         onDismiss={dismissToast}
       />
       <ScrollView className="flex-1 bg-background" keyboardShouldPersistTaps="handled">
-        <View className="px-4 pt-4 pb-8">
+        <View className="px-4 pt-14 pb-8">
           {/* ヘッダー */}
           <View className="flex-row items-center mb-6">
             <Pressable
+              testID="save-back-button"
               onPress={() => router.back()}
               accessibilityRole="button"
               accessibilityLabel={t("article.backA11yLabel")}
@@ -148,12 +153,15 @@ export default function SaveScreen() {
             >
               <ArrowLeft size={ICON_SIZE_LG} color={colors.text} />
             </Pressable>
-            <Text className="text-xl font-bold text-text">{t("article.saveTitle")}</Text>
+            <Text testID="save-screen-title" className="text-xl font-bold text-text">
+              {t("article.saveTitle")}
+            </Text>
           </View>
 
           {/* URL入力 */}
           <View className="mb-4">
             <Input
+              testID="article-url-input"
               label={t("article.urlLabel")}
               placeholder={t("article.urlPlaceholder")}
               value={url}
@@ -190,6 +198,7 @@ export default function SaveScreen() {
           {/* エラーメッセージ */}
           {errorMessage && (
             <View
+              testID="save-error-message"
               className="flex-row items-center gap-2 rounded-lg bg-error/10 border border-error/30 p-3 mb-4"
               accessibilityRole="alert"
               accessibilityLabel={errorMessage}
@@ -216,7 +225,7 @@ export default function SaveScreen() {
                   <Image
                     source={{ uri: preview.thumbnailUrl }}
                     className="w-full rounded-lg mb-3"
-                    style={{ height: THUMBNAIL_HEIGHT }}
+                    style={{ height: ARTICLE_THUMBNAIL_HEIGHT }}
                     resizeMode="cover"
                     accessibilityLabel={t("article.thumbnailAlt")}
                   />

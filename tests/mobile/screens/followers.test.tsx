@@ -131,12 +131,12 @@ describe("FollowersScreen", () => {
   describe("フォロワーリスト", () => {
     it("フォロワー一覧が表示されること", async () => {
       // Arrange & Act
-      const { getByTestId } = await render(<FollowersScreen />);
+      const { getAllByTestId } = await render(<FollowersScreen />);
 
       // Assert
       await waitFor(() => {
-        getByTestId("user-item-user-1");
-        getByTestId("user-item-user-2");
+        const items = getAllByTestId("follower-list-item");
+        expect(items).toHaveLength(2);
       });
     });
 
@@ -237,10 +237,10 @@ describe("FollowersScreen", () => {
   describe("ナビゲーション", () => {
     it("ユーザーアイテムをタップするとプロフィール画面に遷移すること", async () => {
       // Arrange
-      const { getByTestId } = await render(<FollowersScreen />);
+      const { getAllByTestId } = await render(<FollowersScreen />);
 
       // Act
-      await fireEvent.press(getByTestId("user-item-user-1"));
+      await fireEvent.press(getAllByTestId("follower-list-item")[0]);
 
       // Assert
       await waitFor(() => {

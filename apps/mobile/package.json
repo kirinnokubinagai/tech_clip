@@ -2,7 +2,7 @@
   "name": "@tech-clip/mobile",
   "version": "0.0.1",
   "private": true,
-  "main": "expo-router/entry",
+  "main": "./index.js",
   "scripts": {
     "dev": "expo start",
     "build:ios": "eas build --platform ios",
@@ -51,6 +51,7 @@
     "react-native-screens": "~4.23.0",
     "react-native-svg": "^15.15.3",
     "react-native-web": "~0.21.2",
+    "react-native-webview": "^13.16.1",
     "tailwind-merge": "^3.5.0",
     "zustand": "^5.0.0"
   },

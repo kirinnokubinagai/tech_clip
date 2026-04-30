@@ -12,6 +12,7 @@ type SentryEvent = {
   event_id: string;
   timestamp: string;
   platform: string;
+  environment?: string;
   exception: {
     values: Array<{
       type: string;
@@ -23,6 +24,7 @@ type SentryEvent = {
 /** Sentry ミドルウェアの Bindings 型（SENTRY_DSN を含む環境） */
 type SentryBindings = {
   SENTRY_DSN?: string;
+  ENVIRONMENT?: string;
   [key: string]: unknown;
 };
 
@@ -71,13 +73,15 @@ function buildAuthHeader(publicKey: string): string {
  * エラーから Sentry イベントペイロードを生成する
  *
  * @param error - キャプチャするエラー
+ * @param environment - デプロイ環境識別子（省略可）
  * @returns Sentry イベントオブジェクト
  */
-function buildSentryEvent(error: Error): SentryEvent {
+function buildSentryEvent(error: Error, environment?: string): SentryEvent {
   return {
     event_id: crypto.randomUUID().replace(/-/g, ""),
     timestamp: new Date().toISOString(),
     platform: "javascript",
+    ...(environment !== undefined ? { environment } : {}),
     exception: {
       values: [
         {
@@ -95,15 +99,21 @@ function buildSentryEvent(error: Error): SentryEvent {
  * @param dsn - Sentry DSN 文字列
  * @param error - 送信するエラー
  * @param fetchFn - fetch 実装（テスト時にモック差し替え可能）
+ * @param environment - デプロイ環境識別子（省略可）
  */
-async function captureError(dsn: string, error: Error, fetchFn: typeof fetch): Promise<void> {
+async function captureError(
+  dsn: string,
+  error: Error,
+  fetchFn: typeof fetch,
+  environment?: string,
+): Promise<void> {
   const parts = parseDsn(dsn);
   if (!parts) {
     return;
   }
 
   const url = buildSentryUrl(parts);
-  const event = buildSentryEvent(error);
+  const event = buildSentryEvent(error, environment);
 
   await fetchFn(url, {
     method: "POST",
@@ -120,6 +130,7 @@ async function captureError(dsn: string, error: Error, fetchFn: typeof fetch): P
  *
  * 未処理の例外を Sentry に送信する。
  * 環境変数 SENTRY_DSN が未設定の場合はエラーをキャプチャしない。
+ * production / staging 以外の環境では SENTRY_DSN があってもスキップする。
  *
  * @param fetchFn - fetch 実装（デフォルトはグローバル fetch）
  * @returns Hono ミドルウェアハンドラー
@@ -137,8 +148,14 @@ export function createSentryMiddleware(
     if (!dsn) {
       return;
     }
+    // Sentry への送信は production / staging のみ許可する。
+    // development / test では DSN があってもスキップし、本番シグナルのノイズを防ぐ。
+    const environment = c.env?.ENVIRONMENT;
+    if (environment !== "production" && environment !== "staging") {
+      return;
+    }
     if (err instanceof Error) {
-      await captureError(dsn, err, fetchFn);
+      await captureError(dsn, err, fetchFn, environment);
     }
   };
 }

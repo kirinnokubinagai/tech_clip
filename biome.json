@@ -49,7 +49,9 @@
       "!**/.worktrees",
       "!**/.zap",
       "!apps/api/.wrangler",
-      "!apps/api/drizzle"
+      "!apps/api/drizzle",
+      "!apps/mobile/android",
+      "!apps/mobile/ios"
     ]
   },
   "javascript": {

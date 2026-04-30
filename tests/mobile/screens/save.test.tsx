@@ -6,6 +6,13 @@ import { setMockLocale } from "../helpers/i18n-test-utils";
 /** apiFetchのモック */
 const mockApiFetch = jest.fn();
 
+/** invalidateQueriesのモック */
+const mockInvalidateQueries = jest.fn();
+
+jest.mock("@tanstack/react-query", () => ({
+  useQueryClient: () => ({ invalidateQueries: mockInvalidateQueries }),
+}));
+
 jest.mock("@/lib/api", () => ({
   apiFetch: (...args: unknown[]) => mockApiFetch(...args),
 }));
@@ -173,7 +180,7 @@ describe("SaveScreen", () => {
 
       // Assert
       await waitFor(() => {
-        expect(getByText("URLを入力してください")).toBeDefined();
+        expect(getByText("URLを入力してください。")).toBeDefined();
       });
     });
 
@@ -187,7 +194,7 @@ describe("SaveScreen", () => {
 
       // Assert
       await waitFor(() => {
-        expect(getByText("有効なURLを入力してください")).toBeDefined();
+        expect(getByText("有効なURLを入力してください。")).toBeDefined();
       });
     });
 
@@ -195,7 +202,7 @@ describe("SaveScreen", () => {
       // Arrange
       mockApiFetch.mockResolvedValueOnce({
         success: false,
-        error: { code: "INTERNAL_ERROR", message: "記事の取得に失敗しました" },
+        error: { code: "INTERNAL_ERROR", message: "記事の取得に失敗しました。" },
       });
       const { getByPlaceholderText, getByTestId, getByText } = await render(<SaveScreen />);
 
@@ -205,7 +212,7 @@ describe("SaveScreen", () => {
 
       // Assert
       await waitFor(() => {
-        expect(getByText("記事の取得に失敗しました")).toBeDefined();
+        expect(getByText("記事の取得に失敗しました。")).toBeDefined();
       });
     });
   });
@@ -339,7 +346,7 @@ describe("SaveScreen", () => {
 
       // Assert
       await waitFor(() => {
-        expect(mockShowToast).toHaveBeenCalledWith("記事を保存しました", "success");
+        expect(mockShowToast).toHaveBeenCalledWith("記事を保存しました。", "success");
       });
     });
 

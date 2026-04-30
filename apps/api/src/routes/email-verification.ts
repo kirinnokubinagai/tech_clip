@@ -7,6 +7,9 @@ import { users, verifications } from "../db/schema";
 import {
   AUTH_ERROR_CODE,
   AUTH_ERROR_MESSAGE,
+  INTERNAL_ERROR_CODE,
+  INVALID_REQUEST_ERROR_CODE,
+  NOT_FOUND_ERROR_CODE,
   VALIDATION_ERROR_CODE,
   VALIDATION_ERROR_MESSAGE,
 } from "../lib/error-codes";
@@ -19,6 +22,7 @@ import {
   HTTP_UNPROCESSABLE_ENTITY,
 } from "../lib/http-status";
 import { createLogger } from "../lib/logger";
+import { hashTokenSha256 } from "../lib/token-utils";
 import type { EmailEnv } from "../services/emailService";
 import { sendEmailVerification } from "../services/emailService";
 
@@ -41,23 +45,6 @@ type EmailVerificationRouteOptions = {
   appUrl: string;
   emailEnv: EmailEnv;
 };
-
-/**
- * メール認証用トークンをSHA-256でハッシュ化する
- *
- * Web Crypto API (SubtleCrypto) を使用してハッシュ化する。
- * Cloudflare Workers 環境でも動作する。
- *
- * @param token - ハッシュ化するトークン文字列
- * @returns ハッシュ化された16進数文字列
- */
-async function hashToken(token: string): Promise<string> {
-  const encoder = new TextEncoder();
-  const data = encoder.encode(token);
-  const hashBuffer = await crypto.subtle.digest("SHA-256", data);
-  const hashArray = Array.from(new Uint8Array(hashBuffer));
-  return hashArray.map((b) => b.toString(16).padStart(2, "0")).join("");
-}
 
 /**
  * メール認証ルートを生成する
@@ -95,7 +82,7 @@ export function createEmailVerificationRoute(options: EmailVerificationRouteOpti
         {
           success: false,
           error: {
-            code: "NOT_FOUND",
+            code: NOT_FOUND_ERROR_CODE,
             message: "ユーザーが見つかりません",
           },
         },
@@ -104,7 +91,7 @@ export function createEmailVerificationRoute(options: EmailVerificationRouteOpti
     }
 
     const rawToken = crypto.randomUUID();
-    const hashedToken = await hashToken(rawToken);
+    const hashedToken = await hashTokenSha256(rawToken);
     const identifier = `${EMAIL_VERIFICATION_IDENTIFIER_PREFIX}:${userId}`;
     const expiresAt = new Date(Date.now() + VERIFICATION_TOKEN_TTL_MS).toISOString();
 
@@ -120,22 +107,17 @@ export function createEmailVerificationRoute(options: EmailVerificationRouteOpti
     });
 
     const verifyUrl = `${appUrl}/verify-email?token=${rawToken}`;
-    const userName = (found as unknown as Record<string, unknown>).name as string | null;
+    const userName = found.name;
 
     try {
-      await sendEmailVerification(
-        emailEnv,
-        (found as unknown as Record<string, unknown>).email as string,
-        userName ?? "",
-        verifyUrl,
-      );
+      await sendEmailVerification(emailEnv, found.email, userName ?? "", verifyUrl);
     } catch (error) {
       logger.error("認証メール送信エラー", { userId, error });
       return c.json(
         {
           success: false,
           error: {
-            code: "INTERNAL_ERROR",
+            code: INTERNAL_ERROR_CODE,
             message: "認証メールの送信に失敗しました",
           },
         },
@@ -189,7 +171,7 @@ export function createEmailVerificationRoute(options: EmailVerificationRouteOpti
     }
 
     const { token } = validation.data;
-    const hashedToken = await hashToken(token);
+    const hashedToken = await hashTokenSha256(token);
 
     const [verification] = await db
       .select()
@@ -201,7 +183,7 @@ export function createEmailVerificationRoute(options: EmailVerificationRouteOpti
         {
           success: false,
           error: {
-            code: "INVALID_REQUEST",
+            code: INVALID_REQUEST_ERROR_CODE,
             message: "無効なトークンです",
           },
         },
@@ -209,14 +191,13 @@ export function createEmailVerificationRoute(options: EmailVerificationRouteOpti
       );
     }
 
-    const verif = verification as unknown as Record<string, unknown>;
-    const expiresAt = new Date(verif.expiresAt as string);
+    const expiresAt = new Date(String(verification.expiresAt));
     if (expiresAt <= new Date()) {
       return c.json(
         {
           success: false,
           error: {
-            code: "INVALID_REQUEST",
+            code: INVALID_REQUEST_ERROR_CODE,
             message: "トークンの有効期限が切れています",
           },
         },
@@ -224,8 +205,10 @@ export function createEmailVerificationRoute(options: EmailVerificationRouteOpti
       );
     }
 
-    const identifier = verif.identifier as string;
-    const userId = identifier.replace(`${EMAIL_VERIFICATION_IDENTIFIER_PREFIX}:`, "");
+    const userId = String(verification.identifier).replace(
+      `${EMAIL_VERIFICATION_IDENTIFIER_PREFIX}:`,
+      "",
+    );
 
     await db.update(users).set({ emailVerified: true }).where(eq(users.id, userId));
 

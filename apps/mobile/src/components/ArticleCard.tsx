@@ -6,6 +6,7 @@ import { Pressable, Text, View } from "react-native";
 
 import { SourceBadge } from "@/components/ui";
 import { useColors } from "@/hooks/use-colors";
+import { ARTICLE_THUMBNAIL_HEIGHT } from "@/lib/constants";
 import { formatArticleDate } from "@/lib/date-format";
 import { useSettingsStore } from "@/stores/settings-store";
 import type { ArticleListItem } from "@/types/article";
@@ -21,9 +22,6 @@ type ArticleCardProps = {
   onPress: () => void;
   onToggleFavorite?: () => void;
 };
-
-/** サムネイル画像の高さ（px） */
-const THUMBNAIL_HEIGHT = 160;
 
 /** お気に入りアイコンのサイズ（px） */
 const FAVORITE_ICON_SIZE = 20;
@@ -60,7 +58,7 @@ export const ArticleCard = memo(function ArticleCard({
         <Image
           testID="article-thumbnail"
           source={{ uri: article.thumbnailUrl }}
-          style={{ width: "100%", height: THUMBNAIL_HEIGHT }}
+          style={{ width: "100%", height: ARTICLE_THUMBNAIL_HEIGHT }}
           contentFit="cover"
           cachePolicy="memory-disk"
         />
@@ -104,18 +102,13 @@ export const ArticleCard = memo(function ArticleCard({
               hitSlop={8}
             >
               {article.isFavorite ? (
-                <Heart
-                  testID="favorite-icon-filled"
-                  size={FAVORITE_ICON_SIZE}
-                  color={colors.favorite}
-                  fill={colors.favorite}
-                />
+                <View testID="favorite-icon-filled">
+                  <Heart size={FAVORITE_ICON_SIZE} color={colors.favorite} fill={colors.favorite} />
+                </View>
               ) : (
-                <Heart
-                  testID="favorite-icon-outline"
-                  size={FAVORITE_ICON_SIZE}
-                  color={colors.textMuted}
-                />
+                <View testID="favorite-icon-outline">
+                  <Heart size={FAVORITE_ICON_SIZE} color={colors.textMuted} />
+                </View>
               )}
             </Pressable>
           </View>

@@ -44,10 +44,18 @@ export const useUIStore = create<UIState>((set) => ({
   /**
    * SecureStoreからオンボーディング状態を読み込む
    * アプリ起動時に呼び出す
+   *
+   * `pm clear` (Maestro clearState) で SharedPreferences が消えても
+   * Android Keystore のキーが残るため SecureStore が throw する場合がある。
+   * その場合は未表示扱いにして isOnboardingLoaded を必ず true にする。
    */
   loadOnboardingState: async () => {
-    const stored = await SecureStore.getItemAsync(ONBOARDING_SEEN_KEY);
-    const hasSeenOnboarding = stored !== null ? JSON.parse(stored) : false;
-    set({ hasSeenOnboarding, isOnboardingLoaded: true });
+    try {
+      const stored = await SecureStore.getItemAsync(ONBOARDING_SEEN_KEY);
+      const hasSeenOnboarding = stored !== null ? JSON.parse(stored) : false;
+      set({ hasSeenOnboarding, isOnboardingLoaded: true });
+    } catch {
+      set({ hasSeenOnboarding: false, isOnboardingLoaded: true });
+    }
   },
 }));
