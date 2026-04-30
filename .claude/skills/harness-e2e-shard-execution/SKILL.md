@@ -17,7 +17,7 @@ triggers:
 
 - `{worktree}`: worktree の絶対パス
 - `{issue_number}`: Issue 番号
-- `{agent_name}`: 自分の名前（`issue-{N}-e2e-reviewer`）
+- `{agent_name}`: 自分の名前（`e2e-reviewer-{N}`）
 - `{reviewer_role}`: reviewer / infra-reviewer / ui-reviewer
 - `{coder_role}`: coder / infra-engineer / ui-designer
 

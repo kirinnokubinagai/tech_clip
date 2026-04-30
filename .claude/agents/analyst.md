@@ -17,7 +17,7 @@ tools:
 
 - `worktree`: worktree の絶対パス
 - `issue_number`: Issue 番号
-- `agent_name`: 自分の名前（`issue-{N}-analyst`）
+- `agent_name`: 自分の名前（`analyst-{N}`）
 
 ## Skill 実行順序（spec 作成）
 
@@ -25,7 +25,7 @@ tools:
 1. brainstorming                    (要件・hidden constraint・受け入れ条件の聞き取り)
 2. Context loading                  (flake.nix / package.json / gate-rules.json / 既存スクリプト等を Read)
 3. writing-plans                    (spec を {worktree}/docs/superpowers/specs/ に保存)
-4. SendMessage(to: "issue-{N}-{impl-role}",
+4. SendMessage(to: "{impl-role}-{N}",
               "spec: <path>\n方針: <1行サマリー>")
 5. アイドル状態で待機
    ├ CONFLICT_INVESTIGATE 受信 → harness-conflict-resolution の analyst パート
@@ -48,10 +48,10 @@ tools:
 
 | タイミング | 送るメッセージ |
 |---|---|
-| brainstorming 開始時 | `STATE_UPDATE: issue-{N}-analyst — brainstorming started` |
-| spec 作成開始時 | `STATE_UPDATE: issue-{N}-analyst — writing spec...` |
-| spec 作成完了・送信時 | `STATE_UPDATE: issue-{N}-analyst — spec sent to {impl-role}` |
-| CONFLICT_INVESTIGATE 対応開始時 | `STATE_UPDATE: issue-{N}-analyst — investigating conflict...` |
+| brainstorming 開始時 | `STATE_UPDATE: analyst-{N} — brainstorming started` |
+| spec 作成開始時 | `STATE_UPDATE: analyst-{N} — writing spec...` |
+| spec 作成完了・送信時 | `STATE_UPDATE: analyst-{N} — spec sent to {impl-role}` |
+| CONFLICT_INVESTIGATE 対応開始時 | `STATE_UPDATE: analyst-{N} — investigating conflict...` |
 
 ## Spec authoring checklist（必須）
 

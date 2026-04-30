@@ -17,14 +17,14 @@ triggers:
 
 ## 命名規約
 
-- 単独: `issue-{N}-{role}`（既存）
-- レーン: `issue-{N}-{role}-{lane}`（lane は `api` / `mobile` / `ci` / `docs` / `test` 等）
+- 単独: `{role}-{N}`（既存）
+- レーン: `{role}-{lane}-{N}`（lane は `api` / `mobile` / `ci` / `docs` / `test` 等）
 
 lane は `[a-zA-Z0-9][a-zA-Z0-9-]*` の英数字ハイフン文字列。
 
 ## 必須条件
 
-1. **analyst は 1 体のみ** (`issue-{N}-analyst`)。lane 分割しない
+1. **analyst は 1 体のみ** (`analyst-{N}`)。lane 分割しない
 2. **spec にレーン分けを明記**: analyst が spec 内で各 lane の「触って OK」ファイルパス集合を非重複に定義
 3. **file ownership 厳格遵守**: 各 coder は自 lane の集合以外に絶対触らない
 4. **reviewer は 1 体が全 lane の impl-ready を集約**: 全 lane から受信後に統合レビュー
