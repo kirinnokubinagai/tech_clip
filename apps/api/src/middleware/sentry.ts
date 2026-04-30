@@ -101,7 +101,7 @@ function buildSentryEvent(error: Error, environment?: string): SentryEvent {
  * @param fetchFn - fetch 実装（テスト時にモック差し替え可能）
  * @param environment - デプロイ環境識別子（省略可）
  */
-async function captureError(
+export async function captureError(
   dsn: string,
   error: Error,
   fetchFn: typeof fetch,

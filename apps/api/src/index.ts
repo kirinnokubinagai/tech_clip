@@ -14,6 +14,10 @@ import {
   createRefreshTokenCleanupDeps,
 } from "./cron/cleanupExpiredRefreshTokens";
 import { createMonthlyResetDeps, resetFreeAiUsesMonthly } from "./cron/monthlyReset";
+import {
+  createReconcileFailedRollbacksDeps,
+  reconcileFailedRollbacks,
+} from "./cron/reconcileFailedRollbacks";
 import { createSubscriptionCheckDeps, disableExpiredSubscriptions } from "./cron/subscriptionCheck";
 import { createDatabase } from "./db";
 import { createLogger } from "./lib/logger";
@@ -163,7 +167,10 @@ app.on(["POST"], "/api/analytics/:path{.*}", async (c) => {
 /** Cloudflare Workers scheduled イベントハンドラー */
 const scheduled: ExportedHandlerScheduledHandler<Bindings> = async (_event, env, ctx) => {
   const db = createDatabase(env);
-  const dbForCron = db as unknown as { update: (table: unknown) => unknown } & {
+  const dbForCron = db as unknown as {
+    select: (fields?: unknown) => unknown;
+    update: (table: unknown) => unknown;
+  } & {
     delete: (table: unknown) => unknown;
   };
   const logger = createLogger();
@@ -196,6 +203,20 @@ const scheduled: ExportedHandlerScheduledHandler<Bindings> = async (_event, env,
       } catch (error) {
         logger.error("cron refreshTokenCleanup 失敗", {
           job: "refreshTokenCleanup",
+          error: error instanceof Error ? error.message : String(error),
+        });
+      }
+      try {
+        const result = await reconcileFailedRollbacks(
+          createReconcileFailedRollbacksDeps(dbForCron, logger),
+        );
+        logger.info("cron reconcileFailedRollbacks 完了", {
+          job: "reconcileFailedRollbacks",
+          result,
+        });
+      } catch (error) {
+        logger.error("cron reconcileFailedRollbacks 失敗", {
+          job: "reconcileFailedRollbacks",
           error: error instanceof Error ? error.message : String(error),
         });
       }

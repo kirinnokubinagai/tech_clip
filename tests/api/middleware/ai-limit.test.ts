@@ -682,3 +682,340 @@ describe("aiLimitMiddleware", () => {
     });
   });
 });
+
+/** モックの db.insert チェーン */
+const mockInsertValues = vi.fn().mockResolvedValue(undefined);
+const mockInsert = vi.fn().mockReturnValue({ values: mockInsertValues });
+
+/** fetchFn を注入したテスト用アプリ */
+function createTestAppWithFetch(
+  userId: string | undefined,
+  downstreamStatus: number,
+  fetchFn: typeof fetch,
+  env?: { SENTRY_DSN?: string; ENVIRONMENT?: string },
+) {
+  const dbWithInsert = {
+    ...mockDb,
+    insert: mockInsert,
+  };
+
+  const app = new Hono<{
+    Variables: { user?: Record<string, unknown> };
+    Bindings: { SENTRY_DSN?: string; ENVIRONMENT?: string };
+  }>();
+
+  if (userId) {
+    app.use("/ai/*", async (c, next) => {
+      c.set("user", { id: userId });
+      await next();
+    });
+  }
+
+  app.use("/ai/*", createAiLimitMiddleware(dbWithInsert as never, { fetchFn }));
+  app.post("/ai/summarize", (c) => {
+    if (downstreamStatus >= 400) {
+      return c.json(
+        {
+          success: false,
+          error: { code: "INTERNAL_ERROR", message: "サーバーエラーが発生しました" },
+        },
+        downstreamStatus as 500,
+      );
+    }
+    return c.json({ success: true, data: { summary: "テスト要約" } }, HTTP_OK);
+  });
+
+  const bindings = env ?? {};
+
+  return {
+    request: (path: string, init?: RequestInit) => {
+      const req = new Request(`http://localhost${path}`, init);
+      return app.fetch(req, bindings);
+    },
+  };
+}
+
+describe("ロールバック失敗時の永続化", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockCreateLogger.mockReturnValue(mockLogger);
+    mockLogger.withRequestId.mockReturnValue(mockLogger);
+    mockSelectFrom.mockReturnValue({ where: mockSelectWhere });
+    mockSelect.mockReturnValue({ from: mockSelectFrom });
+    mockUpdateReturning.mockResolvedValue([{ id: TEST_USER_ID }]);
+    mockUpdateWhere.mockReturnValue({ returning: mockUpdateReturning });
+    mockUpdateSet.mockReturnValue({ where: mockUpdateWhere });
+    mockUpdate.mockReturnValue({ set: mockUpdateSet });
+    mockInsertValues.mockResolvedValue(undefined);
+    mockInsert.mockReturnValue({ values: mockInsertValues });
+  });
+
+  it("rollbackError 発生時に ai_quota_rollback_failures への INSERT が呼ばれること", async () => {
+    // Arrange
+    const userData = createFreeUserData({ remaining: 3 });
+    mockSelectWhere.mockResolvedValue([userData]);
+    mockUpdateWhere
+      .mockReturnValueOnce({ returning: mockUpdateReturning })
+      .mockRejectedValueOnce(new Error("DB接続エラー"));
+    mockUpdateReturning.mockResolvedValueOnce([{ id: TEST_USER_ID }]);
+
+    const app = createTestAppWithFetch(
+      TEST_USER_ID,
+      HTTP_INTERNAL_SERVER_ERROR,
+      vi.fn() as never,
+      {},
+    );
+
+    // Act
+    await app.request("/ai/summarize", { method: "POST" });
+
+    // Assert
+    expect(mockInsert).toHaveBeenCalled();
+    expect(mockInsertValues).toHaveBeenCalledWith(
+      expect.objectContaining({
+        userId: TEST_USER_ID,
+        reservationPath: "existing-free-use",
+        errorMessage: "DB接続エラー",
+      }),
+    );
+  });
+
+  it("reservation_path が reset-free-use の場合に正しく記録されること", async () => {
+    // Arrange
+    const pastDate = new Date("2025-01-01T00:00:00Z").toISOString();
+    const userData = createFreeUserData({ remaining: 0, resetAt: pastDate });
+    mockSelectWhere.mockResolvedValue([userData]);
+    mockUpdateWhere
+      .mockReturnValueOnce({ returning: mockUpdateReturning })
+      .mockRejectedValueOnce(new Error("DB接続エラー"));
+    mockUpdateReturning.mockResolvedValueOnce([{ id: TEST_USER_ID }]);
+
+    const app = createTestAppWithFetch(
+      TEST_USER_ID,
+      HTTP_INTERNAL_SERVER_ERROR,
+      vi.fn() as never,
+      {},
+    );
+
+    // Act
+    await app.request("/ai/summarize", { method: "POST" });
+
+    // Assert
+    expect(mockInsertValues).toHaveBeenCalledWith(
+      expect.objectContaining({
+        reservationPath: "reset-free-use",
+      }),
+    );
+  });
+
+  it("永続化が失敗しても 500 レスポンスがクラッシュせず error ログが出ること", async () => {
+    // Arrange
+    const userData = createFreeUserData({ remaining: 3 });
+    mockSelectWhere.mockResolvedValue([userData]);
+    mockUpdateWhere
+      .mockReturnValueOnce({ returning: mockUpdateReturning })
+      .mockRejectedValueOnce(new Error("DB接続エラー"));
+    mockUpdateReturning.mockResolvedValueOnce([{ id: TEST_USER_ID }]);
+    mockInsertValues.mockRejectedValue(new Error("INSERT失敗"));
+
+    const app = createTestAppWithFetch(
+      TEST_USER_ID,
+      HTTP_INTERNAL_SERVER_ERROR,
+      vi.fn() as never,
+      {},
+    );
+
+    // Act
+    const res = await app.request("/ai/summarize", { method: "POST" });
+
+    // Assert
+    expect(res.status).toBe(HTTP_INTERNAL_SERVER_ERROR);
+    expect(mockLogger.error).toHaveBeenCalledWith(
+      "ロールバック失敗の永続化に失敗しました",
+      expect.objectContaining({ userId: TEST_USER_ID }),
+    );
+  });
+
+  it("エラーメッセージが 1024 文字に切り詰められること", async () => {
+    // Arrange
+    const userData = createFreeUserData({ remaining: 3 });
+    mockSelectWhere.mockResolvedValue([userData]);
+    const longError = new Error("a".repeat(2000));
+    mockUpdateWhere
+      .mockReturnValueOnce({ returning: mockUpdateReturning })
+      .mockRejectedValueOnce(longError);
+    mockUpdateReturning.mockResolvedValueOnce([{ id: TEST_USER_ID }]);
+
+    const app = createTestAppWithFetch(
+      TEST_USER_ID,
+      HTTP_INTERNAL_SERVER_ERROR,
+      vi.fn() as never,
+      {},
+    );
+
+    // Act
+    await app.request("/ai/summarize", { method: "POST" });
+
+    // Assert
+    expect(mockInsertValues).toHaveBeenCalledWith(
+      expect.objectContaining({
+        errorMessage: "a".repeat(1024),
+      }),
+    );
+  });
+});
+
+describe("ロールバック失敗時の Sentry 通知", () => {
+  let mockFetch: ReturnType<typeof vi.fn>;
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockFetch = vi.fn().mockResolvedValue(new Response(null, { status: 200 }));
+    mockCreateLogger.mockReturnValue(mockLogger);
+    mockLogger.withRequestId.mockReturnValue(mockLogger);
+    mockSelectFrom.mockReturnValue({ where: mockSelectWhere });
+    mockSelect.mockReturnValue({ from: mockSelectFrom });
+    mockUpdateReturning.mockResolvedValue([{ id: TEST_USER_ID }]);
+    mockUpdateWhere.mockReturnValue({ returning: mockUpdateReturning });
+    mockUpdateSet.mockReturnValue({ where: mockUpdateWhere });
+    mockUpdate.mockReturnValue({ set: mockUpdateSet });
+    mockInsertValues.mockResolvedValue(undefined);
+    mockInsert.mockReturnValue({ values: mockInsertValues });
+  });
+
+  it("ENVIRONMENT=production かつ SENTRY_DSN ありで fetch が Sentry エンドポイントに POST されること", async () => {
+    // Arrange
+    const userData = createFreeUserData({ remaining: 3 });
+    mockSelectWhere.mockResolvedValue([userData]);
+    mockUpdateWhere
+      .mockReturnValueOnce({ returning: mockUpdateReturning })
+      .mockRejectedValueOnce(new Error("DB接続エラー"));
+    mockUpdateReturning.mockResolvedValueOnce([{ id: TEST_USER_ID }]);
+
+    const app = createTestAppWithFetch(
+      TEST_USER_ID,
+      HTTP_INTERNAL_SERVER_ERROR,
+      mockFetch as never,
+      {
+        SENTRY_DSN: "https://key@sentry.io/123",
+        ENVIRONMENT: "production",
+      },
+    );
+
+    // Act
+    await app.request("/ai/summarize", { method: "POST" });
+
+    // Assert
+    expect(mockFetch).toHaveBeenCalledTimes(1);
+    const [url] = mockFetch.mock.calls[0] as [string, RequestInit];
+    expect(url).toContain("123");
+  });
+
+  it("ENVIRONMENT=staging でも Sentry に送信されること", async () => {
+    // Arrange
+    const userData = createFreeUserData({ remaining: 3 });
+    mockSelectWhere.mockResolvedValue([userData]);
+    mockUpdateWhere
+      .mockReturnValueOnce({ returning: mockUpdateReturning })
+      .mockRejectedValueOnce(new Error("DB接続エラー"));
+    mockUpdateReturning.mockResolvedValueOnce([{ id: TEST_USER_ID }]);
+
+    const app = createTestAppWithFetch(
+      TEST_USER_ID,
+      HTTP_INTERNAL_SERVER_ERROR,
+      mockFetch as never,
+      {
+        SENTRY_DSN: "https://key@sentry.io/123",
+        ENVIRONMENT: "staging",
+      },
+    );
+
+    // Act
+    await app.request("/ai/summarize", { method: "POST" });
+
+    // Assert
+    expect(mockFetch).toHaveBeenCalledTimes(1);
+  });
+
+  it("ENVIRONMENT=development では SENTRY_DSN ありでも送信されないこと", async () => {
+    // Arrange
+    const userData = createFreeUserData({ remaining: 3 });
+    mockSelectWhere.mockResolvedValue([userData]);
+    mockUpdateWhere
+      .mockReturnValueOnce({ returning: mockUpdateReturning })
+      .mockRejectedValueOnce(new Error("DB接続エラー"));
+    mockUpdateReturning.mockResolvedValueOnce([{ id: TEST_USER_ID }]);
+
+    const app = createTestAppWithFetch(
+      TEST_USER_ID,
+      HTTP_INTERNAL_SERVER_ERROR,
+      mockFetch as never,
+      {
+        SENTRY_DSN: "https://key@sentry.io/123",
+        ENVIRONMENT: "development",
+      },
+    );
+
+    // Act
+    await app.request("/ai/summarize", { method: "POST" });
+
+    // Assert
+    expect(mockFetch).not.toHaveBeenCalled();
+  });
+
+  it("SENTRY_DSN 未設定の場合は送信されないこと", async () => {
+    // Arrange
+    const userData = createFreeUserData({ remaining: 3 });
+    mockSelectWhere.mockResolvedValue([userData]);
+    mockUpdateWhere
+      .mockReturnValueOnce({ returning: mockUpdateReturning })
+      .mockRejectedValueOnce(new Error("DB接続エラー"));
+    mockUpdateReturning.mockResolvedValueOnce([{ id: TEST_USER_ID }]);
+
+    const app = createTestAppWithFetch(
+      TEST_USER_ID,
+      HTTP_INTERNAL_SERVER_ERROR,
+      mockFetch as never,
+      {
+        ENVIRONMENT: "production",
+      },
+    );
+
+    // Act
+    await app.request("/ai/summarize", { method: "POST" });
+
+    // Assert
+    expect(mockFetch).not.toHaveBeenCalled();
+  });
+
+  it("Sentry 送信が失敗してもクラッシュせず error ログが出ること", async () => {
+    // Arrange
+    const userData = createFreeUserData({ remaining: 3 });
+    mockSelectWhere.mockResolvedValue([userData]);
+    mockUpdateWhere
+      .mockReturnValueOnce({ returning: mockUpdateReturning })
+      .mockRejectedValueOnce(new Error("DB接続エラー"));
+    mockUpdateReturning.mockResolvedValueOnce([{ id: TEST_USER_ID }]);
+    mockFetch.mockRejectedValue(new Error("Sentry送信失敗"));
+
+    const app = createTestAppWithFetch(
+      TEST_USER_ID,
+      HTTP_INTERNAL_SERVER_ERROR,
+      mockFetch as never,
+      {
+        SENTRY_DSN: "https://key@sentry.io/123",
+        ENVIRONMENT: "production",
+      },
+    );
+
+    // Act
+    const res = await app.request("/ai/summarize", { method: "POST" });
+
+    // Assert
+    expect(res.status).toBe(HTTP_INTERNAL_SERVER_ERROR);
+    expect(mockLogger.error).toHaveBeenCalledWith(
+      "Sentry 通知に失敗しました",
+      expect.objectContaining({ userId: TEST_USER_ID }),
+    );
+  });
+});
