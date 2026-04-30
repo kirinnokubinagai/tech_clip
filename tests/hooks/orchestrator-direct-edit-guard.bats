@@ -7,6 +7,7 @@
 SCRIPT="$(cd "$(dirname "$BATS_TEST_FILENAME")/../.." && pwd)/.claude/hooks/orchestrator-direct-edit-guard.sh"
 
 setup() {
+    unset GIT_DIR GIT_WORK_TREE
     TMPDIR="$BATS_TEST_TMPDIR"
     REPO_DIR="$TMPDIR/main"
 
@@ -597,26 +598,48 @@ run_script_with_file() {
 }
 
 # --- Phase B: team config ベースの sub-agent 検出（CLAUDE_AGENT_NAME 依存除去後） ---
+# step 6: worktree ブランチ上で team active なら sub-agent の編集として許可
+# step 3/4: main セッション上では team active でも DENY（main read-only 原則）
 
-@test "Phase B: team config が存在する場合（team active）は main ブランチでも allow されること" {
-    # Arrange: team config を作成して team active 状態にする
+@test "Phase B: worktree ブランチ上で team active な場合はソースファイル編集が許可されること（step 6）" {
+    # Arrange: worktree ブランチ + team active = sub-agent の編集
+    git -C "$REPO_DIR" checkout -b feature/test-branch
     local file_path="$REPO_DIR/apps/api/src/index.ts"
     local input
     input=$(jq -n --arg p "$file_path" '{"tool_input":{"file_path":$p}}')
     mkdir -p "$REPO_DIR/.claude-user/teams/active-issues"
     echo '{"members":[{"name":"coder-100"}]}' > "$REPO_DIR/.claude-user/teams/active-issues/config.json"
 
-    # Act: CLAUDE_AGENT_NAME 未設定でも team active なら allow
+    # Act
     unset CLAUDE_AGENT_NAME
     unset _CLAUDE_DETECTED_AGENT_NAME
     run bash -c "cd '$REPO_DIR' && printf '%s' '$input' | bash '$SCRIPT'"
 
-    # Assert
+    # Assert: worktree ブランチ + team active → ALLOW
     [ "$status" -eq 0 ]
 }
 
-@test "Phase B: team config が存在しない場合（team inactive）は main ブランチで deny されること" {
-    # Arrange: team config なし
+@test "Phase B: team active でも main ブランチ上のソースファイル編集は DENY されること（step 4 が優先）" {
+    # Arrange: main ブランチ + team active（main read-only 原則は team active でも適用）
+    local file_path="$REPO_DIR/apps/api/src/index.ts"
+    local input
+    input=$(jq -n --arg p "$file_path" '{"tool_input":{"file_path":$p}}')
+    mkdir -p "$REPO_DIR/.claude-user/teams/active-issues"
+    echo '{"members":[{"name":"coder-100"}]}' > "$REPO_DIR/.claude-user/teams/active-issues/config.json"
+
+    # Act
+    unset CLAUDE_AGENT_NAME
+    unset _CLAUDE_DETECTED_AGENT_NAME
+    run bash -c "cd '$REPO_DIR' && printf '%s' '$input' | bash '$SCRIPT'"
+
+    # Assert: main ブランチなので DENY
+    [ "$status" -eq 2 ]
+    [[ "${output}" == *"DENY"* ]]
+}
+
+@test "Phase B: team config が存在しない場合（team inactive）は worktree ブランチでも deny されること" {
+    # Arrange: worktree ブランチ + team inactive = orchestrator が直接編集しようとしている
+    git -C "$REPO_DIR" checkout -b feature/test-branch
     local file_path="$REPO_DIR/apps/api/src/index.ts"
     local input
     input=$(jq -n --arg p "$file_path" '{"tool_input":{"file_path":$p}}')
@@ -627,13 +650,13 @@ run_script_with_file() {
     unset _CLAUDE_DETECTED_AGENT_NAME
     run bash -c "cd '$REPO_DIR' && printf '%s' '$input' | bash '$SCRIPT'"
 
-    # Assert
+    # Assert: team inactive → DENY
     [ "$status" -eq 2 ]
     [[ "${output}" == *"DENY"* ]]
 }
 
-@test "Phase B: team active でも .claude/** の orchestration ファイルは main ブランチで deny されること（main 直接編集禁止）" {
-    # Arrange: team active だが .claude/ への main-branch 直接編集は orchestrator 禁止
+@test "Phase B: team active でも main ブランチ上の .claude/ ファイル編集は DENY されること（step 4 が優先）" {
+    # Arrange: main + team active だが main ブランチ直接編集は禁止
     local file_path="$REPO_DIR/.claude/hooks/some-hook.sh"
     local input
     input=$(jq -n --arg p "$file_path" '{"tool_input":{"file_path":$p}}')
@@ -645,7 +668,55 @@ run_script_with_file() {
     unset _CLAUDE_DETECTED_AGENT_NAME
     run bash -c "cd '$REPO_DIR' && printf '%s' '$input' | bash '$SCRIPT'"
 
-    # Assert: team active でも orchestrator のみがいる main 上では deny
-    # (team active = sub-agent present, but the check is at file level)
+    # Assert: main ブランチなので step 4 で DENY
+    [ "$status" -eq 2 ]
+    [[ "${output}" == *"DENY"* ]]
+}
+
+# --- Phase B: step 3 (cross-worktree, main session) の team-aware テスト ---
+# step 3 は SESSION_BRANCH=main かつ file が兄弟 worktree 内にある場合に発火する
+
+@test "main セッション上では team active でも兄弟 worktree への編集を DENY すること（step 3 strict）" {
+    # Arrange: REPO_DIR は main ブランチ。兄弟 worktree ディレクトリを作成
+    local parent_dir
+    parent_dir=$(dirname "$REPO_DIR")
+    local sibling_dir="$parent_dir/issue-9999"
+    mkdir -p "$sibling_dir/apps/api/src"
+    git -C "$sibling_dir" init -b issue/9999/test 2>/dev/null
+    echo "code" > "$sibling_dir/apps/api/src/index.ts"
+
+    # team active 状態を設定
+    mkdir -p "$REPO_DIR/.claude-user/teams/active-issues"
+    echo '{"members":[{"name":"coder-100"}]}' > "$REPO_DIR/.claude-user/teams/active-issues/config.json"
+
+    local file_path="$sibling_dir/apps/api/src/index.ts"
+    local input
+    input=$(jq -n --arg p "$file_path" '{"tool_input":{"file_path":$p}}')
+
+    # Act: REPO_DIR (main branch) 上からスクリプトを実行
+    unset CLAUDE_AGENT_NAME
+    run bash -c "cd '$REPO_DIR' && printf '%s' '$input' | bash '$SCRIPT'"
+
+    # Assert: main セッションから兄弟 worktree への編集 → DENY（team active でも）
+    [ "$status" -eq 2 ]
+    [[ "${output}" == *"DENY"* ]]
+}
+
+@test "worktree branch セッション上では team active なら兄弟 worktree のソース編集を許可すること（step 6）" {
+    # Arrange: REPO_DIR を feature ブランチに切り替え（worktree session をシミュレート）
+    git -C "$REPO_DIR" checkout -b feature/worktree-session
+    local file_path="$REPO_DIR/apps/api/src/index.ts"
+    local input
+    input=$(jq -n --arg p "$file_path" '{"tool_input":{"file_path":$p}}')
+
+    # team active 状態を設定
+    mkdir -p "$REPO_DIR/.claude-user/teams/active-issues"
+    echo '{"members":[{"name":"coder-100"}]}' > "$REPO_DIR/.claude-user/teams/active-issues/config.json"
+
+    # Act
+    unset CLAUDE_AGENT_NAME
+    run bash -c "cd '$REPO_DIR' && printf '%s' '$input' | bash '$SCRIPT'"
+
+    # Assert: worktree branch + team active → ALLOW（step 6 の team-active 緩和）
     [ "$status" -eq 0 ]
 }

@@ -77,6 +77,13 @@ if [ "$TOOL_NAME" = "Bash" ]; then
 fi
 
 # ─── SendMessage: spec 直送 / mockup 未承認 / 長文ガード ───
+# Sub-agent 間通信ポリシー (Issue #1146 で確定):
+# - CLAUDE_AGENT_NAME 環境変数は SDK が inject しないため使用不可
+# - DETECTED_AGENT_NAME は常に空、SENDER は常に空 = IS_ORCHESTRATOR=true 扱い
+# - TO != "team-lead" は無条件 exempt (sub-agent 間通信は通す)
+# - TO == "team-lead" は team active 時も SPEC_PATTERN / 1500 文字制限を維持
+#   （sub-agent と orchestrator を区別不可なので安全側に倒し、両方を制限する）
+# - sub-agent が team-lead に長文 STATE_UPDATE を送りたい場合は 1500 文字以内に分割すること
 if [ "$TOOL_NAME" = "SendMessage" ]; then
   TO=$(echo "$TOOL_INPUT" | jq -r '.to // ""')
   CONTENT=$(echo "$TOOL_INPUT" | jq -r '.message // ""')

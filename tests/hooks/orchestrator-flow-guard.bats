@@ -7,6 +7,7 @@
 HOOK="$(cd "$(dirname "$BATS_TEST_FILENAME")/../.." && pwd)/.claude/hooks/orchestrator-flow-guard.sh"
 
 setup() {
+    unset GIT_DIR GIT_WORK_TREE
     TMPDIR="$BATS_TEST_TMPDIR"
     export HOME="$TMPDIR/home"
     mkdir -p "$HOME"
@@ -667,4 +668,37 @@ POST_HOOK="$(cd "$(dirname "$BATS_TEST_FILENAME")/../.." && pwd)/.claude/hooks/p
     [ "$status" -eq 0 ]
     unset _CLAUDE_DETECTED_AGENT_NAME
     rm -rf "$flag_dir"
+}
+
+# -------------------------------------------------------------------------
+# Phase C: SendMessage ポリシー確認（Issue #1146 確定仕様）
+# -------------------------------------------------------------------------
+
+@test "Phase C: team active 時も TO=team-lead への 1500 文字超は DENY されること" {
+    # team active でも TO=team-lead の長文制限は維持（sub-agent/orchestrator 区別不可のため安全側）
+    echo '{"members":[{"name":"coder-100"}]}' > "$CLAUDE_USER_ROOT/teams/active-issues/config.json"
+    unset CLAUDE_AGENT_NAME
+    unset _CLAUDE_DETECTED_AGENT_NAME
+    local long_msg
+    long_msg=$(printf 'z%.0s' $(seq 1 2000))
+    local json
+    json=$(jq -n --arg to "team-lead" --arg msg "$long_msg" \
+        '{"tool_name":"SendMessage","tool_input":{"to":$to,"message":$msg}}')
+    run run_hook "$json"
+    [ "$status" -eq 2 ]
+    [[ "$output" == *"1500 文字以上"* ]]
+}
+
+@test "Phase C: team active 時も TO=coder-1234 への任意長の送信は許可されること（Phase E exempt）" {
+    # TO != team-lead は sub-agent 間通信として無条件許可
+    echo '{"members":[{"name":"coder-100"}]}' > "$CLAUDE_USER_ROOT/teams/active-issues/config.json"
+    unset CLAUDE_AGENT_NAME
+    unset _CLAUDE_DETECTED_AGENT_NAME
+    local long_msg
+    long_msg=$(printf 'w%.0s' $(seq 1 5000))
+    local json
+    json=$(jq -n --arg to "coder-1234" --arg msg "CHANGES_REQUESTED: $long_msg" \
+        '{"tool_name":"SendMessage","tool_input":{"to":$to,"message":$msg}}')
+    run run_hook "$json"
+    [ "$status" -eq 0 ]
 }

@@ -2,8 +2,6 @@
 # PreToolUse:Edit/Write hook: orchestrator の main ブランチ上での直接編集をブロック
 #
 # ブロックロジックの優先順位:
-#   0. team active チェック（active-issues team config が存在 → sub-agent が稼働中 → 即 ALLOW）
-#      CLAUDE_AGENT_NAME / process tree への依存を除去。team config の存在を proxy として使用。
 #   1. blocked_file チェック（ブランチ問わず DENY）
 #      - .omc/state/**:          実行フロー状態ファイル（直接編集によるフロー操作を防止）
 #   2. meta_file チェック（main 上でも ALLOW）
@@ -11,12 +9,16 @@
 #      - .omc/**:         実行状態ファイル（gitignore済み）
 #   3. クロスworktreeチェック（セッションが main で、ファイルが兄弟 worktree 内なら DENY）
 #      worktree-isolation-guard.sh の .claude/ 例外を補完する
-#      → これにより「小さな修正だから直接編集する」という例外的判断をフック層でブロックする
+#      team active 時も DENY（main セッションから兄弟 worktree を編集するのは設計上あり得ない）
 #   4. main ブランチチェック（ファイルのリポジトリが main なら全 DENY）
 #      ファイル種類（apps/, packages/, tests/, scripts/, .claude/** 等）に関係なく全てブロック
 #   5. orchestration_file チェック（main 以外なら ALLOW）
 #      - .claude/**, CLAUDE.md, flake.nix 等
-#   6. それ以外 DENY（orchestrator はソースファイルを直接編集できない。実装系に委譲）
+#   6. team active チェック（worktree ブランチ上での sub-agent 編集を許可）
+#      CLAUDE_AGENT_NAME / process tree への依存を除去した代替判定。
+#      team config が存在 = sub-agent が spawn されている = worktree 上での edit は sub-agent によるもの。
+#      ※ main ブランチ経由は step 4 で先にブロック済みのため到達しない
+#   7. それ以外 DENY（orchestrator はソースファイルを直接編集できない。実装系に委譲）
 
 TOOL_INPUT=$(cat)
 
@@ -90,14 +92,6 @@ if [ -z "$REPO_ROOT" ]; then
   exit 2
 fi
 
-# 0. team active チェック: active-issues team config が存在すれば sub-agent が稼働中
-#    CLAUDE_AGENT_NAME / process tree 依存を除去した代替判定。
-#    team config の存在 = sub-agent が spawn されている = 現在の edit は sub-agent によるもの。
-_TEAM_CONFIG_PATH="${REPO_ROOT}/.claude-user/teams/active-issues/config.json"
-if [ -f "$_TEAM_CONFIG_PATH" ]; then
-  exit 0
-fi
-
 # orchestratorが直接編集できないファイル（明示的ブロック対象・ブランチ問わず）
 is_blocked_file() {
   local path="$1"
@@ -146,6 +140,12 @@ is_orchestration_file() {
   return $matched
 }
 
+# team active 判定: active-issues team config が存在すれば sub-agent が稼働中
+_has_active_team() {
+  local config_path="${REPO_ROOT}/.claude-user/teams/active-issues/config.json"
+  [ -f "$config_path" ]
+}
+
 # 1. 明示ブロック対象を先に評価（最優先 DENY）
 if is_blocked_file "$FILE_PATH"; then
   echo "DENY: このファイルはorchestratorによる直接編集が禁止されています。" >&2
@@ -161,6 +161,7 @@ fi
 
 # 3. クロスworktreeチェック: セッションが main のときに兄弟 worktree 内のファイルを直接編集するのをブロック
 #    worktree-isolation-guard.sh と同じロジック（.claude/ 例外を持たないため、hook ファイルも含め全てカバー）
+#    team active 時も DENY: main セッションから兄弟 worktree を編集するのは設計上あり得ない
 SESSION_BRANCH=$(git branch --show-current 2>/dev/null || true)
 if [[ "$SESSION_BRANCH" == "main" || "$SESSION_BRANCH" == "master" ]]; then
   _GIT_COMMON_DIR=$(git rev-parse --git-common-dir 2>/dev/null || true)
@@ -203,7 +204,11 @@ if is_orchestration_file "$FILE_PATH"; then
 fi
 
 # 6. worktree 上でも orchestrator はソースファイルを直接編集できない
+#    ただし team active 時は sub-agent による編集の可能性があるため許可
 #    実装系サブエージェント（coder / infra-engineer / ui-designer）に委譲すること
+if _has_active_team; then
+  exit 0
+fi
 echo "DENY: orchestrator は worktree 上でもソースファイルを直接編集できません。" >&2
 echo "  対象ファイル: $FILE_PATH" >&2
 echo "" >&2
