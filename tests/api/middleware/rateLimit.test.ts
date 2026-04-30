@@ -449,7 +449,7 @@ describe("createRateLimitMiddleware", () => {
       expect(mockKv.get).toHaveBeenCalledWith("test-key", "json");
     });
 
-    it("createKvStoreのsetがKV.putを呼ぶこと", async () => {
+    it("createKvStoreのsetがKV.putをresetAt由来の動的TTLで呼ぶこと", async () => {
       // Arrange
       const mockKv = {
         get: vi.fn().mockResolvedValue(null),
@@ -460,12 +460,32 @@ describe("createRateLimitMiddleware", () => {
       } as unknown as KVNamespace;
       const store = createKvStore(mockKv);
 
-      // Act
+      // Act: resetAt = now + 60s → TTL は 60s
       await store.set("test-key", { count: 1, resetAt: Date.now() + 60_000 });
 
-      // Assert
+      // Assert: expirationTtl が windowMs 由来の60秒になること（120秒ではない）
       expect(mockKv.put).toHaveBeenCalledWith("test-key", expect.any(String), {
-        expirationTtl: 120,
+        expirationTtl: 60,
+      });
+    });
+
+    it("createKvStoreのsetがresetAt残り時間が短い場合でもKV_MIN_TTL_SECONDS=60でクランプすること", async () => {
+      // Arrange
+      const mockKv = {
+        get: vi.fn().mockResolvedValue(null),
+        put: vi.fn().mockResolvedValue(undefined),
+        delete: vi.fn().mockResolvedValue(undefined),
+        list: vi.fn(),
+        getWithMetadata: vi.fn(),
+      } as unknown as KVNamespace;
+      const store = createKvStore(mockKv);
+
+      // Act: resetAt = now + 5s（残り5秒）→ クランプされて60sになること
+      await store.set("test-key", { count: 1, resetAt: Date.now() + 5_000 });
+
+      // Assert: 最小TTLである60秒にクランプされること
+      expect(mockKv.put).toHaveBeenCalledWith("test-key", expect.any(String), {
+        expirationTtl: 60,
       });
     });
 

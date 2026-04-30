@@ -94,8 +94,8 @@ export function createInMemoryStore(): RateLimitStore {
   };
 }
 
-/** KV エントリのTTL（秒）：最大ウィンドウ長より長く保持する */
-const KV_TTL_SECONDS = 120;
+/** KV エントリの最小TTL（秒）：ウィンドウ長（60秒）に合わせた下限 */
+const KV_MIN_TTL_SECONDS = 60;
 
 /**
  * Cloudflare Workers KV を使ったレート制限ストアを生成する
@@ -113,7 +113,9 @@ export function createKvStore(kv: KVNamespace): RateLimitStore {
       return raw as RateLimitEntry;
     },
     set: async (key: string, value: RateLimitEntry) => {
-      await kv.put(key, JSON.stringify(value), { expirationTtl: KV_TTL_SECONDS });
+      const remainingMs = value.resetAt - Date.now();
+      const ttlSeconds = Math.max(KV_MIN_TTL_SECONDS, Math.ceil(remainingMs / 1000));
+      await kv.put(key, JSON.stringify(value), { expirationTtl: ttlSeconds });
     },
     clear: async () => {
       // KV には一括削除APIがないため、このメソッドはno-op
