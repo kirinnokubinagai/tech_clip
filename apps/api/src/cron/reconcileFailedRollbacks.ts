@@ -4,8 +4,16 @@ import { FREE_AI_USES_PER_MONTH } from "../middleware/ai-limit";
 /** ロールバック失敗補正バッチの依存注入インターフェース */
 export type ReconcileFailedRollbacksDeps = {
   fetchUnresolvedFailures: () => Promise<Array<{ id: string; userId: string }>>;
-  applyRollbackCompensation: (userId: string) => Promise<void>;
-  markResolved: (failureId: string, appliedAdjustment: string, resolvedAt: string) => Promise<void>;
+  /**
+   * userId の freeAiUsesRemaining を +1 補正し、failureId を resolved_at 付きでマークする。
+   * 2 操作はトランザクション内でアトミックに実行されること。
+   */
+  compensateAndMarkResolved: (
+    userId: string,
+    failureId: string,
+    appliedAdjustment: string,
+    resolvedAt: string,
+  ) => Promise<void>;
   getCurrentTimestamp: () => string;
   logger: ReturnType<typeof createLogger>;
 };
@@ -35,8 +43,12 @@ export async function reconcileFailedRollbacks(
 
   for (const failure of failures) {
     try {
-      await deps.applyRollbackCompensation(failure.userId);
-      await deps.markResolved(failure.id, "+1", deps.getCurrentTimestamp());
+      await deps.compensateAndMarkResolved(
+        failure.userId,
+        failure.id,
+        "+1",
+        deps.getCurrentTimestamp(),
+      );
       processed++;
     } catch (error) {
       deps.logger.error("ロールバック失敗の補正に失敗しました", {
@@ -53,12 +65,16 @@ export async function reconcileFailedRollbacks(
 /**
  * Drizzle ORM を使った ReconcileFailedRollbacksDeps の実装を生成する
  *
- * @param db - Drizzle データベースインスタンス
+ * @param db - Drizzle データベースインスタンス（transaction() メソッドを持つこと）
  * @param logger - ロガー
  * @returns ReconcileFailedRollbacksDeps に適合した依存オブジェクト
  */
 export function createReconcileFailedRollbacksDeps(
-  db: { select: (fields?: unknown) => unknown; update: (table: unknown) => unknown },
+  db: {
+    select: (fields?: unknown) => unknown;
+    update: (table: unknown) => unknown;
+    transaction: <T>(fn: (tx: { update: (table: unknown) => unknown }) => Promise<T>) => Promise<T>;
+  },
   logger: ReturnType<typeof createLogger>,
 ): ReconcileFailedRollbacksDeps {
   return {
@@ -75,30 +91,28 @@ export function createReconcileFailedRollbacksDeps(
         .from(aiQuotaRollbackFailures)
         .where(isNull(aiQuotaRollbackFailures.resolvedAt));
     },
-    applyRollbackCompensation: async (userId) => {
+    compensateAndMarkResolved: async (userId, failureId, appliedAdjustment, resolvedAt) => {
       const { eq, sql } = await import("drizzle-orm");
-      const { users } = await import("../db/schema");
-      await (
-        db.update(users) as {
-          set: (values: unknown) => { where: (cond: unknown) => Promise<void> };
-        }
-      )
-        .set({
-          freeAiUsesRemaining: sql`MIN(${users.freeAiUsesRemaining} + 1, ${FREE_AI_USES_PER_MONTH})`,
-          updatedAt: new Date().toISOString(),
-        })
-        .where(eq(users.id, userId));
-    },
-    markResolved: async (failureId, appliedAdjustment, resolvedAt) => {
-      const { eq } = await import("drizzle-orm");
-      const { aiQuotaRollbackFailures } = await import("../db/schema");
-      await (
-        db.update(aiQuotaRollbackFailures) as {
-          set: (values: unknown) => { where: (cond: unknown) => Promise<void> };
-        }
-      )
-        .set({ resolvedAt, appliedAdjustment })
-        .where(eq(aiQuotaRollbackFailures.id, failureId));
+      const { users, aiQuotaRollbackFailures } = await import("../db/schema");
+      await db.transaction(async (tx) => {
+        await (
+          tx.update(users) as {
+            set: (values: unknown) => { where: (cond: unknown) => Promise<void> };
+          }
+        )
+          .set({
+            freeAiUsesRemaining: sql`MIN(${users.freeAiUsesRemaining} + 1, ${FREE_AI_USES_PER_MONTH})`,
+            updatedAt: new Date().toISOString(),
+          })
+          .where(eq(users.id, userId));
+        await (
+          tx.update(aiQuotaRollbackFailures) as {
+            set: (values: unknown) => { where: (cond: unknown) => Promise<void> };
+          }
+        )
+          .set({ resolvedAt, appliedAdjustment })
+          .where(eq(aiQuotaRollbackFailures.id, failureId));
+      });
     },
     getCurrentTimestamp: () => new Date().toISOString(),
     logger,

@@ -25,7 +25,7 @@ export const aiQuotaRollbackFailures = sqliteTable(
   },
   (table) => [
     /** 未処理レコード検索用インデックス */
-    index("idx_ai_quota_rollback_failures_unresolved").on(table.occurredAt),
+    index("idx_ai_quota_rollback_failures_unresolved").on(table.resolvedAt),
   ],
 );
 
