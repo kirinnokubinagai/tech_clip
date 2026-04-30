@@ -7,6 +7,7 @@
 SCRIPT="$(cd "$(dirname "$BATS_TEST_FILENAME")/../.." && pwd)/.claude/hooks/dangerous-command-guard.sh"
 
 setup() {
+    unset GIT_DIR GIT_WORK_TREE
     TMPDIR="$BATS_TEST_TMPDIR"
     REPO_DIR="$TMPDIR/main"
 

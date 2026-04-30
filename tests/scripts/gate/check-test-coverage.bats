@@ -8,6 +8,7 @@ SCRIPT="$REAL_SCRIPT"
 RULES="$(cd "$(dirname "$BATS_TEST_FILENAME")/../../.." && pwd)/.claude/gate-rules.json"
 
 setup() {
+  unset GIT_DIR GIT_WORK_TREE
   TMPDIR="$BATS_TEST_TMPDIR"
   REPO_DIR="$TMPDIR/repo"
   mkdir -p "$REPO_DIR"

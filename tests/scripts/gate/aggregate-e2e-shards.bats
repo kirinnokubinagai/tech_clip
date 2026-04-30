@@ -4,6 +4,7 @@
 SCRIPT="$(cd "$(dirname "$BATS_TEST_FILENAME")/../../.." && pwd)/scripts/gate/aggregate-e2e-shards.sh"
 
 setup() {
+  unset GIT_DIR GIT_WORK_TREE
   TMPDIR="$BATS_TEST_TMPDIR"
   REPO_DIR="$TMPDIR/repo"
   mkdir -p "$REPO_DIR/.claude"
