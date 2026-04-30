@@ -2,6 +2,11 @@ export type { Account, NewAccount } from "./accounts";
 export { accounts } from "./accounts";
 export type { AiJob, NewAiJob } from "./ai-jobs";
 export { aiJobs } from "./ai-jobs";
+export type {
+  AiQuotaRollbackFailure,
+  NewAiQuotaRollbackFailure,
+} from "./ai-quota-rollback-failures";
+export { aiQuotaRollbackFailures } from "./ai-quota-rollback-failures";
 export type { AnalyticsEvent, NewAnalyticsEvent } from "./analytics-events";
 export { analyticsEvents } from "./analytics-events";
 export type { Article, NewArticle } from "./articles";
