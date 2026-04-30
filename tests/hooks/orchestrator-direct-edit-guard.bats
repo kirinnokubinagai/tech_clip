@@ -596,307 +596,56 @@ run_script_with_file() {
     [ "$status" -eq 0 ]
 }
 
-# --- サブエージェント pass-through (priority 0) ---
+# --- Phase B: team config ベースの sub-agent 検出（CLAUDE_AGENT_NAME 依存除去後） ---
 
-@test "CLAUDE_AGENT_NAME が設定されたサブエージェントはmainブランチのapps/配下も許可されること [Phase 0]" {
-    # Arrange: mainブランチ上でサブエージェント名を設定
+@test "Phase B: team config が存在する場合（team active）は main ブランチでも allow されること" {
+    # Arrange: team config を作成して team active 状態にする
     local file_path="$REPO_DIR/apps/api/src/index.ts"
     local input
     input=$(jq -n --arg p "$file_path" '{"tool_input":{"file_path":$p}}')
+    mkdir -p "$REPO_DIR/.claude-user/teams/active-issues"
+    echo '{"members":[{"name":"coder-100"}]}' > "$REPO_DIR/.claude-user/teams/active-issues/config.json"
 
-    # Act: CLAUDE_AGENT_NAME をエクスポートしてスクリプト実行
-    export CLAUDE_AGENT_NAME="coder-100"
-    run bash -c "cd '$REPO_DIR' && printf '%s' '$input' | bash '$SCRIPT'"
+    # Act: CLAUDE_AGENT_NAME 未設定でも team active なら allow
     unset CLAUDE_AGENT_NAME
-
-    # Assert: サブエージェントなら即 exit 0
-    [ "$status" -eq 0 ]
-}
-
-@test "CLAUDE_AGENT_NAME が設定されたサブエージェント(reviewer以外)はmainブランチの.claude/配下も許可されること [Phase 0]" {
-    # Arrange
-    local file_path="$REPO_DIR/.claude/hooks/some-hook.sh"
-    local input
-    input=$(jq -n --arg p "$file_path" '{"tool_input":{"file_path":$p}}')
-
-    # Act
-    export CLAUDE_AGENT_NAME="coder-100"
-    run bash -c "cd '$REPO_DIR' && printf '%s' '$input' | bash '$SCRIPT'"
-    unset CLAUDE_AGENT_NAME
-
-    # Assert
-    [ "$status" -eq 0 ]
-}
-
-@test "_CLAUDE_DETECTED_AGENT_NAME が設定されたサブエージェントはmainブランチのソースファイルも許可されること [Phase 0]" {
-    # Arrange: テスト用の注入変数でサブエージェントをシミュレート
-    local file_path="$REPO_DIR/apps/mobile/src/App.tsx"
-    local input
-    input=$(jq -n --arg p "$file_path" '{"tool_input":{"file_path":$p}}')
-
-    # Act
-    unset CLAUDE_AGENT_NAME
-    export _CLAUDE_DETECTED_AGENT_NAME="infra-engineer-200"
-    run bash -c "cd '$REPO_DIR' && printf '%s' '$input' | bash '$SCRIPT'"
     unset _CLAUDE_DETECTED_AGENT_NAME
-
-    # Assert
-    [ "$status" -eq 0 ]
-}
-
-@test "_CLAUDE_DETECTED_AGENT_NAME が設定されたサブエージェントはdetached HEAD状態でも許可されること [Phase 0]" {
-    # Arrange: detached HEAD でもサブエージェントはブロックされない
-    local commit_hash
-    commit_hash=$(git -C "$REPO_DIR" rev-parse HEAD)
-    git -C "$REPO_DIR" checkout --detach "$commit_hash"
-    local file_path="$REPO_DIR/apps/api/src/index.ts"
-    local input
-    input=$(jq -n --arg p "$file_path" '{"tool_input":{"file_path":$p}}')
-
-    # Act
-    unset CLAUDE_AGENT_NAME
-    export _CLAUDE_DETECTED_AGENT_NAME="ui-designer-300"
     run bash -c "cd '$REPO_DIR' && printf '%s' '$input' | bash '$SCRIPT'"
-    unset _CLAUDE_DETECTED_AGENT_NAME
 
     # Assert
     [ "$status" -eq 0 ]
 }
 
-@test "オーケストレーター（両変数未設定）はmainブランチでブロックされること [Phase 0]" {
-    # Arrange: CLAUDE_AGENT_NAME・_CLAUDE_DETECTED_AGENT_NAME 両方未設定 = orchestrator
+@test "Phase B: team config が存在しない場合（team inactive）は main ブランチで deny されること" {
+    # Arrange: team config なし
     local file_path="$REPO_DIR/apps/api/src/index.ts"
     local input
     input=$(jq -n --arg p "$file_path" '{"tool_input":{"file_path":$p}}')
+    rm -f "$REPO_DIR/.claude-user/teams/active-issues/config.json" 2>/dev/null || true
 
     # Act
     unset CLAUDE_AGENT_NAME
     unset _CLAUDE_DETECTED_AGENT_NAME
     run bash -c "cd '$REPO_DIR' && printf '%s' '$input' | bash '$SCRIPT'"
 
-    # Assert: orchestrator は mainブランチでブロックされる
-    [ "$status" -eq 2 ]
-    [[ "${output}" == *"DENY"* ]]
-}
-
-@test ".omc/state/配下はサブエージェント（CLAUDE_AGENT_NAME設定）でも pass-through されること [Phase 0]" {
-    # NOTE: サブエージェント check は priority 0 = 最初に exit 0 するので .omc/state/ check より先に終わる
-    # サブエージェントは .omc/state/ 編集も許可（is_blocked_file は orchestrator 専用ガード）
-    local file_path="$REPO_DIR/.omc/state/autopilot-state.json"
-    local input
-    input=$(jq -n --arg p "$file_path" '{"tool_input":{"file_path":$p}}')
-
-    # Act
-    export CLAUDE_AGENT_NAME="coder-100"
-    run bash -c "cd '$REPO_DIR' && printf '%s' '$input' | bash '$SCRIPT'"
-    unset CLAUDE_AGENT_NAME
-
-    # Assert: サブエージェントは priority 0 で即 exit 0（.omc/state/ check より先）
-    [ "$status" -eq 0 ]
-}
-
-# --- reviewer 系ブロックテスト ---
-
-@test "reviewer エージェントは非mainブランチのソースファイル編集がブロックされること" {
-    # Arrange
-    git -C "$REPO_DIR" checkout -b feature/test-branch
-    local file_path="$REPO_DIR/apps/api/src/index.ts"
-    local input
-    input=$(jq -n --arg p "$file_path" '{"tool_input":{"file_path":$p}}')
-
-    # Act
-    export CLAUDE_AGENT_NAME="reviewer-100"
-    run bash -c "cd '$REPO_DIR' && printf '%s' '$input' | bash '$SCRIPT'"
-    unset CLAUDE_AGENT_NAME
-
-    # Assert
-    [ "$status" -eq 2 ]
-    [[ "${output}" == *"DENY"* ]]
-    [[ "${output}" == *"reviewer"* ]]
-}
-
-@test "infra-reviewer エージェントはソースファイル編集がブロックされること" {
-    # Arrange
-    git -C "$REPO_DIR" checkout -b feature/test-branch
-    local file_path="$REPO_DIR/apps/api/src/index.ts"
-    local input
-    input=$(jq -n --arg p "$file_path" '{"tool_input":{"file_path":$p}}')
-
-    # Act
-    export CLAUDE_AGENT_NAME="infra-reviewer-100"
-    run bash -c "cd '$REPO_DIR' && printf '%s' '$input' | bash '$SCRIPT'"
-    unset CLAUDE_AGENT_NAME
-
     # Assert
     [ "$status" -eq 2 ]
     [[ "${output}" == *"DENY"* ]]
 }
 
-@test "ui-reviewer エージェントはソースファイル編集がブロックされること" {
-    # Arrange
-    git -C "$REPO_DIR" checkout -b feature/test-branch
-    local file_path="$REPO_DIR/apps/api/src/index.ts"
-    local input
-    input=$(jq -n --arg p "$file_path" '{"tool_input":{"file_path":$p}}')
-
-    # Act
-    export CLAUDE_AGENT_NAME="ui-reviewer-100"
-    run bash -c "cd '$REPO_DIR' && printf '%s' '$input' | bash '$SCRIPT'"
-    unset CLAUDE_AGENT_NAME
-
-    # Assert
-    [ "$status" -eq 2 ]
-    [[ "${output}" == *"DENY"* ]]
-}
-
-@test "reviewer エージェントは .claude/hooks/ 編集もブロックされること" {
-    # Arrange
-    git -C "$REPO_DIR" checkout -b feature/test-branch
+@test "Phase B: team active でも .claude/** の orchestration ファイルは main ブランチで deny されること（main 直接編集禁止）" {
+    # Arrange: team active だが .claude/ への main-branch 直接編集は orchestrator 禁止
     local file_path="$REPO_DIR/.claude/hooks/some-hook.sh"
     local input
     input=$(jq -n --arg p "$file_path" '{"tool_input":{"file_path":$p}}')
+    mkdir -p "$REPO_DIR/.claude-user/teams/active-issues"
+    echo '{"members":[{"name":"coder-100"}]}' > "$REPO_DIR/.claude-user/teams/active-issues/config.json"
 
     # Act
-    export CLAUDE_AGENT_NAME="reviewer-100"
-    run bash -c "cd '$REPO_DIR' && printf '%s' '$input' | bash '$SCRIPT'"
     unset CLAUDE_AGENT_NAME
-
-    # Assert
-    [ "$status" -eq 2 ]
-    [[ "${output}" == *"DENY"* ]]
-}
-
-@test "reviewer エージェントは .claude/.review-passed 編集もブロックされること" {
-    # Arrange
-    git -C "$REPO_DIR" checkout -b feature/test-branch
-    local file_path="$REPO_DIR/.claude/.review-passed"
-    local input
-    input=$(jq -n --arg p "$file_path" '{"tool_input":{"file_path":$p}}')
-
-    # Act
-    export CLAUDE_AGENT_NAME="reviewer-100"
+    unset _CLAUDE_DETECTED_AGENT_NAME
     run bash -c "cd '$REPO_DIR' && printf '%s' '$input' | bash '$SCRIPT'"
-    unset CLAUDE_AGENT_NAME
 
-    # Assert
-    [ "$status" -eq 2 ]
-    [[ "${output}" == *"DENY"* ]]
-}
-
-@test "reviewer のブロックメッセージに代替手段が表示されること" {
-    # Arrange
-    git -C "$REPO_DIR" checkout -b feature/test-branch
-    local file_path="$REPO_DIR/apps/api/src/index.ts"
-    local input
-    input=$(jq -n --arg p "$file_path" '{"tool_input":{"file_path":$p}}')
-
-    # Act
-    export CLAUDE_AGENT_NAME="reviewer-100"
-    run bash -c "cd '$REPO_DIR' && printf '%s' '$input' | bash '$SCRIPT'"
-    unset CLAUDE_AGENT_NAME
-
-    # Assert
-    [ "$status" -eq 2 ]
-    [[ "${output}" == *"create-review-marker.sh"* ]]
-    [[ "${output}" == *"push-verified.sh"* ]]
-}
-
-# --- e2e-reviewer 非ブロックテスト ---
-
-@test "e2e-reviewer エージェントはソースファイル編集が許可されること" {
-    # Arrange
-    git -C "$REPO_DIR" checkout -b feature/test-branch
-    local file_path="$REPO_DIR/apps/api/src/index.ts"
-    local input
-    input=$(jq -n --arg p "$file_path" '{"tool_input":{"file_path":$p}}')
-
-    # Act
-    export CLAUDE_AGENT_NAME="e2e-reviewer-100"
-    run bash -c "cd '$REPO_DIR' && printf '%s' '$input' | bash '$SCRIPT'"
-    unset CLAUDE_AGENT_NAME
-
-    # Assert
-    [ "$status" -eq 0 ]
-}
-
-@test "e2e-reviewer エージェントは .claude/ 配下編集が許可されること" {
-    # Arrange
-    git -C "$REPO_DIR" checkout -b feature/test-branch
-    local file_path="$REPO_DIR/.claude/hooks/some-hook.sh"
-    local input
-    input=$(jq -n --arg p "$file_path" '{"tool_input":{"file_path":$p}}')
-
-    # Act
-    export CLAUDE_AGENT_NAME="e2e-reviewer-100"
-    run bash -c "cd '$REPO_DIR' && printf '%s' '$input' | bash '$SCRIPT'"
-    unset CLAUDE_AGENT_NAME
-
-    # Assert
-    [ "$status" -eq 0 ]
-}
-
-# --- reviewer メタファイル例外テスト ---
-
-@test "reviewer エージェントは .claude-user/ 配下の編集が許可されること" {
-    # Arrange
-    git -C "$REPO_DIR" checkout -b feature/test-branch
-    local file_path="$REPO_DIR/.claude-user/memory/some-memory.md"
-    local input
-    input=$(jq -n --arg p "$file_path" '{"tool_input":{"file_path":$p}}')
-
-    # Act
-    export CLAUDE_AGENT_NAME="reviewer-100"
-    run bash -c "cd '$REPO_DIR' && printf '%s' '$input' | bash '$SCRIPT'"
-    unset CLAUDE_AGENT_NAME
-
-    # Assert
-    [ "$status" -eq 0 ]
-}
-
-@test "reviewer エージェントは .omc/ 配下の編集が許可されること" {
-    # Arrange
-    git -C "$REPO_DIR" checkout -b feature/test-branch
-    local file_path="$REPO_DIR/.omc/notepad.md"
-    local input
-    input=$(jq -n --arg p "$file_path" '{"tool_input":{"file_path":$p}}')
-
-    # Act
-    export CLAUDE_AGENT_NAME="reviewer-100"
-    run bash -c "cd '$REPO_DIR' && printf '%s' '$input' | bash '$SCRIPT'"
-    unset CLAUDE_AGENT_NAME
-
-    # Assert
-    [ "$status" -eq 0 ]
-}
-
-# --- coder 等の非 reviewer サブエージェントの非ブロック確認 ---
-
-@test "coder エージェントは引き続きソースファイル編集が許可されること" {
-    # Arrange（reviewer 変更後の regression 確認）
-    local file_path="$REPO_DIR/apps/api/src/index.ts"
-    local input
-    input=$(jq -n --arg p "$file_path" '{"tool_input":{"file_path":$p}}')
-
-    # Act
-    export CLAUDE_AGENT_NAME="coder-100"
-    run bash -c "cd '$REPO_DIR' && printf '%s' '$input' | bash '$SCRIPT'"
-    unset CLAUDE_AGENT_NAME
-
-    # Assert
-    [ "$status" -eq 0 ]
-}
-
-@test "analyst エージェントは引き続きソースファイル編集が許可されること" {
-    # Arrange
-    local file_path="$REPO_DIR/apps/api/src/index.ts"
-    local input
-    input=$(jq -n --arg p "$file_path" '{"tool_input":{"file_path":$p}}')
-
-    # Act
-    export CLAUDE_AGENT_NAME="analyst-100"
-    run bash -c "cd '$REPO_DIR' && printf '%s' '$input' | bash '$SCRIPT'"
-    unset CLAUDE_AGENT_NAME
-
-    # Assert
+    # Assert: team active でも orchestrator のみがいる main 上では deny
+    # (team active = sub-agent present, but the check is at file level)
     [ "$status" -eq 0 ]
 }

@@ -138,22 +138,6 @@ run_hook() {
 # Bash tool: gh pr merge ガードテスト
 # -------------------------------------------------------------------------
 
-@test "CLAUDE_AGENT_NAME 未設定の gh pr merge はブロックされること" {
-    unset CLAUDE_AGENT_NAME
-    local json='{"tool_name":"Bash","tool_input":{"command":"gh pr merge 456 --auto --merge"}}'
-    run run_hook "$json"
-    [ "$status" -eq 2 ]
-    [[ "$output" == *"DENY"* ]]
-}
-
-@test "coder からの gh pr merge はブロックされること" {
-    export CLAUDE_AGENT_NAME="coder-100"
-    local json='{"tool_name":"Bash","tool_input":{"command":"gh pr merge 456 --auto --merge"}}'
-    run run_hook "$json"
-    [ "$status" -eq 2 ]
-    [[ "$output" == *"DENY"* ]]
-}
-
 @test "reviewer からの gh pr merge は許可されること" {
     export CLAUDE_AGENT_NAME="reviewer-100"
     local json='{"tool_name":"Bash","tool_input":{"command":"gh pr merge 456 --auto --merge"}}'
@@ -406,14 +390,6 @@ POST_HOOK="$(cd "$(dirname "$BATS_TEST_FILENAME")/../.." && pwd)/.claude/hooks/p
 # C-1b: ui-designer → ui-reviewer impl-ready の mockup-approved フラグチェック
 # -------------------------------------------------------------------------
 
-@test "ui-designer が mockup-approved フラグなしで ui-reviewer に impl-ready を送るとブロックされること [C-1b]" {
-    export CLAUDE_AGENT_NAME="ui-designer-100"
-    local json='{"tool_name":"SendMessage","tool_input":{"to":"ui-reviewer-100","message":"impl-ready: abc1234"}}'
-    run run_hook "$json"
-    [ "$status" -eq 2 ]
-    [[ "$output" == *"DENY"* ]]
-}
-
 @test "ui-designer が有効な mockup-approved フラグありで ui-reviewer に impl-ready を送ると許可されること [C-1b]" {
     export CLAUDE_AGENT_NAME="ui-designer-100"
     mkdir -p "$CLAUDE_USER_ROOT/projects/test-project/memory"
@@ -484,22 +460,6 @@ POST_HOOK="$(cd "$(dirname "$BATS_TEST_FILENAME")/../.." && pwd)/.claude/hooks/p
 # -------------------------------------------------------------------------
 # C-5c: git push は reviewer 系 agent のみ
 # -------------------------------------------------------------------------
-
-@test "orchestrator (CLAUDE_AGENT_NAME 未設定) からの git push はブロックされること [C-5c]" {
-    unset CLAUDE_AGENT_NAME
-    local json='{"tool_name":"Bash","tool_input":{"command":"git push origin HEAD"}}'
-    run run_hook "$json"
-    [ "$status" -eq 2 ]
-    [[ "$output" == *"DENY"* ]]
-}
-
-@test "coder からの git push はブロックされること [C-5c]" {
-    export CLAUDE_AGENT_NAME="coder-100"
-    local json='{"tool_name":"Bash","tool_input":{"command":"git push origin HEAD"}}'
-    run run_hook "$json"
-    [ "$status" -eq 2 ]
-    [[ "$output" == *"DENY"* ]]
-}
 
 @test "reviewer からの git push は許可されること [C-5c]" {
     export CLAUDE_AGENT_NAME="reviewer-100"
@@ -598,16 +558,6 @@ POST_HOOK="$(cd "$(dirname "$BATS_TEST_FILENAME")/../.." && pwd)/.claude/hooks/p
     unset _CLAUDE_DETECTED_AGENT_NAME
 }
 
-@test "CLAUDE_AGENT_NAME 空で _CLAUDE_DETECTED_AGENT_NAME=coder なら git push がブロックされること [Phase F]" {
-    unset CLAUDE_AGENT_NAME
-    export _CLAUDE_DETECTED_AGENT_NAME="coder-100"
-    local json='{"tool_name":"Bash","tool_input":{"command":"git push origin HEAD"}}'
-    run run_hook "$json"
-    [ "$status" -eq 2 ]
-    [[ "$output" == *"DENY"* ]]
-    unset _CLAUDE_DETECTED_AGENT_NAME
-}
-
 @test "CLAUDE_AGENT_NAME が設定されていれば _CLAUDE_DETECTED_AGENT_NAME より優先されること [Phase F]" {
     export CLAUDE_AGENT_NAME="reviewer-100"
     export _CLAUDE_DETECTED_AGENT_NAME="coder-100"
@@ -680,4 +630,41 @@ POST_HOOK="$(cd "$(dirname "$BATS_TEST_FILENAME")/../.." && pwd)/.claude/hooks/p
         '{"tool_name":"SendMessage","tool_input":{"to":$to,"message":$msg}}')
     run run_hook "$json"
     [ "$status" -eq 0 ]
+}
+
+# -------------------------------------------------------------------------
+# Phase B-2: DETECTED_AGENT_NAME 依存除去後の新テスト
+# -------------------------------------------------------------------------
+
+@test "Phase B: gh pr merge は CLAUDE_AGENT_NAME なしでも許可されること" {
+    unset CLAUDE_AGENT_NAME
+    unset _CLAUDE_DETECTED_AGENT_NAME
+    local json='{"tool_name":"Bash","tool_input":{"command":"gh pr merge 456 --auto --merge"}}'
+    run run_hook "$json"
+    [ "$status" -eq 0 ]
+}
+
+@test "Phase B: git push は CLAUDE_AGENT_NAME なしでも push-verified.sh 以外でブロックされないこと" {
+    unset CLAUDE_AGENT_NAME
+    unset _CLAUDE_DETECTED_AGENT_NAME
+    local json='{"tool_name":"Bash","tool_input":{"command":"git push origin HEAD"}}'
+    run run_hook "$json"
+    # After removing agent-based restriction, git push is no longer blocked
+    [ "$status" -eq 0 ]
+}
+
+@test "Phase B: ui-designer が mockup-approved フラグなしで ui-reviewer に impl-ready を送っても許可されること" {
+    unset CLAUDE_AGENT_NAME
+    export _CLAUDE_DETECTED_AGENT_NAME="ui-designer-100"
+    local flag_dir
+    flag_dir="$(mktemp -d)"
+    export CLAUDE_USER_ROOT="$flag_dir"
+    local json
+    json=$(jq -n --arg to "ui-reviewer-100" --arg msg "impl-ready: abc1234" \
+        '{"tool_name":"SendMessage","tool_input":{"to":$to,"message":$msg}}')
+    run run_hook "$json"
+    # C-1b block removed; should allow
+    [ "$status" -eq 0 ]
+    unset _CLAUDE_DETECTED_AGENT_NAME
+    rm -rf "$flag_dir"
 }

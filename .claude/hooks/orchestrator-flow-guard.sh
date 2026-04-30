@@ -2,12 +2,15 @@
 # PreToolUse hook: orchestrator のフロー逸脱を物理ブロック
 # ブロック対象:
 #   1. analyst なし implementation/reviewer の Agent spawn
-#   2. reviewer 系の重複 spawn (-2/-3 サフィックス)
+#   2. reviewer 系の重複 spawn
 #   3. AskUserQuestion 未承認の gh issue close / git push --no-verify
-#   4. reviewer 系以外の gh pr merge / git push (push-verified.sh 経由を除く)
-#   5. force push
-#   6. mockup 未承認の ui-designer impl-ready 送信
-#   7. orchestrator が spec を実装エージェントへ直接送信
+#   4. force push
+#   5. orchestrator が spec を実装エージェントへ直接送信
+#
+# 除去済み（CLAUDE_AGENT_NAME 依存除去のため）:
+#   - gh pr merge の reviewer 限定（branch protection + reviewer agent 定義で代替）
+#   - git push の reviewer 限定（pre-push-review-guard.sh + push-verified.sh で代替）
+#   - ui-designer の mockup-approved フラグ確認（agent 定義プロンプトで代替）
 
 set -euo pipefail
 
@@ -21,30 +24,6 @@ source "${REPO_ROOT}/scripts/lib/askuserquestion-flag.sh"
 INPUT=$(cat)
 TOOL_NAME=$(echo "$INPUT" | jq -r '.tool_name // ""')
 TOOL_INPUT=$(echo "$INPUT" | jq -r '.tool_input // {}')
-
-# Walk the process tree to find the invoking claude binary and extract --agent-name.
-# The SDK passes --agent-name <name> when spawning sub-agents but not for the orchestrator.
-# CLAUDE_AGENT_NAME env var is NOT injected by the SDK; this is the only reliable source.
-_detect_claude_agent_name() {
-  local current_pid=$$
-  local parent_pid parent_comm parent_args
-  for _ in $(seq 1 20); do
-    parent_pid=$(ps -p "$current_pid" -o ppid= 2>/dev/null | tr -d " ")
-    [ -z "$parent_pid" ] || [ "$parent_pid" = "0" ] || [ "$parent_pid" = "1" ] && break
-    parent_comm=$(ps -p "$parent_pid" -o comm= 2>/dev/null || echo "")
-    if echo "$parent_comm" | grep -qE "^claude$"; then
-      parent_args=$(ps -p "$parent_pid" -o args= 2>/dev/null || echo "")
-      echo "$parent_args" | grep -oE -- '--agent-name[= ][^ ]+' | sed 's/^--agent-name[= ]//' | head -1
-      return 0
-    fi
-    current_pid=$parent_pid
-  done
-  echo ""
-}
-
-# Prefer env var (explicit override / test injection) then fall back to process tree.
-# Tests can also set _CLAUDE_DETECTED_AGENT_NAME to bypass ps-based detection.
-DETECTED_AGENT_NAME="${CLAUDE_AGENT_NAME:-${_CLAUDE_DETECTED_AGENT_NAME:-$(_detect_claude_agent_name)}}"
 
 deny() {
   local msg="$1"
@@ -85,12 +64,6 @@ if [ "$TOOL_NAME" = "Bash" ]; then
     check_askuserquestion_flag 300 || deny "DENY: 'gh issue close' は AskUserQuestion で事前確認 (5 分以内) してから実行してください。"
   fi
 
-  # gh pr merge: reviewer 系のみ
-  if echo "$CMD" | grep -qE '^\s*gh\s+pr\s+merge\s'; then
-    echo "${DETECTED_AGENT_NAME}" | grep -qE '(reviewer|infra-reviewer|ui-reviewer)' \
-      || deny "DENY: 'gh pr merge' は reviewer 系のみ実行可 (agent=${DETECTED_AGENT_NAME:-unset})。"
-  fi
-
   # force push: 完全禁止
   if echo "$CMD" | grep -qE 'git\s+push\s+.*(-f[[:space:]]|--force[[:space:]]|-f$|--force$)'; then
     deny "DENY: force push 禁止。"
@@ -101,33 +74,13 @@ if [ "$TOOL_NAME" = "Bash" ]; then
     check_askuserquestion_flag 300 || deny "DENY: 'git push --no-verify' は AskUserQuestion で事前確認 (5 分以内) してから実行してください。"
   fi
 
-  # git push: reviewer 系 or push-verified.sh 経由のみ
-  if echo "$CMD" | grep -qE '^\s*git\s+push\s' && ! echo "$CMD" | grep -q 'push-verified\.sh'; then
-    echo "${DETECTED_AGENT_NAME}" | grep -qE '^(reviewer|infra-reviewer|ui-reviewer)(-[a-zA-Z0-9-]+)?-[0-9]+$' \
-      || deny "DENY: 'git push' は reviewer 系のみ。実装系は 'bash scripts/push-verified.sh' 経由で。"
-  fi
 fi
 
 # ─── SendMessage: spec 直送 / mockup 未承認 / 長文ガード ───
 if [ "$TOOL_NAME" = "SendMessage" ]; then
   TO=$(echo "$TOOL_INPUT" | jq -r '.to // ""')
   CONTENT=$(echo "$TOOL_INPUT" | jq -r '.message // ""')
-  SENDER="${DETECTED_AGENT_NAME}"
-  IS_ORCHESTRATOR=false
-  [ -z "$SENDER" ] && IS_ORCHESTRATOR=true
-
-  # [C-1b] ui-designer → ui-reviewer の impl-ready は mockup-approved フラグ必要
-  if echo "$SENDER" | grep -qE '^ui-designer(-[a-zA-Z0-9-]+)?-[0-9]+$' \
-     && echo "$TO" | grep -qE '^ui-reviewer(-[a-zA-Z0-9-]+)?-[0-9]+$' \
-     && echo "$CONTENT" | grep -qE '^impl-ready:'; then
-    if [[ "$SENDER" =~ -([0-9]+)$ ]]; then
-      ISSUE_NUM="${BASH_REMATCH[1]}"
-    else
-      ISSUE_NUM=""
-    fi
-    check_mockup_approval_flag "$ISSUE_NUM" 1800 \
-      || deny "DENY: ui-designer Issue #${ISSUE_NUM}: mockup-approved-${ISSUE_NUM}.flag (30 分以内) が必要。先に MOCKUP_REVIEW_REQUEST で承認を取ってください。"
-  fi
+  IS_ORCHESTRATOR=true
 
   # 例外: analyst 宛 / 補足訂正 / shutdown 系 protocol は exempt
   echo "$TO" | grep -qE '^analyst-[0-9]+$' && exit 0
