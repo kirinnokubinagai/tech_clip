@@ -57,25 +57,21 @@ deny() {
 if [ "$TOOL_NAME" = "Agent" ]; then
   NAME=$(echo "$TOOL_INPUT" | jq -r '.name // ""')
   case "$NAME" in
-    issue-[0-9]*-coder*|issue-[0-9]*-infra-engineer*|issue-[0-9]*-ui-designer*|\
-issue-[0-9]*-reviewer*|issue-[0-9]*-infra-reviewer*|issue-[0-9]*-ui-reviewer*)
-      ISSUE_NUM=$(echo "$NAME" | grep -oE '[0-9]+' | head -1)
+    coder-*|infra-engineer-*|ui-designer-*|reviewer-*|infra-reviewer-*|ui-reviewer-*)
+      if [[ "$NAME" =~ -([0-9]+)$ ]]; then
+        ISSUE_NUM="${BASH_REMATCH[1]}"
+      else
+        exit 0
+      fi
       [ -f "$TEAM_CONFIG" ] || deny "DENY: active-issues team が未作成。TeamCreate(\"active-issues\") を先に実行。"
 
-      ANALYST="issue-${ISSUE_NUM}-analyst"
+      ANALYST="analyst-${ISSUE_NUM}"
       EXISTS=$(jq -r --arg n "$ANALYST" '[.members[]|select(.name==$n)]|length' "$TEAM_CONFIG" 2>/dev/null || echo 0)
       [ "$EXISTS" = "0" ] && deny "DENY: Issue #${ISSUE_NUM} に analyst (${ANALYST}) が未存在。harness-spawn-flow に従い 4 体セット同時 spawn してください。"
 
-      # reviewer 重複 spawn (-2 等のサフィックス) を阻止
-      case "$NAME" in
-        issue-[0-9]*-reviewer-*|issue-[0-9]*-infra-reviewer-*|issue-[0-9]*-ui-reviewer-*)
-          BASE=$(echo "$NAME" | sed -E 's/-[0-9]+$//')
-          if [ "$BASE" != "$NAME" ]; then
-            COUNT=$(jq -r --arg b "$BASE" '[.members[]|select(.name|startswith($b))]|length' "$TEAM_CONFIG" 2>/dev/null || echo 0)
-            [ "$COUNT" -ge 1 ] && deny "DENY: ${BASE} が既に ${COUNT} 体存在。重複 spawn 禁止、既存に SendMessage で再依頼してください。"
-          fi
-          ;;
-      esac
+      # 同名既存 block（旧 no-duplicate-agent-spawn フックの代替）
+      EXISTS_SELF=$(jq -r --arg n "$NAME" '[.members[]|select(.name==$n)]|length' "$TEAM_CONFIG" 2>/dev/null || echo 0)
+      [ "$EXISTS_SELF" != "0" ] && deny "DENY: agent '$NAME' は既に team config に存在。harness-agent-cleanup → cleanup → 再 spawn してください。"
       ;;
   esac
 fi
@@ -107,7 +103,7 @@ if [ "$TOOL_NAME" = "Bash" ]; then
 
   # git push: reviewer 系 or push-verified.sh 経由のみ
   if echo "$CMD" | grep -qE '^\s*git\s+push\s' && ! echo "$CMD" | grep -q 'push-verified\.sh'; then
-    echo "${DETECTED_AGENT_NAME}" | grep -qE '^issue-[0-9]+-(reviewer|infra-reviewer|ui-reviewer)([-]|$)' \
+    echo "${DETECTED_AGENT_NAME}" | grep -qE '^(reviewer|infra-reviewer|ui-reviewer)(-[a-zA-Z0-9-]+)?-[0-9]+$' \
       || deny "DENY: 'git push' は reviewer 系のみ。実装系は 'bash scripts/push-verified.sh' 経由で。"
   fi
 fi
@@ -121,16 +117,20 @@ if [ "$TOOL_NAME" = "SendMessage" ]; then
   [ -z "$SENDER" ] && IS_ORCHESTRATOR=true
 
   # [C-1b] ui-designer → ui-reviewer の impl-ready は mockup-approved フラグ必要
-  if echo "$SENDER" | grep -qE '^issue-[0-9]+-ui-designer' \
-     && echo "$TO" | grep -qE '^issue-[0-9]+-ui-reviewer' \
+  if echo "$SENDER" | grep -qE '^ui-designer(-[a-zA-Z0-9-]+)?-[0-9]+$' \
+     && echo "$TO" | grep -qE '^ui-reviewer(-[a-zA-Z0-9-]+)?-[0-9]+$' \
      && echo "$CONTENT" | grep -qE '^impl-ready:'; then
-    ISSUE_NUM=$(echo "$SENDER" | grep -oE '[0-9]+' | head -1)
+    if [[ "$SENDER" =~ -([0-9]+)$ ]]; then
+      ISSUE_NUM="${BASH_REMATCH[1]}"
+    else
+      ISSUE_NUM=""
+    fi
     check_mockup_approval_flag "$ISSUE_NUM" 1800 \
       || deny "DENY: ui-designer Issue #${ISSUE_NUM}: mockup-approved-${ISSUE_NUM}.flag (30 分以内) が必要。先に MOCKUP_REVIEW_REQUEST で承認を取ってください。"
   fi
 
   # 例外: analyst 宛 / 補足訂正 / shutdown 系 protocol は exempt
-  echo "$TO" | grep -qE '^issue-[0-9]+-analyst$' && exit 0
+  echo "$TO" | grep -qE '^analyst-[0-9]+$' && exit 0
   echo "$CONTENT" | grep -qE '^(補足:|訂正:|clarification:)' && exit 0
   echo "$CONTENT" | jq -e 'type=="object" and (.type|test("shutdown|plan_approval"))' &>/dev/null && exit 0
 
@@ -147,7 +147,7 @@ if [ "$TOOL_NAME" = "SendMessage" ]; then
 
   # [C-3a] orchestrator → analyst 以外への spec: 含む長文禁止（TO=team-lead の場合のみ）
   # TO=team-lead で spec: を送るケースは想定外だが念のため残す
-  IMPL_PATTERN='^issue-[0-9]+-(coder|infra-engineer|ui-designer)([-]|$)'
+  IMPL_PATTERN='^(coder|infra-engineer|ui-designer)(-[a-zA-Z0-9-]+)?-[0-9]+$'
   if echo "$TO" | grep -qE "$IMPL_PATTERN" && echo "$CONTENT" | grep -qE '^spec:'; then
     deny "DENY: orchestrator が spec: を実装系 (${TO}) に直送。spec 作成は analyst に依頼してください。"
   fi

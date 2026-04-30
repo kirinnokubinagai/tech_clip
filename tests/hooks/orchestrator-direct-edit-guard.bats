@@ -605,7 +605,7 @@ run_script_with_file() {
     input=$(jq -n --arg p "$file_path" '{"tool_input":{"file_path":$p}}')
 
     # Act: CLAUDE_AGENT_NAME をエクスポートしてスクリプト実行
-    export CLAUDE_AGENT_NAME="issue-100-coder"
+    export CLAUDE_AGENT_NAME="coder-100"
     run bash -c "cd '$REPO_DIR' && printf '%s' '$input' | bash '$SCRIPT'"
     unset CLAUDE_AGENT_NAME
 
@@ -620,7 +620,7 @@ run_script_with_file() {
     input=$(jq -n --arg p "$file_path" '{"tool_input":{"file_path":$p}}')
 
     # Act
-    export CLAUDE_AGENT_NAME="issue-100-coder"
+    export CLAUDE_AGENT_NAME="coder-100"
     run bash -c "cd '$REPO_DIR' && printf '%s' '$input' | bash '$SCRIPT'"
     unset CLAUDE_AGENT_NAME
 
@@ -636,7 +636,7 @@ run_script_with_file() {
 
     # Act
     unset CLAUDE_AGENT_NAME
-    export _CLAUDE_DETECTED_AGENT_NAME="issue-200-infra-engineer"
+    export _CLAUDE_DETECTED_AGENT_NAME="infra-engineer-200"
     run bash -c "cd '$REPO_DIR' && printf '%s' '$input' | bash '$SCRIPT'"
     unset _CLAUDE_DETECTED_AGENT_NAME
 
@@ -655,7 +655,7 @@ run_script_with_file() {
 
     # Act
     unset CLAUDE_AGENT_NAME
-    export _CLAUDE_DETECTED_AGENT_NAME="issue-300-ui-designer"
+    export _CLAUDE_DETECTED_AGENT_NAME="ui-designer-300"
     run bash -c "cd '$REPO_DIR' && printf '%s' '$input' | bash '$SCRIPT'"
     unset _CLAUDE_DETECTED_AGENT_NAME
 
@@ -687,7 +687,7 @@ run_script_with_file() {
     input=$(jq -n --arg p "$file_path" '{"tool_input":{"file_path":$p}}')
 
     # Act
-    export CLAUDE_AGENT_NAME="issue-100-coder"
+    export CLAUDE_AGENT_NAME="coder-100"
     run bash -c "cd '$REPO_DIR' && printf '%s' '$input' | bash '$SCRIPT'"
     unset CLAUDE_AGENT_NAME
 
@@ -705,7 +705,7 @@ run_script_with_file() {
     input=$(jq -n --arg p "$file_path" '{"tool_input":{"file_path":$p}}')
 
     # Act
-    export CLAUDE_AGENT_NAME="issue-100-reviewer"
+    export CLAUDE_AGENT_NAME="reviewer-100"
     run bash -c "cd '$REPO_DIR' && printf '%s' '$input' | bash '$SCRIPT'"
     unset CLAUDE_AGENT_NAME
 
@@ -723,7 +723,7 @@ run_script_with_file() {
     input=$(jq -n --arg p "$file_path" '{"tool_input":{"file_path":$p}}')
 
     # Act
-    export CLAUDE_AGENT_NAME="issue-100-infra-reviewer"
+    export CLAUDE_AGENT_NAME="infra-reviewer-100"
     run bash -c "cd '$REPO_DIR' && printf '%s' '$input' | bash '$SCRIPT'"
     unset CLAUDE_AGENT_NAME
 
@@ -740,7 +740,7 @@ run_script_with_file() {
     input=$(jq -n --arg p "$file_path" '{"tool_input":{"file_path":$p}}')
 
     # Act
-    export CLAUDE_AGENT_NAME="issue-100-ui-reviewer"
+    export CLAUDE_AGENT_NAME="ui-reviewer-100"
     run bash -c "cd '$REPO_DIR' && printf '%s' '$input' | bash '$SCRIPT'"
     unset CLAUDE_AGENT_NAME
 
@@ -757,7 +757,7 @@ run_script_with_file() {
     input=$(jq -n --arg p "$file_path" '{"tool_input":{"file_path":$p}}')
 
     # Act
-    export CLAUDE_AGENT_NAME="issue-100-reviewer"
+    export CLAUDE_AGENT_NAME="reviewer-100"
     run bash -c "cd '$REPO_DIR' && printf '%s' '$input' | bash '$SCRIPT'"
     unset CLAUDE_AGENT_NAME
 
@@ -774,7 +774,7 @@ run_script_with_file() {
     input=$(jq -n --arg p "$file_path" '{"tool_input":{"file_path":$p}}')
 
     # Act
-    export CLAUDE_AGENT_NAME="issue-100-reviewer"
+    export CLAUDE_AGENT_NAME="reviewer-100"
     run bash -c "cd '$REPO_DIR' && printf '%s' '$input' | bash '$SCRIPT'"
     unset CLAUDE_AGENT_NAME
 
@@ -791,7 +791,7 @@ run_script_with_file() {
     input=$(jq -n --arg p "$file_path" '{"tool_input":{"file_path":$p}}')
 
     # Act
-    export CLAUDE_AGENT_NAME="issue-100-reviewer"
+    export CLAUDE_AGENT_NAME="reviewer-100"
     run bash -c "cd '$REPO_DIR' && printf '%s' '$input' | bash '$SCRIPT'"
     unset CLAUDE_AGENT_NAME
 
@@ -811,7 +811,7 @@ run_script_with_file() {
     input=$(jq -n --arg p "$file_path" '{"tool_input":{"file_path":$p}}')
 
     # Act
-    export CLAUDE_AGENT_NAME="issue-100-e2e-reviewer"
+    export CLAUDE_AGENT_NAME="e2e-reviewer-100"
     run bash -c "cd '$REPO_DIR' && printf '%s' '$input' | bash '$SCRIPT'"
     unset CLAUDE_AGENT_NAME
 
@@ -827,7 +827,7 @@ run_script_with_file() {
     input=$(jq -n --arg p "$file_path" '{"tool_input":{"file_path":$p}}')
 
     # Act
-    export CLAUDE_AGENT_NAME="issue-100-e2e-reviewer"
+    export CLAUDE_AGENT_NAME="e2e-reviewer-100"
     run bash -c "cd '$REPO_DIR' && printf '%s' '$input' | bash '$SCRIPT'"
     unset CLAUDE_AGENT_NAME
 
@@ -845,7 +845,7 @@ run_script_with_file() {
     input=$(jq -n --arg p "$file_path" '{"tool_input":{"file_path":$p}}')
 
     # Act
-    export CLAUDE_AGENT_NAME="issue-100-reviewer"
+    export CLAUDE_AGENT_NAME="reviewer-100"
     run bash -c "cd '$REPO_DIR' && printf '%s' '$input' | bash '$SCRIPT'"
     unset CLAUDE_AGENT_NAME
 
@@ -861,7 +861,7 @@ run_script_with_file() {
     input=$(jq -n --arg p "$file_path" '{"tool_input":{"file_path":$p}}')
 
     # Act
-    export CLAUDE_AGENT_NAME="issue-100-reviewer"
+    export CLAUDE_AGENT_NAME="reviewer-100"
     run bash -c "cd '$REPO_DIR' && printf '%s' '$input' | bash '$SCRIPT'"
     unset CLAUDE_AGENT_NAME
 
@@ -878,7 +878,7 @@ run_script_with_file() {
     input=$(jq -n --arg p "$file_path" '{"tool_input":{"file_path":$p}}')
 
     # Act
-    export CLAUDE_AGENT_NAME="issue-100-coder"
+    export CLAUDE_AGENT_NAME="coder-100"
     run bash -c "cd '$REPO_DIR' && printf '%s' '$input' | bash '$SCRIPT'"
     unset CLAUDE_AGENT_NAME
 
@@ -893,7 +893,7 @@ run_script_with_file() {
     input=$(jq -n --arg p "$file_path" '{"tool_input":{"file_path":$p}}')
 
     # Act
-    export CLAUDE_AGENT_NAME="issue-100-analyst"
+    export CLAUDE_AGENT_NAME="analyst-100"
     run bash -c "cd '$REPO_DIR' && printf '%s' '$input' | bash '$SCRIPT'"
     unset CLAUDE_AGENT_NAME
 
