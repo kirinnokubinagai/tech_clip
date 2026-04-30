@@ -1,0 +1,290 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+    paths-ignore:
+      - '**/*.md'
+      - 'docs/**'
+      - 'LICENSE'
+      - '.omc/**'
+      - 'tests/e2e/maestro/**'
+  pull_request:
+    branches: [main, stage, 'issue/**']
+
+# デフォルトで全権限を read-only にし、各ジョブで必要な権限のみを上書きする
+permissions: read-all
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  # ── Step 1: AIレビュー ────────────────────────────────────────────────────
+  claude-review:
+    # 同一リポジトリの PR のみ実行（フォーク PR で id-token: write が悪用されるのを防ぐ）
+    if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      pull-requests: write
+      id-token: write  # claude-code-action が OIDC トークンを取得する際に必要
+    outputs:
+      result: ${{ steps.review.outcome }}
+      needs_work: ${{ steps.check-label.outputs.needs_work }}
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v4.2.2
+      - id: review
+        continue-on-error: true  # ワークフローファイル変更PRではGitHubセキュリティ制限で失敗するため
+        uses: anthropics/claude-code-action@38ec876110f9fbf8b950c79f534430740c3ac009  # v1
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          claude_args: |
+            --allowedTools Skill,Read,Grep,Glob,"Bash(gh pr comment:*)","Bash(gh pr edit:*)"
+          prompt: |
+            このPRの差分をレビューしてください。
+            レビューには必ず .claude/skills/review/code-review/SKILL.md と .claude/skills/review/pr-review/SKILL.md を Read ツールで読み取り、記載されたチェックリストと出力フォーマットに厳密に従ってください。
+
+            既存のPRコメント（前回のレビュー指摘への回答）も確認してください。
+            前回の指摘に対してコメントで適切に回答・説明されている場合は、その指摘を解決済みとして扱ってください。
+
+            結果は日本語でPRコメントに **1 回だけ** 投稿してください。
+            投稿の前に以下を必ず守ること:
+            1. `gh pr view ${{ github.event.pull_request.number }} --json comments --jq '.comments[] | select(.author.login == "claude")'` で既存の claude[bot] コメントを確認する。
+            2. 今回の CI run で既に claude[bot] のレビューコメントを投稿済みの場合（このセッション内で以前 `gh pr comment` を呼んだ場合）は、絶対に再投稿しない。
+            3. レビュー内容を見直したい場合でも、新規投稿を重ねず、最終版を 1 回だけ投稿する。
+            4. `gh pr comment` は 1 セッションあたり最大 1 回まで。2 回目の呼び出しは禁止する。
+
+            改善提案（💡）が1件でもある場合は、Approve相当の判定を出してはいけません。
+
+            レビュー完了後、以下のルールに従いラベルを操作してください:
+            - 重大な問題（🔴）が0件かつ軽微な問題（🟡）が0件かつ改善提案（💡）が0件の場合:
+              gh pr edit ${{ github.event.pull_request.number }} --add-label "AI Review: PASS" --remove-label "AI Review: NEEDS WORK"
+            - 1つでも問題や改善提案がある場合:
+              gh pr edit ${{ github.event.pull_request.number }} --add-label "AI Review: NEEDS WORK" --remove-label "AI Review: PASS"
+
+            重要: gh pr review --approve は絶対に実行しないでください。
+      # claude-review が fail した場合は check-label は always() で実行される。
+      # ラベル "AI Review: NEEDS WORK" が付いていれば NEEDS WORK 扱いとする。
+      # - push イベントでは claude-review ジョブ自体が skipped になるため needs_work は空文字になる。
+      #   空文字 != 'true' は true となり PASS 扱いになる（意図した動作）。
+      # - ワークフローファイル変更 PR では claude-review が GitHub セキュリティ制限で失敗するが、
+      #   その場合は ci-gate が claude-review failure を検知して "manual review required" として扱う。
+      #   （reviewer エージェントが手動モードに遷移する）
+      # NG の場合は claude-review ステップがラベル "AI Review: NEEDS WORK" を付ける。
+      - id: check-label
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          # push イベント時（PR でない）は PASS 扱い
+          if [ "${{ github.event_name }}" != "pull_request" ]; then
+            echo "needs_work=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          # gh pr view 形式で取得する（gh api より安全）
+          LABELS=$(gh pr view "${{ github.event.pull_request.number }}" --repo "${{ github.repository }}" --json labels --jq '.labels[].name' 2>/dev/null || echo "")
+          # ラベルなし = レビュー未実施または PASS → PASS 扱い（continue-on-error による失敗時も同様）
+          if echo "$LABELS" | grep -q "AI Review: NEEDS WORK"; then
+            echo "needs_work=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "needs_work=false" >> "$GITHUB_OUTPUT"
+          fi
+
+  # ── Step 2: 変更ファイル検出（claude-review に依存しない）─────────────────
+  # パス分類は .claude/gate-rules.json の ci_path_filters と同期させること。
+  changes:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      code: ${{ steps.check.outputs.code }}
+      hooks: ${{ steps.check.outputs.hooks }}
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v4.2.2
+        with:
+          fetch-depth: 0
+      - id: check
+        run: |
+          if [ "${{ github.event_name }}" != "pull_request" ]; then
+            echo "code=true" >> "$GITHUB_OUTPUT"
+            echo "hooks=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          # gate-rules.json の review_gate.auto_pass_paths に相当するものはスキップする。
+          # *.md, docs/**, *.png, *.jpg 等の doc-only 変更は code=false → checks/zap をスキップ。
+          CHANGED=$(git diff --name-only "origin/${{ github.base_ref }}...HEAD" 2>/dev/null \
+            | grep -cvE '^(docs/|.*\.(md|png|jpg|svg|ico|webp)$|\.gitignore$|.+/CHANGELOG\.md$|.+/LICENSE.*$)' \
+            || echo 0)
+          echo "code=$([ "${CHANGED:-0}" -gt 0 ] && echo 'true' || echo 'false')" >> "$GITHUB_OUTPUT"
+          # gate-rules.json の ci_path_filters.hooks_test と同期:
+          # .claude/hooks/**, scripts/**, tests/hooks/** のいずれかが変更された場合に hooks=true
+          HOOKS_CHANGED=$(git diff --name-only "origin/${{ github.base_ref }}...HEAD" 2>/dev/null \
+            | grep -cE '^(\.claude/hooks/|scripts/|tests/hooks/)' || echo 0)
+          echo "hooks=$([ "${HOOKS_CHANGED:-0}" -gt 0 ] && echo 'true' || echo 'false')" >> "$GITHUB_OUTPUT"
+
+  # ── Step 3: コードチェック（Nix 1回 → lint/typecheck/test/audit 順次）──────
+  # lint/typecheck/test/audit はコード変更がない場合（changes.outputs.code == 'false'）
+  # このジョブごとスキップされる。スキップは合格扱いで auto-merge を許可する（設計上の意図）。
+  checks:
+    needs: [claude-review, changes]
+    if: |
+      always() &&
+      needs.changes.outputs.code == 'true' &&
+      needs.claude-review.outputs.needs_work != 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v4.2.2
+      - name: Free disk space
+        uses: jlumbroso/free-disk-space@54081f138730dfa15788a46383842cd2f914a1be  # v1.3.1
+        with:
+          tool-cache: false
+          android: false
+          dotnet: true
+          haskell: true
+          large-packages: true
+          docker-images: true
+          swap-storage: false
+      - uses: ./.github/actions/nix-setup
+      - name: 実行権限チェック
+        run: nix develop .#ci --command ./scripts/check-executable-shell-files.sh
+      - name: Lint
+        run: nix develop .#ci --command pnpm lint
+      - name: Typecheck
+        run: nix develop .#ci --command pnpm typecheck
+      - name: Test
+        run: nix develop .#ci --command ./scripts/run-and-fail-on-stderr.sh pnpm test
+      - name: Bats
+        run: nix develop .#ci --command bats tests/scripts/ tests/hooks/
+      # Audit ステップは npm が audit エンドポイント (quick / bulk) を 410 Gone に
+      # したため pnpm audit が CI 上で常に失敗するようになった。pnpm 側が新 bulk
+      # advisory API に追従するまで一時無効化する。
+      # 参考: https://api-docs.npmjs.com/#tag/Audit
+      # TODO: pnpm が bulk advisory API に対応したら復活させる
+      # - name: Audit
+      #   run: nix develop .#ci --command pnpm audit --prod
+
+  # ── Step 4（並列）: hooks テスト（hooks 変更時のみ）──────────────────────
+  hooks-test:
+    needs: [claude-review, changes]
+    if: |
+      always() &&
+      needs.changes.outputs.hooks == 'true' &&
+      needs.claude-review.outputs.needs_work != 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v4.2.2
+      - name: Free disk space
+        uses: jlumbroso/free-disk-space@54081f138730dfa15788a46383842cd2f914a1be  # v1.3.1
+        with:
+          tool-cache: false
+          android: false
+          dotnet: true
+          haskell: true
+          large-packages: true
+          docker-images: true
+          swap-storage: false
+      - uses: ./.github/actions/nix-setup
+      - name: 実行権限チェック
+        run: nix develop .#ci --command ./scripts/check-executable-shell-files.sh
+      - name: hooksテスト
+        run: nix develop .#ci --command bats tests/hooks/
+
+  # ── Step 5（並列）: ZAP セキュリティスキャン（stage→main の PR / コード変更時のみ）─────────
+  # feature→stage PR では skip (CI が軽量に保たれる)。security gate は stage→main の 1 か所で十分。
+  zap:
+    needs: [claude-review, changes]
+    if: |
+      always() &&
+      needs.changes.outputs.code == 'true' &&
+      needs.claude-review.outputs.needs_work != 'true' &&
+      github.base_ref == 'main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v4.2.2
+      - uses: ./.github/actions/nix-setup
+      - name: Run ZAP scan
+        shell: bash
+        env:
+          TURSO_DATABASE_URL: file:local.db
+          TURSO_AUTH_TOKEN: dummy
+          BETTER_AUTH_SECRET: ${{ secrets.BETTER_AUTH_SECRET_CI }}
+          ENVIRONMENT: test
+          ZAP_TEST_EMAIL: ${{ secrets.ZAP_TEST_EMAIL }}
+          ZAP_TEST_PASSWORD: ${{ secrets.ZAP_TEST_PASSWORD }}
+        run: |
+          ZAP_PORT=$(python3 -c "import socket; s=socket.socket(); s.bind(('',0)); print(s.getsockname()[1]); s.close()")
+          export ZAP_PORT
+          nix develop .#ci --command bash scripts/ci/zap-scan.sh
+      - name: Upload ZAP Report
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
+        with:
+          name: zap-report
+          path: |
+            .zap/zap-report.html
+            /tmp/zap-setup.log
+            /tmp/api.log
+            /tmp/zap-daemon.log
+
+  # ── Step 6: CI ゲート（全チェックの合否を集約する required status check）──
+  # `if: always()` で前段 job が fail/skip されても必ず実行される。
+  # 自分自身が SUCCESS/FAILURE を明示するため SKIPPED にならず、
+  # ruleset の required check として安定して機能する。
+  ci-gate:
+    if: always()
+    needs: [claude-review, changes, checks, hooks-test, zap]
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Evaluate CI gate
+        env:
+          CHANGES_RESULT: ${{ needs.changes.result }}
+          REVIEW_RESULT: ${{ needs.claude-review.result }}
+          REVIEW_NEEDS_WORK: ${{ needs.claude-review.outputs.needs_work }}
+          CHECKS_RESULT: ${{ needs.checks.result }}
+          HOOKS_RESULT: ${{ needs.hooks-test.result }}
+          ZAP_RESULT: ${{ needs.zap.result }}
+        run: |
+          set -euo pipefail
+          fail=0
+          [ "${CHANGES_RESULT}" = "success" ] || { echo "::error::changes=${CHANGES_RESULT}"; fail=1; }
+          if [ "${REVIEW_RESULT}" != "success" ] && [ "${REVIEW_RESULT}" != "skipped" ]; then
+            echo "::error::claude-review=${REVIEW_RESULT}"; fail=1
+          fi
+          [ "${REVIEW_NEEDS_WORK}" != "true" ] || { echo "::error::needs_work=true"; fail=1; }
+          for name in CHECKS HOOKS ZAP; do
+            r="$(eval echo \$${name}_RESULT)"
+            if [ "$r" != "success" ] && [ "$r" != "skipped" ]; then
+              echo "::error::${name}=${r}"; fail=1
+            fi
+          done
+          [ "$fail" -eq 0 ] && echo "CI gate passed" || exit 1
+
+  # ── Step 7: 全チェック通過後に自動マージ ────────────────────────────────
+  # ci-gate が required status check を担うため、auto-merge は純粋なマージ操作のみを行う。
+  # required check ではないため SKIPPED になっても他 PR の merge 可否に影響しない。
+  auto-merge:
+    if: |
+      always() &&
+      needs.ci-gate.result == 'success' &&
+      github.event_name == 'pull_request' &&
+      github.actor != 'dependabot[bot]'
+    needs: [ci-gate]
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      pull-requests: write
+      contents: write
+    steps:
+      - name: 自動マージ
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          gh pr merge "${PR_NUMBER}" --squash --delete-branch --auto --repo ${{ github.repository }}

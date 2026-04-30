@@ -1,0 +1,42 @@
+{
+  "$schema": "./config.schema.json",
+  "claude_review_job_name": "claude-review",
+  "ci_workflow_name": "CI",
+  "e2e_workflow_name": "PR E2E (Android)",
+  "ai_review_pass_label": "AI Review: PASS",
+  "ai_review_needs_work_label": "AI Review: NEEDS WORK",
+  "required_status_check_context": "CI / ci-gate",
+  "verdict_patterns": {
+    "approve": [
+      "(\\*\\*)?✅ Approve(\\*\\*)?",
+      "全件 PASS（0件）"
+    ],
+    "request_changes": [
+      "(\\*\\*)?🔄 Request Changes(\\*\\*)?",
+      "(\\*\\*)?💬 Comment(\\*\\*)?"
+    ]
+  },
+  "polling_interval_minutes": 2,
+  "polling_timeout_minutes": 60,
+  "polling_dir": ".claude/polling",
+  "manual_review_triggers": {
+    "workflow_file_paths": [
+      "^\\.github/workflows/"
+    ],
+    "stacked_pr_base_excludes": [
+      "main"
+    ]
+  },
+  "max_parallel_issues": 3,
+  "human_review_labels": [
+    "release",
+    "requires-human"
+  ],
+  "human_review_title_patterns": [
+    "go-no-go",
+    "store",
+    "production",
+    "smoke test",
+    "本番"
+  ]
+}

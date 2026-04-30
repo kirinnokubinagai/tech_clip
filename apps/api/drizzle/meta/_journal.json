@@ -1,0 +1,62 @@
+{
+  "version": "7",
+  "dialect": "sqlite",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "6",
+      "when": 1774676406248,
+      "tag": "0000_add_notification_settings_table",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "6",
+      "when": 1774869216368,
+      "tag": "0001_add_analytics_events_table",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1775035728229,
+      "tag": "0002_amusing_jamie_braddock",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "6",
+      "when": 1775300000000,
+      "tag": "0005_add_articles_fts",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "6",
+      "when": 1776484579120,
+      "tag": "0004_add_is_test_account_to_users",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "6",
+      "when": 1776686097271,
+      "tag": "0005_add_performance_indexes",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "6",
+      "when": 1745820000000,
+      "tag": "0006_switch_fts5_tokenizer_to_trigram",
+      "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "6",
+      "when": 1745823600000,
+      "tag": "0007_fts_trigram_padding_vocab",
+      "breakpoints": true
+    }
+  ]
+}

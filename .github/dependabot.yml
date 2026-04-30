@@ -1,0 +1,14 @@
+version: 2
+updates:
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: "chore"
+    # Dependabot PR は fork からのトリガーのため secrets が使えず claude-review が失敗する。
+    # continue-on-error: true により claude-review の失敗は無視され、
+    # "AI Review: NEEDS WORK" ラベルが付かなければ needs_work=false となる。
+    # しかし auto-merge ジョブには github.actor != 'dependabot[bot]' 条件を設けているため
+    # Dependabot PR は auto-merge の対象外となる。手動マージとする。

@@ -1,0 +1,146 @@
+# =============================================================================
+# Cloudflare Workers 開発用シークレット (.dev.vars)
+# =============================================================================
+# このファイルをコピーして .dev.vars を作成し、実際の値を設定してください。
+# .dev.vars は .gitignore により Git 管理対象外です。絶対にコミットしないこと。
+#
+# 取得手順の詳細は docs/SECRETS.md を参照してください。
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# 実行環境
+# -----------------------------------------------------------------------------
+# 実行環境の識別子。development | staging | production のいずれかを設定する
+ENVIRONMENT=development
+
+# -----------------------------------------------------------------------------
+# Turso データベース
+# -----------------------------------------------------------------------------
+# Turso ダッシュボード (https://app.turso.tech) でデータベースを作成後に取得する
+# ローカル開発時は sqld を使ったローカルDBの URL を設定することも可能
+
+# LibSQL 接続 URL (例: libsql://your-db-name-your-org.turso.io)
+TURSO_DATABASE_URL=libsql://your-database.turso.io
+
+# Turso 認証トークン
+TURSO_AUTH_TOKEN=your-turso-auth-token
+
+# -----------------------------------------------------------------------------
+# Better Auth
+# -----------------------------------------------------------------------------
+# セッション署名・暗号化に使用するシークレット。32文字以上のランダム文字列を設定する
+# 生成例: openssl rand -base64 32
+
+BETTER_AUTH_SECRET=your-better-auth-secret-min-32-chars
+
+# -----------------------------------------------------------------------------
+# Google OAuth
+# -----------------------------------------------------------------------------
+# Google Cloud Console (https://console.cloud.google.com) で OAuth 2.0 クライアントを作成する
+# 承認済みリダイレクト URI に http://localhost:8787/api/auth/callback/google を追加すること
+
+GOOGLE_CLIENT_ID=your-google-client-id
+GOOGLE_CLIENT_SECRET=your-google-client-secret
+
+# -----------------------------------------------------------------------------
+# Apple Sign In
+# -----------------------------------------------------------------------------
+# Apple Developer (https://developer.apple.com) でサービス ID と秘密鍵を作成する
+# CLIENT_ID は com.techclip.app のようなリバースドメイン形式
+# CLIENT_SECRET は JWT 形式のトークン（Apple 秘密鍵から生成する）
+
+APPLE_CLIENT_ID=your-apple-client-id
+APPLE_CLIENT_SECRET=your-apple-client-secret
+
+# -----------------------------------------------------------------------------
+# GitHub OAuth
+# -----------------------------------------------------------------------------
+# GitHub Developer Settings (https://github.com/settings/developers) で
+# OAuth App を作成する
+# Authorization callback URL: http://localhost:8787/api/auth/callback/github
+
+GITHUB_CLIENT_ID=your-github-client-id
+GITHUB_CLIENT_SECRET=your-github-client-secret
+
+# -----------------------------------------------------------------------------
+# Cloudflare Workers AI (AI 要約・翻訳)
+# -----------------------------------------------------------------------------
+# Workers AI は wrangler.toml の [ai] バインディングで設定される。
+# ローカルで wrangler dev を起動すると AI 呼び出しは Cloudflare のリモートサービスに
+# プロキシされる（ローカル推論ではない）ため、認証が必要。
+#
+# 【ローカルで要約・翻訳を試す方法】
+# 方法 A（推奨）: ブラウザ認証
+#   wrangler login  # ブラウザが開き OAuth ログインする。~/.wrangler/ に保存される。
+#
+# 方法 B: API トークン（CI や headless 環境向け）
+#   Cloudflare ダッシュボード → My Profile → API Tokens → Create Token
+#   「Cloudflare Workers AI」権限を持つトークンを発行して以下に設定する。
+#   Workers AI は無料枠あり（10,000 neuron/日）なので個人検証でのコスト負担は小さい。
+#
+# 未設定（またはダミー値）の場合: wrangler dev は起動するが AI 呼び出しは 401 で失敗し
+# 要約・翻訳 API が 500 エラーを返す。
+
+CLOUDFLARE_API_TOKEN=your-cloudflare-api-token-with-workers-ai-permission
+
+# データベースの summaries/translations.model カラムに保存するタグ
+# 未設定の場合は gemma-4-26b-a4b が使用される
+# GEMMA_MODEL_NAME=gemma-4-26b-a4b
+
+# -----------------------------------------------------------------------------
+# RevenueCat Webhook
+# -----------------------------------------------------------------------------
+# RevenueCat ダッシュボード (https://app.revenuecat.com) > Integrations > Webhooks で
+# Webhook を追加し、Shared Secret を取得して設定する
+# Webhook URL: https://api.techclip.app/api/subscription/webhooks/revenuecat
+# ローカル開発では ngrok 等でトンネルを作成し、そのURLを設定すること
+
+REVENUECAT_WEBHOOK_SECRET=your-revenuecat-webhook-secret
+
+# -----------------------------------------------------------------------------
+# Resend (メール送信)
+# -----------------------------------------------------------------------------
+# Resend ダッシュボード (https://resend.com) で API キーを発行する
+# ローカル開発・テスト時は mailpit (localhost:1025) を使用する：
+#   - mailpit 起動: mailpit コマンド（nix develop で自動起動）
+#   - tests/api/setup.ts が Resend API 呼び出しを mailpit SMTP に転送する
+#   - mailpit 未起動時はテスト内で自動的にモックレスポンスにフォールバックする
+# FROM_EMAIL は Resend で検証済みのドメインのアドレスを指定すること
+
+RESEND_API_KEY=your-resend-api-key
+FROM_EMAIL=no-reply@example.com
+
+# -----------------------------------------------------------------------------
+# R2 (アバター画像ストレージ)
+# -----------------------------------------------------------------------------
+# アバター画像の公開 URL（末尾スラッシュなし）。
+# wrangler.toml の [vars] / [env.production.vars] で環境ごとに既定値を設定済み。
+# ローカルで別の URL を使いたい場合のみ .dev.vars で上書きする。
+#   - development 既定値: http://localhost:8787/avatars
+#   - production  既定値: https://avatars.techclip.io
+# R2_PUBLIC_URL=http://localhost:8787/avatars
+
+# -----------------------------------------------------------------------------
+# API_BASE_URL（Better Auth baseURL 用）
+# -----------------------------------------------------------------------------
+# API 自身のベース URL。Better Auth が内部ルーティングに使用する。
+# ローカル開発: http://localhost:18787/api/auth
+# 本番環境: wrangler secret set API_BASE_URL https://api.techclip.app/api/auth
+API_BASE_URL=http://localhost:18787/api/auth
+
+# -----------------------------------------------------------------------------
+# APP_URL（モバイルアプリ deep-link / OAuth redirect 先）
+# -----------------------------------------------------------------------------
+# Better Auth の baseURL とは別概念。メール認証やパスワードリセットの
+# リダイレクト先 URL として使用する。
+# ローカル開発: http://localhost:8081
+# 本番環境: wrangler secret set APP_URL https://techclip.app
+APP_URL=http://localhost:8081
+
+# -----------------------------------------------------------------------------
+# MAILPIT_URL（ローカル開発用メール送信）
+# -----------------------------------------------------------------------------
+# 設定されている場合は Resend の代わりに mailpit HTTP Send API を使用する。
+# 本番環境では設定しないこと（RESEND_API_KEY を使用）。
+# mailpit は nix develop 環境で自動的に起動される（http://localhost:8025）。
+MAILPIT_URL=http://localhost:8025/api/v1/send

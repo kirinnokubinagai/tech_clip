@@ -1,0 +1,4 @@
+# pnpm-lock.yaml はマージ時にコンフリクトが頻発するため、
+# mainの版を採用し pnpm install で再生成する戦略を取る。
+# rebase時は scripts/rebase-on-main.sh を使用すること。
+pnpm-lock.yaml merge=ours -diff

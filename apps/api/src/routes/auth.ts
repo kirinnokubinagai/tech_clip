@@ -1,0 +1,550 @@
+import { eq } from "drizzle-orm";
+import { Hono } from "hono";
+import { z } from "zod";
+
+import type { Database } from "../db";
+import { refreshTokens, sessions, users } from "../db/schema";
+import {
+  AUTH_EXPIRED_CODE,
+  AUTH_INVALID_CODE,
+  AUTH_ERROR_CODE as AUTH_REQUIRED_CODE,
+  INTERNAL_ERROR_CODE,
+  VALIDATION_ERROR_CODE as VALIDATION_FAILED_CODE,
+} from "../lib/error-codes";
+import {
+  HTTP_INTERNAL_SERVER_ERROR,
+  HTTP_OK,
+  HTTP_UNAUTHORIZED,
+  HTTP_UNPROCESSABLE_ENTITY,
+} from "../lib/http-status";
+import { createLogger } from "../lib/logger";
+import { generateRefreshToken, hashTokenSha256 } from "../lib/token-utils";
+
+/**
+ * Better Auth インスタンスの型定義
+ */
+type AuthInstance = {
+  api: {
+    signInEmail: (options: {
+      body: { email: string; password: string };
+      headers?: Headers;
+    }) => Promise<{
+      token: string | null;
+      user: Record<string, unknown>;
+    } | null>;
+    getSession: (options: { headers: Headers }) => Promise<{
+      session: { token: string; expiresAt: Date | string };
+      user: Record<string, unknown>;
+    } | null>;
+  };
+};
+
+/**
+ * 認証ルートのファクトリ関数の引数
+ */
+type AuthRouteOptions = {
+  db: Database;
+  getAuth: () => AuthInstance;
+};
+
+/** セッション期限切れエラーメッセージ */
+const REFRESH_TOKEN_EXPIRED_MESSAGE = "セッションの有効期限が切れました。再度ログインしてください";
+
+/** 認証ルート用ロガー */
+const logger = createLogger();
+
+/**
+ * セッションに紐づくリフレッシュトークンを発行して保存する
+ *
+ * @param db - データベース接続
+ * @param session - セッション情報
+ * @returns クライアントへ返す平文のリフレッシュトークン
+ */
+async function createRefreshTokenRecord(
+  db: Database,
+  session: { id: string; userId: string; expiresAt: string },
+): Promise<string> {
+  const refreshToken = generateRefreshToken();
+  const tokenHash = await hashTokenSha256(refreshToken);
+
+  await db.insert(refreshTokens).values({
+    id: crypto.randomUUID(),
+    sessionId: session.id,
+    userId: session.userId,
+    tokenHash,
+    expiresAt: session.expiresAt,
+  });
+
+  return refreshToken;
+}
+
+/** サインインリクエストのスキーマ */
+const SignInSchema = z.object({
+  email: z
+    .string({ error: "メールアドレスは必須です" })
+    .email("メールアドレスの形式が正しくありません"),
+  password: z.string({ error: "パスワードは必須です" }).min(1, "パスワードを入力してください"),
+});
+
+/** リフレッシュリクエストのスキーマ */
+const RefreshSchema = z.object({
+  refreshToken: z
+    .string({ error: "リフレッシュトークンは必須です" })
+    .min(1, "リフレッシュトークンを入力してください"),
+});
+
+/**
+ * 認証関連ルートを生成する
+ *
+ * @param options - DB インスタンスと Better Auth ファクトリ
+ * @returns Hono ルーター
+ */
+export function createAuthRoute({ db, getAuth }: AuthRouteOptions) {
+  const app = new Hono();
+
+  /**
+   * サインイン
+   * Better Auth の signInEmail API をラップして統一レスポンス形式で返す
+   */
+  app.post("/sign-in", async (c) => {
+    const body: unknown = await c.req.json().catch(() => ({}));
+    const parsed = SignInSchema.safeParse(body);
+
+    if (!parsed.success) {
+      return c.json(
+        {
+          success: false,
+          error: {
+            code: VALIDATION_FAILED_CODE,
+            message: "入力内容を確認してください",
+            details: parsed.error.issues.map((e) => ({
+              field: e.path.join("."),
+              message: e.message,
+            })),
+          },
+        },
+        HTTP_UNPROCESSABLE_ENTITY,
+      );
+    }
+
+    try {
+      const auth = getAuth();
+      const result = await auth.api.signInEmail({
+        body: { email: parsed.data.email, password: parsed.data.password },
+      });
+
+      if (!result?.token) {
+        return c.json(
+          {
+            success: false,
+            error: {
+              code: AUTH_INVALID_CODE,
+              message: "認証情報が正しくありません",
+            },
+          },
+          HTTP_UNAUTHORIZED,
+        );
+      }
+
+      const [sessionRow] = await db.select().from(sessions).where(eq(sessions.token, result.token));
+
+      if (!sessionRow) {
+        return c.json(
+          {
+            success: false,
+            error: {
+              code: AUTH_INVALID_CODE,
+              message: "認証情報が正しくありません",
+            },
+          },
+          HTTP_UNAUTHORIZED,
+        );
+      }
+
+      const user = result.user;
+      let refreshToken: string;
+      try {
+        refreshToken = await createRefreshTokenRecord(db, {
+          id: sessionRow.id,
+          userId: sessionRow.userId,
+          expiresAt: sessionRow.expiresAt,
+        });
+      } catch (error) {
+        logger.error("リフレッシュトークンの発行に失敗しました", {
+          sessionId: sessionRow.id,
+          userId: sessionRow.userId,
+          error,
+        });
+        return c.json(
+          {
+            success: false,
+            error: {
+              code: INTERNAL_ERROR_CODE,
+              message: "サーバーエラーが発生しました",
+            },
+          },
+          HTTP_INTERNAL_SERVER_ERROR,
+        );
+      }
+
+      return c.json(
+        {
+          success: true,
+          data: {
+            user: {
+              id: user.id,
+              email: user.email,
+              name: user.name,
+              image: user.image ?? null,
+              createdAt: user.createdAt,
+              updatedAt: user.updatedAt,
+            },
+            session: {
+              token: sessionRow.token,
+              refreshToken,
+              expiresAt: sessionRow.expiresAt,
+            },
+          },
+        },
+        HTTP_OK,
+      );
+    } catch (error) {
+      logger.error("サインインに失敗しました", { error });
+      return c.json(
+        {
+          success: false,
+          error: {
+            code: AUTH_INVALID_CODE,
+            message: "認証情報が正しくありません",
+          },
+        },
+        HTTP_UNAUTHORIZED,
+      );
+    }
+  });
+
+  /**
+   * サインアウト
+   * Bearer トークンに紐づく sessions 行を削除してセッションを失効させる
+   * refresh_tokens は onDelete: cascade で自動削除される
+   * 該当行が存在しない場合も冪等に 200 を返す
+   */
+  app.post("/sign-out", async (c) => {
+    const authHeader = c.req.header("Authorization");
+
+    if (!authHeader?.startsWith("Bearer ")) {
+      return c.json(
+        {
+          success: false,
+          error: {
+            code: AUTH_REQUIRED_CODE,
+            message: "ログインが必要です",
+          },
+        },
+        HTTP_UNAUTHORIZED,
+      );
+    }
+
+    const token = authHeader.slice("Bearer ".length);
+
+    try {
+      await db.delete(sessions).where(eq(sessions.token, token));
+
+      return c.json(
+        {
+          success: true,
+          data: null,
+        },
+        HTTP_OK,
+      );
+    } catch (error) {
+      logger.error("サインアウト処理に失敗しました", { error });
+      return c.json(
+        {
+          success: false,
+          error: {
+            code: INTERNAL_ERROR_CODE,
+            message: "サーバーエラーが発生しました",
+          },
+        },
+        HTTP_INTERNAL_SERVER_ERROR,
+      );
+    }
+  });
+
+  /**
+   * セッション確認
+   * Authorization: Bearer <token> ヘッダーからセッションを検証して返す
+   */
+  app.get("/session", async (c) => {
+    const authHeader = c.req.header("Authorization");
+
+    if (!authHeader?.startsWith("Bearer ")) {
+      return c.json(
+        {
+          success: false,
+          error: {
+            code: AUTH_REQUIRED_CODE,
+            message: "ログインが必要です",
+          },
+        },
+        HTTP_UNAUTHORIZED,
+      );
+    }
+
+    const token = authHeader.slice("Bearer ".length);
+
+    try {
+      // 独自の sessions テーブルから Bearer token でセッションを検索
+      const [sessionRow] = await db.select().from(sessions).where(eq(sessions.token, token));
+
+      if (!sessionRow) {
+        return c.json(
+          {
+            success: false,
+            error: {
+              code: AUTH_REQUIRED_CODE,
+              message: "ログインが必要です。",
+            },
+          },
+          HTTP_UNAUTHORIZED,
+        );
+      }
+
+      // セッションの有効期限チェック
+      const expiresAtMs =
+        typeof sessionRow.expiresAt === "string"
+          ? Date.parse(sessionRow.expiresAt)
+          : (sessionRow.expiresAt as Date).getTime();
+      if (Number.isFinite(expiresAtMs) && expiresAtMs <= Date.now()) {
+        return c.json(
+          {
+            success: false,
+            error: {
+              code: AUTH_EXPIRED_CODE,
+              message: REFRESH_TOKEN_EXPIRED_MESSAGE,
+            },
+          },
+          HTTP_UNAUTHORIZED,
+        );
+      }
+
+      const [userRow] = await db.select().from(users).where(eq(users.id, sessionRow.userId));
+
+      if (!userRow) {
+        return c.json(
+          {
+            success: false,
+            error: {
+              code: AUTH_REQUIRED_CODE,
+              message: "ログインが必要です。",
+            },
+          },
+          HTTP_UNAUTHORIZED,
+        );
+      }
+
+      const expiresAtStr =
+        typeof sessionRow.expiresAt === "string"
+          ? sessionRow.expiresAt
+          : new Date(sessionRow.expiresAt as number | Date).toISOString();
+
+      return c.json(
+        {
+          success: true,
+          data: {
+            user: {
+              id: userRow.id,
+              email: userRow.email,
+              name: userRow.name,
+              image: userRow.image ?? null,
+              createdAt: userRow.createdAt,
+              updatedAt: userRow.updatedAt,
+            },
+            session: {
+              token: sessionRow.token,
+              expiresAt: expiresAtStr,
+            },
+          },
+        },
+        HTTP_OK,
+      );
+    } catch (error) {
+      logger.error("モバイルセッション取得中にエラーが発生しました", {
+        error: error instanceof Error ? { name: error.name, message: error.message } : error,
+      });
+      return c.json(
+        {
+          success: false,
+          error: {
+            code: INTERNAL_ERROR_CODE,
+            message: "サーバーエラーが発生しました",
+          },
+        },
+        HTTP_INTERNAL_SERVER_ERROR,
+      );
+    }
+  });
+
+  /**
+   * トークンリフレッシュ
+   * リフレッシュトークンが有効であれば現在のアクセストークンを返し、
+   * リフレッシュトークンは毎回ローテーションする
+   */
+  app.post("/refresh", async (c) => {
+    const body: unknown = await c.req.json().catch(() => ({}));
+    const parsed = RefreshSchema.safeParse(body);
+
+    if (!parsed.success) {
+      return c.json(
+        {
+          success: false,
+          error: {
+            code: VALIDATION_FAILED_CODE,
+            message: "入力内容を確認してください",
+          },
+        },
+        HTTP_UNPROCESSABLE_ENTITY,
+      );
+    }
+
+    try {
+      const refreshTokenHash = await hashTokenSha256(parsed.data.refreshToken);
+
+      const result = await db.transaction(async (tx) => {
+        const [refreshTokenRow] = await tx
+          .select()
+          .from(refreshTokens)
+          .where(eq(refreshTokens.tokenHash, refreshTokenHash));
+
+        if (!refreshTokenRow) {
+          const [reusedRefreshTokenRow] = await tx
+            .select()
+            .from(refreshTokens)
+            .where(eq(refreshTokens.previousTokenHash, refreshTokenHash));
+
+          if (reusedRefreshTokenRow) {
+            logger.warn("リフレッシュトークンの再利用を検知しました", {
+              sessionId: reusedRefreshTokenRow.sessionId,
+              userId: reusedRefreshTokenRow.userId,
+            });
+            const revokedAt = new Date(0).toISOString();
+
+            await tx
+              .update(refreshTokens)
+              .set({
+                expiresAt: revokedAt,
+                updatedAt: new Date().toISOString(),
+              })
+              .where(eq(refreshTokens.id, reusedRefreshTokenRow.id));
+
+            await tx
+              .update(sessions)
+              .set({
+                expiresAt: revokedAt,
+                updatedAt: new Date().toISOString(),
+              })
+              .where(eq(sessions.id, reusedRefreshTokenRow.sessionId));
+          }
+
+          return {
+            error: {
+              code: AUTH_EXPIRED_CODE,
+              message: REFRESH_TOKEN_EXPIRED_MESSAGE,
+            },
+          } as const;
+        }
+
+        const [sessionRow] = await tx
+          .select()
+          .from(sessions)
+          .where(eq(sessions.id, refreshTokenRow.sessionId));
+
+        if (!sessionRow) {
+          return {
+            error: {
+              code: AUTH_EXPIRED_CODE,
+              message: REFRESH_TOKEN_EXPIRED_MESSAGE,
+            },
+          } as const;
+        }
+
+        const refreshExpiresAt = new Date(refreshTokenRow.expiresAt);
+        const expiresAt = new Date(sessionRow.expiresAt);
+        if (refreshExpiresAt <= new Date() || expiresAt <= new Date()) {
+          return {
+            error: {
+              code: AUTH_EXPIRED_CODE,
+              message: REFRESH_TOKEN_EXPIRED_MESSAGE,
+            },
+          } as const;
+        }
+
+        const [userRow] = await tx.select().from(users).where(eq(users.id, sessionRow.userId));
+
+        if (!userRow) {
+          return {
+            error: {
+              code: AUTH_EXPIRED_CODE,
+              message: REFRESH_TOKEN_EXPIRED_MESSAGE,
+            },
+          } as const;
+        }
+
+        const nextRefreshToken = generateRefreshToken();
+        const nextRefreshTokenHash = await hashTokenSha256(nextRefreshToken);
+
+        await tx
+          .update(refreshTokens)
+          .set({
+            previousTokenHash: refreshTokenRow.tokenHash,
+            tokenHash: nextRefreshTokenHash,
+            expiresAt: sessionRow.expiresAt,
+            updatedAt: new Date().toISOString(),
+          })
+          .where(eq(refreshTokens.id, refreshTokenRow.id));
+
+        return {
+          data: {
+            token: sessionRow.token,
+            refreshToken: nextRefreshToken,
+          },
+        } as const;
+      });
+
+      if ("error" in result) {
+        return c.json(
+          {
+            success: false,
+            error: result.error,
+          },
+          HTTP_UNAUTHORIZED,
+        );
+      }
+
+      return c.json(
+        {
+          success: true,
+          data: result.data,
+        },
+        HTTP_OK,
+      );
+    } catch (error) {
+      logger.error("トークンリフレッシュ処理中にエラーが発生しました", {
+        error: error instanceof Error ? { name: error.name, message: error.message } : error,
+      });
+      return c.json(
+        {
+          success: false,
+          error: {
+            code: INTERNAL_ERROR_CODE,
+            message: "サーバーエラーが発生しました",
+          },
+        },
+        HTTP_INTERNAL_SERVER_ERROR,
+      );
+    }
+  });
+
+  return app;
+}

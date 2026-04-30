@@ -1,0 +1,293 @@
+import { useArticles, useToggleFavorite } from "@mobile/hooks/use-articles";
+import { useNetworkStatus } from "@mobile/hooks/use-network-status";
+import { useOfflineArticles } from "@mobile/hooks/use-offline-articles";
+import HomeScreen from "@mobile-app/(tabs)/index";
+import { render, waitFor } from "@testing-library/react-native";
+
+import { setMockLocale } from "../helpers/i18n-test-utils";
+
+jest.mock("@mobile/hooks/use-articles", () => ({
+  useArticles: jest.fn(),
+  useToggleFavorite: jest.fn(),
+}));
+
+jest.mock("@mobile/hooks/use-network-status", () => ({
+  useNetworkStatus: jest.fn(),
+}));
+
+jest.mock("@mobile/hooks/use-offline-articles", () => ({
+  useOfflineArticles: jest.fn(),
+}));
+
+jest.mock("@mobile/components/ArticleCard", () => ({
+  ArticleCard: ({ article }: { article: { title: string } }) =>
+    require("react").createElement(require("react-native").Text, null, article.title),
+}));
+
+/** テスト用記事データ */
+const MOCK_ARTICLES = [
+  {
+    id: "article-1",
+    title: "テスト記事1",
+    author: "著者1",
+    source: "zenn" as const,
+    publishedAt: "2024-01-01T00:00:00Z",
+    excerpt: "記事の抜粋1",
+    thumbnailUrl: null,
+    isFavorite: false,
+    url: "https://zenn.dev/test/1",
+  },
+];
+
+/** useArticles のデフォルトモック値 */
+const DEFAULT_USE_ARTICLES_MOCK = {
+  data: undefined,
+  fetchNextPage: jest.fn(),
+  hasNextPage: false,
+  isFetchingNextPage: false,
+  isLoading: false,
+  isError: false,
+  refetch: jest.fn(),
+  isRefetching: false,
+};
+
+/** useToggleFavorite のデフォルトモック値 */
+const DEFAULT_USE_TOGGLE_FAVORITE_MOCK = {
+  mutate: jest.fn(),
+};
+
+describe("HomeScreen", () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    setMockLocale("ja");
+    (useArticles as jest.Mock).mockReturnValue(DEFAULT_USE_ARTICLES_MOCK);
+    (useToggleFavorite as jest.Mock).mockReturnValue(DEFAULT_USE_TOGGLE_FAVORITE_MOCK);
+    (useNetworkStatus as jest.Mock).mockReturnValue({
+      isOnline: true,
+      isOffline: false,
+    });
+    (useOfflineArticles as jest.Mock).mockReturnValue({
+      articles: [],
+      isLoading: false,
+    });
+  });
+
+  it("オンライン時に取得した記事一覧を表示できること", async () => {
+    (useArticles as jest.Mock).mockReturnValue({
+      ...DEFAULT_USE_ARTICLES_MOCK,
+      data: { pages: [{ items: MOCK_ARTICLES, nextCursor: null, hasNext: false }] },
+    });
+
+    const { getByText } = await render(<HomeScreen />);
+
+    await waitFor(() => {
+      expect(getByText("テスト記事1")).not.toBeNull();
+    });
+  });
+
+  it("オフライン時に offlineArticles が使われること", async () => {
+    (useNetworkStatus as jest.Mock).mockReturnValue({
+      isOnline: false,
+      isOffline: true,
+    });
+    (useOfflineArticles as jest.Mock).mockReturnValue({
+      articles: MOCK_ARTICLES,
+      isLoading: false,
+    });
+
+    const { getByText } = await render(<HomeScreen />);
+
+    await waitFor(() => {
+      expect(useOfflineArticles).toHaveBeenCalledTimes(1);
+      expect(getByText("テスト記事1")).not.toBeNull();
+    });
+  });
+
+  it("オフライン時でキャッシュがない場合に空メッセージが表示されること", async () => {
+    (useNetworkStatus as jest.Mock).mockReturnValue({
+      isOnline: false,
+      isOffline: true,
+    });
+    (useOfflineArticles as jest.Mock).mockReturnValue({
+      articles: [],
+      isLoading: false,
+    });
+
+    const { getByText } = await render(<HomeScreen />);
+
+    await waitFor(() => {
+      expect(getByText("オフライン：キャッシュがありません。")).not.toBeNull();
+    });
+  });
+
+  it("読み込み中にローディング文言が表示されること", async () => {
+    (useArticles as jest.Mock).mockReturnValue({
+      ...DEFAULT_USE_ARTICLES_MOCK,
+      isLoading: true,
+    });
+
+    const { getByText } = await render(<HomeScreen />);
+
+    await waitFor(() => {
+      expect(getByText("読み込み中...")).not.toBeNull();
+    });
+  });
+
+  it("エラー時にエラーメッセージが表示されること", async () => {
+    (useArticles as jest.Mock).mockReturnValue({
+      ...DEFAULT_USE_ARTICLES_MOCK,
+      isError: true,
+      data: undefined,
+    });
+
+    const { getByText } = await render(<HomeScreen />);
+
+    await waitFor(() => {
+      expect(getByText("記事の取得に失敗しました。")).not.toBeNull();
+      expect(getByText("再試行")).not.toBeNull();
+    });
+  });
+
+  it("エラー時に再試行ボタンが表示されること", async () => {
+    (useArticles as jest.Mock).mockReturnValue({
+      ...DEFAULT_USE_ARTICLES_MOCK,
+      isError: true,
+      data: undefined,
+    });
+
+    const { getByText } = await render(<HomeScreen />);
+
+    await waitFor(() => {
+      expect(getByText("再試行")).not.toBeNull();
+    });
+  });
+
+  it("未実装の詳細フィルター導線が表示されないこと", async () => {
+    const { queryByLabelText } = await render(<HomeScreen />);
+
+    await waitFor(() => {
+      expect(queryByLabelText("フィルター")).toBeNull();
+    });
+  });
+
+  it("手書き配列にしかなかった'HN'ラベルが存在しないこと", async () => {
+    // Arrange
+    (useArticles as jest.Mock).mockReturnValue(DEFAULT_USE_ARTICLES_MOCK);
+
+    // Act
+    const { queryByLabelText } = await render(<HomeScreen />);
+
+    // Assert
+    await waitFor(() => {
+      expect(queryByLabelText("HN")).toBeNull();
+    });
+  });
+
+  it("sources.tsで定義されたHacker Newsラベルが存在すること", async () => {
+    // Arrange
+    (useArticles as jest.Mock).mockReturnValue(DEFAULT_USE_ARTICLES_MOCK);
+
+    // Act
+    const { getByLabelText } = await render(<HomeScreen />);
+
+    // Assert
+    await waitFor(() => {
+      expect(getByLabelText("Hacker News")).not.toBeNull();
+    });
+  });
+
+  describe("多言語対応", () => {
+    it("英語ロケールでローディング文言が英語で表示されること", async () => {
+      // Arrange
+      setMockLocale("en");
+      (useArticles as jest.Mock).mockReturnValue({
+        ...DEFAULT_USE_ARTICLES_MOCK,
+        isLoading: true,
+      });
+
+      // Act
+      const { getByText } = await render(<HomeScreen />);
+
+      // Assert
+      await waitFor(() => {
+        expect(getByText("Loading...")).not.toBeNull();
+      });
+    });
+
+    it("英語ロケールでエラー時に英語の再試行UIが表示されること", async () => {
+      // Arrange
+      setMockLocale("en");
+      (useArticles as jest.Mock).mockReturnValue({
+        ...DEFAULT_USE_ARTICLES_MOCK,
+        isError: true,
+        data: undefined,
+      });
+
+      // Act
+      const { getByText } = await render(<HomeScreen />);
+
+      // Assert
+      await waitFor(() => {
+        expect(getByText("Failed to fetch articles")).not.toBeNull();
+        expect(getByText("Retry")).not.toBeNull();
+      });
+    });
+
+    it("英語ロケールでオフライン時に英語の空メッセージが表示されること", async () => {
+      // Arrange
+      setMockLocale("en");
+      (useNetworkStatus as jest.Mock).mockReturnValue({
+        isOnline: false,
+        isOffline: true,
+      });
+      (useOfflineArticles as jest.Mock).mockReturnValue({
+        articles: [],
+        isLoading: false,
+      });
+
+      // Act
+      const { getByText } = await render(<HomeScreen />);
+
+      // Assert
+      await waitFor(() => {
+        expect(getByText("Offline: no cached articles")).not.toBeNull();
+      });
+    });
+  });
+
+  describe("a11y 翻訳キー", () => {
+    it("日本語ロケールでソースフィルタの accessibilityHint が {{label}} 補間込みで表示されること", async () => {
+      // Arrange
+      setMockLocale("ja");
+      (useArticles as jest.Mock).mockReturnValue({
+        ...DEFAULT_USE_ARTICLES_MOCK,
+        data: { pages: [{ items: MOCK_ARTICLES, nextCursor: null, hasNext: false }] },
+      });
+
+      // Act
+      const { getAllByHintText } = await render(<HomeScreen />);
+
+      // Assert: "すべて" ソースフィルタの hint が補間されること
+      await waitFor(() => {
+        expect(getAllByHintText("すべての記事のみ表示します。")).not.toHaveLength(0);
+      });
+    });
+
+    it("英語ロケールでソースフィルタの accessibilityHint が {{label}} 補間込みで英語表示されること", async () => {
+      // Arrange
+      setMockLocale("en");
+      (useArticles as jest.Mock).mockReturnValue({
+        ...DEFAULT_USE_ARTICLES_MOCK,
+        data: { pages: [{ items: MOCK_ARTICLES, nextCursor: null, hasNext: false }] },
+      });
+
+      // Act
+      const { getAllByHintText } = await render(<HomeScreen />);
+
+      // Assert: "All" source filter hint が補間されること
+      await waitFor(() => {
+        expect(getAllByHintText("Show only All articles")).not.toHaveLength(0);
+      });
+    });
+  });
+});

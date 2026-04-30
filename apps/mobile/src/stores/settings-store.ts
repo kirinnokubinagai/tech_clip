@@ -1,0 +1,308 @@
+import { getLocales } from "expo-localization";
+import * as SecureStore from "expo-secure-store";
+import i18n from "i18next";
+import { create } from "zustand";
+
+import { apiFetch } from "@/lib/api";
+import {
+  DEFAULT_UI_LANGUAGE,
+  type Language,
+  resolveChineseVariant,
+  SUPPORTED_SUMMARY_LANGUAGES,
+  SUPPORTED_UI_LANGUAGES,
+  type SummaryLanguage,
+} from "@/lib/language-code";
+import { logger } from "@/lib/logger";
+
+export type { Language, SummaryLanguage };
+
+/** SecureStoreキー: 言語設定 */
+const LANGUAGE_KEY = "settings_language";
+
+/** SecureStoreキー: 要約言語設定 */
+const SUMMARY_LANGUAGE_KEY = "settings_summary_language";
+
+/** SecureStore保存値の最大文字数（locale コードは最大10文字以内） */
+const MAX_LANGUAGE_CODE_LENGTH = 10;
+
+/** デフォルト言語 */
+const DEFAULT_LANGUAGE: Language = DEFAULT_UI_LANGUAGE;
+
+/**
+ * localeコードから表示名へのマッピング
+ */
+export const LANGUAGE_LABEL_MAP: Record<Language, string> = {
+  ja: "日本語",
+  en: "English",
+  "zh-CN": "简体中文",
+  "zh-TW": "繁體中文",
+  ko: "한국어",
+};
+
+/** 旧形式表示名からlocaleコードへの移行マッピング */
+const LEGACY_LANGUAGE_MIGRATION_MAP: Record<string, Language> = {
+  日本語: "ja",
+  English: "en",
+};
+
+/**
+ * 保存値をLocale codeに正規化する
+ * 旧形式（表示名）が保存されている場合はlocaleコードに変換する
+ *
+ * @param stored - SecureStoreから取得したJSON文字列値
+ * @returns 正規化されたlocaleコードと移行が必要かどうかのフラグ
+ */
+function normalizeStoredLanguage(stored: string): {
+  language: Language;
+  needsMigration: boolean;
+} {
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(stored);
+  } catch {
+    return { language: DEFAULT_LANGUAGE, needsMigration: true };
+  }
+  if (typeof parsed !== "string") {
+    return { language: DEFAULT_LANGUAGE, needsMigration: true };
+  }
+
+  if (parsed.length > MAX_LANGUAGE_CODE_LENGTH) {
+    return { language: DEFAULT_LANGUAGE, needsMigration: true };
+  }
+
+  if ((SUPPORTED_UI_LANGUAGES as ReadonlyArray<string>).includes(parsed)) {
+    return { language: parsed as Language, needsMigration: false };
+  }
+
+  const migrated = LEGACY_LANGUAGE_MIGRATION_MAP[parsed];
+  return { language: migrated ?? DEFAULT_LANGUAGE, needsMigration: true };
+}
+
+/** 要約言語コードと表示名のマップ */
+export const SUMMARY_LANGUAGE_LABELS: Record<SummaryLanguage, string> = {
+  ja: "日本語",
+  en: "English",
+  zh: "中文",
+  "zh-CN": "简体中文",
+  "zh-TW": "繁體中文",
+  ko: "한국어",
+};
+
+/** デフォルト要約言語 */
+const DEFAULT_SUMMARY_LANGUAGE: SummaryLanguage = "ja";
+
+/**
+ * 値がサポートされている要約言語コードかどうかを判定する
+ *
+ * @param value - チェックする値
+ * @returns サポートされている要約言語コードであればtrue
+ */
+function isSupportedSummaryLanguage(value: string): value is SummaryLanguage {
+  return (SUPPORTED_SUMMARY_LANGUAGES as readonly string[]).includes(value);
+}
+
+/**
+ * デバイスのロケールから要約言語コードを解決する
+ *
+ * languageTag を優先し zh-Hans-* → zh-CN、zh-Hant-* → zh-TW のマッピングを行う
+ *
+ * @returns サポートされている要約言語コード
+ */
+function resolveDeviceSummaryLanguage(): SummaryLanguage {
+  const locales = getLocales();
+  if (locales.length === 0) {
+    return DEFAULT_SUMMARY_LANGUAGE;
+  }
+  const locale = locales[0];
+  if (!locale) {
+    return DEFAULT_SUMMARY_LANGUAGE;
+  }
+
+  const tag = locale.languageTag ?? "";
+  const code = locale.languageCode ?? "";
+
+  const chineseVariant = resolveChineseVariant(tag, code);
+  if (chineseVariant !== null) {
+    return chineseVariant;
+  }
+
+  if (!code || !isSupportedSummaryLanguage(code)) {
+    return DEFAULT_SUMMARY_LANGUAGE;
+  }
+  return code;
+}
+
+/** 通知設定の型 */
+export type NotificationSettings = {
+  id: string;
+  newArticle: boolean;
+  aiComplete: boolean;
+  follow: boolean;
+  system: boolean;
+  createdAt: string;
+  updatedAt: string;
+};
+
+/** 通知設定APIレスポンスの型 */
+type NotificationSettingsResponse = {
+  success: true;
+  data: NotificationSettings;
+};
+
+type SettingsStore = {
+  /** 表示言語（localeコード） */
+  language: Language;
+  /** 言語設定の読み込み完了フラグ */
+  isLanguageLoaded: boolean;
+  /** 要約言語コード */
+  summaryLanguage: SummaryLanguage;
+  /** 要約言語設定の読み込み完了フラグ */
+  isSummaryLanguageLoaded: boolean;
+  /** 通知設定 */
+  notificationSettings: NotificationSettings | null;
+  /** 通知設定の読み込み完了フラグ */
+  isNotificationSettingsLoaded: boolean;
+  /** SecureStoreから言語設定を読み込む */
+  loadLanguage: () => Promise<void>;
+  /** 言語設定を変更してSecureStoreに永続化する */
+  setLanguage: (language: Language) => Promise<void>;
+  /** SecureStoreから要約言語設定を読み込む */
+  loadSummaryLanguage: () => Promise<void>;
+  /** 要約言語設定を変更してSecureStoreに永続化する */
+  setSummaryLanguage: (language: SummaryLanguage) => Promise<void>;
+  /** APIから通知設定を取得する */
+  fetchNotificationSettings: () => Promise<void>;
+  /** 全通知のON/OFFをAPIに保存する */
+  updateNotificationEnabled: (enabled: boolean) => Promise<void>;
+};
+
+export const useSettingsStore = create<SettingsStore>((set, get) => ({
+  language: DEFAULT_LANGUAGE,
+  isLanguageLoaded: false,
+  summaryLanguage: DEFAULT_SUMMARY_LANGUAGE,
+  isSummaryLanguageLoaded: false,
+  notificationSettings: null,
+  isNotificationSettingsLoaded: false,
+
+  /**
+   * SecureStoreから言語設定を読み込む
+   * 旧形式の表示名が保存されている場合はlocaleコードに移行する
+   * アプリ起動時に呼び出す
+   */
+  loadLanguage: async () => {
+    try {
+      const stored = await SecureStore.getItemAsync(LANGUAGE_KEY);
+      if (stored === null) {
+        set({ language: DEFAULT_LANGUAGE, isLanguageLoaded: true });
+        return;
+      }
+      const { language, needsMigration } = normalizeStoredLanguage(stored);
+      if (needsMigration) {
+        await SecureStore.setItemAsync(LANGUAGE_KEY, JSON.stringify(language));
+      }
+      set({ language, isLanguageLoaded: true });
+    } catch {
+      set({ language: DEFAULT_LANGUAGE, isLanguageLoaded: true });
+    }
+  },
+
+  /**
+   * 言語設定を変更してSecureStoreに永続化し、i18nの表示言語を同期する
+   *
+   * @param language - 設定するlocaleコード
+   */
+  setLanguage: async (language: Language) => {
+    await SecureStore.setItemAsync(LANGUAGE_KEY, JSON.stringify(language));
+    await i18n.changeLanguage(language);
+    set({ language });
+  },
+
+  /**
+   * SecureStoreから要約言語設定を読み込む
+   * アプリ起動時に呼び出す。保存がない場合はデバイス言語を使用する。
+   * パース失敗時や不正値の場合はデバイス言語にフォールバックし、SecureStoreを修復する
+   */
+  loadSummaryLanguage: async () => {
+    try {
+      const stored = await SecureStore.getItemAsync(SUMMARY_LANGUAGE_KEY);
+      if (stored === null) {
+        set({ summaryLanguage: resolveDeviceSummaryLanguage(), isSummaryLanguageLoaded: true });
+        return;
+      }
+      try {
+        const parsed = JSON.parse(stored) as unknown;
+        if (typeof parsed === "string" && isSupportedSummaryLanguage(parsed)) {
+          set({ summaryLanguage: parsed, isSummaryLanguageLoaded: true });
+          return;
+        }
+      } catch {
+        // パース失敗時はデバイス言語にフォールバックする（期待される挙動のためログ不要）
+      }
+      const fallback = resolveDeviceSummaryLanguage();
+      await SecureStore.setItemAsync(SUMMARY_LANGUAGE_KEY, JSON.stringify(fallback));
+      set({ summaryLanguage: fallback, isSummaryLanguageLoaded: true });
+    } catch {
+      set({ summaryLanguage: resolveDeviceSummaryLanguage(), isSummaryLanguageLoaded: true });
+    }
+  },
+
+  /**
+   * 要約言語設定を変更してSecureStoreに永続化する
+   *
+   * @param language - 設定する要約言語コード
+   */
+  setSummaryLanguage: async (language: SummaryLanguage) => {
+    await SecureStore.setItemAsync(SUMMARY_LANGUAGE_KEY, JSON.stringify(language));
+    set({ summaryLanguage: language });
+  },
+
+  /**
+   * APIから通知設定を取得する
+   * 取得失敗時もisNotificationSettingsLoadedをtrueにする
+   */
+  fetchNotificationSettings: async () => {
+    try {
+      const data = await apiFetch<NotificationSettingsResponse>(
+        "/api/users/me/notification-settings",
+      );
+      set({ notificationSettings: data.data, isNotificationSettingsLoaded: true });
+    } catch (error) {
+      logger.warn("通知設定の取得に失敗しました", {
+        error: error instanceof Error ? { name: error.name, message: error.message } : error,
+      });
+      set({ isNotificationSettingsLoaded: true });
+    }
+  },
+
+  /**
+   * 全通知のON/OFFをAPIに保存する
+   * 楽観的更新を行い、失敗時はロールバックする
+   *
+   * @param enabled - trueで全通知ON、falseで全通知OFF
+   * @throws Error - API更新失敗時
+   */
+  updateNotificationEnabled: async (enabled: boolean) => {
+    const previous = get().notificationSettings;
+
+    const updatePayload = {
+      newArticle: enabled,
+      aiComplete: enabled,
+      follow: enabled,
+      system: enabled,
+    };
+
+    try {
+      const data = await apiFetch<NotificationSettingsResponse>(
+        "/api/users/me/notification-settings",
+        {
+          method: "PATCH",
+          body: JSON.stringify(updatePayload),
+        },
+      );
+      set({ notificationSettings: data.data });
+    } catch {
+      set({ notificationSettings: previous });
+      throw new Error("通知設定の更新に失敗しました。");
+    }
+  },
+}));

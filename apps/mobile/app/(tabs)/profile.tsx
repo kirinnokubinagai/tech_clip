@@ -1,0 +1,93 @@
+import { useRouter } from "expo-router";
+import { useTranslation } from "react-i18next";
+import { ActivityIndicator, Pressable, ScrollView, Text, View } from "react-native";
+
+import type { ProfileHeaderUser } from "@/components/ProfileHeader";
+import { ProfileHeader } from "@/components/ProfileHeader";
+import { useColors } from "@/hooks/use-colors";
+import { useMyProfile } from "@/hooks/use-my-profile";
+import { useAuthStore } from "@/stores/auth-store";
+
+/**
+ * プロフィール画面
+ *
+ * 認証状態に応じてユーザー情報またはログイン誘導を表示する。
+ * ログイン済みの場合は /api/users/me からプロフィールを取得して表示する。
+ * 未ログインの場合はログイン誘導メッセージとボタンを表示する。
+ */
+export default function ProfileScreen() {
+  const { t } = useTranslation();
+  const router = useRouter();
+  const colors = useColors();
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+  const isAuthLoading = useAuthStore((s) => s.isLoading);
+  const authUser = useAuthStore((s) => s.user);
+
+  const { data: profile, isLoading: isProfileLoading } = useMyProfile();
+
+  /** 設定画面への遷移を処理する */
+  const handleSettingsPress = () => {
+    router.push("/(tabs)/settings");
+  };
+
+  const handleLoginPress = () => {
+    router.push("/(auth)/login");
+  };
+
+  if (isAuthLoading) {
+    return (
+      <View testID="profile-loading" className="flex-1 bg-background items-center justify-center">
+        <ActivityIndicator size="large" color={colors.primary} />
+      </View>
+    );
+  }
+
+  if (!isAuthenticated || !authUser) {
+    return (
+      <ScrollView className="flex-1 bg-background">
+        <View className="flex-1 items-center justify-center px-4 py-20">
+          <Text
+            testID="profile-guest-message"
+            className="text-base text-text-muted text-center mb-6"
+          >
+            {t("profile.loginPrompt")}
+          </Text>
+          <Pressable
+            testID="profile-login-button"
+            onPress={handleLoginPress}
+            className="bg-primary rounded-lg px-8 py-3"
+            accessibilityRole="button"
+            accessibilityLabel={t("auth.login")}
+          >
+            <Text className="text-white font-semibold text-base">{t("auth.login")}</Text>
+          </Pressable>
+        </View>
+      </ScrollView>
+    );
+  }
+
+  if (isProfileLoading) {
+    return (
+      <View testID="profile-loading" className="flex-1 bg-background items-center justify-center">
+        <ActivityIndicator size="large" color={colors.primary} />
+      </View>
+    );
+  }
+
+  const profileUser: ProfileHeaderUser = {
+    name: profile?.name ?? authUser.name,
+    bio: profile?.bio ?? null,
+    avatarUrl: profile?.avatarUrl ?? authUser.image,
+    followersCount: undefined,
+    followingCount: undefined,
+  };
+
+  return (
+    <ScrollView className="flex-1 bg-background">
+      <ProfileHeader user={profileUser} onSettingsPress={handleSettingsPress} />
+      <View className="flex-1 items-center justify-center px-4 py-12">
+        <Text className="text-base text-text-muted text-center">{t("profile.savedArticles")}</Text>
+      </View>
+    </ScrollView>
+  );
+}

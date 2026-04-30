@@ -1,0 +1,179 @@
+# 設定フロー
+# 設定画面の各項目（通知・言語・パスワード変更・ログアウト）を確認する
+#
+# tags: settings
+
+appId: com.techclip.app
+tags:
+  - settings
+
+env:
+  TEST_EMAIL: ${TEST_EMAIL}
+  TEST_PASSWORD: ${TEST_PASSWORD}
+
+---
+
+# ログイン済み状態でアプリ起動
+- launchApp:
+    clearState: false
+- runFlow: helpers/dismiss-anr.yaml
+- runFlow:
+    when:
+      visible: "Try out your stylus"
+    commands:
+      - tapOn: "Cancel"
+      - waitForAnimationToEnd:
+          timeout: 1000
+- runFlow:
+    file: "helpers/login-helper.yaml"
+- waitForAnimationToEnd:
+    timeout: 2000
+
+# 設定タブへ移動
+- extendedWaitUntil:
+    visible:
+      id: "tab-settings"
+    timeout: 30000
+- tapOn:
+    id: "tab-settings"
+
+# --- 設定画面 (id-based) ---
+- extendedWaitUntil:
+    visible:
+      id: "settings-section-account"
+    timeout: 15000
+- takeScreenshot: screenshots/07-settings/01-settings-screen
+- assertVisible:
+    id: "settings-section-subscription"
+- assertVisible:
+    id: "settings-section-general"
+- scrollUntilVisible:
+    element:
+      id: "settings-section-account-management"
+    direction: DOWN
+    timeout: 10000
+- assertVisible:
+    id: "settings-section-account-management"
+
+# アカウントセクション (id-based)
+- assertVisible:
+    id: "settings-change-password-button"
+- assertVisible:
+    id: "settings-logout-button"
+
+# サブスクリプションセクション (id-based)
+- assertVisible:
+    id: "settings-plan-row"
+
+# バージョン表示 (画面下方なので scroll してから assert)
+- scrollUntilVisible:
+    element:
+      text: ".*バージョン.*"
+    direction: DOWN
+    timeout: 15000
+- assertVisible: ".*バージョン.*"
+
+# --- 通知スイッチ ---
+- assertVisible:
+    id: "settings-notification-switch"
+- tapOn:
+    id: "settings-notification-switch"
+- waitForAnimationToEnd
+- tapOn:
+    id: "settings-notification-switch"
+- waitForAnimationToEnd
+
+# --- 要約言語設定 ---
+- assertVisible:
+    id: "settings-summary-language-button"
+
+# --- 言語設定 ---
+- assertVisible:
+    id: "settings-language-button"
+- tapOn:
+    id: "settings-language-button"
+- extendedWaitUntil:
+    visible:
+      text: "日本語"
+    timeout: 5000
+- assertVisible: "日本語"
+- assertVisible: "English"
+- tapOn: "日本語"
+- assertVisible: "日本語"
+
+# --- パスワード変更画面への遷移 ---
+- tapOn:
+    id: "settings-change-password-button"
+- extendedWaitUntil:
+    visible:
+      id: "change-password-current-input"
+    timeout: 5000
+- assertVisible:
+    id: "change-password-current-input"
+- assertVisible:
+    id: "change-password-new-input"
+- assertVisible:
+    id: "change-password-confirm-input"
+- assertVisible:
+    id: "change-password-save-button"
+- tapOn:
+    id: "change-password-back-button"
+- waitForAnimationToEnd:
+    timeout: 1000
+
+# --- ログアウト確認ダイアログ (custom modal、id-based) ---
+- assertVisible:
+    id: "settings-logout-button"
+- tapOn:
+    id: "settings-logout-button"
+- extendedWaitUntil:
+    visible:
+      id: "confirm-dialog"
+    timeout: 5000
+- assertVisible:
+    id: "confirm-dialog-title"
+- assertVisible:
+    id: "confirm-dialog-message"
+# キャンセル
+- tapOn:
+    id: "confirm-dialog-cancel-button"
+- waitForAnimationToEnd:
+    timeout: 1000
+# 設定画面に戻ることを確認
+- assertVisible:
+    id: "settings-section-subscription"
+
+# --- アカウント削除確認ダイアログ (custom modal、id-based) ---
+- assertVisible:
+    id: "settings-delete-account-button"
+- tapOn:
+    id: "settings-delete-account-button"
+- extendedWaitUntil:
+    visible:
+      id: "confirm-dialog"
+    timeout: 5000
+- assertVisible:
+    id: "confirm-dialog-title"
+# キャンセル
+- tapOn:
+    id: "confirm-dialog-cancel-button"
+- waitForAnimationToEnd:
+    timeout: 1000
+- assertVisible:
+    id: "settings-section-account-management"
+
+# --- ログアウト実行 ---
+- tapOn:
+    id: "settings-logout-button"
+- extendedWaitUntil:
+    visible:
+      id: "confirm-dialog"
+    timeout: 5000
+- tapOn:
+    id: "confirm-dialog-confirm-button"
+# ログイン画面に遷移することを確認
+- extendedWaitUntil:
+    visible:
+      id: "login-email-input"
+    timeout: 10000
+- takeScreenshot: screenshots/07-settings/02-after-logout

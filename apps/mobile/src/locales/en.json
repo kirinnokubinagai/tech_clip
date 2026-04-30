@@ -1,0 +1,441 @@
+{
+  "common": {
+    "loading": "Loading...",
+    "error": "An error occurred.",
+    "errorTitle": "Error",
+    "retry": "Retry",
+    "cancel": "Cancel",
+    "save": "Save",
+    "delete": "Delete",
+    "edit": "Edit",
+    "close": "Close",
+    "confirm": "Confirm",
+    "back": "Back",
+    "next": "Next",
+    "done": "Done",
+    "search": "Search",
+    "skip": "Skip",
+    "start": "Get Started",
+    "accessibility": {
+      "tapToChange": "Tap to change",
+      "currentValue": "{{label}}, current: {{value}}",
+      "loading": "Loading",
+      "loadingHint": "Loading content",
+      "pleaseWait": "Please wait",
+      "loadingArticleList": "Loading article list",
+      "loadingProfile": "Loading profile",
+      "loadingArticleDetail": "Loading article detail",
+      "tagInput": "Enter new tag",
+      "addTag": "Add tag",
+      "followSwitching": "Switching follow status",
+      "unfollow": "Unfollow",
+      "follow": "Follow",
+      "offline": "You are offline",
+      "close": "Close",
+      "purchasePremium": "Purchase premium plan",
+      "settings": "Settings",
+      "deselectTag": "Deselect {{tag}}",
+      "selectTag": "Select {{tag}}"
+    },
+    "following": "Following",
+    "follow": "Follow",
+    "offline": "Offline",
+    "tagInputPlaceholder": "Add new tag",
+    "tagLimitMessage": "You can select up to {{max}} tags"
+  },
+  "premium": {
+    "title": "Premium Plan",
+    "monthlyUsage": "Monthly AI feature usage",
+    "limitReached": "You have reached the free plan limit",
+    "featuresTitle": "Features available with premium plan",
+    "purchaseButton": "Purchase premium plan"
+  },
+  "auth": {
+    "login": "Log in",
+    "logout": "Log out",
+    "signup": "Sign up",
+    "email": "Email",
+    "password": "Password",
+    "forgotPassword": "Forgot password?",
+    "noAccount": "Don't have an account?",
+    "hasAccount": "Already have an account?",
+    "register": "Sign up",
+    "loginTitle": "Log in",
+    "appTagline": "Tech news summarized by AI",
+    "createAccount": "Create account",
+    "name": "Name",
+    "namePlaceholder": "Enter your name",
+    "nameHint": "Enter the name to use as your display name.",
+    "emailPlaceholder": "example@domain.com",
+    "emailHint": "Enter your email address.",
+    "passwordPlaceholder": "8 characters or more",
+    "passwordHint": "Enter a password with at least {{min}} characters.",
+    "passwordHide": "Hide",
+    "passwordShow": "Show",
+    "passwordHideLabel": "Hide password",
+    "passwordShowLabel": "Show password",
+    "loginHint": "Log in with your email address and password.",
+    "forgotPasswordTitle": "Reset password",
+    "forgotPasswordDescription": "We'll send reset instructions to your email address",
+    "forgotPasswordSubmit": "Send reset email",
+    "forgotPasswordSuccess": "We sent a password reset email. Please check your inbox.",
+    "forgotPasswordEmailHint": "Enter the email address where you want to receive the password reset email.",
+    "socialSeparator": "Or",
+    "continueWithGoogle": "Continue with Google",
+    "continueWithGithub": "Continue with GitHub",
+    "signUpWithGoogle": "Sign up with Google",
+    "signUpWithGithub": "Sign up with GitHub",
+    "socialLoginFailed": "Failed to start social sign-in. Please try again.",
+    "callback": {
+      "signingIn": "Signing in...",
+      "backToLogin": "Back to Login",
+      "errorSocialLogin": "Social login failed. Please try again.",
+      "errorNoToken": "Authentication token not found. Please try again.",
+      "errorSaveToken": "Failed to save authentication info. Please try again.",
+      "errorCheckSession": "Failed to verify authentication. Please try again.",
+      "errorInvalidState": "Invalid authentication session. Please try again."
+    },
+    "loginToRegister": "Sign up",
+    "loginToRegisterPrompt": "Don't have an account?",
+    "registerToLoginPrompt": "Already have an account?",
+    "registerHint": "Create a new account with the entered information.",
+    "registerFailed": "Registration failed.",
+    "loginFailed": "Login failed. Please try again.",
+    "validation": {
+      "emailRequired": "Please enter your email address",
+      "emailInvalid": "Please enter a valid email address",
+      "passwordRequired": "Please enter your password",
+      "nameRequired": "Please enter your name",
+      "passwordMinLength": "Password must be at least {{min}} characters."
+    },
+    "continueWithApple": "Continue with Apple",
+    "signUpWithApple": "Sign up with Apple",
+    "nameOptional": "Name (optional)",
+    "nameOptionalHint": "If left blank, a name will be generated from your email"
+  },
+  "tabs": {
+    "home": "Home",
+    "search": "Search",
+    "notifications": "Notifications",
+    "profile": "Profile",
+    "settings": "Settings"
+  },
+  "home": {
+    "filterAll": "All",
+    "favorites": "Favorites",
+    "favoritesFilterLabel": "Show favorites only",
+    "favoritesFilterClearLabel": "Clear favorites filter",
+    "loadingArticles": "Loading...",
+    "fetchError": "Failed to fetch articles",
+    "noArticles": "No articles",
+    "offlineCachedArticles": "Offline: showing cached articles",
+    "offlineNoCache": "Offline: no cached articles",
+    "retryLabel": "Retry",
+    "retryHint": "Retry fetching articles",
+    "sourceFilterHint": "Show only {{label}} articles"
+  },
+  "article": {
+    "save": "Save article",
+    "share": "Share",
+    "readLater": "Read later",
+    "noArticles": "No articles",
+    "readingTime": "{{minutes}} min read",
+    "backA11yLabel": "Back",
+    "backA11yHint": "Go back to the previous screen",
+    "summary": "Summary",
+    "summarized": "Summarized",
+    "summarize": "Summarize",
+    "translation": "Translation",
+    "translated": "Translated",
+    "translate": "Translate",
+    "openInBrowser": "Open in browser",
+    "addToFavorites": "Add to favorites",
+    "removeFromFavorites": "Remove from favorites",
+    "noContent": "Article content is unavailable.",
+    "offlineContentUnavailable": "This article has not been saved for offline use. Open it while online to save the content.",
+    "viewOriginal": "View original article",
+    "fetchError": "Failed to fetch article",
+    "loadingArticle": "Loading...",
+    "saveTitle": "Save Article",
+    "urlLabel": "URL",
+    "urlPlaceholder": "https://",
+    "fetchButton": "Fetch",
+    "saveButton": "Save",
+    "fetching": "Fetching article...",
+    "preview": "Preview",
+    "saveFailed": "Failed to save article",
+    "fetchFailed": "Failed to fetch article",
+    "savedSuccess": "Article saved",
+    "thumbnailAlt": "Article thumbnail",
+    "urlRequired": "Please enter a URL",
+    "urlInvalid": "Please enter a valid URL",
+    "noMatch": "No articles matching \"{{query}}\"",
+    "generating": "Generating...",
+    "premiumFeatures": {
+      "unlimitedAi": "Unlimited AI features",
+      "noAds": "No ads",
+      "offlineAccess": "Offline access"
+    }
+  },
+  "search": {
+    "placeholder": "Search articles...",
+    "clearLabel": "Clear search",
+    "hint": "Search articles by keyword",
+    "hintSub": "You can search by title or content",
+    "searching": "Searching...",
+    "error": "Search failed."
+  },
+  "notifications": {
+    "markAllRead": "Mark all read",
+    "markAllReadLabel": "Mark all as read",
+    "empty": "No notifications",
+    "emptyDescription": "New notifications will appear here",
+    "fetchError": "Failed to fetch notifications",
+    "loadingNotifications": "Loading...",
+    "retryHint": "Retry fetching notifications",
+    "unreadBadgeLabel": "{{count}} unread notifications",
+    "unreadBadgeLabelOver": "{{max}}+ unread notifications"
+  },
+  "profile": {
+    "followersLabel": "Followers",
+    "followingLabel": "Following",
+    "loginPrompt": "Log in to see your saved articles and favorites",
+    "editProfile": "Edit Profile",
+    "savedArticles": "Saved Articles",
+    "noPublicArticles": "This user has no public articles yet",
+    "guestUser": "Guest",
+    "loadingUser": "Loading...",
+    "fetchError": "Failed to fetch user info",
+    "retryHint": "Retry fetching user info",
+    "backHint": "Go back to the previous screen",
+    "loadingHint": "Please wait a moment",
+    "back": "Back",
+    "edit": {
+      "title": "Edit Profile",
+      "nameLabel": "Name",
+      "usernameLabel": "Username",
+      "bioLabel": "Bio",
+      "namePlaceholder": "Enter your name",
+      "usernamePlaceholder": "username",
+      "bioPlaceholder": "Enter your bio",
+      "snsLinks": "SNS Links",
+      "saveButton": "Save",
+      "avatarLabel": "Change avatar image",
+      "saveSuccess": "Profile updated",
+      "saveFailed": "Failed to save profile",
+      "permissionError": "Access to image library is not permitted",
+      "twitterUsernameLabel": "X (Twitter) Username",
+      "twitterUsernamePlaceholder": "your_handle",
+      "githubUsernameLabel": "GitHub Username",
+      "githubUsernamePlaceholder": "your_handle",
+      "websiteUrlLabel": "Website",
+      "websiteUrlPlaceholder": "https://example.com",
+      "loadFailed": "Failed to load profile",
+      "retryButton": "Retry",
+      "usernameDuplicate": "This username is already taken",
+      "validation": {
+        "nameRequired": "Please enter your name",
+        "nameTooLong": "Name must be {{max}} characters or less",
+        "usernameTooLong": "Username must be {{max}} characters or less",
+        "usernameInvalid": "Username can only contain letters, numbers, and underscores",
+        "bioTooLong": "Bio must be {{max}} characters or less",
+        "websiteUrlTooLong": "URL must be {{max}} characters or less",
+        "websiteUrlInvalid": "Please enter a valid URL",
+        "twitterUsernameTooLong": "X (Twitter) username must be {{max}} characters or less",
+        "twitterUsernameInvalid": "X (Twitter) username can only contain letters, numbers, and underscores",
+        "githubUsernameTooLong": "GitHub username must be {{max}} characters or less",
+        "githubUsernameInvalid": "GitHub username can only contain letters, numbers, and hyphens"
+      }
+    },
+    "followers": {
+      "title": "Followers",
+      "followersTab": "Followers",
+      "followingTab": "Following",
+      "noFollowers": "No followers yet",
+      "noFollowing": "Not following anyone yet",
+      "userProfileLabel": "View {{name}}'s profile",
+      "loading": "Loading...",
+      "retry": "Retry",
+      "errorFollowers": "Failed to load followers",
+      "errorFollowing": "Failed to load following",
+      "unknownUser": "Unknown user",
+      "userNotSpecified": "User not specified"
+    }
+  },
+  "settings": {
+    "title": "Settings",
+    "language": "Language",
+    "theme": "Theme",
+    "notifications": "Notifications",
+    "account": "Account",
+    "about": "About this app",
+    "version": "Version",
+    "sections": {
+      "account": "Account",
+      "subscription": "Subscription",
+      "general": "General",
+      "accountManagement": "Account Management"
+    },
+    "items": {
+      "changePassword": "Change Password",
+      "logout": "Log Out",
+      "plan": "Plan",
+      "language": "Language",
+      "notifications": "Notifications",
+      "deleteAccount": "Delete Account",
+      "notLoggedIn": "Not logged in",
+      "summaryLanguage": "Summary Language"
+    },
+    "plan": {
+      "premium": "Premium",
+      "free": "Free"
+    },
+    "languageSelect": {
+      "title": "Language Settings",
+      "prompt": "Select display language"
+    },
+    "summaryLanguageSelect": {
+      "title": "Summary Language",
+      "prompt": "Select language for AI summaries"
+    },
+    "notificationHintOn": "Tap to turn notifications on",
+    "notificationHintOff": "Tap to turn notifications off",
+    "logout": {
+      "title": "Log Out",
+      "message": "Are you sure you want to log out?",
+      "confirm": "Log Out"
+    },
+    "notificationUpdateError": "Failed to update notification settings",
+    "summaryLanguageUpdateError": "Failed to update summary language",
+    "deleteAccount": {
+      "title": "Delete Account",
+      "message": "Deleting your account will permanently remove all your data. This action cannot be undone.",
+      "confirm": "Delete",
+      "failed": "Failed to delete account. Please try again."
+    },
+    "changePassword": {
+      "title": "Change Password",
+      "currentPassword": "Current Password",
+      "currentPasswordPlaceholder": "Enter current password",
+      "newPassword": "New Password",
+      "newPasswordPlaceholder": "Enter new password",
+      "confirmPassword": "New Password (Confirm)",
+      "confirmPasswordPlaceholder": "Re-enter new password",
+      "saveButton": "Change",
+      "saveSuccess": "Password changed",
+      "saveFailed": "Failed to change password. Please check your current password.",
+      "validation": {
+        "currentPasswordRequired": "Please enter your current password",
+        "newPasswordRequired": "Please enter a new password",
+        "newPasswordTooShort": "Password must be at least {{min}} characters.",
+        "newPasswordTooLong": "Password must be {{max}} characters or less",
+        "confirmPasswordRequired": "Please enter the confirmation password",
+        "passwordMismatch": "Passwords do not match"
+      }
+    }
+  },
+  "errorBoundary": {
+    "unexpectedError": "An unexpected error occurred.",
+    "appError": "An error occurred in the application",
+    "retry": "Retry"
+  },
+  "errorView": {
+    "titles": {
+      "network": "Network Error",
+      "server": "Server Error",
+      "generic": "An error occurred."
+    },
+    "messages": {
+      "network": "Please check your internet connection",
+      "server": "A problem occurred on the server. Please try again later.",
+      "generic": "A problem occurred. Please try again."
+    },
+    "retry": "Retry"
+  },
+  "onboarding": {
+    "pages": {
+      "save": {
+        "title": "Save Tech Articles with One Tap",
+        "description": "Supports {{count}} sources including Zenn, Qiita, and dev.to. Save articles you're interested in right away."
+      },
+      "ai": {
+        "title": "AI Summarizes & Translates",
+        "description": "Read English articles in Japanese. Save time with AI summaries when you just need the key points."
+      },
+      "organize": {
+        "title": "Organize with Favorites & Tags",
+        "description": "Categorize articles with tags. Bookmark favorites for quick access anytime."
+      },
+      "start": {
+        "title": "Let's Get Started",
+        "description": "Create an account and manage your technical knowledge efficiently."
+      }
+    },
+    "skip": "Skip",
+    "next": "Next",
+    "start": "Get Started",
+    "accessibility": {
+      "pageIndicator": "Page {{current}} of {{total}}",
+      "nextPageHint": "Go to page {{next}}",
+      "skipHint": "Skip onboarding and go to login",
+      "startHint": "Go to account creation"
+    }
+  },
+  "time": {
+    "justNow": "Just now",
+    "minutesAgo_one": "{{count}} minute ago",
+    "minutesAgo_other": "{{count}} minutes ago",
+    "hoursAgo_one": "{{count}} hour ago",
+    "hoursAgo_other": "{{count}} hours ago",
+    "daysAgo_one": "{{count}} day ago",
+    "daysAgo_other": "{{count}} days ago",
+    "weeksAgo_one": "{{count}} week ago",
+    "weeksAgo_other": "{{count}} weeks ago",
+    "monthsAgo_one": "{{count}} month ago",
+    "monthsAgo_other": "{{count}} months ago",
+    "yearsAgo_one": "{{count}} year ago",
+    "yearsAgo_other": "{{count}} years ago"
+  },
+  "api": {
+    "errors": {
+      "timeout": "Request timed out",
+      "network": "No network connection",
+      "httpGeneric": "A server error occurred.",
+      "parse": "Failed to parse response",
+      "sessionExpired": "Your session has expired. Please log in again.",
+      "status": {
+        "400": "Invalid request",
+        "403": "You do not have permission to perform this action",
+        "404": "Resource not found.",
+        "408": "Request timed out",
+        "409": "A conflict occurred.",
+        "413": "The submitted data is too large",
+        "422": "Please check your input.",
+        "429": "Too many requests. Please wait a moment and try again.",
+        "500": "A server error occurred.",
+        "502": "Unable to connect to the server",
+        "503": "The service is temporarily unavailable.",
+        "504": "Server response timed out"
+      }
+    }
+  },
+  "shareIntent": {
+    "loading": "Loading",
+    "error": "Failed to read shared data",
+    "notFound": "URL not found.",
+    "close": "Close"
+  },
+  "profileSetup": {
+    "title": "Set Up Your Profile",
+    "subtitle": "Your account has been created. Set up your display name to get started.",
+    "nameLabel": "Name",
+    "namePlaceholder": "Enter your name",
+    "saveButton": "Save",
+    "skipButton": "Skip",
+    "saveFailed": "Failed to save profile.",
+    "validation": {
+      "nameRequired": "Please enter your name.",
+      "nameTooLong": "Name must be {{max}} characters or less."
+    }
+  }
+}

@@ -1,0 +1,110 @@
+#!/bin/bash
+set -euo pipefail
+
+SCRIPT_PATH="${BASH_SOURCE[0]}"
+SCRIPT_DIR="$(cd "$(dirname "${SCRIPT_PATH}")" && pwd)"
+REPO_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
+NIX_BIN="${NIX_BIN:-$(command -v nix 2>/dev/null || true)}"
+
+if [ -z "${NIX_BIN}" ] && [ -x "/nix/var/nix/profiles/default/bin/nix" ]; then
+  NIX_BIN="/nix/var/nix/profiles/default/bin/nix"
+fi
+
+if [ "${TECH_CLIP_PRE_PUSH_NIX_BOOTSTRAPPED:-0}" != "1" ]; then
+  if [ -n "${NIX_BIN}" ]; then
+    if [ -z "${IN_NIX_SHELL:-}" ] || ! command -v pnpm > /dev/null 2>&1; then
+      exec "${NIX_BIN}" develop "${REPO_ROOT}" --command env TECH_CLIP_PRE_PUSH_NIX_BOOTSTRAPPED=1 bash "${SCRIPT_PATH}" "$@"
+    fi
+  fi
+fi
+
+if ! command -v pnpm > /dev/null 2>&1; then
+  echo "Pre-push チェック失敗: pnpm コマンドが見つかりません。"
+  exit 1
+fi
+
+cd "${REPO_ROOT}"
+
+# Capture push SHAs for config-only detection after the loop.
+# PUSH_REMOTE_SHA is set to merge-base with origin/main for new-branch pushes.
+PUSH_LOCAL_SHA=""
+PUSH_REMOTE_SHA=""
+
+while read -r _LOCAL_REF LOCAL_SHA _REMOTE_REF REMOTE_SHA; do
+  if [ "${LOCAL_SHA}" = "0000000000000000000000000000000000000000" ]; then
+    continue
+  fi
+  PUSH_LOCAL_SHA="${LOCAL_SHA}"
+  if [ "${REMOTE_SHA}" = "0000000000000000000000000000000000000000" ]; then
+    # New branch: use merge-base with origin/main for diff-based change detection.
+    PUSH_REMOTE_SHA="$(git merge-base "${LOCAL_SHA}" "origin/main" 2>/dev/null || true)"
+    continue
+  fi
+  PUSH_REMOTE_SHA="${REMOTE_SHA}"
+  if ! git merge-base --is-ancestor "${REMOTE_SHA}" "${LOCAL_SHA}"; then
+    echo "非 fast-forward push は禁止されています。"
+    exit 1
+  fi
+done
+
+echo "Pre-push チェック実行中..."
+
+echo "  Executable bits..."
+"${REPO_ROOT}/scripts/check-executable-shell-files.sh" || {
+  echo "Shell script の executable bit が不足しています。修正してからpushしてください。"
+  exit 1
+}
+
+# Config-only skip: if every changed file is a config/doc path that contains no
+# TypeScript/JavaScript, skip lint / typecheck / audit / test.
+# Covered paths: .claude/** (skills, rules, agents), docs/**, scripts/skills/**,
+# .codex/**, CLAUDE.md, AGENTS.md.
+_SKIP_HEAVY_CHECKS=0
+if [ -n "${PUSH_LOCAL_SHA:-}" ] && [ -n "${PUSH_REMOTE_SHA:-}" ]; then
+  _CHANGED="$(git diff --name-only "${PUSH_REMOTE_SHA}" "${PUSH_LOCAL_SHA}" 2>/dev/null || true)"
+  if [ -n "${_CHANGED}" ]; then
+    _NON_CONFIG="$(echo "${_CHANGED}" | \
+      grep -vE '^(\.claude/|\.husky/|docs/|scripts/skills/|\.codex/)' | \
+      grep -vE '^(CLAUDE\.md|AGENTS\.md)$' || true)"
+    if [ -z "${_NON_CONFIG}" ]; then
+      echo "  設定・ドキュメントのみの変更を検出しました。lint / typecheck / audit / test をスキップします。"
+      _SKIP_HEAVY_CHECKS=1
+    fi
+  fi
+fi
+
+if [ "${_SKIP_HEAVY_CHECKS}" = "0" ]; then
+  echo "  Lint..."
+  pnpm lint || { echo "Lint失敗。修正してからpushしてください。"; exit 1; }
+
+  echo "  Typecheck..."
+  pnpm typecheck || { echo "Typecheck失敗。修正してからpushしてください。"; exit 1; }
+
+  echo "  Audit..."
+  # --ignore-registry-errors: pnpm@10.33.0 の既知バグ (https://github.com/pnpm/pnpm/issues/11265) への暫定対応
+  # npm registry の audit エンドポイント廃止に pnpm がまだ追随していないため、
+  # registry エラー時は audit を green 扱いにする。pnpm が新 bulk advisory 対応版を
+  # リリースしたらこのフラグは削除すること。
+  pnpm audit --prod --ignore-registry-errors || { echo "Audit失敗。脆弱性を解消してからpushしてください。"; exit 1; }
+
+  echo "  Test..."
+  "${REPO_ROOT}/scripts/run-and-fail-on-stderr.sh" pnpm test || {
+    echo "Test失敗。stderr がある場合は内容確認後に TECH_CLIP_ALLOW_TEST_STDERR=1 を付けて再pushしてください。"
+    exit 1
+  }
+
+  echo "  bats..."
+  command -v bats >/dev/null || { echo "ERROR: bats not found. nix develop で環境に入ってから実行してください。"; exit 1; }
+  bats tests/scripts/ tests/hooks/ || { echo "bats失敗。修正してからpushしてください。"; exit 1; }
+fi
+
+echo "全チェック通過 (e2e は CI/stage→main で実行されます)"
+
+cat <<'EOM' >&2
+
+[pre-push] ヒント:
+  - e2e は stage → main PR の CI で全 flow 実行されます。
+  - ローカルで e2e を回したい場合: bash scripts/dev/run-e2e-parallel.sh
+EOM
+
+exit 0

@@ -1,0 +1,23 @@
+name: Verify (uncached)
+
+on:
+  workflow_dispatch:
+  schedule:
+    # 毎日 18:00 UTC (JST 03:00) に uncached 検証を実行
+    - cron: '0 18 * * *'
+
+permissions: read-all
+
+concurrency:
+  group: verify-uncached-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  verify-uncached:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v4.2.2
+      - uses: ./.github/actions/nix-setup
+      - name: Uncached typecheck + test
+        run: nix develop .#ci --command pnpm verify:uncached
