@@ -20,31 +20,37 @@ run_hook() {
 }
 
 # -------------------------------------------------------------------------
-# C-4a: 数値サフィックスエージェント名ブロックテスト
+# C-4a: 数値サフィックスエージェント名ブロックテスト ({role}-{N} 形式)
 # -------------------------------------------------------------------------
 
-@test "issue-999-reviewer-2 は数値サフィックスのため BLOCK されること" {
-    local json='{"tool_input":{"name":"issue-999-reviewer-2","subagent_type":"reviewer"}}'
+@test "reviewer-999-2 は数値サフィックスのため BLOCK されること" {
+    local json='{"tool_input":{"name":"reviewer-999-2","subagent_type":"reviewer"}}'
     run run_hook "$json"
     [ "$status" -eq 2 ]
     [[ "$output" == *"BLOCKED"* ]]
 }
 
-@test "issue-1056-coder-3 は数値サフィックスのため BLOCK されること" {
-    local json='{"tool_input":{"name":"issue-1056-coder-3","subagent_type":"coder"}}'
+@test "coder-1056-3 は数値サフィックスのため BLOCK されること" {
+    local json='{"tool_input":{"name":"coder-1056-3","subagent_type":"coder"}}'
     run run_hook "$json"
     [ "$status" -eq 2 ]
     [[ "$output" == *"BLOCKED"* ]]
 }
 
-@test "issue-999-coder-api はアルファベット lane のため許可されること" {
-    local json='{"tool_input":{"name":"issue-999-coder-api","subagent_type":"coder"}}'
+@test "coder-999 はアルファベット lane のため許可されること (suffix なし)" {
+    local json='{"tool_input":{"name":"coder-999","subagent_type":"coder"}}'
     run run_hook "$json"
     [ "$status" -eq 0 ]
 }
 
-@test "issue-999-infra-engineer-mobile はアルファベット lane のため許可されること" {
-    local json='{"tool_input":{"name":"issue-999-infra-engineer-mobile","subagent_type":"infra-engineer"}}'
+@test "coder-flatten-999 はアルファベット lane のため許可されること" {
+    local json='{"tool_input":{"name":"coder-flatten-999","subagent_type":"coder"}}'
+    run run_hook "$json"
+    [ "$status" -eq 0 ]
+}
+
+@test "infra-engineer-mobile-999 はアルファベット lane のため許可されること" {
+    local json='{"tool_input":{"name":"infra-engineer-mobile-999","subagent_type":"infra-engineer"}}'
     run run_hook "$json"
     [ "$status" -eq 0 ]
 }
@@ -55,7 +61,7 @@ run_hook() {
 
 @test "tool_input.name パスで数値サフィックスが正しく検出されること" {
     # .tool_input.name に名前が入っている場合のみ BLOCK されることを確認
-    local json='{"tool_input":{"name":"issue-100-coder-2"}}'
+    local json='{"tool_input":{"name":"coder-100-2"}}'
     run run_hook "$json"
     [ "$status" -eq 2 ]
     [[ "$output" == *"BLOCKED"* ]]
@@ -63,7 +69,7 @@ run_hook() {
 
 @test "tool_input なしのフラット JSON では名前がない扱いで許可されること" {
     # 旧フォーマット（.name）では名前が取得できず exit 0 になること
-    local json='{"name":"issue-100-coder-2","subagent_type":"coder"}'
+    local json='{"name":"coder-100-2","subagent_type":"coder"}'
     run run_hook "$json"
     [ "$status" -eq 0 ]
 }
@@ -73,8 +79,8 @@ run_hook() {
     [ "$status" -eq 0 ]
 }
 
-@test "issue-999-e2e-reviewer-2 は数値サフィックスのため BLOCK されること" {
-    local json='{"tool_input":{"name":"issue-999-e2e-reviewer-2","subagent_type":"e2e-reviewer"}}'
+@test "e2e-reviewer-999-2 は数値サフィックスのため BLOCK されること" {
+    local json='{"tool_input":{"name":"e2e-reviewer-999-2","subagent_type":"e2e-reviewer"}}'
     run run_hook "$json"
     [ "$status" -eq 2 ]
     [[ "$output" == *"BLOCKED"* ]]

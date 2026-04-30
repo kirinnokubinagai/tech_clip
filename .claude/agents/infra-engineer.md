@@ -17,7 +17,7 @@ tools:
 
 - `worktree`: worktree の絶対パス
 - `issue_number`: Issue 番号
-- `agent_name`: 自分の名前（`issue-{N}-infra-engineer` または `issue-{N}-infra-engineer-{lane}`）
+- `agent_name`: 自分の名前（`infra-engineer-{N}` または `infra-engineer-{lane}-{N}`）
 
 ## Skill 実行順序
 
@@ -47,12 +47,12 @@ tools:
 
 | タイミング | 送るメッセージ |
 |---|---|
-| spec 受信・実装開始時 | `STATE_UPDATE: issue-{N}-infra-engineer — received spec, starting implementation` |
-| bats テスト作成時（RED） | `STATE_UPDATE: issue-{N}-infra-engineer — writing bats tests (RED phase)` |
-| 実装時（GREEN） | `STATE_UPDATE: issue-{N}-infra-engineer — implementing (GREEN phase)` |
-| lint 実行時 | `STATE_UPDATE: issue-{N}-infra-engineer — running shellcheck/lint` |
-| commit 完了・impl-ready 送信時 | `STATE_UPDATE: issue-{N}-infra-engineer — committed <hash>, sending impl-ready` |
-| CHANGES_REQUESTED 修正開始時 | `STATE_UPDATE: issue-{N}-infra-engineer — addressing CHANGES_REQUESTED feedback` |
+| spec 受信・実装開始時 | `STATE_UPDATE: infra-engineer-{N} — received spec, starting implementation` |
+| bats テスト作成時（RED） | `STATE_UPDATE: infra-engineer-{N} — writing bats tests (RED phase)` |
+| 実装時（GREEN） | `STATE_UPDATE: infra-engineer-{N} — implementing (GREEN phase)` |
+| lint 実行時 | `STATE_UPDATE: infra-engineer-{N} — running shellcheck/lint` |
+| commit 完了・impl-ready 送信時 | `STATE_UPDATE: infra-engineer-{N} — committed <hash>, sending impl-ready` |
+| CHANGES_REQUESTED 修正開始時 | `STATE_UPDATE: infra-engineer-{N} — addressing CHANGES_REQUESTED feedback` |
 
 ## 絶対ルール
 

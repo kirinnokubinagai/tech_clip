@@ -7,6 +7,7 @@
 HOOK="$(cd "$(dirname "$BATS_TEST_FILENAME")/../.." && pwd)/.claude/hooks/agent-askuserquestion-guard.sh"
 
 setup() {
+    unset GIT_DIR GIT_WORK_TREE
     TMPDIR="$BATS_TEST_TMPDIR"
     export HOME="$TMPDIR/home"
     mkdir -p "$HOME"
@@ -30,15 +31,15 @@ run_hook() {
     [ "$status" -eq 0 ]
 }
 
-@test "issue-1-coder からの AskUserQuestion は DENY されること" {
-    export CLAUDE_AGENT_NAME="issue-1-coder"
+@test "coder-1 からの AskUserQuestion は DENY されること" {
+    export CLAUDE_AGENT_NAME="coder-1"
     run run_hook '{}'
     [ "$status" -eq 2 ]
     [[ "$output" == *"DENY"* ]]
 }
 
-@test "issue-1-reviewer からの AskUserQuestion は DENY されること" {
-    export CLAUDE_AGENT_NAME="issue-1-reviewer"
+@test "reviewer-1 からの AskUserQuestion は DENY されること" {
+    export CLAUDE_AGENT_NAME="reviewer-1"
     run run_hook '{}'
     [ "$status" -eq 2 ]
     [[ "$output" == *"DENY"* ]]

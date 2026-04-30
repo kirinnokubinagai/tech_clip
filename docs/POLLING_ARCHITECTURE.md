@@ -41,7 +41,7 @@ push 完了後に `.claude/polling/pr-<N>.json` を作成する。
   "pr_number": 1050,
   "push_sha": "abc12345...",
   "push_at": "2026-04-17T00:00:00Z",
-  "reviewer_agent": "issue-1031-reviewer",
+  "reviewer_agent": "reviewer-1031",
   "issue_number": 1031,
   "mode": "auto",
   "attempts": 0,

@@ -178,6 +178,11 @@ if [ -n "$CHANGED_FILES" ]; then
       continue
     fi
 
+    # 削除されたファイルは check 対象外 (test ファイルも削除されているはず)
+    if [ ! -f "${REPO_ROOT}/${f}" ]; then
+      continue
+    fi
+
     CHECKED=$((CHECKED + 1))
 
     # expected test path を計算

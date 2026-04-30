@@ -7,7 +7,7 @@
 SCRIPT="$(cd "$(dirname "$BATS_TEST_FILENAME")/../.." && pwd)/.claude/hooks/direnv-allow-guard.sh"
 
 setup() {
-  unset GIT_DIR GIT_WORK_TREE
+    unset GIT_DIR GIT_WORK_TREE
     TMPDIR="$BATS_TEST_TMPDIR"
     REPO_DIR="$TMPDIR/repo"
     FAKE_BIN="$TMPDIR/bin"
@@ -41,14 +41,14 @@ EOF
     ALLOW_FILE="$TMPDIR/allow-ok"
 }
 
-
+# stdin でフックを実行するヘルパー
 run_hook() {
     local cmd="$1"
     (
       export PATH="$FAKE_BIN:$PATH"
       export DIR_ENV_TEST_ALLOW_FILE="$ALLOW_FILE"
       cd "$REPO_DIR"
-      ARGUMENTS="{\"command\":\"$cmd\"}" bash "$SCRIPT"
+      echo "{\"tool_input\":{\"command\":\"$cmd\"}}" | bash "$SCRIPT"
     )
 }
 
@@ -78,4 +78,18 @@ run_hook() {
     touch "$ALLOW_FILE"
     run run_hook "pnpm test"
     [ "$status" -eq 0 ]
+}
+
+@test "stdin が空の場合はスキップされること" {
+    run bash -c "(export PATH='$FAKE_BIN:$PATH' DIR_ENV_TEST_ALLOW_FILE='$ALLOW_FILE'; echo '' | bash '$SCRIPT')"
+    [ "$status" -eq 0 ]
+}
+
+@test "stdinにJSONを渡すとblocked .envrc でブロックされること（stdin ルーティング確認）" {
+    # Act: stdin に tool_input.command を含む正しい JSON を渡す（$ARGUMENTS が空でも機能する）
+    run bash -c "(export PATH='$FAKE_BIN:$PATH' DIR_ENV_TEST_ALLOW_FILE='$ALLOW_FILE'; echo '{\"tool_input\":{\"command\":\"pnpm test\"}}' | (cd '$REPO_DIR' && bash '$SCRIPT'))"
+
+    # Assert: direnv allow 未完了でブロックされること
+    [ "$status" -eq 2 ]
+    [[ "$output" == *"direnv allow"* ]]
 }

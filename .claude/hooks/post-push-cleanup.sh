@@ -6,7 +6,13 @@ if ! command -v jq &> /dev/null; then
   exit 0
 fi
 
-COMMAND=$(echo "$ARGUMENTS" | jq -r '.command // empty' 2>/dev/null)
+INPUT=$(cat)
+
+if [ -z "$INPUT" ]; then
+  exit 0
+fi
+
+COMMAND=$(echo "$INPUT" | jq -r '.tool_input.command // empty' 2>/dev/null)
 
 if [ -z "$COMMAND" ]; then
   exit 0
