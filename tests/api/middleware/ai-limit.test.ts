@@ -988,7 +988,7 @@ describe("ロールバック失敗時の Sentry 通知", () => {
     expect(mockFetch).not.toHaveBeenCalled();
   });
 
-  it("Sentry 送信が失敗してもクラッシュせず error ログが出ること", async () => {
+  it("Sentry 送信が失敗してもクラッシュせず正常なレスポンスが返ること", async () => {
     // Arrange
     const userData = createFreeUserData({ remaining: 3 });
     mockSelectWhere.mockResolvedValue([userData]);
@@ -1011,10 +1011,10 @@ describe("ロールバック失敗時の Sentry 通知", () => {
     // Act
     const res = await app.request("/ai/summarize", { method: "POST" });
 
-    // Assert
+    // Assert: notifyError は fire-and-forget で例外を握り潰すため、クラッシュしない
     expect(res.status).toBe(HTTP_INTERNAL_SERVER_ERROR);
     expect(mockLogger.error).toHaveBeenCalledWith(
-      "Sentry 通知に失敗しました",
+      "AIクォータのロールバックに失敗しました",
       expect.objectContaining({ userId: TEST_USER_ID }),
     );
   });

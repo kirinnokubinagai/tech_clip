@@ -5,7 +5,7 @@ import { ulid } from "ulid";
 import type { Database } from "../db";
 import { aiQuotaRollbackFailures, users } from "../db/schema";
 import { createLogger } from "../lib/logger";
-import { captureError } from "./sentry";
+import { notifyError } from "../lib/sentry-reporter";
 
 /** HTTP 401 Unauthorized ステータスコード */
 const HTTP_UNAUTHORIZED = 401;
@@ -194,17 +194,14 @@ async function safeRollback(
       logger.error("ロールバック失敗の永続化に失敗しました", { userId, error: persistError });
     }
 
-    try {
-      if (
-        context.sentryDsn &&
-        (context.environment === "production" || context.environment === "staging") &&
-        rollbackError instanceof Error
-      ) {
-        const fetchFn = context.fetchFn ?? fetch;
-        await captureError(context.sentryDsn, rollbackError, fetchFn, context.environment);
-      }
-    } catch (sentryError) {
-      logger.error("Sentry 通知に失敗しました", { userId, error: sentryError });
+    if (rollbackError instanceof Error) {
+      const fetchFn = context.fetchFn ?? fetch;
+      await notifyError(
+        { SENTRY_DSN: context.sentryDsn, ENVIRONMENT: context.environment },
+        rollbackError,
+        { source: "ai-limit-rollback", user_id: userId, reservation_path: context.reservationPath },
+        fetchFn,
+      );
     }
   }
 }
