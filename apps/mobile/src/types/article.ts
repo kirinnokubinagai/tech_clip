@@ -28,6 +28,7 @@ export type ArticleListItem = {
 /** 記事詳細画面で使用する型 */
 export type ArticleDetail = {
   id: string;
+  userId: string;
   title: string;
   author: string | null;
   source: ArticleSource;

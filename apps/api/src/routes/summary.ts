@@ -242,7 +242,19 @@ export function createSummaryRoute(options: SummaryRouteOptions) {
       );
     }
 
-    if (!article.content) {
+    // content が null でも、title + author + url + excerpt を fallback として要約できるようにする
+    const summaryInput = article.content
+      ? article.content
+      : [
+          article.title ? `# ${article.title}` : "",
+          article.author ? `Author: ${article.author}` : "",
+          article.url ? `URL: ${article.url}` : "",
+          article.excerpt ?? "",
+        ]
+          .filter(Boolean)
+          .join("\n\n");
+
+    if (!summaryInput.trim()) {
       return c.json(
         {
           success: false,
@@ -272,7 +284,7 @@ export function createSummaryRoute(options: SummaryRouteOptions) {
     try {
       const result = await summarizeFn({
         ai,
-        content: article.content,
+        content: summaryInput,
         language,
         modelTag,
       });

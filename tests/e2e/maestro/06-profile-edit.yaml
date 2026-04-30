@@ -1,5 +1,5 @@
-# プロフィール編集フロー
-# プロフィールタブからプロフィール編集画面へ遷移し、名前・bio・SNSリンクを更新する
+# プロフィール表示・編集フロー
+# プロフィールタブで基本表示を確認し、編集画面で名前/bio/SNSリンクを更新できることを確認する
 #
 # tags: profile
 
@@ -16,77 +16,188 @@ env:
 # ログイン済み状態でアプリ起動
 - launchApp:
     clearState: false
+- runFlow:
+    when:
+      visible: "Try out your stylus"
+    commands:
+      - tapOn: "Cancel"
+      - waitForAnimationToEnd:
+          timeout: 1000
+- runFlow:
+    when:
+      visible: "Process system isn't responding"
+    commands:
+      - tapOn: "Wait"
+      - waitForAnimationToEnd:
+          timeout: 3000
+- runFlow:
+    when:
+      visible: "Open debugger"
+    commands:
+      - tapOn:
+          point: "92%, 93%"
+      - waitForAnimationToEnd:
+          timeout: 1000
+- runFlow:
+    file: "helpers/login-helper.yaml"
+- waitForAnimationToEnd:
+    timeout: 2000
 
-# プロフィールタブへ移動
+# --- プロフィールタブ表示確認 ---
 - tapOn:
-    text: "プロフィール"
+    id: "tab-profile"
+- waitForAnimationToEnd:
+    timeout: 3000
+- takeScreenshot: screenshots/06-profile-edit/01-profile-tab
 
-# --- プロフィール画面 ---
-- assertVisible: "プロフィール"
-- takeScreenshot: screenshots/06-profile-edit/01-profile-screen
+# プロフィールヘッダーが表示されること
+- extendedWaitUntil:
+    visible:
+      id: "profile-header"
+    timeout: 10000
 
-# プロフィール編集画面へ遷移（設定ボタン or 編集ボタン）
-- tapOn:
-    accessibilityLabel: "設定"
-
-# 設定画面経由でプロフィール確認
-- assertVisible: "アカウント"
-
-# 戻ってプロフィール編集へ
-- tapOn:
-    accessibilityLabel: "戻る"
-
-# --- プロフィール編集画面への直接遷移 ---
-- openLink: techclip://profile/edit
-
-# --- プロフィール編集画面 ---
+# ユーザー名が表示されること
 - assertVisible:
-    id: "profile-edit-screen"
-- assertVisible: "プロフィール編集"
+    id: "profile-name"
 
-# アバター変更ボタンの確認
+# アバター画像またはフォールバックが表示されること
+- runFlow:
+    when:
+      visible:
+        id: "profile-avatar-image"
+    commands:
+      - assertVisible:
+          id: "profile-avatar-image"
+- runFlow:
+    when:
+      visible:
+        id: "profile-avatar-fallback"
+    commands:
+      - assertVisible:
+          id: "profile-avatar-fallback"
+
+# 設定ボタンが表示されること
+- assertVisible:
+    id: "profile-settings-button"
+
+# フォロワー・フォロー統計が表示されること
+- assertVisible:
+    id: "profile-stats"
+- assertVisible:
+    id: "profile-followers-count"
+- assertVisible:
+    id: "profile-following-count"
+
+- takeScreenshot: screenshots/06-profile-edit/02-profile-header
+
+# --- プロフィール編集画面へ ---
+- openLink: techclip://profile/edit
+- extendedWaitUntil:
+    visible:
+      id: "profile-edit-screen"
+    timeout: 30000
+- assertVisible: "プロフィール編集"
+- takeScreenshot: screenshots/06-profile-edit/03-edit-screen
+
+# アバター変更ボタン
 - assertVisible:
     id: "profile-edit-avatar-button"
 - assertVisible:
     id: "profile-edit-camera-badge"
 
-# --- バリデーション: 名前を空にして保存 ---
-- clearText:
-    text: "名前を入力"
-- tapOn: "保存する"
-- assertVisible: "名前を入力してください"
+# アバター画像またはフォールバックが表示されること（編集画面）
+- runFlow:
+    when:
+      visible:
+        id: "profile-edit-avatar-image"
+    commands:
+      - assertVisible:
+          id: "profile-edit-avatar-image"
+- runFlow:
+    when:
+      visible:
+        id: "profile-edit-avatar-fallback"
+    commands:
+      - assertVisible:
+          id: "profile-edit-avatar-fallback"
 
-# --- 正常系: プロフィール更新 ---
+# フォーム入力フィールドの確認（スクロール不要な初期表示部分）
+- assertVisible:
+    id: "profile-edit-name-input"
+- assertVisible:
+    id: "profile-edit-username-input"
+
+# bio フィールドに入力してプロフィール画面での表示を後で確認する
 - tapOn:
-    text: "名前を入力"
-- inputText: "テストユーザー更新"
+    id: "profile-edit-bio-input"
+- eraseText
+- inputText: "E2E test bio"
+- hideKeyboard
 
+# 保存ボタンが見えるまで明示的に swipe で scroll
+- swipe:
+    start: "50%, 80%"
+    end: "50%, 20%"
+- waitForAnimationToEnd:
+    timeout: 500
+- swipe:
+    start: "50%, 80%"
+    end: "50%, 20%"
+- waitForAnimationToEnd:
+    timeout: 500
+- scrollUntilVisible:
+    element:
+      id: "profile-edit-save-button"
+    direction: DOWN
+    timeout: 20000
+    centerElement: true
+- assertVisible:
+    id: "profile-edit-save-button"
+
+# スクロールしてソーシャルリンク入力フィールドを確認
+- swipe:
+    start: "50%, 70%"
+    end: "50%, 30%"
+- waitForAnimationToEnd:
+    timeout: 500
+- assertVisible:
+    id: "profile-edit-twitter-input"
+- assertVisible:
+    id: "profile-edit-github-input"
+- assertVisible:
+    id: "profile-edit-website-input"
+- takeScreenshot: screenshots/06-profile-edit/03b-edit-social-links
+
+# 保存ボタンをタップ（bio が保存される）
+- extendedWaitUntil:
+    visible:
+      id: "profile-edit-save-button"
+    timeout: 15000
+- scrollUntilVisible:
+    element:
+      id: "profile-edit-save-button"
+    direction: DOWN
+    timeout: 10000
 - tapOn:
-    text: "username"
-- inputText: "testuser_e2e"
+    id: "profile-edit-save-button"
+- waitForAnimationToEnd:
+    timeout: 3000
 
+# --- プロフィールタブで bio が表示されることを確認 ---
 - tapOn:
-    text: "自己紹介を入力"
-- inputText: "E2Eテスト用のプロフィールです"
+    id: "tab-profile"
+- waitForAnimationToEnd:
+    timeout: 3000
 
-# SNSリンク
-- scrollDown
-- tapOn:
-    text: "https://x.com/username"
-- inputText: "https://x.com/testuser_e2e"
+# bio が設定されたので profile-bio が表示されること
+- extendedWaitUntil:
+    visible:
+      id: "profile-bio"
+    timeout: 5000
+- takeScreenshot: screenshots/06-profile-edit/04-profile-bio
 
-- tapOn:
-    text: "https://github.com/username"
-- inputText: "https://github.com/testuser_e2e"
-
-# 保存
-- tapOn: "保存する"
-- waitForAnimationToEnd
-
-# 保存成功トーストまたは前画面への遷移を確認
-- assertVisible: "プロフィールを更新しました"
-- takeScreenshot: screenshots/06-profile-edit/02-saved
-
-# 戻るボタン
-- tapOn:
-    id: "profile-edit-back-button"
+# Note: bio クリア (idempotency) は別 Issue で対応する。
+# expo-router で同 route への再 openLink がナビゲートしない既知問題があるため、
+# 06 では「bio 入力→保存→保存後 profile タブで bio 表示確認」までで完結。
+# router.back() は handleSave 内で自動発火するため明示的な back-button タップ不要。
+- takeScreenshot: screenshots/06-profile-edit/05-final

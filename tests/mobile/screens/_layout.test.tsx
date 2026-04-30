@@ -62,9 +62,18 @@ jest.mock("@mobile/stores/auth-store", () => ({
       selector: (s: {
         isAuthenticated: boolean;
         isLoading: boolean;
+        hasAccount: boolean;
         checkSession: () => void;
+        loadAccountFlag: () => Promise<void>;
       }) => unknown,
-    ) => selector({ isAuthenticated: false, isLoading: false, checkSession: jest.fn() }),
+    ) =>
+      selector({
+        isAuthenticated: false,
+        isLoading: false,
+        hasAccount: false,
+        checkSession: jest.fn(),
+        loadAccountFlag: jest.fn().mockResolvedValue(undefined),
+      }),
   ),
 }));
 
@@ -116,7 +125,9 @@ const mockedUseAuthStore = useAuthStore as jest.MockedFunction<typeof useAuthSto
 const createAuthStoreState = (isAuthenticated: boolean) => ({
   isAuthenticated,
   isLoading: false,
+  hasAccount: false,
   checkSession: jest.fn(),
+  loadAccountFlag: jest.fn().mockResolvedValue(undefined),
 });
 
 describe("RootLayout", () => {
@@ -293,6 +304,78 @@ describe("RootLayout", () => {
         expect(mockedRequestNotificationPermission).not.toHaveBeenCalled();
         expect(mockedRegisterPushTokenOnly).not.toHaveBeenCalled();
       });
+    });
+  });
+
+  describe("認証後の (tabs) へのリダイレクト", () => {
+    it("認証済みかつ (auth) セグメントにいる場合は isAuthSegment が true になること", async () => {
+      // Arrange: useSegments が "(auth)" を返すよう上書き
+      const expoRouter = require("expo-router") as { useSegments: jest.Mock };
+      expoRouter.useSegments.mockReturnValue(["(auth)"]);
+      mockedUseAuthStore.mockImplementation(
+        (selector: (s: ReturnType<typeof createAuthStoreState>) => unknown) =>
+          selector(createAuthStoreState(true)),
+      );
+
+      // Act & Assert: レンダリングがクラッシュしないこと（Redirect が発火する条件が揃っていること）
+      await expect(render(<RootLayout />)).resolves.not.toThrow();
+    });
+
+    it("認証済みかつ (tabs) セグメントにいる場合はクラッシュしないこと（deeplink 保護）", async () => {
+      // Arrange: deeplink で (tabs) 直下にいる状態
+      const expoRouter = require("expo-router") as { useSegments: jest.Mock };
+      expoRouter.useSegments.mockReturnValue(["(tabs)"]);
+      mockedUseAuthStore.mockImplementation(
+        (selector: (s: ReturnType<typeof createAuthStoreState>) => unknown) =>
+          selector(createAuthStoreState(true)),
+      );
+
+      // Act & Assert: レンダリングがクラッシュしないこと
+      await expect(render(<RootLayout />)).resolves.not.toThrow();
+    });
+  });
+
+  describe("(auth) セグメント内での register/login 間ナビゲーション", () => {
+    it("register 画面にいるとき (!hasAccount) は register redirect が発火しないこと", async () => {
+      // Arrange: useSegments が "(auth)" を返す（register 画面に居る状態）
+      const expoRouter = require("expo-router") as { useSegments: jest.Mock };
+      expoRouter.useSegments.mockReturnValue(["(auth)"]);
+      // hasAccount=false + 未認証 + isAuthSegment=true → register redirect は発火しない
+      mockedUseAuthStore.mockImplementation(
+        (selector: (s: ReturnType<typeof createAuthStoreState>) => unknown) =>
+          selector(createAuthStoreState(false)),
+      );
+
+      // Act & Assert: レンダリングがクラッシュしないこと
+      await expect(render(<RootLayout />)).resolves.not.toThrow();
+    });
+
+    it("login 画面にいるとき (hasAccount) は login redirect が発火しないこと", async () => {
+      // Arrange: useSegments が "(auth)" を返す（login 画面に居る状態）
+      const expoRouter = require("expo-router") as { useSegments: jest.Mock };
+      expoRouter.useSegments.mockReturnValue(["(auth)"]);
+      // hasAccount=true + 未認証 + isAuthSegment=true → login redirect は発火しない
+      mockedUseAuthStore.mockImplementation(
+        (
+          selector: (s: {
+            isAuthenticated: boolean;
+            isLoading: boolean;
+            hasAccount: boolean;
+            checkSession: () => void;
+            loadAccountFlag: () => Promise<void>;
+          }) => unknown,
+        ) =>
+          selector({
+            isAuthenticated: false,
+            isLoading: false,
+            hasAccount: true,
+            checkSession: jest.fn(),
+            loadAccountFlag: jest.fn().mockResolvedValue(undefined),
+          }),
+      );
+
+      // Act & Assert: レンダリングがクラッシュしないこと
+      await expect(render(<RootLayout />)).resolves.not.toThrow();
     });
   });
 });

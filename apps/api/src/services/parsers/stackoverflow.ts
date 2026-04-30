@@ -1,7 +1,7 @@
 import TurndownService from "turndown";
 
 import type { ParsedArticle } from "../../types/article";
-import { calculateReadingTime, TECHCLIP_USER_AGENT } from "./_shared";
+import { calculateReadingTime, htmlFragmentToMarkdown, TECHCLIP_USER_AGENT } from "./_shared";
 
 /** Stack Exchange APIのベースURL */
 const SE_API_BASE_URL = "https://api.stackexchange.com/2.3/questions";
@@ -132,13 +132,13 @@ function buildContent(questionBody: string, acceptedAnswerBody: string | null): 
     codeBlockStyle: "fenced",
   });
 
-  const questionMd = turndown.turndown(questionBody);
+  const questionMd = htmlFragmentToMarkdown(questionBody, turndown);
 
   if (!acceptedAnswerBody) {
     return questionMd;
   }
 
-  const answerMd = turndown.turndown(acceptedAnswerBody);
+  const answerMd = htmlFragmentToMarkdown(acceptedAnswerBody, turndown);
 
   return `${questionMd}\n\n---\n\n## Accepted Answer\n\n${answerMd}`;
 }

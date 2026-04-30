@@ -7,7 +7,8 @@
 SCRIPT="$(cd "$(dirname "$BATS_TEST_FILENAME")/../.." && pwd)/.claude/hooks/direnv-allow-guard.sh"
 
 setup() {
-    TMPDIR=$(mktemp -d)
+  unset GIT_DIR GIT_WORK_TREE
+    TMPDIR="$BATS_TEST_TMPDIR"
     REPO_DIR="$TMPDIR/repo"
     FAKE_BIN="$TMPDIR/bin"
 
@@ -40,9 +41,6 @@ EOF
     ALLOW_FILE="$TMPDIR/allow-ok"
 }
 
-teardown() {
-    rm -rf "$TMPDIR"
-}
 
 run_hook() {
     local cmd="$1"

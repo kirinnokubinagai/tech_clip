@@ -10,6 +10,7 @@ import { createClient } from "@libsql/client";
 import { drizzle } from "drizzle-orm/libsql";
 
 import {
+  accounts,
   articles,
   articleTags,
   follows,
@@ -34,6 +35,12 @@ const TAGS_PER_USER = 5;
 
 /** AIモデル名（seedデータ用） */
 const SEED_AI_MODEL = "gemma-4-26b-a4b";
+
+/** Maestro E2Eテスト用ユーザーのメールアドレス */
+const MAESTRO_TEST_EMAIL = "test+maestro@techclip.app";
+
+/** Maestro E2Eテスト用ユーザーのパスワード */
+const MAESTRO_TEST_PASSWORD = "TestPassword123!";
 
 /** 記事ソース一覧 */
 const ARTICLE_SOURCES = [
@@ -218,6 +225,33 @@ export function buildNotificationData(userId: string, index: number) {
 }
 
 /**
+ * scrypt でパスワードをハッシュ化する（Better Auth 互換）
+ *
+ * @param password - 平文パスワード
+ * @returns salt:hash 形式のハッシュ文字列
+ */
+async function hashPasswordForBetterAuth(password: string): Promise<string> {
+  const { scryptAsync } = await import("@noble/hashes/scrypt.js");
+  const { hex } = await import("@better-auth/utils/hex");
+
+  const N = 16384;
+  const r = 16;
+  const p = 1;
+  const dkLen = 64;
+
+  const saltBytes = crypto.getRandomValues(new Uint8Array(16));
+  const salt = hex.encode(saltBytes);
+  const key = await scryptAsync(password.normalize("NFKC"), salt, {
+    N,
+    p,
+    r,
+    dkLen,
+    maxmem: 128 * N * r * 2,
+  });
+  return `${salt}:${hex.encode(key)}`;
+}
+
+/**
  * DBをシードデータで初期化する（冪等）
  *
  * 既存のシードユーザーが存在する場合はスキップする。
@@ -290,6 +324,30 @@ async function seed() {
     }
   }
   process.stdout.write("フォロー関係を挿入しました\n");
+
+  const maestroUserId = crypto.randomUUID();
+  await db.insert(users).values({
+    id: maestroUserId,
+    email: MAESTRO_TEST_EMAIL,
+    name: "Maestro テストユーザー",
+    username: "maestro_test_user",
+    emailVerified: true,
+    isProfilePublic: true,
+    preferredLanguage: "ja",
+    isPremium: false,
+    freeAiUsesRemaining: 5,
+  });
+
+  const hashedPassword = await hashPasswordForBetterAuth(MAESTRO_TEST_PASSWORD);
+  await db.insert(accounts).values({
+    id: crypto.randomUUID(),
+    userId: maestroUserId,
+    accountId: maestroUserId,
+    providerId: "credential",
+    password: hashedPassword,
+  });
+
+  process.stdout.write(`Maestro テストユーザー (${MAESTRO_TEST_EMAIL}) を挿入しました\n`);
 
   process.stdout.write("シードデータの挿入が完了しました\n");
   client.close();

@@ -4,6 +4,9 @@ set -euo pipefail
 SCRIPT_PATH="${BASH_SOURCE[0]}"
 SCRIPT_DIR="$(cd "$(dirname "${SCRIPT_PATH}")" && pwd)"
 REPO_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
+# shellcheck source=./lib/nix.sh
+source "${SCRIPT_DIR}/lib/nix.sh"
+ensure_nix_shell "${REPO_ROOT}" "$@"
 
 # --- 色付け ---
 if [ -t 1 ]; then
@@ -32,8 +35,10 @@ cleanup() {
     echo "[maestro-local] バックグラウンドビルドプロセスを停止します (PID: ${BUILD_PID})"
     kill "${BUILD_PID}" 2>/dev/null || true
   fi
+  # 残留 Maestro プロセスも終了させる
+  pkill -9 -f "maestro.cli.AppKt" 2>/dev/null || true
 }
-trap cleanup EXIT
+trap cleanup EXIT INT TERM
 
 # --- 使用法 ---
 usage() {
@@ -85,7 +90,7 @@ check_command() {
 }
 
 check_command "pnpm" "nix develop（flake.nix で管理）"
-check_command "maestro" "curl -Ls 'https://get.maestro.mobile.dev' | bash"
+check_command "maestro" "direnv allow または nix develop を実行してください"
 
 if [ "${PLATFORM}" = "ios" ]; then
   check_command "xcrun" "Xcode をインストールしてください（App Store または developer.apple.com）"
@@ -132,24 +137,35 @@ if [ -z "${TIMEOUT_CMD}" ]; then
   echo "${COLOR_YELLOW}警告: timeout/gtimeout コマンドが見つかりません。タイムアウトなしで実行します${COLOR_RESET}"
 fi
 
+# --- 既存 APK をアンインストール（古いビルドを踏まないための保険）---
+APP_ID="${MAESTRO_APP_ID:-com.techclip.app}"
+if [ "${PLATFORM}" = "android" ]; then
+  if adb shell pm list packages 2>/dev/null | grep -q "^package:${APP_ID}$"; then
+    echo "[maestro-local] 既存 APK をアンインストールします: ${APP_ID}"
+    adb uninstall "${APP_ID}" 2>/dev/null || true
+  fi
+fi
+
 # --- dev client ビルド + 起動 ---
 BUILD_LOG="/tmp/maestro-local-${PLATFORM}-build.log"
 echo "[maestro-local] ${PLATFORM} dev client をビルド中..."
 echo "  ログ: ${BUILD_LOG}"
 
+export EXPO_PUBLIC_E2E_MODE="1"
+
 cd "${REPO_ROOT}/apps/mobile"
 
 if [ "${PLATFORM}" = "ios" ]; then
   if [ -n "${TIMEOUT_CMD}" ]; then
-    "${TIMEOUT_CMD}" "${TIMEOUT_BUILD_SEC}" pnpm expo run:ios > "${BUILD_LOG}" 2>&1 &
+    "${TIMEOUT_CMD}" "${TIMEOUT_BUILD_SEC}" pnpm exec expo run:ios > "${BUILD_LOG}" 2>&1 &
   else
-    pnpm expo run:ios > "${BUILD_LOG}" 2>&1 &
+    pnpm exec expo run:ios > "${BUILD_LOG}" 2>&1 &
   fi
 elif [ "${PLATFORM}" = "android" ]; then
   if [ -n "${TIMEOUT_CMD}" ]; then
-    "${TIMEOUT_CMD}" "${TIMEOUT_BUILD_SEC}" pnpm expo run:android --variant debug > "${BUILD_LOG}" 2>&1 &
+    "${TIMEOUT_CMD}" "${TIMEOUT_BUILD_SEC}" pnpm exec expo run:android --variant debug > "${BUILD_LOG}" 2>&1 &
   else
-    pnpm expo run:android --variant debug > "${BUILD_LOG}" 2>&1 &
+    pnpm exec expo run:android --variant debug > "${BUILD_LOG}" 2>&1 &
   fi
 fi
 
@@ -157,9 +173,18 @@ BUILD_PID="$!"
 
 cd "${REPO_ROOT}"
 
-# --- アプリ起動待機 ---
-APP_ID="${MAESTRO_APP_ID:-com.techclip.app}"
-APP_WAIT_MAX_SEC="${MAESTRO_APP_WAIT_MAX_SEC:-300}"
+# --- Phase 1: ビルド完了待機 ---
+echo "[maestro-local] ビルド完了を待機中..."
+wait "${BUILD_PID}"
+BUILD_EXIT=$?
+if [ "${BUILD_EXIT}" -ne 0 ]; then
+  echo "${COLOR_RED}エラー: ビルドが失敗しました（終了コード: ${BUILD_EXIT}）。ログを確認してください: ${BUILD_LOG}${COLOR_RESET}" >&2
+  exit 5
+fi
+echo "${COLOR_GREEN}[maestro-local] ビルド完了${COLOR_RESET}"
+
+# --- Phase 2: アプリ起動待機 ---
+APP_LAUNCH_WAIT_MAX_SEC="${MAESTRO_APP_WAIT_MAX_SEC:-120}"
 APP_WAIT_INTERVAL=5
 APP_WAITED=0
 
@@ -167,7 +192,13 @@ echo "[maestro-local] アプリの起動を待機中..."
 
 while true; do
   if [ "${PLATFORM}" = "ios" ]; then
-    SIMULATOR_UDID="$(xcrun simctl list devices booted 2>/dev/null | grep -E '\(Booted\)' | head -1 | grep -oE '[0-9A-F-]{36}')"
+    SIMULATOR_UDID="$(
+      xcrun simctl list devices booted 2>/dev/null \
+        | grep -E '\(Booted\)' \
+        | head -1 \
+        | grep -oE '[0-9A-F-]{36}' \
+        || true
+    )"
     if [ -n "${SIMULATOR_UDID}" ]; then
       _LAUNCHED=0
       _INNER_WAITED=0
@@ -192,13 +223,8 @@ while true; do
     fi
   fi
 
-  if ! kill -0 "${BUILD_PID}" 2>/dev/null; then
-    echo "${COLOR_RED}エラー: ビルドが失敗しました。ログを確認してください: ${BUILD_LOG}${COLOR_RESET}" >&2
-    exit 5
-  fi
-
-  if [ "${APP_WAITED}" -ge "${APP_WAIT_MAX_SEC}" ]; then
-    echo "${COLOR_RED}エラー: アプリの起動待機がタイムアウトしました（${APP_WAIT_MAX_SEC}秒）${COLOR_RESET}" >&2
+  if [ "${APP_WAITED}" -ge "${APP_LAUNCH_WAIT_MAX_SEC}" ]; then
+    echo "${COLOR_RED}エラー: アプリの起動待機がタイムアウトしました（${APP_LAUNCH_WAIT_MAX_SEC}秒）${COLOR_RESET}" >&2
     echo "  ビルドログを確認してください: ${BUILD_LOG}" >&2
     exit 4
   fi
@@ -225,6 +251,52 @@ if [ "${PLATFORM}" = "android" ]; then
   fi
 fi
 
+# --- Android: ADB port forwarding + Maestro driver 起動 ---
+if [ "${PLATFORM}" = "android" ]; then
+  echo "[maestro-local] ADB port forwarding (7001) をリセットします..."
+  adb forward --remove tcp:7001 2>/dev/null || true
+  adb forward tcp:7001 tcp:7001 2>/dev/null && \
+    echo "${COLOR_GREEN}  ADB forward tcp:7001 → OK${COLOR_RESET}" || \
+    echo "${COLOR_YELLOW}  警告: ADB forward tcp:7001 に失敗しました${COLOR_RESET}"
+
+  # 前回の Maestro Java プロセスが残っていると DADB ポートを掴んだままになるため強制終了する
+  echo "[maestro-local] 残留 Maestro プロセスを確認・終了します..."
+  _MAESTRO_PIDS="$(pgrep -f 'maestro' 2>/dev/null | grep -v "$$" || true)"
+  if [ -n "${_MAESTRO_PIDS}" ]; then
+    echo "${COLOR_YELLOW}  残留プロセス検出: ${_MAESTRO_PIDS} → kill${COLOR_RESET}"
+    # shellcheck disable=SC2086
+    kill -9 ${_MAESTRO_PIDS} 2>/dev/null || true
+    sleep 1
+  fi
+
+  # Maestro driver を instrumentation runner 経由で起動する
+  # 注意: `am start -n dev.mobile.maestro/.android.MaestroDriverApp` は "No activity found" で失敗する
+  if adb shell pm list packages 2>/dev/null | grep -q "dev.mobile.maestro"; then
+    echo "[maestro-local] Maestro driver を instrumentation runner で起動します..."
+    adb shell am instrument -w \
+      dev.mobile.maestro.test/androidx.test.runner.AndroidJUnitRunner \
+      > /dev/null 2>&1 &
+
+    # port 7001 が LISTEN 状態になるまで最大 15 秒待機する
+    _DRIVER_WAITED=0
+    _DRIVER_READY=0
+    while [ "${_DRIVER_WAITED}" -lt 15 ]; do
+      if adb shell ss -tlnp 2>/dev/null | grep -q ":7001"; then
+        _DRIVER_READY=1
+        break
+      fi
+      sleep 1
+      _DRIVER_WAITED=$(( _DRIVER_WAITED + 1 ))
+    done
+
+    if [ "${_DRIVER_READY}" -eq 1 ]; then
+      echo "${COLOR_GREEN}  Maestro driver 起動完了（${_DRIVER_WAITED}秒）${COLOR_RESET}"
+    else
+      echo "${COLOR_YELLOW}  警告: Maestro driver の起動確認がタイムアウトしました（port 7001 未 LISTEN）${COLOR_RESET}"
+    fi
+  fi
+fi
+
 # --- Maestro 実行 ---
 JUNIT_OUTPUT="/tmp/maestro-result.xml"
 DEBUG_OUTPUT="/tmp/maestro-debug"
@@ -237,6 +309,17 @@ maestro test \
   --format junit \
   --output "${JUNIT_OUTPUT}" \
   --debug-output "${DEBUG_OUTPUT}" \
+  --env TEST_EMAIL="${TEST_EMAIL:-test+maestro@techclip.app}" \
+  --env TEST_PASSWORD="${TEST_PASSWORD:-TestPassword123!}" \
+  --env TEST_NAME="${TEST_NAME:-Maestro Test User}" \
+  --env TIMESTAMP="${TIMESTAMP:-$(date +%s)}" \
+  --env API_BASE_URL="${API_BASE_URL:-http://127.0.0.1:18787}" \
+  --env FOLLOWER_EMAIL="${FOLLOWER_EMAIL:-follower+maestro@techclip.app}" \
+  --env FOLLOWER_PASSWORD="${FOLLOWER_PASSWORD:-TestPassword123!}" \
+  --env FOLLOWEE_EMAIL="${FOLLOWEE_EMAIL:-followee+maestro@techclip.app}" \
+  --env FOLLOWEE_PASSWORD="${FOLLOWEE_PASSWORD:-TestPassword123!}" \
+  --env PREMIUM_EMAIL="${PREMIUM_EMAIL:-premium+maestro@techclip.app}" \
+  --env PREMIUM_PASSWORD="${PREMIUM_PASSWORD:-TestPassword123!}" \
   "${FLOW_PATH}" || MAESTRO_EXIT=$?
 
 # --- 結果サマリー ---

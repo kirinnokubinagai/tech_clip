@@ -5,6 +5,7 @@ import { Text, View } from "react-native";
 
 import { useColors } from "@/hooks/use-colors";
 import { useUnreadNotificationCount } from "@/hooks/use-notifications";
+import { DARK_COLORS } from "@/lib/constants";
 
 /** タブアイコンサイズ */
 const TAB_ICON_SIZE = 24;
@@ -23,13 +24,13 @@ export default function TabLayout() {
         tabBarActiveTintColor: colors.primary,
         tabBarInactiveTintColor: colors.textDim,
         tabBarStyle: {
-          backgroundColor: colors.surface,
-          borderTopColor: colors.border,
+          backgroundColor: DARK_COLORS.surface,
+          borderTopColor: DARK_COLORS.border,
         },
         headerStyle: {
-          backgroundColor: colors.surface,
+          backgroundColor: DARK_COLORS.surface,
         },
-        headerTintColor: colors.text,
+        headerTintColor: DARK_COLORS.text,
         headerShadowVisible: false,
         tabBarLabelStyle: {
           fontSize: 11,
@@ -40,6 +41,7 @@ export default function TabLayout() {
         name="index"
         options={{
           title: t("tabs.home"),
+          tabBarButtonTestID: "tab-home",
           tabBarIcon: ({ color }) => <Home size={TAB_ICON_SIZE} color={color} />,
         }}
       />
@@ -47,6 +49,7 @@ export default function TabLayout() {
         name="search"
         options={{
           title: t("tabs.search"),
+          tabBarButtonTestID: "tab-search",
           tabBarIcon: ({ color }) => <Search size={TAB_ICON_SIZE} color={color} />,
         }}
       />
@@ -54,6 +57,7 @@ export default function TabLayout() {
         name="notifications"
         options={{
           title: t("tabs.notifications"),
+          tabBarButtonTestID: "tab-notifications",
           tabBarIcon: ({ color }) => (
             <View>
               <Bell size={TAB_ICON_SIZE} color={color} />
@@ -81,6 +85,7 @@ export default function TabLayout() {
         name="profile"
         options={{
           title: t("tabs.profile"),
+          tabBarButtonTestID: "tab-profile",
           tabBarIcon: ({ color }) => <User size={TAB_ICON_SIZE} color={color} />,
         }}
       />
@@ -88,6 +93,7 @@ export default function TabLayout() {
         name="settings"
         options={{
           title: t("tabs.settings"),
+          tabBarButtonTestID: "tab-settings",
           tabBarIcon: ({ color }) => <Settings size={TAB_ICON_SIZE} color={color} />,
         }}
       />

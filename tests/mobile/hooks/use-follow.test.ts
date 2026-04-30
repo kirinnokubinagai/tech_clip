@@ -241,14 +241,14 @@ describe("useFollowing", () => {
   describe("異常系", () => {
     it("APIエラー時にエラー状態になること", async () => {
       // Arrange
-      mockedApiFetch.mockRejectedValue(new Error("サーバーエラーが発生しました"));
+      mockedApiFetch.mockRejectedValue(new Error("サーバーエラーが発生しました。"));
 
       // Act
       const { result } = await renderHook(() => useFollowing(), { wrapper: Wrapper });
 
       // Assert
       await waitFor(() => expect(result.current.isError).toBe(true));
-      expect(result.current.error?.message).toBe("サーバーエラーが発生しました");
+      expect(result.current.error?.message).toBe("サーバーエラーが発生しました。");
     });
   });
 });

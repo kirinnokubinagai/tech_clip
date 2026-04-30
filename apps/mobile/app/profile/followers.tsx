@@ -86,7 +86,7 @@ function UserListItem({ item, onPress, userProfileLabel }: UserListItemProps) {
 
   return (
     <Pressable
-      testID={`user-item-${item.id}`}
+      testID="follower-list-item"
       onPress={handlePress}
       accessibilityRole="button"
       accessibilityLabel={userProfileLabel}

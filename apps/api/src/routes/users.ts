@@ -5,11 +5,16 @@ import { z } from "zod";
 import type { Auth } from "../auth";
 import type { Database } from "../db";
 import { accounts, users } from "../db/schema";
+import type { User } from "../db/schema/users";
 import {
   AUTH_ERROR_CODE,
   AUTH_ERROR_MESSAGE,
   AUTH_INVALID_CODE,
   AUTH_INVALID_MESSAGE,
+  DUPLICATE_ERROR_CODE,
+  INTERNAL_ERROR_CODE,
+  INVALID_REQUEST_ERROR_CODE,
+  NOT_FOUND_ERROR_CODE,
   VALIDATION_ERROR_CODE,
   VALIDATION_ERROR_MESSAGE,
 } from "../lib/error-codes";
@@ -23,7 +28,11 @@ import {
   HTTP_UNAUTHORIZED,
   HTTP_UNPROCESSABLE_ENTITY,
 } from "../lib/http-status";
+import { createLogger } from "../lib/logger";
 import { processAvatarImage, uploadAvatarToR2, validateImageFile } from "../services/imageUpload";
+
+/** ユーザールート用ロガー */
+const logger = createLogger();
 
 /** 名前最大文字数 */
 const NAME_MAX_LENGTH = 100;
@@ -51,9 +60,6 @@ const PASSWORD_MIN_LENGTH = 8;
 
 /** パスワード最大文字数 */
 const PASSWORD_MAX_LENGTH = 128;
-
-/** パスワード変更成功メッセージ */
-const PASSWORD_CHANGE_SUCCESS_MESSAGE = "パスワードを変更しました。";
 
 /** パスワード変更スキーマ */
 const ChangePasswordSchema = z.object({
@@ -134,8 +140,8 @@ type UsersRouteOptions = {
  * @param user - ユーザーデータ
  * @returns 機密情報を除いたユーザーデータ
  */
-function omitSensitiveFields(user: Record<string, unknown>): Record<string, unknown> {
-  const result = { ...user };
+function omitSensitiveFields(user: User): Record<string, unknown> {
+  const result: Record<string, unknown> = { ...user };
   for (const field of SENSITIVE_FIELDS) {
     delete result[field];
   }
@@ -181,7 +187,7 @@ export function createUsersRoute(options: UsersRouteOptions) {
         {
           success: false,
           error: {
-            code: "NOT_FOUND",
+            code: NOT_FOUND_ERROR_CODE,
             message: "ユーザーが見つかりません",
           },
         },
@@ -191,7 +197,7 @@ export function createUsersRoute(options: UsersRouteOptions) {
 
     return c.json({
       success: true,
-      data: omitSensitiveFields(found as unknown as Record<string, unknown>),
+      data: omitSensitiveFields(found),
     });
   });
 
@@ -254,12 +260,12 @@ export function createUsersRoute(options: UsersRouteOptions) {
         .from(users)
         .where(eq(users.username, updateData.username));
 
-      if (existing && (existing as unknown as Record<string, unknown>).id !== userId) {
+      if (existing && existing.id !== userId) {
         return c.json(
           {
             success: false,
             error: {
-              code: "DUPLICATE",
+              code: DUPLICATE_ERROR_CODE,
               message: "このユーザー名はすでに使用されています",
             },
           },
@@ -276,7 +282,7 @@ export function createUsersRoute(options: UsersRouteOptions) {
 
     return c.json({
       success: true,
-      data: omitSensitiveFields(updated as unknown as Record<string, unknown>),
+      data: omitSensitiveFields(updated),
     });
   });
 
@@ -305,7 +311,7 @@ export function createUsersRoute(options: UsersRouteOptions) {
         {
           success: false,
           error: {
-            code: "INVALID_REQUEST",
+            code: INVALID_REQUEST_ERROR_CODE,
             message: "リクエストの解析に失敗しました",
           },
         },
@@ -319,7 +325,7 @@ export function createUsersRoute(options: UsersRouteOptions) {
         {
           success: false,
           error: {
-            code: "INVALID_REQUEST",
+            code: INVALID_REQUEST_ERROR_CODE,
             message: "avatarフィールドにファイルを指定してください",
           },
         },
@@ -333,7 +339,7 @@ export function createUsersRoute(options: UsersRouteOptions) {
         {
           success: false,
           error: {
-            code: "INVALID_REQUEST",
+            code: INVALID_REQUEST_ERROR_CODE,
             message: validation.error ?? "ファイル形式が正しくありません",
           },
         },
@@ -347,7 +353,7 @@ export function createUsersRoute(options: UsersRouteOptions) {
         {
           success: false,
           error: {
-            code: "INVALID_REQUEST",
+            code: INVALID_REQUEST_ERROR_CODE,
             message: processedImage.error,
           },
         },
@@ -360,7 +366,7 @@ export function createUsersRoute(options: UsersRouteOptions) {
         {
           success: false,
           error: {
-            code: "INTERNAL_ERROR",
+            code: INTERNAL_ERROR_CODE,
             message: "サーバーエラーが発生しました",
           },
         },
@@ -369,10 +375,7 @@ export function createUsersRoute(options: UsersRouteOptions) {
     }
 
     const [currentUser] = await db.select().from(users).where(eq(users.id, userId));
-    const oldAvatarUrl = (currentUser as unknown as Record<string, unknown>)?.avatarUrl as
-      | string
-      | null
-      | undefined;
+    const oldAvatarUrl = currentUser?.avatarUrl;
 
     let avatarUrl: string;
     try {
@@ -387,7 +390,7 @@ export function createUsersRoute(options: UsersRouteOptions) {
         {
           success: false,
           error: {
-            code: "INTERNAL_ERROR",
+            code: INTERNAL_ERROR_CODE,
             message: "アバター画像のアップロードに失敗しました",
           },
         },
@@ -398,7 +401,7 @@ export function createUsersRoute(options: UsersRouteOptions) {
     if (oldAvatarUrl) {
       const oldKey = oldAvatarUrl.replace(`${r2PublicUrl}/`, "");
       await r2Bucket.delete(oldKey).catch((err) => {
-        console.warn("旧アバター画像の削除に失敗しました", { oldKey, error: err });
+        logger.warn("旧アバター画像の削除に失敗しました", { oldKey, error: err });
       });
     }
 
@@ -410,7 +413,7 @@ export function createUsersRoute(options: UsersRouteOptions) {
 
     return c.json({
       success: true,
-      data: omitSensitiveFields(updated as unknown as Record<string, unknown>),
+      data: omitSensitiveFields(updated),
     });
   });
 
@@ -500,7 +503,7 @@ export function createUsersRoute(options: UsersRouteOptions) {
     return c.json(
       {
         success: true,
-        data: { message: PASSWORD_CHANGE_SUCCESS_MESSAGE },
+        data: { message: "パスワードを変更しました" },
       },
       HTTP_OK,
     );
@@ -532,7 +535,7 @@ export function createUsersRoute(options: UsersRouteOptions) {
         {
           success: false,
           error: {
-            code: "INTERNAL_ERROR",
+            code: INTERNAL_ERROR_CODE,
             message: "アカウントの削除に失敗しました",
           },
         },

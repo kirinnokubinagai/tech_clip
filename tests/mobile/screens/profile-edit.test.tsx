@@ -116,7 +116,7 @@ describe("ProfileEditScreen", () => {
 
       // Assert
       await waitFor(() => {
-        expect(getByText("プロフィールの取得に失敗しました")).toBeDefined();
+        expect(getByText("プロフィールの取得に失敗しました。")).toBeDefined();
       });
     });
   });
@@ -135,7 +135,7 @@ describe("ProfileEditScreen", () => {
       await waitFor(() => {
         expect(getByPlaceholderText("名前を入力").props.value).toBe("テストユーザー");
       });
-      await fireEvent.press(getByTestId("button"));
+      await fireEvent.press(getByTestId("profile-edit-save-button"));
 
       // Assert
       await waitFor(() => {
@@ -156,12 +156,12 @@ describe("ProfileEditScreen", () => {
       await waitFor(() => {
         expect(getByPlaceholderText("名前を入力").props.value).toBe("テストユーザー");
       });
-      await fireEvent.press(getByTestId("button"));
+      await fireEvent.press(getByTestId("profile-edit-save-button"));
 
       // Assert
       await waitFor(() => {
         expect(Toast).toHaveBeenLastCalledWith(
-          expect.objectContaining({ visible: true, message: "プロフィールを更新しました" }),
+          expect.objectContaining({ visible: true, message: "プロフィールを更新しました。" }),
           undefined,
         );
       });
@@ -181,7 +181,7 @@ describe("ProfileEditScreen", () => {
       await waitFor(() => {
         expect(getByPlaceholderText("名前を入力").props.value).toBe("テストユーザー");
       });
-      await fireEvent.press(getByTestId("button"));
+      await fireEvent.press(getByTestId("profile-edit-save-button"));
 
       // Assert
       await waitFor(() => {
@@ -204,11 +204,11 @@ describe("ProfileEditScreen", () => {
       });
       const nameInput = getByPlaceholderText("名前を入力");
       await fireEvent.changeText(nameInput, "");
-      await fireEvent.press(getByTestId("button"));
+      await fireEvent.press(getByTestId("profile-edit-save-button"));
 
       // Assert
       await waitFor(() => {
-        expect(getByText("名前を入力してください")).toBeDefined();
+        expect(getByText("名前を入力してください。")).toBeDefined();
       });
     });
   });
@@ -221,7 +221,7 @@ describe("ProfileEditScreen", () => {
         .mockResolvedValueOnce({ success: true, data: profileWithDifferentUsername })
         .mockResolvedValueOnce({
           success: false,
-          error: { code: "DUPLICATE", message: "このユーザー名はすでに使用されています" },
+          error: { code: "DUPLICATE", message: "このユーザー名はすでに使用されています。" },
         });
 
       // Act
@@ -234,11 +234,11 @@ describe("ProfileEditScreen", () => {
 
       const usernameInput = getByPlaceholderText("username");
       await fireEvent.changeText(usernameInput, "newusername");
-      await fireEvent.press(getByTestId("button"));
+      await fireEvent.press(getByTestId("profile-edit-save-button"));
 
       // Assert
       await waitFor(() => {
-        expect(getByText("このユーザー名はすでに使用されています")).toBeDefined();
+        expect(getByText("このユーザー名はすでに使用されています。")).toBeDefined();
       });
     });
   });
@@ -274,7 +274,7 @@ describe("ProfileEditScreen", () => {
       await waitFor(() => {
         expect(ImagePicker.launchImageLibraryAsync).toHaveBeenCalled();
       });
-      await fireEvent.press(getByTestId("button"));
+      await fireEvent.press(getByTestId("profile-edit-save-button"));
 
       // Assert
       await waitFor(() => {
@@ -300,7 +300,7 @@ describe("ProfileEditScreen", () => {
       });
 
       const initialCallCount = apiFetch.mock.calls.length;
-      await fireEvent.press(getByTestId("button"));
+      await fireEvent.press(getByTestId("profile-edit-save-button"));
 
       // Assert
       await waitFor(() => {

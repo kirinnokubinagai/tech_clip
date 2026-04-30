@@ -24,6 +24,7 @@ export const notifications = sqliteTable(
   (table) => [
     index("idx_notifications_user").on(table.userId),
     index("idx_notifications_user_unread").on(table.userId, table.isRead),
+    index("idx_notifications_recipient_created").on(table.userId, table.createdAt),
   ],
 );
 

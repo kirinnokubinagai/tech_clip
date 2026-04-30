@@ -1,7 +1,7 @@
 import { DEFAULT_GEMMA_MODEL_TAG, WORKERS_AI_GEMMA_MODEL_ID } from "../lib/ai-model";
 import { LANGUAGE_DISPLAY_NAMES } from "../lib/language-display-names";
 import { createLogger } from "../lib/logger";
-import { isWorkersAiTextResponse } from "../lib/workers-ai";
+import { extractTextResponse, isWorkersAiTextResponse } from "../lib/workers-ai";
 import type { SUPPORTED_LANGUAGES } from "../validators/ai";
 
 /** 要約生成結果 */
@@ -50,11 +50,8 @@ const HTML_ENTITIES: Record<string, string> = {
  * @returns サニタイズ済みのプレーンテキスト（MAX_CONTENT_LENGTH 以内）
  */
 export function sanitizeArticleContent(content: string): string {
-  const withoutScript = content.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, " ");
-  const withoutStyle = withoutScript.replace(
-    /<style\b[^<]*(?:(?!<\/style>)<[^<]*)*<\/style>/gi,
-    " ",
-  );
+  const withoutScript = content.replace(/<script[\s\S]*?<\/script>/gi, " ");
+  const withoutStyle = withoutScript.replace(/<style[\s\S]*?<\/style>/gi, " ");
   const withoutTags = withoutStyle.replace(/<[^>]+>/g, " ");
   const decoded = withoutTags.replace(
     /&amp;|&lt;|&gt;|&quot;|&#039;|&apos;|&nbsp;/g,
@@ -105,7 +102,7 @@ Key Points:
     }
 
     return {
-      summary: result.response,
+      summary: extractTextResponse(result),
       model: resolvedModelTag,
     };
   } catch (error) {

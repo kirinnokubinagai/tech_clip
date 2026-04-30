@@ -73,6 +73,16 @@ function createTestApp(
   return app;
 }
 
+/**
+ * テスト用 cursor エンコードヘルパー（base64url）
+ */
+function makeTestCursor(createdAt: string, id: string): string {
+  return btoa(JSON.stringify({ createdAt, id }))
+    .replace(/\+/g, "-")
+    .replace(/\//g, "_")
+    .replace(/=/g, "");
+}
+
 describe("公開記事API 統合テスト", () => {
   let mockQueryFn: ReturnType<typeof vi.fn<PublicArticlesQueryFn>>;
   let mockUserExistsFn: ReturnType<typeof vi.fn<UserExistsFn>>;
@@ -181,7 +191,7 @@ describe("公開記事API 統合テスト", () => {
       // Arrange
       mockQueryFn.mockResolvedValue([]);
       const app = createTestApp(mockQueryFn, mockUserExistsFn);
-      const cursor = "pub_article_003";
+      const cursor = makeTestCursor("2024-01-03T00:00:00.000Z", "pub_article_003");
       const req = new Request(`http://localhost/users/public_user_01/articles?cursor=${cursor}`);
 
       // Act

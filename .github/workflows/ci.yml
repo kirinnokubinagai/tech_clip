@@ -10,7 +10,7 @@ on:
       - '.omc/**'
       - 'tests/e2e/maestro/**'
   pull_request:
-    branches: [main, 'issue/**']
+    branches: [main, stage, 'issue/**']
 
 # デフォルトで全権限を read-only にし、各ジョブで必要な権限のみを上書きする
 permissions: read-all
@@ -26,7 +26,6 @@ jobs:
     if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    continue-on-error: true  # トークン制限による失敗は後続をブロックしない
     permissions:
       contents: read
       pull-requests: write
@@ -66,12 +65,13 @@ jobs:
               gh pr edit ${{ github.event.pull_request.number }} --add-label "AI Review: NEEDS WORK" --remove-label "AI Review: PASS"
 
             重要: gh pr review --approve は絶対に実行しないでください。
-      # claude-review が API エラー等で失敗しても check-label は always() で実行される。
-      # ラベルなし（レビュー未実施 or トークン制限失敗）は PASS 扱いとする設計。
+      # claude-review が fail した場合は check-label は always() で実行される。
+      # ラベル "AI Review: NEEDS WORK" が付いていれば NEEDS WORK 扱いとする。
       # - push イベントでは claude-review ジョブ自体が skipped になるため needs_work は空文字になる。
       #   空文字 != 'true' は true となり PASS 扱いになる（意図した動作）。
-      # - PR イベントで claude-review が continue-on-error により失敗した場合も、
-      #   "AI Review: NEEDS WORK" ラベルが付いていなければ PASS 扱いになる（意図した動作）。
+      # - ワークフローファイル変更 PR では claude-review が GitHub セキュリティ制限で失敗するが、
+      #   その場合は ci-gate が claude-review failure を検知して "manual review required" として扱う。
+      #   （reviewer エージェントが手動モードに遷移する）
       # NG の場合は claude-review ステップがラベル "AI Review: NEEDS WORK" を付ける。
       - id: check-label
         if: always()
@@ -93,6 +93,7 @@ jobs:
           fi
 
   # ── Step 2: 変更ファイル検出（claude-review に依存しない）─────────────────
+  # パス分類は .claude/gate-rules.json の ci_path_filters と同期させること。
   changes:
     runs-on: ubuntu-latest
     timeout-minutes: 5
@@ -110,15 +111,16 @@ jobs:
             echo "hooks=true" >> "$GITHUB_OUTPUT"
             exit 0
           fi
-          # .claude/ 配下（agents/・rules/ 等の設定ファイル群）、docs/ 配下、および *.md ファイルは
-          # コードチェックの対象外とする。これらはドキュメントやエージェント定義・プロジェクトルールであり
-          # lint/typecheck/test には関係しないためスキップすることで不要な CI 実行を避ける。
-          # hooks/ のみ別途 hooks-test ジョブで検証する（下記 HOOKS_CHANGED 参照）。
+          # gate-rules.json の review_gate.auto_pass_paths に相当するものはスキップする。
+          # *.md, docs/**, *.png, *.jpg 等の doc-only 変更は code=false → checks/zap をスキップ。
           CHANGED=$(git diff --name-only "origin/${{ github.base_ref }}...HEAD" 2>/dev/null \
-            | grep -cvE '^(\.claude/|docs/|.*\.md$)' || echo 0)
+            | grep -cvE '^(docs/|.*\.(md|png|jpg|svg|ico|webp)$|\.gitignore$|.+/CHANGELOG\.md$|.+/LICENSE.*$)' \
+            || echo 0)
           echo "code=$([ "${CHANGED:-0}" -gt 0 ] && echo 'true' || echo 'false')" >> "$GITHUB_OUTPUT"
+          # gate-rules.json の ci_path_filters.hooks_test と同期:
+          # .claude/hooks/**, scripts/**, tests/hooks/** のいずれかが変更された場合に hooks=true
           HOOKS_CHANGED=$(git diff --name-only "origin/${{ github.base_ref }}...HEAD" 2>/dev/null \
-            | grep -cE '^\.claude/hooks/' || echo 0)
+            | grep -cE '^(\.claude/hooks/|scripts/|tests/hooks/)' || echo 0)
           echo "hooks=$([ "${HOOKS_CHANGED:-0}" -gt 0 ] && echo 'true' || echo 'false')" >> "$GITHUB_OUTPUT"
 
   # ── Step 3: コードチェック（Nix 1回 → lint/typecheck/test/audit 順次）──────
@@ -134,6 +136,16 @@ jobs:
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v4.2.2
+      - name: Free disk space
+        uses: jlumbroso/free-disk-space@54081f138730dfa15788a46383842cd2f914a1be  # v1.3.1
+        with:
+          tool-cache: false
+          android: false
+          dotnet: true
+          haskell: true
+          large-packages: true
+          docker-images: true
+          swap-storage: false
       - uses: ./.github/actions/nix-setup
       - name: 実行権限チェック
         run: nix develop .#ci --command ./scripts/check-executable-shell-files.sh
@@ -143,6 +155,8 @@ jobs:
         run: nix develop .#ci --command pnpm typecheck
       - name: Test
         run: nix develop .#ci --command ./scripts/run-and-fail-on-stderr.sh pnpm test
+      - name: Bats
+        run: nix develop .#ci --command bats tests/scripts/ tests/hooks/
       # Audit ステップは npm が audit エンドポイント (quick / bulk) を 410 Gone に
       # したため pnpm audit が CI 上で常に失敗するようになった。pnpm 側が新 bulk
       # advisory API に追従するまで一時無効化する。
@@ -162,22 +176,35 @@ jobs:
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v4.2.2
+      - name: Free disk space
+        uses: jlumbroso/free-disk-space@54081f138730dfa15788a46383842cd2f914a1be  # v1.3.1
+        with:
+          tool-cache: false
+          android: false
+          dotnet: true
+          haskell: true
+          large-packages: true
+          docker-images: true
+          swap-storage: false
       - uses: ./.github/actions/nix-setup
       - name: 実行権限チェック
         run: nix develop .#ci --command ./scripts/check-executable-shell-files.sh
       - name: hooksテスト
         run: nix develop .#ci --command bats tests/hooks/
 
-  # ── Step 5（並列）: ZAP セキュリティスキャン（PR + コード変更時のみ）────
+  # ── Step 5（並列）: ZAP セキュリティスキャン（stage→main の PR / コード変更時のみ）─────────
+  # feature→stage PR では skip (CI が軽量に保たれる)。security gate は stage→main の 1 か所で十分。
   zap:
     needs: [claude-review, changes]
     if: |
       always() &&
-      github.event_name == 'pull_request' &&
       needs.changes.outputs.code == 'true' &&
-      needs.claude-review.outputs.needs_work != 'true'
+      needs.claude-review.outputs.needs_work != 'true' &&
+      github.base_ref == 'main'
     runs-on: ubuntu-latest
     timeout-minutes: 45
+    permissions:
+      contents: read
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v4.2.2
       - uses: ./.github/actions/nix-setup

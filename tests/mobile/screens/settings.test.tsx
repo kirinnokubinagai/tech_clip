@@ -3,9 +3,15 @@ import { fireEvent, render } from "@testing-library/react-native";
 import { Alert } from "react-native";
 
 const mockPush = jest.fn();
+const mockConfirm = jest.fn();
 
 jest.mock("expo-router", () => ({
   useRouter: () => ({ push: mockPush }),
+}));
+
+jest.mock("@mobile/components/ConfirmDialog", () => ({
+  confirm: (...args: unknown[]) => mockConfirm(...args),
+  ConfirmDialogHost: () => null,
 }));
 
 const mockSignOut = jest.fn();
@@ -95,39 +101,39 @@ describe("SettingsScreen", () => {
       await fireEvent.press(getByTestId("settings-logout-button"));
 
       // Assert
-      expect(Alert.alert).toHaveBeenCalledTimes(1);
-      expect(Alert.alert).toHaveBeenCalledWith("ログアウト", expect.any(String), expect.any(Array));
+      expect(mockConfirm).toHaveBeenCalledTimes(1);
+      expect(mockConfirm).toHaveBeenCalledWith(
+        expect.objectContaining({ title: "ログアウト", message: expect.any(String) }),
+      );
     });
 
-    it("確認ダイアログのキャンセルボタンを押してもサインアウトが実行されないこと", async () => {
+    it("確認ダイアログのキャンセルでサインアウトが実行されないこと", async () => {
       // Arrange
       const { getByTestId } = await render(<SettingsScreen />);
       await fireEvent.press(getByTestId("settings-logout-button"));
 
-      // Act
-      const buttons = (Alert.alert as jest.Mock).mock.calls[0][2];
-      const cancelButton = buttons.find((b: { style: string }) => b.style === "cancel");
-      cancelButton.onPress?.();
+      // Act: confirm に渡された onCancel を呼ぶ (なければ no-op = 何もしない)
+      const callArg = mockConfirm.mock.calls[0][0] as { onCancel?: () => void };
+      callArg.onCancel?.();
 
       // Assert
       expect(mockSignOut).not.toHaveBeenCalled();
     });
 
-    it("確認ダイアログの確認ボタンを押すとサインアウトが実行されること", async () => {
+    it("確認ダイアログの確認ボタンでサインアウトが実行されること", async () => {
       // Arrange
       const { getByTestId } = await render(<SettingsScreen />);
       await fireEvent.press(getByTestId("settings-logout-button"));
 
       // Act
-      const buttons = (Alert.alert as jest.Mock).mock.calls[0][2];
-      const confirmButton = buttons.find((b: { style: string }) => b.style === "destructive");
-      confirmButton.onPress();
+      const callArg = mockConfirm.mock.calls[0][0] as { onConfirm: () => void };
+      callArg.onConfirm();
 
       // Assert
       expect(mockSignOut).toHaveBeenCalledTimes(1);
     });
 
-    it("確認ダイアログのボタンがdestructiveスタイルであること", async () => {
+    it("確認ダイアログが danger バリアントで呼ばれること", async () => {
       // Arrange
       const { getByTestId } = await render(<SettingsScreen />);
 
@@ -135,9 +141,7 @@ describe("SettingsScreen", () => {
       await fireEvent.press(getByTestId("settings-logout-button"));
 
       // Assert
-      const buttons = (Alert.alert as jest.Mock).mock.calls[0][2];
-      const confirmButton = buttons.find((b: { style: string }) => b.style === "destructive");
-      expect(confirmButton).toBeDefined();
+      expect(mockConfirm).toHaveBeenCalledWith(expect.objectContaining({ variant: "danger" }));
     });
   });
 
@@ -158,44 +162,43 @@ describe("SettingsScreen", () => {
       await fireEvent.press(getByTestId("settings-delete-account-button"));
 
       // Assert
-      expect(Alert.alert).toHaveBeenCalledTimes(1);
-      expect(Alert.alert).toHaveBeenCalledWith(
-        "アカウントを削除する",
-        expect.any(String),
-        expect.any(Array),
+      expect(mockConfirm).toHaveBeenCalledTimes(1);
+      expect(mockConfirm).toHaveBeenCalledWith(
+        expect.objectContaining({
+          title: "アカウントを削除する",
+          message: expect.any(String),
+        }),
       );
     });
 
-    it("確認ダイアログのキャンセルボタンを押してもアカウント削除が実行されないこと", async () => {
+    it("確認ダイアログのキャンセルでアカウント削除が実行されないこと", async () => {
       // Arrange
       const { getByTestId } = await render(<SettingsScreen />);
       await fireEvent.press(getByTestId("settings-delete-account-button"));
 
       // Act
-      const buttons = (Alert.alert as jest.Mock).mock.calls[0][2];
-      const cancelButton = buttons.find((b: { style: string }) => b.style === "cancel");
-      cancelButton.onPress?.();
+      const callArg = mockConfirm.mock.calls[0][0] as { onCancel?: () => void };
+      callArg.onCancel?.();
 
       // Assert
       expect(mockDeleteAccount).not.toHaveBeenCalled();
     });
 
-    it("確認ダイアログの確認ボタンを押すとアカウント削除が実行されること", async () => {
+    it("確認ダイアログの確認ボタンでアカウント削除が実行されること", async () => {
       // Arrange
       mockDeleteAccount.mockResolvedValue(undefined);
       const { getByTestId } = await render(<SettingsScreen />);
       await fireEvent.press(getByTestId("settings-delete-account-button"));
 
       // Act
-      const buttons = (Alert.alert as jest.Mock).mock.calls[0][2];
-      const confirmButton = buttons.find((b: { style: string }) => b.style === "destructive");
-      confirmButton.onPress();
+      const callArg = mockConfirm.mock.calls[0][0] as { onConfirm: () => void };
+      callArg.onConfirm();
 
       // Assert
       expect(mockDeleteAccount).toHaveBeenCalledTimes(1);
     });
 
-    it("確認ダイアログの確認ボタンがdestructiveスタイルであること", async () => {
+    it("確認ダイアログが danger バリアントで呼ばれること", async () => {
       // Arrange
       const { getByTestId } = await render(<SettingsScreen />);
 
@@ -203,9 +206,7 @@ describe("SettingsScreen", () => {
       await fireEvent.press(getByTestId("settings-delete-account-button"));
 
       // Assert
-      const buttons = (Alert.alert as jest.Mock).mock.calls[0][2];
-      const confirmButton = buttons.find((b: { style: string }) => b.style === "destructive");
-      expect(confirmButton).toBeDefined();
+      expect(mockConfirm).toHaveBeenCalledWith(expect.objectContaining({ variant: "danger" }));
     });
   });
 });

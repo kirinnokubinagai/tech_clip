@@ -18,6 +18,41 @@ export type { ArticleSource };
 /** ページネーションのデフォルト取得件数 */
 export const PAGINATION_LIMIT = 20;
 
+/**
+ * 記事サムネイル画像の高さ（px）
+ * ArticleCard と article/save 画面で共用する
+ */
+export const ARTICLE_THUMBNAIL_HEIGHT = 160;
+
+/**
+ * WebView で許可するオリジンのホワイトリスト
+ * 対応しているコンテンツソースのドメインのみ許可する
+ */
+export const WEBVIEW_ORIGIN_WHITELIST = [
+  "https://zenn.dev/*",
+  "https://qiita.com/*",
+  "https://note.com/*",
+  "https://b.hatena.ne.jp/*",
+  "https://hatenablog.com/*",
+  "https://*.hatenablog.com/*",
+  "https://dev.to/*",
+  "https://medium.com/*",
+  "https://news.ycombinator.com/*",
+  "https://hashnode.com/*",
+  "https://*.hashnode.dev/*",
+  "https://github.com/*",
+  "https://stackoverflow.com/*",
+  "https://www.reddit.com/*",
+  "https://speakerdeck.com/*",
+  "https://www.freecodecamp.org/*",
+  "https://blog.logrocket.com/*",
+  "https://css-tricks.com/*",
+  "https://www.smashingmagazine.com/*",
+  "https://twitter.com/*",
+  "https://x.com/*",
+  "https://www.youtube.com/*",
+] as const;
+
 /** TanStack Queryのstale判定時間（5分・ミリ秒） */
 export const STALE_TIME_MS = 5 * 60 * 1000;
 
@@ -46,7 +81,6 @@ type ThemeColors = {
   info: string;
   dangerSurface: string;
   successSurface: string;
-  accent: string;
   error: string;
   success: string;
   warning: string;
@@ -62,21 +96,12 @@ type ThemeColors = {
  * - SEMANTIC_COLORS（共有）→ DARK_COLORS（ダークテーマ）にスプレッド
  * - error / success / warning / favorite / neutral / white はここで一元管理
  *
- * ## accent トークンについて
- * 現在 accent = "#14b8a6" は Primary と同値。
- * TODO(#855): Primary に一本化し accent トークンを削除する（docs/mobile-theme.md 移行タスク#2 参照）
- *
  * ## 新色を追加するルール
  * - 既存トークンでカバーできない意味的状態が新たに生まれたときのみ追加する
  * - グラデーション・ネオン・蛍光系カラーは禁止（AIっぽい印象を避けるため）
  * - 追加時は docs/mobile-theme.md にも記載すること
  */
 const SEMANTIC_COLORS = {
-  /**
-   * アクセントカラー（Primary と同値）
-   * @deprecated Primary に一本化予定。docs/mobile-theme.md 移行タスク#2 参照
-   */
-  accent: "#14b8a6",
   /** エラー色（危険操作・失敗状態） */
   error: "#ef4444",
   /** 成功色（完了・OK状態） */

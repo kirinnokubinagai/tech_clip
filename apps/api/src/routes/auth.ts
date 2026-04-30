@@ -18,6 +18,7 @@ import {
   HTTP_UNPROCESSABLE_ENTITY,
 } from "../lib/http-status";
 import { createLogger } from "../lib/logger";
+import { generateRefreshToken, hashTokenSha256 } from "../lib/token-utils";
 
 /**
  * Better Auth インスタンスの型定義
@@ -46,39 +47,11 @@ type AuthRouteOptions = {
   getAuth: () => AuthInstance;
 };
 
-/** リフレッシュトークンの文字数 */
-const REFRESH_TOKEN_LENGTH = 48;
-
 /** セッション期限切れエラーメッセージ */
 const REFRESH_TOKEN_EXPIRED_MESSAGE = "セッションの有効期限が切れました。再度ログインしてください";
 
 /** 認証ルート用ロガー */
 const logger = createLogger();
-
-/**
- * リフレッシュトークンを SHA-256 でハッシュ化する
- *
- * @param token - 平文のリフレッシュトークン
- * @returns 16進文字列のハッシュ値
- */
-async function hashRefreshToken(token: string): Promise<string> {
-  const encoded = new TextEncoder().encode(token);
-  const digest = await crypto.subtle.digest("SHA-256", encoded);
-  return Array.from(new Uint8Array(digest), (value) => value.toString(16).padStart(2, "0")).join(
-    "",
-  );
-}
-
-/**
- * ランダムなリフレッシュトークン文字列を生成する
- *
- * @returns 平文のリフレッシュトークン
- */
-function generateRefreshToken(): string {
-  const bytes = new Uint8Array(REFRESH_TOKEN_LENGTH / 2);
-  crypto.getRandomValues(bytes);
-  return Array.from(bytes, (b) => b.toString(16).padStart(2, "0")).join("");
-}
 
 /**
  * セッションに紐づくリフレッシュトークンを発行して保存する
@@ -92,7 +65,7 @@ async function createRefreshTokenRecord(
   session: { id: string; userId: string; expiresAt: string },
 ): Promise<string> {
   const refreshToken = generateRefreshToken();
-  const tokenHash = await hashRefreshToken(refreshToken);
+  const tokenHash = await hashTokenSha256(refreshToken);
 
   await db.insert(refreshTokens).values({
     id: crypto.randomUUID(),
@@ -319,51 +292,87 @@ export function createAuthRoute({ db, getAuth }: AuthRouteOptions) {
       );
     }
 
-    try {
-      const auth = getAuth();
-      const result = await auth.api.getSession({ headers: c.req.raw.headers });
+    const token = authHeader.slice("Bearer ".length);
 
-      if (!result) {
+    try {
+      // 独自の sessions テーブルから Bearer token でセッションを検索
+      const [sessionRow] = await db.select().from(sessions).where(eq(sessions.token, token));
+
+      if (!sessionRow) {
         return c.json(
           {
             success: false,
             error: {
               code: AUTH_REQUIRED_CODE,
-              message: "ログインが必要です",
+              message: "ログインが必要です。",
             },
           },
           HTTP_UNAUTHORIZED,
         );
       }
 
-      const user = result.user;
-      const session = result.session;
-      const expiresAt =
-        session.expiresAt instanceof Date
-          ? session.expiresAt.toISOString()
-          : String(session.expiresAt);
+      // セッションの有効期限チェック
+      const expiresAtMs =
+        typeof sessionRow.expiresAt === "string"
+          ? Date.parse(sessionRow.expiresAt)
+          : (sessionRow.expiresAt as Date).getTime();
+      if (Number.isFinite(expiresAtMs) && expiresAtMs <= Date.now()) {
+        return c.json(
+          {
+            success: false,
+            error: {
+              code: AUTH_EXPIRED_CODE,
+              message: REFRESH_TOKEN_EXPIRED_MESSAGE,
+            },
+          },
+          HTTP_UNAUTHORIZED,
+        );
+      }
+
+      const [userRow] = await db.select().from(users).where(eq(users.id, sessionRow.userId));
+
+      if (!userRow) {
+        return c.json(
+          {
+            success: false,
+            error: {
+              code: AUTH_REQUIRED_CODE,
+              message: "ログインが必要です。",
+            },
+          },
+          HTTP_UNAUTHORIZED,
+        );
+      }
+
+      const expiresAtStr =
+        typeof sessionRow.expiresAt === "string"
+          ? sessionRow.expiresAt
+          : new Date(sessionRow.expiresAt as number | Date).toISOString();
 
       return c.json(
         {
           success: true,
           data: {
             user: {
-              id: user.id,
-              email: user.email,
-              name: user.name,
-              image: user.image ?? null,
-              createdAt: user.createdAt,
-              updatedAt: user.updatedAt,
+              id: userRow.id,
+              email: userRow.email,
+              name: userRow.name,
+              image: userRow.image ?? null,
+              createdAt: userRow.createdAt,
+              updatedAt: userRow.updatedAt,
             },
             session: {
-              token: session.token,
-              expiresAt,
+              token: sessionRow.token,
+              expiresAt: expiresAtStr,
             },
           },
         },
         HTTP_OK,
       );
-    } catch {
+    } catch (error) {
+      logger.error("モバイルセッション取得中にエラーが発生しました", {
+        error: error instanceof Error ? { name: error.name, message: error.message } : error,
+      });
       return c.json(
         {
           success: false,
@@ -400,7 +409,7 @@ export function createAuthRoute({ db, getAuth }: AuthRouteOptions) {
     }
 
     try {
-      const refreshTokenHash = await hashRefreshToken(parsed.data.refreshToken);
+      const refreshTokenHash = await hashTokenSha256(parsed.data.refreshToken);
 
       const result = await db.transaction(async (tx) => {
         const [refreshTokenRow] = await tx
@@ -483,7 +492,7 @@ export function createAuthRoute({ db, getAuth }: AuthRouteOptions) {
         }
 
         const nextRefreshToken = generateRefreshToken();
-        const nextRefreshTokenHash = await hashRefreshToken(nextRefreshToken);
+        const nextRefreshTokenHash = await hashTokenSha256(nextRefreshToken);
 
         await tx
           .update(refreshTokens)
@@ -520,7 +529,10 @@ export function createAuthRoute({ db, getAuth }: AuthRouteOptions) {
         },
         HTTP_OK,
       );
-    } catch {
+    } catch (error) {
+      logger.error("トークンリフレッシュ処理中にエラーが発生しました", {
+        error: error instanceof Error ? { name: error.name, message: error.message } : error,
+      });
       return c.json(
         {
           success: false,

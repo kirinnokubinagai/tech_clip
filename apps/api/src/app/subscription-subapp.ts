@@ -25,7 +25,8 @@ export async function handleSubscription(
   });
 
   return fetchWithAuth(
-    auth.api.getSession.bind(auth.api),
+    db,
+    auth,
     (subApp) => {
       subApp.route("/api/subscription", subscriptionRoute);
     },

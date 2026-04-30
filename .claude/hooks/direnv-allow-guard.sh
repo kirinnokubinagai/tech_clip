@@ -1,56 +1,25 @@
 #!/bin/bash
 # PreToolUse:Bash hook
-# .envrc を使う worktree で direnv allow 前の env 依存コマンド実行をブロックする
+# direnv allow 未完了の worktree で env 依存コマンドの実行をブロック
 
-if ! command -v jq &> /dev/null; then
-  exit 0
-fi
+command -v jq >/dev/null && command -v direnv >/dev/null || exit 0
 
-if ! command -v direnv &> /dev/null; then
-  exit 0
-fi
+# helper はこのスクリプトの位置基準で source（テストの fake repo でも壊れないように）
+HOOK_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
+LIB="${HOOK_DIR}/../../scripts/lib/worktree-init.sh"
+[ -f "$LIB" ] || exit 0
+# shellcheck source=../../scripts/lib/worktree-init.sh
+source "$LIB"
 
-COMMAND=$(echo "$ARGUMENTS" | jq -r '.command // empty' 2>/dev/null)
+CMD=$(echo "$ARGUMENTS" | jq -r '.command // empty' 2>/dev/null)
+[ -z "$CMD" ] && exit 0
 
-if [ -z "$COMMAND" ]; then
-  exit 0
-fi
+is_direnv_allow_command "$CMD" && exit 0
+needs_direnv_allow "$CMD" || exit 0
 
-requires_direnv_allow() {
-  local cmd="$1"
+REPO_ROOT=$(env -u GIT_DIR -u GIT_WORK_TREE git rev-parse --show-toplevel 2>/dev/null) || exit 0
+[ -f "$REPO_ROOT/.envrc" ] || exit 0
+direnv_ready "$REPO_ROOT" && exit 0
 
-  echo "$cmd" | grep -qE '(^|[[:space:];|&])(direnv[[:space:]]+exec|pnpm|node|npm|npx|turbo|biome|vitest|jest|wrangler|drizzle-kit|zap|maestro|expo|tsx|tsc)([[:space:];|&]|$)'
-}
-
-allows_direnv() {
-  local cmd="$1"
-
-  echo "$cmd" | grep -qE '(^|[[:space:];|&])direnv[[:space:]]+allow([[:space:];|&]|$)'
-}
-
-if allows_direnv "$COMMAND"; then
-  exit 0
-fi
-
-if ! requires_direnv_allow "$COMMAND"; then
-  exit 0
-fi
-
-ROOT=$(env -u GIT_DIR -u GIT_WORK_TREE git rev-parse --show-toplevel 2>/dev/null || echo "")
-if [ -z "$ROOT" ]; then
-  exit 0
-fi
-
-if [ ! -f "$ROOT/.envrc" ]; then
-  exit 0
-fi
-
-if (cd "$ROOT" && direnv exec "$ROOT" true > /dev/null 2>&1); then
-  exit 0
-fi
-
-echo "DENY: direnv allow が未完了のため env 依存コマンドを実行できません。" >&2
-echo "  対象worktree: $ROOT" >&2
-echo "  先に実行: cd \"$ROOT\" && direnv allow ." >&2
-echo "  その後:   cd \"$ROOT\" && direnv exec \"$ROOT\" <command>" >&2
+echo "DENY: direnv allow 未完了。先に: cd \"$REPO_ROOT\" && direnv allow ." >&2
 exit 2

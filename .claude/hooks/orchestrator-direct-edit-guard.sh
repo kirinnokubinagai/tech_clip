@@ -1,7 +1,9 @@
 #!/usr/bin/env bash
-# PreToolUse:Edit/Write hook: mainブランチおよび detached HEAD 上での直接編集をブロック
+# PreToolUse:Edit/Write hook: orchestrator・reviewer 系エージェントおよび main ブランチ上での直接編集をブロック
 #
 # ブロックロジックの優先順位:
+#   0. sub-agent 判定（CLAUDE_AGENT_NAME または process tree で agent 確認）→ 即 ALLOW
+#      サブエージェントの Edit/Write は絶対にブロックしない
 #   1. blocked_file チェック（ブランチ問わず DENY）
 #      - .omc/state/**:          実行フロー状態ファイル（直接編集によるフロー操作を防止）
 #   2. meta_file チェック（main 上でも ALLOW）
@@ -13,8 +15,73 @@
 #   4. main ブランチチェック（ファイルのリポジトリが main なら全 DENY）
 #      ファイル種類（apps/, packages/, tests/, scripts/, .claude/** 等）に関係なく全てブロック
 #   5. orchestration_file チェック（main 以外なら ALLOW）
-#      - .claude/**, CLAUDE.md, AGENTS.md, flake.nix 等
-#   6. それ以外 ALLOW（worktree 内バックグラウンドエージェントの動作を許可）
+#      - .claude/**, CLAUDE.md, flake.nix 等
+#   6. それ以外 DENY（orchestrator はソースファイルを直接編集できない。実装系に委譲）
+
+# 0. sub-agent 判定: CLAUDE_AGENT_NAME が設定されているか、process tree で claude --agent-name を検出
+#    → サブエージェントなら即パス（以降のブランチチェックは不要）
+_detect_agent_name_for_edit_guard() {
+  local current_pid=$$
+  local parent_pid parent_comm parent_args
+  for _ in $(seq 1 20); do
+    parent_pid=$(ps -p "$current_pid" -o ppid= 2>/dev/null | tr -d " ")
+    [ -z "$parent_pid" ] || [ "$parent_pid" = "0" ] || [ "$parent_pid" = "1" ] && break
+    parent_comm=$(ps -p "$parent_pid" -o comm= 2>/dev/null || echo "")
+    if echo "$parent_comm" | grep -qE "^claude$"; then
+      parent_args=$(ps -p "$parent_pid" -o args= 2>/dev/null || echo "")
+      echo "$parent_args" | grep -oE -- '--agent-name[= ][^ ]+' | sed 's/^--agent-name[= ]//' | head -1
+      return 0
+    fi
+    current_pid=$parent_pid
+  done
+  echo ""
+}
+
+# reviewer 系エージェント判定: "reviewer" を含むが "e2e-reviewer" は除外
+_is_reviewer_agent() {
+  local name="$1"
+  case "$name" in
+    *e2e-reviewer*) return 1 ;;
+  esac
+  case "$name" in
+    *reviewer*) return 0 ;;
+  esac
+  return 1
+}
+
+_EDIT_GUARD_AGENT_NAME="${CLAUDE_AGENT_NAME:-${_CLAUDE_DETECTED_AGENT_NAME:-$(_detect_agent_name_for_edit_guard)}}"
+if [ -n "$_EDIT_GUARD_AGENT_NAME" ]; then
+  if _is_reviewer_agent "$_EDIT_GUARD_AGENT_NAME"; then
+    _REVIEWER_INPUT=$(cat)
+    if [ -z "$_REVIEWER_INPUT" ]; then
+      exit 0
+    fi
+    if command -v jq &> /dev/null; then
+      _REVIEWER_FILE_PATH=$(echo "$_REVIEWER_INPUT" | jq -r '.tool_input.file_path // empty' 2>/dev/null)
+    else
+      echo "DENY: jq コマンドが必要です。" >&2
+      exit 2
+    fi
+    if [ -z "$_REVIEWER_FILE_PATH" ]; then
+      exit 0
+    fi
+    # メタファイル（.claude-user/, .omc/）は reviewer でも許可（インラインマッチ）
+    case "$_REVIEWER_FILE_PATH" in
+      */.claude-user/*) exit 0 ;;
+      */.omc/*) exit 0 ;;
+    esac
+    echo "DENY: reviewer 系エージェントは Edit/Write ツールでファイルを編集できません。" >&2
+    echo "  エージェント: $_EDIT_GUARD_AGENT_NAME" >&2
+    echo "  対象ファイル: $_REVIEWER_FILE_PATH" >&2
+    echo "" >&2
+    echo "  reviewer の書き込み操作は全て Bash ツール経由で行ってください:" >&2
+    echo "  - マーカー作成: bash scripts/gate/create-review-marker.sh" >&2
+    echo "  - push: bash scripts/push-verified.sh" >&2
+    echo "  - PR 作成: gh pr create" >&2
+    exit 2
+  fi
+  exit 0
+fi
 
 TOOL_INPUT=$(cat)
 
@@ -42,8 +109,18 @@ if [[ "$FILE_PATH" != /* ]]; then
 fi
 
 # シンボリックリンクや .. を正規化（ファイルが存在しなくても動作）
-# realpath -m が失敗した場合はブロック方向に倒す（未正規化パスを使わない）
-FILE_PATH=$(realpath -m "$FILE_PATH" 2>/dev/null)
+# GNU realpath -m を優先し、macOS realpath にフォールバックする
+_normalize_path() {
+  local p="$1"
+  if realpath -m "$p" 2>/dev/null; then
+    return 0
+  fi
+  if [ -e "$p" ]; then
+    realpath "$p" 2>/dev/null && return 0
+  fi
+  python3 -c "import os,sys; print(os.path.normpath(os.path.abspath(sys.argv[1])))" "$p" 2>/dev/null
+}
+FILE_PATH=$(_normalize_path "$FILE_PATH")
 if [ -z "$FILE_PATH" ]; then
   echo "DENY: パスの正規化に失敗しました（GNU coreutils の realpath が必要です）" >&2
   exit 2
@@ -72,7 +149,7 @@ if [ -z "$REPO_ROOT" ]; then
   echo "DENY: git リポジトリルートが特定できませんでした: $FILE_PATH" >&2
   exit 2
 fi
-REPO_ROOT=$(realpath -m "$REPO_ROOT" 2>/dev/null)
+REPO_ROOT=$(_normalize_path "$REPO_ROOT")
 if [ -z "$REPO_ROOT" ]; then
   echo "DENY: REPO_ROOT のパス正規化に失敗しました" >&2
   exit 2
@@ -146,7 +223,7 @@ if [[ "$SESSION_BRANCH" == "main" || "$SESSION_BRANCH" == "master" ]]; then
   _GIT_COMMON_DIR=$(git rev-parse --git-common-dir 2>/dev/null || true)
   if [[ -n "$_GIT_COMMON_DIR" ]]; then
     _MAIN_REPO_ROOT=$(cd "$_GIT_COMMON_DIR/.." && pwd -P 2>/dev/null || true)
-    _MAIN_REPO_ROOT=$(realpath -m "$_MAIN_REPO_ROOT" 2>/dev/null || echo "")
+    _MAIN_REPO_ROOT=$(_normalize_path "$_MAIN_REPO_ROOT" 2>/dev/null || echo "")
     _WORKTREE_BASE=$(dirname "$_MAIN_REPO_ROOT")
     if [[ -n "$_MAIN_REPO_ROOT" && "$FILE_PATH" == "${_WORKTREE_BASE}/"* && "$FILE_PATH" != "${_MAIN_REPO_ROOT}/"* ]]; then
       echo "DENY: mainブランチのオーケストレーターは兄弟worktreeのファイルを直接編集できません。" >&2
@@ -182,5 +259,11 @@ if is_orchestration_file "$FILE_PATH"; then
   exit 0
 fi
 
-# 6. それ以外（worktree 内ソースファイル等）は許可
-exit 0
+# 6. worktree 上でも orchestrator はソースファイルを直接編集できない
+#    実装系サブエージェント（coder / infra-engineer / ui-designer）に委譲すること
+echo "DENY: orchestrator は worktree 上でもソースファイルを直接編集できません。" >&2
+echo "  対象ファイル: $FILE_PATH" >&2
+echo "" >&2
+echo "  ❌ 「修正が小さいから直接編集する」は禁止です。必ず以下のフローに従うこと:" >&2
+echo "  → Agent(coder, mode=\"acceptEdits\") で実装系サブエージェントに委譲してください。" >&2
+exit 2

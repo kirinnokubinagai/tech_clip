@@ -1,6 +1,6 @@
 import { HTTP_UNAUTHORIZED, HTTP_UNPROCESSABLE_ENTITY } from "@api/lib/http-status";
 import type { SearchQueryFn } from "@api/routes/search";
-import { buildFtsMatchExpression, createSearchRoute } from "@api/routes/search";
+import { buildFtsMatchExpression, createSearchRoute, getShortTokens } from "@api/routes/search";
 import { Hono } from "hono";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -112,7 +112,7 @@ describe("buildFtsMatchExpression", () => {
     const result = buildFtsMatchExpression(query);
 
     // Assert
-    expect(result).toBe('"React"*');
+    expect(result).toBe('"React"');
   });
 
   it("複数語をANDで連結したFTS5 MATCH式に変換できること", () => {
@@ -123,7 +123,7 @@ describe("buildFtsMatchExpression", () => {
     const result = buildFtsMatchExpression(query);
 
     // Assert
-    expect(result).toBe('"React"* AND "hooks"*');
+    expect(result).toBe('"React" AND "hooks"');
   });
 
   it("ダブルクォートを含む場合二重クォートでエスケープされること", () => {
@@ -134,7 +134,7 @@ describe("buildFtsMatchExpression", () => {
     const result = buildFtsMatchExpression(query);
 
     // Assert
-    expect(result).toBe('"foo""bar"*');
+    expect(result).toBe('"foo""bar"');
   });
 
   it("FTS5記号（ハイフン）を含む場合ダブルクォートで無効化されること", () => {
@@ -145,7 +145,7 @@ describe("buildFtsMatchExpression", () => {
     const result = buildFtsMatchExpression(query);
 
     // Assert
-    expect(result).toBe('"foo-bar"*');
+    expect(result).toBe('"foo-bar"');
   });
 
   it("FTS5記号（コロン）を含む場合ダブルクォートで無効化されること", () => {
@@ -156,7 +156,7 @@ describe("buildFtsMatchExpression", () => {
     const result = buildFtsMatchExpression(query);
 
     // Assert
-    expect(result).toBe('"foo:bar"*');
+    expect(result).toBe('"foo:bar"');
   });
 
   it("FTS5記号（アスタリスク）を含む場合ダブルクォートで無効化されること", () => {
@@ -167,7 +167,7 @@ describe("buildFtsMatchExpression", () => {
     const result = buildFtsMatchExpression(query);
 
     // Assert
-    expect(result).toBe('"foo*bar"*');
+    expect(result).toBe('"foo*bar"');
   });
 
   it("連続空白はトークンとして無視されること", () => {
@@ -178,7 +178,7 @@ describe("buildFtsMatchExpression", () => {
     const result = buildFtsMatchExpression(query);
 
     // Assert
-    expect(result).toBe('"React"* AND "hooks"*');
+    expect(result).toBe('"React" AND "hooks"');
   });
 
   it("前後の空白はトリムされること", () => {
@@ -189,7 +189,7 @@ describe("buildFtsMatchExpression", () => {
     const result = buildFtsMatchExpression(query);
 
     // Assert
-    expect(result).toBe('"TypeScript"*');
+    expect(result).toBe('"TypeScript"');
   });
 
   it("空文字列の場合nullを返すこと", () => {
@@ -212,6 +212,85 @@ describe("buildFtsMatchExpression", () => {
 
     // Assert
     expect(result).toBeNull();
+  });
+
+  it("3文字未満のトークンのみの場合nullを返すこと", () => {
+    // Arrange: trigram は最低3文字必要なため2文字以下は除外
+    const query = "AI Go";
+
+    // Act
+    const result = buildFtsMatchExpression(query);
+
+    // Assert
+    expect(result).toBeNull();
+  });
+
+  it("3文字未満のトークンは除外して3文字以上のトークンのみ含むこと", () => {
+    // Arrange: "Go"(2文字)は除外、"React"(5文字)は含む
+    const query = "Go React";
+
+    // Act
+    const result = buildFtsMatchExpression(query);
+
+    // Assert
+    expect(result).toBe('"React"');
+  });
+});
+
+describe("getShortTokens", () => {
+  it("2文字のトークンを返すこと", () => {
+    // Arrange
+    const query = "Go";
+
+    // Act
+    const result = getShortTokens(query);
+
+    // Assert
+    expect(result).toEqual(["Go"]);
+  });
+
+  it("1文字のトークンを返すこと", () => {
+    // Arrange
+    const query = "A";
+
+    // Act
+    const result = getShortTokens(query);
+
+    // Assert
+    expect(result).toEqual(["A"]);
+  });
+
+  it("3文字以上のトークンは含まないこと", () => {
+    // Arrange
+    const query = "React";
+
+    // Act
+    const result = getShortTokens(query);
+
+    // Assert
+    expect(result).toEqual([]);
+  });
+
+  it("混在クエリで短いトークンのみ返すこと", () => {
+    // Arrange: "Go"(2文字)と"AI"(2文字)のみ返し"React"(5文字)は除外
+    const query = "Go React AI";
+
+    // Act
+    const result = getShortTokens(query);
+
+    // Assert
+    expect(result).toEqual(["Go", "AI"]);
+  });
+
+  it("空文字列の場合空配列を返すこと", () => {
+    // Arrange
+    const query = "";
+
+    // Act
+    const result = getShortTokens(query);
+
+    // Assert
+    expect(result).toEqual([]);
   });
 });
 

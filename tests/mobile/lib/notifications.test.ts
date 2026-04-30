@@ -422,3 +422,47 @@ describe("notifications", () => {
     });
   });
 });
+
+describe("通知ルート traversal 追加テスト", () => {
+  it("ダブルスラッシュ含む URL をブロックすること", () => {
+    let capturedResponseHandler: ((response: unknown) => void) | undefined;
+    (Notifications.addNotificationResponseReceivedListener as jest.Mock).mockImplementation(
+      (handler) => {
+        capturedResponseHandler = handler;
+        return { remove: jest.fn() };
+      },
+    );
+
+    setupNotificationHandlers();
+    capturedResponseHandler?.({
+      notification: {
+        request: { content: { data: { url: "/articles//../../admin" } } },
+      },
+    });
+
+    expect(router.push).not.toHaveBeenCalled();
+    expect(logger.warn).toHaveBeenCalledWith(
+      "許可されていない通知URLをブロックしました",
+      expect.objectContaining({ url: "/articles//../../admin" }),
+    );
+  });
+
+  it("許可パターン + dotdot パス を含む URL をブロックすること", () => {
+    let capturedResponseHandler: ((response: unknown) => void) | undefined;
+    (Notifications.addNotificationResponseReceivedListener as jest.Mock).mockImplementation(
+      (handler) => {
+        capturedResponseHandler = handler;
+        return { remove: jest.fn() };
+      },
+    );
+
+    setupNotificationHandlers();
+    capturedResponseHandler?.({
+      notification: {
+        request: { content: { data: { url: "/articles/../../../etc/passwd" } } },
+      },
+    });
+
+    expect(router.push).not.toHaveBeenCalled();
+  });
+});

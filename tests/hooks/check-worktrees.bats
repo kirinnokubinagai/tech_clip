@@ -8,7 +8,8 @@ SCRIPT="$(cd "$(dirname "$BATS_TEST_FILENAME")/../.." && pwd)/.claude/hooks/chec
 
 # テスト用の一時的なgitリポジトリをセットアップ
 setup() {
-    TMPDIR=$(mktemp -d)
+  unset GIT_DIR GIT_WORK_TREE
+    TMPDIR="$BATS_TEST_TMPDIR"
     REPO_DIR="$TMPDIR/main"
     WORKTREE_BASE="$TMPDIR"
 
@@ -26,9 +27,6 @@ setup() {
     git -C "$REPO_DIR" fetch origin main --quiet
 }
 
-teardown() {
-    rm -rf "$TMPDIR"
-}
 
 # スクリプトをREPO_DIR配下で実行するヘルパー
 run_script() {

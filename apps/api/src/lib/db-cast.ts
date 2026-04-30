@@ -3,7 +3,11 @@
  *
  * Drizzle の select() / leftJoin() が返す型は複雑なユニオン型になるため、
  * APIレスポンスとして返す際に汎用型へのキャストが必要。
- * TODO: Drizzle型推論改善後にtoRecordArrayごと廃止する
+ *
+ * @remarks
+ * このモジュールは暫定的なキャスト層である。
+ * Drizzle ORM の型推論が改善された時点で toRecord / toRecordArray ごと廃止する。
+ * 廃止作業は Issue #1056 の follow-up として別 Issue で実施する。
  */
 
 /**
@@ -18,13 +22,12 @@ export function toRecord<T extends Record<string, unknown>>(result: Record<strin
 
 /**
  * レコード配列を汎用レコード配列にキャストする
- * TODO: Drizzle型推論改善後にtoRecordArrayごと廃止する
+ *
+ * Drizzle 型推論改善後にこの関数ごと廃止予定（Issue #1056 follow-up）。
  *
  * @param results - Drizzle のクエリ結果（配列）
  * @returns 汎用レコード配列
  */
-export function toRecordArray(
-  results: unknown[] /* TODO: Drizzle型改善後に廃止 */,
-): Array<Record<string, unknown>> {
+export function toRecordArray(results: unknown[]): Array<Record<string, unknown>> {
   return results as Array<Record<string, unknown>>;
 }

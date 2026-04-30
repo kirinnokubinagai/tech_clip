@@ -9,6 +9,7 @@ import type { FollowListItem, FollowListQueryParams } from "../routes/follows";
 import { createFollowsRoute, parseCursor } from "../routes/follows";
 import { createPublicProfileRoute } from "../routes/public-profile";
 import { createUsersRoute } from "../routes/users";
+import { createFollowNotification } from "../services/notification-trigger";
 import type { Bindings } from "../types";
 
 /**
@@ -147,6 +148,18 @@ export async function handleUsers(
         .select()
         .from(follows)
         .where(and(eq(follows.followerId, followerId), eq(follows.followingId, followingId)));
+
+      const [follower] = await db
+        .select({ name: users.name })
+        .from(users)
+        .where(eq(users.id, followerId));
+      await createFollowNotification({
+        db,
+        followerId,
+        followingId,
+        followerName: follower?.name ?? undefined,
+      });
+
       return {
         followerId: result.followerId,
         followingId: result.followingId,
@@ -174,7 +187,8 @@ export async function handleUsers(
   });
 
   return fetchWithAuth(
-    auth.api.getSession.bind(auth.api),
+    db,
+    auth,
     (subApp) => {
       subApp.route("/api/users", usersRoute);
       subApp.route("/api/users", followsRoute);

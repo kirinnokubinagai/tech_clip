@@ -1,0 +1,156 @@
+# フォロワー/フォロー中一覧フロー
+# FOLLOWER ユーザーでログインし、フォロワー/フォロー中一覧画面のタブ切り替えを確認する
+#
+# 事前条件: seed で FOLLOWER が FOLLOWEE をフォロー済みであること
+#
+# tags: profile, social
+
+appId: com.techclip.app
+tags:
+  - profile
+  - social
+
+env:
+  TEST_EMAIL: ${FOLLOWER_EMAIL}
+  TEST_PASSWORD: ${FOLLOWER_PASSWORD}
+
+---
+
+# フレッシュ状態で FOLLOWER としてアプリ起動
+- launchApp:
+    clearState: true
+- runFlow:
+    when:
+      visible: "Try out your stylus"
+    commands:
+      - tapOn: "Cancel"
+      - waitForAnimationToEnd:
+          timeout: 1000
+- runFlow:
+    when:
+      visible: "Process system isn't responding"
+    commands:
+      - tapOn: "Wait"
+      - waitForAnimationToEnd:
+          timeout: 3000
+- runFlow:
+    when:
+      visible: "Open debugger"
+    commands:
+      - tapOn:
+          point: "92%, 93%"
+      - waitForAnimationToEnd:
+          timeout: 1000
+- runFlow:
+    when:
+      visible: "take pictures and record video"
+    commands:
+      - tapOn: "Don't allow"
+      - waitForAnimationToEnd:
+          timeout: 1000
+
+- runFlow:
+    file: "helpers/login-helper.yaml"
+- waitForAnimationToEnd:
+    timeout: 2000
+
+# --- フォロワー一覧画面を開く（ディープリンク経由） ---
+- openLink: techclip://profile/followers
+- extendedWaitUntil:
+    visible:
+      id: "followers-screen"
+    timeout: 10000
+- takeScreenshot: screenshots/16-followers-screen/01-followers-screen
+
+# --- タブ表示確認 ---
+- assertVisible:
+    id: "followers-tabs"
+- assertVisible:
+    id: "tab-followers"
+- assertVisible:
+    id: "tab-following"
+- takeScreenshot: screenshots/16-followers-screen/02-tabs
+
+# --- フォロワータブ: 初期タブはフォロワー ---
+- extendedWaitUntil:
+    visible:
+      id: "followers-list"
+    timeout: 10000
+- takeScreenshot: screenshots/16-followers-screen/03-followers-list
+
+# --- フォロー中タブへ切り替え ---
+- tapOn:
+    id: "tab-following"
+- waitForAnimationToEnd:
+    timeout: 3000
+- extendedWaitUntil:
+    visible:
+      id: "followers-list"
+    timeout: 10000
+- takeScreenshot: screenshots/16-followers-screen/04-following-list
+
+# FOLLOWEE ユーザーのアイテムが表示されることを確認（少なくとも1件のフォロー中）
+- assertVisible:
+    id: "followers-list"
+
+# --- フォロワータブに戻る ---
+- tapOn:
+    id: "tab-followers"
+- waitForAnimationToEnd:
+    timeout: 2000
+
+# --- 戻るボタンで前の画面へ ---
+- tapOn:
+    id: "followers-back-button"
+- waitForAnimationToEnd:
+    timeout: 1000
+
+# --- フォロー中タブを初期表示で開く（?tab=following） ---
+- openLink: techclip://profile/followers?tab=following
+- extendedWaitUntil:
+    visible:
+      id: "followers-screen"
+    timeout: 10000
+- extendedWaitUntil:
+    visible:
+      id: "followers-list"
+    timeout: 10000
+- takeScreenshot: screenshots/16-followers-screen/05-following-tab-initial
+
+# --- フォロー中リストからユーザープロフィールへ遷移 ---
+# フォロー中の最初のユーザー（FOLLOWEE）をタップして別ユーザープロフィール画面へ
+- extendedWaitUntil:
+    visible:
+      id: "follower-list-item"
+    timeout: 10000
+- tapOn:
+    index: 0
+    id: "follower-list-item"
+- waitForAnimationToEnd:
+    timeout: 2000
+- extendedWaitUntil:
+    visible:
+      id: "user-profile-screen"
+    timeout: 10000
+- takeScreenshot: screenshots/16-followers-screen/06-user-profile
+
+# フォローセクション（フォロー/フォロー解除ボタン）が表示されること
+- assertVisible:
+    id: "user-profile-follow-section"
+
+# フォローボタン（follow-button）が表示されること
+- assertVisible:
+    id: "follow-button"
+# フォローボタンのラベルテキストが表示されること
+- assertVisible:
+    id: "follow-button-label"
+
+# 戻るボタンで前の画面に戻る
+- tapOn:
+    id: "user-profile-back-button"
+- waitForAnimationToEnd:
+    timeout: 1000
+- extendedWaitUntil:
+    visible:
+      id: "followers-screen"
+    timeout: 5000

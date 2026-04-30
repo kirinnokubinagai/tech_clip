@@ -85,7 +85,7 @@ describe("SearchScreen", () => {
 
       // Assert
       await waitFor(() => {
-        expect(screen.getByText("タイトルや内容から検索できます")).toBeDefined();
+        expect(screen.getByText("タイトルや内容から検索できます。")).toBeDefined();
       });
     });
   });
@@ -147,7 +147,7 @@ describe("SearchScreen", () => {
       // Assert
       await waitFor(
         () => {
-          expect(screen.getByText("検索に失敗しました")).toBeDefined();
+          expect(screen.getByText("検索に失敗しました。")).toBeDefined();
         },
         { timeout: 1500 },
       );
@@ -195,7 +195,7 @@ describe("SearchScreen", () => {
       // Assert
       await waitFor(
         () => {
-          expect(screen.getByText("「react」に一致する記事がありません")).toBeDefined();
+          expect(screen.getByText("「react」に一致する記事がありません。")).toBeDefined();
         },
         { timeout: 1500 },
       );

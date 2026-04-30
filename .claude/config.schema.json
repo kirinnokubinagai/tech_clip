@@ -10,7 +10,9 @@
     "ai_review_needs_work_label"
   ],
   "properties": {
-    "$schema": { "type": "string" },
+    "$schema": {
+      "type": "string"
+    },
     "claude_review_job_name": {
       "type": "string",
       "description": "CI workflow 内の claude-review job 名"
@@ -18,6 +20,10 @@
     "ci_workflow_name": {
       "type": "string",
       "description": "PR に対して発火する CI workflow の名前"
+    },
+    "e2e_workflow_name": {
+      "type": "string",
+      "description": "E2E テスト用 workflow の名前（例: 'PR E2E (Android)'）。全 workflow チェック対象に含まれる"
     },
     "ai_review_pass_label": {
       "type": "string",
@@ -37,11 +43,15 @@
       "properties": {
         "approve": {
           "type": "array",
-          "items": { "type": "string" }
+          "items": {
+            "type": "string"
+          }
         },
         "request_changes": {
           "type": "array",
-          "items": { "type": "string" }
+          "items": {
+            "type": "string"
+          }
         }
       }
     },
@@ -65,12 +75,16 @@
       "properties": {
         "workflow_file_paths": {
           "type": "array",
-          "items": { "type": "string" },
+          "items": {
+            "type": "string"
+          },
           "description": "変更ファイルがこの正規表現にマッチしたら手動モード"
         },
         "stacked_pr_base_excludes": {
           "type": "array",
-          "items": { "type": "string" },
+          "items": {
+            "type": "string"
+          },
           "description": "PR の base branch がこのリストに含まれない場合は手動モード"
         }
       }
@@ -82,12 +96,16 @@
     },
     "human_review_labels": {
       "type": "array",
-      "items": { "type": "string" },
+      "items": {
+        "type": "string"
+      },
       "description": "これらのラベルが付いた Issue は要人間確認"
     },
     "human_review_title_patterns": {
       "type": "array",
-      "items": { "type": "string" },
+      "items": {
+        "type": "string"
+      },
       "description": "タイトルにこれらのパターンを含む Issue は要人間確認（大文字小文字無視）"
     }
   }

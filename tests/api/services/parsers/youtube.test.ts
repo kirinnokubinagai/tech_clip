@@ -179,27 +179,33 @@ describe("parseYouTube", () => {
     expect(result.readingTimeMinutes).toBeGreaterThanOrEqual(1);
   });
 
-  it("字幕がない動画の場合 NO_CAPTIONS エラーになること", async () => {
-    // Arrange
-    const url = "https://www.youtube.com/watch?v=dQw4w9WgXcQ";
-    const oembed = buildOEmbedResponse();
-    const html = buildVideoPageHtml(null);
-
-    vi.spyOn(globalThis, "fetch").mockImplementation(async (input: RequestInfo | URL) => {
-      const requestUrl = typeof input === "string" ? input : input.toString();
-      if (requestUrl.includes("/oembed")) {
-        return new Response(JSON.stringify(oembed), { status: 200 });
-      }
-      if (requestUrl.includes("/watch")) {
-        return new Response(html, { status: 200 });
-      }
-      return new Response("Not Found", { status: 404 });
+  it('字幕がない動画の場合 content="" の ParsedArticle を返すこと', async () => {
+    // Arrange: oEmbed 取得成功、tracks 空（captions なし）
+    const fetchMock = vi.spyOn(globalThis, "fetch");
+    fetchMock.mockImplementationOnce(async () => {
+      return new Response(JSON.stringify({ title: "Test Video", author_name: "Test Author" }), {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      });
+    });
+    fetchMock.mockImplementationOnce(async () => {
+      return new Response(
+        '<html><body><script>var ytInitialPlayerResponse = {"captions":{"playerCaptionsTracklistRenderer":{"captionTracks":[]}}};</script></body></html>',
+        { status: 200, headers: { "Content-Type": "text/html" } },
+      );
     });
 
-    // Act & Assert
-    await expect(parseYouTube(url)).rejects.toThrow("NO_CAPTIONS");
-  });
+    // Act
+    const result = await parseYouTube("https://www.youtube.com/watch?v=dQw4w9WgXcQ");
 
+    // Assert: 字幕なしでも失敗せず content="" で返る
+    expect(result.title).toBe("Test Video");
+    expect(result.author).toBe("Test Author");
+    expect(result.content).toBe("");
+    expect(result.readingTimeMinutes).toBe(0);
+
+    fetchMock.mockRestore();
+  });
   it("oEmbed API が失敗した場合エラーになること", async () => {
     // Arrange
     const url = "https://www.youtube.com/watch?v=dQw4w9WgXcQ";

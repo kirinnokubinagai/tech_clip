@@ -13,19 +13,20 @@ export type SubscriptionStatus = {
   currentPlan: string | null;
 };
 
-/**
- * プラットフォームごとのRevenueCat APIキーを取得する
- *
- * @returns プラットフォームに対応するAPIキー
- */
-function requireEnvKey(name: string, value: string | undefined): string {
+/** 開発環境でのプレースホルダーキーのプレフィックス */
+const DEV_PLACEHOLDER_PREFIX = "your-";
+
+function requireEnvKey(name: string, value: string | undefined): string | null {
   if (!value || value === "undefined") {
     throw new Error(`環境変数 ${name} が設定されていません`);
+  }
+  if (__DEV__ && value.startsWith(DEV_PLACEHOLDER_PREFIX)) {
+    return null;
   }
   return value;
 }
 
-function getApiKey(): string {
+function getApiKey(): string | null {
   if (Platform.OS === "ios") {
     return requireEnvKey(
       "EXPO_PUBLIC_REVENUECAT_IOS_API_KEY",
@@ -65,6 +66,9 @@ function extractSubscriptionStatus(customerInfo: {
  */
 export async function configureRevenueCat(): Promise<void> {
   const apiKey = getApiKey();
+  if (apiKey === null) {
+    return;
+  }
   try {
     Purchases.setDebugLogsEnabled(__DEV__);
     await Purchases.configure({ apiKey });
@@ -125,5 +129,20 @@ export async function restorePurchases(): Promise<SubscriptionStatus> {
     return extractSubscriptionStatus(customerInfo);
   } catch {
     throw new Error("購入の復元に失敗しました");
+  }
+}
+
+/**
+ * 利用可能なオファリングのパッケージ一覧を取得する
+ *
+ * @returns 現在のオファリングのパッケージ一覧。current がない場合は空配列
+ * @throws オファリング取得に失敗した場合
+ */
+export async function getOfferings(): Promise<PurchasesPackage[]> {
+  try {
+    const offerings = await Purchases.getOfferings();
+    return offerings.current?.availablePackages ?? [];
+  } catch {
+    throw new Error("オファリングの取得に失敗しました");
   }
 }

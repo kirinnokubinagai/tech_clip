@@ -75,7 +75,7 @@ describe("NotificationsScreen", () => {
 
       // Assert
       await waitFor(() => {
-        expect(getByText("通知はありません")).toBeDefined();
+        expect(getByText("通知はありません。")).toBeDefined();
       });
     });
 
@@ -88,7 +88,7 @@ describe("NotificationsScreen", () => {
 
       // Assert
       await waitFor(() => {
-        expect(getByText("通知の取得に失敗しました")).toBeDefined();
+        expect(getByText("通知の取得に失敗しました。")).toBeDefined();
       });
     });
 
@@ -163,7 +163,7 @@ describe("NotificationsScreen", () => {
 
       // Assert
       await waitFor(() => {
-        expect(queryByText("通知はありません")).toBeNull();
+        expect(queryByText("通知はありません。")).toBeNull();
       });
     });
   });

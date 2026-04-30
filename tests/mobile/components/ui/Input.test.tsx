@@ -34,11 +34,11 @@ describe("Input", () => {
     it("エラーメッセージが表示されること", async () => {
       // Arrange & Act
       const { getByText } = await render(
-        <Input label="メール" error="メールアドレスの形式が正しくありません" />,
+        <Input label="メール" error="メールアドレスの形式が正しくありません。" />,
       );
 
       // Assert
-      expect(getByText("メールアドレスの形式が正しくありません")).toBeDefined();
+      expect(getByText("メールアドレスの形式が正しくありません。")).toBeDefined();
     });
 
     it("エラーがない場合はエラーメッセージが表示されないこと", async () => {
@@ -46,7 +46,7 @@ describe("Input", () => {
       const { queryByText } = await render(<Input label="メール" />);
 
       // Assert
-      expect(queryByText("メールアドレスの形式が正しくありません")).toBeNull();
+      expect(queryByText("メールアドレスの形式が正しくありません。")).toBeNull();
     });
   });
 
@@ -92,6 +92,17 @@ describe("Input", () => {
       // Assert
       const input = getByTestId("input-field");
       expect(input.props.editable).toBe(false);
+    });
+
+    it("カスタムtestIDが正しく設定されること", async () => {
+      // Arrange & Act
+      const { getByTestId } = await render(
+        <Input placeholder="カスタムID" testID="custom-input-id" />,
+      );
+
+      // Assert
+      const input = getByTestId("custom-input-id");
+      expect(input.props.placeholder).toBe("カスタムID");
     });
   });
 });

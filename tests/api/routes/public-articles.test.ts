@@ -96,6 +96,16 @@ function createTestApp() {
   return app;
 }
 
+/**
+ * テスト用 cursor エンコードヘルパー（base64url）
+ */
+function makeTestCursor(createdAt: string, id: string): string {
+  return btoa(JSON.stringify({ createdAt, id }))
+    .replace(/\+/g, "-")
+    .replace(/\//g, "_")
+    .replace(/=/g, "");
+}
+
 describe("GET /api/users/:id/articles", () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -196,7 +206,7 @@ describe("GET /api/users/:id/articles", () => {
 
     it("cursorパラメータを指定できること", async () => {
       // Arrange
-      const cursor = "article_pub_003";
+      const cursor = makeTestCursor("2024-01-03T00:00:00.000Z", "article_pub_003");
       mockUserExistsFn.mockResolvedValue(true);
       mockQueryFn.mockResolvedValue([]);
       const app = createTestApp();
@@ -244,7 +254,12 @@ describe("GET /api/users/:id/articles", () => {
       // Assert
       expect(res.status).toBe(HTTP_OK);
       expect(body.meta.hasNext).toBe(true);
-      expect(body.meta.nextCursor).toBe(`article_pub_${String(DEFAULT_LIMIT).padStart(3, "0")}`);
+      expect(body.meta.nextCursor).not.toBeNull();
+      const decodedCursor = JSON.parse(
+        Buffer.from(body.meta.nextCursor as string, "base64url").toString(),
+      ) as { createdAt: string; id: string };
+      expect(decodedCursor.id).toBe(`article_pub_${String(DEFAULT_LIMIT).padStart(3, "0")}`);
+      expect(decodedCursor.createdAt).toBeDefined();
       expect(body.data).toHaveLength(DEFAULT_LIMIT);
     });
   });

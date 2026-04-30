@@ -1,3 +1,4 @@
+import type { SummaryLang } from "@/lib/language-code";
 import type { ArticleDetailResponse, ArticlesListResponse } from "@/types/article";
 
 import { apiFetch } from "./api";
@@ -84,11 +85,21 @@ export async function syncArticles(): Promise<SyncResult> {
  * 指定記事の詳細をサーバーから取得してローカルDBに同期する
  *
  * @param articleId - 同期する記事ID
+ * @param language - 要約言語
+ * @param targetLanguage - 翻訳言語
  * @returns 同期成否
  */
-export async function syncArticleDetail(articleId: string): Promise<SyncDetailResult> {
+export async function syncArticleDetail(
+  articleId: string,
+  language: SummaryLang = "ja",
+  targetLanguage: SummaryLang = "en",
+): Promise<SyncDetailResult> {
   try {
-    const response = await apiFetch<ArticleDetailResponse>(`/api/articles/${articleId}`, {
+    const params = new URLSearchParams({
+      language,
+      targetLanguage,
+    });
+    const response = await apiFetch<ArticleDetailResponse>(`/api/articles/${articleId}?${params}`, {
       method: "GET",
     });
 
@@ -100,11 +111,11 @@ export async function syncArticleDetail(articleId: string): Promise<SyncDetailRe
     await upsertArticle(detail);
 
     if (detail.summary !== null) {
-      await upsertSummary(articleId, detail.summary);
+      await upsertSummary(articleId, language, detail.summary);
     }
 
     if (detail.translation !== null) {
-      await upsertTranslation(articleId, detail.translation);
+      await upsertTranslation(articleId, targetLanguage, detail.translation);
     }
 
     return { success: true };
