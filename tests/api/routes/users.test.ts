@@ -1196,3 +1196,106 @@ describe("POST /api/users/me/avatar", () => {
     });
   });
 });
+
+describe("POST /api/users/me/avatar — 旧アバター R2 削除キー抽出", () => {
+  const mockR2Delete = vi.fn();
+
+  function createAvatarTestAppWithSpyR2() {
+    type Variables = {
+      user: typeof MOCK_USER;
+      session: Record<string, unknown>;
+    };
+    const app = new Hono<{ Variables: Variables }>();
+
+    app.use("*", (c, next) => {
+      c.set("user", MOCK_USER);
+      c.set("session", { id: "session_01" });
+      return next();
+    });
+
+    const spyR2Bucket = { delete: mockR2Delete } as unknown as R2Bucket;
+
+    const usersRoute = createUsersRoute({
+      db: mockDb as unknown as Database,
+      r2Bucket: spyR2Bucket,
+      r2PublicUrl: "https://cdn.example.com",
+      auth: mockAuth as unknown as Auth,
+    });
+    app.route("/api/users", usersRoute);
+
+    return app;
+  }
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockR2Delete.mockResolvedValue(undefined);
+
+    mockSelectFrom.mockReturnValue({ where: mockSelectWhere });
+    // デフォルトは oldAvatarUrl を持つユーザー（prefix あり）
+    mockSelectWhere.mockResolvedValue([
+      { ...MOCK_USER, avatarUrl: "https://cdn.example.com/avatars/old_file.jpg" },
+    ]);
+    mockUpdateSet.mockReturnValue({ where: mockUpdateWhere });
+    mockUpdateWhere.mockReturnValue({ returning: mockUpdateReturning });
+    mockUpdateReturning.mockResolvedValue([
+      { ...MOCK_USER, avatarUrl: "https://cdn.example.com/avatars/new_file.jpg" },
+    ]);
+
+    vi.mocked(validateImageFile).mockReturnValue({ isValid: true });
+    vi.mocked(processAvatarImage).mockResolvedValue({
+      isValid: true,
+      image: {
+        buffer: new Uint8Array([0xff, 0xd8, 0xff]),
+        contentType: "image/jpeg",
+        extension: "jpg",
+      },
+    });
+    vi.mocked(uploadAvatarToR2).mockResolvedValue({
+      avatarUrl: "https://cdn.example.com/avatars/new_file.jpg",
+    });
+  });
+
+  it("旧アバターURL が r2PublicUrl の prefix を持つ場合、prefix を除いたキーで R2 から削除されること", async () => {
+    // Arrange: mockSelectWhere は beforeEach で prefix ありユーザーを返す設定済み
+    const app = createAvatarTestAppWithSpyR2();
+    const file = new File([new Uint8Array([0xff, 0xd8, 0xff])], "avatar.jpg", {
+      type: "image/jpeg",
+    });
+
+    // Act
+    await postAvatar(app, file);
+
+    // Assert: "https://cdn.example.com/avatars/old_file.jpg" → "avatars/old_file.jpg"
+    expect(mockR2Delete).toHaveBeenCalledWith("avatars/old_file.jpg");
+  });
+
+  it("旧アバターURL が prefix を持たない場合、そのままのキーで R2 から削除されること", async () => {
+    // Arrange: prefix なしの URL を持つユーザーをモック
+    mockSelectWhere.mockResolvedValue([{ ...MOCK_USER, avatarUrl: "legacy-key.jpg" }]);
+    const app = createAvatarTestAppWithSpyR2();
+    const file = new File([new Uint8Array([0xff, 0xd8, 0xff])], "avatar.jpg", {
+      type: "image/jpeg",
+    });
+
+    // Act
+    await postAvatar(app, file);
+
+    // Assert: フォールバックで元のキーがそのまま使われること
+    expect(mockR2Delete).toHaveBeenCalledWith("legacy-key.jpg");
+  });
+
+  it("旧アバターURL が null の場合、R2 削除が呼ばれないこと", async () => {
+    // Arrange: avatarUrl が null のユーザーをモック
+    mockSelectWhere.mockResolvedValue([{ ...MOCK_USER, avatarUrl: null }]);
+    const app = createAvatarTestAppWithSpyR2();
+    const file = new File([new Uint8Array([0xff, 0xd8, 0xff])], "avatar.jpg", {
+      type: "image/jpeg",
+    });
+
+    // Act
+    await postAvatar(app, file);
+
+    // Assert
+    expect(mockR2Delete).not.toHaveBeenCalled();
+  });
+});

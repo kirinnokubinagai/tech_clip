@@ -205,10 +205,11 @@ export function createEmailVerificationRoute(options: EmailVerificationRouteOpti
       );
     }
 
-    const userId = String(verification.identifier).replace(
-      `${EMAIL_VERIFICATION_IDENTIFIER_PREFIX}:`,
-      "",
-    );
+    const rawIdentifier = String(verification.identifier);
+    const identifierPrefix = `${EMAIL_VERIFICATION_IDENTIFIER_PREFIX}:`;
+    const userId = rawIdentifier.startsWith(identifierPrefix)
+      ? rawIdentifier.slice(identifierPrefix.length)
+      : rawIdentifier;
 
     await db.update(users).set({ emailVerified: true }).where(eq(users.id, userId));
 
