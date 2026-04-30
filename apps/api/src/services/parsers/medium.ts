@@ -2,6 +2,7 @@ import { Readability } from "@mozilla/readability";
 import { parseHTML } from "linkedom";
 import TurndownService from "turndown";
 
+import { safeFetch } from "../../lib/safe-fetch";
 import type { ParsedArticle } from "../../types/article";
 import {
   assertHtmlSize,
@@ -61,7 +62,7 @@ function getMetaByName(doc: LinkedomDocument, name: string): string | null {
  * @throws Error - HTMLの取得またはパースに失敗した場合
  */
 export async function parseMedium(url: string): Promise<ParsedArticle> {
-  const response = await fetch(url, {
+  const response = await safeFetch(url, {
     headers: { "User-Agent": TECHCLIP_USER_AGENT },
   });
 

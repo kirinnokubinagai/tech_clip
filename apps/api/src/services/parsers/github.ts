@@ -1,3 +1,4 @@
+import { safeFetch } from "../../lib/safe-fetch";
 import type { ParsedArticle } from "../../types/article";
 import { calculateReadingTime, TECHCLIP_USER_AGENT } from "./_shared";
 
@@ -130,7 +131,7 @@ function createApiHeaders(): Record<string, string> {
  */
 async function fetchReadme(owner: string, repo: string): Promise<ParsedArticle> {
   const apiUrl = `${GITHUB_API_BASE_URL}/repos/${owner}/${repo}/readme`;
-  const response = await fetch(apiUrl, { headers: createApiHeaders() });
+  const response = await safeFetch(apiUrl, { headers: createApiHeaders() });
 
   if (!response.ok) {
     throw new Error(`GitHub APIからのデータ取得に失敗しました（ステータス: ${response.status}）`);
@@ -170,7 +171,7 @@ async function fetchIssueOrPr(
 ): Promise<ParsedArticle> {
   const endpoint = type === "issue" ? "issues" : "pulls";
   const apiUrl = `${GITHUB_API_BASE_URL}/repos/${owner}/${repo}/${endpoint}/${number}`;
-  const response = await fetch(apiUrl, { headers: createApiHeaders() });
+  const response = await safeFetch(apiUrl, { headers: createApiHeaders() });
 
   if (!response.ok) {
     throw new Error(`GitHub APIからのデータ取得に失敗しました（ステータス: ${response.status}）`);

@@ -1,5 +1,6 @@
 import { z } from "zod";
 
+import { safeFetch } from "../../lib/safe-fetch";
 import type { ParsedArticle } from "../../types/article";
 import { calculateReadingTime, createExcerpt, TECHCLIP_USER_AGENT } from "./_shared";
 
@@ -98,7 +99,7 @@ export async function parseTwitter(url: string): Promise<ParsedArticle> {
   }
 
   const oembedUrl = `${OEMBED_ENDPOINT}?url=${encodeURIComponent(url)}&omit_script=true`;
-  const response = await fetch(oembedUrl, {
+  const response = await safeFetch(oembedUrl, {
     signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
     headers: {
       "User-Agent": TECHCLIP_USER_AGENT,

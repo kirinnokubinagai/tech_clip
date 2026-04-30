@@ -1,5 +1,6 @@
 import TurndownService from "turndown";
 
+import { safeFetch } from "../../lib/safe-fetch";
 import type { ParsedArticle } from "../../types/article";
 import { calculateReadingTime, htmlFragmentToMarkdown, TECHCLIP_USER_AGENT } from "./_shared";
 
@@ -157,7 +158,7 @@ export async function parseStackOverflow(url: string): Promise<ParsedArticle> {
   const questionId = extractQuestionId(url);
 
   const apiUrl = `${SE_API_BASE_URL}/${questionId}?site=stackoverflow&filter=${SO_API_FILTER}&order=desc&sort=votes`;
-  const response = await fetch(apiUrl, {
+  const response = await safeFetch(apiUrl, {
     headers: { "User-Agent": TECHCLIP_USER_AGENT },
   });
 

@@ -1,5 +1,6 @@
 import TurndownService from "turndown";
 
+import { safeFetch } from "../../lib/safe-fetch";
 import type { ParsedArticle } from "../../types/article";
 import { calculateReadingTime, htmlFragmentToMarkdown, TECHCLIP_USER_AGENT } from "./_shared";
 
@@ -78,13 +79,15 @@ export async function parseZennBook(url: string): Promise<ParsedArticle> {
   const slug = extractBookSlug(url);
   const headers = { "User-Agent": TECHCLIP_USER_AGENT };
 
-  const bookResponse = await fetch(`${ZENN_API_BASE_URL}/books/${slug}`, { headers });
+  const bookResponse = await safeFetch(`${ZENN_API_BASE_URL}/books/${slug}`, { headers });
   if (!bookResponse.ok) {
     throw new Error(`ブック情報の取得に失敗しました（ステータス: ${bookResponse.status}）`);
   }
   const bookData: ZennBookResponse = await bookResponse.json();
 
-  const chaptersResponse = await fetch(`${ZENN_API_BASE_URL}/books/${slug}/chapters`, { headers });
+  const chaptersResponse = await safeFetch(`${ZENN_API_BASE_URL}/books/${slug}/chapters`, {
+    headers,
+  });
   if (!chaptersResponse.ok) {
     throw new Error(`チャプター一覧の取得に失敗しました（ステータス: ${chaptersResponse.status}）`);
   }

@@ -1,5 +1,6 @@
 import { z } from "zod";
 
+import { safeFetch } from "../../lib/safe-fetch";
 import type { ParsedArticle } from "../../types/article";
 import { calculateReadingTime, createExcerpt, TECHCLIP_USER_AGENT } from "./_shared";
 
@@ -147,7 +148,7 @@ function buildWatchUrl(videoId: string): string {
  */
 async function fetchOEmbed(videoUrl: string): Promise<OEmbedResponse> {
   const oembedUrl = `${OEMBED_ENDPOINT}?url=${encodeURIComponent(videoUrl)}&format=json`;
-  const response = await fetch(oembedUrl, {
+  const response = await safeFetch(oembedUrl, {
     signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
     headers: { "User-Agent": TECHCLIP_USER_AGENT },
   });
@@ -172,7 +173,7 @@ async function fetchOEmbed(videoUrl: string): Promise<OEmbedResponse> {
  * @throws Error - 取得失敗時
  */
 async function fetchVideoPageHtml(videoUrl: string): Promise<string> {
-  const response = await fetch(videoUrl, {
+  const response = await safeFetch(videoUrl, {
     signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
     headers: {
       "User-Agent": TECHCLIP_USER_AGENT,
@@ -385,7 +386,7 @@ function validateCaptionBaseUrl(baseUrl: string): void {
 async function fetchCaptionText(baseUrl: string): Promise<string> {
   validateCaptionBaseUrl(baseUrl);
 
-  const response = await fetch(baseUrl, {
+  const response = await safeFetch(baseUrl, {
     signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
     headers: { "User-Agent": TECHCLIP_USER_AGENT },
   });

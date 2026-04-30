@@ -1,3 +1,4 @@
+import { safeFetch } from "../../lib/safe-fetch";
 import type { ParsedArticle } from "../../types/article";
 import { calculateReadingTime, TECHCLIP_USER_AGENT } from "./_shared";
 
@@ -110,7 +111,7 @@ function extractHostAndSlug(url: string): [string, string] {
 export async function parseHashnode(url: string): Promise<ParsedArticle> {
   const [host, slug] = extractHostAndSlug(url);
 
-  const response = await fetch(HASHNODE_GRAPHQL_URL, {
+  const response = await safeFetch(HASHNODE_GRAPHQL_URL, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",

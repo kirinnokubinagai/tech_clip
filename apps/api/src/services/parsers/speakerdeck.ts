@@ -1,5 +1,6 @@
 import { parseHTML } from "linkedom";
 
+import { safeFetch } from "../../lib/safe-fetch";
 import type { ParsedArticle } from "../../types/article";
 import { calculateReadingTime, TECHCLIP_USER_AGENT } from "./_shared";
 
@@ -75,7 +76,7 @@ function validateSpeakerdeckUrl(url: string): void {
 export async function parseSpeakerdeck(url: string): Promise<ParsedArticle> {
   validateSpeakerdeckUrl(url);
 
-  const response = await fetch(url, {
+  const response = await safeFetch(url, {
     headers: { "User-Agent": TECHCLIP_USER_AGENT },
   });
 

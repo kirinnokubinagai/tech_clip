@@ -7,42 +7,13 @@
  */
 import { parseHTML } from "linkedom";
 
+import { isPublicHost, SsrfBlockedError, safeFetch } from "../lib/safe-fetch";
 import type { ParsedArticle } from "./article-parser";
 import { detectSource } from "./source-detector";
 
 const USER_AGENT = "Mozilla/5.0 (compatible; TechClipBot/1.0; +https://techclip.app)";
 const FETCH_TIMEOUT_MS = 10_000;
 const READING_SPEED_CHARS_PER_MIN = 500;
-
-/**
- * SSRF 対策: 内部ネットワーク・metadata サーバへの fetch を防ぐ
- * ホスト名が私設 IP 帯 or 予約名に該当する URL は拒否する
- */
-const PRIVATE_HOST_PATTERNS = [
-  /^localhost$/i,
-  /^127\.\d+\.\d+\.\d+$/,
-  /^10\.\d+\.\d+\.\d+$/,
-  /^192\.168\.\d+\.\d+$/,
-  /^172\.(1[6-9]|2\d|3[01])\.\d+\.\d+$/,
-  /^169\.254\.\d+\.\d+$/,
-  /^metadata\.google\.internal$/i,
-  /^metadata\.azure\.com$/i,
-  /^\[::1\]$/,
-  /^\[fc00:/i,
-  /^\[fd/i,
-  /^\[fe80:/i,
-];
-
-function isPrivateHost(urlString: string): boolean {
-  try {
-    const u = new URL(urlString);
-    const host = u.hostname;
-    if (u.protocol !== "http:" && u.protocol !== "https:") return true;
-    return PRIVATE_HOST_PATTERNS.some((p) => p.test(host));
-  } catch {
-    return true;
-  }
-}
 
 function firstNonEmpty(...values: Array<string | null | undefined>): string | null {
   for (const v of values) {
@@ -72,7 +43,7 @@ export async function fetchArticleMetadata(url: string): Promise<ParsedArticle> 
     source = "other";
   }
 
-  if (isPrivateHost(url)) {
+  if (!isPublicHost(url)) {
     return {
       title: url,
       author: null,
@@ -84,6 +55,7 @@ export async function fetchArticleMetadata(url: string): Promise<ParsedArticle> 
       source,
     };
   }
+
   const fallback: ParsedArticle = {
     title: url,
     author: null,
@@ -97,7 +69,7 @@ export async function fetchArticleMetadata(url: string): Promise<ParsedArticle> 
 
   let html = "";
   try {
-    const response = await fetch(url, {
+    const response = await safeFetch(url, {
       headers: { "User-Agent": USER_AGENT },
       signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
     });
@@ -105,7 +77,10 @@ export async function fetchArticleMetadata(url: string): Promise<ParsedArticle> 
       return { ...fallback, title: url };
     }
     html = await response.text();
-  } catch {
+  } catch (err) {
+    if (err instanceof SsrfBlockedError) {
+      return fallback;
+    }
     return fallback;
   }
 

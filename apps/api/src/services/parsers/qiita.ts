@@ -1,5 +1,6 @@
 import TurndownService from "turndown";
 
+import { safeFetch } from "../../lib/safe-fetch";
 import type { ParsedArticle } from "../../types/article";
 import { calculateReadingTime, TECHCLIP_USER_AGENT } from "./_shared";
 
@@ -58,7 +59,7 @@ function extractItemId(url: string): string {
 export async function parseQiita(url: string): Promise<ParsedArticle> {
   const itemId = extractItemId(url);
 
-  const response = await fetch(`${QIITA_API_BASE_URL}/items/${itemId}`, {
+  const response = await safeFetch(`${QIITA_API_BASE_URL}/items/${itemId}`, {
     headers: { "User-Agent": TECHCLIP_USER_AGENT },
   });
 

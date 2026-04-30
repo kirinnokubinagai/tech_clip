@@ -2,6 +2,7 @@ import { Readability } from "@mozilla/readability";
 import { parseHTML } from "linkedom";
 import TurndownService from "turndown";
 
+import { safeFetch } from "../../lib/safe-fetch";
 import type { ParsedArticle } from "../../types/article";
 import {
   assertHtmlSize,
@@ -81,7 +82,7 @@ export async function parseHatena(url: string): Promise<ParsedArticle> {
     throw new Error("はてなブログのURLではありません");
   }
 
-  const response = await fetch(url, {
+  const response = await safeFetch(url, {
     headers: { "User-Agent": TECHCLIP_USER_AGENT },
   });
 

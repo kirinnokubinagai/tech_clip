@@ -1,3 +1,4 @@
+import { safeFetch } from "../../lib/safe-fetch";
 import type { ParsedArticle } from "../../types/article";
 import { calculateReadingTime, createExcerpt, TECHCLIP_USER_AGENT } from "./_shared";
 
@@ -126,7 +127,7 @@ export async function parseReddit(url: string): Promise<ParsedArticle> {
   validateRedditUrl(parsed);
 
   const apiUrl = buildJsonApiUrl(parsed);
-  const response = await fetch(apiUrl, {
+  const response = await safeFetch(apiUrl, {
     headers: { "User-Agent": TECHCLIP_USER_AGENT },
   });
 

@@ -1,5 +1,6 @@
 import TurndownService from "turndown";
 
+import { safeFetch } from "../../lib/safe-fetch";
 import type { ParsedArticle } from "../../types/article";
 import { calculateReadingTime, htmlFragmentToMarkdown, TECHCLIP_USER_AGENT } from "./_shared";
 
@@ -94,7 +95,7 @@ export async function parseZenn(url: string): Promise<ParsedArticle> {
   const slug = extractSlug(url);
 
   const apiUrl = `${ZENN_API_BASE_URL}/${slug}`;
-  const response = await fetch(apiUrl, {
+  const response = await safeFetch(apiUrl, {
     headers: { "User-Agent": TECHCLIP_USER_AGENT },
   });
 
