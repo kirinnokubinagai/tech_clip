@@ -251,3 +251,48 @@ run_script_staged() {
   [ "$status" -eq 0 ]
   echo "$output" | grep -q '"covered": true'
 }
+
+# テスト 12: ソースファイルと test ファイルが両方削除 → PASS (false positive なし)
+@test "ソースファイルと test ファイルが両方削除された場合は PASS" {
+  # origin/main にソースと test を配置
+  mkdir -p "$REPO_DIR/apps/api/src/services"
+  echo "export function oldSvc() {}" > "$REPO_DIR/apps/api/src/services/to-delete.ts"
+  mkdir -p "$REPO_DIR/tests/api/services"
+  echo "// test for to-delete" > "$REPO_DIR/tests/api/services/to-delete.test.ts"
+  git -C "$REPO_DIR" add .
+  git -C "$REPO_DIR" commit -m "add to-delete service"
+  git -C "$REPO_DIR" push origin main --quiet
+
+  # 両方削除
+  git -C "$REPO_DIR" rm "$REPO_DIR/apps/api/src/services/to-delete.ts"
+  git -C "$REPO_DIR" rm "$REPO_DIR/tests/api/services/to-delete.test.ts"
+  commit_all
+
+  cd "$REPO_DIR"
+  run_script
+
+  [ "$status" -eq 0 ]
+  echo "$output" | grep -q '"covered": true'
+}
+
+# テスト 13: ソースファイルのみ削除 (test は残る) → PASS (削除ファイルは skip)
+@test "ソースファイルのみ削除されて test が disk に残る場合も PASS" {
+  # origin/main にソースと test を配置
+  mkdir -p "$REPO_DIR/apps/api/src/services"
+  echo "export function legacySvc() {}" > "$REPO_DIR/apps/api/src/services/legacy.ts"
+  mkdir -p "$REPO_DIR/tests/api/services"
+  echo "// test for legacy" > "$REPO_DIR/tests/api/services/legacy.test.ts"
+  git -C "$REPO_DIR" add .
+  git -C "$REPO_DIR" commit -m "add legacy service"
+  git -C "$REPO_DIR" push origin main --quiet
+
+  # ソースのみ削除 (test は残す)
+  git -C "$REPO_DIR" rm "$REPO_DIR/apps/api/src/services/legacy.ts"
+  commit_all
+
+  cd "$REPO_DIR"
+  run_script
+
+  [ "$status" -eq 0 ]
+  echo "$output" | grep -q '"covered": true'
+}
