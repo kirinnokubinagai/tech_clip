@@ -14,7 +14,7 @@ triggers:
 
 このスキルを呼び出す前に以下がコンテキストに存在すること:
 - `{worktree}`: worktree の絶対パス
-- `{issue_number}`: Issue 番号（送信先 `issue-{N}-e2e-reviewer` を組み立てるため）
+- `{issue_number}`: Issue 番号（送信先 `e2e-reviewer-{N}` を組み立てるため）
 
 ## 手順
 

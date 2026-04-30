@@ -6,22 +6,19 @@
 #   - 内容 == git HEAD
 # 不一致 / 不在 / 不正形式 → exit 2
 
-extract_command_from_arguments() {
-  local arguments="$1"
-  local command=""
+INPUT=$(cat)
 
-  if command -v jq &> /dev/null; then
-    command=$(echo "$arguments" | jq -r '.command // empty' 2>/dev/null)
-  fi
+if [ -z "$INPUT" ]; then
+  exit 0
+fi
 
-  if [ -z "$command" ]; then
-    command=$(echo "$arguments" | grep -o '"command"[[:space:]]*:[[:space:]]*"[^"]*"' | head -1 | sed 's/.*"command"[[:space:]]*:[[:space:]]*"//' | sed 's/"$//')
-  fi
+if command -v jq &> /dev/null; then
+  COMMAND=$(echo "$INPUT" | jq -r '.tool_input.command // empty' 2>/dev/null)
+fi
 
-  echo "$command"
-}
-
-COMMAND=$(extract_command_from_arguments "${ARGUMENTS:-}")
+if [ -z "$COMMAND" ]; then
+  COMMAND=$(echo "$INPUT" | grep -o '"command"[[:space:]]*:[[:space:]]*"[^"]*"' | head -1 | sed 's/.*"command"[[:space:]]*:[[:space:]]*"//' | sed 's/"$//')
+fi
 
 if [ -z "$COMMAND" ]; then
   exit 0

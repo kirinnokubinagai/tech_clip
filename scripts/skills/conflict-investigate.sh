@@ -114,4 +114,4 @@ done <<< "$CONFLICT_FILES"
 
 echo
 echo "---"
-echo "次のアクション: 両側の意図を統合した spec を /tmp/issue-{N}-conflict-spec.md に作成し、coder に CONFLICT_RESOLVE を送信。片側採用は原則禁止。"
+echo "次のアクション: 両側の意図を統合した spec を /tmp/issue-{N}-conflict-spec.md に作成し、coder-{N} に CONFLICT_RESOLVE を送信。片側採用は原則禁止。"

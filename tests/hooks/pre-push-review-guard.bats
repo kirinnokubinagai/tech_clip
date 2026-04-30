@@ -7,7 +7,7 @@
 SCRIPT="$(cd "$(dirname "$BATS_TEST_FILENAME")/../.." && pwd)/.claude/hooks/pre-push-review-guard.sh"
 
 setup() {
-  unset GIT_DIR GIT_WORK_TREE
+    unset GIT_DIR GIT_WORK_TREE
     TMPDIR="$BATS_TEST_TMPDIR"
     REPO_DIR="$TMPDIR/main"
     WORKTREE_BASE="$TMPDIR"
@@ -21,78 +21,93 @@ setup() {
     git -C "$REPO_DIR" commit -m "initial commit"
 }
 
-
-# ARGUMENTSを設定してスクリプトをworktreeから実行するヘルパー
-run_script_with_args() {
+# stdin でフックを実行するヘルパー
+run_hook() {
     local args_json="$1"
     local run_dir="${2:-$REPO_DIR}"
-    (cd "$run_dir" && ARGUMENTS="$args_json" bash "$SCRIPT")
+    echo "$args_json" | (cd "$run_dir" && bash "$SCRIPT")
 }
 
-run_script_with_args_and_path() {
+run_hook_with_path() {
     local args_json="$1"
     local custom_path="$2"
     local run_dir="${3:-$REPO_DIR}"
-    (cd "$run_dir" && PATH="$custom_path" ARGUMENTS="$args_json" bash "$SCRIPT")
+    echo "$args_json" | (cd "$run_dir" && PATH="$custom_path" bash "$SCRIPT")
 }
 
 @test "git pushを含まないコマンドはスキップされること" {
     # Arrange
-    local args='{"command": "ls -la"}'
+    local args='{"tool_input":{"command":"ls -la"}}'
 
     # Act
-    run run_script_with_args "$args"
+    run run_hook "$args"
 
     # Assert
     [ "$status" -eq 0 ]
 }
 
-@test "ARGUMENTSが空の場合はスキップされること" {
-    # Arrange
-    local args=''
-
-    # Act
-    run run_script_with_args "$args"
+@test "stdinが空の場合はスキップされること" {
+    # Arrange / Act
+    run bash -c "echo '' | bash '$SCRIPT'"
 
     # Assert
     [ "$status" -eq 0 ]
 }
 
-@test "jqが壊れていてもマーカーなしならブロックされること" {
+@test "jqが壊れていてもstageブランチでマーカーなしならブロックされること" {
     # Arrange: jqの代わりにダミーを用意してエラーを返させる
+    # stage ブランチはマーカー必須のため、jq フォールバックでも block される
     local fake_jq_dir="$TMPDIR/fake_bin"
     mkdir -p "$fake_jq_dir"
-    # jqをダミーで上書き（常に失敗するjq）
     printf '#!/bin/bash\nexit 1\n' > "$fake_jq_dir/jq"
     chmod +x "$fake_jq_dir/jq"
 
-    mkdir -p "$REPO_DIR/.claude"
-    local args='{"command": "git push origin issue/764/test"}'
+    local alt_repo="$TMPDIR/alt-main"
+    mkdir -p "$alt_repo"
+    git -C "$alt_repo" init -b main -q
+    git -C "$alt_repo" config user.email "test@example.com"
+    git -C "$alt_repo" config user.name "Test User"
+    echo "initial" > "$alt_repo/file.txt"
+    git -C "$alt_repo" add .
+    git -C "$alt_repo" commit -m "initial" -q
+    local stage_wt="$TMPDIR/alt-stage"
+    git -C "$alt_repo" worktree add "$stage_wt" -b stage
+    mkdir -p "$stage_wt/.claude"
+
+    local args='{"tool_input":{"command":"git push origin stage"}}'
 
     # Act: jq失敗時も grep/sed フォールバックで command を抽出してガード継続
-    run run_script_with_args_and_path "$args" "$fake_jq_dir:$PATH" "$REPO_DIR"
+    run run_hook_with_path "$args" "$fake_jq_dir:$PATH" "$stage_wt"
 
     # Assert
     [ "$status" -eq 2 ]
     [[ "$output" == *"DENY"* ]] || [[ "${lines[*]}" == *"DENY"* ]]
 }
 
-@test "jqが壊れていてもマーカーがあれば許可されること" {
+@test "jqが壊れていてもstageブランチでマーカーがあれば許可されること" {
     # Arrange
     local fake_jq_dir="$TMPDIR/fake_bin"
     mkdir -p "$fake_jq_dir"
     printf '#!/bin/bash\nexit 1\n' > "$fake_jq_dir/jq"
     chmod +x "$fake_jq_dir/jq"
 
-    local wt_path="$WORKTREE_BASE/issue-764"
-    git -C "$REPO_DIR" worktree add "$wt_path" -b issue/764/test
-    mkdir -p "$wt_path/.claude"
-    git -C "$wt_path" rev-parse HEAD > "$wt_path/.claude/.review-passed"
+    local alt_repo="$TMPDIR/alt-main2"
+    mkdir -p "$alt_repo"
+    git -C "$alt_repo" init -b main -q
+    git -C "$alt_repo" config user.email "test@example.com"
+    git -C "$alt_repo" config user.name "Test User"
+    echo "initial" > "$alt_repo/file.txt"
+    git -C "$alt_repo" add .
+    git -C "$alt_repo" commit -m "initial" -q
+    local stage_wt="$TMPDIR/alt-stage2"
+    git -C "$alt_repo" worktree add "$stage_wt" -b stage
+    mkdir -p "$stage_wt/.claude"
+    git -C "$stage_wt" rev-parse HEAD > "$stage_wt/.claude/.review-passed"
 
-    local args='{"command": "git push origin issue/764/test"}'
+    local args='{"tool_input":{"command":"git push origin stage"}}'
 
     # Act
-    run run_script_with_args_and_path "$args" "$fake_jq_dir:$PATH" "$wt_path"
+    run run_hook_with_path "$args" "$fake_jq_dir:$PATH" "$stage_wt"
 
     # Assert
     [ "$status" -eq 0 ]
@@ -101,10 +116,10 @@ run_script_with_args_and_path() {
 @test "マーカーなしでgit pushするとブロックされること（mainリポジトリから）" {
     # Arrange: .claudeディレクトリがある状態でマーカーなし
     mkdir -p "$REPO_DIR/.claude"
-    local args='{"command": "git push origin issue/764/test"}'
+    local args='{"tool_input":{"command":"git push origin issue/764/test"}}'
 
     # Act
-    run run_script_with_args "$args" "$REPO_DIR"
+    run run_hook "$args" "$REPO_DIR"
 
     # Assert
     [ "$status" -eq 2 ]
@@ -118,10 +133,10 @@ run_script_with_args_and_path() {
     mkdir -p "$wt_path/.claude"
     git -C "$wt_path" rev-parse HEAD > "$wt_path/.claude/.review-passed"
 
-    local args='{"command": "git push origin issue/764/force-agent-teams-via-hooks"}'
+    local args='{"tool_input":{"command":"git push origin issue/764/force-agent-teams-via-hooks"}}'
 
     # Act: worktreeから実行
-    run run_script_with_args "$args" "$wt_path"
+    run run_hook "$args" "$wt_path"
 
     # Assert
     [ "$status" -eq 0 ]
@@ -134,10 +149,10 @@ run_script_with_args_and_path() {
     git -C "$REPO_DIR" worktree add "$wt_path" -b issue/764/force-agent-teams-via-hooks
     mkdir -p "$wt_path/.claude"
 
-    local args='{"command": "git push origin issue/764/force-agent-teams-via-hooks"}'
+    local args='{"tool_input":{"command":"git push origin issue/764/force-agent-teams-via-hooks"}}'
 
     # Act: worktreeから実行
-    run run_script_with_args "$args" "$wt_path"
+    run run_hook "$args" "$wt_path"
 
     # Assert: issue/* は短絡 exit 0
     [ "$status" -eq 0 ]
@@ -150,10 +165,10 @@ run_script_with_args_and_path() {
     mkdir -p "$wt_path/.claude"
     git -C "$wt_path" rev-parse HEAD > "$wt_path/.claude/.review-passed"
 
-    local args='{"command": "git push origin issue/999/some-feature"}'
+    local args='{"tool_input":{"command":"git push origin issue/999/some-feature"}}'
 
     # Act
-    run run_script_with_args "$args" "$wt_path"
+    run run_hook "$args" "$wt_path"
 
     # Assert
     [ "$status" -eq 0 ]
@@ -167,10 +182,10 @@ run_script_with_args_and_path() {
     mkdir -p "$wt_path/.claude"
     git -C "$wt_path" rev-parse HEAD > "$wt_path/.claude/.review-passed"
 
-    local args='{"command": "git push -u origin issue/764/foo"}'
+    local args='{"tool_input":{"command":"git push -u origin issue/764/foo"}}'
 
     # Act
-    run run_script_with_args "$args" "$wt_path"
+    run run_hook "$args" "$wt_path"
 
     # Assert
     [ "$status" -eq 0 ]
@@ -182,10 +197,10 @@ run_script_with_args_and_path() {
     git -C "$REPO_DIR" worktree add "$wt_path" -b issue/764/foo
     mkdir -p "$wt_path/.claude"
 
-    local args='{"command": "git push -u origin issue/764/foo"}'
+    local args='{"tool_input":{"command":"git push -u origin issue/764/foo"}}'
 
     # Act
-    run run_script_with_args "$args" "$wt_path"
+    run run_hook "$args" "$wt_path"
 
     # Assert: issue/* は短絡 exit 0
     [ "$status" -eq 0 ]
@@ -198,10 +213,10 @@ run_script_with_args_and_path() {
     mkdir -p "$wt_path/.claude"
     git -C "$wt_path" rev-parse HEAD > "$wt_path/.claude/.review-passed"
 
-    local args='{"command": "git push --set-upstream origin issue/764/foo"}'
+    local args='{"tool_input":{"command":"git push --set-upstream origin issue/764/foo"}}'
 
     # Act
-    run run_script_with_args "$args" "$wt_path"
+    run run_hook "$args" "$wt_path"
 
     # Assert
     [ "$status" -eq 0 ]
@@ -213,10 +228,10 @@ run_script_with_args_and_path() {
     git -C "$REPO_DIR" worktree add "$wt_path" -b issue/764/foo
     mkdir -p "$wt_path/.claude"
 
-    local args='{"command": "git push --set-upstream origin issue/764/foo"}'
+    local args='{"tool_input":{"command":"git push --set-upstream origin issue/764/foo"}}'
 
     # Act
-    run run_script_with_args "$args" "$wt_path"
+    run run_hook "$args" "$wt_path"
 
     # Assert: issue/* は短絡 exit 0
     [ "$status" -eq 0 ]
@@ -225,10 +240,10 @@ run_script_with_args_and_path() {
 @test "mainブランチへのpushはブランチ抽出できない場合にCWDのマーカーを参照すること" {
     # Arrange: マーカーなし
     mkdir -p "$REPO_DIR/.claude"
-    local args='{"command": "git push origin main"}'
+    local args='{"tool_input":{"command":"git push origin main"}}'
 
     # Act
-    run run_script_with_args "$args" "$REPO_DIR"
+    run run_hook "$args" "$REPO_DIR"
 
     # Assert: mainへのpushは設定でブロックされるが、ここではガード自体のロジックをテスト
     # マーカーがなければブロックされること
@@ -241,10 +256,10 @@ run_script_with_args_and_path() {
     git -C "$REPO_DIR" worktree add "$wt_path" -b issue/1138/branch-strategy
     mkdir -p "$wt_path/.claude"
 
-    local args='{"command": "git push origin issue/1138/branch-strategy"}'
+    local args='{"tool_input":{"command":"git push origin issue/1138/branch-strategy"}}'
 
     # Act: issue/* は短絡で exit 0 (marker 不要)
-    run run_script_with_args "$args" "$wt_path"
+    run run_hook "$args" "$wt_path"
 
     # Assert
     [ "$status" -eq 0 ]
@@ -256,10 +271,10 @@ run_script_with_args_and_path() {
     git -C "$REPO_DIR" worktree add "$wt_path" -b feature/new-ui
     mkdir -p "$wt_path/.claude"
 
-    local args='{"command": "git push origin feature/new-ui"}'
+    local args='{"tool_input":{"command":"git push origin feature/new-ui"}}'
 
     # Act
-    run run_script_with_args "$args" "$wt_path"
+    run run_hook "$args" "$wt_path"
 
     # Assert
     [ "$status" -eq 0 ]
@@ -271,10 +286,10 @@ run_script_with_args_and_path() {
     git -C "$REPO_DIR" worktree add "$wt_path" -b stage
     mkdir -p "$wt_path/.claude"
 
-    local args='{"command": "git push origin stage"}'
+    local args='{"tool_input":{"command":"git push origin stage"}}'
 
     # Act
-    run run_script_with_args "$args" "$wt_path"
+    run run_hook "$args" "$wt_path"
 
     # Assert: stage branch はマーカー必須 → ブロック
     [ "$status" -eq 2 ]
@@ -288,11 +303,25 @@ run_script_with_args_and_path() {
     mkdir -p "$wt_path/.claude"
     git -C "$wt_path" rev-parse HEAD > "$wt_path/.claude/.review-passed"
 
-    local args='{"command": "git push origin stage"}'
+    local args='{"tool_input":{"command":"git push origin stage"}}'
 
     # Act
-    run run_script_with_args "$args" "$wt_path"
+    run run_hook "$args" "$wt_path"
 
     # Assert
     [ "$status" -eq 0 ]
+}
+
+@test "stdinに正しいJSONを渡すとgit pushがブロックされること（マーカーなし）" {
+    # Arrange: stage ブランチでマーカーなし — stdin ルーティングが正しく機能することを確認
+    local wt_path="$WORKTREE_BASE/stage-stdin-test"
+    git -C "$REPO_DIR" worktree add "$wt_path" -b stage
+    mkdir -p "$wt_path/.claude"
+
+    # Act: stdin に tool_input.command を含む正しい JSON を渡す
+    run bash -c "echo '{\"tool_input\":{\"command\":\"git push origin stage\"}}' | (cd '$wt_path' && bash '$SCRIPT')"
+
+    # Assert: 実際にブロックされること（$ARGUMENTS が空でも stdin から読む）
+    [ "$status" -eq 2 ]
+    [[ "$output" == *"DENY"* ]]
 }

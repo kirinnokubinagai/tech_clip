@@ -7,22 +7,19 @@
 # marker 不在 → evaluate-paths.sh で再判定 (no_e2e_affecting_paths / auto_skip なら通過)
 # 不一致 / 不正形式 → exit 2
 
-extract_command_from_arguments() {
-  local arguments="$1"
-  local command=""
+INPUT=$(cat)
 
-  if command -v jq &> /dev/null; then
-    command=$(echo "$arguments" | jq -r '.command // empty' 2>/dev/null)
-  fi
+if [ -z "$INPUT" ]; then
+  exit 0
+fi
 
-  if [ -z "$command" ]; then
-    command=$(echo "$arguments" | grep -o '"command"[[:space:]]*:[[:space:]]*"[^"]*"' | head -1 | sed 's/.*"command"[[:space:]]*:[[:space:]]*"//' | sed 's/"$//')
-  fi
+if command -v jq &> /dev/null; then
+  COMMAND=$(echo "$INPUT" | jq -r '.tool_input.command // empty' 2>/dev/null)
+fi
 
-  echo "$command"
-}
-
-COMMAND=$(extract_command_from_arguments "${ARGUMENTS:-}")
+if [ -z "$COMMAND" ]; then
+  COMMAND=$(echo "$INPUT" | grep -o '"command"[[:space:]]*:[[:space:]]*"[^"]*"' | head -1 | sed 's/.*"command"[[:space:]]*:[[:space:]]*"//' | sed 's/"$//')
+fi
 
 if [ -z "$COMMAND" ]; then
   exit 0

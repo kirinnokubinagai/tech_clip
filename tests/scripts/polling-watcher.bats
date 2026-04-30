@@ -28,7 +28,7 @@ EOF
   "pr_number": 42,
   "push_sha": "abc1234",
   "issue_number": 999,
-  "agent_name": "issue-999-reviewer",
+  "agent_name": "reviewer-999",
   "started_at": "${now}"
 }
 EOF
@@ -108,7 +108,7 @@ STUB
   "pr_number": 42,
   "push_sha": "abc1234",
   "issue_number": 999,
-  "agent_name": "issue-999-reviewer",
+  "agent_name": "reviewer-999",
   "started_at": "${old_start}"
 }
 EOF2
@@ -189,7 +189,7 @@ EOF2
   "pr_number": 42,
   "push_sha": "abc1234",
   "issue_number": 999,
-  "agent_name": "issue-999-reviewer",
+  "agent_name": "reviewer-999",
   "started_at": "${old_start}"
 }
 EOF2

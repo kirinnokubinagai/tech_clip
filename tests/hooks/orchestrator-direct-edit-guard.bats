@@ -7,7 +7,7 @@
 SCRIPT="$(cd "$(dirname "$BATS_TEST_FILENAME")/../.." && pwd)/.claude/hooks/orchestrator-direct-edit-guard.sh"
 
 setup() {
-  unset GIT_DIR GIT_WORK_TREE
+    unset GIT_DIR GIT_WORK_TREE
     TMPDIR="$BATS_TEST_TMPDIR"
     REPO_DIR="$TMPDIR/main"
 
@@ -597,307 +597,126 @@ run_script_with_file() {
     [ "$status" -eq 0 ]
 }
 
-# --- サブエージェント pass-through (priority 0) ---
+# --- Phase B: team config ベースの sub-agent 検出（CLAUDE_AGENT_NAME 依存除去後） ---
+# step 6: worktree ブランチ上で team active なら sub-agent の編集として許可
+# step 3/4: main セッション上では team active でも DENY（main read-only 原則）
 
-@test "CLAUDE_AGENT_NAME が設定されたサブエージェントはmainブランチのapps/配下も許可されること [Phase 0]" {
-    # Arrange: mainブランチ上でサブエージェント名を設定
+@test "Phase B: worktree ブランチ上で team active な場合はソースファイル編集が許可されること（step 6）" {
+    # Arrange: worktree ブランチ + team active = sub-agent の編集
+    git -C "$REPO_DIR" checkout -b feature/test-branch
     local file_path="$REPO_DIR/apps/api/src/index.ts"
     local input
     input=$(jq -n --arg p "$file_path" '{"tool_input":{"file_path":$p}}')
-
-    # Act: CLAUDE_AGENT_NAME をエクスポートしてスクリプト実行
-    export CLAUDE_AGENT_NAME="issue-100-coder"
-    run bash -c "cd '$REPO_DIR' && printf '%s' '$input' | bash '$SCRIPT'"
-    unset CLAUDE_AGENT_NAME
-
-    # Assert: サブエージェントなら即 exit 0
-    [ "$status" -eq 0 ]
-}
-
-@test "CLAUDE_AGENT_NAME が設定されたサブエージェント(reviewer以外)はmainブランチの.claude/配下も許可されること [Phase 0]" {
-    # Arrange
-    local file_path="$REPO_DIR/.claude/hooks/some-hook.sh"
-    local input
-    input=$(jq -n --arg p "$file_path" '{"tool_input":{"file_path":$p}}')
-
-    # Act
-    export CLAUDE_AGENT_NAME="issue-100-coder"
-    run bash -c "cd '$REPO_DIR' && printf '%s' '$input' | bash '$SCRIPT'"
-    unset CLAUDE_AGENT_NAME
-
-    # Assert
-    [ "$status" -eq 0 ]
-}
-
-@test "_CLAUDE_DETECTED_AGENT_NAME が設定されたサブエージェントはmainブランチのソースファイルも許可されること [Phase 0]" {
-    # Arrange: テスト用の注入変数でサブエージェントをシミュレート
-    local file_path="$REPO_DIR/apps/mobile/src/App.tsx"
-    local input
-    input=$(jq -n --arg p "$file_path" '{"tool_input":{"file_path":$p}}')
-
-    # Act
-    unset CLAUDE_AGENT_NAME
-    export _CLAUDE_DETECTED_AGENT_NAME="issue-200-infra-engineer"
-    run bash -c "cd '$REPO_DIR' && printf '%s' '$input' | bash '$SCRIPT'"
-    unset _CLAUDE_DETECTED_AGENT_NAME
-
-    # Assert
-    [ "$status" -eq 0 ]
-}
-
-@test "_CLAUDE_DETECTED_AGENT_NAME が設定されたサブエージェントはdetached HEAD状態でも許可されること [Phase 0]" {
-    # Arrange: detached HEAD でもサブエージェントはブロックされない
-    local commit_hash
-    commit_hash=$(git -C "$REPO_DIR" rev-parse HEAD)
-    git -C "$REPO_DIR" checkout --detach "$commit_hash"
-    local file_path="$REPO_DIR/apps/api/src/index.ts"
-    local input
-    input=$(jq -n --arg p "$file_path" '{"tool_input":{"file_path":$p}}')
-
-    # Act
-    unset CLAUDE_AGENT_NAME
-    export _CLAUDE_DETECTED_AGENT_NAME="issue-300-ui-designer"
-    run bash -c "cd '$REPO_DIR' && printf '%s' '$input' | bash '$SCRIPT'"
-    unset _CLAUDE_DETECTED_AGENT_NAME
-
-    # Assert
-    [ "$status" -eq 0 ]
-}
-
-@test "オーケストレーター（両変数未設定）はmainブランチでブロックされること [Phase 0]" {
-    # Arrange: CLAUDE_AGENT_NAME・_CLAUDE_DETECTED_AGENT_NAME 両方未設定 = orchestrator
-    local file_path="$REPO_DIR/apps/api/src/index.ts"
-    local input
-    input=$(jq -n --arg p "$file_path" '{"tool_input":{"file_path":$p}}')
+    mkdir -p "$REPO_DIR/.claude-user/teams/active-issues"
+    echo '{"members":[{"name":"coder-100"}]}' > "$REPO_DIR/.claude-user/teams/active-issues/config.json"
 
     # Act
     unset CLAUDE_AGENT_NAME
     unset _CLAUDE_DETECTED_AGENT_NAME
     run bash -c "cd '$REPO_DIR' && printf '%s' '$input' | bash '$SCRIPT'"
 
-    # Assert: orchestrator は mainブランチでブロックされる
-    [ "$status" -eq 2 ]
-    [[ "${output}" == *"DENY"* ]]
-}
-
-@test ".omc/state/配下はサブエージェント（CLAUDE_AGENT_NAME設定）でも pass-through されること [Phase 0]" {
-    # NOTE: サブエージェント check は priority 0 = 最初に exit 0 するので .omc/state/ check より先に終わる
-    # サブエージェントは .omc/state/ 編集も許可（is_blocked_file は orchestrator 専用ガード）
-    local file_path="$REPO_DIR/.omc/state/autopilot-state.json"
-    local input
-    input=$(jq -n --arg p "$file_path" '{"tool_input":{"file_path":$p}}')
-
-    # Act
-    export CLAUDE_AGENT_NAME="issue-100-coder"
-    run bash -c "cd '$REPO_DIR' && printf '%s' '$input' | bash '$SCRIPT'"
-    unset CLAUDE_AGENT_NAME
-
-    # Assert: サブエージェントは priority 0 で即 exit 0（.omc/state/ check より先）
+    # Assert: worktree ブランチ + team active → ALLOW
     [ "$status" -eq 0 ]
 }
 
-# --- reviewer 系ブロックテスト ---
-
-@test "reviewer エージェントは非mainブランチのソースファイル編集がブロックされること" {
-    # Arrange
-    git -C "$REPO_DIR" checkout -b feature/test-branch
+@test "Phase B: team active でも main ブランチ上のソースファイル編集は DENY されること（step 4 が優先）" {
+    # Arrange: main ブランチ + team active（main read-only 原則は team active でも適用）
     local file_path="$REPO_DIR/apps/api/src/index.ts"
     local input
     input=$(jq -n --arg p "$file_path" '{"tool_input":{"file_path":$p}}')
+    mkdir -p "$REPO_DIR/.claude-user/teams/active-issues"
+    echo '{"members":[{"name":"coder-100"}]}' > "$REPO_DIR/.claude-user/teams/active-issues/config.json"
 
     # Act
-    export CLAUDE_AGENT_NAME="issue-100-reviewer"
-    run bash -c "cd '$REPO_DIR' && printf '%s' '$input' | bash '$SCRIPT'"
     unset CLAUDE_AGENT_NAME
-
-    # Assert
-    [ "$status" -eq 2 ]
-    [[ "${output}" == *"DENY"* ]]
-    [[ "${output}" == *"reviewer"* ]]
-}
-
-@test "infra-reviewer エージェントはソースファイル編集がブロックされること" {
-    # Arrange
-    git -C "$REPO_DIR" checkout -b feature/test-branch
-    local file_path="$REPO_DIR/apps/api/src/index.ts"
-    local input
-    input=$(jq -n --arg p "$file_path" '{"tool_input":{"file_path":$p}}')
-
-    # Act
-    export CLAUDE_AGENT_NAME="issue-100-infra-reviewer"
+    unset _CLAUDE_DETECTED_AGENT_NAME
     run bash -c "cd '$REPO_DIR' && printf '%s' '$input' | bash '$SCRIPT'"
-    unset CLAUDE_AGENT_NAME
 
-    # Assert
+    # Assert: main ブランチなので DENY
     [ "$status" -eq 2 ]
     [[ "${output}" == *"DENY"* ]]
 }
 
-@test "ui-reviewer エージェントはソースファイル編集がブロックされること" {
-    # Arrange
+@test "Phase B: team config が存在しない場合（team inactive）は worktree ブランチでも deny されること" {
+    # Arrange: worktree ブランチ + team inactive = orchestrator が直接編集しようとしている
     git -C "$REPO_DIR" checkout -b feature/test-branch
     local file_path="$REPO_DIR/apps/api/src/index.ts"
     local input
     input=$(jq -n --arg p "$file_path" '{"tool_input":{"file_path":$p}}')
+    rm -f "$REPO_DIR/.claude-user/teams/active-issues/config.json" 2>/dev/null || true
 
     # Act
-    export CLAUDE_AGENT_NAME="issue-100-ui-reviewer"
-    run bash -c "cd '$REPO_DIR' && printf '%s' '$input' | bash '$SCRIPT'"
     unset CLAUDE_AGENT_NAME
+    unset _CLAUDE_DETECTED_AGENT_NAME
+    run bash -c "cd '$REPO_DIR' && printf '%s' '$input' | bash '$SCRIPT'"
 
-    # Assert
+    # Assert: team inactive → DENY
     [ "$status" -eq 2 ]
     [[ "${output}" == *"DENY"* ]]
 }
 
-@test "reviewer エージェントは .claude/hooks/ 編集もブロックされること" {
-    # Arrange
-    git -C "$REPO_DIR" checkout -b feature/test-branch
+@test "Phase B: team active でも main ブランチ上の .claude/ ファイル編集は DENY されること（step 4 が優先）" {
+    # Arrange: main + team active だが main ブランチ直接編集は禁止
     local file_path="$REPO_DIR/.claude/hooks/some-hook.sh"
     local input
     input=$(jq -n --arg p "$file_path" '{"tool_input":{"file_path":$p}}')
+    mkdir -p "$REPO_DIR/.claude-user/teams/active-issues"
+    echo '{"members":[{"name":"coder-100"}]}' > "$REPO_DIR/.claude-user/teams/active-issues/config.json"
 
     # Act
-    export CLAUDE_AGENT_NAME="issue-100-reviewer"
-    run bash -c "cd '$REPO_DIR' && printf '%s' '$input' | bash '$SCRIPT'"
     unset CLAUDE_AGENT_NAME
+    unset _CLAUDE_DETECTED_AGENT_NAME
+    run bash -c "cd '$REPO_DIR' && printf '%s' '$input' | bash '$SCRIPT'"
 
-    # Assert
+    # Assert: main ブランチなので step 4 で DENY
     [ "$status" -eq 2 ]
     [[ "${output}" == *"DENY"* ]]
 }
 
-@test "reviewer エージェントは .claude/.review-passed 編集もブロックされること" {
-    # Arrange
-    git -C "$REPO_DIR" checkout -b feature/test-branch
-    local file_path="$REPO_DIR/.claude/.review-passed"
+# --- Phase B: step 3 (cross-worktree, main session) の team-aware テスト ---
+# step 3 は SESSION_BRANCH=main かつ file が兄弟 worktree 内にある場合に発火する
+
+@test "main セッション上では team active でも兄弟 worktree への編集を DENY すること（step 3 strict）" {
+    # Arrange: REPO_DIR は main ブランチ。兄弟 worktree ディレクトリを作成
+    local parent_dir
+    parent_dir=$(dirname "$REPO_DIR")
+    local sibling_dir="$parent_dir/issue-9999"
+    mkdir -p "$sibling_dir/apps/api/src"
+    git -C "$sibling_dir" init -b issue/9999/test 2>/dev/null
+    echo "code" > "$sibling_dir/apps/api/src/index.ts"
+
+    # team active 状態を設定
+    mkdir -p "$REPO_DIR/.claude-user/teams/active-issues"
+    echo '{"members":[{"name":"coder-100"}]}' > "$REPO_DIR/.claude-user/teams/active-issues/config.json"
+
+    local file_path="$sibling_dir/apps/api/src/index.ts"
     local input
     input=$(jq -n --arg p "$file_path" '{"tool_input":{"file_path":$p}}')
 
-    # Act
-    export CLAUDE_AGENT_NAME="issue-100-reviewer"
-    run bash -c "cd '$REPO_DIR' && printf '%s' '$input' | bash '$SCRIPT'"
+    # Act: REPO_DIR (main branch) 上からスクリプトを実行
     unset CLAUDE_AGENT_NAME
+    run bash -c "cd '$REPO_DIR' && printf '%s' '$input' | bash '$SCRIPT'"
 
-    # Assert
+    # Assert: main セッションから兄弟 worktree への編集 → DENY（team active でも）
     [ "$status" -eq 2 ]
     [[ "${output}" == *"DENY"* ]]
 }
 
-@test "reviewer のブロックメッセージに代替手段が表示されること" {
-    # Arrange
-    git -C "$REPO_DIR" checkout -b feature/test-branch
+@test "worktree branch セッション上では team active なら兄弟 worktree のソース編集を許可すること（step 6）" {
+    # Arrange: REPO_DIR を feature ブランチに切り替え（worktree session をシミュレート）
+    git -C "$REPO_DIR" checkout -b feature/worktree-session
     local file_path="$REPO_DIR/apps/api/src/index.ts"
     local input
     input=$(jq -n --arg p "$file_path" '{"tool_input":{"file_path":$p}}')
 
-    # Act
-    export CLAUDE_AGENT_NAME="issue-100-reviewer"
-    run bash -c "cd '$REPO_DIR' && printf '%s' '$input' | bash '$SCRIPT'"
-    unset CLAUDE_AGENT_NAME
-
-    # Assert
-    [ "$status" -eq 2 ]
-    [[ "${output}" == *"create-review-marker.sh"* ]]
-    [[ "${output}" == *"push-verified.sh"* ]]
-}
-
-# --- e2e-reviewer 非ブロックテスト ---
-
-@test "e2e-reviewer エージェントはソースファイル編集が許可されること" {
-    # Arrange
-    git -C "$REPO_DIR" checkout -b feature/test-branch
-    local file_path="$REPO_DIR/apps/api/src/index.ts"
-    local input
-    input=$(jq -n --arg p "$file_path" '{"tool_input":{"file_path":$p}}')
+    # team active 状態を設定
+    mkdir -p "$REPO_DIR/.claude-user/teams/active-issues"
+    echo '{"members":[{"name":"coder-100"}]}' > "$REPO_DIR/.claude-user/teams/active-issues/config.json"
 
     # Act
-    export CLAUDE_AGENT_NAME="issue-100-e2e-reviewer"
-    run bash -c "cd '$REPO_DIR' && printf '%s' '$input' | bash '$SCRIPT'"
     unset CLAUDE_AGENT_NAME
-
-    # Assert
-    [ "$status" -eq 0 ]
-}
-
-@test "e2e-reviewer エージェントは .claude/ 配下編集が許可されること" {
-    # Arrange
-    git -C "$REPO_DIR" checkout -b feature/test-branch
-    local file_path="$REPO_DIR/.claude/hooks/some-hook.sh"
-    local input
-    input=$(jq -n --arg p "$file_path" '{"tool_input":{"file_path":$p}}')
-
-    # Act
-    export CLAUDE_AGENT_NAME="issue-100-e2e-reviewer"
     run bash -c "cd '$REPO_DIR' && printf '%s' '$input' | bash '$SCRIPT'"
-    unset CLAUDE_AGENT_NAME
 
-    # Assert
-    [ "$status" -eq 0 ]
-}
-
-# --- reviewer メタファイル例外テスト ---
-
-@test "reviewer エージェントは .claude-user/ 配下の編集が許可されること" {
-    # Arrange
-    git -C "$REPO_DIR" checkout -b feature/test-branch
-    local file_path="$REPO_DIR/.claude-user/memory/some-memory.md"
-    local input
-    input=$(jq -n --arg p "$file_path" '{"tool_input":{"file_path":$p}}')
-
-    # Act
-    export CLAUDE_AGENT_NAME="issue-100-reviewer"
-    run bash -c "cd '$REPO_DIR' && printf '%s' '$input' | bash '$SCRIPT'"
-    unset CLAUDE_AGENT_NAME
-
-    # Assert
-    [ "$status" -eq 0 ]
-}
-
-@test "reviewer エージェントは .omc/ 配下の編集が許可されること" {
-    # Arrange
-    git -C "$REPO_DIR" checkout -b feature/test-branch
-    local file_path="$REPO_DIR/.omc/notepad.md"
-    local input
-    input=$(jq -n --arg p "$file_path" '{"tool_input":{"file_path":$p}}')
-
-    # Act
-    export CLAUDE_AGENT_NAME="issue-100-reviewer"
-    run bash -c "cd '$REPO_DIR' && printf '%s' '$input' | bash '$SCRIPT'"
-    unset CLAUDE_AGENT_NAME
-
-    # Assert
-    [ "$status" -eq 0 ]
-}
-
-# --- coder 等の非 reviewer サブエージェントの非ブロック確認 ---
-
-@test "coder エージェントは引き続きソースファイル編集が許可されること" {
-    # Arrange（reviewer 変更後の regression 確認）
-    local file_path="$REPO_DIR/apps/api/src/index.ts"
-    local input
-    input=$(jq -n --arg p "$file_path" '{"tool_input":{"file_path":$p}}')
-
-    # Act
-    export CLAUDE_AGENT_NAME="issue-100-coder"
-    run bash -c "cd '$REPO_DIR' && printf '%s' '$input' | bash '$SCRIPT'"
-    unset CLAUDE_AGENT_NAME
-
-    # Assert
-    [ "$status" -eq 0 ]
-}
-
-@test "analyst エージェントは引き続きソースファイル編集が許可されること" {
-    # Arrange
-    local file_path="$REPO_DIR/apps/api/src/index.ts"
-    local input
-    input=$(jq -n --arg p "$file_path" '{"tool_input":{"file_path":$p}}')
-
-    # Act
-    export CLAUDE_AGENT_NAME="issue-100-analyst"
-    run bash -c "cd '$REPO_DIR' && printf '%s' '$input' | bash '$SCRIPT'"
-    unset CLAUDE_AGENT_NAME
-
-    # Assert
+    # Assert: worktree branch + team active → ALLOW（step 6 の team-active 緩和）
     [ "$status" -eq 0 ]
 }

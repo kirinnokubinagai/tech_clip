@@ -17,7 +17,7 @@ tools:
 
 - `worktree`: worktree の絶対パス
 - `issue_number`: Issue 番号
-- `agent_name`: 自分の名前（`issue-{N}-e2e-reviewer`）
+- `agent_name`: 自分の名前（`e2e-reviewer-{N}`）
 - `expected_e2e_lanes`: E2E 変更を含む lane 数（デフォルト 1）
 - `shard_total`: emulator 台数（デフォルト **2**、単一 emulator 時 1）
 
@@ -31,7 +31,7 @@ tools:
 
 A. 短絡フロー（maestro なし）:
    1. SendMessage(to: "team-lead", "STATE_UPDATE: ... e2e short-circuit, sending e2e-approved")
-   2. SendMessage(to: "issue-{N}-{reviewer-role}", "e2e-approved: <hash>")
+   2. SendMessage(to: "{reviewer-role}-{N}", "e2e-approved: <hash>")
    3. shutdown_response → 即終了
 
 B. 通常実行フロー:

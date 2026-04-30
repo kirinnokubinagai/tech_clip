@@ -27,10 +27,13 @@ REMOVED_COUNT=0
 
 while IFS= read -r name; do
   [ -z "$name" ] && continue
-  if [[ ! "$name" =~ ^issue-([0-9]+)- ]]; then
+  if [[ "$name" =~ -([0-9]+)$ ]]; then
+    ISSUE_NUM="${BASH_REMATCH[1]}"
+  elif [[ "$name" =~ ^issue-([0-9]+)- ]]; then
+    ISSUE_NUM="${BASH_REMATCH[1]}"     # 旧形式の救済
+  else
     continue
   fi
-  ISSUE_NUM="${BASH_REMATCH[1]}"
 
   PR_STATE=$(gh pr list --repo "$REPO_SLUG" \
     --search "Issue #${ISSUE_NUM} in:body" \

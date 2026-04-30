@@ -18,7 +18,7 @@ tools:
 
 - `worktree`: worktree の絶対パス
 - `issue_number`: Issue 番号
-- `agent_name`: 自分の名前（`issue-{N}-coder` または `issue-{N}-coder-{lane}`）
+- `agent_name`: 自分の名前（`coder-{N}` または `coder-{lane}-{N}`）
 
 ## Skill 実行順序
 
@@ -56,12 +56,12 @@ tools:
 
 | タイミング | 送るメッセージ |
 |---|---|
-| spec 受信・実装開始時 | `STATE_UPDATE: issue-{N}-coder — received spec, starting implementation` |
-| テスト作成時（RED） | `STATE_UPDATE: issue-{N}-coder — writing tests (RED phase)` |
-| 実装時（GREEN） | `STATE_UPDATE: issue-{N}-coder — implementing (GREEN phase)` |
-| lint 実行時 | `STATE_UPDATE: issue-{N}-coder — running lint` |
-| commit 完了・impl-ready 送信時 | `STATE_UPDATE: issue-{N}-coder — committed <hash>, sending impl-ready` |
-| CHANGES_REQUESTED 修正開始時 | `STATE_UPDATE: issue-{N}-coder — addressing CHANGES_REQUESTED feedback` |
+| spec 受信・実装開始時 | `STATE_UPDATE: coder-{N} — received spec, starting implementation` |
+| テスト作成時（RED） | `STATE_UPDATE: coder-{N} — writing tests (RED phase)` |
+| 実装時（GREEN） | `STATE_UPDATE: coder-{N} — implementing (GREEN phase)` |
+| lint 実行時 | `STATE_UPDATE: coder-{N} — running lint` |
+| commit 完了・impl-ready 送信時 | `STATE_UPDATE: coder-{N} — committed <hash>, sending impl-ready` |
+| CHANGES_REQUESTED 修正開始時 | `STATE_UPDATE: coder-{N} — addressing CHANGES_REQUESTED feedback` |
 
 ## 絶対ルール
 
@@ -85,7 +85,7 @@ tools:
 
 `testing` は worktree 側で自動ロード済み。
 
-## レーン並列モード（`issue-{N}-coder-{lane}` で spawn された場合）
+## レーン並列モード（`coder-{lane}-{N}` で spawn された場合）
 
 - analyst spec の自 lane セクションに記載された「触って OK」ファイルのみ触る
 - 他 lane と同じファイルを絶対に触らない

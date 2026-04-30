@@ -50,7 +50,7 @@ bash scripts/next-issue-candidates.sh --json
 
 以下のときは spawn 前に `harness-orchestrator-self-audit` を通す:
 
-- 既に `issue-{N}-*` サブエージェントが team config に存在 → 二重 spawn 禁止
+- 既に `*-{N}` サブエージェントが team config に存在 → 二重 spawn 禁止
 - ユーザーが「Issue #N をやめて」と明示的に指示 → `harness-agent-cleanup` を実行
 - 複数 Issue が同じファイルを触る可能性が高い → 順次実行を判断
 

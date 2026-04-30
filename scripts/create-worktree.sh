@@ -35,14 +35,23 @@ if [[ -e "${WORKTREE_PATH}" ]]; then
   exit 1
 fi
 
-echo "📥 origin/main を更新..."
-git fetch origin main
+# Issue #1138: feature/* は origin/stage から分岐させる。stage が未存在なら origin/main にフォールバック。
+if git ls-remote --exit-code --heads origin stage >/dev/null 2>&1; then
+  BASE_REF="origin/stage"
+  BASE_NAME="stage"
+else
+  BASE_REF="origin/main"
+  BASE_NAME="main"
+fi
+
+echo "📥 ${BASE_REF} を更新..."
+git fetch origin "${BASE_NAME}"
 # main worktree のローカル main を origin/main に FF merge する。
 # 非 FF（未 push コミットがある等）の場合は失敗するが、worktree 作成自体は続行したいため || true で握り潰す。
 git -C "${REPO_ROOT}" merge --ff-only origin/main --quiet 2>/dev/null || true
 
-echo "🌳 worktree を作成..."
-git worktree add "${WORKTREE_PATH}" -b "${BRANCH_NAME}" origin/main
+echo "🌳 worktree を作成... (base=${BASE_REF})"
+git worktree add "${WORKTREE_PATH}" -b "${BRANCH_NAME}" "${BASE_REF}"
 
 if command -v direnv >/dev/null 2>&1 && [[ -f "${WORKTREE_PATH}/.envrc" ]]; then
   echo "🔓 direnv allow を実行..."
