@@ -15,3 +15,13 @@ SCRIPT="$(cd "$(dirname "$BATS_TEST_FILENAME")/../.." && pwd)/.claude/hooks/clea
   run bash -c 'grep -q "MERGED" "'"$SCRIPT"'"'
   [ "$status" -eq 0 ]
 }
+
+@test "clean-stale: {role}-{N} 形式の agent を正しく処理すること（新形式メイン）" {
+  run bash -c 'grep -qE "\-\(\[0-9\]\+\)\\\$" "'"$SCRIPT"'"'
+  [ "$status" -eq 0 ]
+}
+
+@test "clean-stale: 旧形式 issue-{N}-{role} も fallback で処理されること" {
+  run bash -c 'grep -qE "\^issue-\(\[0-9\]\+\)-" "'"$SCRIPT"'"'
+  [ "$status" -eq 0 ]
+}
