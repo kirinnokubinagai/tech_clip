@@ -274,6 +274,7 @@ jobs:
       always() &&
       needs.ci-gate.result == 'success' &&
       github.event_name == 'pull_request' &&
+      contains(fromJSON('["main","stage"]'), github.base_ref) &&
       github.actor != 'dependabot[bot]'
     needs: [ci-gate]
     runs-on: ubuntu-latest
@@ -282,9 +283,13 @@ jobs:
       pull-requests: write
       contents: write
     steps:
-      - name: 自動マージ
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v4.2.2
+        with:
+          sparse-checkout: scripts/ci/auto-merge.sh
+          sparse-checkout-cone-mode: false
+      - name: 自動マージ（冪等 enable + verify）
         env:
           GH_TOKEN: ${{ github.token }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
-        run: |
-          gh pr merge "${PR_NUMBER}" --squash --delete-branch --auto --repo ${{ github.repository }}
+          REPO: ${{ github.repository }}
+        run: bash scripts/ci/auto-merge.sh
