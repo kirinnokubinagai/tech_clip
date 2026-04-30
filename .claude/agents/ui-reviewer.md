@@ -17,7 +17,7 @@ tools:
 
 - `worktree`: worktree の絶対パス
 - `issue_number`: Issue 番号
-- `agent_name`: 自分の名前（`issue-{N}-ui-reviewer`）
+- `agent_name`: 自分の名前（`ui-reviewer-{N}`）
 
 ## Skill 実行順序
 

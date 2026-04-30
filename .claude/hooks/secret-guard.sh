@@ -5,12 +5,14 @@ if ! command -v jq &> /dev/null; then
   exit 0
 fi
 
-COMMAND=$(echo "$ARGUMENTS" | jq -r '.command // empty' 2>/dev/null)
+# stdin から PreToolUse JSON を読み込む
+INPUT=$(cat)
+
+COMMAND=$(echo "$INPUT" | jq -r '.tool_input.command // empty' 2>/dev/null)
 
 if [ -z "$COMMAND" ]; then
   exit 0
 fi
-
 if ! echo "$COMMAND" | grep -qE 'git\s+(push|commit)'; then
   exit 0
 fi

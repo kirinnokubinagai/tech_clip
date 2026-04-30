@@ -7,6 +7,7 @@
 HOOK="$(cd "$(dirname "$BATS_TEST_FILENAME")/../.." && pwd)/.claude/hooks/orchestrator-flow-guard.sh"
 
 setup() {
+    unset GIT_DIR GIT_WORK_TREE
     TMPDIR="$BATS_TEST_TMPDIR"
     export HOME="$TMPDIR/home"
     mkdir -p "$HOME"
@@ -30,58 +31,58 @@ run_hook() {
 # -------------------------------------------------------------------------
 
 @test "analyst なしで coder spawn はブロックされること" {
-    local json='{"tool_name":"Agent","tool_input":{"name":"issue-999-coder","subagent_type":"coder"}}'
+    local json='{"tool_name":"Agent","tool_input":{"name":"coder-999","subagent_type":"coder"}}'
     run run_hook "$json"
     [ "$status" -eq 2 ]
     [[ "$output" == *"DENY"* ]]
 }
 
 @test "analyst なしで infra-engineer spawn はブロックされること" {
-    local json='{"tool_name":"Agent","tool_input":{"name":"issue-999-infra-engineer","subagent_type":"infra-engineer"}}'
+    local json='{"tool_name":"Agent","tool_input":{"name":"infra-engineer-999","subagent_type":"infra-engineer"}}'
     run run_hook "$json"
     [ "$status" -eq 2 ]
     [[ "$output" == *"DENY"* ]]
 }
 
 @test "analyst なしで reviewer spawn はブロックされること" {
-    local json='{"tool_name":"Agent","tool_input":{"name":"issue-999-reviewer","subagent_type":"reviewer"}}'
+    local json='{"tool_name":"Agent","tool_input":{"name":"reviewer-999","subagent_type":"reviewer"}}'
     run run_hook "$json"
     [ "$status" -eq 2 ]
     [[ "$output" == *"DENY"* ]]
 }
 
 @test "analyst なしで ui-designer spawn はブロックされること" {
-    local json='{"tool_name":"Agent","tool_input":{"name":"issue-999-ui-designer","subagent_type":"ui-designer"}}'
+    local json='{"tool_name":"Agent","tool_input":{"name":"ui-designer-999","subagent_type":"ui-designer"}}'
     run run_hook "$json"
     [ "$status" -eq 2 ]
     [[ "$output" == *"DENY"* ]]
 }
 
 @test "analyst なしで infra-reviewer spawn はブロックされること" {
-    local json='{"tool_name":"Agent","tool_input":{"name":"issue-999-infra-reviewer","subagent_type":"infra-reviewer"}}'
+    local json='{"tool_name":"Agent","tool_input":{"name":"infra-reviewer-999","subagent_type":"infra-reviewer"}}'
     run run_hook "$json"
     [ "$status" -eq 2 ]
     [[ "$output" == *"DENY"* ]]
 }
 
 @test "analyst なしで ui-reviewer spawn はブロックされること" {
-    local json='{"tool_name":"Agent","tool_input":{"name":"issue-999-ui-reviewer","subagent_type":"ui-reviewer"}}'
+    local json='{"tool_name":"Agent","tool_input":{"name":"ui-reviewer-999","subagent_type":"ui-reviewer"}}'
     run run_hook "$json"
     [ "$status" -eq 2 ]
     [[ "$output" == *"DENY"* ]]
 }
 
 @test "analyst が存在する場合は coder spawn が許可されること" {
-    # team config に analyst を追加
-    echo '{"members":[{"name":"issue-100-analyst"},{"name":"issue-100-coder"}]}' \
+    # team config に analyst のみ追加（coder は未存在）
+    echo '{"members":[{"name":"analyst-100"}]}' \
         > "$CLAUDE_USER_ROOT/teams/active-issues/config.json"
-    local json='{"tool_name":"Agent","tool_input":{"name":"issue-100-coder","subagent_type":"coder"}}'
+    local json='{"tool_name":"Agent","tool_input":{"name":"coder-100","subagent_type":"coder"}}'
     run run_hook "$json"
     [ "$status" -eq 0 ]
 }
 
 @test "analyst spawn 自体はブロックされないこと" {
-    local json='{"tool_name":"Agent","tool_input":{"name":"issue-999-analyst","subagent_type":"analyst"}}'
+    local json='{"tool_name":"Agent","tool_input":{"name":"analyst-999","subagent_type":"analyst"}}'
     run run_hook "$json"
     [ "$status" -eq 0 ]
 }
@@ -94,7 +95,7 @@ run_hook() {
 
 @test "team config が存在しない場合は spawn がブロックされること" {
     rm -f "$CLAUDE_USER_ROOT/teams/active-issues/config.json"
-    local json='{"tool_name":"Agent","tool_input":{"name":"issue-999-coder","subagent_type":"coder"}}'
+    local json='{"tool_name":"Agent","tool_input":{"name":"coder-999","subagent_type":"coder"}}'
     run run_hook "$json"
     [ "$status" -eq 2 ]
     [[ "$output" == *"DENY"* ]]
@@ -138,38 +139,22 @@ run_hook() {
 # Bash tool: gh pr merge ガードテスト
 # -------------------------------------------------------------------------
 
-@test "CLAUDE_AGENT_NAME 未設定の gh pr merge はブロックされること" {
-    unset CLAUDE_AGENT_NAME
-    local json='{"tool_name":"Bash","tool_input":{"command":"gh pr merge 456 --auto --merge"}}'
-    run run_hook "$json"
-    [ "$status" -eq 2 ]
-    [[ "$output" == *"DENY"* ]]
-}
-
-@test "coder からの gh pr merge はブロックされること" {
-    export CLAUDE_AGENT_NAME="issue-100-coder"
-    local json='{"tool_name":"Bash","tool_input":{"command":"gh pr merge 456 --auto --merge"}}'
-    run run_hook "$json"
-    [ "$status" -eq 2 ]
-    [[ "$output" == *"DENY"* ]]
-}
-
 @test "reviewer からの gh pr merge は許可されること" {
-    export CLAUDE_AGENT_NAME="issue-100-reviewer"
+    export CLAUDE_AGENT_NAME="reviewer-100"
     local json='{"tool_name":"Bash","tool_input":{"command":"gh pr merge 456 --auto --merge"}}'
     run run_hook "$json"
     [ "$status" -eq 0 ]
 }
 
 @test "infra-reviewer からの gh pr merge は許可されること" {
-    export CLAUDE_AGENT_NAME="issue-100-infra-reviewer"
+    export CLAUDE_AGENT_NAME="infra-reviewer-100"
     local json='{"tool_name":"Bash","tool_input":{"command":"gh pr merge 456 --auto --merge"}}'
     run run_hook "$json"
     [ "$status" -eq 0 ]
 }
 
 @test "ui-reviewer からの gh pr merge は許可されること" {
-    export CLAUDE_AGENT_NAME="issue-100-ui-reviewer"
+    export CLAUDE_AGENT_NAME="ui-reviewer-100"
     local json='{"tool_name":"Bash","tool_input":{"command":"gh pr merge 456 --auto --merge"}}'
     run run_hook "$json"
     [ "$status" -eq 0 ]
@@ -194,7 +179,7 @@ run_hook() {
 }
 
 @test "reviewer からの通常の git push はブロックされないこと [C-5c]" {
-    export CLAUDE_AGENT_NAME="issue-100-reviewer"
+    export CLAUDE_AGENT_NAME="reviewer-100"
     local json='{"tool_name":"Bash","tool_input":{"command":"git push origin HEAD"}}'
     run run_hook "$json"
     [ "$status" -eq 0 ]
@@ -227,58 +212,90 @@ run_hook() {
 # Agent tool: lane suffix (複数レーン並列) テスト
 # -------------------------------------------------------------------------
 
-@test "analyst なしで lane 付き coder (issue-1056-coder-api) spawn はブロックされること" {
-    local json='{"tool_name":"Agent","tool_input":{"name":"issue-1056-coder-api","subagent_type":"coder"}}'
+@test "analyst なしで lane 付き coder (coder-api-1056) spawn はブロックされること" {
+    local json='{"tool_name":"Agent","tool_input":{"name":"coder-api-1056","subagent_type":"coder"}}'
     run run_hook "$json"
     [ "$status" -eq 2 ]
     [[ "$output" == *"DENY"* ]]
 }
 
-@test "analyst なしで lane 付き infra-engineer (issue-1056-infra-engineer-ci) spawn はブロックされること" {
-    local json='{"tool_name":"Agent","tool_input":{"name":"issue-1056-infra-engineer-ci","subagent_type":"infra-engineer"}}'
+@test "analyst なしで lane 付き infra-engineer (infra-engineer-ci-1056) spawn はブロックされること" {
+    local json='{"tool_name":"Agent","tool_input":{"name":"infra-engineer-ci-1056","subagent_type":"infra-engineer"}}'
     run run_hook "$json"
     [ "$status" -eq 2 ]
     [[ "$output" == *"DENY"* ]]
 }
 
-@test "analyst なしで lane 付き reviewer (issue-1056-reviewer-api) spawn はブロックされること" {
-    local json='{"tool_name":"Agent","tool_input":{"name":"issue-1056-reviewer-api","subagent_type":"reviewer"}}'
+@test "analyst なしで lane 付き reviewer (reviewer-api-1056) spawn はブロックされること" {
+    local json='{"tool_name":"Agent","tool_input":{"name":"reviewer-api-1056","subagent_type":"reviewer"}}'
     run run_hook "$json"
     [ "$status" -eq 2 ]
     [[ "$output" == *"DENY"* ]]
 }
 
 @test "analyst が存在する場合 lane 付き coder-api spawn が許可されること" {
-    echo '{"members":[{"name":"issue-1056-analyst"}]}' \
+    echo '{"members":[{"name":"analyst-1056"}]}' \
         > "$CLAUDE_USER_ROOT/teams/active-issues/config.json"
-    local json='{"tool_name":"Agent","tool_input":{"name":"issue-1056-coder-api","subagent_type":"coder"}}'
+    local json='{"tool_name":"Agent","tool_input":{"name":"coder-api-1056","subagent_type":"coder"}}'
     run run_hook "$json"
     [ "$status" -eq 0 ]
 }
 
 @test "analyst が存在する場合 lane 付き coder-mobile spawn が許可されること" {
-    echo '{"members":[{"name":"issue-1056-analyst"}]}' \
+    echo '{"members":[{"name":"analyst-1056"}]}' \
         > "$CLAUDE_USER_ROOT/teams/active-issues/config.json"
-    local json='{"tool_name":"Agent","tool_input":{"name":"issue-1056-coder-mobile","subagent_type":"coder"}}'
+    local json='{"tool_name":"Agent","tool_input":{"name":"coder-mobile-1056","subagent_type":"coder"}}'
     run run_hook "$json"
     [ "$status" -eq 0 ]
 }
 
 @test "analyst が存在する場合 lane 付き infra-reviewer-ci spawn が許可されること" {
-    echo '{"members":[{"name":"issue-1056-analyst"}]}' \
+    echo '{"members":[{"name":"analyst-1056"}]}' \
         > "$CLAUDE_USER_ROOT/teams/active-issues/config.json"
-    local json='{"tool_name":"Agent","tool_input":{"name":"issue-1056-infra-reviewer-ci","subagent_type":"infra-reviewer"}}'
+    local json='{"tool_name":"Agent","tool_input":{"name":"infra-reviewer-ci-1056","subagent_type":"infra-reviewer"}}'
     run run_hook "$json"
     [ "$status" -eq 0 ]
 }
 
-@test "lane 付き coder から issue 番号が正しく抽出されること (1056-coder-api -> analyst: issue-1056-analyst)" {
+@test "lane 付き coder から issue 番号が正しく抽出されること (1056-coder-api -> analyst: analyst-1056)" {
     # analyst なし → DENY に含まれる issue 番号が 1056 であること
-    local json='{"tool_name":"Agent","tool_input":{"name":"issue-1056-coder-api","subagent_type":"coder"}}'
+    local json='{"tool_name":"Agent","tool_input":{"name":"coder-api-1056","subagent_type":"coder"}}'
     run run_hook "$json"
     [ "$status" -eq 2 ]
-    [[ "$output" == *"issue-1056-analyst"* ]]
+    [[ "$output" == *"analyst-1056"* ]]
 }
+
+# -------------------------------------------------------------------------
+# 同名既存 block テスト（旧 no-duplicate-agent-spawn の代替）
+# -------------------------------------------------------------------------
+
+@test "既存 team member と同名の coder spawn はブロックされること" {
+    echo '{"members":[{"name":"analyst-200"},{"name":"coder-200"}]}' \
+        > "$CLAUDE_USER_ROOT/teams/active-issues/config.json"
+    local json='{"tool_name":"Agent","tool_input":{"name":"coder-200","subagent_type":"coder"}}'
+    run run_hook "$json"
+    [ "$status" -eq 2 ]
+    [[ "$output" == *"DENY"* ]]
+}
+
+@test "既存 team member と同名の reviewer spawn はブロックされること" {
+    echo '{"members":[{"name":"analyst-300"},{"name":"reviewer-300"}]}' \
+        > "$CLAUDE_USER_ROOT/teams/active-issues/config.json"
+    local json='{"tool_name":"Agent","tool_input":{"name":"reviewer-300","subagent_type":"reviewer"}}'
+    run run_hook "$json"
+    [ "$status" -eq 2 ]
+    [[ "$output" == *"DENY"* ]]
+}
+
+@test "analyst は存在するが自分（coder-400）は未登録なら spawn 許可されること" {
+    echo '{"members":[{"name":"analyst-400"}]}' \
+        > "$CLAUDE_USER_ROOT/teams/active-issues/config.json"
+    local json='{"tool_name":"Agent","tool_input":{"name":"coder-400","subagent_type":"coder"}}'
+    run run_hook "$json"
+    [ "$status" -eq 0 ]
+}
+
+
 
 # -------------------------------------------------------------------------
 # post-ask-user-question.sh と orchestrator-flow-guard.sh のパス一致テスト
@@ -328,7 +345,7 @@ POST_HOOK="$(cd "$(dirname "$BATS_TEST_FILENAME")/../.." && pwd)/.claude/hooks/p
 @test "orchestrator が 'Phase 5:' を含むメッセージを analyst へ送ると許可されること" {
     local msg="Phase 5: 以下の内容で spec を作成してください"
     local json
-    json=$(jq -n --arg to "issue-999-analyst" --arg msg "$msg" \
+    json=$(jq -n --arg to "analyst-999" --arg msg "$msg" \
         '{"tool_name":"SendMessage","tool_input":{"to":$to,"message":$msg}}')
     run run_hook "$json"
     [ "$status" -eq 0 ]
@@ -337,7 +354,7 @@ POST_HOOK="$(cd "$(dirname "$BATS_TEST_FILENAME")/../.." && pwd)/.claude/hooks/p
 @test "orchestrator が '補足:' 始まりのメッセージを infra-engineer へ送ると許可されること" {
     local msg="補足: flake.nix の coreutils は gnused を含みます"
     local json
-    json=$(jq -n --arg to "issue-999-infra-engineer" --arg msg "$msg" \
+    json=$(jq -n --arg to "infra-engineer-999" --arg msg "$msg" \
         '{"tool_name":"SendMessage","tool_input":{"to":$to,"message":$msg}}')
     run run_hook "$json"
     [ "$status" -eq 0 ]
@@ -346,7 +363,7 @@ POST_HOOK="$(cd "$(dirname "$BATS_TEST_FILENAME")/../.." && pwd)/.claude/hooks/p
 @test "orchestrator が短い shutdown_request を reviewer へ送ると許可されること" {
     local msg='{"type":"shutdown_request","request_id":"abc123"}'
     local json
-    json=$(jq -n --arg to "issue-999-reviewer" --arg msg "$msg" \
+    json=$(jq -n --arg to "reviewer-999" --arg msg "$msg" \
         '{"tool_name":"SendMessage","tool_input":{"to":$to,"message":$msg}}')
     run run_hook "$json"
     [ "$status" -eq 0 ]
@@ -365,7 +382,7 @@ POST_HOOK="$(cd "$(dirname "$BATS_TEST_FILENAME")/../.." && pwd)/.claude/hooks/p
 }
 
 @test "orchestrator が短い impl-ready メッセージを reviewer へ送ると許可されること" {
-    local json='{"tool_name":"SendMessage","tool_input":{"to":"issue-999-reviewer","message":"impl-ready: abc1234567890"}}'
+    local json='{"tool_name":"SendMessage","tool_input":{"to":"reviewer-999","message":"impl-ready: abc1234567890"}}'
     run run_hook "$json"
     [ "$status" -eq 0 ]
 }
@@ -374,19 +391,11 @@ POST_HOOK="$(cd "$(dirname "$BATS_TEST_FILENAME")/../.." && pwd)/.claude/hooks/p
 # C-1b: ui-designer → ui-reviewer impl-ready の mockup-approved フラグチェック
 # -------------------------------------------------------------------------
 
-@test "ui-designer が mockup-approved フラグなしで ui-reviewer に impl-ready を送るとブロックされること [C-1b]" {
-    export CLAUDE_AGENT_NAME="issue-100-ui-designer"
-    local json='{"tool_name":"SendMessage","tool_input":{"to":"issue-100-ui-reviewer","message":"impl-ready: abc1234"}}'
-    run run_hook "$json"
-    [ "$status" -eq 2 ]
-    [[ "$output" == *"DENY"* ]]
-}
-
 @test "ui-designer が有効な mockup-approved フラグありで ui-reviewer に impl-ready を送ると許可されること [C-1b]" {
-    export CLAUDE_AGENT_NAME="issue-100-ui-designer"
+    export CLAUDE_AGENT_NAME="ui-designer-100"
     mkdir -p "$CLAUDE_USER_ROOT/projects/test-project/memory"
     date -u +%Y-%m-%dT%H:%M:%SZ > "$CLAUDE_USER_ROOT/projects/test-project/memory/mockup-approved-100.flag"
-    local json='{"tool_name":"SendMessage","tool_input":{"to":"issue-100-ui-reviewer","message":"impl-ready: abc1234"}}'
+    local json='{"tool_name":"SendMessage","tool_input":{"to":"ui-reviewer-100","message":"impl-ready: abc1234"}}'
     run run_hook "$json"
     [ "$status" -eq 0 ]
 }
@@ -421,10 +430,10 @@ POST_HOOK="$(cd "$(dirname "$BATS_TEST_FILENAME")/../.." && pwd)/.claude/hooks/p
     # このテストは現在 TO != team-lead なので Phase E によって許可される動作を確認する
     unset CLAUDE_AGENT_NAME
     local json
-    json=$(jq -n --arg to "issue-999-infra-engineer" --arg msg "spec: /tmp/spec.md" \
+    json=$(jq -n --arg to "infra-engineer-999" --arg msg "spec: /tmp/spec.md" \
         '{"tool_name":"SendMessage","tool_input":{"to":$to,"message":$msg}}')
     run run_hook "$json"
-    # Phase E: TO=issue-999-infra-engineer (not team-lead) → exit 0
+    # Phase E: TO=infra-engineer-999 (not team-lead) → exit 0
     [ "$status" -eq 0 ]
 }
 
@@ -433,7 +442,7 @@ POST_HOOK="$(cd "$(dirname "$BATS_TEST_FILENAME")/../.." && pwd)/.claude/hooks/p
 # -------------------------------------------------------------------------
 
 @test "git push --no-verify はフラグなしでブロックされること [C-5b]" {
-    export CLAUDE_AGENT_NAME="issue-100-reviewer"
+    export CLAUDE_AGENT_NAME="reviewer-100"
     local json='{"tool_name":"Bash","tool_input":{"command":"git push origin HEAD --no-verify"}}'
     run run_hook "$json"
     [ "$status" -eq 2 ]
@@ -441,7 +450,7 @@ POST_HOOK="$(cd "$(dirname "$BATS_TEST_FILENAME")/../.." && pwd)/.claude/hooks/p
 }
 
 @test "git push --no-verify は AskUserQuestion フラグありで許可されること [C-5b]" {
-    export CLAUDE_AGENT_NAME="issue-100-reviewer"
+    export CLAUDE_AGENT_NAME="reviewer-100"
     mkdir -p "$CLAUDE_USER_ROOT/projects/test-project/memory"
     date -u +%Y-%m-%dT%H:%M:%SZ > "$CLAUDE_USER_ROOT/projects/test-project/memory/tmp-last-askuserquestion.flag"
     local json='{"tool_name":"Bash","tool_input":{"command":"git push origin HEAD --no-verify"}}'
@@ -453,24 +462,8 @@ POST_HOOK="$(cd "$(dirname "$BATS_TEST_FILENAME")/../.." && pwd)/.claude/hooks/p
 # C-5c: git push は reviewer 系 agent のみ
 # -------------------------------------------------------------------------
 
-@test "orchestrator (CLAUDE_AGENT_NAME 未設定) からの git push はブロックされること [C-5c]" {
-    unset CLAUDE_AGENT_NAME
-    local json='{"tool_name":"Bash","tool_input":{"command":"git push origin HEAD"}}'
-    run run_hook "$json"
-    [ "$status" -eq 2 ]
-    [[ "$output" == *"DENY"* ]]
-}
-
-@test "coder からの git push はブロックされること [C-5c]" {
-    export CLAUDE_AGENT_NAME="issue-100-coder"
-    local json='{"tool_name":"Bash","tool_input":{"command":"git push origin HEAD"}}'
-    run run_hook "$json"
-    [ "$status" -eq 2 ]
-    [[ "$output" == *"DENY"* ]]
-}
-
 @test "reviewer からの git push は許可されること [C-5c]" {
-    export CLAUDE_AGENT_NAME="issue-100-reviewer"
+    export CLAUDE_AGENT_NAME="reviewer-100"
     local json='{"tool_name":"Bash","tool_input":{"command":"git push origin HEAD"}}'
     run run_hook "$json"
     [ "$status" -eq 0 ]
@@ -481,20 +474,20 @@ POST_HOOK="$(cd "$(dirname "$BATS_TEST_FILENAME")/../.." && pwd)/.claude/hooks/p
 # -------------------------------------------------------------------------
 
 @test "サブエージェント (analyst) は 1500文字超メッセージを送信できること [C-12]" {
-    export CLAUDE_AGENT_NAME="issue-1056-analyst"
+    export CLAUDE_AGENT_NAME="analyst-1056"
     local long_msg
     long_msg=$(printf 'x%.0s' $(seq 1 2000))
     local json
-    json=$(jq -n --arg to "issue-1056-reviewer" --arg msg "$long_msg" \
+    json=$(jq -n --arg to "reviewer-1056" --arg msg "$long_msg" \
         '{"tool_name":"SendMessage","tool_input":{"to":$to,"message":$msg}}')
     run run_hook "$json"
     [ "$status" -eq 0 ]
 }
 
 @test "サブエージェント (reviewer) は 'Phase 12:' を含むメッセージを送信できること [C-12]" {
-    export CLAUDE_AGENT_NAME="issue-1056-reviewer"
+    export CLAUDE_AGENT_NAME="reviewer-1056"
     local json
-    json=$(jq -n --arg to "issue-1056-coder" --arg msg "Phase 12: revisions please" \
+    json=$(jq -n --arg to "coder-1056" --arg msg "Phase 12: revisions please" \
         '{"tool_name":"SendMessage","tool_input":{"to":$to,"message":$msg}}')
     run run_hook "$json"
     [ "$status" -eq 0 ]
@@ -533,9 +526,9 @@ POST_HOOK="$(cd "$(dirname "$BATS_TEST_FILENAME")/../.." && pwd)/.claude/hooks/p
 
 @test "CLAUDE_AGENT_NAME 空でも _CLAUDE_DETECTED_AGENT_NAME があれば agent として扱われること [Phase F]" {
     unset CLAUDE_AGENT_NAME
-    export _CLAUDE_DETECTED_AGENT_NAME="issue-100-coder"
+    export _CLAUDE_DETECTED_AGENT_NAME="coder-100"
     local json
-    json=$(jq -n --arg to "issue-100-analyst" --arg msg "Phase 12: changes requested" \
+    json=$(jq -n --arg to "analyst-100" --arg msg "Phase 12: changes requested" \
         '{"tool_name":"SendMessage","tool_input":{"to":$to,"message":$msg}}')
     run run_hook "$json"
     # analyst 宛は exempt → 0
@@ -545,11 +538,11 @@ POST_HOOK="$(cd "$(dirname "$BATS_TEST_FILENAME")/../.." && pwd)/.claude/hooks/p
 
 @test "CLAUDE_AGENT_NAME 空で _CLAUDE_DETECTED_AGENT_NAME=reviewer なら 1500文字超でも DENY されないこと [Phase F]" {
     unset CLAUDE_AGENT_NAME
-    export _CLAUDE_DETECTED_AGENT_NAME="issue-100-reviewer"
+    export _CLAUDE_DETECTED_AGENT_NAME="reviewer-100"
     local long_msg
     long_msg=$(printf 'z%.0s' $(seq 1 2000))
     local json
-    json=$(jq -n --arg to "issue-100-coder" --arg msg "$long_msg" \
+    json=$(jq -n --arg to "coder-100" --arg msg "$long_msg" \
         '{"tool_name":"SendMessage","tool_input":{"to":$to,"message":$msg}}')
     run run_hook "$json"
     # reviewer (agent) → IS_ORCHESTRATOR=false → 1500字チェックをスキップ → 0
@@ -559,26 +552,16 @@ POST_HOOK="$(cd "$(dirname "$BATS_TEST_FILENAME")/../.." && pwd)/.claude/hooks/p
 
 @test "CLAUDE_AGENT_NAME 空で _CLAUDE_DETECTED_AGENT_NAME=reviewer なら git push が許可されること [Phase F]" {
     unset CLAUDE_AGENT_NAME
-    export _CLAUDE_DETECTED_AGENT_NAME="issue-100-reviewer"
+    export _CLAUDE_DETECTED_AGENT_NAME="reviewer-100"
     local json='{"tool_name":"Bash","tool_input":{"command":"git push origin HEAD"}}'
     run run_hook "$json"
     [ "$status" -eq 0 ]
     unset _CLAUDE_DETECTED_AGENT_NAME
 }
 
-@test "CLAUDE_AGENT_NAME 空で _CLAUDE_DETECTED_AGENT_NAME=coder なら git push がブロックされること [Phase F]" {
-    unset CLAUDE_AGENT_NAME
-    export _CLAUDE_DETECTED_AGENT_NAME="issue-100-coder"
-    local json='{"tool_name":"Bash","tool_input":{"command":"git push origin HEAD"}}'
-    run run_hook "$json"
-    [ "$status" -eq 2 ]
-    [[ "$output" == *"DENY"* ]]
-    unset _CLAUDE_DETECTED_AGENT_NAME
-}
-
 @test "CLAUDE_AGENT_NAME が設定されていれば _CLAUDE_DETECTED_AGENT_NAME より優先されること [Phase F]" {
-    export CLAUDE_AGENT_NAME="issue-100-reviewer"
-    export _CLAUDE_DETECTED_AGENT_NAME="issue-100-coder"
+    export CLAUDE_AGENT_NAME="reviewer-100"
+    export _CLAUDE_DETECTED_AGENT_NAME="coder-100"
     local json='{"tool_name":"Bash","tool_input":{"command":"git push origin HEAD"}}'
     run run_hook "$json"
     # CLAUDE_AGENT_NAME=reviewer が優先 → 許可
@@ -596,7 +579,7 @@ POST_HOOK="$(cd "$(dirname "$BATS_TEST_FILENAME")/../.." && pwd)/.claude/hooks/p
     unset CLAUDE_AGENT_NAME
     unset _CLAUDE_DETECTED_AGENT_NAME
     local json
-    json=$(jq -n --arg to "issue-1056-coder" --arg msg "spec: /path/to/spec.md" \
+    json=$(jq -n --arg to "coder-1056" --arg msg "spec: /path/to/spec.md" \
         '{"tool_name":"SendMessage","tool_input":{"to":$to,"message":$msg}}')
     run run_hook "$json"
     # TO が team-lead 以外 → Phase E secondary heuristic が Phase E の前に C-3a をスキップして許可
@@ -608,7 +591,7 @@ POST_HOOK="$(cd "$(dirname "$BATS_TEST_FILENAME")/../.." && pwd)/.claude/hooks/p
     unset CLAUDE_AGENT_NAME
     unset _CLAUDE_DETECTED_AGENT_NAME
     local json
-    json=$(jq -n --arg to "issue-1056-reviewer" --arg msg "e2e-approved: abc1234" \
+    json=$(jq -n --arg to "reviewer-1056" --arg msg "e2e-approved: abc1234" \
         '{"tool_name":"SendMessage","tool_input":{"to":$to,"message":$msg}}')
     run run_hook "$json"
     [ "$status" -eq 0 ]
@@ -620,7 +603,7 @@ POST_HOOK="$(cd "$(dirname "$BATS_TEST_FILENAME")/../.." && pwd)/.claude/hooks/p
     local long_msg
     long_msg=$(printf 'x%.0s' $(seq 1 2000))
     local json
-    json=$(jq -n --arg to "issue-1056-coder" --arg msg "CHANGES_REQUESTED: $long_msg" \
+    json=$(jq -n --arg to "coder-1056" --arg msg "CHANGES_REQUESTED: $long_msg" \
         '{"tool_name":"SendMessage","tool_input":{"to":$to,"message":$msg}}')
     run run_hook "$json"
     [ "$status" -eq 0 ]
@@ -644,7 +627,77 @@ POST_HOOK="$(cd "$(dirname "$BATS_TEST_FILENAME")/../.." && pwd)/.claude/hooks/p
     unset CLAUDE_AGENT_NAME
     unset _CLAUDE_DETECTED_AGENT_NAME
     local json
-    json=$(jq -n --arg to "issue-1056-coder" --arg msg "Phase 1: 実装仕様" \
+    json=$(jq -n --arg to "coder-1056" --arg msg "Phase 1: 実装仕様" \
+        '{"tool_name":"SendMessage","tool_input":{"to":$to,"message":$msg}}')
+    run run_hook "$json"
+    [ "$status" -eq 0 ]
+}
+
+# -------------------------------------------------------------------------
+# Phase B-2: DETECTED_AGENT_NAME 依存除去後の新テスト
+# -------------------------------------------------------------------------
+
+@test "Phase B: gh pr merge は CLAUDE_AGENT_NAME なしでも許可されること" {
+    unset CLAUDE_AGENT_NAME
+    unset _CLAUDE_DETECTED_AGENT_NAME
+    local json='{"tool_name":"Bash","tool_input":{"command":"gh pr merge 456 --auto --merge"}}'
+    run run_hook "$json"
+    [ "$status" -eq 0 ]
+}
+
+@test "Phase B: git push は CLAUDE_AGENT_NAME なしでも push-verified.sh 以外でブロックされないこと" {
+    unset CLAUDE_AGENT_NAME
+    unset _CLAUDE_DETECTED_AGENT_NAME
+    local json='{"tool_name":"Bash","tool_input":{"command":"git push origin HEAD"}}'
+    run run_hook "$json"
+    # After removing agent-based restriction, git push is no longer blocked
+    [ "$status" -eq 0 ]
+}
+
+@test "Phase B: ui-designer が mockup-approved フラグなしで ui-reviewer に impl-ready を送っても許可されること" {
+    unset CLAUDE_AGENT_NAME
+    export _CLAUDE_DETECTED_AGENT_NAME="ui-designer-100"
+    local flag_dir
+    flag_dir="$(mktemp -d)"
+    export CLAUDE_USER_ROOT="$flag_dir"
+    local json
+    json=$(jq -n --arg to "ui-reviewer-100" --arg msg "impl-ready: abc1234" \
+        '{"tool_name":"SendMessage","tool_input":{"to":$to,"message":$msg}}')
+    run run_hook "$json"
+    # C-1b block removed; should allow
+    [ "$status" -eq 0 ]
+    unset _CLAUDE_DETECTED_AGENT_NAME
+    rm -rf "$flag_dir"
+}
+
+# -------------------------------------------------------------------------
+# Phase C: SendMessage ポリシー確認（Issue #1146 確定仕様）
+# -------------------------------------------------------------------------
+
+@test "Phase C: team active 時も TO=team-lead への 1500 文字超は DENY されること" {
+    # team active でも TO=team-lead の長文制限は維持（sub-agent/orchestrator 区別不可のため安全側）
+    echo '{"members":[{"name":"coder-100"}]}' > "$CLAUDE_USER_ROOT/teams/active-issues/config.json"
+    unset CLAUDE_AGENT_NAME
+    unset _CLAUDE_DETECTED_AGENT_NAME
+    local long_msg
+    long_msg=$(printf 'z%.0s' $(seq 1 2000))
+    local json
+    json=$(jq -n --arg to "team-lead" --arg msg "$long_msg" \
+        '{"tool_name":"SendMessage","tool_input":{"to":$to,"message":$msg}}')
+    run run_hook "$json"
+    [ "$status" -eq 2 ]
+    [[ "$output" == *"1500 文字以上"* ]]
+}
+
+@test "Phase C: team active 時も TO=coder-1234 への任意長の送信は許可されること（Phase E exempt）" {
+    # TO != team-lead は sub-agent 間通信として無条件許可
+    echo '{"members":[{"name":"coder-100"}]}' > "$CLAUDE_USER_ROOT/teams/active-issues/config.json"
+    unset CLAUDE_AGENT_NAME
+    unset _CLAUDE_DETECTED_AGENT_NAME
+    local long_msg
+    long_msg=$(printf 'w%.0s' $(seq 1 5000))
+    local json
+    json=$(jq -n --arg to "coder-1234" --arg msg "CHANGES_REQUESTED: $long_msg" \
         '{"tool_name":"SendMessage","tool_input":{"to":$to,"message":$msg}}')
     run run_hook "$json"
     [ "$status" -eq 0 ]

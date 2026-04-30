@@ -10,7 +10,10 @@ LIB="${HOOK_DIR}/../../scripts/lib/worktree-init.sh"
 # shellcheck source=../../scripts/lib/worktree-init.sh
 source "$LIB"
 
-CMD=$(echo "$ARGUMENTS" | jq -r '.command // empty' 2>/dev/null)
+INPUT=$(cat)
+[ -z "$INPUT" ] && exit 0
+
+CMD=$(echo "$INPUT" | jq -r '.tool_input.command // empty' 2>/dev/null)
 [ -z "$CMD" ] && exit 0
 echo "$CMD" | grep -q "git worktree add" || exit 0
 
@@ -28,7 +31,7 @@ NEEDS_INIT=false
 [ ! -d "$WTPATH/node_modules" ] && NEEDS_INIT=true
 
 if [ "$NEEDS_INIT" = "true" ]; then
-  echo "⚠️ worktree 初期化が未完了です。次を実行してください:"
+  echo "worktree 初期化が未完了です。次を実行してください:"
   print_init_commands "$WTPATH"
   echo "（推奨: 'bash scripts/create-worktree.sh <N> <desc>' を使うとこの初期化が自動化される）"
 fi

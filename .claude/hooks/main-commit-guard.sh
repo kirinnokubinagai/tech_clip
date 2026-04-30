@@ -3,7 +3,7 @@
 # main ブランチへの git commit を Claude Code レベルでブロックする
 #
 # PreToolUse (Bash) フックとして呼び出される
-# ARGUMENTS 環境変数: {"command": "..."}
+# stdin から JSON を読む: {"tool_input": {"command": "..."}}
 
 set -uo pipefail
 
@@ -12,8 +12,13 @@ if ! command -v jq >/dev/null 2>&1; then
   exit 0
 fi
 
-if ! command_str=$(printf '%s' "${ARGUMENTS:-}" | jq -r '.command // ""' 2>/dev/null); then
-  printf '{"decision":"block","reason":"main-commit-guard: ARGUMENTS の JSON 解析に失敗しました"}\n'
+INPUT=$(cat)
+if [ -z "$INPUT" ]; then
+  exit 0
+fi
+
+if ! command_str=$(printf '%s' "$INPUT" | jq -r '.tool_input.command // ""' 2>/dev/null); then
+  printf '{"decision":"block","reason":"main-commit-guard: JSON 解析に失敗しました"}\n'
   exit 0
 fi
 [[ -n "${command_str}" ]] || exit 0

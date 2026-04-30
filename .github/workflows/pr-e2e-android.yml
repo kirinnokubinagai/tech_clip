@@ -2,7 +2,7 @@ name: PR E2E (Android)
 
 on:
   pull_request:
-    branches: [main]
+    branches: [main, stage]
     # gate-rules.json の ci_path_filters.e2e_android と同期させること
     paths:
       - "apps/mobile/**"

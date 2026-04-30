@@ -24,7 +24,7 @@
 #     "pr_number": 123,
 #     "push_sha": "abc1234",
 #     "issue_number": 1052,
-#     "agent_name": "issue-1052-reviewer",
+#     "agent_name": "reviewer-1052",
 #     "started_at": "2025-01-01T00:00:00Z"
 #   }
 

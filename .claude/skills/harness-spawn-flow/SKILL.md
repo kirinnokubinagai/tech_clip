@@ -41,10 +41,10 @@ bash scripts/skills/spawn-prepare.sh <issue-number> <kebab-case-desc>
   "impl_role": "coder",
   "reviewer_role": "reviewer",
   "agents": [
-    {"role": "analyst",      "name": "issue-1234-analyst"},
-    {"role": "coder",        "name": "issue-1234-coder"},
-    {"role": "e2e-reviewer", "name": "issue-1234-e2e-reviewer"},
-    {"role": "reviewer",     "name": "issue-1234-reviewer"}
+    {"role": "analyst",      "name": "analyst-1234"},
+    {"role": "coder",        "name": "coder-1234"},
+    {"role": "e2e-reviewer", "name": "e2e-reviewer-1234"},
+    {"role": "reviewer",     "name": "reviewer-1234"}
   ]
 }
 ```
@@ -64,22 +64,22 @@ JSON の `agents` をそのまま展開して 4 体 spawn:
 ```text
 [同一メッセージで全員 background spawn]
 Agent(analyst,
-      name="issue-{N}-analyst",
+      name="analyst-{N}",
       team_name="active-issues", run_in_background=true, mode="acceptEdits",
       prompt="Issue #{N} の設計担当。worktree: {worktree}")
 
 Agent({impl_role},
-      name="issue-{N}-{impl_role}",
+      name="{impl_role}-{N}",
       team_name="active-issues", run_in_background=true, mode="acceptEdits",
       prompt="Issue #{N} 実装担当。worktree: {worktree}。impl-ready は必ず e2e-reviewer に送る。")
 
 Agent(e2e-reviewer,
-      name="issue-{N}-e2e-reviewer",
+      name="e2e-reviewer-{N}",
       team_name="active-issues", run_in_background=true, mode="acceptEdits",
       prompt="Issue #{N} E2E レビュー担当。worktree: {worktree}。shard_total={shard_total}。expected_e2e_lanes=1。フェーズ 0 で evaluate-paths.sh 実行 → 影響なしなら短絡、ありなら shard 実行。")
 
 Agent({reviewer_role},
-      name="issue-{N}-{reviewer_role}",
+      name="{reviewer_role}-{N}",
       team_name="active-issues", run_in_background=true, mode="acceptEdits",
       prompt="Issue #{N} レビュー担当。worktree: {worktree}。e2e-reviewer から e2e-approved を待機。")
 ```
