@@ -87,9 +87,11 @@ export async function handleEmailVerification(
  * OAuth ソーシャルログイン後にモバイルアプリへ deep link リダイレクトするハンドラ
  *
  * Better Auth は OAuth callback 後にセッションクッキーを設定してからこのエンドポイントへ
- * リダイレクトする。セッションクッキーからセッション情報を取得し、独自の
- * refresh token を発行して `techclip://auth/callback?token=...&refresh_token=...` へ
- * 302 リダイレクトする。
+ * リダイレクトする。セッションクッキーからセッション情報を取得し、一度限りの
+ * exchange code を発行して `techclip://auth/callback?code=...&state=...` へ
+ * 302 リダイレクトする。アプリ側は POST /api/auth/mobile-exchange でこの code を
+ * session token と refresh token に交換する（URL に token を載せないため Referer/
+ * ブラウザ履歴経由の漏洩を防ぐ）。
  *
  * エラー時は `techclip://auth/callback?error=...` へリダイレクトする。
  *
