@@ -14,6 +14,10 @@ import {
   createRefreshTokenCleanupDeps,
 } from "./cron/cleanupExpiredRefreshTokens";
 import { createMonthlyResetDeps, resetFreeAiUsesMonthly } from "./cron/monthlyReset";
+import {
+  createReconcileFailedRollbacksDeps,
+  reconcileFailedRollbacks,
+} from "./cron/reconcileFailedRollbacks";
 import { createSubscriptionCheckDeps, disableExpiredSubscriptions } from "./cron/subscriptionCheck";
 import { createDatabase } from "./db";
 import { createLogger } from "./lib/logger";
@@ -161,29 +165,40 @@ app.on(["POST"], "/api/analytics/:path{.*}", async (c) => {
 });
 
 /** Cloudflare Workers scheduled イベントハンドラー */
-const scheduled: ExportedHandlerScheduledHandler<Bindings> = async (_event, env, ctx) => {
+const scheduled: ExportedHandlerScheduledHandler<Bindings> = async (event, env, ctx) => {
   const db = createDatabase(env);
-  const dbForCron = db as unknown as { update: (table: unknown) => unknown } & {
+  const dbForCron = db as unknown as {
+    select: (fields?: unknown) => unknown;
+    update: (table: unknown) => unknown;
+    transaction: <T>(fn: (tx: { update: (table: unknown) => unknown }) => Promise<T>) => Promise<T>;
+  } & {
     delete: (table: unknown) => unknown;
   };
   const logger = createLogger();
   ctx.waitUntil(
     (async () => {
-      try {
-        const result = await resetFreeAiUsesMonthly(createMonthlyResetDeps(dbForCron));
-        logger.info("cron monthlyReset 完了", { job: "monthlyReset", result });
-      } catch (error) {
-        logger.error("cron monthlyReset 失敗", {
-          job: "monthlyReset",
-          error: error instanceof Error ? error.message : String(error),
-        });
+      if (event.cron === "0 0 1 * *") {
+        try {
+          const result = await resetFreeAiUsesMonthly(createMonthlyResetDeps(dbForCron));
+          logger.info("cron monthlyReset 完了", { job: "monthlyReset", result });
+        } catch (error) {
+          logger.error("cron monthlyReset 失敗", {
+            job: "monthlyReset",
+            error: error instanceof Error ? error.message : String(error),
+          });
+        }
       }
       try {
-        const result = await disableExpiredSubscriptions(createSubscriptionCheckDeps(dbForCron));
-        logger.info("cron subscriptionCheck 完了", { job: "subscriptionCheck", result });
+        const result = await reconcileFailedRollbacks(
+          createReconcileFailedRollbacksDeps(dbForCron, logger),
+        );
+        logger.info("cron reconcileFailedRollbacks 完了", {
+          job: "reconcileFailedRollbacks",
+          result,
+        });
       } catch (error) {
-        logger.error("cron subscriptionCheck 失敗", {
-          job: "subscriptionCheck",
+        logger.error("cron reconcileFailedRollbacks 失敗", {
+          job: "reconcileFailedRollbacks",
           error: error instanceof Error ? error.message : String(error),
         });
       }
@@ -196,6 +211,15 @@ const scheduled: ExportedHandlerScheduledHandler<Bindings> = async (_event, env,
       } catch (error) {
         logger.error("cron refreshTokenCleanup 失敗", {
           job: "refreshTokenCleanup",
+          error: error instanceof Error ? error.message : String(error),
+        });
+      }
+      try {
+        const result = await disableExpiredSubscriptions(createSubscriptionCheckDeps(dbForCron));
+        logger.info("cron subscriptionCheck 完了", { job: "subscriptionCheck", result });
+      } catch (error) {
+        logger.error("cron subscriptionCheck 失敗", {
+          job: "subscriptionCheck",
           error: error instanceof Error ? error.message : String(error),
         });
       }

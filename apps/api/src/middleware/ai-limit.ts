@@ -1,9 +1,11 @@
 import { and, eq, gt, sql } from "drizzle-orm";
 import type { Context, MiddlewareHandler, Next } from "hono";
+import { ulid } from "ulid";
 
 import type { Database } from "../db";
-import { users } from "../db/schema";
+import { aiQuotaRollbackFailures, users } from "../db/schema";
 import { createLogger } from "../lib/logger";
+import { notifyError } from "../lib/sentry-reporter";
 
 /** HTTP 401 Unauthorized ステータスコード */
 const HTTP_UNAUTHORIZED = 401;
@@ -28,10 +30,18 @@ const AI_LIMIT_ERROR_MESSAGE =
   "無料のAI使用回数の上限に達しました。プレミアムプランにアップグレードしてください";
 
 /** 無料ユーザーの月間AI使用上限回数 */
-const FREE_AI_USES_PER_MONTH = 5;
+export const FREE_AI_USES_PER_MONTH = 5;
 
 /** 1ヶ月のミリ秒数（30日） */
 const ONE_MONTH_MS = 30 * 24 * 60 * 60 * 1000;
+
+/** ロールバック失敗時のコンテキスト */
+type RollbackFailureContext = {
+  reservationPath: "existing-free-use" | "reset-free-use";
+  sentryDsn?: string;
+  environment?: string;
+  fetchFn?: typeof fetch;
+};
 
 /**
  * 次のリセット日時を計算する
@@ -136,21 +146,63 @@ async function rollbackReservedFreeUse(db: Database, userId: string): Promise<vo
 }
 
 /**
+ * ロールバック失敗を ai_quota_rollback_failures テーブルに記録する
+ *
+ * @param db - Drizzle ORMデータベースインスタンス
+ * @param userId - ユーザーID
+ * @param reservationPath - 失敗した予約経路
+ * @param error - 発生したエラー
+ */
+async function persistRollbackFailure(
+  db: Database,
+  userId: string,
+  reservationPath: "existing-free-use" | "reset-free-use",
+  error: unknown,
+): Promise<void> {
+  const message = error instanceof Error ? error.message : String(error);
+  const truncated = message.slice(0, 1024);
+  await db.insert(aiQuotaRollbackFailures).values({
+    id: ulid(),
+    userId,
+    reservationPath,
+    errorMessage: truncated,
+  });
+}
+
+/**
  * ロールバックを安全に実行する。失敗してもクラッシュせずエラーをログ出力する
  *
  * @param db - Drizzle ORMデータベースインスタンス
  * @param userId - ユーザーID
  * @param logger - リクエストスコープのロガー
+ * @param context - ロールバック失敗時のコンテキスト
  */
 async function safeRollback(
   db: Database,
   userId: string,
   logger: ReturnType<typeof createLogger>,
+  context: RollbackFailureContext,
 ): Promise<void> {
   try {
     await rollbackReservedFreeUse(db, userId);
   } catch (rollbackError) {
     logger.error("AIクォータのロールバックに失敗しました", { userId, error: rollbackError });
+
+    try {
+      await persistRollbackFailure(db, userId, context.reservationPath, rollbackError);
+    } catch (persistError) {
+      logger.error("ロールバック失敗の永続化に失敗しました", { userId, error: persistError });
+    }
+
+    if (rollbackError instanceof Error) {
+      const fetchFn = context.fetchFn ?? fetch;
+      await notifyError(
+        { SENTRY_DSN: context.sentryDsn, ENVIRONMENT: context.environment },
+        rollbackError,
+        { source: "ai-limit-rollback", user_id: userId, reservation_path: context.reservationPath },
+        fetchFn,
+      );
+    }
   }
 }
 
@@ -165,6 +217,7 @@ async function safeRollback(
  * @param db - Drizzle ORMデータベースインスタンス
  * @param userId - ユーザーID
  * @param logger - リクエストスコープのロガー
+ * @param context - ロールバック失敗時のコンテキスト
  */
 async function executeWithRollback(
   c: Context,
@@ -172,14 +225,15 @@ async function executeWithRollback(
   db: Database,
   userId: string,
   logger: ReturnType<typeof createLogger>,
+  context: RollbackFailureContext,
 ): Promise<void> {
   try {
     await next();
     if (c.res.status >= HTTP_CLIENT_ERROR_MIN) {
-      await safeRollback(db, userId, logger);
+      await safeRollback(db, userId, logger, context);
     }
   } catch (error) {
-    await safeRollback(db, userId, logger);
+    await safeRollback(db, userId, logger, context);
     throw error;
   }
 }
@@ -227,9 +281,16 @@ function respondReservationConflict(
  * - 無料ユーザー（残回数なし、リセット期限内）: 402を返却
  *
  * @param db - Drizzle ORMデータベースインスタンス
+ * @param options - オプション（fetchFn: テスト時の Sentry fetch モック用）
  * @returns Hono ミドルウェアハンドラー
  */
-export function createAiLimitMiddleware(db: Database): MiddlewareHandler {
+export function createAiLimitMiddleware(
+  db: Database,
+  options?: { fetchFn?: typeof fetch },
+): MiddlewareHandler<{
+  Bindings: { SENTRY_DSN?: string; ENVIRONMENT?: string };
+  Variables: { requestId?: string; user?: Record<string, unknown> };
+}> {
   return async (c, next) => {
     const logger = createLogger(c.get("requestId") as string | undefined);
     const user = c.get("user") as Record<string, unknown> | undefined;
@@ -273,6 +334,12 @@ export function createAiLimitMiddleware(db: Database): MiddlewareHandler {
 
     const remaining = dbUser.freeAiUsesRemaining ?? 0;
 
+    const sentryConfig = {
+      sentryDsn: c.env?.SENTRY_DSN,
+      environment: c.env?.ENVIRONMENT,
+      fetchFn: options?.fetchFn,
+    };
+
     if (remaining > 0) {
       const didReserve = await reserveExistingFreeUse(db, userId);
 
@@ -280,7 +347,10 @@ export function createAiLimitMiddleware(db: Database): MiddlewareHandler {
         return respondReservationConflict(c, logger, userId, "existing-free-use");
       }
 
-      await executeWithRollback(c, next, db, userId, logger);
+      await executeWithRollback(c, next, db, userId, logger, {
+        reservationPath: "existing-free-use",
+        ...sentryConfig,
+      });
       return;
     }
 
@@ -293,7 +363,10 @@ export function createAiLimitMiddleware(db: Database): MiddlewareHandler {
         return respondReservationConflict(c, logger, userId, "reset-free-use");
       }
 
-      await executeWithRollback(c, next, db, userId, logger);
+      await executeWithRollback(c, next, db, userId, logger, {
+        reservationPath: "reset-free-use",
+        ...sentryConfig,
+      });
       return;
     }
 

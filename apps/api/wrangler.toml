@@ -31,7 +31,7 @@ binding = "AI"
 # GITHUB_TOKEN        # GitHub API アクセストークン（verdict 判定用、wrangler secret put GITHUB_TOKEN）
 
 [triggers]
-crons = ["0 0 1 * *"]
+crons = ["0 0 1 * *", "0 0 * * *"]  # 月次 + 日次 (UTC 0:00)
 
 # --- Staging 環境 ---
 # TODO(staging-setup): Staging 環境はまだ構築されていません。
