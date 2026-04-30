@@ -30,7 +30,15 @@ if [ -z "$PR_NUMBER" ]; then
     PR_TITLE="$ISSUE_TITLE"
   fi
 
+  # Issue #1138: stage branch なら main 向け、それ以外は stage 向け
+  if [ "$PR_BRANCH" = "stage" ]; then
+    PR_BASE="main"
+  else
+    PR_BASE="stage"
+  fi
+
   PR_URL=$(gh pr create \
+    --base "$PR_BASE" \
     --title "$PR_TITLE" \
     --body "## 概要
 
