@@ -9,6 +9,7 @@ const TEST_BINDINGS = {
   TURSO_DATABASE_URL: "file:local.db",
   TURSO_AUTH_TOKEN: "test-token",
   ENVIRONMENT: "test",
+  APP_URL: "http://localhost:8081",
   BETTER_AUTH_SECRET: TEST_SECRET,
   GOOGLE_CLIENT_ID: "google-client-id-test",
   GOOGLE_CLIENT_SECRET: "google-client-secret-test",
