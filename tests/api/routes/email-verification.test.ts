@@ -14,6 +14,19 @@ vi.mock("@api/services/emailService", () => ({
   sendEmailVerification: vi.fn(),
 }));
 
+/** drizzle-orm の eq() をスパイ化して第二引数（userId）を検証可能にする */
+const capturedEqValues: unknown[] = [];
+vi.mock("drizzle-orm", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("drizzle-orm")>();
+  return {
+    ...actual,
+    eq: vi.fn((_col: unknown, val: unknown) => {
+      capturedEqValues.push(val);
+      return { col: _col, val };
+    }),
+  };
+});
+
 import { sendEmailVerification } from "@api/services/emailService";
 
 /** テスト用のモックユーザー */
@@ -377,21 +390,15 @@ describe("POST /api/auth/verify-email", () => {
 });
 
 describe("POST /api/auth/verify-email — identifier prefix extraction", () => {
-  /** eq() に渡された userId を記録するスパイ */
-  const capturedEqArgs: Array<{ column: unknown; value: unknown }> = [];
-
   beforeEach(() => {
     vi.clearAllMocks();
-    capturedEqArgs.length = 0;
+    capturedEqValues.length = 0;
 
     mockSelectFrom.mockReturnValue({ where: mockSelectWhere });
 
     mockUpdate.mockReturnValue({ set: mockUpdateSet });
     mockUpdateSet.mockReturnValue({ where: mockUpdateWhere });
-    mockUpdateWhere.mockImplementation((arg) => {
-      capturedEqArgs.push(arg);
-      return { returning: mockUpdateReturning };
-    });
+    mockUpdateWhere.mockReturnValue({ returning: mockUpdateReturning });
     mockUpdateReturning.mockResolvedValue([{ ...MOCK_USER, emailVerified: true }]);
 
     mockDelete.mockReturnValue({ where: mockDeleteWhere });
@@ -419,14 +426,10 @@ describe("POST /api/auth/verify-email — identifier prefix extraction", () => {
     // Assert
     expect(res.status).toBe(HTTP_OK);
     expect(mockUpdateWhere).toHaveBeenCalled();
-    // eq() の第二引数（userId）が prefix 除去後の値であることを確認
-    const eqArg = mockUpdateWhere.mock.calls[0][0];
-    expect(eqArg).toBeDefined();
-    // drizzle-orm の eq() の戻り値は内部オブジェクトのため、
-    // mockUpdateWhere に渡される引数が eq() の返り値であることを確認する。
-    // userId の抽出が正しいかどうかは、mockUpdateSet が emailVerified: true で
-    // 呼ばれていることと組み合わせて確認する（正常レスポンスで代替）。
     expect(mockUpdateSet).toHaveBeenCalledWith({ emailVerified: true });
+    // eq() の第二引数として渡された userId が prefix 除去後の値であること
+    const updateEqValue = capturedEqValues.find((v) => v === "user_01HXYZ");
+    expect(updateEqValue).toBe("user_01HXYZ");
   });
 
   it("identifier に prefix が含まれない場合、そのまま userId として扱われること", async () => {
@@ -451,6 +454,9 @@ describe("POST /api/auth/verify-email — identifier prefix extraction", () => {
     expect(res.status).toBe(HTTP_OK);
     expect(mockUpdateWhere).toHaveBeenCalled();
     expect(mockUpdateSet).toHaveBeenCalledWith({ emailVerified: true });
+    // prefix なしの場合、identifier そのまま userId として eq() に渡されること
+    const updateEqValue = capturedEqValues.find((v) => v === "user_01HXYZ");
+    expect(updateEqValue).toBe("user_01HXYZ");
   });
 
   it("identifier の userId 部分に 'email-verification:' を含む文字列でもプレフィックス除去は先頭のみであること", async () => {
@@ -472,10 +478,13 @@ describe("POST /api/auth/verify-email — identifier prefix extraction", () => {
     const res = await app.fetch(req);
     const body = (await res.json()) as { success: boolean };
 
-    // Assert: startsWith+slice は先頭 prefix のみ除去するので HTTP 200 で正常完了する。
-    // replaceAll を使うと "abc-:def" が渡り、update まで到達しても誤った userId になる。
+    // Assert: startsWith+slice は先頭 prefix のみ除去するので "abc-email-verification:def" が userId になる。
+    // replaceAll を誤採用した場合は "abc-:def" になり、値が異なる。
     expect(res.status).toBe(HTTP_OK);
     expect(body.success).toBe(true);
     expect(mockDelete).toHaveBeenCalledTimes(1);
+    // eq() に渡された userId が先頭 prefix のみ除去した値であること
+    const updateEqValue = capturedEqValues.find((v) => v === "abc-email-verification:def");
+    expect(updateEqValue).toBe("abc-email-verification:def");
   });
 });
