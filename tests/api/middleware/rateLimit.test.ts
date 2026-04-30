@@ -489,6 +489,26 @@ describe("createRateLimitMiddleware", () => {
       });
     });
 
+    it("createKvStoreのsetがresetAt残り時間が60秒超の場合に動的TTLを使うこと", async () => {
+      // Arrange
+      const mockKv = {
+        get: vi.fn().mockResolvedValue(null),
+        put: vi.fn().mockResolvedValue(undefined),
+        delete: vi.fn().mockResolvedValue(undefined),
+        list: vi.fn(),
+        getWithMetadata: vi.fn(),
+      } as unknown as KVNamespace;
+      const store = createKvStore(mockKv);
+
+      // Act: resetAt = now + 90s → TTL は 90s（クランプされず動的算出値が使われること）
+      await store.set("test-key", { count: 1, resetAt: Date.now() + 90_000 });
+
+      // Assert: expirationTtl が動的算出値の90秒になること（最小値60秒ではない）
+      expect(mockKv.put).toHaveBeenCalledWith("test-key", expect.any(String), {
+        expirationTtl: 90,
+      });
+    });
+
     it("createKvStoreのgetがエントリを正しく返すこと", async () => {
       // Arrange
       const entry = { count: 3, resetAt: 9999999999 };
