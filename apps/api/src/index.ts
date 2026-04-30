@@ -170,6 +170,7 @@ const scheduled: ExportedHandlerScheduledHandler<Bindings> = async (_event, env,
   const dbForCron = db as unknown as {
     select: (fields?: unknown) => unknown;
     update: (table: unknown) => unknown;
+    transaction: <T>(fn: (tx: { update: (table: unknown) => unknown }) => Promise<T>) => Promise<T>;
   } & {
     delete: (table: unknown) => unknown;
   };
