@@ -46,7 +46,7 @@ ISSUES_JSON=$(gh issue list --state open --limit 100 \
 
 if [ "$ISSUES_JSON" = "[]" ] || [ -z "$ISSUES_JSON" ]; then
   if [ "$OUTPUT_JSON" = "true" ]; then
-    echo '{"auto_assignable":[],"requires_human":[]}'
+    echo '{"auto_assignable":[],"requires_human":[],"active_zones":[],"active_issues":[]}'
   else
     echo "対応可能なオープン Issue はありません"
   fi
