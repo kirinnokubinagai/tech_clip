@@ -211,5 +211,39 @@ describe("AuthCallbackScreen", () => {
       // Assert
       expect(mockReplace).toHaveBeenCalledWith("/(auth)/login");
     });
+
+    it("setAuthToken が例外をスローした場合はエラー表示になること", async () => {
+      // Arrange
+      const validCode = "a".repeat(64);
+      (mockGetOAuthState as jest.Mock).mockResolvedValue("nonce_abc");
+      mockUseLocalSearchParams.mockReturnValue({ code: validCode, state: "nonce_abc" });
+      (mockSetAuthToken as jest.Mock).mockRejectedValue(new Error("セキュアストア書き込み失敗"));
+
+      // Act
+      const { findByTestId } = await render(<AuthCallbackScreen />);
+
+      // Assert
+      const errorEl = await findByTestId("auth-callback-error");
+      expect(errorEl.props.testID).toBe("auth-callback-error");
+      expect(mockCheckSession).not.toHaveBeenCalled();
+    });
+
+    it("checkSession が例外をスローした場合はエラー表示になること", async () => {
+      // Arrange
+      const validCode = "a".repeat(64);
+      (mockGetOAuthState as jest.Mock).mockResolvedValue("nonce_abc");
+      mockUseLocalSearchParams.mockReturnValue({ code: validCode, state: "nonce_abc" });
+      (mockSetAuthToken as jest.Mock).mockResolvedValue(undefined);
+      (mockSetRefreshToken as jest.Mock).mockResolvedValue(undefined);
+      mockCheckSession.mockRejectedValue(new Error("セッション確認失敗"));
+
+      // Act
+      const { findByTestId } = await render(<AuthCallbackScreen />);
+
+      // Assert
+      const errorEl = await findByTestId("auth-callback-error");
+      expect(errorEl.props.testID).toBe("auth-callback-error");
+      expect(mockReplace).not.toHaveBeenCalled();
+    });
   });
 });

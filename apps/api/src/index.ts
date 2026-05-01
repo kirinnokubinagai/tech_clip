@@ -233,7 +233,7 @@ const scheduled: ExportedHandlerScheduledHandler<Bindings> = async (event, env, 
       }
       try {
         const result = await cleanupExpiredOauthExchangeCodes(
-          createOauthExchangeCodeCleanupDeps(dbForCron),
+          createOauthExchangeCodeCleanupDeps(db),
         );
         logger.info("cron oauthExchangeCodeCleanup 完了", {
           job: "oauthExchangeCodeCleanup",

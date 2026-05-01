@@ -1,5 +1,6 @@
 import { lt } from "drizzle-orm";
 
+import type { Database } from "../db";
 import { oauthExchangeCodes } from "../db/schema";
 
 /** 期限切れ OAuth exchange code クリーンアップの依存注入インターフェース */
@@ -32,23 +33,17 @@ export async function cleanupExpiredOauthExchangeCodes(
 /**
  * Drizzle ORM を使った deleteExpiredOauthExchangeCodes の実装を生成する
  *
- * @param db - Drizzle データベースインスタンス。既存の cron ジョブパターンとの一貫性を保つため
- *   loose な型 `{ delete: (table: unknown) => unknown }` を使用している
+ * @param db - Drizzle データベースインスタンス
  * @returns OauthExchangeCodeCleanupDeps に適合した依存オブジェクト
  */
-export function createOauthExchangeCodeCleanupDeps(db: {
-  delete: (table: unknown) => unknown;
-}): OauthExchangeCodeCleanupDeps {
+export function createOauthExchangeCodeCleanupDeps(db: Database): OauthExchangeCodeCleanupDeps {
   return {
     deleteExpiredOauthExchangeCodes: async (currentTimestamp) => {
-      const result = await (
-        db.delete(oauthExchangeCodes) as ReturnType<typeof db.delete> & {
-          where: (condition: unknown) => { returning: () => Promise<unknown[]> };
-        }
-      )
+      const result = await db
+        .delete(oauthExchangeCodes)
         .where(lt(oauthExchangeCodes.expiresAt, currentTimestamp))
         .returning();
-      return (result as unknown[]).length;
+      return result.length;
     },
     getCurrentTimestamp: () => new Date().toISOString(),
   };
