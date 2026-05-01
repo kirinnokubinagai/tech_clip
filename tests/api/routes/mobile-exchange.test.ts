@@ -212,5 +212,33 @@ describe("POST /mobile-exchange", () => {
       // Assert
       expect(response.status).toBe(422);
     });
+
+    it("race condition で先に consumed された code は 401 を返すこと", async () => {
+      // Arrange
+      const { db } = createMockDb({
+        exchangeRow: createMockExchangeRow(),
+        updateReturning: [],
+      });
+
+      // Act
+      const response = await callMobileExchange(db, { code: VALID_CODE });
+
+      // Assert
+      expect(response.status).toBe(401);
+    });
+
+    it("session 行が見つからない場合は 401 を返すこと", async () => {
+      // Arrange
+      const { db } = createMockDb({
+        exchangeRow: createMockExchangeRow(),
+        sessionRow: null,
+      });
+
+      // Act
+      const response = await callMobileExchange(db, { code: VALID_CODE });
+
+      // Assert
+      expect(response.status).toBe(401);
+    });
   });
 });
