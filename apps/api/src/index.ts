@@ -231,21 +231,19 @@ const scheduled: ExportedHandlerScheduledHandler<Bindings> = async (event, env, 
           error: error instanceof Error ? error.message : String(error),
         });
       }
-      if (event.cron === "0 0 * * *") {
-        try {
-          const result = await cleanupExpiredOauthExchangeCodes(
-            createOauthExchangeCodeCleanupDeps(dbForCron),
-          );
-          logger.info("cron oauthExchangeCodeCleanup 完了", {
-            job: "oauthExchangeCodeCleanup",
-            result,
-          });
-        } catch (error) {
-          logger.error("cron oauthExchangeCodeCleanup 失敗", {
-            job: "oauthExchangeCodeCleanup",
-            error: error instanceof Error ? error.message : String(error),
-          });
-        }
+      try {
+        const result = await cleanupExpiredOauthExchangeCodes(
+          createOauthExchangeCodeCleanupDeps(dbForCron),
+        );
+        logger.info("cron oauthExchangeCodeCleanup 完了", {
+          job: "oauthExchangeCodeCleanup",
+          result,
+        });
+      } catch (error) {
+        logger.error("cron oauthExchangeCodeCleanup 失敗", {
+          job: "oauthExchangeCodeCleanup",
+          error: error instanceof Error ? error.message : String(error),
+        });
       }
     })(),
   );

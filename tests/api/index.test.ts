@@ -4,10 +4,12 @@ const mockResetFreeAiUsesMonthly = vi.fn().mockResolvedValue({ success: true });
 const mockReconcileFailedRollbacks = vi.fn().mockResolvedValue({ success: true });
 const mockCleanupExpiredRefreshTokens = vi.fn().mockResolvedValue({ success: true });
 const mockDisableExpiredSubscriptions = vi.fn().mockResolvedValue({ success: true });
+const mockCleanupExpiredOauthExchangeCodes = vi.fn().mockResolvedValue({ success: true });
 const mockCreateMonthlyResetDeps = vi.fn().mockReturnValue({});
 const mockCreateReconcileFailedRollbacksDeps = vi.fn().mockReturnValue({});
 const mockCreateRefreshTokenCleanupDeps = vi.fn().mockReturnValue({});
 const mockCreateSubscriptionCheckDeps = vi.fn().mockReturnValue({});
+const mockCreateOauthExchangeCodeCleanupDeps = vi.fn().mockReturnValue({});
 const mockCreateDatabase = vi.fn().mockReturnValue({});
 const mockCreateLogger = vi.fn().mockReturnValue({
   info: vi.fn(),
@@ -31,6 +33,10 @@ vi.mock("@api/cron/cleanupExpiredRefreshTokens", () => ({
 vi.mock("@api/cron/subscriptionCheck", () => ({
   disableExpiredSubscriptions: mockDisableExpiredSubscriptions,
   createSubscriptionCheckDeps: mockCreateSubscriptionCheckDeps,
+}));
+vi.mock("@api/cron/cleanupExpiredOauthExchangeCodes", () => ({
+  cleanupExpiredOauthExchangeCodes: mockCleanupExpiredOauthExchangeCodes,
+  createOauthExchangeCodeCleanupDeps: mockCreateOauthExchangeCodeCleanupDeps,
 }));
 vi.mock("@api/db", () => ({
   createDatabase: mockCreateDatabase,
@@ -112,5 +118,29 @@ describe("scheduled handler cron ルーティング", () => {
 
     // Assert
     expect(mockDisableExpiredSubscriptions).toHaveBeenCalledTimes(1);
+  });
+
+  it("日次 cron では cleanupExpiredOauthExchangeCodes が実行されること", async () => {
+    // Arrange / Act
+    await runScheduled("0 0 * * *");
+
+    // Assert
+    expect(mockCleanupExpiredOauthExchangeCodes).toHaveBeenCalledTimes(1);
+  });
+
+  it("月次 cron でも cleanupExpiredOauthExchangeCodes が実行されること", async () => {
+    // Arrange / Act
+    await runScheduled("0 0 1 * *");
+
+    // Assert
+    expect(mockCleanupExpiredOauthExchangeCodes).toHaveBeenCalledTimes(1);
+  });
+
+  it("任意の cron では cleanupExpiredOauthExchangeCodes が実行されること", async () => {
+    // Arrange / Act
+    await runScheduled("*/5 * * * *");
+
+    // Assert
+    expect(mockCleanupExpiredOauthExchangeCodes).toHaveBeenCalledTimes(1);
   });
 });
