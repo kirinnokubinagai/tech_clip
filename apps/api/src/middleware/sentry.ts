@@ -1,18 +1,19 @@
 import type { MiddlewareHandler } from "hono";
 
 /** Sentry DSN の解析結果 */
-type SentryDsnParts = {
+export type SentryDsnParts = {
   publicKey: string;
   host: string;
   projectId: string;
 };
 
 /** Sentry イベントのペイロード型 */
-type SentryEvent = {
+export type SentryEvent = {
   event_id: string;
   timestamp: string;
   platform: string;
   environment?: string;
+  tags?: Record<string, string>;
   exception: {
     values: Array<{
       type: string;
@@ -34,7 +35,7 @@ type SentryBindings = {
  * @param dsn - Sentry DSN 文字列（例: https://key@host/projectId）
  * @returns 解析結果。不正な場合は null
  */
-function parseDsn(dsn: string): SentryDsnParts | null {
+export function parseDsn(dsn: string): SentryDsnParts | null {
   try {
     const url = new URL(dsn);
     const publicKey = url.username;
@@ -55,7 +56,7 @@ function parseDsn(dsn: string): SentryDsnParts | null {
  * @param parts - 解析済み DSN 情報
  * @returns Sentry store エンドポイント URL
  */
-function buildSentryUrl(parts: SentryDsnParts): string {
+export function buildSentryUrl(parts: SentryDsnParts): string {
   return `https://${parts.host}/api/${parts.projectId}/store/`;
 }
 
@@ -65,7 +66,7 @@ function buildSentryUrl(parts: SentryDsnParts): string {
  * @param publicKey - Sentry public key
  * @returns X-Sentry-Auth ヘッダー値
  */
-function buildAuthHeader(publicKey: string): string {
+export function buildAuthHeader(publicKey: string): string {
   return `Sentry sentry_version=7, sentry_client=tech-clip-workers/1.0, sentry_key=${publicKey}`;
 }
 
@@ -74,14 +75,20 @@ function buildAuthHeader(publicKey: string): string {
  *
  * @param error - キャプチャするエラー
  * @param environment - デプロイ環境識別子（省略可）
+ * @param tags - イベントに付与するタグ（省略可）
  * @returns Sentry イベントオブジェクト
  */
-function buildSentryEvent(error: Error, environment?: string): SentryEvent {
+export function buildSentryEvent(
+  error: Error,
+  environment?: string,
+  tags?: Record<string, string>,
+): SentryEvent {
   return {
     event_id: crypto.randomUUID().replace(/-/g, ""),
     timestamp: new Date().toISOString(),
     platform: "javascript",
     ...(environment !== undefined ? { environment } : {}),
+    ...(tags !== undefined && Object.keys(tags).length > 0 ? { tags } : {}),
     exception: {
       values: [
         {
@@ -100,12 +107,14 @@ function buildSentryEvent(error: Error, environment?: string): SentryEvent {
  * @param error - 送信するエラー
  * @param fetchFn - fetch 実装（テスト時にモック差し替え可能）
  * @param environment - デプロイ環境識別子（省略可）
+ * @param tags - イベントに付与するタグ（省略可）
  */
-async function captureError(
+export async function captureError(
   dsn: string,
   error: Error,
   fetchFn: typeof fetch,
   environment?: string,
+  tags?: Record<string, string>,
 ): Promise<void> {
   const parts = parseDsn(dsn);
   if (!parts) {
@@ -113,7 +122,7 @@ async function captureError(
   }
 
   const url = buildSentryUrl(parts);
-  const event = buildSentryEvent(error, environment);
+  const event = buildSentryEvent(error, environment, tags);
 
   await fetchFn(url, {
     method: "POST",

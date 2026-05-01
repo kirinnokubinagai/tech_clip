@@ -276,3 +276,45 @@ describe("createSentryMiddleware", () => {
     });
   });
 });
+
+import { captureError } from "@api/middleware/sentry";
+
+describe("captureError (直接呼び出し)", () => {
+  let fetchMock: ReturnType<typeof vi.fn>;
+
+  beforeEach(() => {
+    fetchMock = vi.fn().mockResolvedValue(new Response(null, { status: 200 }));
+  });
+
+  it("有効な DSN でエラーを送信すると Sentry エンドポイントに POST されること", async () => {
+    // Arrange
+    const dsn = "https://testkey@sentry.io/12345";
+    const error = new Error("直接呼び出しテストエラー");
+
+    // Act
+    await captureError(dsn, error, fetchMock as typeof fetch, "production");
+
+    // Assert
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    const [url, options] = fetchMock.mock.calls[0] as [string, RequestInit];
+    expect(url).toContain("12345");
+    expect(options.method).toBe("POST");
+    const body = JSON.parse(options.body as string) as Record<string, unknown>;
+    expect(body.exception).toBeDefined();
+    expect((body.exception as { values: Array<{ value: string }> }).values[0].value).toBe(
+      "直接呼び出しテストエラー",
+    );
+  });
+
+  it("無効な DSN の場合は送信されないこと", async () => {
+    // Arrange
+    const invalidDsn = "not-a-valid-dsn";
+    const error = new Error("テストエラー");
+
+    // Act
+    await captureError(invalidDsn, error, fetchMock as typeof fetch);
+
+    // Assert
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+});

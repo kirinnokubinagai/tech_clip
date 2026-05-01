@@ -1,14 +1,16 @@
 #!/bin/bash
 # 危険なコマンドを検知して確認を促すhook
-# $ARGUMENTS 環境変数からBashコマンドを取得
+# Claude Code PreToolUse:Bash hook として stdin から JSON を受け取る
 
 # jqがない場合はスキップ
 if ! command -v jq &> /dev/null; then
   exit 0
 fi
 
-# $ARGUMENTSからcommandフィールドを抽出
-COMMAND=$(echo "$ARGUMENTS" | jq -r '.command // empty' 2>/dev/null)
+# stdin から PreToolUse JSON を読み込む
+INPUT=$(cat)
+
+COMMAND=$(echo "$INPUT" | jq -r '.tool_input.command // empty' 2>/dev/null)
 
 if [ -z "$COMMAND" ]; then
   exit 0

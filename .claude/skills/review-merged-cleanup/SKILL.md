@@ -31,7 +31,7 @@ SendMessage(to: "issue-{issue_number}-e2e-reviewer",     {"type": "shutdown_requ
 
 順序は問わないが 3 体すべてに送ることを保証する。受信側がすでに終了している場合は配送に失敗してもこのフローは継続する（best-effort）。
 
-**例外**: 複数 lane の場合、`{impl_agent_name}` は spawn 時の lane 付き名（例: `issue-1234-coder-flatten`, `issue-1234-coder-lifecycle`）の **全 lane 分** に送る。受信した issue の coder 系 lane を `gh` / spawn 履歴 / 受信した impl-ready 元から把握できない場合は、`{impl_agent_name}` 単一名で代用してよい（best-effort）。
+**例外**: 複数 lane の場合、`{impl_agent_name}` は spawn 時の lane 付き名（例: `coder-flatten-1234`, `coder-lifecycle-1234`）の **全 lane 分** に送る。受信した issue の coder 系 lane を `gh` / spawn 履歴 / 受信した impl-ready 元から把握できない場合は、`{impl_agent_name}` 単一名で代用してよい（best-effort）。
 
 ### 2. クリーンアップ実行
 

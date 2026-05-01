@@ -14,7 +14,7 @@ triggers:
 
 このスキルを呼び出す前に以下がコンテキストに存在すること:
 - `{worktree}`: worktree の絶対パス
-- `{impl_agent_name}`: 実装エージェント名（例: `issue-1056-coder`）
+- `{impl_agent_name}`: 実装エージェント名（例: `coder-1056`）
 - `{issue_number}`: Issue 番号
 
 ## 手順

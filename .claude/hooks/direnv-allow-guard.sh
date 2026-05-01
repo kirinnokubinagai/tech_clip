@@ -11,7 +11,10 @@ LIB="${HOOK_DIR}/../../scripts/lib/worktree-init.sh"
 # shellcheck source=../../scripts/lib/worktree-init.sh
 source "$LIB"
 
-CMD=$(echo "$ARGUMENTS" | jq -r '.command // empty' 2>/dev/null)
+INPUT=$(cat)
+[ -z "$INPUT" ] && exit 0
+
+CMD=$(echo "$INPUT" | jq -r '.tool_input.command // empty' 2>/dev/null)
 [ -z "$CMD" ] && exit 0
 
 is_direnv_allow_command "$CMD" && exit 0

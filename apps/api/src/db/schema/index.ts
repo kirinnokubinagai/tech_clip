@@ -2,6 +2,11 @@ export type { Account, NewAccount } from "./accounts";
 export { accounts } from "./accounts";
 export type { AiJob, NewAiJob } from "./ai-jobs";
 export { aiJobs } from "./ai-jobs";
+export type {
+  AiQuotaRollbackFailure,
+  NewAiQuotaRollbackFailure,
+} from "./ai-quota-rollback-failures";
+export { aiQuotaRollbackFailures } from "./ai-quota-rollback-failures";
 export type { AnalyticsEvent, NewAnalyticsEvent } from "./analytics-events";
 export { analyticsEvents } from "./analytics-events";
 export type { Article, NewArticle } from "./articles";
@@ -12,6 +17,8 @@ export type { NewNotificationSettings, NotificationSettings } from "./notificati
 export { notificationSettings } from "./notification-settings";
 export type { NewNotification, Notification } from "./notifications";
 export { notifications } from "./notifications";
+export type { NewOauthExchangeCode, OauthExchangeCode } from "./oauth-exchange-codes";
+export { oauthExchangeCodes } from "./oauth-exchange-codes";
 export type { NewRefreshToken, RefreshToken } from "./refresh-tokens";
 export { refreshTokens } from "./refresh-tokens";
 export { accountsRelations, sessionsRelations, usersRelations } from "./relations";

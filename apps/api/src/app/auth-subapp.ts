@@ -3,9 +3,9 @@ import { Hono } from "hono";
 
 import type { Auth } from "../auth";
 import type { Database } from "../db";
-import { refreshTokens, sessions } from "../db/schema";
+import { oauthExchangeCodes, refreshTokens, sessions } from "../db/schema";
 import { fetchWithAuth } from "../lib/route-helpers";
-import { generateRefreshToken, hashTokenSha256 } from "../lib/token-utils";
+import { generateRandomHexToken, generateRefreshToken, hashTokenSha256 } from "../lib/token-utils";
 import { createAuthRoute } from "../routes/auth";
 import { createEmailVerificationRoute } from "../routes/email-verification";
 import { createPasswordResetRoute } from "../routes/password-reset";
@@ -17,6 +17,12 @@ const DEFAULT_APP_URL = "http://localhost:8081";
 
 /** モバイルアプリの deep link スキーム */
 const MOBILE_CALLBACK_URL = "techclip://auth/callback";
+
+/** exchange code の有効期限（ミリ秒） */
+const EXCHANGE_CODE_TTL_MS = 60_000;
+
+/** exchange code の文字数（32バイト = 64文字 hex） */
+const EXCHANGE_CODE_LENGTH = 64;
 
 /**
  * 認証ルートのサブアプリを構築してリクエストを処理する
@@ -81,9 +87,11 @@ export async function handleEmailVerification(
  * OAuth ソーシャルログイン後にモバイルアプリへ deep link リダイレクトするハンドラ
  *
  * Better Auth は OAuth callback 後にセッションクッキーを設定してからこのエンドポイントへ
- * リダイレクトする。セッションクッキーからセッション情報を取得し、独自の
- * refresh token を発行して `techclip://auth/callback?token=...&refresh_token=...` へ
- * 302 リダイレクトする。
+ * リダイレクトする。セッションクッキーからセッション情報を取得し、一度限りの
+ * exchange code を発行して `techclip://auth/callback?code=...&state=...` へ
+ * 302 リダイレクトする。アプリ側は POST /api/auth/mobile-exchange でこの code を
+ * session token と refresh token に交換する（URL に token を載せないため Referer/
+ * ブラウザ履歴経由の漏洩を防ぐ）。
  *
  * エラー時は `techclip://auth/callback?error=...` へリダイレクトする。
  *
@@ -123,23 +131,33 @@ export async function handleMobileOAuthCallback(
   }
 
   const plainRefreshToken = generateRefreshToken();
-  const tokenHash = await hashTokenSha256(plainRefreshToken);
+  const refreshTokenHash = await hashTokenSha256(plainRefreshToken);
 
   await db.insert(refreshTokens).values({
     id: crypto.randomUUID(),
     sessionId: sessionRow.id,
     userId: sessionRow.userId,
-    tokenHash,
+    tokenHash: refreshTokenHash,
     expiresAt: sessionRow.expiresAt,
+  });
+
+  const exchangeCode = generateRandomHexToken(EXCHANGE_CODE_LENGTH);
+  const exchangeCodeHash = await hashTokenSha256(exchangeCode);
+  const codeExpiresAt = new Date(Date.now() + EXCHANGE_CODE_TTL_MS).toISOString();
+
+  await db.insert(oauthExchangeCodes).values({
+    id: crypto.randomUUID(),
+    codeHash: exchangeCodeHash,
+    sessionId: sessionRow.id,
+    userId: sessionRow.userId,
+    sessionToken,
+    refreshTokenPlain: plainRefreshToken,
+    expiresAt: codeExpiresAt,
   });
 
   const url = new URL(request.url);
   const oauthState = url.searchParams.get("state");
-
-  const deepLinkParams = new URLSearchParams({
-    token: sessionToken,
-    refresh_token: plainRefreshToken,
-  });
+  const deepLinkParams = new URLSearchParams({ code: exchangeCode });
 
   if (oauthState) {
     deepLinkParams.set("state", oauthState);

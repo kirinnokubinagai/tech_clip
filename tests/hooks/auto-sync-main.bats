@@ -2,7 +2,7 @@
 SCRIPT="$(cd "$(dirname "$BATS_TEST_FILENAME")/../.." && pwd)/.claude/hooks/auto-sync-main.sh"
 
 setup() {
-  unset GIT_DIR GIT_WORK_TREE
+    unset GIT_DIR GIT_WORK_TREE
   TEST_DIR="$BATS_TEST_TMPDIR"
   FAKE_BIN="$TEST_DIR/fake_bin"
   mkdir -p "$FAKE_BIN"

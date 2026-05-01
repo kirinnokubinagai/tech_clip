@@ -1,9 +1,9 @@
-import { eq } from "drizzle-orm";
+import { and, eq, isNull } from "drizzle-orm";
 import { Hono } from "hono";
 import { z } from "zod";
 
 import type { Database } from "../db";
-import { refreshTokens, sessions, users } from "../db/schema";
+import { oauthExchangeCodes, refreshTokens, sessions, users } from "../db/schema";
 import {
   AUTH_EXPIRED_CODE,
   AUTH_INVALID_CODE,
@@ -540,6 +540,120 @@ export function createAuthRoute({ db, getAuth }: AuthRouteOptions) {
             code: INTERNAL_ERROR_CODE,
             message: "サーバーエラーが発生しました",
           },
+        },
+        HTTP_INTERNAL_SERVER_ERROR,
+      );
+    }
+  });
+
+  /**
+   * モバイル OAuth exchange code をセッショントークンと交換する
+   * 一度きりの短命 code を受け取り、session token と refresh token を返す
+   */
+  const MobileExchangeSchema = z.object({
+    code: z
+      .string({ error: "exchange code は必須です" })
+      .length(64, "exchange code の形式が正しくありません")
+      .regex(/^[0-9a-f]+$/, "exchange code の形式が正しくありません"),
+  });
+
+  app.post("/mobile-exchange", async (c) => {
+    const body: unknown = await c.req.json().catch(() => ({}));
+    const parsed = MobileExchangeSchema.safeParse(body);
+
+    if (!parsed.success) {
+      return c.json(
+        {
+          success: false,
+          error: { code: VALIDATION_FAILED_CODE, message: "入力内容を確認してください" },
+        },
+        HTTP_UNPROCESSABLE_ENTITY,
+      );
+    }
+
+    try {
+      const codeHash = await hashTokenSha256(parsed.data.code);
+
+      const result = await db.transaction(async (tx) => {
+        const [row] = await tx
+          .select()
+          .from(oauthExchangeCodes)
+          .where(eq(oauthExchangeCodes.codeHash, codeHash));
+
+        if (!row) return { error: "invalid_code" } as const;
+
+        if (row.consumedAt !== null) {
+          logger.warn("OAuth exchange code の再利用を検知しました", {
+            userId: row.userId,
+            sessionId: row.sessionId,
+          });
+          return { error: "already_consumed" } as const;
+        }
+
+        const expiresAtMs = Date.parse(row.expiresAt);
+        if (Number.isFinite(expiresAtMs) && expiresAtMs <= Date.now()) {
+          return { error: "expired" } as const;
+        }
+
+        const updateResult = await tx
+          .update(oauthExchangeCodes)
+          .set({ consumedAt: new Date().toISOString() })
+          .where(and(eq(oauthExchangeCodes.id, row.id), isNull(oauthExchangeCodes.consumedAt)))
+          .returning({ id: oauthExchangeCodes.id });
+
+        if (updateResult.length === 0) return { error: "race_consumed" } as const;
+
+        const [sessionRow] = await tx.select().from(sessions).where(eq(sessions.id, row.sessionId));
+
+        if (!sessionRow) return { error: "session_missing" } as const;
+
+        const sessionExpiresAtStr =
+          typeof sessionRow.expiresAt === "string"
+            ? sessionRow.expiresAt
+            : new Date(sessionRow.expiresAt as number | Date).toISOString();
+
+        await tx.delete(oauthExchangeCodes).where(eq(oauthExchangeCodes.id, row.id));
+
+        return {
+          ok: {
+            sessionToken: row.sessionToken,
+            refreshToken: row.refreshTokenPlain,
+            expiresAt: sessionExpiresAtStr,
+          },
+        } as const;
+      });
+
+      if ("error" in result) {
+        return c.json(
+          {
+            success: false,
+            error: {
+              code: AUTH_INVALID_CODE,
+              message: "認証コードが無効または期限切れです",
+            },
+          },
+          HTTP_UNAUTHORIZED,
+        );
+      }
+
+      return c.json(
+        {
+          success: true,
+          data: {
+            session: { token: result.ok.sessionToken, expiresAt: result.ok.expiresAt },
+            refreshToken: result.ok.refreshToken,
+          },
+        },
+        HTTP_OK,
+      );
+    } catch (error) {
+      logger.error("OAuth exchange 処理中にエラーが発生しました", {
+        error: error instanceof Error ? { name: error.name, message: error.message } : error,
+      });
+      return c.json(
+        {
+          success: false,
+          error: { code: INTERNAL_ERROR_CODE, message: "サーバーエラーが発生しました" },
         },
         HTTP_INTERNAL_SERVER_ERROR,
       );

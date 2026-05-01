@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 # PreToolUse hook (matcher: Agent)
-# suffix 付き数字エージェント名（issue-{N}-{role}-2 等）を物理 block する
+# suffix 付き数字エージェント名（{role}-{N}-2 等）を物理 block する
 #
-# 目的: issue-{N}-reviewer-2, -3 などの重複エージェント増殖を防ぐ
+# 目的: coder-1146-2, reviewer-1146-3 などの重複エージェント増殖を防ぐ
 #
 # 同名衝突（既に同名エージェントが存在する場合）の検出はこのフック単体では
 # 実現できない（in-process エージェントは ps に表示されないため）。
@@ -27,17 +27,18 @@ AGENT_NAME=$(echo "$TOOL_INPUT" | jq -r '.tool_input.name // ""' 2>/dev/null || 
 # name が空ならチェック不要
 [ -n "$AGENT_NAME" ] || exit 0
 
-# issue-{N}-{role} 形式のみチェック（lane 付き issue-{N}-{role}-{lane} も対象）
-if [[ ! "$AGENT_NAME" =~ ^issue-[0-9]+-[a-z] ]]; then
+# {role}-{N} 形式のみチェック（英字始まりで末尾が数字のもの）
+# 例: coder-1146 / analyst-1086 / e2e-reviewer-1138
+if [[ ! "$AGENT_NAME" =~ ^[a-zA-Z][a-zA-Z0-9-]*-[0-9]+ ]]; then
   exit 0
 fi
 
-# suffix 付き数字エージェント名（issue-{N}-{role}-1, -2, -3 等）を block
-# 末尾が純粋な数字 1-3 桁の場合のみ block（lane 名は英字始まりのため区別可能）
-# 例: issue-1056-coder-2 → block / issue-1056-coder-api → allow
-if [[ "$AGENT_NAME" =~ ^issue-[0-9]+-[a-z][a-zA-Z0-9-]*-([0-9]{1,3})$ ]]; then
-  SUFFIX="${BASH_REMATCH[1]}"
-  BASE_NAME="${AGENT_NAME%-${SUFFIX}}"
+# suffix 付き数字エージェント名（{role}-{N}-1, -2, -3 等）を block
+# パターン: <英字始まりの role>-<issue番号>-<純数字suffix>
+# 例: coder-1146-2 → block / coder-flatten-1146 → allow (lane は英字)
+if [[ "$AGENT_NAME" =~ ^([a-zA-Z][a-zA-Z0-9-]*-[0-9]+)-([0-9]{1,3})$ ]]; then
+  BASE_NAME="${BASH_REMATCH[1]}"
+  SUFFIX="${BASH_REMATCH[2]}"
   echo "BLOCKED: suffix 付き数字エージェント名 '$AGENT_NAME' は禁止されています。" >&2
   echo "" >&2
   echo "必須手順（cleanup してから再 spawn）:" >&2
@@ -45,7 +46,7 @@ if [[ "$AGENT_NAME" =~ ^issue-[0-9]+-[a-z][a-zA-Z0-9-]*-([0-9]{1,3})$ ]]; then
   echo "  2. shutdown_response を待つ" >&2
   echo "  3. '$BASE_NAME'（suffix なし）で再 spawn する" >&2
   echo "" >&2
-  echo "❌ suffix 付き名称（${BASE_NAME}-2 等）での spawn は禁止。" >&2
+  echo "❌ suffix 付き名称（${BASE_NAME}-${SUFFIX} 等）での spawn は禁止。" >&2
   echo "❌ cleanup せずに再 spawn することも禁止。" >&2
   exit 2
 fi

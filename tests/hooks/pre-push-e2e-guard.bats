@@ -8,7 +8,7 @@ SCRIPT="$(cd "$(dirname "$BATS_TEST_FILENAME")/../.." && pwd)/.claude/hooks/pre-
 RULES="$(cd "$(dirname "$BATS_TEST_FILENAME")/../.." && pwd)/.claude/gate-rules.json"
 
 setup() {
-  unset GIT_DIR GIT_WORK_TREE
+    unset GIT_DIR GIT_WORK_TREE
     TMPDIR="$BATS_TEST_TMPDIR"
     REPO_DIR="$TMPDIR/main"
     WORKTREE_BASE="$TMPDIR"
@@ -22,30 +22,27 @@ setup() {
     git -C "$REPO_DIR" commit -m "initial commit"
 }
 
-
-run_script_with_args() {
+# stdin でフックを実行するヘルパー
+run_hook() {
     local args_json="$1"
     local run_dir="${2:-$REPO_DIR}"
-    (cd "$run_dir" && ARGUMENTS="$args_json" bash "$SCRIPT")
+    echo "$args_json" | (cd "$run_dir" && bash "$SCRIPT")
 }
 
 @test "git push を含まないコマンドはスキップされること" {
     # Arrange
-    local args='{"command": "ls -la"}'
+    local args='{"tool_input":{"command":"ls -la"}}'
 
     # Act
-    run run_script_with_args "$args"
+    run run_hook "$args"
 
     # Assert
     [ "$status" -eq 0 ]
 }
 
-@test "ARGUMENTS が空の場合はスキップされること" {
-    # Arrange
-    local args=''
-
-    # Act
-    run run_script_with_args "$args"
+@test "stdin が空の場合はスキップされること" {
+    # Arrange / Act
+    run bash -c "echo '' | bash '$SCRIPT'"
 
     # Assert
     [ "$status" -eq 0 ]
@@ -57,10 +54,10 @@ run_script_with_args() {
     git -C "$REPO_DIR" worktree add "$wt_path" -b issue/1138/branch-strategy
     mkdir -p "$wt_path/.claude"
 
-    local args='{"command": "git push origin issue/1138/branch-strategy"}'
+    local args='{"tool_input":{"command":"git push origin issue/1138/branch-strategy"}}'
 
     # Act: issue/* は短絡で exit 0 (e2e marker 不要)
-    run run_script_with_args "$args" "$wt_path"
+    run run_hook "$args" "$wt_path"
 
     # Assert
     [ "$status" -eq 0 ]
@@ -72,10 +69,10 @@ run_script_with_args() {
     git -C "$REPO_DIR" worktree add "$wt_path" -b feature/new-ui
     mkdir -p "$wt_path/.claude"
 
-    local args='{"command": "git push origin feature/new-ui"}'
+    local args='{"tool_input":{"command":"git push origin feature/new-ui"}}'
 
     # Act
-    run run_script_with_args "$args" "$wt_path"
+    run run_hook "$args" "$wt_path"
 
     # Assert
     [ "$status" -eq 0 ]
@@ -88,10 +85,10 @@ run_script_with_args() {
     git -C "$REPO_DIR" worktree add "$wt_path" -b stage
     mkdir -p "$wt_path/.claude"
 
-    local args='{"command": "git push origin stage"}'
+    local args='{"tool_input":{"command":"git push origin stage"}}'
 
     # Act
-    run run_script_with_args "$args" "$wt_path"
+    run run_hook "$args" "$wt_path"
 
     # Assert: stage branch はマーカー必須 (evaluate-paths.sh が無ければブロック)
     [ "$status" -eq 2 ]
@@ -105,10 +102,10 @@ run_script_with_args() {
     mkdir -p "$wt_path/.claude"
     git -C "$wt_path" rev-parse HEAD > "$wt_path/.claude/.e2e-passed"
 
-    local args='{"command": "git push origin stage"}'
+    local args='{"tool_input":{"command":"git push origin stage"}}'
 
     # Act
-    run run_script_with_args "$args" "$wt_path"
+    run run_hook "$args" "$wt_path"
 
     # Assert
     [ "$status" -eq 0 ]
@@ -130,10 +127,10 @@ run_script_with_args() {
     mkdir -p "$alt_wt/.claude"
     echo "not-a-sha" > "$alt_wt/.claude/.e2e-passed"
 
-    local args='{"command": "git push origin stage"}'
+    local args='{"tool_input":{"command":"git push origin stage"}}'
 
     # Act
-    run run_script_with_args "$args" "$alt_wt"
+    run run_hook "$args" "$alt_wt"
 
     # Assert
     [ "$status" -eq 2 ]
@@ -155,12 +152,26 @@ run_script_with_args() {
     mkdir -p "$alt_wt2/.claude"
     echo "0000000000000000000000000000000000000000" > "$alt_wt2/.claude/.e2e-passed"
 
-    local args='{"command": "git push origin stage"}'
+    local args='{"tool_input":{"command":"git push origin stage"}}'
 
     # Act
-    run run_script_with_args "$args" "$alt_wt2"
+    run run_hook "$args" "$alt_wt2"
 
     # Assert
     [ "$status" -eq 2 ]
     [[ "$output" == *"DENY"* ]] || [[ "${lines[*]}" == *"DENY"* ]]
+}
+
+@test "stdinに正しいJSONを渡すとstage pushがブロックされること（e2eマーカーなし）" {
+    # Arrange: stage ブランチでe2eマーカーなし — stdin ルーティングが正しく機能することを確認
+    local wt_path="$WORKTREE_BASE/stage-stdin-test"
+    git -C "$REPO_DIR" worktree add "$wt_path" -b stage
+    mkdir -p "$wt_path/.claude"
+
+    # Act: stdin に tool_input.command を含む正しい JSON を渡す
+    run bash -c "echo '{\"tool_input\":{\"command\":\"git push origin stage\"}}' | (cd '$wt_path' && bash '$SCRIPT')"
+
+    # Assert: 実際にブロックされること（$ARGUMENTS が空でも stdin から読む）
+    [ "$status" -eq 2 ]
+    [[ "$output" == *"DENY"* ]]
 }
