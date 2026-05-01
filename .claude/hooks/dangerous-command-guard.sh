@@ -118,6 +118,37 @@ check_dangerous() {
   return 1
 }
 
+# CI ゲート判定ラベルの手動操作をブロック
+check_label_manipulation() {
+  local cmd="$1"
+
+  # gh pr edit / gh issue edit / gh pr create で --add-label / --remove-label / --label を検出
+  if ! echo "$cmd" | grep -qE "gh +(pr|issue) +(edit|create)"; then
+    return 1
+  fi
+
+  if ! echo "$cmd" | grep -qE -- "--(add|remove)-label|^gh +pr +(edit|create).*--label"; then
+    return 1
+  fi
+
+  # 保護対象ラベルパターン (大文字小文字無視)
+  # "AI Review", "AI-Review", "ai review", "ai-review" すべてカバー
+  # シングルクォート / ダブルクォートどちらでも検出
+  if echo "$cmd" | grep -qiE -- "--(add|remove)-label[ =]+['\"]?ai[- ]review|--label[ =]+['\"]?ai[- ]review"; then
+    echo "DENY: AI Review 系ラベルの手動操作は禁止されています"
+    echo "  コマンド: $cmd"
+    echo ""
+    echo "  AI Review: NEEDS WORK / APPROVED / SKIPPED は claude-review bot の自動判定です"
+    echo "  ラベルを外して CI をバイパスすることはできません"
+    echo "  修正対応: bot の指摘内容（改善提案も含め全件）を修正してから push してください"
+    echo "     - bot コメントの確認: gh pr view <PR#> --comments"
+    echo "     - 修正後 push で bot が再評価し、ラベルを自動更新します"
+    return 0
+  fi
+
+  return 1
+}
+
 # PRマージ前のレビューチェック
 check_merge_without_review() {
   local cmd="$1"
@@ -189,6 +220,10 @@ if check_dangerous "$COMMAND"; then
   echo "コマンド: $COMMAND"
   echo ""
   echo "このコマンドは config / index / worktree を壊す可能性があります。"
+  exit 2
+fi
+
+if check_label_manipulation "$COMMAND"; then
   exit 2
 fi
 

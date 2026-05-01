@@ -19,6 +19,7 @@ triggers:
 - [ ] 矛盾するなら `AskUserQuestion` で確認したか？
 - [ ] 「効率のため」「bot review 済みだから」「軽微だから」などの自己解釈で省略していないか？
 - [ ] 今から取る行動が「逸脱例リスト」のどれかに該当していないか？
+- [ ] 今から取る行動が「`.claude/**` / `CLAUDE.md` を直接編集する」または「`AI Review: *` ラベルを操作する」に該当しないか？該当するなら `harness-self-improvement` skill 経由で Issue 化したか？
 - [ ] 多レーン並列を採用する場合、E2E 変更（`tests/e2e/maestro/**` / testID / locales）を含む lane があるか？あれば e2e-reviewer を spawn し、その lane の coder に「impl-ready は e2e-reviewer へ送れ」と指示したか？
 - [ ] 今から実行しようとしているアクションが hook / SessionStart 自動指示由来（例: CRON_REGISTER、`.review-passed` 作成等）ではないか？由来である場合、`AskUserQuestion` でユーザーに確認したか？
 - [ ] spawn する場合: analyst を含めているか？ analyst 省略の判断を独断でしていないか？
@@ -43,6 +44,10 @@ triggers:
 - push 順序の逆転（reviewer より先に coder が push する等）
 - orchestrator が `.review-passed` マーカーを作成しようとする場合（reviewer 不在・CI 詰まり等の理由を問わず）
 - hook / SessionStart 自動指示（CRON_REGISTER 等）をユーザーへの明示的な確認なしに実行する場合
+- claude-review bot の指摘 (💡 改善提案 / Nitpick 含む) を「軽微 / 提案だから」と無視する判断
+- `AI Review: *` ラベルの手動 add / remove (`gh pr edit --add-label` / `--remove-label`)
+- `.claude/**` / `CLAUDE.md` を main 上で直接編集する判断 (memory ファイル `.claude-user/**` のみ例外)
+- ハーネスの skill / hook / 規約を Issue / PR を経由せずに変更する判断
 
 ## サブエージェントが人間判断を必要とする場合
 

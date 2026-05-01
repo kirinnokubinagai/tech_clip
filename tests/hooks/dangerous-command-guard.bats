@@ -22,9 +22,12 @@ setup() {
 
 
 # ARGUMENTS JSON を組み立てて hook を実行するヘルパー
+# jq で JSON を安全に構築することでダブルクォートを含むコマンドも正しく処理する
 run_hook() {
     local cmd="$1"
-    (cd "$REPO_DIR" && ARGUMENTS="{\"command\":\"$cmd\"}" bash "$SCRIPT")
+    local json
+    json=$(jq -n --arg c "$cmd" '{"command":$c}')
+    (cd "$REPO_DIR" && ARGUMENTS="$json" bash "$SCRIPT")
 }
 
 @test "mainブランチ上の sed -i はブロックされること" {
@@ -71,4 +74,61 @@ run_hook() {
 @test "mainブランチ上の通常の sed（-i なし）は許可されること" {
     run run_hook "sed 's/foo/bar/g' file.txt"
     [ "$status" -ne 2 ]
+}
+
+@test "gh pr edit --remove-label 'AI Review: NEEDS WORK' はブロックされること" {
+    run run_hook "gh pr edit 123 --remove-label 'AI Review: NEEDS WORK'"
+    [ "$status" -eq 2 ]
+    [[ "$output" == *"DENY"* ]]
+    [[ "$output" == *"AI Review"* ]]
+}
+
+@test "gh pr edit --add-label 'AI Review: APPROVED' はブロックされること" {
+    run run_hook "gh pr edit 123 --add-label 'AI Review: APPROVED'"
+    [ "$status" -eq 2 ]
+    [[ "$output" == *"DENY"* ]]
+}
+
+@test "gh pr edit --remove-label 'AI Review: SKIPPED' (ダブルクォート) もブロックされること" {
+    run run_hook 'gh pr edit 123 --remove-label "AI Review: SKIPPED"'
+    [ "$status" -eq 2 ]
+    [[ "$output" == *"DENY"* ]]
+}
+
+@test "gh issue edit --add-label 'AI Review: APPROVED' もブロックされること" {
+    run run_hook "gh issue edit 1167 --add-label 'AI Review: APPROVED'"
+    [ "$status" -eq 2 ]
+    [[ "$output" == *"DENY"* ]]
+}
+
+@test "大文字小文字混在 'ai-review-needs-work' もブロックされること" {
+    run run_hook "gh pr edit 123 --add-label 'ai-review-needs-work'"
+    [ "$status" -eq 2 ]
+    [[ "$output" == *"DENY"* ]]
+}
+
+@test "gh pr edit --add-label 'bug' (AI Review 以外) は許可されること" {
+    run run_hook "gh pr edit 123 --add-label 'bug'"
+    [ "$status" -ne 2 ]
+}
+
+@test "gh pr edit --add-label 'needs-review' (AI Review プレフィックスなし) は許可されること" {
+    run run_hook "gh pr edit 123 --add-label 'needs-review'"
+    [ "$status" -ne 2 ]
+}
+
+@test "gh pr view 123 (edit 以外) は許可されること" {
+    run run_hook "gh pr view 123"
+    [ "$status" -ne 2 ]
+}
+
+@test "gh pr edit --title 'fix' (--*-label なし) は許可されること" {
+    run run_hook "gh pr edit 123 --title 'fix: foo'"
+    [ "$status" -ne 2 ]
+}
+
+@test "AI Review ブロック時に修正手順メッセージが出ること" {
+    run run_hook "gh pr edit 123 --remove-label 'AI Review: NEEDS WORK'"
+    [ "$status" -eq 2 ]
+    [[ "$output" == *"全件"* || "$output" == *"push"* ]]
 }
