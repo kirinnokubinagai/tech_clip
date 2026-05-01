@@ -70,18 +70,50 @@ REQUIRES_HUMAN=$(echo "$ISSUES_JSON" | jq -c --argjson labels "[$HUMAN_LABELS]" 
   )
 ]')
 
+# active zones を取得
+ACTIVE_ZONES_JSON=$(bash "$SCRIPT_DIR/skills/list-active-zones.sh" --json 2>/dev/null || echo '{"active_issues":[],"active_zones":[]}')
+ACTIVE_ZONES=$(echo "$ACTIVE_ZONES_JSON" | jq '.active_zones // []')
+ACTIVE_ISSUES_LIST=$(echo "$ACTIVE_ZONES_JSON" | jq '.active_issues // []')
+
+# 各 issue の zones を detect-issue-zones.sh で取得して付与
+AUTO_ASSIGNABLE_FINAL="[]"
+while IFS= read -r ISSUE_OBJ; do
+  ITITLE=$(echo "$ISSUE_OBJ" | jq -r '.title')
+  DETECT_OUT=$(bash "$SCRIPT_DIR/skills/detect-issue-zones.sh" --text "$ITITLE" --json 2>/dev/null || echo '{"zones":[]}')
+  ISSUE_ZONES=$(echo "$DETECT_OUT" | jq '.zones // []')
+
+  INTERSECTION=$(jq -n \
+    --argjson mine "$ISSUE_ZONES" \
+    --argjson active "$ACTIVE_ZONES" \
+    '$mine - ($mine - $active)')
+  BLOCKED=$(jq -n --argjson inter "$INTERSECTION" '$inter | length > 0')
+
+  ISSUE_FINAL=$(echo "$ISSUE_OBJ" | jq \
+    --argjson zones "$ISSUE_ZONES" \
+    --argjson blocked "$BLOCKED" \
+    --argjson blocking "$INTERSECTION" \
+    '. + {zones: $zones, blocked_by_active: $blocked, blocking_zones: $blocking}')
+
+  AUTO_ASSIGNABLE_FINAL=$(echo "$AUTO_ASSIGNABLE_FINAL" | jq --argjson item "$ISSUE_FINAL" '. + [$item]')
+done < <(echo "$AUTO_ASSIGNABLE" | jq -c '.[]')
+
 if [ "$OUTPUT_JSON" = "true" ]; then
-  echo "{\"auto_assignable\":$AUTO_ASSIGNABLE,\"requires_human\":$REQUIRES_HUMAN}"
+  jq -n \
+    --argjson auto_assignable "$AUTO_ASSIGNABLE_FINAL" \
+    --argjson requires_human "$REQUIRES_HUMAN" \
+    --argjson active_zones "$ACTIVE_ZONES" \
+    --argjson active_issues "$ACTIVE_ISSUES_LIST" \
+    '{auto_assignable: $auto_assignable, requires_human: $requires_human, active_zones: $active_zones, active_issues: $active_issues}'
   exit 0
 fi
 
 # テキスト形式で出力
-AUTO_COUNT=$(echo "$AUTO_ASSIGNABLE" | jq 'length')
+AUTO_COUNT=$(echo "$AUTO_ASSIGNABLE_FINAL" | jq 'length')
 HUMAN_COUNT=$(echo "$REQUIRES_HUMAN" | jq 'length')
 
 if [ "$AUTO_COUNT" -gt 0 ]; then
   echo "自動割り当て可能 Issue:"
-  echo "$AUTO_ASSIGNABLE" | jq -r '.[] | "  #\(.number) \(.title)"'
+  echo "$AUTO_ASSIGNABLE_FINAL" | jq -r '.[] | if .blocked_by_active then "  ⏸ #\(.number) \(.title) (ブロック中: \(.blocking_zones | join(", ")))" else "  ✅ #\(.number) \(.title)" end'
 else
   echo "自動割り当て可能 Issue: なし"
 fi

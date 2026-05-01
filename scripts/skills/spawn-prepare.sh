@@ -26,6 +26,24 @@ DESC="${2:?usage: spawn-prepare.sh <issue-number> <desc>}"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 
+# zone 衝突最終チェック
+ACTIVE_ZONES_JSON=$(bash "$SCRIPT_DIR/list-active-zones.sh" --json --exclude-issue "$ISSUE_NUM")
+ISSUE_ZONES_JSON=$(bash "$SCRIPT_DIR/detect-issue-zones.sh" --issue "$ISSUE_NUM" --json)
+
+CONFLICTING=$(jq -n \
+  --argjson active "$ACTIVE_ZONES_JSON" \
+  --argjson mine "$ISSUE_ZONES_JSON" \
+  '($mine.zones // []) - (($mine.zones // []) - ($active.active_zones // []))')
+
+if [ "$(echo "$CONFLICTING" | jq 'length')" -gt 0 ]; then
+  echo "ERROR: zone conflict detected. Spawn aborted." >&2
+  echo "  This issue zones: $(echo "$ISSUE_ZONES_JSON" | jq -c '.zones')" >&2
+  echo "  Currently active zones: $(echo "$ACTIVE_ZONES_JSON" | jq -c '.active_zones')" >&2
+  echo "  Conflicting: $(echo "$CONFLICTING" | jq -c '.')" >&2
+  echo "  → Wait for blocking issue(s) to merge, then re-spawn." >&2
+  exit 1
+fi
+
 # 1. worktree 作成（既存の場合はスキップ）
 WORKTREE="${REPO_ROOT}/../issue-${ISSUE_NUM}"
 if [ ! -d "$WORKTREE" ]; then

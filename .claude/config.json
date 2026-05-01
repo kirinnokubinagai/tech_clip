@@ -38,5 +38,43 @@
     "production",
     "smoke test",
     "本番"
-  ]
+  ],
+  "conflict_zones": {
+    "api-entry": {
+      "files": ["apps/api/src/index.ts", "wrangler.toml", "wrangler.jsonc"],
+      "keywords": ["cron", "scheduled", "route registration", "wrangler", "cf worker entry"]
+    },
+    "api-migration": {
+      "files": ["apps/api/drizzle/", "apps/api/src/db/schema/", "apps/api/src/db/schema.ts"],
+      "keywords": ["migration", "drizzle", "schema", "table", "column", "drizzle-kit"]
+    },
+    "api-auth": {
+      "files": ["apps/api/src/app/auth-subapp.ts", "apps/api/src/routes/auth.ts", "apps/api/src/auth/"],
+      "keywords": ["oauth", "login", "session", "token", "password", "better-auth", "auth flow"]
+    },
+    "api-rate-limit": {
+      "files": ["apps/api/src/middleware/rate-limit", "apps/api/src/lib/rate-limit"],
+      "keywords": ["rate limit", "rate-limit", "throttle", "kv store"]
+    },
+    "infra-ci": {
+      "files": [".github/workflows/", "scripts/gate/", "scripts/ci/"],
+      "keywords": ["ci", "workflow", "gate", "github actions", "ci-gate"]
+    },
+    "infra-harness": {
+      "files": ["CLAUDE.md", ".claude/skills/", ".claude/agents/", ".claude/hooks/"],
+      "keywords": ["harness", "orchestrator", "skill definition", "agent definition", "hook"]
+    },
+    "mobile-screens": {
+      "files": ["apps/mobile/app/", "apps/mobile/screens/"],
+      "keywords": ["screen", "画面", "navigation"]
+    },
+    "mobile-shared-ui": {
+      "files": ["apps/mobile/components/ui/", "apps/mobile/lib/theme"],
+      "keywords": ["shared component", "theme", "tailwind", "nativewind"]
+    },
+    "design-tokens": {
+      "files": ["apps/mobile/tailwind.config", "apps/mobile/lib/colors", "tokens/"],
+      "keywords": ["color token", "テーマカラー", "design token"]
+    }
+  }
 }

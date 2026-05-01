@@ -107,6 +107,18 @@
         "type": "string"
       },
       "description": "タイトルにこれらのパターンを含む Issue は要人間確認（大文字小文字無視）"
+    },
+    "conflict_zones": {
+      "type": "object",
+      "description": "ファイル衝突予測に使う zone 定義。各 zone は files (path prefix) と keywords (issue title/body 検索語) を持つ",
+      "additionalProperties": {
+        "type": "object",
+        "required": ["files", "keywords"],
+        "properties": {
+          "files": {"type": "array", "items": {"type": "string"}},
+          "keywords": {"type": "array", "items": {"type": "string"}}
+        }
+      }
     }
   }
 }

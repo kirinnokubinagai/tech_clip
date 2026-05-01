@@ -1,6 +1,12 @@
 #!/usr/bin/env bats
-# auto-generated stub - TODO: 実装に対応するテストを追加すること
+SCRIPT="$(cd "$(dirname "$BATS_TEST_FILENAME")/../../.." && pwd)/scripts/skills/spawn-prepare.sh"
 
-@test "TODO: 実装に対応するテストを追加すること" {
-  skip "auto-generated stub"
+@test "spawn-prepare: zone 衝突最終ガードのコードが存在する" {
+  grep -q "list-active-zones.sh" "$SCRIPT"
+  grep -q "detect-issue-zones.sh" "$SCRIPT"
+  grep -q "zone conflict detected" "$SCRIPT"
+}
+
+@test "spawn-prepare: --exclude-issue で自分を除外する" {
+  grep -q -- "--exclude-issue" "$SCRIPT"
 }

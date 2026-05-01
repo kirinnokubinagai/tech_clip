@@ -111,6 +111,7 @@ TeamDelete("active-issues")
 - e2e-reviewer の spawn 省略（4 体セット固定）
 - 実装系から reviewer に直接 `impl-ready` 送信（必ず e2e-reviewer 経由）
 - spawn プロンプトに spec 保存先を書く（保存先は analyst 定義に委ねる）
+- spawn-prepare.sh が exit 1 (zone conflict) を返した Issue を強行 spawn する（独断禁止 → `harness-orchestrator-self-audit`）
 
 ## 関連 skill / script
 

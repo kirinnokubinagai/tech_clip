@@ -70,6 +70,8 @@ coverage/
 .claude/.e2e-passed
 # ポーリング状態ファイル（CI watcher の一時ファイル）
 .claude/polling/
+# zone 衝突判定キャッシュ（実行時自動生成、コミット禁止）
+.claude/.zone-cache/
 
 # Claude Code ユーザー設定ディレクトリ（認証情報を含むため除外）
 .claude-user/

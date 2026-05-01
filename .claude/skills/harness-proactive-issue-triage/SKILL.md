@@ -30,8 +30,13 @@ bash scripts/next-issue-candidates.sh --json
 
 ```json
 {
-  "auto_assignable": [{"number": 1055, "title": "..."}, ...],
-  "requires_human": [{"number": 1057, "title": "[release] v2.0.0..."}, ...]
+  "auto_assignable": [
+    {"number": 1055, "title": "...", "zones": ["api-auth"], "blocked_by_active": false},
+    {"number": 1083, "title": "OAuth ...", "zones": ["api-auth", "api-migration"], "blocked_by_active": true, "blocking_zones": ["api-migration"]}
+  ],
+  "requires_human": [{"number": 1057, "title": "[release] v2.0.0..."}, ...],
+  "active_zones": ["api-migration"],
+  "active_issues": [1085]
 }
 ```
 
@@ -39,12 +44,17 @@ bash scripts/next-issue-candidates.sh --json
 
 - **要人間確認**（`requires_human`）: `release` / `requires-human` ラベル、または title に `go-no-go` / `store` / `production` / `smoke test` / `本番` を含む
 - **自動着手可能**（`auto_assignable`）: 上記以外
+- **zone 衝突**（`blocked_by_active: true`）: 現在 active な Issue と同じ zone を触る Issue は spawn 保留
+
+zone 定義は `.claude/config.json` の `conflict_zones` キーで管理。active zone の検出は `git worktree list --porcelain` で `issue/N/...` パターンを抽出（`scripts/skills/list-active-zones.sh`）。
 
 ## 動作
 
-1. `auto_assignable` を全件、`harness-spawn-flow` で **確認なしで即 spawn**（同時 spawn 数の上限なし、ファイル競合がある Issue 以外）
-2. 着手後、ユーザーへ事後報告（「Issue #N, #M に着手しました」）
-3. `requires_human` のみユーザーに一覧提示（着手しない）
+1. `bash scripts/next-issue-candidates.sh --json` を実行して候補を取得
+2. `auto_assignable.filter(i => !i.blocked_by_active)` を全件、`harness-spawn-flow` で **確認なしで即 spawn**
+3. `auto_assignable.filter(i => i.blocked_by_active)` は **spawn 保留**。ユーザーへ「Issue #N (zone: ...) は #M がマージされるまで待機」と表示
+4. `requires_human` のみユーザーに一覧提示（着手しない）
+5. 既に処理中の Issue から `APPROVED: issue-N` 受信時は再度 step 1 から実行（マージ済みになった zone が解放されるため queued 候補が unblock される）
 
 ## 着手禁止条件（独断回避）
 
@@ -52,7 +62,7 @@ bash scripts/next-issue-candidates.sh --json
 
 - 既に `issue-{N}-*` サブエージェントが team config に存在 → 二重 spawn 禁止
 - ユーザーが「Issue #N をやめて」と明示的に指示 → `harness-agent-cleanup` を実行
-- 複数 Issue が同じファイルを触る可能性が高い → 順次実行を判断
+- `spawn-prepare.sh` が exit 1 (zone conflict) を返した Issue → 強行 spawn 禁止（`harness-orchestrator-self-audit` に委ねる）
 
 ## 関連 skill
 
