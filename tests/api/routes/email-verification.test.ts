@@ -14,6 +14,19 @@ vi.mock("@api/services/emailService", () => ({
   sendEmailVerification: vi.fn(),
 }));
 
+/** drizzle-orm の eq() をスパイ化して第二引数（userId）を検証可能にする */
+const capturedEqValues: unknown[] = [];
+vi.mock("drizzle-orm", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("drizzle-orm")>();
+  return {
+    ...actual,
+    eq: vi.fn((_col: unknown, val: unknown) => {
+      capturedEqValues.push(val);
+      return { col: _col, val };
+    }),
+  };
+});
+
 import { sendEmailVerification } from "@api/services/emailService";
 
 /** テスト用のモックユーザー */
@@ -373,5 +386,105 @@ describe("POST /api/auth/verify-email", () => {
       success: false,
       error: { code: "VALIDATION_FAILED" },
     });
+  });
+});
+
+describe("POST /api/auth/verify-email — identifier prefix extraction", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    capturedEqValues.length = 0;
+
+    mockSelectFrom.mockReturnValue({ where: mockSelectWhere });
+
+    mockUpdate.mockReturnValue({ set: mockUpdateSet });
+    mockUpdateSet.mockReturnValue({ where: mockUpdateWhere });
+    mockUpdateWhere.mockReturnValue({ returning: mockUpdateReturning });
+    mockUpdateReturning.mockResolvedValue([{ ...MOCK_USER, emailVerified: true }]);
+
+    mockDelete.mockReturnValue({ where: mockDeleteWhere });
+    mockDeleteWhere.mockResolvedValue([]);
+  });
+
+  it("identifier に prefix が付いている場合、userId が正しく抽出されること", async () => {
+    // Arrange
+    const verificationWithPrefix = {
+      ...MOCK_VERIFICATION,
+      identifier: "email-verification:user_01HXYZ",
+      expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+    };
+    mockSelectWhere.mockResolvedValue([verificationWithPrefix]);
+    const app = createApp();
+    const req = new Request("http://localhost/api/auth/verify-email", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ token: "test-token-abc123" }),
+    });
+
+    // Act
+    const res = await app.fetch(req);
+
+    // Assert
+    expect(res.status).toBe(HTTP_OK);
+    expect(mockUpdateWhere).toHaveBeenCalled();
+    expect(mockUpdateSet).toHaveBeenCalledWith({ emailVerified: true });
+    // eq() の第二引数として渡された userId が prefix 除去後の値であること
+    const updateEqValue = capturedEqValues.find((v) => v === "user_01HXYZ");
+    expect(updateEqValue).toBe("user_01HXYZ");
+  });
+
+  it("identifier に prefix が含まれない場合、そのまま userId として扱われること", async () => {
+    // Arrange
+    const verificationWithoutPrefix = {
+      ...MOCK_VERIFICATION,
+      identifier: "user_01HXYZ",
+      expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+    };
+    mockSelectWhere.mockResolvedValue([verificationWithoutPrefix]);
+    const app = createApp();
+    const req = new Request("http://localhost/api/auth/verify-email", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ token: "test-token-abc123" }),
+    });
+
+    // Act
+    const res = await app.fetch(req);
+
+    // Assert
+    expect(res.status).toBe(HTTP_OK);
+    expect(mockUpdateWhere).toHaveBeenCalled();
+    expect(mockUpdateSet).toHaveBeenCalledWith({ emailVerified: true });
+    // prefix なしの場合、identifier そのまま userId として eq() に渡されること
+    const updateEqValue = capturedEqValues.find((v) => v === "user_01HXYZ");
+    expect(updateEqValue).toBe("user_01HXYZ");
+  });
+
+  it("identifier の userId 部分に 'email-verification:' を含む文字列でもプレフィックス除去は先頭のみであること", async () => {
+    // Arrange: replaceAll を誤採用した場合に "abc-:def" になるケース（regression guard）
+    const verificationWithNestedPrefix = {
+      ...MOCK_VERIFICATION,
+      identifier: "email-verification:abc-email-verification:def",
+      expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+    };
+    mockSelectWhere.mockResolvedValue([verificationWithNestedPrefix]);
+    const app = createApp();
+    const req = new Request("http://localhost/api/auth/verify-email", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ token: "test-token-abc123" }),
+    });
+
+    // Act
+    const res = await app.fetch(req);
+    const body = (await res.json()) as { success: boolean };
+
+    // Assert: startsWith+slice は先頭 prefix のみ除去するので "abc-email-verification:def" が userId になる。
+    // replaceAll を誤採用した場合は "abc-:def" になり、値が異なる。
+    expect(res.status).toBe(HTTP_OK);
+    expect(body.success).toBe(true);
+    expect(mockDelete).toHaveBeenCalledTimes(1);
+    // eq() に渡された userId が先頭 prefix のみ除去した値であること
+    const updateEqValue = capturedEqValues.find((v) => v === "abc-email-verification:def");
+    expect(updateEqValue).toBe("abc-email-verification:def");
   });
 });
