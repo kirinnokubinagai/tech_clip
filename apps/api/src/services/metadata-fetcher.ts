@@ -82,7 +82,7 @@ function isBlockedHost(urlString: string): boolean {
     return true;
   }
   if (u.protocol !== "http:" && u.protocol !== "https:") return true;
-  const host = u.hostname.toLowerCase();
+  const host = u.hostname.toLowerCase().replace(/\.$/, "");
   if (host.length === 0) return true;
   if (looksLikeIpLiteral(host)) return true;
   // 単一ラベル (`.` なし) は社内ホスト扱いで拒否

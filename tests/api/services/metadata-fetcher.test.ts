@@ -97,6 +97,12 @@ describe("ホワイトリスト方式の追加カバレッジ", () => {
     "http://app.internal/path",
     "http://metadata.aws.amazon.com/x",
     "http://metadata.oraclecloud.com/x",
+    // 末尾ドット FQDN bypass テスト
+    "http://metadata.google.internal./computeMetadata/v1",
+    "http://metadata.aws.amazon.com./latest/meta-data",
+    "http://server.local./path",
+    "http://api.svc.cluster.local./path",
+    "http://intranet./path",
   ];
 
   for (const url of additionalBlockedUrls) {
