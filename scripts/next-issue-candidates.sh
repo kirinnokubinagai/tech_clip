@@ -78,8 +78,8 @@ ACTIVE_ISSUES_LIST=$(echo "$ACTIVE_ZONES_JSON" | jq '.active_issues // []')
 # 各 issue の zones を detect-issue-zones.sh で取得して付与
 AUTO_ASSIGNABLE_FINAL="[]"
 while IFS= read -r ISSUE_OBJ; do
-  ITITLE=$(echo "$ISSUE_OBJ" | jq -r '.title')
-  DETECT_OUT=$(bash "$SCRIPT_DIR/skills/detect-issue-zones.sh" --text "$ITITLE" --json 2>/dev/null || echo '{"zones":[]}')
+  INUMBER=$(echo "$ISSUE_OBJ" | jq -r '.number')
+  DETECT_OUT=$(bash "$SCRIPT_DIR/skills/detect-issue-zones.sh" --issue "$INUMBER" --json 2>/dev/null || echo '{"zones":[]}')
   ISSUE_ZONES=$(echo "$DETECT_OUT" | jq '.zones // []')
 
   INTERSECTION=$(jq -n \
