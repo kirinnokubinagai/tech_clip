@@ -35,6 +35,15 @@ jobs:
       needs_work: ${{ steps.check-label.outputs.needs_work }}
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v4.2.2
+      - name: Clear stale review labels
+        if: github.event_name == 'pull_request'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh pr edit "${{ github.event.pull_request.number }}" \
+            --repo "${{ github.repository }}" \
+            --remove-label "AI Review: NEEDS WORK" \
+            --remove-label "AI Review: PASS" 2>/dev/null || true
       - id: review
         continue-on-error: true  # ワークフローファイル変更PRではGitHubセキュリティ制限で失敗するため
         uses: anthropics/claude-code-action@38ec876110f9fbf8b950c79f534430740c3ac009  # v1
