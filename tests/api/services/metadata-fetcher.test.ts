@@ -8,7 +8,17 @@ function makeHtmlResponse(html: string, ok = true, status = 200) {
   return {
     ok,
     status,
+    headers: { get: (_name: string) => null },
     text: vi.fn().mockResolvedValue(html),
+  };
+}
+
+function makeRedirectResponse(location: string | null, status = 301) {
+  return {
+    ok: false,
+    status,
+    headers: { get: (name: string) => (name.toLowerCase() === "location" ? location : null) },
+    text: vi.fn().mockResolvedValue(""),
   };
 }
 
@@ -65,6 +75,138 @@ describe("isPrivateHost（SSRF ブロック）", () => {
 
     // Assert
     expect(mockFetch).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe("ホワイトリスト方式の追加カバレッジ", () => {
+  const additionalBlockedUrls = [
+    "http://[::]/path",
+    "http://[::ffff:127.0.0.1]/path",
+    "http://[fec0::1]/path",
+    "http://[ff02::1]/path",
+    "http://0.0.0.0/path",
+    "http://100.64.0.1/path",
+    "http://224.0.0.1/path",
+    "http://240.0.0.1/path",
+    "http://127.1/path",
+    "http://2130706433/path",
+    "http://0x7f000001/path",
+    "http://intranet/path",
+    "http://server.local/path",
+    "http://api.svc.cluster.local/path",
+    "http://app.internal/path",
+    "http://metadata.aws.amazon.com/x",
+    "http://metadata.oraclecloud.com/x",
+  ];
+
+  for (const url of additionalBlockedUrls) {
+    it(`"${url}" はフォールバックを返すこと`, async () => {
+      // Arrange & Act
+      const result = await fetchArticleMetadata(url);
+
+      // Assert
+      expect(mockFetch).not.toHaveBeenCalled();
+      expect(result.title).toBe(url);
+      expect(result.content).toBe("");
+      expect(result.readingTimeMinutes).toBe(0);
+    });
+  }
+
+  const publicUrls = [
+    "https://example.com/article",
+    "https://zenn.dev/user/articles/example",
+    "https://qiita.com/user/items/abc123",
+  ];
+
+  for (const url of publicUrls) {
+    it(`"${url}" はブロックしないこと`, async () => {
+      // Arrange
+      mockFetch.mockResolvedValue(makeHtmlResponse(buildHtml("")));
+
+      // Act
+      await fetchArticleMetadata(url);
+
+      // Assert
+      expect(mockFetch).toHaveBeenCalledTimes(1);
+    });
+  }
+});
+
+describe("redirect の SSRF 検査", () => {
+  it("301 リダイレクト先が内部 IP の場合はフォールバックを返すこと", async () => {
+    // Arrange
+    mockFetch.mockResolvedValueOnce(makeRedirectResponse("http://127.0.0.1/leak", 301));
+    const url = "https://example.com/article";
+
+    // Act
+    const result = await fetchArticleMetadata(url);
+
+    // Assert
+    expect(mockFetch).toHaveBeenCalledTimes(1);
+    expect(result.title).toBe(url);
+    expect(result.content).toBe("");
+    expect(result.readingTimeMinutes).toBe(0);
+  });
+
+  it("302 リダイレクト先が安全な URL の場合は Location 先を fetch してコンテンツを返すこと", async () => {
+    // Arrange
+    const destHtml = buildHtml('<meta property="og:title" content="転送先タイトル">');
+    mockFetch
+      .mockResolvedValueOnce(makeRedirectResponse("https://example.com/dest", 302))
+      .mockResolvedValueOnce(makeHtmlResponse(destHtml));
+    const url = "https://example.com/article";
+
+    // Act
+    const result = await fetchArticleMetadata(url);
+
+    // Assert
+    expect(mockFetch).toHaveBeenCalledTimes(2);
+    expect(result.title).toBe("転送先タイトル");
+  });
+
+  it("リダイレクトが 4 回以上連続した場合はフォールバックを返すこと", async () => {
+    // Arrange
+    mockFetch.mockResolvedValue(makeRedirectResponse("https://example.com/next", 301));
+    const url = "https://example.com/article";
+
+    // Act
+    const result = await fetchArticleMetadata(url);
+
+    // Assert
+    expect(result.title).toBe(url);
+    expect(result.content).toBe("");
+    expect(result.readingTimeMinutes).toBe(0);
+  });
+
+  it("Location ヘッダが相対 URL の場合は元 URL を base に絶対化されること", async () => {
+    // Arrange
+    const destHtml = buildHtml('<meta property="og:title" content="相対リダイレクト先">');
+    mockFetch
+      .mockResolvedValueOnce(makeRedirectResponse("/relative-path", 302))
+      .mockResolvedValueOnce(makeHtmlResponse(destHtml));
+    const url = "https://example.com/article";
+
+    // Act
+    const result = await fetchArticleMetadata(url);
+
+    // Assert
+    expect(mockFetch).toHaveBeenCalledTimes(2);
+    expect(mockFetch.mock.calls[1][0]).toBe("https://example.com/relative-path");
+    expect(result.title).toBe("相対リダイレクト先");
+  });
+
+  it("Location ヘッダが空の場合はフォールバックを返すこと", async () => {
+    // Arrange
+    mockFetch.mockResolvedValueOnce(makeRedirectResponse(null, 302));
+    const url = "https://example.com/article";
+
+    // Act
+    const result = await fetchArticleMetadata(url);
+
+    // Assert
+    expect(result.title).toBe(url);
+    expect(result.content).toBe("");
+    expect(result.readingTimeMinutes).toBe(0);
   });
 });
 
