@@ -29,7 +29,7 @@ jobs:
         env:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
         run: echo "::add-mask::$EXPO_TOKEN"
-      - uses: expo/expo-github-action@v8
+      - uses: expo/expo-github-action@v9
         with:
           eas-version: "14.x"
           token: ${{ secrets.EXPO_TOKEN }}
@@ -64,7 +64,7 @@ jobs:
         env:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
         run: echo "::add-mask::$EXPO_TOKEN"
-      - uses: expo/expo-github-action@v8
+      - uses: expo/expo-github-action@v9
         with:
           eas-version: "14.x"
           token: ${{ secrets.EXPO_TOKEN }}
