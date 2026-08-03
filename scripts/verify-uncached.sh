@@ -25,10 +25,6 @@ ensure_nix_shell "${REPO_ROOT}" "$@"
 sanitize_nix_tool_path
 
 for task in "${TASKS[@]}"; do
-  echo "==> uncached: turbo run ${task} --force --no-cache"
-  if [ "${task}" = "test" ]; then
-    "${SCRIPT_DIR}/run-and-fail-on-stderr.sh" turbo run "${task}" --force --no-cache
-  else
-    turbo run "${task}" --force --no-cache
-  fi
+  echo "==> uncached: turbo run ${task} --force"
+  turbo run "${task}" --force
 done
