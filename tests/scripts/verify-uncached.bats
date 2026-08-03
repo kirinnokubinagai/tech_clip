@@ -9,3 +9,16 @@ SCRIPT="$(cd "$(dirname "$BATS_TEST_FILENAME")/../.." && pwd)/scripts/verify-unc
   grep -q "turbo" "$SCRIPT"
 }
 
+@test "verify-uncached.sh: 正常な stderr を失敗扱いするラッパーを使わない" {
+  run grep -q "run-and-fail-on-stderr" "$SCRIPT"
+  [ "$status" -ne 0 ]
+}
+
+@test "verify-uncached.sh: deprecated な no-cache を使わず完全再実行する" {
+  run grep -q -- "--force --cache=local:r,remote:r" "$SCRIPT"
+  [ "$status" -eq 0 ]
+
+  run grep -q -- "--no-cache" "$SCRIPT"
+  [ "$status" -ne 0 ]
+}
+
