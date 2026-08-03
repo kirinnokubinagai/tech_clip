@@ -88,8 +88,8 @@ if [ "${_SKIP_HEAVY_CHECKS}" = "0" ]; then
   pnpm audit --prod --ignore-registry-errors || { echo "Audit失敗。脆弱性を解消してからpushしてください。"; exit 1; }
 
   echo "  Test..."
-  "${REPO_ROOT}/scripts/run-and-fail-on-stderr.sh" pnpm test || {
-    echo "Test失敗。stderr がある場合は内容確認後に TECH_CLIP_ALLOW_TEST_STDERR=1 を付けて再pushしてください。"
+  pnpm test || {
+    echo "Test失敗。テストコマンドの終了コードを確認してから再pushしてください。"
     exit 1
   }
 

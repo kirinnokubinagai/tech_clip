@@ -11,6 +11,7 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
 const SQLD_URL = process.env.SQLD_URL ?? "http://127.0.0.1:8888";
 const SQLD_AUTH_TOKEN = process.env.SQLD_AUTH_TOKEN ?? "dummy";
+const REQUIRE_LOCAL_TURSO = process.env.TECH_CLIP_REQUIRE_LOCAL_TURSO === "1";
 
 function getDrizzleMigrationsFolder(): string {
   return path.resolve(import.meta.dirname, "../../../apps/api/drizzle");
@@ -95,6 +96,9 @@ describe("Local Turso (sqld) FTS5 trigram + padding 統合テスト", () => {
     } catch (e) {
       console.warn(`sqld (${SQLD_URL}) に接続できません。Local Turso テストをスキップします。`);
       console.warn(String(e));
+      if (REQUIRE_LOCAL_TURSO) {
+        throw e;
+      }
     }
   });
 

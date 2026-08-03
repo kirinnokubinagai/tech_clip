@@ -14,11 +14,14 @@ SCRIPT="$(cd "$(dirname "$BATS_TEST_FILENAME")/../.." && pwd)/scripts/verify-unc
   [ "$status" -ne 0 ]
 }
 
-@test "verify-uncached.sh: deprecated な no-cache を使わず完全再実行する" {
-  run grep -q -- "--force --cache=local:r,remote:r" "$SCRIPT"
+@test "verify-uncached.sh: 正規の force 指定で完全再実行する" {
+  run grep -q -- "--force" "$SCRIPT"
   [ "$status" -eq 0 ]
 
   run grep -q -- "--no-cache" "$SCRIPT"
+  [ "$status" -ne 0 ]
+
+  run grep -q -- "--cache=local:r,remote:r" "$SCRIPT"
   [ "$status" -ne 0 ]
 }
 

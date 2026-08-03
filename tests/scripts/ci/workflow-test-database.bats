@@ -3,6 +3,7 @@
 ROOT="$(cd "$(dirname "$BATS_TEST_FILENAME")/../../.." && pwd)"
 UNCACHED_WORKFLOW="$ROOT/.github/workflows/verify-uncached.yml"
 CI_WORKFLOW="$ROOT/.github/workflows/ci.yml"
+PRE_PUSH="$ROOT/.husky/pre-push"
 HTTP_TEST="$ROOT/tests/api/integration/search-http-local-turso.test.ts"
 FTS_TEST="$ROOT/tests/api/integration/search-fts-local-turso.test.ts"
 
@@ -21,8 +22,12 @@ FTS_TEST="$ROOT/tests/api/integration/search-fts-local-turso.test.ts"
 
   run grep -q "TECH_CLIP_REQUIRE_LOCAL_TURSO" "$HTTP_TEST"
   [ "$status" -eq 0 ]
+  run grep -q 'if (REQUIRE_LOCAL_TURSO)' "$HTTP_TEST"
+  [ "$status" -eq 0 ]
 
   run grep -q "TECH_CLIP_REQUIRE_LOCAL_TURSO" "$FTS_TEST"
+  [ "$status" -eq 0 ]
+  run grep -q 'if (REQUIRE_LOCAL_TURSO)' "$FTS_TEST"
   [ "$status" -eq 0 ]
 }
 
@@ -37,6 +42,9 @@ FTS_TEST="$ROOT/tests/api/integration/search-fts-local-turso.test.ts"
 
 @test "通常 CI: テスト終了コードを使い stderr の有無では判定しない" {
   run grep -q "run-and-fail-on-stderr" "$CI_WORKFLOW"
+  [ "$status" -ne 0 ]
+
+  run grep -q "run-and-fail-on-stderr" "$PRE_PUSH"
   [ "$status" -ne 0 ]
 
   run grep -q 'TECH_CLIP_REQUIRE_LOCAL_TURSO: "1"' "$CI_WORKFLOW"

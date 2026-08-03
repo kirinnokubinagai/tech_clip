@@ -153,8 +153,17 @@ jobs:
         run: nix develop .#ci --command pnpm lint
       - name: Typecheck
         run: nix develop .#ci --command pnpm typecheck
+      - name: Start local Turso
+        env:
+          TURSO_CI_DB_FILE: /tmp/tech-clip-ci-turso.db
+          TURSO_CI_PORT: "8888"
+        run: nix develop .#ci --command bash scripts/ci/start-turso.sh
       - name: Test
-        run: nix develop .#ci --command ./scripts/run-and-fail-on-stderr.sh pnpm test
+        env:
+          TECH_CLIP_REQUIRE_LOCAL_TURSO: "1"
+          SQLD_URL: http://127.0.0.1:8888
+          SQLD_AUTH_TOKEN: dummy
+        run: nix develop .#ci --command pnpm test
       - name: Bats
         run: nix develop .#ci --command bats tests/scripts/ tests/hooks/
       # Audit ステップは npm が audit エンドポイント (quick / bulk) を 410 Gone に
