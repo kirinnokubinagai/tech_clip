@@ -12,41 +12,48 @@ env:
 # ANR (Android 36 Pixel Launcher 既知バグ) を先に dismiss する
 - runFlow: dismiss-anr.yaml
 
-# Metro cold-start 待機（アニメーション停止まで最大 60 秒）
-- waitForAnimationToEnd:
-    timeout: 60000
+# Metro cold-start 待機（いずれかの初期 route が表示されるまで最大 120 秒）
+- extendedWaitUntil:
+    visible:
+      id: "onboarding-title|register-email-input|login-email-input|feed-mode-toggle"
+    timeout: 120000
 
 # 既にログイン済みでホームが表示されている場合は何もせず抜ける
 - runFlow:
     when:
-      visible: "すべて"
+      visible:
+        id: "feed-mode-toggle"
     commands:
       - waitForAnimationToEnd:
           timeout: 1000
 
 # いずれかの初期画面が確実に表示されるまで runFlow when: visible で条件分岐
-# 最初に hit する text でループを抜ける
+# 最初に hit する ID でループを抜ける
 - runFlow:
     when:
-      visible: "技術記事をワンタップで保存"
+      visible:
+        id: "onboarding-title"
     commands:
       - waitForAnimationToEnd:
           timeout: 1000
 - runFlow:
     when:
-      visible: "パスワードを忘れた方"
+      visible:
+        id: "login-email-input"
     commands:
       - waitForAnimationToEnd:
           timeout: 1000
 - runFlow:
     when:
-      visible: "アカウントを作成"
+      visible:
+        id: "register-email-input"
     commands:
       - waitForAnimationToEnd:
           timeout: 1000
 - runFlow:
     when:
-      visible: "すべて"
+      visible:
+        id: "feed-mode-toggle"
     commands:
       - waitForAnimationToEnd:
           timeout: 1000
@@ -54,7 +61,8 @@ env:
 # onboarding ページ1 検出 → 4 ページ通過 (各ページの text を確認してから次へ)
 - runFlow:
     when:
-      visible: "技術記事をワンタップで保存"
+      visible:
+        id: "onboarding-title"
     commands:
       - tapOn:
           id: "next-button"
@@ -82,7 +90,8 @@ env:
 # register 画面 → login リンクをタップ
 - runFlow:
     when:
-      visible: "アカウントを作成"
+      visible:
+        id: "register-email-input"
     commands:
       - tapOn:
           text: "ログイン"
@@ -92,7 +101,8 @@ env:
 # ログイン画面 → ログイン実行
 - runFlow:
     when:
-      visible: "パスワードを忘れた方"
+      visible:
+        id: "login-email-input"
     commands:
       - tapOn:
           id: "login-email-input"
@@ -110,5 +120,5 @@ env:
 # ホーム画面ロード完了待ち
 - extendedWaitUntil:
     visible:
-      text: "すべて"
+      id: "feed-mode-toggle"
     timeout: 30000
