@@ -182,7 +182,9 @@ jobs:
       needs.changes.outputs.hooks == 'true' &&
       needs.claude-review.outputs.needs_work != 'true'
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    # The composite nix-setup action also runs magic-nix-cache cleanup in its
+    # post step; include that cleanup in the job budget.
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v4.2.2
       - name: Free disk space
