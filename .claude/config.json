@@ -5,7 +5,7 @@
   "e2e_workflow_name": "PR E2E (Android)",
   "ai_review_pass_label": "AI Review: PASS",
   "ai_review_needs_work_label": "AI Review: NEEDS WORK",
-  "required_status_check_context": "CI / ci-gate (pull_request)",
+  "required_status_check_context": "ci-gate",
   "verdict_patterns": {
     "approve": [
       "(\\*\\*)?✅ Approve(\\*\\*)?",

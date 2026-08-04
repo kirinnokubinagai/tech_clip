@@ -31,7 +31,7 @@ SKIPPED が required check の fail 扱いとなって PR が BLOCKED になる�
 
 - `ci-gate` job を新設（`if: always()` で必ず実行、SUCCESS/FAILURE を明示出力）
 - `auto-merge` は `ci-gate` 成功時のみ動作する単純なマージ操作に縮小
-- ruleset の required check を `CI / auto-merge` から `CI / ci-gate` に変更
+- ruleset の required check を `auto-merge` から `ci-gate` に変更
 
 `ci-gate` は自身が SUCCESS/FAILURE を返すため SKIPPED にならず、required check として安定する。
 
@@ -40,23 +40,21 @@ SKIPPED が required check の fail 扱いとなって PR が BLOCKED になる�
 ruleset `main-protection-with-admin-bypass`（id: 14698666）の required:
 
 ```
-CI / ci-gate (pull_request)
+ci-gate
 ```
 
-> **⚠️ context 名に "(pull_request)" サフィックスが必要な理由**
->
-> 同一 workflow が `push` と `pull_request` の両 event で trigger する場合、GitHub は PR trigger の check 名に自動的に `(pull_request)` サフィックスを付与する。
-> `CI / ci-gate` と `CI / ci-gate (pull_request)` は **別の check として扱われる**。
-> Ruleset に `CI / ci-gate`（サフィックスなし）を指定すると、push trigger の check を参照するため PR の required check が永遠に満たされない。
->
-> 実観測: PR #1026〜#1036 において、`CI / ci-gate`（サフィックスなし）を required に設定したことで
-> PR が BLOCKED になり続けた。`CI / ci-gate (pull_request)` に修正後に解消した。
+GitHub の required status check context は `<job name>` 形式で、この ruleset では `ci-gate`。
+ワークフローの表示名は `CI` だが、workflow 名・matrix・event trigger type は required context に含まれない。
+GitHub API の check-runs でも PR #1172・#1174 の name は `ci-gate` と確認できる。
+
+`ci-gate` 以外の文字列を required にすると実在する check run と一致せず、green の PR も BLOCKED になる。
 
 変更手順（順序厳守）:
-1. この PR をマージ（`CI / ci-gate` が CI 上に存在する状態にする）
-2. `bash scripts/update-main-ruleset.sh` を手動実行
+1. 対象 PR の check-runs に name=`ci-gate` が存在することを確認
+2. この PR をマージ
+3. `bash scripts/update-main-ruleset.sh` を手動実行
 
-⚠️ 逆順で実行すると `CI / ci-gate (pull_request)` が存在しない状態で required になり全 PR が BLOCKED になる。
+⚠️ `REQUIRED_CHECK` を上書きする場合も、check-runs API が返す完全一致の job 名だけを指定する。
 
 ## イベント別動作
 
@@ -70,7 +68,7 @@ CI / ci-gate (pull_request)
 
 ## スクリプト
 
-- `scripts/update-main-ruleset.sh` — ruleset required check を `CI / ci-gate (pull_request)` に差し替える冪等スクリプト。環境変数 `REPO` / `RULESET_ID` / `REQUIRED_CHECK` で上書き可能。
+- `scripts/update-main-ruleset.sh` — ruleset required check を `ci-gate` に差し替える冪等スクリプト。環境変数 `REPO` / `RULESET_ID` / `REQUIRED_CHECK` で上書き可能。
 
 ## stacked PR（base != main）対応
 
