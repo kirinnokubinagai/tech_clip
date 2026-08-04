@@ -48,8 +48,8 @@ tags:
 
 - extendedWaitUntil:
     visible:
-      text: "技術記事をワンタップで保存"
-    timeout: 60000
+      id: "onboarding-title"
+    timeout: 120000
 - tapOn:
     id: "next-button"
 - extendedWaitUntil:

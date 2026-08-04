@@ -33,14 +33,13 @@ export EXPO_PUBLIC_REVENUECAT_ANDROID_API_KEY="your-revenuecat-android-api-key"
 export EXPO_PUBLIC_API_URL_ANDROID="http://10.0.2.2:${API_CI_PORT:-18787}"
 
 # Build and install development build.
-# Two-phase approach:
-#  1. Wait for Gradle build to complete + app to be installed
-#     (detect via Gradle "BUILD SUCCESSFUL" or pidof verification)
-#  2. Wait for Metro to deliver the JS bundle (log "Bundled")
-#  3. Start Maestro tests
+# Three-phase approach:
+#  1. Wait for Gradle build to complete (log "BUILD SUCCESSFUL")
+#  2. Verify the installed app process is running
+#  3. Wait for Metro to deliver the main JS bundle before starting Maestro
 echo "[e2e] Gradle ビルド + アプリインストール + Metro バンドルを待機中..."
 EXPO_LOG="/tmp/expo-run-android-$$.log"
-nix develop --command bash -c "cd apps/mobile && ORG_GRADLE_PROJECT_reactNativeArchitectures=x86_64 pnpm expo run:android --variant debug" 2>&1 | tee "$EXPO_LOG" &
+nix develop --command bash -c "cd apps/mobile && ORG_GRADLE_PROJECT_reactNativeArchitectures=x86_64 pnpm expo run:android --variant debug" > >(tee "$EXPO_LOG") 2>&1 &
 EXPO_PID=$!
 
 # Phase 1: Wait for Gradle build to complete (watch for "BUILD SUCCESSFUL" in log)
@@ -57,9 +56,9 @@ while [ $GRADLE_WAITED -lt $MAX_GRADLE_WAIT ]; do
     rm -f "$EXPO_LOG"
     exit 1
   fi
-  # Check for Gradle build completion markers
-  if grep -qE "BUILD SUCCESSFUL|Bundled" "$EXPO_LOG" 2>/dev/null; then
-    echo "[e2e] Phase 1: Gradle ビルド + Metro バンドル完了"
+  # Check for Gradle build completion
+  if grep -q "BUILD SUCCESSFUL" "$EXPO_LOG" 2>/dev/null; then
+    echo "[e2e] Phase 1: Gradle ビルド完了"
     break
   fi
   sleep 1
@@ -94,6 +93,40 @@ if [ $PIDOF_WAITED -ge $MAX_PIDOF_WAIT ]; then
   echo "[e2e] 最終 30 行のログ:"
   tail -30 "$EXPO_LOG" || true
   echo "1" > "test-results/maestro-exit-code${SHARD_SUFFIX}.txt"
+  kill "$EXPO_PID" 2>/dev/null || true
+  rm -f "$EXPO_LOG"
+  exit 1
+fi
+
+# Phase 3: Wait for Metro to deliver the main JS bundle
+echo "[e2e] Phase 3: Metro メインバンドル完了を待機中..."
+MAX_METRO_WAIT=120
+METRO_WAITED=0
+while [ $METRO_WAITED -lt $MAX_METRO_WAIT ]; do
+  if ! kill -0 "$EXPO_PID" 2>/dev/null; then
+    echo "ERROR: Expo process exited unexpectedly while waiting for Metro bundle"
+    echo "[e2e] 最終 30 行のログ:"
+    tail -30 "$EXPO_LOG" || true
+    echo "1" > "test-results/maestro-exit-code${SHARD_SUFFIX}.txt"
+    pkill -P "$EXPO_PID" 2>/dev/null || true
+    kill "$EXPO_PID" 2>/dev/null || true
+    rm -f "$EXPO_LOG"
+    exit 1
+  fi
+  if grep -qE "Bundled .*apps/mobile/index\.js" "$EXPO_LOG" 2>/dev/null; then
+    echo "[e2e] Phase 3: Metro メインバンドル完了"
+    break
+  fi
+  sleep 1
+  METRO_WAITED=$((METRO_WAITED + 1))
+done
+
+if [ $METRO_WAITED -ge $MAX_METRO_WAIT ]; then
+  echo "ERROR: Metro main bundle did not complete within ${MAX_METRO_WAIT}s"
+  echo "[e2e] 最終 30 行のログ:"
+  tail -30 "$EXPO_LOG" || true
+  echo "1" > "test-results/maestro-exit-code${SHARD_SUFFIX}.txt"
+  pkill -P "$EXPO_PID" 2>/dev/null || true
   kill "$EXPO_PID" 2>/dev/null || true
   rm -f "$EXPO_LOG"
   exit 1
