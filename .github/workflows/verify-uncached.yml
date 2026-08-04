@@ -19,5 +19,14 @@ jobs:
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0  # v4.2.2
       - uses: ./.github/actions/nix-setup
+      - name: Start local Turso
+        env:
+          TURSO_CI_DB_FILE: /tmp/tech-clip-ci-turso.db
+          TURSO_CI_PORT: "8888"
+        run: nix develop .#ci --command bash scripts/ci/start-turso.sh
       - name: Uncached typecheck + test
+        env:
+          TECH_CLIP_REQUIRE_LOCAL_TURSO: "1"
+          SQLD_URL: http://127.0.0.1:8888
+          SQLD_AUTH_TOKEN: dummy
         run: nix develop .#ci --command pnpm verify:uncached
