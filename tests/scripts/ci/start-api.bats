@@ -6,6 +6,11 @@ SCRIPT="$(cd "$(dirname "$BATS_TEST_FILENAME")/../../.." && pwd)/scripts/ci/star
   [ "$status" -eq 0 ]
 }
 
+@test "start-api.sh: Wrangler は専用 CI dev shell で起動する" {
+  run bash -c 'grep -q "nohup nix develop .#ci --command bash -c" "'"$SCRIPT"'"'
+  [ "$status" -eq 0 ]
+}
+
 @test "start-api.sh: 構文エラーがない" {
   run bash -n "$SCRIPT"
   [ "$status" -eq 0 ]
