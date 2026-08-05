@@ -64,6 +64,12 @@ describe("CreateTagSchema", () => {
       expect(result.error?.issues[0].message).toContain("タグ名");
     });
 
+    it("nameが空白だけの場合エラーになること", () => {
+      const result = CreateTagSchema.safeParse({ name: "   " });
+
+      expect(result.success).toBe(false);
+    });
+
     it("nameが50文字を超える場合エラーになること", () => {
       // Arrange
       const input = { name: "a".repeat(51) };

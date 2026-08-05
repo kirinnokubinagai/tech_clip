@@ -31,6 +31,7 @@ import { omitContent } from "../lib/response-utils";
 import type { ParsedArticle } from "../services/article-parser";
 import { decodeCursor, encodeCursor as encodeCursorBase64url } from "../services/parsers/_shared";
 import { SUPPORTED_LANGUAGES } from "../validators/ai";
+import { HttpUrlSchema } from "../validators/web-url";
 
 /** デフォルトのページサイズ */
 const DEFAULT_LIMIT = 20;
@@ -44,9 +45,6 @@ const MAX_LIMIT = 50;
 /** リソース未発見エラーメッセージ */
 const NOT_FOUND_ERROR_MESSAGE = "記事が見つかりません";
 
-/** URL最大文字数 */
-const URL_MAX_LENGTH = 2048;
-
 /** 字幕取得失敗を示すエラーコード（YouTubeパーサーが投げる） */
 const NO_CAPTIONS_ERROR_CODE = "NO_CAPTIONS";
 
@@ -56,22 +54,7 @@ const NO_CAPTIONS_ERROR_MESSAGE =
 
 /** 記事保存リクエストのZodスキーマ */
 const CreateArticleSchema = z.object({
-  url: z
-    .string({ error: "URLは必須です" })
-    .min(1, "URLを入力してください")
-    .max(URL_MAX_LENGTH, `URLは${URL_MAX_LENGTH}文字以内で入力してください`)
-    .url("URLの形式が正しくありません")
-    .refine(
-      (val) => {
-        try {
-          const parsed = new URL(val);
-          return parsed.protocol === "http:" || parsed.protocol === "https:";
-        } catch {
-          return false;
-        }
-      },
-      { message: "URLはhttp://またはhttps://で始まる必要があります" },
-    ),
+  url: HttpUrlSchema,
 });
 
 /** 記事更新リクエストのZodスキーマ */

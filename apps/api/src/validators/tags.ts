@@ -9,9 +9,9 @@ const TAG_NAME_MAX_LENGTH = 50;
 export const CreateTagSchema = z.object({
   name: z
     .string({ error: "タグ名は必須です" })
+    .trim()
     .min(1, "タグ名を入力してください")
-    .max(TAG_NAME_MAX_LENGTH, `タグ名は${TAG_NAME_MAX_LENGTH}文字以内で入力してください`)
-    .trim(),
+    .max(TAG_NAME_MAX_LENGTH, `タグ名は${TAG_NAME_MAX_LENGTH}文字以内で入力してください`),
 });
 
 /**

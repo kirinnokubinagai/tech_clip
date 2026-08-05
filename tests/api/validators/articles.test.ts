@@ -77,6 +77,16 @@ describe("CreateArticleSchema", () => {
       expect(result.error?.issues[0].message).toContain("https://");
     });
 
+    it.each([
+      "javascript:alert(1)",
+      "data:text/html,<script>alert(1)</script>",
+      "file:///tmp/a.txt",
+    ])("%s URLがエラーになること", (url) => {
+      const result = CreateArticleSchema.safeParse({ url });
+
+      expect(result.success).toBe(false);
+    });
+
     it("urlが2048文字を超える場合エラーになること", () => {
       // Arrange
       const longPath = "a".repeat(2040);
@@ -193,6 +203,13 @@ describe("SearchArticlesSchema", () => {
       expect(result.data?.q).toBe("TypeScript");
     });
 
+    it("検索キーワードの前後の空白がトリムされること", () => {
+      const result = SearchArticlesSchema.safeParse({ q: "  TypeScript  " });
+
+      expect(result.success).toBe(true);
+      expect(result.data?.q).toBe("TypeScript");
+    });
+
     it("limitを指定してバリデーションが通ること", () => {
       // Arrange
       const input = { q: "React", limit: 10 };
@@ -203,6 +220,13 @@ describe("SearchArticlesSchema", () => {
       // Assert
       expect(result.success).toBe(true);
       expect(result.data?.limit).toBe(10);
+    });
+
+    it("HTTPクエリ由来の文字列limitを数値に変換できること", () => {
+      const result = SearchArticlesSchema.safeParse({ q: "React", limit: "20" });
+
+      expect(result.success).toBe(true);
+      expect(result.data?.limit).toBe(20);
     });
 
     it("limitを省略した場合デフォルト値20になること", () => {
@@ -228,6 +252,10 @@ describe("SearchArticlesSchema", () => {
 
       // Assert
       expect(result.success).toBe(false);
+    });
+
+    it("qが空白だけの場合エラーになること", () => {
+      expect(SearchArticlesSchema.safeParse({ q: "   " }).success).toBe(false);
     });
 
     it("qが200文字を超える場合エラーになること", () => {
@@ -261,6 +289,12 @@ describe("SearchArticlesSchema", () => {
       const result = SearchArticlesSchema.safeParse(input);
 
       // Assert
+      expect(result.success).toBe(false);
+    });
+
+    it.each(["abc", "1.5", ""])("limit=%sの文字列はエラーになること", (limit) => {
+      const result = SearchArticlesSchema.safeParse({ q: "test", limit });
+
       expect(result.success).toBe(false);
     });
   });
