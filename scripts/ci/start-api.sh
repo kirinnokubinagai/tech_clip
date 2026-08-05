@@ -49,11 +49,11 @@ EOF
   echo "[api-ci] apps/api/.dev.vars 生成完了"
 fi
 
-# wrangler は nix dev shell に含まれる
+# Wrangler は apps/api の固定devDependencyを pnpm exec 経由で使う
 # wrangler.ci.toml を使用: [ai] binding を除外して edge-preview remote proxy を回避する
 # （wrangler 4.x の [ai] binding はダミー認証情報では起動に失敗する）
 nohup nix develop .#ci --command bash -c \
-  "cd apps/api && CLOUDFLARE_API_TOKEN=${CLOUDFLARE_API_TOKEN} CLOUDFLARE_ACCOUNT_ID=${CLOUDFLARE_ACCOUNT_ID} wrangler dev --config wrangler.ci.toml --port ${PORT} --ip 0.0.0.0" \
+  "cd apps/api && CLOUDFLARE_API_TOKEN=${CLOUDFLARE_API_TOKEN} CLOUDFLARE_ACCOUNT_ID=${CLOUDFLARE_ACCOUNT_ID} pnpm exec wrangler dev --config wrangler.ci.toml --port ${PORT} --ip 0.0.0.0" \
   > /tmp/api-ci.log 2>&1 &
 API_PID=$!
 echo "${API_PID}" > /tmp/api-ci.pid

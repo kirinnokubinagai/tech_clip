@@ -11,6 +11,11 @@ SCRIPT="$(cd "$(dirname "$BATS_TEST_FILENAME")/../../.." && pwd)/scripts/ci/star
   [ "$status" -eq 0 ]
 }
 
+@test "start-api.sh: workspace 固定版 Wrangler を pnpm exec で起動する" {
+  run bash -c 'grep -q "pnpm exec wrangler dev --config wrangler.ci.toml" "'"$SCRIPT"'"'
+  [ "$status" -eq 0 ]
+}
+
 @test "start-api.sh: 構文エラーがない" {
   run bash -n "$SCRIPT"
   [ "$status" -eq 0 ]
