@@ -3,7 +3,7 @@
     "name": "TechClip",
     "slug": "tech-clip",
     "scheme": "techclip",
-    "version": "1.0",
+    "version": "1.0.0",
     "orientation": "portrait",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
@@ -11,7 +11,7 @@
     "updates": {
       "enabled": true,
       "fallbackToCacheTimeout": 0,
-      "url": "https://u.expo.dev/tech-clip",
+      "url": "https://u.expo.dev/573a77c3-8ccb-42d5-9a1f-6ac29e79ad6b",
       "requestHeaders": {
         "expo-channel-name": "production"
       },
@@ -19,6 +19,11 @@
       "codeSigningMetadata": {
         "keyid": "main",
         "alg": "rsa-v1_5-sha256"
+      }
+    },
+    "extra": {
+      "eas": {
+        "projectId": "573a77c3-8ccb-42d5-9a1f-6ac29e79ad6b"
       }
     },
     "runtimeVersion": {
@@ -89,13 +94,7 @@
           "androidIntentFilters": ["text/*"]
         }
       ],
-      [
-        "react-native-google-mobile-ads",
-        {
-          "androidAppId": "ca-app-pub-3940256099942544~3347511713",
-          "iosAppId": "ca-app-pub-3940256099942544~1458002511"
-        }
-      ],
+      "react-native-google-mobile-ads",
       "./plugins/with-native-build-fixes",
       "./plugins/with-android-maestro-queries",
       "./plugins/with-android-cleartext-localhost"

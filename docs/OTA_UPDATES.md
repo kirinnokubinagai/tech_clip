@@ -17,7 +17,7 @@ TechClip は [expo-updates](https://docs.expo.dev/versions/latest/sdk/updates/) 
     "updates": {
       "enabled": true,
       "fallbackToCacheTimeout": 0,
-      "url": "https://u.expo.dev/tech-clip",
+      "url": "https://u.expo.dev/573a77c3-8ccb-42d5-9a1f-6ac29e79ad6b",
       "requestHeaders": {
         "expo-channel-name": "production"
       },
@@ -40,7 +40,7 @@ TechClip は [expo-updates](https://docs.expo.dev/versions/latest/sdk/updates/) 
 |----------|-----|------|
 | `updates.enabled` | `true` | OTA アップデートを有効化 |
 | `updates.fallbackToCacheTimeout` | `0` | 起動時にアップデートチェックに失敗した場合、即座にキャッシュにフォールバック（UX優先） |
-| `updates.url` | `https://u.expo.dev/tech-clip` | EAS Update のエンドポイント URL |
+| `updates.url` | `https://u.expo.dev/573a77c3-8ccb-42d5-9a1f-6ac29e79ad6b` | EAS Update のエンドポイント URL |
 | `updates.requestHeaders.expo-channel-name` | `production` | デフォルトチャネル（ブランチ） |
 | `updates.codeSigningCertificate` | `./certs/certificate.pem` | コード署名証明書のパス |
 | `updates.codeSigningMetadata.keyid` | `main` | 署名鍵の識別子 |

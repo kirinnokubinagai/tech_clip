@@ -4,16 +4,12 @@ on:
   workflow_dispatch:
     inputs:
       platform:
-        description: "配信するプラットフォーム"
+        description: 配信するプラットフォーム
         required: true
         type: choice
-        options:
-          - all
-          - ios
-          - android
-        default: all
+        options: [all, ios, android]
+        default: android
 
-# デフォルトで全権限を read-only にする
 permissions: read-all
 
 env:
@@ -28,18 +24,65 @@ jobs:
       contents: read
     steps:
       - uses: actions/checkout@v7
-      - uses: ./.github/actions/nix-setup
-      - name: Mask EXPO_TOKEN in logs
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.33.0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - name: Install JavaScript dependencies
+        run: pnpm install --frozen-lockfile --ignore-scripts
+      - name: Prepare OTA signing certificate
+        env:
+          OTA_UPDATE_CERTIFICATE: ${{ secrets.OTA_UPDATE_CERTIFICATE }}
+          OTA_UPDATE_PRIVATE_KEY: ${{ secrets.OTA_UPDATE_PRIVATE_KEY }}
+        run: scripts/ci/prepare-ota-signing-certificate.sh apps/mobile/certs
+      - name: Require Expo token
         env:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
-        run: echo "::add-mask::$EXPO_TOKEN"
+        run: |
+          if [[ -z "${EXPO_TOKEN:-}" || -z "${EXPO_TOKEN//[[:space:]]/}" ]]; then
+            echo "::error::EXPO_TOKEN is not configured; refusing to submit without authentication."
+            exit 1
+          fi
       - uses: expo/expo-github-action@v9
         with:
           eas-version: "14.x"
           token: ${{ secrets.EXPO_TOKEN }}
+      - name: Verify EAS CLI and authentication
+        working-directory: apps/mobile
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+        run: ../../scripts/ci/run-eas.sh whoami
+      - name: Require iOS submission identifiers
+        env:
+          APPLE_ID: ${{ vars.APPLE_ID }}
+          ASC_APP_ID: ${{ vars.ASC_APP_ID }}
+          APPLE_TEAM_ID: ${{ vars.APPLE_TEAM_ID }}
+        run: |
+          set -euo pipefail
+          for name in APPLE_ID ASC_APP_ID APPLE_TEAM_ID; do
+            if [[ -z "${!name:-}" || -z "${!name//[[:space:]]/}" ]]; then
+              echo "::error::$name is not configured in the protected production environment."
+              exit 1
+            fi
+          done
+          echo "Identifiers are present. Apple credential entry remains a Mac GUI responsibility; no password is stored in this workflow."
       - name: Submit iOS to App Store
         working-directory: apps/mobile
-        run: nix develop --command bash -c "eas submit --platform ios --latest --non-interactive"
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+          APPLE_ID: ${{ vars.APPLE_ID }}
+          ASC_APP_ID: ${{ vars.ASC_APP_ID }}
+          APPLE_TEAM_ID: ${{ vars.APPLE_TEAM_ID }}
+        run: |
+          ../../scripts/ci/run-eas.sh submit \
+            --platform ios \
+            --profile production \
+            --latest \
+            --non-interactive \
+            --wait
 
   submit-android:
     if: ${{ inputs.platform == 'all' || inputs.platform == 'android' }}
@@ -49,15 +92,70 @@ jobs:
       contents: read
     steps:
       - uses: actions/checkout@v7
-      - uses: ./.github/actions/nix-setup
-      - name: Mask EXPO_TOKEN in logs
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.33.0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - name: Install JavaScript dependencies
+        run: pnpm install --frozen-lockfile --ignore-scripts
+      - name: Prepare OTA signing certificate
+        env:
+          OTA_UPDATE_CERTIFICATE: ${{ secrets.OTA_UPDATE_CERTIFICATE }}
+          OTA_UPDATE_PRIVATE_KEY: ${{ secrets.OTA_UPDATE_PRIVATE_KEY }}
+        run: scripts/ci/prepare-ota-signing-certificate.sh apps/mobile/certs
+      - name: Require Expo token
         env:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
-        run: echo "::add-mask::$EXPO_TOKEN"
+        run: |
+          if [[ -z "${EXPO_TOKEN:-}" || -z "${EXPO_TOKEN//[[:space:]]/}" ]]; then
+            echo "::error::EXPO_TOKEN is not configured; refusing to submit without authentication."
+            exit 1
+          fi
       - uses: expo/expo-github-action@v9
         with:
           eas-version: "14.x"
           token: ${{ secrets.EXPO_TOKEN }}
+      - name: Verify EAS CLI and authentication
+        working-directory: apps/mobile
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+        run: ../../scripts/ci/run-eas.sh whoami
+      - name: Prepare Google Play service-account key
+        env:
+          GOOGLE_SERVICE_ACCOUNT_JSON: ${{ secrets.GOOGLE_SERVICE_ACCOUNT_JSON }}
+        run: |
+          set -euo pipefail
+          if [[ -z "${GOOGLE_SERVICE_ACCOUNT_JSON:-}" || -z "${GOOGLE_SERVICE_ACCOUNT_JSON//[[:space:]]/}" ]]; then
+            echo "::error::GOOGLE_SERVICE_ACCOUNT_JSON is not configured in the protected production environment."
+            exit 1
+          fi
+          key_path="$RUNNER_TEMP/google-play-service-account.json"
+          umask 077
+          printf '%s' "$GOOGLE_SERVICE_ACCOUNT_JSON" > "$key_path"
+          python3 - "$key_path" <<'PY'
+          import json
+          import pathlib
+          import sys
+
+          data = json.loads(pathlib.Path(sys.argv[1]).read_text())
+          required = {"type", "project_id", "client_email", "private_key"}
+          missing = sorted(required - data.keys())
+          if missing or data.get("type") != "service_account":
+              raise SystemExit(f"invalid Google service-account JSON; missing={missing}")
+          PY
+          echo "Google Play service-account JSON validated without printing its contents."
       - name: Submit Android to Google Play
         working-directory: apps/mobile
-        run: nix develop --command bash -c "eas submit --platform android --latest --non-interactive"
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+          GOOGLE_SERVICE_ACCOUNT_KEY_PATH: ${{ runner.temp }}/google-play-service-account.json
+        run: |
+          ../../scripts/ci/run-eas.sh submit \
+            --platform android \
+            --profile production \
+            --latest \
+            --non-interactive \
+            --wait
