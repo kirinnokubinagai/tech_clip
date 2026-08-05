@@ -30,6 +30,9 @@ env:
       - tapOn: "Wait"
       - waitForAnimationToEnd:
           timeout: 3000
+- openLink: techclip://
+- waitForAnimationToEnd:
+    timeout: 1000
 - runFlow:
     file: "helpers/login-helper.yaml"
 - waitForAnimationToEnd:

@@ -12,11 +12,6 @@ env:
 # ANR (Android 36 Pixel Launcher 既知バグ) を先に dismiss する
 - runFlow: dismiss-anr.yaml
 
-# 現在のstack route（article/saveやsettings等）をrootへ戻してから初期状態を判定する
-- openLink: techclip://
-- waitForAnimationToEnd:
-    timeout: 1000
-
 # Metro cold-start 待機（いずれかの初期 route が表示されるまで最大 120 秒）
 - extendedWaitUntil:
     visible:
