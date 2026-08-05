@@ -82,7 +82,7 @@ jobs:
             --profile "$profile" \
             --non-interactive \
             --wait \
-            --verbose \
+            --build-logger-level debug \
             --json > "$output"
           python3 ../../scripts/ci/verify-eas-build-json.py "$output" ios
 
@@ -141,6 +141,6 @@ jobs:
             --profile "$profile" \
             --non-interactive \
             --wait \
-            --verbose \
+            --build-logger-level debug \
             --json > "$output"
           python3 ../../scripts/ci/verify-eas-build-json.py "$output" android
