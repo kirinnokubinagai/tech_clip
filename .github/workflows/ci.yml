@@ -278,8 +278,8 @@ jobs:
           [ "$fail" -eq 0 ] && echo "CI gate passed" || exit 1
 
   # ── Step 7: 全チェック通過後に自動マージ ────────────────────────────────
-  # ci-gate が required status check を担うため、auto-merge は純粋なマージ操作のみを行う。
-  # required check ではないため SKIPPED になっても他 PR の merge 可否に影響しない。
+  # ci-gate が通常CIの合否を担い、auto-merge は path-filtered Android E2E の
+  # run statusもread-backしてからmergeする。
   auto-merge:
     if: |
       always() &&
@@ -289,8 +289,11 @@ jobs:
       github.actor != 'dependabot[bot]'
     needs: [ci-gate]
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    # Android E2E may include a cold Gradle build; auto-merge.sh waits for the
+    # path-filtered E2E workflow before enabling or performing the merge.
+    timeout-minutes: 45
     permissions:
+      actions: read
       pull-requests: write
       contents: write
     steps:
