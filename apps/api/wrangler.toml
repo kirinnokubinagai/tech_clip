@@ -34,38 +34,21 @@ binding = "AI"
 crons = ["0 0 1 * *"]
 
 # --- Staging 環境 ---
-# TODO(staging-setup): Staging 環境はまだ構築されていません。
-#   追跡 Issue: (フォローアップ Issue を作成してここに番号を追記すること)
-#   ブロッカー: KV namespace / R2 bucket の事前作成が必要。
-#
-#   デプロイ手順:
-#   1. wrangler kv namespace create tech-clip-rate-limit-staging --env staging
-#   2. wrangler kv namespace create tech-clip-cache-staging --env staging
-#   3. Cloudflare ダッシュボードで R2 bucket "tech-clip-avatars-staging" を作成
-#   4. 各 ID を取得して REPLACE_WITH_... を実値に置換する
-#   5. wrangler secret put TURSO_DATABASE_URL --env staging（他 secrets も同様）
-#
-#   注意: REPLACE_WITH_... が残った状態で `wrangler deploy --env staging` を実行すると
-#         Cloudflare API から設定エラーが返る想定。production デプロイでは
-#         env.staging セクションは参照されないため本番環境は安全。
-#
-#   staging でも monthly cron を動かしたい場合:
-#     [env.staging.triggers]
-#     crons = ["0 0 1 * *"]
+# These bindings are provisioned in the TechClip Cloudflare account.
 [env.staging]
 name = "tech-clip-api-staging"
 [env.staging.vars]
 ENVIRONMENT = "staging"
-APP_URL = "REPLACE_WITH_STAGING_APP_URL"
-R2_PUBLIC_URL = "REPLACE_WITH_STAGING_R2_PUBLIC_URL"
+APP_URL = "https://techclip.pages.dev"
+R2_PUBLIC_URL = "https://pub-3798f7cb79af44a6b873fbd58d4e0b96.r2.dev"
 
 [[env.staging.kv_namespaces]]
 binding = "RATE_LIMIT"
-id = "REPLACE_WITH_STAGING_RATE_LIMIT_KV_ID"
+id = "3a87ba694ddb4816b386db8d564e5155"
 
 [[env.staging.kv_namespaces]]
 binding = "CACHE"
-id = "REPLACE_WITH_STAGING_CACHE_KV_ID"
+id = "39563996c207443882fba0340915f0cf"
 
 [[env.staging.r2_buckets]]
 binding = "AVATARS_BUCKET"
