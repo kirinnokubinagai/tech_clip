@@ -30,6 +30,7 @@ RETRY_DELAY_BASE="${AUTO_MERGE_RETRY_DELAY_BASE:-2}"
 # changes), while an existing run must complete successfully before merging.
 E2E_POLL_INTERVAL="${AUTO_MERGE_E2E_POLL_INTERVAL:-30}"
 E2E_MAX_WAIT="${AUTO_MERGE_E2E_MAX_WAIT:-2700}"
+E2E_DISCOVERY_WAIT="${AUTO_MERGE_E2E_DISCOVERY_WAIT:-60}"
 
 log() { echo "[auto-merge] $*"; }
 
@@ -63,8 +64,18 @@ wait_for_android_e2e() {
 
     case "$status" in
       absent)
-        log "No Android E2E run for ${head_sha}; path-filtered workflow not applicable"
-        return 0
+        if (( elapsed < E2E_DISCOVERY_WAIT )); then
+          wait_seconds="$E2E_POLL_INTERVAL"
+          (( wait_seconds > 0 )) || wait_seconds=1
+          remaining=$((E2E_DISCOVERY_WAIT - elapsed))
+          (( wait_seconds < remaining )) || wait_seconds="$remaining"
+          log "Android E2E run not visible for ${head_sha}; waiting ${wait_seconds}s for workflow discovery"
+          sleep "$wait_seconds"
+          elapsed=$((elapsed + wait_seconds))
+        else
+          log "No Android E2E run for ${head_sha}; path-filtered workflow not applicable"
+          return 0
+        fi
         ;;
       completed:success)
         log "Android E2E passed for ${head_sha}"
