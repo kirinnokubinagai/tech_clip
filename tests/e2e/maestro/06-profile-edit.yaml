@@ -15,7 +15,7 @@ env:
 
 # ログイン済み状態でアプリ起動
 - launchApp:
-    clearState: true
+    clearState: false
 - runFlow:
     when:
       visible: "Try out your stylus"
