@@ -30,6 +30,8 @@ import {
 } from "../lib/http-status";
 import { createLogger } from "../lib/logger";
 import { processAvatarImage, uploadAvatarToR2, validateImageFile } from "../services/imageUpload";
+import { SUPPORTED_LANGUAGES } from "../validators/ai";
+import { HttpUrlSchema } from "../validators/web-url";
 
 /** ユーザールート用ロガー */
 const logger = createLogger();
@@ -42,9 +44,6 @@ const USERNAME_MAX_LENGTH = 30;
 
 /** 自己紹介最大文字数 */
 const BIO_MAX_LENGTH = 500;
-
-/** URL最大文字数 */
-const URL_MAX_LENGTH = 2048;
 
 /** GitHubユーザー名最大文字数 */
 const GITHUB_USERNAME_MAX_LENGTH = 39;
@@ -82,49 +81,48 @@ const SENSITIVE_FIELDS = [
 ] as const;
 
 /** プロフィール更新スキーマ */
-const UpdateProfileSchema = z.object({
-  name: z
-    .string()
-    .max(NAME_MAX_LENGTH, `名前は${NAME_MAX_LENGTH}文字以内で入力してください`)
-    .trim()
-    .nullable()
-    .optional(),
-  username: z
-    .string()
-    .max(USERNAME_MAX_LENGTH, `ユーザー名は${USERNAME_MAX_LENGTH}文字以内で入力してください`)
-    .regex(USERNAME_REGEX, "ユーザー名は半角英数字、アンダースコア、ハイフンのみ使用できます")
-    .nullable()
-    .optional(),
-  bio: z
-    .string()
-    .max(BIO_MAX_LENGTH, `自己紹介は${BIO_MAX_LENGTH}文字以内で入力してください`)
-    .nullable()
-    .optional(),
-  websiteUrl: z
-    .string()
-    .max(URL_MAX_LENGTH, `URLは${URL_MAX_LENGTH}文字以内で入力してください`)
-    .url("URLの形式が正しくありません")
-    .nullable()
-    .optional(),
-  githubUsername: z
-    .string()
-    .max(
-      GITHUB_USERNAME_MAX_LENGTH,
-      `GitHubユーザー名は${GITHUB_USERNAME_MAX_LENGTH}文字以内で入力してください`,
-    )
-    .nullable()
-    .optional(),
-  twitterUsername: z
-    .string()
-    .max(
-      TWITTER_USERNAME_MAX_LENGTH,
-      `Twitterユーザー名は${TWITTER_USERNAME_MAX_LENGTH}文字以内で入力してください`,
-    )
-    .nullable()
-    .optional(),
-  isProfilePublic: z.boolean().optional(),
-  preferredLanguage: z.string().optional(),
-});
+const UpdateProfileSchema = z
+  .object({
+    name: z
+      .string()
+      .max(NAME_MAX_LENGTH, `名前は${NAME_MAX_LENGTH}文字以内で入力してください`)
+      .trim()
+      .nullable()
+      .optional(),
+    username: z
+      .string()
+      .max(USERNAME_MAX_LENGTH, `ユーザー名は${USERNAME_MAX_LENGTH}文字以内で入力してください`)
+      .regex(USERNAME_REGEX, "ユーザー名は半角英数字、アンダースコア、ハイフンのみ使用できます")
+      .nullable()
+      .optional(),
+    bio: z
+      .string()
+      .max(BIO_MAX_LENGTH, `自己紹介は${BIO_MAX_LENGTH}文字以内で入力してください`)
+      .nullable()
+      .optional(),
+    websiteUrl: HttpUrlSchema.nullable().optional(),
+    githubUsername: z
+      .string()
+      .max(
+        GITHUB_USERNAME_MAX_LENGTH,
+        `GitHubユーザー名は${GITHUB_USERNAME_MAX_LENGTH}文字以内で入力してください`,
+      )
+      .nullable()
+      .optional(),
+    twitterUsername: z
+      .string()
+      .max(
+        TWITTER_USERNAME_MAX_LENGTH,
+        `Twitterユーザー名は${TWITTER_USERNAME_MAX_LENGTH}文字以内で入力してください`,
+      )
+      .nullable()
+      .optional(),
+    isProfilePublic: z.boolean().optional(),
+    preferredLanguage: z.enum(SUPPORTED_LANGUAGES).optional(),
+  })
+  .refine((data) => Object.keys(data).length > 0, {
+    message: "更新するフィールドを1つ以上指定してください",
+  });
 
 /** createUsersRouteのオプション */
 type UsersRouteOptions = {

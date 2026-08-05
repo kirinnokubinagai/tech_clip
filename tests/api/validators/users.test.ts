@@ -143,6 +143,16 @@ describe("UpdateProfileSchema", () => {
       expect(result.error?.issues[0].message).toContain("URL");
     });
 
+    it.each([
+      "javascript:alert(1)",
+      "data:text/html,<script>alert(1)</script>",
+      "file:///tmp/a.txt",
+    ])("%s URLはエラーになること", (websiteUrl) => {
+      const result = UpdateProfileSchema.safeParse({ websiteUrl });
+
+      expect(result.success).toBe(false);
+    });
+
     it("githubUsernameが39文字を超える場合エラーになること", () => {
       // Arrange
       const input = { githubUsername: "a".repeat(40) };
@@ -165,6 +175,20 @@ describe("UpdateProfileSchema", () => {
       // Assert
       expect(result.success).toBe(false);
       expect(result.error?.issues[0].message).toContain("15");
+    });
+
+    it("空のプロフィール更新はエラーになること", () => {
+      expect(UpdateProfileSchema.safeParse({}).success).toBe(false);
+    });
+
+    it("未知のフィールドだけのプロフィール更新はエラーになること", () => {
+      expect(UpdateProfileSchema.safeParse({ usernmae: "alice" }).success).toBe(false);
+    });
+
+    it("未対応のpreferredLanguageはエラーになること", () => {
+      expect(UpdateProfileSchema.safeParse({ preferredLanguage: "xx-invalid" }).success).toBe(
+        false,
+      );
     });
   });
 });
@@ -216,6 +240,32 @@ describe("UploadAvatarSchema", () => {
       const result = UploadAvatarSchema.safeParse(input);
 
       // Assert
+      expect(result.success).toBe(false);
+    });
+
+    it("許可されていないMIMEタイプの場合エラーになること", () => {
+      const result = UploadAvatarSchema.safeParse({
+        avatar: new File(["payload"], "avatar.html", { type: "text/html" }),
+      });
+
+      expect(result.success).toBe(false);
+    });
+
+    it("空ファイルの場合エラーになること", () => {
+      const result = UploadAvatarSchema.safeParse({
+        avatar: new File([], "avatar.jpg", { type: "image/jpeg" }),
+      });
+
+      expect(result.success).toBe(false);
+    });
+
+    it("5MBを超えるファイルの場合エラーになること", () => {
+      const result = UploadAvatarSchema.safeParse({
+        avatar: new File([new Uint8Array(5 * 1024 * 1024 + 1)], "avatar.jpg", {
+          type: "image/jpeg",
+        }),
+      });
+
       expect(result.success).toBe(false);
     });
   });
