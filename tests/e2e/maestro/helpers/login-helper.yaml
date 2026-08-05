@@ -9,6 +9,12 @@ env:
 
 ---
 
+# Maestroのcold-start raceでlauncherに残る場合があるため、stateを保持して再launchする
+- launchApp:
+    clearState: false
+- waitForAnimationToEnd:
+    timeout: 3000
+
 # ANR (Android 36 Pixel Launcher 既知バグ) を先に dismiss する
 - runFlow: dismiss-anr.yaml
 
