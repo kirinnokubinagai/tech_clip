@@ -28,6 +28,14 @@ openssl req -new -x509 \
   -subj "/CN=TechClip OTA Signing"
 ```
 
+## CI/CD
+
+GitHub Actions の EAS Build/Submit は、次の Secrets から公開証明書を
+`certificate.pem` として動的に復元する。private key はワークツリーに残さない。
+
+- `OTA_UPDATE_CERTIFICATE`（安定した公開証明書）
+- `OTA_UPDATE_PRIVATE_KEY`（OTA 更新署名用。Vaultwarden にも保管）
+
 ## 注意事項
 
 - `private-key.pem` は絶対に Git にコミットしないこと

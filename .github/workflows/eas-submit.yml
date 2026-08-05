@@ -33,6 +33,11 @@ jobs:
           cache: pnpm
       - name: Install JavaScript dependencies
         run: pnpm install --frozen-lockfile --ignore-scripts
+      - name: Prepare OTA signing certificate
+        env:
+          OTA_UPDATE_CERTIFICATE: ${{ secrets.OTA_UPDATE_CERTIFICATE }}
+          OTA_UPDATE_PRIVATE_KEY: ${{ secrets.OTA_UPDATE_PRIVATE_KEY }}
+        run: scripts/ci/prepare-ota-signing-certificate.sh apps/mobile/certs
       - name: Require Expo token
         env:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
@@ -96,6 +101,11 @@ jobs:
           cache: pnpm
       - name: Install JavaScript dependencies
         run: pnpm install --frozen-lockfile --ignore-scripts
+      - name: Prepare OTA signing certificate
+        env:
+          OTA_UPDATE_CERTIFICATE: ${{ secrets.OTA_UPDATE_CERTIFICATE }}
+          OTA_UPDATE_PRIVATE_KEY: ${{ secrets.OTA_UPDATE_PRIVATE_KEY }}
+        run: scripts/ci/prepare-ota-signing-certificate.sh apps/mobile/certs
       - name: Require Expo token
         env:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
