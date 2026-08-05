@@ -94,13 +94,13 @@ jobs:
           key: nix-avd-${{ hashFiles('flake.lock', 'scripts/dev/setup-avd.sh') }}-v1
 
       - name: Start Turso dev server
-        run: nix develop --command bash scripts/ci/start-turso.sh
+        run: nix develop .#ci --command bash scripts/ci/start-turso.sh
         env:
           TURSO_CI_DB_FILE: /tmp/tech-clip-ci-turso.db
           TURSO_CI_PORT: "8888"
 
       - name: Boot Android emulator (nix-provided)
-        run: nix develop --command bash scripts/ci/start-emulator.sh techclip-ci 5554
+        run: nix develop .#ci --command bash scripts/ci/start-emulator.sh techclip-ci 5554
 
       - name: Run E2E (shard ${{ matrix.shard }}/2)
         env:
@@ -112,7 +112,7 @@ jobs:
           TEST_NAME: "Maestro Test User"
           MAESTRO_TEST_PASSWORD: "TestPassword123!"
           TIMESTAMP: ${{ github.run_id }}
-        run: nix develop --command bash scripts/ci/run-android-e2e.sh
+        run: nix develop .#ci --command bash scripts/ci/run-android-e2e.sh
 
       - name: Stop emulator
         if: always()
@@ -121,7 +121,7 @@ jobs:
             PID=$(cat /tmp/emulator-5554.pid)
             kill "$PID" 2>/dev/null || true
           fi
-          nix develop --command adb -s emulator-5554 emu kill 2>/dev/null || true
+          nix develop .#ci --command adb -s emulator-5554 emu kill 2>/dev/null || true
 
       - name: Upload screenshots artifact
         if: always()
