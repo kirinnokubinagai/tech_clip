@@ -10,7 +10,7 @@ teardown() {
 }
 
 @test "verify-eas-build-json accepts a finished build with an artifact" {
-  printf '%s\n' '{"id":"build-1","platform":"android","status":"finished","artifacts":{"buildUrl":"https://expo.dev/artifacts/build-1"}}' > "$TMP_DIR/build.json"
+  printf '%s\n' '{"id":"build-1","platform":"ANDROID","status":"FINISHED","artifacts":{"buildUrl":"https://expo.dev/artifacts/build-1"}}' > "$TMP_DIR/build.json"
 
   run python3 "$SCRIPT" "$TMP_DIR/build.json" android
 

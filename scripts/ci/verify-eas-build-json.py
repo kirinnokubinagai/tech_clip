@@ -43,7 +43,7 @@ def main() -> int:
         return 1
 
     build = builds[-1]
-    status = build.get("status")
+    status = str(build.get("status", "")).lower()
     if status != "finished":
         print(
             f"::error::EAS build did not finish (platform={platform}, status={status!r}).",
@@ -52,7 +52,7 @@ def main() -> int:
         return 1
 
     returned_platform = build.get("platform")
-    if returned_platform and returned_platform != platform:
+    if returned_platform and str(returned_platform).lower() != platform.lower():
         print(
             f"::error::EAS returned platform={returned_platform!r}, expected {platform!r}.",
             file=sys.stderr,
