@@ -75,6 +75,14 @@ jobs:
         run: |
           set -euo pipefail
           profile="${APP_ENV}"
+          if [[ "$profile" == "production" ]]; then
+            for name in ADMOB_ANDROID_APP_ID ADMOB_IOS_APP_ID; do
+              if [[ -z "${!name:-}" || -z "${!name//[[:space:]]/}" ]]; then
+                echo "::error::$name is required for a production build; refusing to ship test AdMob IDs."
+                exit 1
+              fi
+            done
+          fi
           mkdir -p "$RUNNER_TEMP/techclip-eas"
           output="$RUNNER_TEMP/techclip-eas/${profile}-ios.json"
           ../../scripts/ci/run-eas.sh build \
@@ -134,6 +142,14 @@ jobs:
         run: |
           set -euo pipefail
           profile="${APP_ENV}"
+          if [[ "$profile" == "production" ]]; then
+            for name in ADMOB_ANDROID_APP_ID ADMOB_IOS_APP_ID; do
+              if [[ -z "${!name:-}" || -z "${!name//[[:space:]]/}" ]]; then
+                echo "::error::$name is required for a production build; refusing to ship test AdMob IDs."
+                exit 1
+              fi
+            done
+          fi
           mkdir -p "$RUNNER_TEMP/techclip-eas"
           output="$RUNNER_TEMP/techclip-eas/${profile}-android.json"
           ../../scripts/ci/run-eas.sh build \
