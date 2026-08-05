@@ -186,7 +186,7 @@ https://techclip.app/privacy
 3. App IDs を選択
 4. Bundle ID を設定:
    ```
-   app.techclip.mobile
+   com.techclip.app
    ```
 5. 必要な Capabilities を有効化:
    - Push Notifications（プッシュ通知を使用する場合）
@@ -209,7 +209,7 @@ EAS を使用する場合は自動管理。手動の場合:
 
 1. Profiles > 「+」
 2. App Store Connect を選択
-3. App ID: `app.techclip.mobile` を選択
+3. App ID: `com.techclip.app` を選択
 4. Distribution Certificate を選択
 5. プロファイル名: `TechClip App Store`
 6. `.mobileprovision` をダウンロード
@@ -287,7 +287,7 @@ eas build:list --platform ios
       "backgroundColor": "#ffffff"
     },
     "ios": {
-      "bundleIdentifier": "app.techclip.mobile",
+      "bundleIdentifier": "com.techclip.app",
       "buildNumber": "1",
       "supportsTablet": false,
       "requireFullScreen": false,
@@ -330,7 +330,7 @@ eas build:list --platform ios
 | プラットフォーム | iOS |
 | 名前 | TechClip |
 | 主要言語 | 日本語 |
-| バンドル ID | app.techclip.mobile |
+| バンドル ID | com.techclip.app |
 | SKU | techclip-ios-001 |
 | ユーザーアクセス | フルアクセス |
 
@@ -391,11 +391,11 @@ TechClip 1.0.0 - 初回リリース
 | 項目 | 設定 |
 |------|------|
 | サインイン情報が必要 | はい |
-| デモ用アカウント（ユーザー名） | reviewer@techclip.app |
-| デモ用アカウント（パスワード） | ReviewPass123! |
+| デモ用アカウント（ユーザー名） | App Store Connect の審査情報へ安全に入力（Git 管理しない） |
+| デモ用アカウント（パスワード） | App Store Connect の審査情報へ安全に入力（Git 管理しない） |
 | メモ | 「記事一覧はログイン後に表示されます。デモアカウントでログインしてご確認ください。」 |
 
-デモアカウントは審査開始前に本番環境で有効化しておくこと。
+デモアカウントの認証情報はリポジトリ、Discord、CI ログへ記載しない。過去に記載されていた値は公開済みとして無効化・ローテーションし、審査開始前に安全な経路で本番環境へ再作成すること。
 
 ### 4-6. 提出前の最終確認
 

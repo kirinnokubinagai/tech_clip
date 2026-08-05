@@ -143,10 +143,10 @@ jobs:
           retention-days: 7
           if-no-files-found: warn
 
-      - name: Fail if Maestro failed
+      - name: Validate Maestro result
         if: always()
         run: |
-          set -eo pipefail
+          set -euo pipefail
           JUNIT="test-results/junit-shard${{ matrix.shard }}of2.xml"
           EXIT_CODE_FILE="test-results/maestro-exit-code-shard${{ matrix.shard }}of2.txt"
 
@@ -154,55 +154,45 @@ jobs:
             echo "::error::maestro-exit-code file not found: $EXIT_CODE_FILE"
             exit 1
           fi
-          EXIT_CODE=$(cat "$EXIT_CODE_FILE")
-
-          if [ "$EXIT_CODE" -ne 0 ]; then
-            echo "::error::Maestro E2E failed (shard ${{ matrix.shard }}/2)"
-
-            if [ ! -f "$JUNIT" ]; then
-              echo "::error::JUnit XML not found: $JUNIT"
-              exit 1
-            fi
-            if [ ! -s "$JUNIT" ]; then
-              echo "::error::JUnit XML is empty: $JUNIT"
-              exit 1
-            fi
-
-            echo ""
-            echo "=== Failed tests ==="
-            python3 -c "
-          import xml.etree.ElementTree as ET, sys
-          tree = ET.parse('$JUNIT')
-          for tc in tree.iter('testcase'):
-              fail = tc.find('failure')
-              if fail is not None:
-                  name = tc.get('name', 'unknown')
-                  msg = fail.text or fail.get('message', '(no message)')
-                  print(f'::error::FAIL: {name} — {msg}')
-                  print(f'  Test: {name}')
-                  print(f'  Reason: {msg}')
-                  print()
-          " || {
-              echo "::error::JUnit XML parse failed for $JUNIT"
-              echo "--- Raw XML (first 50 lines) ---"
-              head -50 "$JUNIT" || true
-              exit 1
-            }
-
-            echo "=== Summary ==="
-            python3 -c "
-          import xml.etree.ElementTree as ET
-          tree = ET.parse('$JUNIT')
-          ts = tree.find('.//testsuite') or tree.getroot()
-          total = ts.get('tests', '?')
-          fails = ts.get('failures', '?')
-          print(f'Total: {total}, Failures: {fails}')
-          " || {
-              echo "::warning::JUnit summary parse failed (non-fatal)"
-            }
-
+          if [ ! -s "$JUNIT" ]; then
+            echo "::error::JUnit XML is missing or empty: $JUNIT"
             exit 1
           fi
+
+          python3 - "$JUNIT" "$EXIT_CODE_FILE" <<'PY'
+          import pathlib
+          import sys
+          import xml.etree.ElementTree as ET
+
+          junit_path = pathlib.Path(sys.argv[1])
+          exit_code = int(pathlib.Path(sys.argv[2]).read_text().strip())
+          try:
+              root = ET.parse(junit_path).getroot()
+          except (ET.ParseError, OSError) as exc:
+              print(f"::error::JUnit XML parse failed: {exc}")
+              raise SystemExit(1)
+
+          testcases = list(root.iter("testcase"))
+          total = int(root.get("tests", len(testcases)))
+          failures = int(root.get("failures", 0))
+          errors = int(root.get("errors", 0))
+          if total <= 0 or not testcases:
+              print("::error::Maestro produced no testcases; refusing a false green result.")
+              raise SystemExit(1)
+
+          for testcase in testcases:
+              failure = testcase.find("failure")
+              if failure is None:
+                  failure = testcase.find("error")
+              if failure is not None:
+                  name = testcase.get("name", "unknown")
+                  message = failure.text or failure.get("message", "(no message)")
+                  print(f"::error::FAIL: {name} — {message}")
+
+          print(f"Maestro summary: tests={total}, failures={failures}, errors={errors}, exit={exit_code}")
+          if exit_code != 0 or failures != 0 or errors != 0:
+              raise SystemExit(1)
+          PY
 
   e2e-aggregate:
     needs: android-e2e

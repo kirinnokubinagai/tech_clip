@@ -152,8 +152,8 @@ while IFS= read -r f; do
 done < <(bash scripts/ci/shard-flows.sh --shard "${SHARD_INDEX}/${SHARD_TOTAL}" --dir tests/e2e/maestro)
 
 if [ "${#SHARD_FLOWS[@]}" -eq 0 ]; then
-  echo "WARNING: no maestro flows for shard ${SHARD_INDEX}/${SHARD_TOTAL}; skipping" >&2
-  echo "0" > "test-results/maestro-exit-code${SHARD_SUFFIX}.txt"
+  echo "ERROR: no maestro flows for shard ${SHARD_INDEX}/${SHARD_TOTAL}" >&2
+  echo "1" > "test-results/maestro-exit-code${SHARD_SUFFIX}.txt"
   pkill -P "$EXPO_PID" 2>/dev/null || true
   kill "$EXPO_PID" 2>/dev/null || true
   exit 0
@@ -166,6 +166,7 @@ done
 
 # Run Maestro tests (continue on failure to upload artifacts)
 set +e
+export MAESTRO_CLI_NO_ANALYTICS=1
 nix develop --command maestro test "${SHARD_FLOWS[@]}" \
   --format junit \
   --output "test-results/junit${SHARD_SUFFIX}.xml" \

@@ -3,71 +3,114 @@ name: EAS Build
 on:
   push:
     branches: [main]
+  workflow_dispatch:
+    inputs:
+      platform:
+        description: Build platform
+        required: true
+        type: choice
+        options: [all, android, ios]
+        default: all
+      profile:
+        description: EAS build profile
+        required: true
+        type: choice
+        options: [preview, production]
+        default: preview
 
-# デフォルトで全権限を read-only にする（ci.yml と統一）
 permissions: read-all
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+  EXPO_PUBLIC_API_URL: https://api.techclip.app
+  EXPO_PUBLIC_API_URL_IOS: https://api.techclip.app
+  EXPO_PUBLIC_API_URL_ANDROID: https://api.techclip.app
 
 jobs:
   build-ios:
+    if: github.event_name == 'push' || inputs.platform == 'all' || inputs.platform == 'ios'
     runs-on: ubuntu-latest
     permissions:
       contents: read
     steps:
       - uses: actions/checkout@v7
-      - uses: ./.github/actions/nix-setup
-      - name: Cache pnpm store
-        uses: actions/cache@v4
-        with:
-          path: ~/.pnpm-store
-          key: pnpm-store-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
-          restore-keys: |
-            pnpm-store-${{ runner.os }}-
-      - name: Mask EXPO_TOKEN in logs
+      - name: Require Expo token
         env:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
-        run: echo "::add-mask::$EXPO_TOKEN"
+        run: |
+          if [[ -z "${EXPO_TOKEN:-}" || -z "${EXPO_TOKEN//[[:space:]]/}" ]]; then
+            echo "::error::EXPO_TOKEN is not configured; refusing to report a false-green EAS build."
+            exit 1
+          fi
       - uses: expo/expo-github-action@v9
         with:
           eas-version: "14.x"
           token: ${{ secrets.EXPO_TOKEN }}
-      - name: Build iOS
+      - name: Verify EAS CLI and authentication
         working-directory: apps/mobile
-        run: nix develop --command bash -c "eas build --platform ios --profile production --non-interactive"
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+        run: ../../scripts/ci/run-eas.sh whoami
+      - name: Build iOS and verify artifact
+        working-directory: apps/mobile
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+          APP_ENV: ${{ github.event_name == 'workflow_dispatch' && inputs.profile || 'production' }}
+          ADMOB_ANDROID_APP_ID: ${{ vars.ADMOB_ANDROID_APP_ID }}
+          ADMOB_IOS_APP_ID: ${{ vars.ADMOB_IOS_APP_ID }}
+        run: |
+          set -euo pipefail
+          profile="${APP_ENV}"
+          mkdir -p "$RUNNER_TEMP/techclip-eas"
+          output="$RUNNER_TEMP/techclip-eas/${profile}-ios.json"
+          ../../scripts/ci/run-eas.sh build \
+            --platform ios \
+            --profile "$profile" \
+            --non-interactive \
+            --wait \
+            --json > "$output"
+          python3 ../../scripts/ci/verify-eas-build-json.py "$output" ios
 
   build-android:
+    if: github.event_name == 'push' || inputs.platform == 'all' || inputs.platform == 'android'
     runs-on: ubuntu-latest
     permissions:
       contents: read
     steps:
       - uses: actions/checkout@v7
-      - uses: ./.github/actions/nix-setup
-      - name: Cache Gradle
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.gradle/caches
-            ~/.gradle/wrapper
-          key: gradle-${{ runner.os }}-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
-          restore-keys: |
-            gradle-${{ runner.os }}-
-      - name: Cache pnpm store
-        uses: actions/cache@v4
-        with:
-          path: ~/.pnpm-store
-          key: pnpm-store-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
-          restore-keys: |
-            pnpm-store-${{ runner.os }}-
-      - name: Mask EXPO_TOKEN in logs
+      - name: Require Expo token
         env:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
-        run: echo "::add-mask::$EXPO_TOKEN"
+        run: |
+          if [[ -z "${EXPO_TOKEN:-}" || -z "${EXPO_TOKEN//[[:space:]]/}" ]]; then
+            echo "::error::EXPO_TOKEN is not configured; refusing to report a false-green EAS build."
+            exit 1
+          fi
       - uses: expo/expo-github-action@v9
         with:
           eas-version: "14.x"
           token: ${{ secrets.EXPO_TOKEN }}
-      - name: Build Android
+      - name: Verify EAS CLI and authentication
         working-directory: apps/mobile
-        run: nix develop --command bash -c "eas build --platform android --profile production --non-interactive"
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+        run: ../../scripts/ci/run-eas.sh whoami
+      - name: Build Android and verify artifact
+        working-directory: apps/mobile
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+          APP_ENV: ${{ github.event_name == 'workflow_dispatch' && inputs.profile || 'production' }}
+          ADMOB_ANDROID_APP_ID: ${{ vars.ADMOB_ANDROID_APP_ID }}
+          ADMOB_IOS_APP_ID: ${{ vars.ADMOB_IOS_APP_ID }}
+        run: |
+          set -euo pipefail
+          profile="${APP_ENV}"
+          mkdir -p "$RUNNER_TEMP/techclip-eas"
+          output="$RUNNER_TEMP/techclip-eas/${profile}-android.json"
+          ../../scripts/ci/run-eas.sh build \
+            --platform android \
+            --profile "$profile" \
+            --non-interactive \
+            --wait \
+            --json > "$output"
+          python3 ../../scripts/ci/verify-eas-build-json.py "$output" android
