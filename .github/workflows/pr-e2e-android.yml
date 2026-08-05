@@ -221,12 +221,35 @@ jobs:
         run: |
           set -eo pipefail
           mkdir -p test-results
-          SHARD_FILES=$(ls test-results/junit-shard*of2.xml 2>/dev/null || true)
-          if [ -z "$SHARD_FILES" ]; then
-            echo "no shard junit files found" >&2
+          EXPECTED_SHARDS=2
+          SHARD_FILES=""
+          MISSING_JUNIT=""
+          for shard in $(seq 1 "$EXPECTED_SHARDS"); do
+            f="test-results/junit-shard${shard}of${EXPECTED_SHARDS}.xml"
+            if [ ! -s "$f" ]; then
+              MISSING_JUNIT="${MISSING_JUNIT} shard${shard}of${EXPECTED_SHARDS}"
+            else
+              SHARD_FILES="${SHARD_FILES} ${f}"
+            fi
+          done
+
+          if [ -n "$MISSING_JUNIT" ]; then
+            echo "::error::Missing JUnit shard artifact(s):$MISSING_JUNIT"
+            {
+              echo '<?xml version="1.0" encoding="UTF-8"?>'
+              echo '<testsuite tests="1" failures="1" errors="0">'
+              for shard in $(seq 1 "$EXPECTED_SHARDS"); do
+                f="test-results/junit-shard${shard}of${EXPECTED_SHARDS}.xml"
+                if [ ! -s "$f" ]; then
+                  echo "<testcase name=\"android-e2e-shard${shard}of${EXPECTED_SHARDS}\"><failure>JUnit artifact missing; shard did not complete</failure></testcase>"
+                fi
+              done
+              echo '</testsuite>'
+            } > test-results/junit.xml
             echo "1" > test-results/maestro-exit-code.txt
             exit 1
           fi
+
           TOTAL=0
           FAILED=0
           ERRORS=0
@@ -249,7 +272,13 @@ jobs:
           } > test-results/junit.xml
 
           OVERALL=0
-          for f in $(ls test-results/maestro-exit-code-shard*of2.txt 2>/dev/null); do
+          for shard in $(seq 1 "$EXPECTED_SHARDS"); do
+            f="test-results/maestro-exit-code-shard${shard}of${EXPECTED_SHARDS}.txt"
+            if [ ! -s "$f" ]; then
+              echo "::error::Missing Maestro exit-code marker: $f"
+              OVERALL=1
+              continue
+            fi
             EC=$(cat "$f" 2>/dev/null || echo 1)
             if [ "$EC" -ne 0 ]; then
               OVERALL=$EC

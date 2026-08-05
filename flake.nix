@@ -50,7 +50,9 @@
           # 不一致時は gradle が `com.android.builder.sdk.InstallFailedException` を投げて、
           # nix store の read-only 領域に NDK を install しようとして失敗する。
           includeNDK = true;
-          ndkVersions = [ "27.0.12077973" ];
+          # Expo SDK 55 / React Native 0.83 は 27.1 を要求する。
+          # 27.0 を side-by-side で残すのは既存の生成済みnative projectとの互換性のため。
+          ndkVersions = [ "27.1.12297006" "27.0.12077973" ];
         };
         androidSdk = androidComposition.androidsdk;
         androidHome = "${androidSdk}/libexec/android-sdk";

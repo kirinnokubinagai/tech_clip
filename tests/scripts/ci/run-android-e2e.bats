@@ -71,7 +71,7 @@ LOGIN_HELPER="$(cd "$(dirname "$BATS_TEST_FILENAME")/../../.." && pwd)/tests/e2e
   pidof_timeout_line="$(grep -nF 'if [ $PIDOF_WAITED -ge $MAX_PIDOF_WAIT ]; then' "$SCRIPT" | cut -d: -f1)"
   metro_gate_line="$(grep -nF 'if grep -qE "Bundled .*apps/mobile/index\.js"' "$SCRIPT" | cut -d: -f1)"
   ready_line="$(grep -nF 'App is running, ready to start Maestro tests' "$SCRIPT" | cut -d: -f1)"
-  maestro_line="$(grep -nF 'nix develop --command maestro test' "$SCRIPT" | cut -d: -f1)"
+  maestro_line="$(grep -nF 'nix develop .#ci --command maestro test' "$SCRIPT" | cut -d: -f1)"
 
   [ -n "$pidof_timeout_line" ]
   [ -n "$metro_gate_line" ]
@@ -131,4 +131,9 @@ LOGIN_HELPER="$(cd "$(dirname "$BATS_TEST_FILENAME")/../../.." && pwd)/tests/e2e
 @test "ORG_GRADLE_PROJECT_reactNativeArchitectures=x86_64 を nix develop 内に直接指定する" {
   # export だけでは nix develop --command bash -c に伝播しないため、bash -c 文字列内に含める必要がある
   grep -E "nix develop.*ORG_GRADLE_PROJECT_reactNativeArchitectures=x86_64" "$SCRIPT"
+}
+
+@test "E2E の内部コマンドは専用 CI dev shell を使う" {
+  run bash -c '! grep -q "nix develop --command" "'"$SCRIPT"'"'
+  [ "$status" -eq 0 ]
 }

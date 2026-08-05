@@ -16,6 +16,8 @@ setup() {
   export GH_TOKEN=dummy
   export PR_NUMBER=1234
   export REPO=owner/repo
+  export AUTO_MERGE_E2E_DISCOVERY_WAIT=0
+  unset E2E_STATUS
 }
 
 # T1: mergeStateStatus=CLEAN → direct merge を 1 回呼ぶ、exit 0
@@ -167,4 +169,42 @@ setup() {
   merge_count=$(cat "${GH_FIXTURE_FILE}.merge.count" 2>/dev/null || echo 0)
   [ "$merge_count" -ge 2 ]
   grep -q -- "--auto" "$GH_CALLS_LOG"
+}
+
+# T10: E2E failure → direct merge を拒否
+@test "T10: Android E2E failure のとき merge しないこと" {
+  echo '{"state":"OPEN","mergeStateStatus":"CLEAN","autoMergeRequest":null,"isDraft":false}' \
+    > "${GH_FIXTURE_FILE}.view"
+  export E2E_STATUS=completed:failure
+
+  run bash "$SCRIPT"
+
+  [ "$status" -eq 1 ]
+  ! grep -q -- "gh pr merge" "$GH_CALLS_LOG"
+}
+
+# T11: E2E success → direct merge を許可
+@test "T11: Android E2E success のとき direct merge すること" {
+  echo '{"state":"OPEN","mergeStateStatus":"CLEAN","autoMergeRequest":null,"isDraft":false}' \
+    > "${GH_FIXTURE_FILE}.view"
+  export E2E_STATUS=completed:success
+
+  run bash "$SCRIPT"
+
+  [ "$status" -eq 0 ]
+  merge_count=$(cat "${GH_FIXTURE_FILE}.merge.count" 2>/dev/null || echo 0)
+  [ "$merge_count" -eq 1 ]
+  grep -q -- "gh pr merge" "$GH_CALLS_LOG"
+}
+
+# T12: 既存auto-merge + E2E failure → auto-mergeを無効化
+@test "T12: E2E failure のとき既存の auto-merge も無効化すること" {
+  echo '{"state":"OPEN","mergeStateStatus":"UNKNOWN","autoMergeRequest":{"enabledAt":"2024-01-01"},"isDraft":false}' \
+    > "${GH_FIXTURE_FILE}.view"
+  export E2E_STATUS=completed:failure
+
+  run bash "$SCRIPT"
+
+  [ "$status" -eq 1 ]
+  grep -q -- "--disable-auto" "$GH_CALLS_LOG"
 }

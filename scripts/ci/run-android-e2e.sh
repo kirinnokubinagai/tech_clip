@@ -19,7 +19,7 @@ bash scripts/ci/start-api.sh
 
 # Reset DB and seed e2e data before building the app
 echo "[e2e] DB リセット + migrate + seed を実行中..."
-nix develop --command bash -c 'cd apps/api && export TURSO_DATABASE_URL="${TURSO_DATABASE_URL:-http://127.0.0.1:8888}" && export TURSO_AUTH_TOKEN="${TURSO_AUTH_TOKEN:-dummy}" && pnpm reset:e2e'
+nix develop .#ci --command bash -c 'cd apps/api && export TURSO_DATABASE_URL="${TURSO_DATABASE_URL:-http://127.0.0.1:8888}" && export TURSO_AUTH_TOKEN="${TURSO_AUTH_TOKEN:-dummy}" && pnpm reset:e2e'
 echo "[e2e] DB セットアップ完了"
 
 # Expo public env vars must be embedded into the JS bundle at build time.
@@ -39,7 +39,7 @@ export EXPO_PUBLIC_API_URL_ANDROID="http://10.0.2.2:${API_CI_PORT:-18787}"
 #  3. Wait for Metro to deliver the main JS bundle before starting Maestro
 echo "[e2e] Gradle ビルド + アプリインストール + Metro バンドルを待機中..."
 EXPO_LOG="/tmp/expo-run-android-$$.log"
-nix develop --command bash -c "cd apps/mobile && ORG_GRADLE_PROJECT_reactNativeArchitectures=x86_64 pnpm expo run:android --variant debug" > >(tee "$EXPO_LOG") 2>&1 &
+nix develop .#ci --command bash -c "cd apps/mobile && ORG_GRADLE_PROJECT_reactNativeArchitectures=x86_64 pnpm expo run:android --variant debug" > >(tee "$EXPO_LOG") 2>&1 &
 EXPO_PID=$!
 
 # Phase 1: Wait for Gradle build to complete (watch for "BUILD SUCCESSFUL" in log)
@@ -167,7 +167,7 @@ done
 # Run Maestro tests (continue on failure to upload artifacts)
 set +e
 export MAESTRO_CLI_NO_ANALYTICS=1
-nix develop --command maestro test "${SHARD_FLOWS[@]}" \
+nix develop .#ci --command maestro test "${SHARD_FLOWS[@]}" \
   --format junit \
   --output "test-results/junit${SHARD_SUFFIX}.xml" \
   --debug-output "screenshots/debug${SHARD_SUFFIX}" \

@@ -17,9 +17,14 @@ if [[ "${1:-}" == "pr" ]]; then
     VIEW_FILE="${FIXTURE}.view"
     VIEW_EXIT="${FIXTURE}.view.exit"
     if [[ -f "$VIEW_FILE" ]]; then
-      cat "$VIEW_FILE"
+      VIEW_JSON="$(cat "$VIEW_FILE")"
     else
-      echo '{"state":"OPEN","mergeStateStatus":"UNKNOWN","autoMergeRequest":null,"isDraft":false}'
+      VIEW_JSON='{"state":"OPEN","mergeStateStatus":"UNKNOWN","autoMergeRequest":null,"isDraft":false}'
+    fi
+    if echo "$VIEW_JSON" | jq -e 'has("headRefOid")' >/dev/null 2>&1; then
+      printf '%s\n' "$VIEW_JSON"
+    else
+      echo "$VIEW_JSON" | jq -c '. + {headRefOid:"test-head"}'
     fi
     exit_code=0
     if [[ -f "$VIEW_EXIT" ]]; then
@@ -53,6 +58,11 @@ if [[ "${1:-}" == "pr" ]]; then
 
     exit "$exit_code"
   fi
+fi
+
+if [[ "${1:-}" == "run" && "${2:-}" == "list" ]]; then
+  printf '%s\n' "${E2E_STATUS:-absent}"
+  exit 0
 fi
 
 # Default: unknown command, return error

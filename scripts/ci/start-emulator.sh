@@ -19,7 +19,7 @@ AVD_NAME="${1:-techclip-ci}"
 PORT="${2:-5554}"
 
 if [ -z "${ANDROID_HOME:-}" ]; then
-  echo "ERROR: ANDROID_HOME が未設定。nix develop --command bash $0 ... で実行してください" >&2
+  echo "ERROR: ANDROID_HOME が未設定。nix develop .#ci --command bash $0 ... で実行してください" >&2
   exit 1
 fi
 
